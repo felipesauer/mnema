@@ -1,5 +1,5 @@
 /**
- * What a cache says about itself — the stamp, the frontier and the fingerprints — and the one
+ * What a cache says about itself (the stamp, the frontier and the fingerprints) and the one
  * thing each is for: telling a cache that can still be trusted from one that cannot.
  */
 

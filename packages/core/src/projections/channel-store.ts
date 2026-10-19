@@ -3,7 +3,7 @@
  *
  * The pure fold produces where each switch stands; this module writes those rows into
  * `channel_switches` and reads them back. Like every projection store it is a CACHE of
- * the chain — dropped and replayed on a rebuild, never authored directly.
+ * the chain: dropped and replayed on a rebuild, never authored directly.
  *
  * THE READ IS A KEYED LOOKUP AND THAT IS DELIBERATE. The one consumer that matters asks
  * about a named channel on the hot path a host runs before every file is written, so the
@@ -19,7 +19,7 @@ import { verb } from './upsert.js';
 /**
  * The `channel_switches` row shape as stored.
  *
- * `switched_on` is an INTEGER because STRICT tables have no boolean type — the same
+ * `switched_on` is an INTEGER because STRICT tables have no boolean type: the same
  * spelling `runs.open` already uses for the same reason.
  */
 interface ChannelSwitchRow {
@@ -60,7 +60,7 @@ export function materializeChannelSwitches(
 /**
  * Reads where one channel's switch stands, or null when nothing ever switched it.
  *
- * `null` is the ordinary answer and it means the channel is ON — see
+ * `null` is the ordinary answer and it means the channel is ON: see
  * {@link ChannelSwitchProjection}. It is returned rather than defaulted here because a
  * store answers about rows, and inventing a row for a channel the record never mentions
  * would put this module's opinion of the default into every reader that asks.

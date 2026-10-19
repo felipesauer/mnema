@@ -3,7 +3,7 @@
  *
  * Each case is two machines writing one record. Machine A's clock is right; machine B's runs
  * an hour behind. B pulls what A wrote and then writes on top of it, so every fact of B's was
- * written AFTER the facts of A's it read — and stamped BEFORE them. Read by `at` alone, B's
+ * written AFTER the facts of A's it read, and stamped BEFORE them. Read by `at` alone, B's
  * facts are folded first, and the state the projection shows is the one B's write replaced.
  *
  * Each case writes the SAME acts twice: once by writers that cite nothing, which is what
@@ -59,7 +59,7 @@ const byA = (minute: number): string => new Date(Date.UTC(2026, 9, 7, 9, minute)
 const byB = (minute: number): string => byA(minute - 60);
 
 /**
- * Two machines on one record. `cite` is whether their writers cite what they read — the
+ * Two machines on one record. `cite` is whether their writers cite what they read: the
  * product's writer does; a writer from before `after` did not.
  */
 function twoMachines(cite: boolean) {
@@ -126,7 +126,7 @@ describe('C1: a decision superseded on a machine whose clock is behind', () => {
     return { d1: decisions.get('d1')?.state, d2: decisions.get('d2')?.state };
   }
 
-  it('without a citation the superseded decision reads as in force — the defect', () => {
+  it('without a citation the superseded decision reads as in force: the defect', () => {
     // Read by `at`, the supersede comes before D1 was born, so it moves nothing (FORMAT.md §6.7).
     expect(supersede(false)).toEqual({ d1: 'accepted', d2: 'proposed' });
   });
@@ -166,7 +166,7 @@ describe('C2: a task moved on a machine whose clock is behind', () => {
     };
   }
 
-  it('without a citation the cancel is read before the start it followed, and is not applied — the defect', () => {
+  it('without a citation the cancel is read before the start it followed, and is not applied: the defect', () => {
     // Its writer cited nothing, so nothing says it saw the task at all; by `at` the task was
     // READY there, which is not the state the cancel left (FORMAT.md §6.7).
     expect(cancelAfterStart(false)).toEqual({ state: 'IN_PROGRESS', divergent: 0 });
@@ -192,7 +192,7 @@ describe('C3: a link retracted on a machine whose clock is behind', () => {
     return projectLinks(read()).map((edge) => `${edge.subject} ${edge.rel} ${edge.target}`);
   }
 
-  it('without a citation the retraction comes first, finds nothing, and the link stands — the defect', () => {
+  it('without a citation the retraction comes first, finds nothing, and the link stands: the defect', () => {
     expect(retractOnB(false)).toEqual(['rule-1 governs src/app.ts']);
   });
 

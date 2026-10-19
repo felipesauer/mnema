@@ -1,7 +1,7 @@
 /**
  * What the surface says after a pattern has left the record as a file.
  *
- * FORM B — the headline names the file, and what is true about it is indented under.
+ * FORM B: the headline names the file, and what is true about it is indented under.
  * It reads like a write's report because it is the same shape of news (something now
  * exists that did not), and it closes by saying the one thing that makes it NOT a
  * write: nothing reached the record.
@@ -9,7 +9,7 @@
  * THE DERIVATION IS SAID OUT LOUD, and that is the line this module exists for. The
  * `description` is the field the host routes on, the record holds none, and this verb
  * produced one by a mechanical cut of the body. A caller who cannot see that cannot
- * judge whether the host will pick the right pattern — and a field a reader believes was
+ * judge whether the host will pick the right pattern, and a field a reader believes was
  * authored, when it was cut, is the one place this file could quietly assert more than
  * the record does. So the rule is named, per source, from a table that a third source
  * could not be added to without being worded.
@@ -21,7 +21,7 @@
  * shortened in. A report that shortened it would disagree with the file it describes.
  *
  * TWO FIELDS GO THROUGH `oneLine`, and it used to be one. The PATH always did: a
- * directory can hold a newline in its name, and this line is a one-item report — the
+ * directory can hold a newline in its name, and this line is a one-item report, the
  * shape a second half would imitate. THE AGENT THAT ADOPTED THE PATTERN DID NOT, and
  * that was a hole rather than a decision: `adoptedBy` is the name whoever adopted it
  * was working under, which is text somebody typed, and it sits on a fact line under
@@ -40,7 +40,7 @@ import type { Line } from './line.js';
 import type { Render } from './render.js';
 
 /**
- * How each source of the description is said — TOTAL over the union, so a third rule
+ * How each source of the description is said: TOTAL over the union, so a third rule
  * for producing one does not compile until it has a sentence here.
  *
  * The derived wording states the rule and not the outcome ("first sentence of the
@@ -83,7 +83,7 @@ export function exportReport(render: Render, done: SkillExportDone): string[] {
 
 /**
  * The line said on the second stream when the description DERIVED from the body holds no
- * "when", "whenever" or "quando" — and nothing otherwise. A description the caller gave is the
+ * "when", "whenever" or "quando", and nothing otherwise. A description the caller gave is the
  * caller's, so it is not read. The export has already happened and is not refused: the way out
  * is `--description`, and the file is the caller's to keep or write again.
  */

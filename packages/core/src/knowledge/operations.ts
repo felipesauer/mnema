@@ -2,10 +2,10 @@
  * Capturing knowledge: the write operations for the knowledge domain.
  *
  * Knowledge is a point-in-time FACT, not a gated move. A memory has no state to
- * judge, no prior state to check, and no lifecycle — so unlike a task
+ * judge, no prior state to check, and no lifecycle, so unlike a task
  * transition, capturing one runs no gate. It is one append: mint the memory's
  * own id, stamp the envelope, emit `memory.captured`. That the fact is
- * immutable is what makes the gate irrelevant here — there is nothing to
+ * immutable is what makes the gate irrelevant here: there is nothing to
  * authorize about a fact that will never move.
  *
  * The disciplines the work operations rely on still hold, because they defend
@@ -13,20 +13,20 @@
  *   - every piece of free text is screened before anything else happens ({@link
  *     screenContent}): a field over the size limit refuses the whole write, and a
  *     recognized credential is replaced by a typed placeholder. A fact is the
- *     shape most exposed to this — it is unstructured text with no field that
- *     disciplines what goes in — and it is permanent, so the door is the only
+ *     shape most exposed to this: it is unstructured text with no field that
+ *     disciplines what goes in, and it is permanent, so the door is the only
  *     place the question can still be answered.
  *   - `who` (the authorizing anchor) and `signerFp` (the signing key) come from
- *     the writer's own key, never supplied — a caller cannot forge who captured
+ *     the writer's own key, never supplied: a caller cannot forge who captured
  *     a memory by typing a name.
  *   - the executing agent is never that same identity ({@link
  *     resolveExecutingAgent}). No gate runs here, but this is not a gate rule:
  *     it is the authority invariant, and the verifier applies it to EVERY kind.
  *     Checking it at the door is what keeps a self-authorized fact out of an
  *     append-only log, where it could not be repaired afterwards. That resolution
- *     SCREENS the agent name as well — one of the two fields a caller supplies on
+ *     SCREENS the agent name as well (one of the two fields a caller supplies on
  *     the ENVELOPE, the other being the pinned `run`, which is screened with the
- *     payload above — so what they replaced joins the payload's in one report, and
+ *     payload above), so what they replaced joins the payload's in one report, and
  *     a caller reads a single list rather than remembering to merge three.
  *   - the memory's id is MINTED by the operation (see {@link mintId}), never
  *     chosen by the caller, so two offline clones never mint the same id and two
@@ -42,15 +42,15 @@
  * for the resolved scope (`openTreeForWriting`) and hands the resulting writer
  * in via the context. This operation writes to whatever chain that writer owns.
  *
- * The other knowledge writes share this shape exactly — one append, no gate, and
- * the one refusal a fact can earn (the authority invariant) — because they are
+ * The other knowledge writes share this shape exactly (one append, no gate, and
+ * the one refusal a fact can earn: the authority invariant), because they are
  * all point-in-time FACTS:
  *   - {@link recordObservation}: a note ABOUT an entity. It mints its OWN id
  *     (the observation is an entity), and names the observed one in the payload.
  *   - {@link recordHandoff}: work on a task passed between agents. Its subject
  *     IS the task, not a fresh id; multiple handoffs on one task are a list.
- *   - {@link linkKnowledge}: the first RELATIONAL fact — one entity relates to
- *     another. Unlike a supersede it does NOT refuse a dangling target: the
+ *   - {@link linkKnowledge}: the first RELATIONAL fact (one entity relates to
+ *     another). Unlike a supersede it does NOT refuse a dangling target: the
  *     relation is legitimately cross-tree and the writer has no global view, so
  *     the link is an asserted fact resolved on read against the union.
  */
@@ -107,7 +107,7 @@ export interface CaptureInput {
 
 /**
  * Captures a memory: mints its id, then appends the single `memory.captured`
- * fact stamped with one `at`. The id is minted here, never supplied — the caller
+ * fact stamped with one `at`. The id is minted here, never supplied: the caller
  * receives it back in {@link CaptureOk.id}. There is no birth pair and no gate:
  * a memory has no state, so nothing is judged and nothing is transitioned. `who`
  * is the writer's anchor, derived from its key; `which` is the executing agent,
@@ -147,7 +147,7 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
         ...(which !== undefined ? { which } : {}),
         ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
       },
-      // The screened text, never `input.content` — the whole point of the door is
+      // The screened text, never `input.content`: the whole point of the door is
       // that the original does not reach the chain.
       { content: content.fields.content },
     ),
@@ -180,7 +180,7 @@ export interface ObservationInput {
 /**
  * Records an observation about an entity: mints the observation's OWN id, then
  * appends one `observation.recorded` fact. The id is minted here, never
- * supplied — an observation is itself an entity ("I noted X about Y"), so it
+ * supplied: an observation is itself an entity ("I noted X about Y"), so it
  * carries its own subject and names the observed entity in `about`. Two
  * observations about the same entity therefore never collide on one subject.
  *
@@ -197,7 +197,7 @@ export function recordObservation(
   //
   // `about` is in here WITH the text, and that is not decoration. It is an id by
   // contract but it is NOT validated (a dangling cross-tree reference is honest),
-  // so in practice it holds whatever a caller sends — which means it is the one
+  // so in practice it holds whatever a caller sends, which means it is the one
   // field of this operation that could carry an unbounded value into the chain, and
   // a fat event is exactly what the size limit exists to keep out. No real id can
   // match a credential shape, so screening it cannot corrupt a legitimate
@@ -221,8 +221,8 @@ export function recordObservation(
   // The observed entity is a REFERENCE to an already-minted id: canonicalized
   // (NFC, the chain's stored form) so a reader keys on the same string, but
   // never minted here and never refused for absence. It runs AFTER the screen so
-  // the canonicalization — which serializes the value to check the chain can hold
-  // it — is bounded by the size limit rather than paying for whatever arrived.
+  // the canonicalization (which serializes the value to check the chain can hold
+  // it) is bounded by the size limit rather than paying for whatever arrived.
   const about = canonicalId(text.fields.about) ?? text.fields.about;
 
   // Minted here, not chosen by the caller (see mintId): the observation's own
@@ -250,7 +250,7 @@ export function recordObservation(
 export interface HandoffOk extends ScreenedWrite {
   readonly ok: true;
   /**
-   * The two labels AS RECORDED — screened, so a surface that echoes them shows
+   * The two labels AS RECORDED: screened, so a surface that echoes them shows
    * what landed rather than what was asked for. A handoff mints no id, so this is
    * the only thing a caller has to report the fact by.
    */
@@ -274,13 +274,13 @@ export interface HandoffInput {
 
 /**
  * Records a handoff on a task: appends one `handoff.recorded` fact whose subject
- * IS the task. Unlike an observation, no id is minted — a handoff has no
+ * IS the task. Unlike an observation, no id is minted: a handoff has no
  * standalone identity; it is an entry in the task's history. Multiple handoffs
  * on one task share the subject and do not collide, because each is a distinct
  * event and the projection accumulates them into a list. `fromAgent == toAgent`
  * is legitimate (a chat restart with the same agent) and not refused.
  *
- * The task subject is NOT verified to exist here — it is a reference resolved on
+ * The task subject is NOT verified to exist here: it is a reference resolved on
  * read, the same cross-tree-honest treatment the observation and link use.
  */
 export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk | FactError {
@@ -293,7 +293,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   // here proves, riding the envelope of every event of the session.
   const agents = screenContent({
     // Handed in as `subject`, which is what it BECOMES and the key the classification
-    // answers under — a subject is a name on every kind whose subject reaches the door.
+    // answers under: a subject is a name on every kind whose subject reaches the door.
     subject: input.task,
     fromAgent: input.fromAgent,
     toAgent: input.toAgent,
@@ -332,7 +332,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
 /** A knowledge link was recorded: the fact was appended. */
 export interface LinkOk extends ScreenedWrite {
   readonly ok: true;
-  /** The relation AS RECORDED — screened, so an echo shows what landed. */
+  /** The relation AS RECORDED: screened, so an echo shows what landed. */
   readonly rel: string;
 }
 
@@ -342,11 +342,11 @@ export interface LinkInput {
   readonly subject: string;
   /**
    * What the link points at. An id of another record for most relations, and a PATH
-   * for `governs` — which is why this is not typed, checked or resolved here: it is
+   * for `governs`, which is why this is not typed, checked or resolved here: it is
    * the caller's string, and the reader decides what it names.
    */
   readonly target: string;
-  /** The relation label — an open literal string (see the catalog's recommended set). */
+  /** The relation label: an open literal string (see the catalog's recommended set). */
   readonly rel: string;
   /** The agent that recorded it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
@@ -361,8 +361,8 @@ export interface LinkInput {
  * already-minted ids (canonicalized, never minted here).
  *
  * UNLIKE {@link supersedeDecision}, THIS DOES NOT REFUSE A DANGLING TARGET.
- * A link is legitimately cross-tree — a private memory may point at a public
- * task — and the writer sees only its own tree, so it cannot confirm the target
+ * A link is legitimately cross-tree (a private memory may point at a public
+ * task) and the writer sees only its own tree, so it cannot confirm the target
  * exists globally. The link is an asserted fact; a target absent from the
  * current view is honest dangling, resolved on read against the union. Refusing
  * it here would break the very cross-tree relations the link exists to record.
@@ -370,7 +370,7 @@ export interface LinkInput {
 export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | FactError {
   // `rel` is an OPEN string, so it is free text by definition. Both endpoints join
   // it: neither is validated (that is the whole point of a cross-tree link), so
-  // each is a field through which an unbounded value could reach the chain — one as
+  // each is a field through which an unbounded value could reach the chain; one as
   // the event's subject, one in its payload.
   const relation = screenContent({
     subject: input.subject,
@@ -423,7 +423,7 @@ export type RetractError =
   | FactError
   /** This tree holds no record by that id. */
   | { readonly ok: false; readonly code: 'UNKNOWN_NOTE'; readonly message: string }
-  /** The id names a record with a lifecycle of its own — a decision, a pattern, a task. */
+  /** The id names a record with a lifecycle of its own: a decision, a pattern, a task. */
   | { readonly ok: false; readonly code: 'NOT_A_NOTE'; readonly message: string }
   /** The record already took this note back. */
   | { readonly ok: false; readonly code: 'ALREADY_RETRACTED'; readonly message: string }
@@ -471,7 +471,7 @@ const ITS_OWN_LIFECYCLE = {
 
 /**
  * Reads what `id` names in this tree's ordered stream. A retraction counts only when its
- * identity may retract the note ({@link mayRetract}) — the rule the read applies — so a
+ * identity may retract the note ({@link mayRetract}), the rule the read applies, so a
  * stranger's retraction neither hides the note nor stands in its author's way.
  */
 function standingOf(events: readonly CatalogEvent[], id: string): Standing {
@@ -494,7 +494,7 @@ function standingOf(events: readonly CatalogEvent[], id: string): Standing {
 }
 
 /**
- * Retracts a note — a memory or an observation — by appending one `note.retracted` whose
+ * Retracts a note, a memory or an observation, by appending one `note.retracted` whose
  * subject is the note and whose payload is the reason. Nothing is erased: the note's own
  * event stays, a verifier still sees it, and the read by id still serves it, saying it was
  * taken back; the reads that LIST notes stop offering it.
@@ -502,8 +502,8 @@ function standingOf(events: readonly CatalogEvent[], id: string): Standing {
  * WHO MAY is the identity that wrote the note, with any key of it ({@link mayRetract}): a
  * writer of another identity is refused, told whose the note is. The fact is attributed to the
  * anchor (`who`) and to the agent that carried it out (`which`). It is SAME-TREE:
- * the note is looked for in the tree this writer owns — a surface opens the note's own tree,
- * the way a decision's move follows the decision — and a retraction of an id this tree does
+ * the note is looked for in the tree this writer owns (a surface opens the note's own tree,
+ * the way a decision's move follows the decision) and a retraction of an id this tree does
  * not hold is refused rather than recorded dangling.
  *
  * Decided under the tail's lock against the record as it stands ({@link
@@ -668,15 +668,15 @@ function linkStandingOf(
 }
 
 /**
- * Retracts a link by appending one `link.retracted` that names the edge as the link did —
- * subject, target, relation — and why. Nothing is erased: the link's own event stays and a
+ * Retracts a link by appending one `link.retracted` that names the edge as the link did
+ * (subject, target, relation) and why. Nothing is erased: the link's own event stays and a
  * verifier still sees it; every reader of links, which reads the edges the record still
  * asserts, stops seeing this identity's assertion of it, and the edge with it when nobody
  * else asserts it.
  *
  * WHO MAY is the identity that recorded the link, with any key of it ({@link mayRetract}): a
  * writer of another identity is refused, told whose the link is. It is SAME-TREE: the edge
- * is looked for in the tree this writer owns — a surface opens the tree the link landed in —
+ * is looked for in the tree this writer owns, a surface opens the tree the link landed in,
  * and an edge this tree does not hold is refused rather than recorded dangling.
  *
  * Decided under the tail's lock against the record as it stands ({@link
@@ -686,8 +686,8 @@ export function retractLink(
   ctx: WriteContext,
   input: LinkRetractInput,
 ): LinkRetractOk | LinkRetractError {
-  // The edge's two names go through the door as the link's did — a name carrying a credential
-  // is refused, never replaced, so a clean one comes back as it went in — and the reason too.
+  // The edge's two names go through the door as the link's did (a name carrying a credential
+  // is refused, never replaced, so a clean one comes back as it went in) and the reason too.
   const text = screenContent({
     target: input.target,
     rel: input.rel,

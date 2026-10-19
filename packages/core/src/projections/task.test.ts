@@ -10,7 +10,7 @@ const env = (subject: string, n: number) => ({
   subject,
 });
 
-describe('projectTasks — the single reader rule', () => {
+describe('projectTasks: the single reader rule', () => {
   it('projects a task from its birth pair with the initial state', () => {
     const events = taskBirth(env('t-1', 0), { title: 'ship it', initial: 'draft' });
     const tasks = projectTasks(events);
@@ -67,11 +67,11 @@ describe('projectTasks — the single reader rule', () => {
   });
 });
 
-describe('projectTasks — faithful across workflow evolution', () => {
+describe('projectTasks: faithful across workflow evolution', () => {
   it('yields the recorded state, never one re-derived from a workflow', () => {
     // Facts written under an old workflow: born in 'draft', moved to 'shipped'.
     // A later workflow might start tasks in 'triage' and lack draft→shipped.
-    // Replaying the OLD facts must still yield 'shipped' — the literal `to`,
+    // Replaying the OLD facts must still yield 'shipped': the literal `to`,
     // not a lookup into any current rules.
     const historical: CatalogEvent[] = [
       ...taskBirth(env('t-1', 0), { title: 'legacy', initial: 'draft' }),

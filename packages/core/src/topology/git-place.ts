@@ -1,5 +1,5 @@
 /**
- * Where git keeps a working tree's repository — read from the files git writes, without
+ * Where git keeps a working tree's repository: read from the files git writes, without
  * running git.
  *
  * THE PRIVATE TREE USED TO LIVE IN THE WORKING TREE, at `<project>/.mnema/private/`, kept out of
@@ -10,7 +10,7 @@
  * The private tree lives there now ({@link privateTreePlace}).
  *
  * PURE, like the rest of discovery: it reads `.git` (a directory, or a file that names one) and
- * the `commondir` file a linked worktree's git directory carries — the two things git itself
+ * the `commondir` file a linked worktree's git directory carries, the two things git itself
  * reads to answer `git rev-parse --git-common-dir`. Measured against git on a linked worktree, a
  * submodule, `--separate-git-dir`, and a worktree of a bare repository.
  *
@@ -59,7 +59,7 @@ export function gitPlaceOf(dir: string): GitPlace | undefined {
 
 /**
  * Where a project's private tree lives, and where THIS working tree keeps its installation id
- * for it — or undefined when the project is in no repository, and the tree stays in
+ * for it, or undefined when the project is in no repository, and the tree stays in
  * `.mnema/private/`.
  *
  * The tree is `<common git dir>/mnema/<project, relative to the top, encoded>/private` ({@link
@@ -89,7 +89,7 @@ export function privateTreePlace(
  * top's `verify` read the nested tree's files as a tail of its own and failed. Encoded,
  * every project's tree is a sibling of every other's, and the encoding cannot be taken back to
  * two different paths (`encodeURIComponent` is one to one). The top itself, whose relative
- * path is empty, is `%2E` — an encoded `.`, which no relative path spells.
+ * path is empty, is `%2E`: an encoded `.`, which no relative path spells.
  */
 export function privateTreeUnder(gitDir: string, within: string): string {
   const component = encodeURIComponent(within.split(sep).join('/'));
@@ -98,7 +98,7 @@ export function privateTreeUnder(gitDir: string, within: string): string {
 
 /**
  * Whether the repository's common git directory is out of reach of `git add` in this working
- * tree: it is the top's own `.git` directory, or it lies outside the top altogether — compared as
+ * tree: it is the top's own `.git` directory, or it lies outside the top altogether, compared as
  * the file system resolves both, so a symbolic link or a `commondir` that leads back into the
  * working tree is not taken for "outside". Anything else (a `gitdir:` naming a directory inside
  * the worktree, a link into it) is a path git may stage, and is asked of git like any other.

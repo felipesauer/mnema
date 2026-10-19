@@ -1,6 +1,6 @@
 /**
- * THE FOUR PROJECTIONS KEEP WHAT THE RECORD SAID — every move's proof, who acted, how many facts
- * a run held — AND INVENT NOTHING: a field the record never held is absent, not `undefined`, and
+ * THE FOUR PROJECTIONS KEEP WHAT THE RECORD SAID (every move's proof, who acted, how many facts
+ * a run held), AND INVENT NOTHING: a field the record never held is absent, not `undefined`, and
  * a subject with a birth and no move (or a move and no birth) is not projected.
  *
  * Each case is a whole projection compared strictly, so a key holding `undefined` is a failure.

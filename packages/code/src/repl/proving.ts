@@ -1,5 +1,5 @@
 /**
- * WHETHER WHAT THE RECORD PROVED IS STILL A STATEMENT ABOUT THE WHOLE RECORD — asked on
+ * WHETHER WHAT THE RECORD PROVED IS STILL A STATEMENT ABOUT THE WHOLE RECORD: asked on
  * a clock, and answered without reading a chain.
  *
  * The console rules on the record ONCE, when it opens: a `verify` over every tree it
@@ -10,7 +10,7 @@
  * corner is asserting a level about a record that is no longer the one it read.
  *
  * MEASURED, AND IT IS WHY THIS FILE EXISTS. With a duplicate of the last entry appended
- * while the session was open — the break two writers appending at once used to leave —
+ * while the session was open, the break two writers appending at once used to leave,
  * the body of the page printed `seq gap: expected 8, found 7` and the corner, in the same
  * frame, said `fully-signed`. The surface disagreed with itself on one screen.
  *
@@ -27,15 +27,15 @@
  * this product signs once per act, so it cost the square of the history. The measurement
  * the two numbers come from already bent: 354 ms over 2,010 entries, and from there to
  * 1.7 s over 6,297 is a slope of 1.37, not 1. Past thirty thousand events the square was
- * most of the bill — 62 to 95 s over a hundred thousand, on the shipped binary. The range
+ * most of the bill: 62 to 95 s over a hundred thousand, on the shipped binary. The range
  * is found without the walk now (`chain/range.ts`), each key is read once, and the shape is
  * counted rather than claimed (`chain/verify-costs-what-the-record-holds.test.ts`). The
  * argument above never rested on the slope, and it stands: a verification is still a pass
- * over every event — about 1.0 s over 6,297 events and 13 s over a hundred thousand, on the
- * same binary — and that is what a clock must not pay.
+ * over every event (about 1.0 s over 6,297 events and 13 s over a hundred thousand, on the
+ * same binary) and that is what a clock must not pay.
  *
  * SO WHAT IT ANSWERS IS NARROW, AND THE NARROWNESS IS THE HONESTY. An extent that moved
- * means the record is no longer the one that was ruled on — it does NOT mean the record
+ * means the record is no longer the one that was ruled on: it does NOT mean the record
  * broke, and this file may not claim it did. A freshness mark cannot see a rewrite that
  * preserves a size, and a probe that pretended otherwise would be offering a guarantee it
  * cannot keep (`chain/freshness.ts` says so about itself). The corner therefore stops
@@ -53,7 +53,7 @@
  * DIFFERENT ones: the follower reports what somebody else appended and must not report a
  * duplicate of an entry it already showed as an arrival, which is why it filters by `seq`;
  * this reports that the verdict has stopped covering the record, which that same filter
- * makes invisible. Folding them would make one of the two wrong — the feed would show a
+ * makes invisible. Folding them would make one of the two wrong: the feed would show a
  * duplicate as news, which is the defect the filter is there to prevent. What that costs
  * is one more `chainExtent` per tick until this latches, measured and reported with the
  * delivery.
@@ -64,7 +64,7 @@ import { type ChainExtent, chainExtent } from '@mnema/chain';
 /** What a session that ruled on the record once can keep asking about that ruling. */
 export interface TheProof {
   /**
-   * Whether the verdict still covers the whole record — false from the first tick at
+   * Whether the verdict still covers the whole record: false from the first tick at
    * which any tree it covered has moved, and false for the rest of the session.
    *
    * It is a question and not a value because the answer changes under the caller, and it
@@ -79,7 +79,7 @@ export interface TheProof {
 /**
  * Watches the trees a verdict covered, from where they stand now.
  *
- * With no roots — a session opened outside any project — there is no verdict to hold and
+ * With no roots, a session opened outside any project, there is no verdict to hold and
  * nothing to watch, and the answer is that it covers everything there is: a corner that
  * degraded where there is no record would be naming a level nobody stated.
  */
@@ -87,7 +87,7 @@ export function watchingTheProof(roots: readonly string[]): TheProof {
   // READ BEFORE ANYTHING IS SERVED, in the same breath the verdict is taken, and for the
   // reason every reading of this mark takes: a mark taken afterwards would claim coverage
   // of an instant the verdict may not have reached. The direction of the error is the
-  // cheap one — an append that lands DURING the opening's `verify` leaves a mark that
+  // cheap one: an append that lands DURING the opening's `verify` leaves a mark that
   // differs from it, so the badge degrades over an entry it may already have counted.
   const when = roots.map((root) => chainExtent({ root }));
   let moved = false;

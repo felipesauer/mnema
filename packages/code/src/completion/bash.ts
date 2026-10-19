@@ -3,7 +3,7 @@
  *
  * Three lookup tables and one function. The tables are the tree (see `lookups.ts`):
  * what each level offers as a subcommand, what it accepts as a flag, and the values a
- * declaration enumerates. The function is the only logic there is — walk the words
+ * declaration enumerates. The function is the only logic there is: walk the words
  * already typed to find WHERE on the tree the line is, then answer with that level's
  * words.
  *
@@ -14,12 +14,12 @@
  * the tables and no change here.
  *
  * IT TARGETS BASH 3.2, which is the bash macOS still ships. So no `mapfile`, no
- * associative array, no `[[` where `[` does — the whole point is a file that loads
+ * associative array, no `[[` where `[` does: the whole point is a file that loads
  * everywhere `bash` does, and a completion that fails to load fails SILENTLY.
  *
  * AND IT DOES NOT USE `compgen -W`, which is the idiom, for one reason: `-W` EXPANDS
- * every word of its list — brace, tilde, parameter, arithmetic and COMMAND substitution
- * — so a declaration that ever held `$(…)` would be executed by pressing Tab. Every word
+ * every word of its list (brace, tilde, parameter, arithmetic and COMMAND substitution),
+ * so a declaration that ever held `$(…)` would be executed by pressing Tab. Every word
  * here comes from a declaration and not from a caller, which is why this is a hazard and
  * not a hole; the filtering is a `case` over the words instead, which expands nothing,
  * and `the-shell-knows-the-verbs.test.ts` drives a real bash over a declaration holding
@@ -80,7 +80,7 @@ function table(name: string, rows: readonly CompletionRow[]): readonly string[] 
 }
 
 /**
- * The completion function itself — the same shape whatever the tree holds.
+ * The completion function itself: the same shape whatever the tree holds.
  *
  * Written as one template rather than a list of lines so that the shell reads as shell
  * here. Every `${…}` a SHELL is meant to expand is escaped (`\${…}`); the two that are

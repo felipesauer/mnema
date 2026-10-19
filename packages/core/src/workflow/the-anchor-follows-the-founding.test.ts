@@ -2,21 +2,21 @@
  * THE ANCHOR FOLLOWS THE FOUNDING: a key's first write into a tree records the anchor it serves
  * only once the fact that settles it is on the record.
  *
- * A recorded anchor is the one thing every later write trusts without reading the record —
- * `ensureFounded` returns on it at once — so an anchor with no founding behind it is not a stale
+ * A recorded anchor is the one thing every later write trusts without reading the record,
+ * `ensureFounded` returns on it at once, so an anchor with no founding behind it is not a stale
  * file. It is a key signing as an identity the record never admitted. That is what the order
  * before this file produced: the anchor was recorded FIRST and the founding appended second, so a
  * first write that failed between the two left the anchor behind, the next write signed without
  * founding, and `verify` failed on that tree for good (`[T2/T4] … is not a key enrolled for …
- * at this point`). Measured on the built binary with three ordinary triggers — a tail that
- * cannot be born (its birth lives inside the founding's append), a lock directory that is a
- * link to nothing, and the tail's lock held by another live session — and with a process killed
+ * at this point`). Measured on the built binary with three ordinary triggers (a tail that
+ * cannot be born, its birth living inside the founding's append; a lock directory that is a
+ * link to nothing; and the tail's lock held by another live session) and with a process killed
  * inside the founding's append.
  *
  * One case per trigger, each PLANTED rather than raced: the founding's append throwing after the
  * tail was born, the tail's lock held by a live process, and the state a process leaves when it
  * dies after its founding landed and before its anchor. Each asserts the state the failure
- * leaves AND what the next write makes of it, because the harm was never the failure — it was
+ * leaves AND what the next write makes of it, because the harm was never the failure: it was
  * the next write.
  */
 
@@ -83,7 +83,7 @@ function machine(prefix: string): Machine {
   return open(tmp(prefix));
 }
 
-/** A writer for the key at `keyRoot` — what a NEW process of that installation opens. */
+/** A writer for the key at `keyRoot`: what a NEW process of that installation opens. */
 function open(keyRoot: string): Machine {
   // A machine that has its key: a first key is kept only at a first append.
   loadOrCreateKeyPair({ root: keyRoot });
@@ -135,7 +135,7 @@ function theNextWriteFounds(keyRoot: string): void {
   expect(verify(tree, upcasters)).toMatchObject({ ok: true, fullySigned: true });
 }
 
-describe('the anchor follows the founding — a first write that fails leaves no anchor', () => {
+describe('the anchor follows the founding: a first write that fails leaves no anchor', () => {
   it('a founding whose append throws after the tail was born leaves no anchor, and the next write founds', () => {
     const b = machine('mnema-anchor-born-');
     // A disk that fills at the founding's line: the birth before it (the key's public half, the
@@ -162,7 +162,7 @@ describe('the anchor follows the founding — a first write that fails leaves no
       syncBuiltinESMExports();
     }
 
-    // The plant fired, once, at the founding — a plant that never fires would leave every
+    // The plant fired, once, at the founding: a plant that never fires would leave every
     // assertion below true of a write that simply succeeded.
     expect(fired).toBe(1);
     expect((thrown as { code?: string }).code).toBe('ENOSPC');
@@ -178,7 +178,7 @@ describe('the anchor follows the founding — a first write that fails leaves no
 
   /**
    * A CEILING OF ITS OWN, and the line says what it waits on: a lock held by a process that is
-   * alive and stays alive, which the founding's append is SUPPOSED to wait out — one
+   * alive and stays alive, which the founding's append is SUPPOSED to wait out, one
    * `DEFAULT_WAIT_MS` of 2000 ms, by design, before it refuses. The next write finds the lock
    * gone and does not wait. 12000 ms is six times the wait, the margin the lock's own case keeps.
    */
@@ -188,7 +188,7 @@ describe('the anchor follows the founding — a first write that fails leaves no
     const b = machine('mnema-anchor-busy-');
     const lock = join(tree, 'locks', `${b.writer.tail}.lock`);
     mkdirSync(dirname(lock), { recursive: true });
-    // Alive and fresh — this very process — so nothing may break it: two sessions writing one
+    // Alive and fresh, this very process, so nothing may break it: two sessions writing one
     // project at once share the tail, and this is the moment the other one holds it.
     writeFileSync(lock, `${process.pid} ${Date.now()}\n`, 'utf-8');
 
@@ -203,7 +203,7 @@ describe('the anchor follows the founding — a first write that fails leaves no
   });
 });
 
-describe('the anchor follows the founding — a process that dies between the two', () => {
+describe('the anchor follows the founding: a process that dies between the two', () => {
   it('dies after its founding landed and before its anchor: the next write adopts that founding and founds nothing', () => {
     const b = machine('mnema-anchor-died-');
     // The process dies at the anchor: nothing after that line runs. Thrown here rather than
@@ -222,7 +222,7 @@ describe('the anchor follows the founding — a process that dies between the tw
     });
     expect((failed({ ...b.ctx, writer: dying }) as Error).message).toBe('the process died here');
 
-    // The founding is on the tail — it landed BEFORE the anchor — and no anchor claims it.
+    // The founding is on the tail, it landed BEFORE the anchor, and no anchor claims it.
     expect(foundings()).toHaveLength(1);
     expect(existsSync(anchorFile(b.fingerprint))).toBe(false);
 
@@ -239,7 +239,7 @@ describe('the anchor follows the founding — a process that dies between the tw
   });
 });
 
-describe('the anchor follows the founding — an adopted identity has nothing to follow', () => {
+describe('the anchor follows the founding: an adopted identity has nothing to follow', () => {
   it('records the anchor a member vouched for, and appends nothing', () => {
     const a = machine('mnema-anchor-adopt-a-');
     const anchor = ensureFounded(a.ctx);
@@ -265,7 +265,7 @@ describe('the anchor follows the founding — an adopted identity has nothing to
     expect(ensureFounded(b.ctx)).toBe(anchor);
 
     // The fact that settles this anchor is already on the record, so the anchor is recorded at
-    // once — and the record is exactly as long as it was.
+    // once, and the record is exactly as long as it was.
     expect(readFileSync(anchorFile(b.fingerprint), 'utf-8').trim()).toBe(anchor);
     expect(orderedEvents({ root: tree }, upcasters)).toHaveLength(before);
   });

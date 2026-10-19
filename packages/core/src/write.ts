@@ -1,10 +1,10 @@
 /**
- * @mnema/core/write — the WRITING surface of the work domain.
+ * @mnema/core/write: the WRITING surface of the work domain.
  *
  * Everything here changes the record: it appends an event through a gate, or
  * opens the writer that does. It is a subpath of its own so a read-only consumer
  * (the context package) can depend on `@mnema/core` for projections and the gate WITHOUT
- * being able to name a single writer — the separation is structural, enforced by
+ * being able to name a single writer: the separation is structural, enforced by
  * the module graph, not by a hand-maintained denylist. A new write operation
  * added here is caught by that boundary automatically, because it is born on the
  * writing side of the line.
@@ -40,7 +40,7 @@ export {
 } from './checks/operations.js';
 // The refusal an oversize field earns, and the report a scrubbed write carries
 // back. Both travel in every write's result union, so a surface needs to be able
-// to name them; the screening function itself is deliberately NOT exported — the
+// to name them; the screening function itself is deliberately NOT exported: the
 // door is inside, and a caller that could screen separately could also skip it.
 export type { ContentTooLargeErr, ScreenedWrite } from './content/screen.js';
 // The one refusal a point-in-time fact can earn beyond its content: the authority
@@ -68,7 +68,7 @@ export {
   requestAgentEnrollment,
   requestEnrollment,
 } from './identity/handshake.js';
-// Restoring a key from a copy of its private half — the only recovery there is.
+// Restoring a key from a copy of its private half: the only recovery there is.
 // It appends nothing, but it installs key material and records which anchor a key
 // serves, so it is a write: a read-only layer must not be able to name it.
 export {
@@ -180,7 +180,7 @@ export {
   revokeKey,
 } from './workflow/identity-operations.js';
 // The write operations for the work domain: each appends an event a gate
-// authorized. Their input/result/context types travel with them — a caller that
+// authorized. Their input/result/context types travel with them: a caller that
 // can write needs them; a reader never sees this module.
 //
 // `authorizeTailPrune` is the one here that no gate authorizes, and it is not an
@@ -190,8 +190,8 @@ export {
 // `mnema tail prune` asked for it, and it has that one caller.
 //
 // `switchChannel` is the other one no gate authorizes, and for a different reason
-// again: its subject is not the work but MNEMA — one of the places this product puts
-// the record in front of a model unasked — and there is no prior state to judge,
+// again: its subject is not the work but MNEMA, one of the places this product puts
+// the record in front of a model unasked, and there is no prior state to judge,
 // because switching a channel to where it already stands is a person saying so twice.
 // It arrived with `mnema switch`, and it has that one caller: the MCP server serves no
 // tool for it, so an agent cannot switch off what governs its own work through the door
@@ -199,7 +199,7 @@ export {
 //
 // `recordChannelServed`, `recordChannelAsked` and `recordChannelRefused` are the same subject from the other side:
 // what a channel DID, rather than what somebody did to it. They have no verb and no gate
-// either, and their caller is not a person at all — it is the push itself, which is what
+// either, and their caller is not a person at all: it is the push itself, which is what
 // makes the rule id an asking cites a value that came out of the record. An agent cannot
 // reach them: no tool takes a rule id and writes an accusation with it.
 export {
@@ -265,10 +265,10 @@ export {
   type WriteContext,
   type WriteError,
 } from './workflow/index.js';
-// Identity write operations — founding an anchor, establishing it WHOLE into a
+// Identity write operations: founding an anchor, establishing it WHOLE into a
 // tree (the ≥2-keys policy), and enrolling or revoking keys. `ensureFounded` is
 // the founding every write goes through; the `foundIdentity` wrapper around it is
-// not here, because no surface ever founded on its own — `init` establishes, and
+// not here, because no surface ever founded on its own: `init` establishes, and
 // every other write founds on its way in.
 export type {
   DecideThenWrite,

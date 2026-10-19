@@ -6,7 +6,7 @@
  * because two very different moments need exactly the same answer. A key brought
  * back onto a machine must learn which anchor it may sign as (see restore), and a
  * machine writing to a tree for the first time must learn the same thing before
- * its first fact — otherwise it derives its OWN anchor and founds a second
+ * its first fact: otherwise it derives its OWN anchor and founds a second
  * identity in a record the team shares. One reading, one verdict: the two cannot
  * disagree about who a key is.
  *
@@ -15,7 +15,7 @@
  * would judge it. What is NOT taken on faith is the consent: an enrollment names
  * a fingerprint, and anyone can write a fingerprint down. Only the signature the
  * new key itself made over `enroll:<anchor>:<fp>` proves it agreed to join, so
- * that signature is re-verified here against the key it names — otherwise any
+ * that signature is re-verified here against the key it names: otherwise any
  * repository could hand a key an identity by merely naming it, and the key would
  * sign as an anchor it never joined.
  *
@@ -23,7 +23,7 @@
  * deliberately STRICTER than the verifier. The verifier ignores a residual revoke
  * so a keyless party cannot deny an honest chain; here the worst a wrongly-honored
  * revoke can do is refuse an operation the person can retry, while the worst a
- * wrongly-IGNORED one can do is write under a retired key — permanently failing
+ * wrongly-IGNORED one can do is write under a retired key: permanently failing
  * verification, and unappendable-back. The asymmetry decides, not the symmetry.
  */
 
@@ -46,14 +46,14 @@ import { orderedEvents } from '../projections/order.js';
 
 /** Which record to read, and how to read events written under older contracts. */
 export interface MembershipQuery {
-  /** The chain root whose facts decide — a tree, never a key root. */
+  /** The chain root whose facts decide: a tree, never a key root. */
   readonly tree: string;
   readonly upcasters: UpcasterRegistry;
 }
 
 /** How a record proves a key belongs to the anchor it serves. */
 export type Membership =
-  /** The key founded this anchor — it is the identity's first key. */
+  /** The key founded this anchor: it is the identity's first key. */
   | 'founded'
   /** A member vouched for the key, and the key's own signature proves it consented. */
   | 'enrolled'
@@ -72,7 +72,7 @@ export type MembershipRefusalCode =
   /** The record proves the key belonged to an identity and was retired from it. */
   | 'REVOKED_KEY'
   /**
-   * The record proves membership in more than one identity — which one is the person's call, and
+   * The record proves membership in more than one identity, which one is the person's call, and
    * the record takes it only as a revocation by the identity that should not have the key. This
    * said "only as a revocation", and where the key is that identity's last, the revocation is
    * refused until another key has joined it: then the record takes it as an enrollment followed by
@@ -88,7 +88,7 @@ export type IdentityRefusalCode =
   | MembershipRefusalCode
   /**
    * This checkout recorded the identity it writes as, and the record does not count its key among
-   * that identity's keys — it was retired from it, or it never was one of them
+   * that identity's keys: it was retired from it, or it never was one of them
    * ({@link staleAnchorRefusal}).
    */
   | 'STALE_ANCHOR'
@@ -99,7 +99,7 @@ export type IdentityRefusalCode =
   | 'A_CHECKER_KEY'
   /**
    * An agent is asked for, the record of this tree does not enrol its key, and the key that would
-   * sign instead — the person's — cannot be opened (it is protected, and `MNEMA_KEY_PASSPHRASE` is
+   * sign instead, the person's, cannot be opened (it is protected, and `MNEMA_KEY_PASSPHRASE` is
    * not in the environment) or is not on this machine. Founding or minting a key to get through
    * would be an identity the person never asked for, so nothing is signed; the way out is the verb
    * that enrols the agent.
@@ -135,7 +135,7 @@ export interface MembershipRefused {
  * gated write: an operation calls it before its first fact, and there is no
  * honest way to continue past "I do not know who I am". A caller that has to
  * choose an identity on the person's behalf has already lost the property the
- * record exists for — one person, one anchor, provably.
+ * record exists for: one person, one anchor, provably.
  */
 export class IdentityUnavailableError extends CodedError {
   override readonly name = 'IdentityUnavailableError';
@@ -144,7 +144,7 @@ export class IdentityUnavailableError extends CodedError {
     message: string,
     /**
      * The fingerprint of this machine's key, where the way out the message names is `mnema key
-     * restore "<the key file>"` — so the surface can say where that file is. Only a surface can:
+     * restore "<the key file>"`, so the surface can say where that file is. Only a surface can:
      * the key root is read where a writer opens and nowhere else (`openChainForWriting`), and
      * the message is written below it.
      */
@@ -239,18 +239,18 @@ export function membershipIn(
 }
 
 /**
- * The refusal of a key the record proves in more than one identity — and the ways out of it the
+ * The refusal of a key the record proves in more than one identity, and the ways out of it the
  * record names, or the words that say it names none.
  *
  * IT USED TO STOP AT THE REFUSAL, and the page beside it promised the write was refused "until
- * you say which" — with no command that says which. Measured on the binary, a key leaves an
+ * you say which": with no command that says which. Measured on the binary, a key leaves an
  * identity in one of two ways, and the record says which one each identity allows:
  *
  *   - an identity that holds another key RETIRES it (`mnema key revoke`, from a machine that
- *     writes here as that identity, committed and shared) — so a key enrolled into two
+ *     writes here as that identity, committed and shared), so a key enrolled into two
  *     identities, having founded neither, speaks for either once the other lets it go;
  *   - an identity whose ONLY key it is cannot retire it (`LAST_KEY`), so another key joins it
- *     first — and an installation that writes as such an identity is necessarily one of THIS
+ *     first, and an installation that writes as such an identity is necessarily one of THIS
  *     key's: the checkout it founded the identity from, or one it wrote as it from. There, with
  *     the record pulled, another key is enrolled, this one retired, and `mnema key restore` points
  *     the checkout at the identity the key is left in, before anything writes as the one it left.
@@ -267,36 +267,36 @@ export function membershipIn(
  * not pulled.
  *
  * WHAT IS SAID IS WHAT THE RECORD NAMES, NEVER WHAT IS IMPOSSIBLE. Whether a checkout still
- * writes as an identity is local and cannot be read here — the refusal is only ever given where
- * no anchor is recorded — so the record is asked what it CAN answer: which identities count the
+ * writes as an identity is local and cannot be read here (the refusal is only ever given where
+ * no anchor is recorded), so the record is asked what it CAN answer: which identities count the
  * key, as their only one or beside another (the roster the revocation checks, and both of its
  * refusals); which one the key founded; and as which the key has written, since a checkout of it
  * that writes as an identity leaves the key's signature under that identity. Where the key has
- * written as neither, the sentence says the record names no checkout that could separate them —
+ * written as neither, the sentence says the record names no checkout that could separate them,
  * not that none exists: a commit in which the key stood alone in one of them, checked out and
  * restored, still makes one, and that is not taught.
  *
  * THE COMMAND IS HANDED OVER WHOLE, and the first version of this sentence did not hand it: it
  * stopped at the fingerprint, while `key revoke` requires `--reason`, so a person who copied the
  * words got the parser's refusal (`mnema key revoke needs --reason <text>`, exit 1) instead of
- * the way out. The words carry `--reason "<why>"` — a marker for what the person writes, quoted
- * because what they write is a sentence — and every other marker says where its value comes
+ * the way out. The words carry `--reason "<why>"` (a marker for what the person writes, quoted
+ * because what they write is a sentence) and every other marker says where its value comes
  * from: `<the line>` is what the other key's request prints, and `"<the key file>"` is what the
  * revocation prints when it retires the key a machine signs with, on that machine
- * (`wiring/key.ts`) — quoted too, because a path can hold a space. Nothing here can print it:
+ * (`wiring/key.ts`), quoted too, because a path can hold a space. Nothing here can print it:
  * which directory holds a machine's key is read where a writer opens (`openChainForWriting`) and
  * nowhere else.
  *
  * WHERE THE OTHER KEY LIVES WAS SAID FOR ONE PLACE, another machine. The other key can be a copy
- * this machine keeps — the backup key an `init` made is one, and its path is what that `init`
- * printed — and a person who asked for it here without `--key` asked for THIS key instead:
- * measured on the binary, the enrollment answered *already in <identity> — nothing recorded* and
+ * this machine keeps (the backup key an `init` made is one, and its path is what that `init`
+ * printed) and a person who asked for it here without `--key` asked for THIS key instead:
+ * measured on the binary, the enrollment answered *already in <identity>* and recorded nothing, and
  * the revocation refused `LAST_KEY`. The words name `--key "<its file>"` for that copy now, and the
  * way out done with the backup is followed to the letter in `the-refusal-names-the-way-out.test.ts`.
  *
  * A record the product wrote cannot hold a key a roster does not count, since a vouch commits
  * the key's public half before it is appended; a tree that LOST that half can, and there the
- * reason is said as what it is — `restore.test.ts` holds that tree. With three identities or
+ * reason is said as what it is: `restore.test.ts` holds that tree. With three identities or
  * more, leaving one whose only key this is still leaves the key in two, where no restore
  * chooses, so no recipe is given there: the rule is, and it is not measured.
  *
@@ -336,7 +336,7 @@ function ambiguityOf(
       ? 'the identity it founded here'
       : 'an identity it has written here as';
   // The way out of `left` through the checkout that writes as it, when that leaves the key in
-  // `rest` alone — the one shape where a restore there points the checkout somewhere.
+  // `rest` alone: the one shape where a restore there points the checkout somewhere.
   const through = (left: string, rest: string): string =>
     `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from — which, if it is still there, goes on writing as ${oneLine(left)} — pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \`init\` made is, \`mnema key request --anchor ${oneLine(left)} --key "<its file>"\` on this machine), retire this one with ${revoke} — which, run there, prints where that machine keeps the key file — run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
 
@@ -385,12 +385,12 @@ function ambiguityOf(
 }
 
 /**
- * The refusal of a write from a checkout whose recorded identity does not count its key — and the
+ * The refusal of a write from a checkout whose recorded identity does not count its key, and the
  * way out the record names, or the words that say what is true instead.
  *
  * THE TRAP IT CLOSES. A checkout records, locally, the identity it writes as, and nothing read
- * that record again: a key that LEFT the identity — retired from its roster by this checkout's
- * own `mnema key revoke`, or by another member and pulled in — went on signing as it, every write
+ * that record again: a key that LEFT the identity (retired from its roster by this checkout's
+ * own `mnema key revoke`, or by another member and pulled in) went on signing as it, every write
  * exited 0, and `verify` failed on the whole record from then on, for good (*"event signer <K> is
  * not a key enrolled for <I>"*). Measured on the binary with git clones in both shapes, and in the
  * second one with no warning anywhere. The write is refused now, before anything is appended
@@ -405,18 +405,18 @@ function ambiguityOf(
  *
  * What the record lets it say:
  *   - the key is a member of ONE other identity: `mnema key restore` of this machine's key file
- *     makes the checkout write as it — the restore the way out already ends with, and the file is
+ *     makes the checkout write as it, the restore the way out already ends with, and the file is
  *     printed by the surface, which alone knows the key root ({@link IdentityUnavailableError});
  *   - of NONE: nothing it signs would verify, and the record read is the copy this checkout
- *     holds — a pull may bring the enrollment into the other identity that the restore needs, so
+ *     holds; a pull may bring the enrollment into the other identity that the restore needs, so
  *     the words say that too, as the revocation of this machine's own key does;
  *   - of MORE THAN ONE: the ambiguity, in the words a fresh clone is given;
- *   - of nothing, EVER — no founding by this key and no enrollment of it: the anchor was recorded
+ *   - of nothing, EVER (no founding by this key and no enrollment of it): the anchor was recorded
  *     ahead of a founding that never landed, which the code before the anchor followed the
  *     founding left behind, so there is no identity to leave, and the way out is deleting the
  *     file: the next write decides again, from the record, as a first write does;
  *   - and where the tree carries no public half for the key, an enrollment of it cannot be
- *     proven, so a record that names the key is said to lack the half — never answered with the
+ *     proven, so a record that names the key is said to lack the half, never answered with the
  *     deletion, after which the next write would found a second identity.
  *
  * `a-stale-anchor-writes-nothing.test.ts` asks each case of the core; the binary's are in
@@ -437,7 +437,7 @@ export function staleAnchorRefusal(
       : new IdentityUnavailableError('STALE_ANCHOR', message, restores);
 
   const half = committedPublicKey(layout, fingerprint);
-  // No half, no enrollment of this key can be proven — but a founding needs none, and the record
+  // No half, no enrollment of this key can be proven, but a founding needs none, and the record
   // may still NAME the key. Only a record that names it nowhere is the anchor recorded ahead of a
   // founding; one that names it lost the half.
   const named =
@@ -475,13 +475,13 @@ export function staleAnchorRefusal(
 }
 
 /**
- * The keys currently valid for one anchor in this record — the identity's roster,
+ * The keys currently valid for one anchor in this record: the identity's roster,
  * folded the way the verifier folds it.
  *
  * A key counts only when its membership is PROVEN here and now: a founding that
  * binds its own key, or an enrollment whose consent signature verifies against
  * the committed public key it names. An enrollment the verifier would reject
- * therefore does not inflate the roster — which matters most where the count is
+ * therefore does not inflate the roster, which matters most where the count is
  * load-bearing, because "this is the last key" must never be wrong about a key
  * that cannot actually sign.
  */
@@ -491,7 +491,7 @@ export function rosterOf(query: MembershipQuery, anchor: string): Set<string> {
 
 /**
  * The keys of an identity that are its OWN: {@link rosterOf} without the agent keys. It is the
- * roster that answers who may vouch, who may retire and who may be the last — an agent key is a
+ * roster that answers who may vouch, who may retire and who may be the last: an agent key is a
  * member that speaks for the identity under a name, and signs no change to who may sign
  * (FORMAT.md section 6.2), so an identity whose every key is an agent's has nobody left to
  * enrol anything.
@@ -501,7 +501,7 @@ export function personsRosterOf(query: MembershipQuery, anchor: string): Set<str
 }
 
 /**
- * The agent keys an identity holds now — each with the name it was enrolled under — as the
+ * The agent keys an identity holds now (each with the name it was enrolled under) as the
  * record proves them: the consent verifies against the committed public half, and a retirement
  * takes the key out of the map. A key taken out by `key.revoked` is out too: it is no member.
  */
@@ -510,7 +510,7 @@ export function agentsOf(query: MembershipQuery, anchor: string): Map<string, st
 }
 
 /**
- * Every key the events enrol as an AGENT — with the identity that enrolled it and the name — whose
+ * Every key the events enrol as an AGENT, with the identity that enrolled it and the name, whose
  * consent verifies against the public half the tree carries. A key stays in the map after a
  * retirement or a revocation: what it signed while it held the role is still what it signed, and
  * the readings that count it (`accountability`) are about those facts. A key enrolled twice keeps
@@ -534,7 +534,7 @@ export function agentKeysIn(
 
 /** An identity's keys as one reading of the record sees them: its own, and its agents'. */
 export interface RosterByRole {
-  /** The keys that are the identity's own — the ones that may vouch, retire and be the last. */
+  /** The keys that are the identity's own: the ones that may vouch, retire and be the last. */
   readonly persons: Set<string>;
   /** The agent keys it holds now, each with the name it was enrolled under. */
   readonly agents: Map<string, string>;
@@ -554,7 +554,7 @@ export function rosterByRole(query: MembershipQuery, anchor: string): RosterByRo
 }
 
 /**
- * {@link rosterOf} over events a caller already holds, in the record's order — THE SAME FOLD,
+ * {@link rosterOf} over events a caller already holds, in the record's order: THE SAME FOLD,
  * so a roster read off a session's retained replay and one read off a fresh replay cannot come
  * to disagree about a key. `tree` is where the public half an enrollment names is read, as it is
  * for a replay.
@@ -573,7 +573,7 @@ export function rosterIn(
 }
 
 /**
- * The one fold behind the roster: every key valid for `anchor` (agent keys among them — they sign
+ * The one fold behind the roster: every key valid for `anchor` (agent keys among them; they sign
  * for the identity, and a checkout that writes with one is counted), and the names of the agent
  * keys that ever held the role here. Which of those are still members is `valid`'s to say.
  */
@@ -640,13 +640,13 @@ type EnrollmentFact =
 
 /**
  * Walks the record and yields the membership facts whose ENVELOPE holds up,
- * dropping the malformed ones — an event that fails these bindings is not a
+ * dropping the malformed ones: an event that fails these bindings is not a
  * decision about a key, it is a broken event, and the verifier reports it as one.
  *
  * The bindings are the verifier's own: a founding must be self-signed by its
  * founding key and name the anchor that derives from it, and every fact must be
  * authorized by the very anchor it concerns. What is deliberately NOT checked
- * here is the consent signature — that depends on which key the caller can prove,
+ * here is the consent signature: that depends on which key the caller can prove,
  * so each caller applies it.
  */
 function* enrollmentFactsOf(events: Iterable<CatalogEvent>): Generator<EnrollmentFact> {
@@ -693,7 +693,7 @@ function* enrollmentFactsOf(events: Iterable<CatalogEvent>): Generator<Enrollmen
 }
 
 /**
- * Whether `reverseSig` is this key's own signature over `agent-enroll:<anchor>:<fp>:<name>` — the
+ * Whether `reverseSig` is this key's own signature over `agent-enroll:<anchor>:<fp>:<name>`: the
  * agent key's consent to ONE name in ONE identity, which only its holder can make.
  */
 export function provesAgentConsent(
@@ -714,7 +714,7 @@ export function provesAgentConsent(
 }
 
 /**
- * Whether `reverseSig` is this key's own signature over `enroll:<anchor>:<fp>` —
+ * Whether `reverseSig` is this key's own signature over `enroll:<anchor>:<fp>`:
  * the proof of consent, and the one part of an enrollment only the joining key's
  * holder can produce.
  *

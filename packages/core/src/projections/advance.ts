@@ -10,7 +10,7 @@
  *   - an entity fold (a task, a run, a decision, a skill) starts each accumulator from the one
  *     the cache stored for that entity and steps it over the arrivals that name it, writes the
  *     accumulator back, and writes the entity's row if it is complete. The entities an arrival
- *     does not name are not read — which is the property: the work is the arrivals' and the
+ *     does not name are not read, which is the property: the work is the arrivals' and the
  *     entities they touch, and a record ten times larger costs the same;
  *   - the folds that keep no accumulator (a memory, an observation, a handoff, a link, a
  *     switch) are one event each, and the rule of each is the function the replay applies
@@ -26,17 +26,17 @@
  *
  * A MOVE IS JUDGED HERE AGAINST THE STATE THE CACHE HOLDS (FORMAT.md §6.7), because the
  * arrivals alone are not the history a move is judged against. The judgment a replay makes
- * needs, for a move the state at that point does not admit, the moves its writer saw — where
- * its tail's citations reach — and this file holds no tail or citation. So an arrival is
+ * needs, for a move the state at that point does not admit, the moves its writer saw, where
+ * its tail's citations reach, and this file holds no tail or citation. So an arrival is
  * advanced over only when every move among the arrivals is admitted by the state the stored
  * accumulators give: born, a row of the table, from the state the subject is in. Anything else
- * — a divergence, a move the workflow does not allow — is rare, and {@link advance} answers
+ * (a divergence, a move the workflow does not allow) is rare, and {@link advance} answers
  * false without writing, so the cache reads the record again and the replay judges it. That is
  * also what keeps the divergences this file indexes again the replay's: a move the state admits
  * leaves a subject's divergences as they were.
  *
  * WHAT THE CALLER OWES, and none of it is checkable here: that `arrived` really is what
- * follows the order the cache was built from, at position `from` — the count of events the
+ * follows the order the cache was built from, at position `from`, the count of events the
  * cache covered. `chainArrivals` is what establishes it, and its refusals are the cases where
  * this must not be used. A wrong `from` writes a reference index pointing at the wrong
  * events, quietly (`reference-store.ts`).
@@ -190,7 +190,7 @@ const ASKS_WHAT_WAS_SEEN = Symbol('asks what its writer saw');
 
 /**
  * Whether every move among `arrived` is admitted by the state the cache holds, stepped forward
- * over the arrivals before it — the replay's judgment wherever this one can answer (see the
+ * over the arrivals before it: the replay's judgment wherever this one can answer (see the
  * module comment). A successor is born when the cache holds its state or an arrival is its birth,
  * which is exactly "the record holds its birth", the cache covering everything before.
  */

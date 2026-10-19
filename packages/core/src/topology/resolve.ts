@@ -7,13 +7,13 @@
  *
  *   - PROJECT-PUBLIC  `<repo>/.mnema/`          committed; the team sees it.
  *   - PROJECT-PRIVATE `<git common dir>/mnema/<project path, encoded>/private/`  only this
- *                     machine, only this project — beside the repository's objects, where removing a
+ *                     machine, only this project: beside the repository's objects, where removing a
  *                     worktree does not reach and no `git add` stages; `<repo>/.mnema/private/`
  *                     (gitignored) outside a repository ({@link privateTreePlace}).
  *   - GLOBAL-PRIVATE  `<data>/global/`          only this machine, ACROSS all
  *                                               projects (personal knowledge).
  *
- * and the KEY ROOT `<data>/identity/` — where the private key lives once, referenced by
+ * and the KEY ROOT `<data>/identity/`, where the private key lives once, referenced by
  * all three trees (never copied into any chain). `<data>` is `~/.mnema`, or the directory
  * `$MNEMA_HOME` names ({@link appDataDir}).
  *
@@ -21,7 +21,7 @@
  * found by walking up directories until a `.mnema/` appears (as git finds
  * `.git`), so it works from any subdirectory; the GLOBAL/identity root lives in the
  * home, as `gpg`'s and `ssh`'s do. It used to follow XDG, and {@link appDataDir} says what
- * that cost. The project trees are OPTIONAL — run outside a repo and only the global tree
+ * that cost. The project trees are OPTIONAL: run outside a repo and only the global tree
  * resolves.
  *
  * THE WALK USED TO TAKE THE FIRST `.mnema/` IT MET, and the two halves of the paragraph
@@ -29,11 +29,11 @@
  * then), named exactly what the walk looks for. Measured on the built binary before this
  * changed:
  * after the first `mnema init` anywhere on a machine with no `$XDG_DATA_HOME`, a note
- * taken in `~/Downloads` was answered "Landed in the public tree — committed with the
- * repository" and written into the machine's data directory, and every folder under the
+ * taken in `~/Downloads` was answered "Landed in the public tree" (committed with the
+ * repository) and written into the machine's data directory, and every folder under the
  * home that was no project of its own was served as the project `~`. So the walk now
  * passes over two kinds of `.mnema/`, and there is ONE function that says which
- * ({@link whyNoProjectRootAt}) — asked by the walk here, by `mnema init` before it founds
+ * ({@link whyNoProjectRootAt}): asked by the walk here, by `mnema init` before it founds
  * anything, and by whatever offers to found a project.
  *
  * This is pure resolution: it computes paths, it does NOT create directories or
@@ -53,7 +53,7 @@ export const PROJECT_DIR = '.mnema';
  * under the repository's git directory inside one ({@link privateTreePlace}).
  */
 export const PRIVATE_DIR = 'private';
-/** The application's name — dotted, it is the data directory under the home: `~/.mnema`. */
+/** The application's name, dotted, it is the data directory under the home: `~/.mnema`. */
 export const APP_DIR = 'mnema';
 /** The global chain's directory under the app directory. */
 export const GLOBAL_DIR = 'global';
@@ -62,7 +62,7 @@ export const IDENTITY_DIR = 'identity';
 /** Where the agents' own key roots live under the app directory: one folder per agent name. */
 export const AGENTS_DIR = 'agents';
 
-/** The environment inputs discovery reads — injected so the rule is testable. */
+/** The environment inputs discovery reads: injected so the rule is testable. */
 export interface DiscoveryEnv {
   /**
    * `$HOME`, as the environment gives it. The walk stops at it ({@link whyNoProjectRootAt}),
@@ -70,13 +70,13 @@ export interface DiscoveryEnv {
    */
   readonly home: string;
   /**
-   * `$MNEMA_HOME`, if set: the data directory ITSELF, in place of `~/.mnema` — the key root
+   * `$MNEMA_HOME`, if set: the data directory ITSELF, in place of `~/.mnema`; the key root
    * and the global tree then live directly under it. Empty is the same as unset; relative is
    * refused ({@link appDataDir}).
    */
   readonly mnemaHome?: string | undefined;
   /**
-   * The home the account names in the password database, read where the process is — the one
+   * The home the account names in the password database, read where the process is: the one
    * `os.homedir()` answers when `$HOME` is missing or empty. The data directory goes under it
    * when {@link home} names no directory (empty, or relative).
    */
@@ -85,7 +85,7 @@ export interface DiscoveryEnv {
 
 /**
  * An agent this process signs as, where one is configured: the name it is enrolled under, and the
- * key root that holds its key — `<data directory>/agents/<name>`, never the person's.
+ * key root that holds its key, `<data directory>/agents/<name>`, never the person's.
  *
  * It names a CHOICE, not a fact: a tree signs with this key only where the record enrols it there
  * under exactly this name (`keyRootFor`), and signs with the person's key everywhere else.
@@ -107,22 +107,22 @@ export interface AgentSigning {
  * and key root always resolve.
  */
 export interface ResolvedTrees {
-  /** `<repo>/.mnema` — committed, team-visible. Absent outside a project. */
+  /** `<repo>/.mnema`: committed, team-visible. Absent outside a project. */
   readonly projectPublic?: string;
   /**
    * `<git common dir>/mnema/<project path, encoded>/private` in a repository, `<repo>/.mnema/private`
-   * (gitignored) outside one — this machine. Absent outside a project.
+   * (gitignored) outside one: this machine. Absent outside a project.
    */
   readonly projectPrivate?: string;
   /**
-   * Where THIS working tree keeps its installation id for the private tree — the same path
+   * Where THIS working tree keeps its installation id for the private tree: the same path
    * under its own git directory, so every worktree writes a tail of its own. Absent outside a
    * repository, where the id lives in the private tree as in every other tree.
    */
   readonly projectPrivateInstallation?: string;
-  /** `~/.mnema/global` (under `$MNEMA_HOME` when set) — this machine, across all projects. Always present. */
+  /** `~/.mnema/global` (under `$MNEMA_HOME` when set): this machine, across all projects. Always present. */
   readonly global: string;
-  /** `~/.mnema/identity` (under `$MNEMA_HOME` when set) — the key root the three trees reference. Always present. */
+  /** `~/.mnema/identity` (under `$MNEMA_HOME` when set): the key root the three trees reference. Always present. */
   readonly keyRoot: string;
   /**
    * The agent key this process signs with where the record enrols it, when one is configured
@@ -146,8 +146,8 @@ export function agentKeyRoot(env: DiscoveryEnv, name: string): string {
 /**
  * `trees`, with the agent `name` to sign as where the record enrols it. The name is the one the
  * agent was enrolled under, which is also its folder: a value that is not an agent name
- * (`agentNameRefusal`) never reaches the file system. It is not dropped either — the agent was
- * asked for, and a write that fell back to the person's key would answer a question nobody asked —
+ * (`agentNameRefusal`) never reaches the file system. It is not dropped either (the agent was
+ * asked for, and a write that fell back to the person's key would answer a question nobody asked)
  * so it comes back marked, and every write in these trees is refused ({@link AgentSigning.unnamed}).
  */
 export function withAgentKey(trees: ResolvedTrees, env: DiscoveryEnv, name: string): ResolvedTrees {
@@ -157,7 +157,7 @@ export function withAgentKey(trees: ResolvedTrees, env: DiscoveryEnv, name: stri
 }
 
 /**
- * Why a directory can be no project's root — see {@link whyNoProjectRootAt}, which is
+ * Why a directory can be no project's root: see {@link whyNoProjectRootAt}, which is
  * the one place that decides it.
  *
  * A closed set, so a reason added here does not compile anywhere that has to say
@@ -179,12 +179,12 @@ export interface PassedOverTree {
  *
  * The second half exists because passing over a tree is not the same as its not being
  * there. A `.mnema/` in a home can hold events written there before the walk learned to
- * pass it by — a machine this was built on had one, with a task in it — and a walk that
+ * pass it by (a machine this was built on had one, with a task in it) and a walk that
  * went past it in silence would make those events vanish from every answer without a word.
  * Nothing here reads them; the list says where they are, so a surface can tell the person.
  */
 export interface Discovery {
-  /** The trees the working directory resolves to — {@link resolveTrees}'s whole answer. */
+  /** The trees the working directory resolves to: {@link resolveTrees}'s whole answer. */
   readonly trees: ResolvedTrees;
   /** Every `.mnema/` passed over, nearest first; empty when the walk met none. */
   readonly passedOver: readonly PassedOverTree[];
@@ -195,10 +195,10 @@ export interface Discovery {
  *
  * The project trees come from the nearest ancestor directory that contains a
  * `.mnema/` DIRECTORY and can be a project's root ({@link whyNoProjectRootAt}); if
- * none exists up to the filesystem root — or up to the home directory, where the walk
- * stops — there is no project and only the global tree and key root are returned.
+ * none exists up to the filesystem root (or up to the home directory, where the walk
+ * stops) there is no project and only the global tree and key root are returned.
  * The global tree and key root come from the app data directory ({@link appDataDir}):
- * `$MNEMA_HOME` when it is set, otherwise `~/.mnema` — and never a path relative to the
+ * `$MNEMA_HOME` when it is set, otherwise `~/.mnema`, and never a path relative to the
  * working directory, so it throws rather than answer one.
  */
 export function resolveTrees(cwd: string, env: DiscoveryEnv): ResolvedTrees {
@@ -206,7 +206,7 @@ export function resolveTrees(cwd: string, env: DiscoveryEnv): ResolvedTrees {
 }
 
 /**
- * {@link resolveTrees}, with what the walk passed over — the SAME walk, not a second one.
+ * {@link resolveTrees}, with what the walk passed over: the SAME walk, not a second one.
  *
  * A surface that wants to say a tree was passed over asks this instead of walking again,
  * so what it says is about the walk that decided the trees and cannot come to describe a
@@ -244,16 +244,16 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * `mnema init` asks it before founding anything, and the surface that offers to found a
  * project asks it before offering.
  *
- * ## `home` — the home directory is never a project's root, and nothing above it is
+ * ## `home`: the home directory is never a project's root, and nothing above it is
  *
  * It is a statement about the DIRECTORY, whatever its `.mnema/` holds, and the walk
  * stops there. Three things were measured on the built binary before this rule existed,
  * each in a sandbox home:
  *
- *   - `~/.mnema` IS this machine's data directory — it was whenever `$XDG_DATA_HOME` was
+ *   - `~/.mnema` IS this machine's data directory: it was whenever `$XDG_DATA_HOME` was
  *     unset, when this was measured, and it is always now, unless `$MNEMA_HOME` moves it. A
  *     project founded in the home shares that one directory with the private key and
- *     the global tree, and a project tree's `.gitignore` covers its own `keys/` — not
+ *     the global tree, and a project tree's `.gitignore` covers its own `keys/`, not
  *     `identity/`. In a home kept under git, as dotfiles often are, `git add .mnema`
  *     staged the machine's private key and the backup key.
  *   - With the data directory elsewhere, the home tree still took every folder under the
@@ -269,22 +269,22 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  *     keyed on what the directory HOLDS would give two answers about one directory, and one
  *     keyed on where it IS gives one.
  *
- * Nothing above the home is taken either, because anything above it contains it — a
+ * Nothing above the home is taken either, because anything above it contains it: a
  * project found there would take the home and everything in it, which is the same fault
  * larger. A working directory OUTSIDE the home never meets it, and walks to the
  * filesystem root as it always did.
  *
- * The home is `env.home` — the environment's, which is what every other tool the person
- * runs takes for their home — spelled as written and as the filesystem resolves it, so a
+ * The home is `env.home` (the environment's, which is what every other tool the person
+ * runs takes for their home) spelled as written and as the filesystem resolves it, so a
  * home reached through a symlink is still the home. A relative or empty one is no home
- * at all, and names nothing here — and the data directory then goes under the account's
+ * at all, and names nothing here, and the data directory then goes under the account's
  * home instead ({@link appDataDir}), never under the working directory.
  *
- * ## `data-directory` — a `.mnema/` that holds a key root is a machine's data directory
+ * ## `data-directory`: a `.mnema/` that holds a key root is a machine's data directory
  *
  * A project tree never contains an `identity/`; a data directory always does (every path
  * the product has that makes one makes the key root in it, a session that only reads
- * included — pinned in `a-client-that-names-no-workspace.test.ts`). This is what reaches
+ * included: pinned in `a-client-that-names-no-workspace.test.ts`). This is what reaches
  * the data directory of ANOTHER environment, which the home rule cannot: `~/.mnema` keeps
  * its key root after `$MNEMA_HOME` moves the data directory, a run with a sandboxed `HOME` whose working
  * directory sits under a real one finds the real one, and `sudo` finds its user's. It is
@@ -292,14 +292,14 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * is still the nearest one.
  *
  * It is ONE reading, and it was two when it lived in the server's working-directory rung:
- * the second — "it is the parent of the key root this environment resolves" — was a second
+ * the second ("it is the parent of the key root this environment resolves") was a second
  * statement of the same fact, and removing it left every case green, so it was dropped
  * rather than kept as a guard nothing can light. That rung's own guard is gone now; this is
  * where the reading lives, for every rung and every verb.
  *
  * WHAT NEITHER READING REACHES, declared rather than guessed at: a project-shaped
- * `.mnema/` in the home of someone OTHER than the environment asking — a sandboxed run
- * under a real home whose `~/.mnema` a stray `init` made — looks like any project from
+ * `.mnema/` in the home of someone OTHER than the environment asking, a sandboxed run
+ * under a real home whose `~/.mnema` a stray `init` made, looks like any project from
  * where that run stands. Nothing in it says otherwise, and the only reading that could is
  * the real home, which this pure function does not consult. It lasts until that real home
  * writes once: its data directory is `~/.mnema` too, so the first write there puts a key
@@ -310,23 +310,23 @@ export function whyNoProjectRootAt(dir: string, env: DiscoveryEnv): NoProjectRoo
 }
 
 /**
- * The application data directory — where the key root and the global tree live. THE RULE, in
+ * The application data directory, where the key root and the global tree live. THE RULE, in
  * the one place it lives:
  *
- *   1. `$MNEMA_HOME`, when it is set and not empty — the directory itself. A RELATIVE value is
+ *   1. `$MNEMA_HOME`, when it is set and not empty: the directory itself. A RELATIVE value is
  *      refused, with a throw: the market resolves a relative home against the working directory
  *      (`GNUPGHOME`, `CARGO_HOME`), which for a key root is one identity per folder, and ignoring
  *      it would found, in silence, a key the person asked to keep somewhere else. Neither answer
  *      can be taken back, so the resolution stops and says so.
  *   2. otherwise `~/.mnema`, under `$HOME` when that is an absolute path;
- *   3. otherwise under the account's home from the password database — what `os.homedir()`
- *      answers for an empty `$HOME` — and when there is none of those either, a throw.
+ *   3. otherwise under the account's home from the password database, what `os.homedir()`
+ *      answers for an empty `$HOME`, and when there is none of those either, a throw.
  *
  * IT USED TO FOLLOW `$XDG_DATA_HOME`: `$XDG_DATA_HOME/mnema` when the variable was an absolute
  * path, else `~/.mnema`. That made WHICH KEY SIGNS A FACT depend on which process started the
- * writer. The variable is set on a person's behalf by whatever launches the process — a
+ * writer. The variable is set on a person's behalf by whatever launches the process (a
  * snap-packaged editor pointed it inside its own revision folder for every process its
- * extension host started, and Flatpak points it inside each app's sandbox — and a key root that
+ * extension host started, and Flatpak points it inside each app's sandbox) and a key root that
  * followed it gave one person a second identity, founded in silence the first time the other
  * launcher's process wrote into a record. The product split a person on its own as well: the
  * fallback was `~/.mnema`, not the XDG default, so a shell with `$XDG_DATA_HOME` at its standard
@@ -336,12 +336,12 @@ export function whyNoProjectRootAt(dir: string, env: DiscoveryEnv): NoProjectRoo
  * against the built binary and counts one author.
  *
  * AND THE EMPTY `$HOME` USED TO NAME THE WORKING DIRECTORY: the rule joined whatever `$HOME` held,
- * and `join('', '.mnema')` is `.mnema` — so a process started with an empty `$HOME` kept a key in
+ * and `join('', '.mnema')` is `.mnema`, so a process started with an empty `$HOME` kept a key in
  * every folder it ran from, measured on the built binary as two keys minted in two sibling
  * folders. Rule 3 is what closes that.
  *
- * It stays a named function because the paths that must agree — `global`, `keyRoot` and the
- * agents' roots — are derived from one call. It is module-private for the reason the project
+ * It stays a named function because the paths that must agree (`global`, `keyRoot` and the
+ * agents' roots) are derived from one call. It is module-private for the reason the project
  * index taught: an export with nothing outside this file behind it is a public name for nobody.
  */
 function appDataDir(env: DiscoveryEnv): string {
@@ -368,7 +368,7 @@ function appDataDir(env: DiscoveryEnv): string {
 /**
  * The spellings of the environment's home a walked directory is compared against: the
  * path as the environment wrote it, and the path the filesystem resolves it to. Empty
- * for a relative or empty home — see {@link whyNoProjectRootAt}.
+ * for a relative or empty home: see {@link whyNoProjectRootAt}.
  *
  * Both, because the walk climbs from a working directory the OS hands over already
  * resolved, while `HOME` is whatever was written into it: a home that is a symlink to
@@ -395,10 +395,10 @@ function noProjectRootAt(dir: string, homes: ReadonlySet<string>): NoProjectRoot
 
 /**
  * Walks up from `cwd` looking for a directory that contains a `.mnema/` directory
- * and can be a project's root, returning that `.mnema/` path (the public project tree)
- * — or undefined, at the home directory or at the filesystem root — together with every
+ * and can be a project's root, returning that `.mnema/` path (the public project tree),
+ * or undefined, at the home directory or at the filesystem root, together with every
  * `.mnema/` it passed over on the way. A `.mnema` that is a FILE, not a directory,
- * does not count — it is not a tree.
+ * does not count: it is not a tree.
  */
 function walkUp(
   cwd: string,
@@ -428,13 +428,13 @@ function walkUp(
 /**
  * Whether `path` is a directory, answering a missing one WITHOUT an exception.
  *
- * The walk asks this twice for every directory it climbs — once for the `.mnema/` and once
- * for a key root inside it — and nearly every answer is "not there". A `statSync` that throws
+ * The walk asks this twice for every directory it climbs, once for the `.mnema/` and once
+ * for a key root inside it, and nearly every answer is "not there". A `statSync` that throws
  * on a missing path pays for an error object and its stack each time, and that was nearly
  * the whole of what the second question cost. Measured in alternating blocks against the
  * walk as it was before the second question existed (two copies of which agreed within
  * 2%): inside a project three levels down, 33 µs became 92 µs with the throwing check and
- * 41 µs with this one — the rest is resolving the home once per call; seven levels under a
+ * 41 µs with this one (the rest is resolving the home once per call); seven levels under a
  * home with no project, 112 µs became 143 µs, and 61 µs with this one, because the walk now
  * stops at the home instead of climbing to the root. Anything other than "not there" (a
  * path through a file, a directory it may not read) still throws, and is still `false`.

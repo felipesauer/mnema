@@ -77,7 +77,7 @@ describe('whether git would stage the private tree', () => {
 
   it('says outside the worktree for a tree in the repository’s git directory, whatever the .gitignore says', () => {
     // Where discovery puts it inside a repository: no `git add` stages a path under `.git/`,
-    // so there is nothing to ask git, and nothing to refuse — even with no `/private/` line.
+    // so there is nothing to ask git, and nothing to refuse, even with no `/private/` line.
     git('init', '-q');
     writeFileSync(join(repo, '.mnema', '.gitignore'), '/locks/\n');
     const inRepository = { ...trees, projectPrivate: join(repo, '.git', 'mnema', 'private') };
@@ -105,7 +105,7 @@ describe('whether git would stage the private tree', () => {
 
   it('still says visible where .git is a symbolic link to a directory inside the worktree', () => {
     // Asked by its spelling (`.git/mnema/…`), git refuses the path as "beyond a symbolic link"
-    // and exits 128 — which must not be read as "cannot tell" once the git directory is known
+    // and exits 128, which must not be read as "cannot tell" once the git directory is known
     // to be inside the worktree.
     git('init', '-q', '--separate-git-dir', join(repo, 'realgd'));
     rmSync(join(repo, '.git'));

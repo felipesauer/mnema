@@ -24,7 +24,7 @@ interface DecisionRow {
   readonly supersedes: string | null;
   readonly created_at: string;
   readonly updated_at: string;
-  /** What each move said, JSON-encoded — null when no move said anything. */
+  /** What each move said, JSON-encoded: null when no move said anything. */
   readonly proof: string | null;
   readonly recorded_who: string | null;
   readonly recorded_which: string | null;
@@ -75,7 +75,7 @@ export function materializeDecisions(
   }
 }
 
-/** How many decisions are projected — the count the next `ADR-<n>` is numbered from. */
+/** How many decisions are projected: the count the next `ADR-<n>` is numbered from. */
 export function countDecisions(db: SqliteDatabase): number {
   return (db.prepare('SELECT COUNT(*) AS n FROM decisions').get() as { n: number }).n;
 }
@@ -132,7 +132,7 @@ function toProjection(row: DecisionRow): DecisionProjection {
     updatedAt: row.updated_at,
   };
   // NULL in the column means the decision recorded none, so the projection gets
-  // no key — the round trip preserves absence rather than turning it into ''.
+  // no key: the round trip preserves absence rather than turning it into ''.
   if (row.alternatives !== null) projection.alternatives = row.alternatives;
   if (row.superseded_by !== null) projection.supersededBy = row.superseded_by;
   if (row.supersedes !== null) projection.supersedes = row.supersedes;

@@ -97,7 +97,7 @@ describe('the rule, asked of one value', () => {
 describe('the marker is the pattern the product fills its own recipes by', () => {
   it('is the one the guard over every command handed over fills markers by', () => {
     // That guard fills every marker a page or a sentence prints before it parses the line, so a
-    // marker a new recipe prints is one this door already refuses — as long as both read one
+    // marker a new recipe prints is one this door already refuses, as long as both read one
     // pattern. The guard lives in another package's tests, where a value of this package cannot
     // be imported without being exported to every caller (`every-public-value-has-a-caller`), so
     // the two are reconciled here, by their source.
@@ -299,7 +299,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
 
   it('is total over the catalog, and every site listed has a row here', () => {
     // The table is total by TYPE in src (a kind with no row does not compile); this is the other
-    // direction — that every site it lists is one this sweep reaches, so a row nobody drives
+    // direction: that every site it lists is one this sweep reaches, so a row nobody drives
     // cannot sit in the table as a claim.
     expect(Object.keys(REASONS).sort()).toEqual(Object.keys(LATEST_VERSION).sort());
     const listed = Object.entries(REASONS).flatMap(([kind, sites]) =>
@@ -344,7 +344,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
  * A TITLE THAT IS A MARKER IS REFUSED ON THE WAY IN, by the function that refuses one as a reason.
  *
  * What was wrong: `mnema decision record "<title>" "<rationale>"`, pasted from a recipe, recorded
- * a decision named `<title>` — the rule asked the marker question of the why alone.
+ * a decision named `<title>`; the rule asked the marker question of the why alone.
  */
 describe('the title, asked of one value', () => {
   it('refuses a marker and names the field and what goes in its place', () => {

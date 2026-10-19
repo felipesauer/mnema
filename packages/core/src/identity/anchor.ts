@@ -1,7 +1,7 @@
 /**
  * The readable form of an anchor, and the way back from it.
  *
- * An anchor is `mnid:` and sixty-four hex characters — sixty-nine on a line, and
+ * An anchor is `mnid:` and sixty-four hex characters, sixty-nine on a line, and
  * it appears in the reads a person opens to audit the record: who authorized each
  * event, who each account belongs to, whose runs are open. At that width the
  * value is not read, it is skipped, and an audit nobody reads is not an audit.
@@ -9,20 +9,20 @@
  * THE SHORT FORM IS A PREFIX OF THE VALUE ITSELF, never a hash of it. That is the
  * whole difference from {@link deriveAlias}, which hashes an id because an id is a
  * v7 UUID whose leading characters are a timestamp. An anchor's characters are
- * already a hash, so they are already spread; and a prefix is CHECKABLE — anyone
+ * already a hash, so they are already spread; and a prefix is CHECKABLE: anyone
  * holding the full value can see the short one at the front of it, with no lookup
  * and no trust in this code. A hashed label could not be checked, and it could not
  * be typed back in, which is the second half of what makes this honest:
  *
  * WHAT THE OUTPUT SHORTENS, THE INPUT ACCEPTS. A short form that looks like the
- * real value WILL be pasted where the real value goes — that is what it is for.
+ * real value WILL be pasted where the real value goes, that is what it is for.
  * So {@link shortenAnchors} and {@link resolveAnchorPrefix} are two halves of one
  * contract, and they must be given the SAME set: a form shortened against the
  * anchors the record knows resolves against the anchors the record knows, and the
  * round trip closes by construction. Shortening against a narrower set (the few
  * anchors one report happens to show) would print a value the input then refuses.
  *
- * A value the set does not hold is never shortened — it is printed in full. So the
+ * A value the set does not hold is never shortened: it is printed in full. So the
  * short form exists only where it can be resolved, and "is this shortened" and "can
  * this be pasted back" are the same question.
  */
@@ -33,7 +33,7 @@ import { ANCHOR_PREFIX } from '@mnema/chain';
  *
  * Eight, where an entity's alias takes four ({@link SHORT_ALIAS_HEX}), and the
  * difference is not taste: an alias is only ever SHOWN, so a clash there costs a
- * moment of confusion, while an anchor is shown AND typed back — into a filter over
+ * moment of confusion, while an anchor is shown AND typed back, into a filter over
  * an audit, and into the request that consents to join an identity. The floor is
  * therefore set by what a wrong resolution costs, not by what fits on a line. Eight
  * hex is thirty-two bits, in the same territory as git's short SHA, which is the
@@ -55,7 +55,7 @@ export function isAnchorId(value: string): boolean {
  * The short form of every anchor in `anchors`, keyed by the full value.
  *
  * Each is `mnid:` plus the first {@link SHORT_ANCHOR_HEX} hex characters of the
- * anchor, lengthened — only for the ones that need it — until no two anchors in the
+ * anchor, lengthened, only for the ones that need it, until no two anchors in the
  * set share a form. The whole set moves together no further than it has to: one
  * clash lengthens the two that clash, not everyone.
  *
@@ -98,7 +98,7 @@ export type AnchorResolution =
   | {
       readonly ok: false;
       readonly reason: 'AMBIGUOUS_ANCHOR' | 'UNKNOWN_ANCHOR';
-      /** The anchors the value could have meant — several, or none. */
+      /** The anchors the value could have meant: several, or none. */
       readonly candidates: readonly string[];
     };
 
@@ -117,14 +117,14 @@ export type AnchorResolution =
  *     starts with it. The `mnid:` is optional either way, because both are pasted:
  *     the reads print it, and a person retyping from memory drops it.
  *   - Anything else is refused, and the refusal carries what it could have meant.
- *     Several candidates is `AMBIGUOUS_ANCHOR` — the value is real, it just does not
+ *     Several candidates is `AMBIGUOUS_ANCHOR`: the value is real, it just does not
  *     say which. None is `UNKNOWN_ANCHOR`: a prefix nobody here answers to. Neither
  *     is silently passed through, because both would then be used as a filter that
- *     matches nothing and come back as an empty answer — a lie with no shape.
+ *     matches nothing and come back as an empty answer: a lie with no shape.
  *
  * AN EMPTY VALUE NAMES NOBODY, and is refused before the matching starts. Read as a
  * prefix it matches EVERYONE, which in a record with one identity would quietly
- * resolve to that identity — and the way an empty value actually arrives is
+ * resolve to that identity, and the way an empty value actually arrives is
  * `--actor "$ME"` with the variable unset, which is the same accident the surface
  * already refuses to read as an agent's name.
  */

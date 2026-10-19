@@ -1,5 +1,5 @@
 /**
- * Which strings are a GitHub account name — the rule a link is refused by on the way in and a
+ * Which strings are a GitHub account name: the rule a link is refused by on the way in and a
  * reading is refused by before it puts the name in an address.
  *
  * The expected answers come from GitHub's own sign-up rule (letters, digits and single hyphens,
@@ -74,7 +74,7 @@ describe('sigstoreIdentityRefusal', () => {
   });
 });
 
-describe('sigstoreAccountOf — what the record keeps for a Sigstore identity', () => {
+describe('sigstoreAccountOf: what the record keeps for a Sigstore identity', () => {
   // The digests are `printf '%s' felipe@example.com | sha256sum`, computed outside this code.
   const HASHED = 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f';
 

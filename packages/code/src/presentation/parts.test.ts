@@ -2,7 +2,7 @@
  * What a line's PARTS are, and the two things that keep the split between a part and
  * its bytes from rotting.
  *
- * The forms themselves are asserted in `forms.test.ts` — that is where the shape a
+ * The forms themselves are asserted in `forms.test.ts`, that is where the shape a
  * reader relies on is pinned, through the renderer, on the text a person sees. Here
  * are the properties of the split itself, and both of them are absences, which is
  * why they need a file rather than a comment:
@@ -10,7 +10,7 @@
  *   - NO ROLE WITHOUT A PRODUCER. A role is only worth carrying if something makes
  *     one, and the failure is silent in both directions: a role nobody produces is a
  *     value a renderer will one day branch on and never reach, and a role a renderer
- *     never asked for is a taxonomy. The type already forces the other half — the
+ *     never asked for is a taxonomy. The type already forces the other half: the
  *     renderer's separator table is total over the union, so a role added without
  *     saying how it joins the part before it does not build.
  *   - NOTHING HERE ASKS WHERE OUTPUT IS GOING. `presentation/` is compared byte for
@@ -39,7 +39,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 describe('every role has something that produces it', () => {
   /**
-   * Every primitive, called the ways a caller calls it — including `statement`
+   * Every primitive, called the ways a caller calls it, including `statement`
    * without its detail, which is the one call that produces a line of one part.
    *
    * The list is the point: a primitive added with a role of its own has to appear
@@ -80,7 +80,7 @@ describe('every role has something that produces it', () => {
     itemLine([asPick('\u276f'), asWord('search'), 'a read']),
     // AND THE WORD THAT ROW OFFERS, which is the third part of a line that is chrome. It
     // is here in the shape the console composes it in and in the shape it composes when a
-    // word has nothing to say — padded to a column beside a description, and bare when
+    // word has nothing to say: padded to a column beside a description, and bare when
     // there is none (`repl/palette.ts`).
     itemLine([asPick('\u276f'), asWord('search  '), 'a read']),
     itemLine([asWord('an-id')]),
@@ -97,7 +97,7 @@ describe('every role has something that produces it', () => {
     statement('ALLOWED', 'submit t-1 → READY', 'good'),
     statement('Refused (MISSING_PROOF)', 'complete needs a note', 'bad'),
     // The verdict whose sentence arrives in clauses, both ways a caller builds one: one
-    // clause and nothing to qualify it, and the shape `verify` actually prints — the
+    // clause and nothing to qualify it, and the shape `verify` actually prints, the
     // level's clause carrying the news, the rest qualifying it and carrying none.
     clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
     clauseStatement('public', [
@@ -115,8 +115,8 @@ describe('every role has something that produces it', () => {
 
   it('produces every severity too, and leaves most parts without one', () => {
     // The same rule on the second axis: a severity nothing sets is a value the
-    // renderer branches on and never reaches. And the other half — that ABSENT is
-    // the common case — is asserted because a severity every part carried would be
+    // renderer branches on and never reaches. And the other half (that ABSENT is
+    // the common case) is asserted because a severity every part carried would be
     // a surface that colours everything, which is a surface that colours nothing.
     const produced = new Set<Severity>();
     let unsevere = 0;
@@ -153,7 +153,7 @@ describe('every role has something that produces it', () => {
 });
 
 describe('the plain renderer adds nothing to what the parts hold', () => {
-  it('breaks a line exactly as often as its parts do — never once more', () => {
+  it('breaks a line exactly as often as its parts do, never once more', () => {
     // A newline inside a field is text an ACTOR wrote, and collapsing it is the call
     // site's rule (`oneLine`), asserted in `one-line-per-item.test.ts`. What is
     // asserted here is the renderer's half of that promise: it neither adds a break
@@ -204,8 +204,8 @@ describe('presentation asks nothing about where output is going', () => {
   const mentions = (source: string): string[] => FORBIDDEN.filter((term) => source.includes(term));
 
   /**
-   * Every module of this directory that SHIPS — the tests are excluded, and that is
-   * the guard's edge rather than a hole in it: `one-line-per-item.test.ts` drives the
+   * Every module of this directory that SHIPS (the tests are excluded, and that is
+   * the guard's edge rather than a hole in it): `one-line-per-item.test.ts` drives the
    * whole CLI in a sandbox and has to set `HOME` to do it. What is banned is a
    * shipped line's bytes depending on the machine, not a fixture building one.
    */

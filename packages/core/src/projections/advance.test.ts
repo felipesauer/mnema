@@ -4,14 +4,14 @@
  *
  * `advance` writes only the tables the arrivals feed (`fed-by.ts`) and appends to
  * the reference index rather than replacing it. Both are decisions about WORK, and
- * neither may be a decision about content — so what every case here asserts is the
+ * neither may be a decision about content, so what every case here asserts is the
  * strongest form available: after the arrival, the advanced database and a database
  * replayed from the same chain hold the SAME ROWS in every projection table.
  *
  * WHY IT IS DRIVEN BY KIND, and why that is not decoration. `FED_BY_KIND` is a hand
  * written table. Its type forces every kind to have a row and every value to be a
  * real table, and no type can force a row to name the tables the folds ACTUALLY
- * read — a row that under-claims does not fail to compile, it serves a stale table.
+ * read: a row that under-claims does not fail to compile, it serves a stale table.
  * That is silent corruption rather than slowness, and it is the one failure this
  * whole direction could produce. So: one event of every kind, and a row that forgot
  * a table goes red on the table it forgot.
@@ -24,11 +24,11 @@
  * type, so a kind added to the catalog fails to compile in each until it is driven",
  * AND IT WAS FALSE OF BOTH. A mapped type declared in a `.test.ts` is checked by
  * nothing: `tsc -b` excludes tests and vitest strips types without checking them. It
- * was measured — a kind added to the catalog with no row in either table left the
+ * was measured: a kind added to the catalog with no row in either table left the
  * build's complaints in `src` alone, and the two tables silent. The one next door
  * survived it anyway, because it asserts its keys against the catalog at RUN time; this
  * one iterated `Object.keys(ARRIVALS)`, so an undriven kind was not failed, it was
- * SKIPPED — 32 cases passed and the new kind got no advance-versus-replay proof at all.
+ * SKIPPED: 32 cases passed and the new kind got no advance-versus-replay proof at all.
  * The table below is now held against the catalog at run time, by the case that opens
  * the suite.
  *
@@ -36,7 +36,7 @@
  * otherwise: `createTask`, `recordDecision` and `createSkill` each write a birth PAIR
  * (the `*.created`/`*.recorded` and the birth `*.transitioned`), so driving one of
  * those kinds puts two on the chain. The two rows involved are identical in
- * `FED_BY_KIND` — the same entity table and the same index — so neither can mask the
+ * `FED_BY_KIND`, the same entity table and the same index, so neither can mask the
  * other; what the case proves for the pair it proves for each. Every other kind
  * arrives as exactly one event, which each case asserts.
  */
@@ -116,7 +116,7 @@ function open(options: { maxSegmentBytes?: number } = {}): WriteContext {
 }
 
 /**
- * A record with something in every table, written BEFORE the frontier is taken —
+ * A record with something in every table, written BEFORE the frontier is taken,
  * so what each case then drives is the only arrival, and the tables it must and
  * must not disturb are already full.
  */
@@ -154,8 +154,8 @@ interface Arrival {
   /**
    * Set for the ONE kind that cannot arrive after anything: a founding is the first
    * write a tree ever takes, and every other driver's setup has already performed it.
-   * So its case takes the frontier over an EMPTY chain — which is the honest shape of
-   * that arrival, not a concession — and there is nothing already here for it to
+   * So its case takes the frontier over an EMPTY chain (which is the honest shape of
+   * that arrival, not a concession) and there is nothing already here for it to
    * disturb.
    */
   readonly overAnEmptyChain?: true;
@@ -192,7 +192,7 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
         endRun(ctx, { run: run as string, which: 'an-agent-that-will-stop', outcome: 'done' }),
       ),
   },
-  // The birth PAIR — see the note at the top of this file.
+  // The birth PAIR: see the note at the top of this file.
   'task.created': { emit: (ctx) => landed(createTask(ctx, { title: 'a task that arrived' })) },
   'task.transitioned': {
     setup: (ctx) => landed(createTask(ctx, { title: 'a task that will move' })).id,
@@ -392,7 +392,7 @@ function ciKeyRoot(): string {
   return `${root}-ci`;
 }
 
-/** A decision with a declared check, and a key enrolled to run it — the setup of a result. */
+/** A decision with a declared check, and a key enrolled to run it: the setup of a result. */
 function aRuleWithACheckAndACheckerKey(ctx: WriteContext): string {
   const rule = landed(recordDecision(ctx, { title: 'a rule to check', rationale: 'why' })).id;
   landed(declareCheck(ctx, { rule, command: 'node' }));
@@ -425,7 +425,7 @@ function runAs(
   });
 }
 
-/** Puts a SECOND tail in the tree — another installation's key writing into it. */
+/** Puts a SECOND tail in the tree: another installation's key writing into it. */
 function aSecondTailIn(chainRoot: string): string {
   const otherKeys = mkdtempSync(join(tmpdir(), 'mnema-advance-other-'));
   try {
@@ -444,7 +444,7 @@ function aSecondTailIn(chainRoot: string): string {
 
 /**
  * Every row of every projection table, as comparable values. Sorted, because SQL row
- * order is not a property of a projection — the ORDER a projection carries is in the
+ * order is not a property of a projection: the ORDER a projection carries is in the
  * `ord` column, which is inside the rows being compared.
  */
 function dump(db: SqliteDatabase): Record<string, string[]> {
@@ -476,7 +476,7 @@ describe('an arrival brings the cache to exactly where a replay would have put i
   });
 
   for (const kind of Object.keys(ARRIVALS) as EventKind[]) {
-    it(`${kind} — advanced tables equal replayed tables`, () => {
+    it(`${kind}: advanced tables equal replayed tables`, () => {
       const ctx = open();
       const arrival = ARRIVALS[kind];
       const already =
@@ -507,7 +507,7 @@ describe('an arrival brings the cache to exactly where a replay would have put i
 
       // AND AGAIN with THIS KIND'S ROW ALONE, which is what closes the masking the
       // birth pairs would otherwise create. A pair puts two kinds on the chain, so the
-      // union of their rows can carry a table the row under test forgot — measured: a
+      // union of their rows can carry a table the row under test forgot; measured: a
       // mutation that deleted the full-text index from `task.created` left this case
       // green, because `task.transitioned` arrived beside it still naming it. Every
       // arrival a driver here produces holds kinds that SHARE a row, so restricting to
@@ -607,7 +607,7 @@ describe('a chain that changed some other way is replayed whole', () => {
     expect(segments.length, 'the tail needs more than one segment to be cut').toBeGreaterThan(1);
     rmSync(join(dir, segments[0] as string));
 
-    // Nothing throws, and what is served is what the shortened chain says — which is
+    // Nothing throws, and what is served is what the shortened chain says, which is
     // the whole point of falling back rather than appending onto a stale order.
     cache.refresh();
     agreesWithAFullReplay(cache);
@@ -657,7 +657,7 @@ describe('a chain that changed some other way is replayed whole', () => {
   it('a clock that stepped back INSIDE one tail is still a suffix, and still right', () => {
     // The other half, and it is not a fallback: within a tail `seq` is the order and
     // the hash chain proves it, so an event stamped before its predecessor still comes
-    // after it. There is nothing to refuse, and the cache brings itself forward — what
+    // after it. There is nothing to refuse, and the cache brings itself forward: what
     // this pins is that the ROWS are the ones a replay would have written, which is the
     // only thing at stake.
     const ctx = open();
@@ -716,7 +716,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
     // millisecond resolution and a channel that fires on every edit appends far
     // faster than that, so a session ties with ITSELF constantly. Within one tail
     // `seq` is the order and the merge never compares two of its events, so a tie
-    // there is not a reordering — and a test that refused it would replay the chain
+    // there is not a reordering, and a test that refused it would replay the chain
     // on every append, which is what the first version of this did.
     const ctx = open();
     const frozen: WriteContext = { ...ctx, clock: () => '2026-08-19T12:00:00.000Z' };
@@ -737,7 +737,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
     // The tie the merge DOES break, and the reason the test cannot simply ignore
     // instants: across tails the order is `(at, tail)`, so an arrival stamped at the
     // same instant as a covered event of a tail that sorts after it would be placed
-    // BEFORE that event — an interleave, not a suffix.
+    // BEFORE that event, an interleave, not a suffix.
     const instant = '2026-08-19T12:00:00.000Z';
     const first = open();
     const firstFrozen: WriteContext = { ...first, clock: () => instant };
@@ -757,7 +757,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
 
       // Whichever tail sorts EARLIER is the one whose arrival would be placed before
       // the other's covered event. The ids are key fingerprints, so which is which is
-      // not this test's to choose — it reads them and drives the one that must fail.
+      // not this test's to choose: it reads them and drives the one that must fail.
       const earlier = first.writer.tail < second.writer.tail ? firstFrozen : second;
       const before = chainReplay({ root }, upcasters);
       landed(captureMemory(earlier, { content: 'tying with a tail that sorts after me' }));
@@ -776,7 +776,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
 describe('a write that changes something is still seen by the read after it', () => {
   it('a task created after the frontier is in the cache the next read gets', () => {
     // The property that must not be traded for the speed: the read after a write
-    // sees the write. Proved by CASE rather than by a stopwatch — the timing says
+    // sees the write. Proved by CASE rather than by a stopwatch: the timing says
     // nothing about whether the answer was right.
     const ctx = open();
     aRecordAlreadyHere(ctx);
@@ -806,7 +806,7 @@ describe('a write that changes something is still seen by the read after it', ()
   it('the reference index an arrival appends to is the one a replay would have built', () => {
     // The one materialization brought forward by APPENDING. Its rows carry `ord`, the
     // event's position in the order, so an append that got the base wrong would be a
-    // history pointing at the wrong facts — and it would not throw.
+    // history pointing at the wrong facts, and it would not throw.
     const ctx = open();
     const already = aRecordAlreadyHere(ctx);
     const cache = ProjectionCache.open(root, { upcasters });
@@ -829,10 +829,10 @@ describe('a cache refreshed again and again equals one replayed once', () => {
   it('keeps the frontier moving, so the same arrival is never applied twice', () => {
     // THE CASES ABOVE CALL `advance` DIRECTLY, which is what leaves this uncovered:
     // they hand it the order and the position themselves, so nothing exercises the
-    // bookkeeping `ProjectionCache.refresh` does BETWEEN two arrivals — the frontier it
+    // bookkeeping `ProjectionCache.refresh` does BETWEEN two arrivals: the frontier it
     // carries forward and the order it keeps. Measured: deleting `this.frontier =
-    // arrived.frontier` left the whole suite green, and the reference index — the one
-    // table that is APPENDED rather than rebuilt — went from one row per appearance to
+    // arrived.frontier` left the whole suite green, and the reference index (the one
+    // table that is APPENDED rather than rebuilt) went from one row per appearance to
     // two and then four, because every refresh re-applied what the last one had already
     // written. Silent corruption of the index three audits read.
     //

@@ -3,7 +3,7 @@
  * escapes.
  *
  * It composes through {@link renderWith}, so the depth, the separators and the order
- * are the plain renderer's — literally the same loop. All this file decides is what
+ * are the plain renderer's: literally the same loop. All this file decides is what
  * wraps a part's own text, which is what makes the promise below true by construction
  * rather than by two files agreeing:
  *
@@ -15,11 +15,11 @@
  *   of the record. `styled.test.ts` asserts it over every shape the surface builds.
  *
  * IT PAINTS NOW, AND THE DOC HERE USED TO SAY IT COULD NOT. The premise was "WEIGHT
- * ONLY — NO COLOUR, and that is a technical limit rather than restraint": colour is
+ * ONLY, NO COLOUR, and that is a technical limit rather than restraint": colour is
  * how a terminal says GOOD and BAD, a part did not know whether it was either, and
  * painting a verdict green would have needed a severity nothing produced. What
- * falsified it is that something produces one — {@link statement} takes an optional
- * severity and the refusal funnel sets it (`wiring/report.ts`) — and the map below is
+ * falsified it is that something produces one, {@link statement} takes an optional
+ * severity and the refusal funnel sets it (`wiring/report.ts`), and the map below is
  * the consumer that had to exist first. The limit was real and it was named
  * correctly; it was a limit about the CALL SITES, and they moved.
  *
@@ -38,7 +38,7 @@
  * and it says why where it is: the band behind a command that has been sent, {@link SHADE}.)
  *
  * The escapes are SGR: `1` is bold, `2` is faint, and `22` returns to normal
- * intensity — one closer for both, because it is the ANSI code for "neither bold nor
+ * intensity, one closer for both, because it is the ANSI code for "neither bold nor
  * faint" and nothing here nests. `31`, `32` and `33` are red, green and yellow, all
  * closed by `39`, the default foreground. Deliberately not `0`, which would also reset a
  * colour a caller's terminal set for its own reasons.
@@ -51,7 +51,7 @@ import { widthOfText } from './width.js';
 
 /** Bold: SGR 1. */
 const BOLD = '\u001b[1m';
-/** Faint: SGR 2 — what a terminal shows as dim. */
+/** Faint: SGR 2, what a terminal shows as dim. */
 const DIM = '\u001b[2m';
 /** Back to normal intensity: SGR 22, the closer for both of the above. */
 const NORMAL = '\u001b[22m';
@@ -60,7 +60,7 @@ const NORMAL = '\u001b[22m';
 const RED = '\u001b[31m';
 /** Green: SGR 32, the basic one, for the same reason. */
 const GREEN = '\u001b[32m';
-/** Yellow: SGR 33, the basic one — the third, for news that is neither. */
+/** Yellow: SGR 33, the basic one; the third, for news that is neither. */
 const YELLOW = '\u001b[33m';
 /** Back to the terminal's own foreground: SGR 39, the closer for every hue. */
 const DEFAULT_HUE = '\u001b[39m';
@@ -73,7 +73,7 @@ const DEFAULT_HUE = '\u001b[39m';
  * IT IS THE ONE PLACE THIS FILE LEAVES THE BASIC EIGHT, and the rule it leaves is about a colour
  * landing unreadable on a theme its reader cannot change: *a fixed red can land unreadable on a
  * light background*. A band is a background and a background is half of a pair, so the pair is
- * fixed at BOTH ends — a mid-dark grey with light text on it — and what a theme can change is only
+ * fixed at BOTH ends, a mid-dark grey with light text on it, and what a theme can change is only
  * the page around it. Measured by drawing the same recording on a dark and on a light theme: on
  * the dark one it is a quiet band, on the light one a darker band with its words still on top of
  * it, legible on both. The basic eight cannot say a quiet grey at all (the theme's own bright
@@ -87,14 +87,14 @@ const SENT_HUE = '\u001b[38;5;253m';
 const UNSHADE = '\u001b[49m';
 
 /**
- * THE ACCENT: SGR 35, magenta — the one hue on this surface that is not news, and the
+ * THE ACCENT: SGR 35, magenta, the one hue on this surface that is not news, and the
  * only one a ROLE carries rather than a severity.
  *
  * IT IS THE PRODUCT'S MARK AND NOT A VERDICT, which is what keeps the promise above whole
  * rather than making an exception to it. Red, green and yellow say how bad the news is;
  * magenta says *this is mnema*. It is what the console's own rules are drawn in
  * (`repl/region.ts`, `ACCENT`), and the only thing here that takes it is the PROMPT of an
- * echo — the console showing a caller what they sent (`echo.ts`). Nothing about the
+ * echo: the console showing a caller what they sent (`echo.ts`). Nothing about the
  * record is ever wrapped in it, and nothing wrapped in it says anything a reader could
  * lose: strip the escapes and the prompt is still there, spelled out, which is the same
  * argument the three severities are painted under.
@@ -112,64 +112,64 @@ const ACCENT = '\u001b[35m';
 /**
  * What opens each role, and the empty string for a role written bare.
  *
- * Total over {@link Role} by type — the same rule the separator table keeps, for the
+ * Total over {@link Role} by type, the same rule the separator table keeps, for the
  * same reason: a role that did not say how it is painted would be painted by whatever
  * a fallback chose, and a surface would acquire an emphasis nobody decided on. A role
  * added to the union without an entry here does not build.
  *
  * The ten, and the convention each follows:
  *
- *   - `label` — bold. It leads the line and it is what a reader scanning a log for a
+ *   - `label`: bold. It leads the line and it is what a reader scanning a log for a
  *     refusal reads first, which is the one thing git, gh and kubectl all embolden.
- *   - `subject` — bold. A heading, and headings are the other half of that same
+ *   - `subject`: bold. A heading, and headings are the other half of that same
  *     convention.
- *   - `field` — bare. A column of a list is the DATA; emphasising all of it emphasises
+ *   - `field`: bare. A column of a list is the DATA; emphasising all of it emphasises
  *     nothing, and this is most of what the surface prints.
- *   - `detail` — dim. Secondary by construction: it is the half of a statement that
+ *   - `detail`: dim. Secondary by construction: it is the half of a statement that
  *     follows the colon, and dimming what is secondary is the convention a reader
  *     already knows from `git status` and `gh pr list`.
- *   - `clause` — dim, the same as the detail it is a refinement of, and the sameness is
+ *   - `clause`: dim, the same as the detail it is a refinement of, and the sameness is
  *     load-bearing rather than a coincidence to collapse. `verify`'s verdict used to
  *     arrive as ONE detail holding every clause, so the whole sentence was dim; splitting
  *     it into the clauses the chain hands over must not change the weight of a single
  *     word of it, or the split would have been a restyling wearing a decomposition's
  *     clothes. What the split buys is that ONE clause can now carry a hue.
- *   - `state` — bare, exactly like the `field` it rides. A position's WEIGHT is the
+ *   - `state`: bare, exactly like the `field` it rides. A position's WEIGHT is the
  *     title's: emboldening or dimming every state would say something about all of them,
  *     and what distinguishes them is not how much they matter but what a reader does
- *     next. That travels on the other axis — three of the five dispositions carry a
- *     severity and two carry none (see `state.ts`) — so a state with nothing to report
+ *     next. That travels on the other axis; three of the five dispositions carry a
+ *     severity and two carry none (see `state.ts`), so a state with nothing to report
  *     comes out byte for byte the plain line, which is most of them.
- *   - `id`, `when` and `scope` — dim, and they are the reason this map was worth
+ *   - `id`, `when` and `scope`: dim, and they are the reason this map was worth
  *     extending. A list of hits is columns of `field` that all weigh the same, so nothing
  *     in it stood out; dimming the columns nobody READS makes the title beside them the
  *     line's subject, WITHOUT painting the title. It is emphasis by subtraction, which is
  *     the only kind that scales to six lists. IT WAS TWO, AND THIS FILE POINTED AT
- *     `line.ts` FOR *why no third column joined them* — the scope is that third, it
+ *     `line.ts` FOR *why no third column joined them*: the scope is that third, it
  *     joined for this entry's own argument rather than for one of its own, and `line.ts`
  *     is where the premise it falsified is written out.
- *   - `prompt` — bare, and it is the one role that carries a HUE of its own
+ *   - `prompt`: bare, and it is the one role that carries a HUE of its own
  *     ({@link TINTED_BY}). What a caller typed in front of is the product's mark on the
  *     page rather than a fact about the record, so it takes the accent and no weight: an
  *     echo emboldened at both ends would be a row shouting where a reader is looking for
  *     the words they typed.
- *   - `pick` — bare, and the second role that carries a HUE of its own
+ *   - `pick`: bare, and the second role that carries a HUE of its own
  *     ({@link TINTED_BY}). The mark on the row a caller chose is the console's own
  *     punctuation rather than a fact, so it takes the accent; what it does NOT take is a
  *     weight, because the glyph is already the whole answer and an emboldened mark would be
  *     the row shouting about being the row.
- *   - `typed` — bold, exactly like the `label` it is a refinement of, and the sameness is
+ *   - `typed`: bold, exactly like the `label` it is a refinement of, and the sameness is
  *     the point rather than a duplication to collapse. A caller scrolling a session is
  *     looking for the line they asked, in among the answer to it, and that is the same
  *     thing a reader scanning a log for a refusal is doing.
- *   - `sentmark` and `sent` — a command the caller has sent, as the roll keeps it: a quiet grey
+ *   - `sentmark` and `sent`: a command the caller has sent, as the roll keeps it: a quiet grey
  *     mark and the words in a lighter grey, on the band {@link shadedAcross} lays under the whole
  *     row. They carry no hue and no weight, because the accent says *this is mnema* and what a
  *     caller asked is not that; they are painted as a PAIR with the band ({@link SHADE}).
- *   - `word` — bare, and the THIRD role that carries a HUE of its own ({@link TINTED_BY}).
+ *   - `word`: bare, and the THIRD role that carries a HUE of its own ({@link TINTED_BY}).
  *     A word a caller could type is the product's own vocabulary offered back rather than a
  *     fact about the record, so it takes the accent; what it does not take is a weight, for
- *     the reason the mark does not — a list where four rows are emboldened is four rows
+ *     the reason the mark does not: a list where four rows are emboldened is four rows
  *     shouting, and what makes the word the subject of its row is that the description
  *     beside it is NOT painted.
  */
@@ -213,7 +213,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
 
 /**
  * What each role TINTS, and the empty string for every role that carries no hue of its
- * own — which is all of them but one.
+ * own, which is all of them but one.
  *
  * Total over {@link Role} by type, exactly like the two tables it sits between, and for
  * the third time the same reason: a role whose hue nobody stated would be painted by
@@ -230,7 +230,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * things, and they may not meet: how bad the NEWS is, which is the call site's to say and
  * is {@link PAINTED_BY}; and *this is the product*, which is the accent and belongs to
  * the thing that says nothing about the record at all ({@link ACCENT}). A part that
- * carries news is painted by the news — the severity is read first below — and nothing
+ * carries news is painted by the news (the severity is read first below) and nothing
  * that takes the accent can carry one: an echo is what a caller sent, and a console
  * cannot have an opinion about it.
  *
@@ -238,8 +238,8 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * and this is what falsified it. It was true while every hue this file wrote was a
  * severity; the accent was spent by the LAYOUT, in the layout's own vocabulary, on things
  * a renderer never saw. The echo is the first line of the page that is chrome and a LINE
- * at once — it is composed and rendered like everything else, which is what makes a caller
- * who asked for no colour get none of this either — so the accent had to become sayable
+ * at once (it is composed and rendered like everything else, which is what makes a caller
+ * who asked for no colour get none of this either), so the accent had to become sayable
  * here. What did not move is the count: one accent, none of the three severities.
  */
 const TINTED_BY: { readonly [R in Role]: string } = {
@@ -261,7 +261,7 @@ const TINTED_BY: { readonly [R in Role]: string } = {
 };
 
 /**
- * What each severity paints — the use of hue this surface was built around, and one of
+ * What each severity paints, the use of hue this surface was built around, and one of
  * the two it has ({@link TINTED_BY} is the other, and says what falsified the sentence
  * that used to end this line: *and it is the whole use of hue on this surface*).
  *
@@ -272,7 +272,7 @@ const TINTED_BY: { readonly [R in Role]: string } = {
  * THREE ENTRIES, and the triple is deliberately the most conventional one in a terminal:
  * red is the answer a caller has to act on, green is the one they do not, and yellow is
  * the one where neither is true. It was two, and `line.ts` says what falsified the
- * premise that there was no third to say — a proven level that is neither a break nor a
+ * premise that there was no third to say: a proven level that is neither a break nor a
  * signature. Nothing here decides WHICH a given line is: the call site says (see
  * `verdict.ts`, `wiring/verify.ts` and `state.ts`), and that is what keeps the renderer
  * from being the thing that judges the record.
@@ -282,7 +282,7 @@ const TINTED_BY: { readonly [R in Role]: string } = {
  * `stalled` task is red because it is an answer a caller has to act on, exactly as a
  * refusal is; a `settled` one is green for the same reason `ALLOWED` is, and so is a
  * decision in force. A second vocabulary would have given this surface two reds meaning
- * different things, which is how a hue stops being readable at all — and it is why the
+ * different things, which is how a hue stops being readable at all, and it is why the
  * three machines' positions come through ONE table on the way here (`state.ts`), not one
  * per machine.
  */
@@ -294,16 +294,16 @@ const PAINTED_BY: { readonly [S in Severity]: string } = {
 
 /**
  * One part as the bytes it occupies: its text, wrapped in its role's weight and then
- * in its hue — the severity's where it has one, and the role's own where it does not.
+ * in its hue, the severity's where it has one, and the role's own where it does not.
  *
  * THE NEWS WINS, and the order is the decision rather than an accident of the `??`. A
  * part that carries a severity is reporting something a reader has to act on, and a part
  * that carries the accent is saying which product they are looking at; if one part could
  * ever be both, the news is the half that may not be overwritten. Nothing produces such a
- * part today — the accent's one role is the echo's prompt, and no call site gives it a
- * severity — so this line states an order rather than resolving a collision.
+ * part today (the accent's one role is the echo's prompt, and no call site gives it a
+ * severity), so this line states an order rather than resolving a collision.
  *
- * A part that opens NOTHING is returned untouched — not wrapped in an empty pair — so
+ * A part that opens NOTHING is returned untouched, not wrapped in an empty pair, so
  * the styled line of a list of plain columns is byte for byte the plain one, and the
  * common case costs nothing at all.
  *
@@ -327,7 +327,7 @@ function painted(part: Part): string {
 }
 
 /**
- * The renderer for a terminal that can show weight and colour — chosen at the entry,
+ * The renderer for a terminal that can show weight and colour: chosen at the entry,
  * never here (see `wiring/color.ts` for what chooses it, and `render.ts` for why
  * nothing in `presentation/` may ask).
  */
@@ -339,7 +339,7 @@ export const renderStyled: Render = renderWith(painted);
  *
  * IT IS A WRAPPER AND NOT A PART because what fills a row is the width, and a part carries no
  * width (`line.ts`). It is applied AFTER the fold, row by row, so a command long enough to
- * break is a band as tall as it is and not a band on its first row alone — and it is applied
+ * break is a band as tall as it is and not a band on its first row alone, and it is applied
  * only to a line that begins with the mark, which is the one discriminant there is for a sent
  * command. What it adds is spaces and the two escapes that open and close the shade; the plain
  * rendering of the same line is untouched, which is what leaves a reader without colour only

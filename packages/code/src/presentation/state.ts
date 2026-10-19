@@ -1,5 +1,5 @@
 /**
- * A workflow state as a PART of the line it rides — the one place a state is composed,
+ * A workflow state as a PART of the line it rides: the one place a state is composed,
  * and the one place its news is decided.
  *
  * A state used to be concatenated into the title beside it, which meant a reading could
@@ -11,12 +11,12 @@
  * WHY A POSITION IS NEWS AND A TREE IS NOT. This surface refused to paint a state
  * once, and the reason written at the call site was that states are categories and a hue
  * per category is noise. The rule was right and the classification was wrong: a `scope`
- * really is a category — three trees, no order, no consequence between them — and it is
+ * really is a category (three trees, no order, no consequence between them) and it is
  * still unpainted for exactly that reason. A workflow state is a POSITION IN A CYCLE, and
  * the transition table gives each position a structurally different set of exits, which
  * is what makes "what does a reader do about this" answerable at all. The domain derives
- * that answer from the table — `core`'s `disposition.ts` for a task, `context`'s
- * `decisions.ts` and `skills.ts` for the other two — and this module only says how each
+ * that answer from the table (`core`'s `disposition.ts` for a task, `context`'s
+ * `decisions.ts` and `skills.ts` for the other two) and this module only says how each
  * answer reads.
  *
  * IT USED TO ANSWER FOR THE TASK MACHINE ONLY, and the sentence that said so read: *a
@@ -24,7 +24,7 @@
  * out plain; those machines have their own classification, in their own words, in the
  * module that owns their reads, and a surface that painted them would be a surface
  * RE-DERIVING a meaning it cannot ask for*. Half of that is why this module is still
- * shaped the way it is — nothing here re-derives anything — and the other half was
+ * shaped the way it is, nothing here re-derives anything, and the other half was
  * simply false. The meaning CAN be asked for: `context` exports `skillDisposition` and
  * now `decisionDisposition`, held on that package's surface on purpose so asking stays
  * cheaper than copying (`no-classification-table-reaches-the-surface.test.ts`). What was
@@ -40,7 +40,7 @@
  *
  * TWO VOCABULARIES AND ONE TABLE, which is not a compromise but the point. The task
  * machine's five names answer "can this move" and the other two machines' three answer
- * "does this govern" — `core`'s `disposition.ts` says why they are not one vocabulary,
+ * "does this govern": `core`'s `disposition.ts` says why they are not one vocabulary,
  * and this module is not the place to overrule it. What this surface has is a single
  * question of its own ("is this news, and how bad"), so it maps BOTH vocabularies into
  * ONE scale in ONE table: `awaiting-judgement` is the same word in both unions and it
@@ -63,7 +63,7 @@ import type { Column } from './items.js';
 import type { Severity } from './line.js';
 
 /**
- * What each disposition tells a reader, in the surface's own scale — TOTAL over both
+ * What each disposition tells a reader, in the surface's own scale: TOTAL over both
  * domains' vocabularies, so a disposition added to either does not build until somebody
  * has said whether it is news.
  *
@@ -72,22 +72,22 @@ import type { Severity } from './line.js';
  * six make it. A map keyed by only the painted ones would be silent about the rest, and
  * a disposition added tomorrow would join no list at all.
  *
- *   - `stalled` — RED. It is the one position that cannot progress: the only move out
+ *   - `stalled`: RED. It is the one position that cannot progress: the only move out
  *     undoes it. That is a line a reader has to act on, which is the whole of what red
  *     means on this surface. Only a task reaches it; neither of the other two machines
  *     has a state whose single exit is free.
- *   - `awaiting-judgement` — YELLOW. Somebody owes a verdict. Neither a thing to fix nor
+ *   - `awaiting-judgement`: YELLOW. Somebody owes a verdict. Neither a thing to fix nor
  *     a thing that is finished, which is exactly the middle the scale has. It is the one
  *     row all three machines reach, and it is the criterion the record's opening page is
  *     built on: a task `IN_REVIEW`, a decision `proposed`, a pattern `proposed` or
  *     `reviewed`. That sentence used to name only the last two, and the surface was
  *     right first: `IN_REVIEW` was painted yellow here while the opening page's waiting
  *     list asked two machines out of three and left it off.
- *   - `settled` — GREEN. It arrived. Nothing to do, and green is what says so.
- *   - `in-force` — GREEN, and the same green for the same reason. A decision that was
+ *   - `settled`: GREEN. It arrived. Nothing to do, and green is what says so.
+ *   - `in-force`: GREEN, and the same green for the same reason. A decision that was
  *     accepted and a pattern that was adopted ARRIVED at the position that ends the
  *     pendency, and undoing either costs an explanation (`supersede` wants a reason,
- *     `deprecate` wants a reason) — which is precisely what separates `settled` from
+ *     `deprecate` wants a reason), which is precisely what separates `settled` from
  *     `closed` on the task machine. Two names in two vocabularies, one thing for a
  *     reader to do about it, so one hue. It is NOT yellow, and that is the trap this
  *     row exists to avoid: `supersede` is legal from `accepted` forever, so any rule
@@ -97,9 +97,9 @@ import type { Severity } from './line.js';
  *     never stops being legal from `DONE`, so it served every completed task as work
  *     to pick up until both its lists started asking the classification this table
  *     reads.
- *   - `advancing` — NOTHING. It is the ordinary case and the majority of any list; a hue
+ *   - `advancing`: NOTHING. It is the ordinary case and the majority of any list; a hue
  *     on the normal state would be a hue on everything, which is a hue on nothing.
- *   - `closed` — NOTHING. A canceled task, a rejected call, a retired pattern: it is over
+ *   - `closed`: NOTHING. A canceled task, a rejected call, a retired pattern: it is over
  *     and nobody has to act on it. Not green, because green says "this arrived" and a
  *     cancellation did not; the WORD says what happened, and this is the case where the
  *     word is the whole answer.
@@ -117,18 +117,18 @@ const NEWS_OF: Readonly<Record<TaskDisposition | Disposition, Severity | undefin
 };
 
 /**
- * What the machines that recognize this word say the position means — one answer per
+ * What the machines that recognize this word say the position means: one answer per
  * machine that has the state, and nothing invented for a word no machine has.
  *
  * A LINE CARRIES A WORD AND NOT A MACHINE, which is why this asks all three rather than
  * being told which to ask. `search` lists three kinds in one column and `show` prints
  * whichever it was asked about; a caller could hand the kind down, but the READER of the
- * line cannot — the column holds `(proposed)` and nothing beside it says whether that is
+ * line cannot: the column holds `(proposed)` and nothing beside it says whether that is
  * a decision's or a pattern's. Classifying by the word is therefore exactly as
  * informative as the line is, which is the rule this whole surface is built on.
  *
- * Two words belong to two machines today — `proposed` and `rejected`, to decisions and
- * to patterns — and both machines classify each of them the SAME. That agreement is a
+ * Two words belong to two machines today (`proposed` and `rejected`, to decisions and
+ * to patterns) and both machines classify each of them the SAME. That agreement is a
  * property of the two tables and not of this module, so it is asserted where it can
  * break rather than assumed here: `a-state-is-a-position.test.ts` walks every word both
  * machines share. What {@link asState} does when they ever disagree is say nothing, and
@@ -144,7 +144,7 @@ function dispositionsOf(state: string): readonly (TaskDisposition | Disposition)
 }
 
 /**
- * This column is a workflow STATE — the position a record is in, and the news that
+ * This column is a workflow STATE: the position a record is in, and the news that
  * position carries where the domain says there is one.
  *
  * It is `asId`'s and `asWhen`'s third sibling and it lives here rather than beside them
@@ -155,7 +155,7 @@ function dispositionsOf(state: string): readonly (TaskDisposition | Disposition)
  *
  * The parentheses are part of the text, and that is deliberate: they are what the reads
  * already printed, and painting a state without them would put a hue on a bare word in
- * the middle of a title. The state's own words are never dropped — a reader with no
+ * the middle of a title. The state's own words are never dropped: a reader with no
  * colour at all reads the same answer, which is the rule the whole surface is built on.
  *
  * A word NO machine has comes back plain, and that is the honest answer rather than a

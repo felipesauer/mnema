@@ -4,7 +4,7 @@
  *
  * The property under test is the one the whole between-machines flow rests on: a
  * key another machine already enrolled must write as THAT identity, not as the one
- * it could derive from itself. Getting this wrong does not fail loudly — it
+ * it could derive from itself. Getting this wrong does not fail loudly: it
  * appends a second `identity.founded` to a record the team shares, and from then
  * on one person reads as two strangers, with no way to take the events back.
  *
@@ -111,7 +111,7 @@ function consentOf(m: Pick<Machine, 'keyRoot' | 'fingerprint'>, anchor: string):
   return Buffer.from(sign(enrollmentMessage(anchor, m.fingerprint), privateKey)).toString('hex');
 }
 
-/** A machine's public half, read from its key root — the material a vouch commits. */
+/** A machine's public half, read from its key root: the material a vouch commits. */
 function publicHalfOf(m: Pick<Machine, 'keyRoot' | 'fingerprint'>): PublicHalf {
   return {
     publicKey: createPublicKey(
@@ -126,7 +126,7 @@ function anchorFile(fingerprint: string): string {
   return join(tree, 'keys', `${fingerprint}.anchor`);
 }
 
-describe('adoption — a key the record proves a member writes as THAT identity', () => {
+describe('adoption: a key the record proves a member writes as THAT identity', () => {
   it('adopts the enrolling identity instead of founding a second one', () => {
     const a = machine('mnema-adoption-a-');
     const anchor = ensureFounded(a.ctx);
@@ -163,7 +163,7 @@ describe('adoption — a key the record proves a member writes as THAT identity'
     expect(verify(tree, upcasters)).toMatchObject({ ok: true, fullySigned: true });
   });
 
-  it('WITHOUT adoption the same enrolled key splits the identity — what this prevents', () => {
+  it('WITHOUT adoption the same enrolled key splits the identity: what this prevents', () => {
     // The neutralization: the same state, but B's anchor decision skipped. Writing
     // under the anchor B derives from its own key is what founding a second
     // identity looks like, and it is what the branch under test avoids.
@@ -176,9 +176,9 @@ describe('adoption — a key the record proves a member writes as THAT identity'
       reverseSig: consentOf(b, anchor),
     });
 
-    // Found B's own anchor by hand and record it — exactly what the code before adoption did
+    // Found B's own anchor by hand and record it, exactly what the code before adoption did
     // for an enrolled key: it never asked the record, so it founded the anchor its key derives.
-    // THIS RECORDED THE ANCHOR ALONE, with no founding behind it — a state no code ever wrote for
+    // THIS RECORDED THE ANCHOR ALONE, with no founding behind it, a state no code ever wrote for
     // an enrolled key, since the old code founded, and one every write refuses now
     // (`STALE_ANCHOR`, `a-stale-anchor-writes-nothing.test.ts`): that is how this case went red.
     const derived = deriveAnchor(b.fingerprint);
@@ -200,7 +200,7 @@ describe('adoption — a key the record proves a member writes as THAT identity'
     expect(authors.size).toBe(2);
   });
 
-  it('founds its own anchor when the record proves nothing — a first installation', () => {
+  it('founds its own anchor when the record proves nothing: a first installation', () => {
     const a = machine('mnema-adoption-solo-');
     expect(decideAnchor(a.ctx).source).toBe('unfounded');
 
@@ -211,7 +211,7 @@ describe('adoption — a key the record proves a member writes as THAT identity'
     expect(existsSync(anchorFile(a.fingerprint))).toBe(true);
   });
 
-  it('adopts a founding it made itself — a copied key in a fresh clone re-founds nothing', () => {
+  it('adopts a founding it made itself: a copied key in a fresh clone re-founds nothing', () => {
     const a = machine('mnema-adoption-copy-');
     const anchor = ensureFounded(a.ctx);
     // The clone: the tree's committed material survives, the LOCAL anchor does not
@@ -231,7 +231,7 @@ describe('adoption — a key the record proves a member writes as THAT identity'
   });
 });
 
-describe('adoption — the record is read only where no anchor is recorded', () => {
+describe('adoption: the record is read only where no anchor is recorded', () => {
   it('consults the record ONCE across five writes, then never again', () => {
     // The measurement the hot path deserves: `recordAnchor` sits in the same branch
     // as the record read, so counting it counts the reads. Five writes, one read.
@@ -263,7 +263,7 @@ describe('adoption — the record is read only where no anchor is recorded', () 
   });
 });
 
-describe('adoption — an identity it cannot decide is an identity it does not write as', () => {
+describe('adoption: an identity it cannot decide is an identity it does not write as', () => {
   it('throws AMBIGUOUS_MEMBERSHIP when the record proves two identities for this key', () => {
     // Two anchors in one tree both accepted this key: the machine that lost its
     // key, minted another, founded a second identity, and was later enrolled into
@@ -310,7 +310,7 @@ describe('adoption — an identity it cannot decide is an identity it does not w
     revokeKey(a.ctx, { revokedFp: b.fingerprint, reason: 'the machine was lost' });
 
     // B writes into a tree it has no recorded anchor for. Founding its own would
-    // be honest but silent — a retired member reappearing as a stranger — so the
+    // be honest but silent, a retired member reappearing as a stranger, so the
     // refusal is the same one the restore gives, for the same reason.
     let thrown: unknown;
     try {
@@ -323,7 +323,7 @@ describe('adoption — an identity it cannot decide is an identity it does not w
     expect(existsSync(anchorFile(b.fingerprint))).toBe(false);
   });
 
-  it('is unmoved by an enrollment the tree merely NAMES — consent is proven, not asserted', () => {
+  it('is unmoved by an enrollment the tree merely NAMES: consent is proven, not asserted', () => {
     // A stranger's tree naming this key's fingerprint, with a signature it could
     // not have made. Adopting on that would let any repository hand a machine an
     // identity by writing its fingerprint down.
@@ -346,7 +346,7 @@ describe('adoption — an identity it cannot decide is an identity it does not w
   });
 });
 
-describe('the same decision with or without a writer — the one a caller takes before opening one', () => {
+describe('the same decision with or without a writer: the one a caller takes before opening one', () => {
   /** Every directory and file under the tree, each file with its digest. */
   function listing(dir: string): string[] {
     const out: string[] = [];
@@ -365,7 +365,7 @@ describe('the same decision with or without a writer — the one a caller takes 
     return out;
   }
 
-  /** The decision for the key at `keyRoot`, asked of the signer — no writer is opened. */
+  /** The decision for the key at `keyRoot`, asked of the signer: no writer is opened. */
   function asked(keyRoot: string): ReturnType<typeof decideAnchor> {
     return decideAnchor({ writer: signerAt(tree, { keyRoot }), layout: { root: tree }, upcasters });
   }
@@ -377,7 +377,7 @@ describe('the same decision with or without a writer — the one a caller takes 
     return { keyRoot, fingerprint: loadOrCreateKeyPair({ root: keyRoot }).fingerprint };
   }
 
-  it('for a key new to the tree: the anchor it would found — and the tree untouched by asking', () => {
+  it('for a key new to the tree: the anchor it would found, and the tree untouched by asking', () => {
     ensureFounded(machine('mnema-same-a-').ctx);
     const b = unopened('mnema-same-b-');
     const before = listing(tree);
@@ -425,7 +425,7 @@ describe('the same decision with or without a writer — the one a caller takes 
   });
 });
 
-describe('the way out, with three identities — the words for more than two', () => {
+describe('the way out, with three identities: the words for more than two', () => {
   /** A key root holding a key that has never opened a writer over the tree. */
   function joiner(prefix: string): { keyRoot: string; fingerprint: string } {
     const keyRoot = tmp(prefix);
@@ -460,7 +460,7 @@ describe('the way out, with three identities — the words for more than two', (
   it('founded one and enrolled into two: it speaks for the one it founded once both others let go', () => {
     const founders = ['x', 'y'].map((name) => machine(`mnema-three-${name}-`));
     const anchors = founders.map((m) => ensureFounded(m.ctx));
-    // This key WRITES first, so it founds an identity of its own — whose only key it is.
+    // This key WRITES first, so it founds an identity of its own, whose only key it is.
     const k = machine('mnema-three-k-');
     const own = ensureFounded(k.ctx);
     founders.forEach((m, i) => {

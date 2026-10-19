@@ -41,12 +41,12 @@ describe('the skill transition table is well-formed', () => {
     }
   });
 
-  it('never lists `create` — birth is not a gated transition', () => {
+  it('never lists `create`: birth is not a gated transition', () => {
     expect(SKILL_TRANSITIONS.some((t) => (t.action as string) === 'create')).toBe(false);
     expect(SKILL_ACTIONS as readonly string[]).not.toContain('create');
   });
 
-  it('is NOT relational — no action carries a decision-style `supersede`', () => {
+  it('is NOT relational: no action carries a decision-style `supersede`', () => {
     expect(SKILL_ACTIONS as readonly string[]).not.toContain('supersede');
   });
 

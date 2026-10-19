@@ -3,7 +3,7 @@
  * the two halves of the contract agree.
  *
  * The property under test is not "it is shorter". A hashed label would be shorter
- * too, and would pass every length check — and it would be uncheckable by hand and
+ * too, and would pass every length check, and it would be uncheckable by hand and
  * impossible to type back. So the first test asserts what the value IS, against the
  * anchor's own characters, and the round trip asserts that what one half produces
  * the other half accepts.
@@ -44,7 +44,7 @@ describe('shortenAnchors', () => {
     expect(first).not.toBe(second);
     expect(one.startsWith(first)).toBe(true);
     expect(two.startsWith(second)).toBe(true);
-    // Grown to exactly where they part — the ninth hex — and no further.
+    // Grown to exactly where they part, the ninth hex, and no further.
     expect(first).toHaveLength('mnid:'.length + 9);
     expect(second).toHaveLength('mnid:'.length + 9);
     // And the clash moves nobody else: only the two that clashed grew.
@@ -57,7 +57,7 @@ describe('shortenAnchors', () => {
 });
 
 describe('resolveAnchorPrefix', () => {
-  it('takes back every form it hands out — the round trip, by construction', () => {
+  it('takes back every form it hands out: the round trip, by construction', () => {
     const anchors = [A, B, C, anchorOf('a1b2c3d4ff')];
     for (const [anchor, short] of shortenAnchors(anchors)) {
       expect(resolveAnchorPrefix(short, anchors)).toEqual({ ok: true, anchor });
@@ -97,7 +97,7 @@ describe('resolveAnchorPrefix', () => {
 
   it('refuses an empty value even when there is only ONE identity to pick', () => {
     // The case the matching would get wrong on its own: an empty prefix matches
-    // everyone, so a record with one identity would resolve it — and an empty value
+    // everyone, so a record with one identity would resolve it, and an empty value
     // is a variable that expanded to nothing, not a person naming themselves.
     expect(resolveAnchorPrefix('', [A])).toEqual({
       ok: false,

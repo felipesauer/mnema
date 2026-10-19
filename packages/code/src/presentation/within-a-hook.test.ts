@@ -1,5 +1,5 @@
 /**
- * The one rule a text is cut by to stay inside what a hook carries — held here on its own, and
+ * The one rule a text is cut by to stay inside what a hook carries: held here on its own, and
  * in `brief.test.ts`, `recall.test.ts` and `the-record-arrives-unasked.test.ts` over the texts
  * it binds.
  */
@@ -55,7 +55,7 @@ describe('the cut', () => {
     expect(cut.at(-1)).toBe('15 left out');
   });
 
-  it('stops climbing at the first item that does not fit — the work is bounded by the room', () => {
+  it('stops climbing at the first item that does not fit: the work is bounded by the room', () => {
     const { compose, asked } = composing(100_000);
     fitWhole(100_000, 70, compose);
     // The whole, then 1 to 6: never the hundred thousand in between.

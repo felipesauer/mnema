@@ -1,8 +1,8 @@
 /**
  * EVERY WAY THIS PROCESS CAN STOP, AND THE TERMINAL GIVEN BACK IN ALL OF THEM.
  *
- * A console takes the terminal. It puts the input in raw mode — no echo, no line editing
- * — and it hides the cursor while it draws. Neither of those is this process's state:
+ * A console takes the terminal. It puts the input in raw mode (no echo, no line editing)
+ * and it hides the cursor while it draws. Neither of those is this process's state:
  * they belong to the TERMINAL, and they outlive the process that set them. A session
  * that stops without undoing them leaves the caller's shell with no echo and no caret,
  * which is the worst defect this frontier can produce and the worst precisely because
@@ -12,16 +12,16 @@
  * lines at the bottom of the loop: it is not "give the terminal back when the session
  * ends", it is "give it back on EVERY way this process ends". They are:
  *
- *   - `exit` — the normal end, and it covers more than it looks like. Leaving by the
+ *   - `exit`: the normal end, and it covers more than it looks like. Leaving by the
  *     word, the input reaching its end, a `process.exit` anywhere, and an UNCAUGHT
  *     EXCEPTION all arrive here: node emits it before the process goes, even for the
  *     throw nobody handled.
- *   - a SIGNAL. Node does NOT emit `exit` for one — the default disposition ends the
+ *   - a SIGNAL. Node does NOT emit `exit` for one: the default disposition ends the
  *     process without running anything of ours. Measured, in a pty, against a control
  *     that takes the terminal and hooks nothing: killed with `SIGHUP` it leaves the
  *     device with `-echo -icanon` and the cursor hidden, and the next command a caller
  *     types is invisible. Each signal of {@link EXIT_SIGNALS} is therefore hooked,
- *     restored, unhooked and RAISED AGAIN — so the process still dies of what it was
+ *     restored, unhooked and RAISED AGAIN, so the process still dies of what it was
  *     killed by, and a parent still sees "terminated by signal" rather than an exit code
  *     we invented.
  *
@@ -33,7 +33,7 @@
  * why this file still exists, and it is two things rather than one:
  *
  *   - THE NORMAL RETURN IS NOT AN EXIT. The word that leaves and the end of input close
- *     and the process goes on — commander returns, the entry finishes, and anything
+ *     and the process goes on: commander returns, the entry finishes, and anything
  *     after it runs in a terminal that must already be the caller's again. No hook of a
  *     library's fires there, because nothing is exiting.
  *   - A PROMISE MADE OF SOMEBODY ELSE'S TRANSITIVE DEPENDENCY IS NOT A PROMISE. What
@@ -44,7 +44,7 @@
  * WHAT IS NOT COVERED, said out loud so a pass is not read as covering it: `SIGKILL` and
  * `SIGSTOP` cannot be caught by anyone, and a process the kernel destroys leaves whatever
  * it left. That is the same for `vim`, `htop` and every other program that takes the
- * terminal, and the remedy is the same one — `reset`.
+ * terminal, and the remedy is the same one: `reset`.
  */
 
 /**
@@ -53,7 +53,7 @@
  * All four terminate by default and all four can be caught, which is what makes them the
  * set: a signal whose default is to be ignored needs nothing from us, and one that cannot
  * be caught would be a promise this file could not keep. `SIGINT` and `SIGQUIT` are here
- * for the SIGNAL and not for the keystroke — while the session is reading keys the
+ * for the SIGNAL and not for the keystroke, while the session is reading keys the
  * terminal is in raw mode, so Ctrl-C and Ctrl-\ arrive as BYTES the console answers
  * (Ctrl-C abandons the line being typed and the session lives on). What reaches here is
  * `kill -INT`.
@@ -73,7 +73,7 @@ const ON_EXIT = 'exit';
 export interface Leaving {
   /** Listen for an event or a signal. */
   readonly on: (event: string, listener: () => void) => void;
-  /** Stop listening — the same listener, so nothing else's is removed. */
+  /** Stop listening: the same listener, so nothing else's is removed. */
   readonly off: (event: string, listener: () => void) => void;
   /** Send this signal to this process again, now that nothing of ours answers it. */
   readonly raise: (signal: string) => void;
@@ -96,7 +96,7 @@ export const leavingProcess: Leaving = {
  * Hooks `restore` to every way the process can stop, and answers with how to unhook it.
  *
  * `restore` must be IDEMPOTENT and it must be SYNCHRONOUS. Idempotent because two of
- * these can fire on one death — a signal arriving while the normal path unwinds — and
+ * these can fire on one death, a signal arriving while the normal path unwinds, and
  * synchronous because an `exit` listener is the last code that runs: a promise scheduled
  * there is a promise nobody will ever await, and the terminal would stay taken.
  *

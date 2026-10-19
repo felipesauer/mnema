@@ -1,23 +1,23 @@
 /**
  * The alias: a short, human-facing name for an entity, derived purely from its
- * id. It is a display convenience, never an identity — the id is the only
+ * id. It is a display convenience, never an identity: the id is the only
  * identity, and it is always recoverable. An alias is NEVER stored: the entity
  * carries its id, events stamp the id, and the alias is computed at the edge
  * only when something is shown to a human.
  *
  * Derivation is `sha256(id)` prefixed by the entity's kind: `t-3a9f` for a task,
  * which is the one kind there is. The hash is used, not the id's own prefix,
- * because an id is a v7 UUID that begins with a timestamp — two ids minted
+ * because an id is a v7 UUID that begins with a timestamp: two ids minted
  * close together would share a leading run and collide on sight. The hash
  * spreads them uniformly. Measured on the burst `id.test.ts` mints: 1986 of
  * 1999 consecutive pairs share their whole 48-bit prefix, so "close together" is
  * the ordinary case and not a coincidence to be waited for.
  *
- * THIS DOC USED TO NAME THREE KINDS — `e-3a9f` for an epic and `s-3a9f` for a
- * sprint beside the task — and the premise under those two names was that a kind
+ * THIS DOC USED TO NAME THREE KINDS: `e-3a9f` for an epic and `s-3a9f` for a
+ * sprint beside the task, and the premise under those two names was that a kind
  * the vocabulary can spell is a kind something spells. It is false, and it was
  * falsified by asking production: `deriveAlias` is called at four sites and all
- * four pass `'task'`, so the two other arms were a public option nothing fed —
+ * four pass `'task'`, so the two other arms were a public option nothing fed:
  * an option with no production caller, standing here in silence because the guard
  * for it reads whole exported VALUES and an arm of one is not a value. The arms
  * are gone; the guard now reads arms too, and `every-public-value-has-a-caller`
@@ -25,7 +25,7 @@
  *
  * The KIND AXIS stays, with one arm on it. It is not vestigial: the epic was
  * deferred rather than refused, so the axis is what makes adding it back a row in
- * this record instead of a new parameter through four call sites — and the prefix
+ * this record instead of a new parameter through four call sites, and the prefix
  * is what builds `t-` in the first place. What was removed is the two spellings
  * with nothing behind them, not the ability to have a second kind.
  *
@@ -38,13 +38,13 @@
  * the id it was the one of the four that printed the alias alone. Pinned by
  * `code`'s `cli.writes.golden.txt`, which holds every line the command line writes.
  *
- * There was a second function here — `disambiguate`, which lengthened only the
+ * There was a second function here: `disambiguate`, which lengthened only the
  * ambiguous aliases of a set shown together, exactly as git does with short SHAs.
  * It is gone, with nothing in its place, because the premise under it was false:
  * nothing ever shows two aliases at once. An alias is emitted in four places, all
  * of them the reply to a write about ONE task (`task` create and `task` move, on
  * each of the two surfaces); every read prints ids. The set it needed never
- * existed, so a short-form collision is simply accepted — `alias.test.ts` pins a
+ * existed, so a short-form collision is simply accepted: `alias.test.ts` pins a
  * real colliding pair rather than leaving that as a claim.
  */
 
@@ -61,7 +61,7 @@ export type AliasKind = keyof typeof ALIAS_PREFIXES;
 /**
  * The number of hex characters in a short alias. Four hex = 16 bits = 65536
  * distinct values, so ~256 ids (per kind) before a coin flip of collision. It is
- * a display default, not a guarantee of uniqueness — the id is that, and it
+ * a display default, not a guarantee of uniqueness: the id is that, and it
  * travels with every alias.
  */
 export const SHORT_ALIAS_HEX = 4;
@@ -74,7 +74,7 @@ function hashOf(id: string): string {
 /**
  * Derives the short alias for an entity: `<prefix>-<hex>`, where the hex is the
  * first {@link SHORT_ALIAS_HEX} characters of `sha256(id)`. Pure and
- * deterministic — same (kind, id) always yields the same alias, with no I/O.
+ * deterministic: same (kind, id) always yields the same alias, with no I/O.
  *
  * It is best-effort short: two ids can share the prefix, and nothing here
  * resolves that. The alias is a convenience shown next to the id, and the id is

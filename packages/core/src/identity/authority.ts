@@ -2,7 +2,7 @@
  * The authority invariant: the agent that EXECUTED is never the identity that
  * AUTHORIZED.
  *
- * `who` is the anchor a fact is authorized by — derived from the writing key,
+ * `who` is the anchor a fact is authorized by: derived from the writing key,
  * never typed in. `which` is the agent that executed it. When the two are the
  * same identity, nothing outside the agent stands behind the record: it
  * authorized its own work, and the accountability the chain exists to carry
@@ -13,7 +13,7 @@
  * that need it are not alike: a gated transition (a prior state to judge), a
  * birth (no prior state, but still an authorized fact), and a point-in-time fact
  * with no workflow at all. Spread across those shapes as a copied block, the
- * check was simply MISSING from the knowledge facts — a self-authorized capture
+ * check was simply MISSING from the knowledge facts: a self-authorized capture
  * reached the chain and only the verifier caught it later, which in an
  * append-only log turns a refusable input into a permanent invalid entry. Failing
  * at the door is the whole point: one function makes "every append is checked" a
@@ -21,7 +21,7 @@
  *
  * Canonicalizing and comparing are bundled deliberately. The comparison must run
  * on the form the chain will STORE (see {@link canonicalIdentity}), so no caller
- * can compare one form and record another — which is exactly how a `which` that
+ * can compare one form and record another, which is exactly how a `which` that
  * "differs" from `who` at the check can end up byte-identical to it in the signed
  * event.
  *
@@ -34,13 +34,13 @@
  * Screening it where it is already resolved makes "every free-text field is
  * screened" true of the envelope too, instead of true of the payload only.
  *
- * THE OTHER ONE IS `run`, and this paragraph used to say it was not — it read
+ * THE OTHER ONE IS `run`, and this paragraph used to say it was not: it read
  * "`which` is the envelope's ONLY free-text field … `subject` and `run` are ids".
  * `subject` is an id on eleven kinds and a caller's unproved reference on three
  * (a handoff's task, a link's origin, a consultation's skill), all of which have
  * always gone through the door; `run` was the one that had not. It is an id by
  * contract and nothing in this package proves it, so what reaches the chain is
- * whatever a caller sent, under no ceiling — and it rides every event of the
+ * whatever a caller sent, under no ceiling, and it rides every event of the
  * session exactly as `which` does. The surfaces do prove it before they call, which
  * is the same argument this codebase already refused for the consultation's skill
  * id: an invariant enforced only where someone remembered it is a habit, not a
@@ -69,7 +69,7 @@ export interface SelfAuthorizedErr {
 export interface ExecutingAgentOk {
   readonly ok: true;
   /**
-   * The canonical, SCREENED `which` an event should record — absent when the
+   * The canonical, SCREENED `which` an event should record: absent when the
    * caller named no agent (a human acting directly). This is the value to stamp
    * on the envelope; recording anything else would store a string the check never
    * saw.
@@ -78,7 +78,7 @@ export interface ExecutingAgentOk {
   /**
    * One entry per value replaced in the agent name. A caller merges it into its
    * own report, so a dirty `which` on an otherwise clean write still says what was
-   * taken out — the whole point of not scrubbing in silence.
+   * taken out: the whole point of not scrubbing in silence.
    */
   readonly replaced: readonly ReplacedClass[];
 }
@@ -98,8 +98,8 @@ export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ScreenRefusa
  *
  * `who` is expected in canonical form already: a gate canonicalizes it to answer
  * "is there a human at all" (its own, distinct refusal), and a writer's anchor is
- * canonical by construction. Anything not a usable identity — a non-string from
- * an untrusted surface, blank, or uncanonicalizable — is treated as no agent at
+ * canonical by construction. Anything not a usable identity (a non-string from
+ * an untrusted surface, blank, or uncanonicalizable) is treated as no agent at
  * all, the same reading {@link canonicalIdentity} gives it.
  *
  * The screen is idempotent, so a caller that already screened this string (the
@@ -111,11 +111,11 @@ export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ScreenRefusa
  * deleted because the premise in it is the thing that was wrong: it read "a name
  * that is ENTIRELY a credential comes back as the bare placeholder … odd to look at
  * but honest, and strictly better than stamping the credential itself on every event
- * of the session." The comparison was right and the conclusion did not follow — those
+ * of the session." The comparison was right and the conclusion did not follow: those
  * were not the only two options. An agent recorded as `<SECRET:aws-access-key>` is not
  * an odd-looking agent, it is no agent: nothing keys on it, the session it labels can
  * never be attributed, and the record cannot be edited. The third option is to record
- * nothing and say so, which is what happens now, and the caller is still told — at the
+ * nothing and say so, which is what happens now, and the caller is still told: at the
  * only moment it can act, which is before the session has any facts in it.
  *
  * Held by `every-door.test.ts`, "refuses an all-credential agent name, and appends
@@ -124,7 +124,7 @@ export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ScreenRefusa
 export function resolveExecutingAgent(who: string, which: unknown): ExecutingAgent {
   // Screened BEFORE canonicalizing: what is compared against `who` below has to be
   // what the envelope records, and a screen that ran afterwards would break that.
-  // A non-string is not text — there is nothing to weigh and nothing to clean — and
+  // A non-string is not text (there is nothing to weigh and nothing to clean) and
   // it is read as no agent at all, exactly as it was before.
   const screen = typeof which === 'string' ? screenContent({ which }) : undefined;
   if (screen !== undefined && !screen.ok) return screen;
@@ -143,7 +143,7 @@ export function resolveExecutingAgent(who: string, which: unknown): ExecutingAge
 }
 
 /**
- * Whether an agent name is the authorizing anchor written SHORT — the same
+ * Whether an agent name is the authorizing anchor written SHORT: the same
  * identity, spelled the way the reads print it.
  *
  * An anchor's short form is a PREFIX of the anchor, not a hash of it, precisely so
@@ -157,7 +157,7 @@ export function resolveExecutingAgent(who: string, which: unknown): ExecutingAge
  *
  * The scheme prefix is required, and that is what keeps the rule deterministic. A
  * bare `m` is a prefix of every anchor there is, so refusing on prefix alone would
- * refuse a one-letter agent name — and refuse it on some machines and not others,
+ * refuse a one-letter agent name, and refuse it on some machines and not others,
  * depending on the local anchor's hex. Carrying `mnid:` means the value is claiming
  * to be an anchor, and no agent is legitimately named that.
  */

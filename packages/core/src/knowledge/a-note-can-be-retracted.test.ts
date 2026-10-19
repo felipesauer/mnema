@@ -2,7 +2,7 @@
  * A note can be retracted: a later signed fact takes a memory or an observation out of what
  * the record serves, and keeps it.
  *
- * Driven through the two seams a surface uses — the write operation and the projection cache —
+ * Driven through the two seams a surface uses, the write operation and the projection cache,
  * against a real tree in a sandbox. What is held:
  *   - the reads that LIST notes (the search with and without a term, the observations about an
  *     entity, the memory listing) no longer serve a retracted note;

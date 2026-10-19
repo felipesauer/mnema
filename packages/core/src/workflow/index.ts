@@ -1,6 +1,6 @@
 /**
- * The workflows: the product's fixed opinions about how work moves — one for
- * tasks, one for decisions — plus the gates that authorize each move at write
+ * The workflows: the product's fixed opinions about how work moves (one for
+ * tasks, one for decisions) plus the gates that authorize each move at write
  * time and the operations that append only what a gate authorized.
  */
 

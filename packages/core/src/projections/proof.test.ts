@@ -55,7 +55,7 @@ describe('the column, both ways', () => {
   it('keeps ABSENCE absent across the round trip', () => {
     // NULL and not `'[]'`, and the decoded shape has NO KEY rather than an empty
     // array: every consumer checks for the key, and `[]` would read as "derived from
-    // nothing in particular" — the same distinction the decision's `alternatives`
+    // nothing in particular", the same distinction the decision's `alternatives`
     // column already keeps.
     expect(proofColumn(undefined)).toBeNull();
     expect(proofColumn([])).toBeNull();

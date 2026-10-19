@@ -1,5 +1,5 @@
 /**
- * `$MNEMA_CACHE_DIR` — the cache of reads kept in a directory somebody chose — and what keeps it a
+ * `$MNEMA_CACHE_DIR`, the cache of reads kept in a directory somebody chose, and what keeps it a
  * cache: never the record, and never another project's.
  *
  * What each case holds, read off the files that land rather than off the functions that make them:
@@ -85,7 +85,7 @@ function heldBy(root: string, file: string): string[] {
 
 const filesIn = (dir: string): string[] => readdirSync(dir).filter((name) => name.endsWith('.db'));
 
-describe('MNEMA_CACHE_DIR — the cache of reads in a chosen directory', () => {
+describe('MNEMA_CACHE_DIR: the cache of reads in a chosen directory', () => {
   it('keeps it there, and leaves the tree without one', () => {
     const root = aProject('alpha');
     keepReadCacheIn(cacheDir);
@@ -143,7 +143,7 @@ describe('MNEMA_CACHE_DIR — the cache of reads in a chosen directory', () => {
   });
 });
 
-describe('MNEMA_CACHE_DIR — a directory that cannot serve is refused, with what to do', () => {
+describe('MNEMA_CACHE_DIR: a directory that cannot serve is refused, with what to do', () => {
   it('refuses a relative path', () => {
     expect(() => keepReadCacheIn('cache')).toThrow(/relative.*absolute directory.*unset it/s);
   });

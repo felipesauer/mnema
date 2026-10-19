@@ -3,8 +3,8 @@
  *
  * A retraction used to be a fact any writer of the tree could append, about any note in it:
  * a second identity took back the first one's memory, `verify` passed, and the search stopped
- * finding the note. The rule now is one comparison — the retraction's `who` against the note's
- * `who` — asked from three sides:
+ * finding the note. The rule now is one comparison, the retraction's `who` against the note's
+ * `who`, asked from three sides:
  *   - the write refuses an identity that did not write the note, and says whose it is;
  *   - the read does not apply a retraction by another identity, so the note is still served;
  *   - `verify` reports such a retraction in its census, informational, exit untouched.

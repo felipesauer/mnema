@@ -6,24 +6,24 @@
  * these, which run the gate FIRST and append ONLY if the gate authorized the
  * move. That is the write-time enforcement the whole design rests on: an event
  * reaches the chain only after the gate judged it legal, proven, and
- * authorized — by the same table every reader judges it by when it reads
+ * authorized, by the same table every reader judges it by when it reads
  * (FORMAT.md §6.7), so what the gate writes is what the readers apply.
  *
  * Reading the current state comes from the chain itself (the source of truth),
- * not the SQLite cache — a stale cache must never let an illegal move through.
+ * not the SQLite cache: a stale cache must never let an illegal move through.
  * Each operation stamps `at` from one uniform clock so events across tails
  * interleave consistently.
  *
  * Free text is SCREENED before any of that ({@link screenContent}): a field over
  * the size limit refuses the whole write, and a recognized credential is replaced
  * by a typed placeholder, with what was replaced reported back on the result. It
- * runs first because it needs no context — not the task, not the identity — so an
+ * runs first because it needs no context (not the task, not the identity), so an
  * oversize refusal touches nothing at all.
  *
  * THE OPERATION touches nothing, and that sentence was read as more than it says. The
  * caller that opened a writer to call it has already touched the tree: for a key that
- * never wrote there, an installation id. IT WAS FOUR ENTRIES — the key's public half, the
- * id, and a tail with its proof — and, measured on the binary, every command-line verb
+ * never wrote there, an installation id. IT WAS FOUR ENTRIES: the key's public half, the
+ * id, and a tail with its proof, and, measured on the binary, every command-line verb
  * refused by this door or by the gate left the four behind. The three a clone receives are
  * born at the writer's first append now (`ChainWriter.ensureBorn`, `@mnema/chain`), so such
  * a refusal leaves the id alone, which the tree's `.gitignore` keeps out. The operations
@@ -34,19 +34,19 @@
  * And the event itself goes through one more door on its way out ({@link
  * appendEvent}): would a READ accept it? The catalog's shape rules used to live
  * only in the parser, which runs on the way in from disk, so a write that built an
- * event the parser forbids was appended, signed, and reported as a success — and
+ * event the parser forbids was appended, signed, and reported as a success, and
  * every later read of that project failed, on the whole tree rather than the one
  * record. The door asks the parser's own validator, so there is one rule and both
  * sides ask it.
  *
  * Identity is DERIVED, never supplied. `who` (the authorizing anchor) and
- * `signerFp` (the signing key) both come from the writer's own key — the very
- * key that will sign the checkpoint — so a caller cannot forge who authorized a
+ * `signerFp` (the signing key) both come from the writer's own key (the very
+ * key that will sign the checkpoint), so a caller cannot forge who authorized a
  * fact by typing a name. The caller supplies at most `which` (the executing
  * agent) and `run` (the session the fact belongs to). `who != which` still holds:
  * an anchor hash never collides with an agent name. Both of the typed-in envelope
- * fields go through the door like any payload text — `run` is an id by contract
- * that nothing here proves, so it holds whatever arrived — and the reports they
+ * fields go through the door like any payload text (`run` is an id by contract
+ * that nothing here proves, so it holds whatever arrived) and the reports they
  * produce join the payload's, in one list.
  */
 
@@ -91,10 +91,10 @@ export interface WriteContext {
   /** The clock that stamps `at`; defaults to the wall clock. */
   readonly clock?: Clock;
   /**
-   * The keys this tree's record counts for an anchor, read from what the caller already holds —
+   * The keys this tree's record counts for an anchor, read from what the caller already holds:
    * undefined where it holds nothing to read them from. Asked before every append, whether the
    * identity this checkout recorded still counts its key (`ensureFounded`); absent, or undefined,
-   * the record is replayed for it, which is what a command line — holding nothing — pays.
+   * the record is replayed for it, which is what a command line, holding nothing, pays.
    *
    * It is a READING OF THE CHAIN AS IT IS NOW, never of a projection's tables: the one caller
    * that sets it (the MCP session, `writeContext`) answers from the order its cache retained plus
@@ -103,14 +103,14 @@ export interface WriteContext {
    */
   readonly roster?: (anchor: string) => ReadonlySet<string> | undefined;
   /**
-   * What the caller owes the tree before this context's first fact and after its founding — the
+   * What the caller owes the tree before this context's first fact and after its founding: the
    * MCP session's run, prepared before the operation and written only once it has decided to
    * write. Called by `ensureFounded`, which every operation reaches through the append door
    * (`appendFact`) after the last refusal it makes, and after the door has asked the fact; the
    * caller makes it run once. THIS SAID the door's own refusals (a title, a reason or a reference
    * that is not one, an event no read could open) "come after `ensureFounded`, so those still
-   * follow the founding": they did, and from an empty HOME each one left the key, the founding and
-   * — here — the run behind it. They come before it now, so a refused first fact writes no run
+   * follow the founding": they did, and from an empty HOME each one left the key, the founding and,
+   * here, the run behind it. They come before it now, so a refused first fact writes no run
    * (`code/tests/a-refusal-leaves-nothing.test.ts`, the append door through the server).
    */
   readonly beforeTheFirstFact?: () => void;
@@ -128,8 +128,8 @@ export interface WriteContext {
  * A write whose writer is not open yet, and opens only once the operation has decided to write.
  *
  * OPENING A WRITER TOUCHES THE TREE EVEN WHEN NOTHING IS APPENDED: it mints this key's
- * installation id. It did more — materialized the key's public half and gave the tail its
- * directory and its proof of ownership — and for a key that never wrote in the tree, an
+ * installation id. It did more, materialized the key's public half and gave the tail its
+ * directory and its proof of ownership, and for a key that never wrote in the tree, an
  * operation that opened first and refused second left all four behind: measured on `key
  * enroll`, a refused vouch left the tree with an untracked `.pub` and an empty tail. Those
  * three are born at the writer's first append now; the id is still a file. An operation handed
@@ -137,7 +137,7 @@ export interface WriteContext {
  * leaves the tree byte for byte as it found it.
  */
 export interface DeferredWriteContext {
-  /** The key that would sign here, and the anchor it serves — read without opening anything. */
+  /** The key that would sign here, and the anchor it serves: read without opening anything. */
   readonly signer: ChainSigner;
   readonly layout: ChainLayout;
   readonly upcasters: UpcasterRegistry;
@@ -159,7 +159,7 @@ export function signerOfContext(ctx: DecideThenWrite): ChainSigner {
 }
 
 /**
- * The context to write through — the caller's own writer, or the deferred one opened NOW. Call it
+ * The context to write through: the caller's own writer, or the deferred one opened NOW. Call it
  * after the last refusal the operation can give, never before.
  */
 export function openedContext(ctx: DecideThenWrite): WriteContext {
@@ -228,7 +228,7 @@ export interface CreateInput {
 /**
  * Transitions a task through the gate. Reads the task's current state from the
  * chain, asks the gate whether the move is authorized, and appends the
- * transition ONLY if it is — under the tail's lock, against the state the record
+ * transition ONLY if it is: under the tail's lock, against the state the record
  * is in at that moment ({@link onTheRecordAsItStands}). On refusal nothing is written and the typed reason
  * is returned. `to` is the gate's resolved state, never the caller's assertion.
  *
@@ -236,7 +236,7 @@ export interface CreateInput {
  * load-bearing: the gate hands its verdict's `fields` straight to the event, so
  * screening afterwards would leave the original text in the appended fact while
  * the caller was told it had been cleaned. Screening first also means the gate
- * judges the same text the chain will hold — a placeholder is never empty, so a
+ * judges the same text the chain will hold: a placeholder is never empty, so a
  * required note that was scrubbed still satisfies the proof requirement.
  *
  * The executing agent is resolved before the gate for the same reason, and the
@@ -253,14 +253,14 @@ export function transitionTask(
 
   // The pinned run goes through the same door, in its own call because the proof's
   // is conditional and a move with no proof still carries a run. It is a caller's
-  // string this package proves nothing about — see the field classification — and it
+  // string this package proves nothing about, see the field classification, and it
   // is stamped on every event of the session, so it is screened like the agent name
   // beside it rather than forwarded raw.
   const pinned = screenContent({ run: input.run });
   if (!pinned.ok) return pinned;
 
-  // Look the task up in the chain's canonical id form — the SAME form its
-  // subject is stored and read back in — so the lookup key matches the
+  // Look the task up in the chain's canonical id form (the SAME form its
+  // subject is stored and read back in), so the lookup key matches the
   // projection's, and a composition variant of the id cannot false-miss. (The
   // decision operations already do this; the task now agrees.)
   const id = canonicalId(input.id);
@@ -287,15 +287,15 @@ export function transitionTask(
         return { refuse: stateMoved('task', id, input.action, was, current) };
       }
 
-      // `who` is this installation's authorizing anchor — its own key's, or the
-      // identity the record proves that key joined — never supplied, so a caller
+      // `who` is this installation's authorizing anchor (its own key's, or the
+      // identity the record proves that key joined) never supplied, so a caller
       // cannot forge who authorized the move. The gate still checks it against
       // `which` so an agent cannot pose as the authorizer.
       const who = authorizingAnchor(ctx);
 
       // The agent is resolved BEFORE the gate and the RESOLVED value is what the gate
-      // judges and the envelope records. `which` is free text like any payload field —
-      // and the one on the envelope, stamped on every event of a session — so it goes
+      // judges and the envelope records. `which` is free text like any payload field
+      // (and the one on the envelope, stamped on every event of a session), so it goes
       // through the same door; resolving it here rather than canonicalizing it again
       // below is what keeps the string that was screened and compared identical to the
       // string that is stored.
@@ -315,7 +315,7 @@ export function transitionTask(
       return {
         write: () => {
           // The door asks the fact first, then founds this installation's anchor, so the
-          // transition's signer is a key valid for its anchor at verify — and a fact the door
+          // transition's signer is a key valid for its anchor at verify, and a fact the door
           // refuses founds nothing (see `appendFact`).
           const appended = appendFact(ctx, ({ at }) =>
             taskTransitioned(
@@ -352,8 +352,8 @@ export function transitionTask(
  * Creates a task: mints its id, then appends the birth pair (`task.created` then
  * the birth `task.transitioned`, `from: null` → the initial state) in order,
  * both stamped with one `at`. The id is minted by the operation, never supplied
- * (see {@link mintId}) — the caller receives it back in {@link CreateOk.id}.
- * Birth is not a gated transition — there is no prior state to judge — but it
+ * (see {@link mintId}): the caller receives it back in {@link CreateOk.id}.
+ * Birth is not a gated transition (there is no prior state to judge), but it
  * still binds a `who` (the writer's anchor) that must not be the executing agent
  * `which`, the same authority invariant the gate enforces.
  */
@@ -366,7 +366,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   if (!text.ok) return text;
 
   // `who` is derived from local material and the record, so it is always a real
-  // anchor — the MISSING_WHO path a typed-in name could hit no longer exists. The one
+  // anchor: the MISSING_WHO path a typed-in name could hit no longer exists. The one
   // authority check that remains is that the executing agent is not that same
   // identity (an anchor never equals an agent name, but the check is cheap and
   // states the invariant explicitly).

@@ -4,17 +4,17 @@
  *
  * THE CEILING IS THE HOST'S, AND IT IS MEASURED. Claude Code hands a command hook's
  * `additionalContext` to the model whole up to 10,000 characters, and over that it saves the
- * text to a file and hands over the path with a preview of the first 2,000 — without asking
+ * text to a file and hands over the path with a preview of the first 2,000: without asking
  * the model to open the file (code.claude.com/docs/en/hooks, *JSON output*). Measured against
  * the real binary, 2.1.281, with the request it sends afterwards as the evidence: 10,000 arrives whole and 10,001 arrives as a path; the count
- * is the JavaScript string length — UTF-16 code units, so an astral character costs two — and
+ * is the JavaScript string length (UTF-16 code units, so an astral character costs two) and
  * neither code points nor bytes; and each hook of one event is measured on its own, so the two
  * texts a session opens with have a ceiling each.
  *
  * WHERE IT BINDS, AND WHERE IT DOES NOT. It binds the two texts the plugin's `SessionStart`
  * handlers hand over, and only when they ask for it (`mnema brief --hook`, `mnema recall
  * --hook`). The same verbs without the flag print whole: `mnema brief > MNEMA.md` writes a file
- * whose bytes are compared with `diff`, and a file's reader has no ceiling anybody measured —
+ * whose bytes are compared with `diff`, and a file's reader has no ceiling anybody measured,
  * so a cut there would drop rules for a limit that is not there, and would make the staleness
  * check report a difference that is not the record's.
  *
@@ -33,32 +33,32 @@
  * lines are built, and the declaration of it is made in the same place.
  *
  * ANOTHER HOST, ANOTHER UNIT. Codex measures a hook's text in tokens of four UTF-8 bytes,
- * 2,500 of them, and over that saves it to a file and hands over a preview with its MIDDLE cut —
+ * 2,500 of them, and over that saves it to a file and hands over a preview with its MIDDLE cut,
  * so a text this module cut at 10,000 code units, which runs to more bytes than units wherever
- * a line carries `·` or `—`, arrived cut in the middle of a rule. The host table says the
+ * a line carries `·` or an em dash, arrived cut in the middle of a rule. The host table says the
  * ceiling of a host that has one of its own (`hookText`), and {@link hookCeilingOf} is the one
  * place it becomes a unit and a number; the verb is told the host by the command the plugin
  * generates for it (`--host`), never by guessing.
  */
 
 /**
- * The most a hook's text may hold and still arrive as text, in the host's own unit — see
+ * The most a hook's text may hold and still arrive as text, in the host's own unit: see
  * this module's header for the measurement.
  */
 export const HOOK_TEXT_CEILING = 10_000;
 
-/** The ceiling as a sentence prints it — derived, so no text spells the number a second time. */
+/** The ceiling as a sentence prints it: derived, so no text spells the number a second time. */
 export const HOOK_CEILING_IN_WORDS = HOOK_TEXT_CEILING.toLocaleString('en-US');
 
 /**
  * What the handler puts between a verb's text and what the same run said about the record on
- * its second stream (`plugin/hooks/hand-over.mjs`, `BETWEEN_THE_STREAMS`) — part of the one
+ * its second stream (`plugin/hooks/hand-over.mjs`, `BETWEEN_THE_STREAMS`): part of the one
  * string the host measures, so part of what the room is taken from.
  */
 const BETWEEN_THE_STREAMS = 2;
 
 /**
- * How long lines are once printed — each followed by the newline `writeLines` ends it with —
+ * How long lines are once printed, each followed by the newline `writeLines` ends it with,
  * counted the way the host counts.
  *
  * IT IS A LENGTH AND NOT A WIDTH, and that is why this module counts for itself where the rest
@@ -74,12 +74,12 @@ export function printedLength(
   return lines.reduce((sum, line) => sum + lengthOf(line) + 1, 0);
 }
 
-/** A text's length in UTF-16 code units — Claude Code's unit. */
+/** A text's length in UTF-16 code units: Claude Code's unit. */
 function unitsOf(text: string): number {
   return text.length;
 }
 
-/** A text's length in UTF-8 bytes — the unit Codex's ceiling is a quarter of. */
+/** A text's length in UTF-8 bytes: the unit Codex's ceiling is a quarter of. */
 function bytesOf(text: string): number {
   return Buffer.byteLength(text, 'utf8');
 }
@@ -95,7 +95,7 @@ export interface HookCeiling {
   readonly lengthOf: (text: string) => number;
   /**
    * The ceiling as the paragraph that declares a cut words it: a count of characters, or of
-   * tokens of so many bytes — the words are the composer's, the numbers are these.
+   * tokens of so many bytes; the words are the composer's, the numbers are these.
    */
   readonly said: { readonly count: number; readonly bytesPerToken?: number };
 }
@@ -140,7 +140,7 @@ export function hookCeilingOf(
  * stream has been set aside.
  *
  * The handler appends that second stream to the text, trimmed, with a blank line between, and
- * the host measures the result as ONE string — so a document that filled the ceiling alone
+ * the host measures the result as ONE string, so a document that filled the ceiling alone
  * would cross it the day the record stopped chaining, which is the day its notice matters
  * most. The lines are the ones the verb writes there, as written.
  */
@@ -158,12 +158,12 @@ export function roomBeside(
  * already prints them.
  *
  * `compose(shown)` is the whole text with its first `shown` items, and for `shown < total` it
- * is the text that SAYS it was cut — the declaration is part of what has to fit, so it is part
+ * is the text that SAYS it was cut: the declaration is part of what has to fit, so it is part
  * of what is measured. The full text is asked first, and when it fits it is returned as it is:
  * a record under the ceiling prints exactly the bytes it prints without one.
  *
  * NOTHING IS CUT IN THE MIDDLE, AND NOTHING IS REORDERED. An item is in or out, and what is out
- * is a tail of the order the text already has — so a reader told "the last ones in this order
+ * is a tail of the order the text already has, so a reader told "the last ones in this order
  * are not here" is told the truth, and no shorter rule further down is promoted past a longer
  * one to fill a gap. The walk climbs from none, so it stops as soon as the next item would not
  * fit: the work is bounded by the ceiling, never by how large the record is.

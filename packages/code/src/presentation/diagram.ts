@@ -1,6 +1,6 @@
 /**
- * The record as mermaid text — the three state machines, one entity's history and one
- * entity's connections — for a reader that DRAWS it (GitHub, an editor) rather than prints it.
+ * The record as mermaid text (the three state machines, one entity's history and one
+ * entity's connections) for a reader that DRAWS it (GitHub, an editor) rather than prints it.
  *
  * It is text on stdout and nothing else: no image, no file, nothing written to the record.
  *
@@ -29,7 +29,7 @@ import {
 } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 
-/** The workflows that have a state machine to draw — the words a caller types. */
+/** The workflows that have a state machine to draw: the words a caller types. */
 export type DiagramWorkflow = 'decision' | 'skill' | 'task';
 
 /** What a move owes, in the words a diagram reader is given; an unlisted proof shows as its name. */
@@ -78,7 +78,7 @@ function entities(text: string): string {
 }
 
 /**
- * A quoted label — the one door, and the only form a record's text takes in these diagrams:
+ * A quoted label (the one door, and the only form a record's text takes in these diagrams):
  * collapsed to one line (the rule every reading applies), then made unable to end the label.
  */
 export const quoted = (text: string): string => `"${entities(oneLine(text))}"`;

@@ -40,7 +40,7 @@ function envelope(subject: string, minute: number, which?: string) {
   };
 }
 
-/** A `skill.consulted` — the one kind whose RUN the reading derivation needs. */
+/** A `skill.consulted`: the one kind whose RUN the reading derivation needs. */
 function skillConsulted(
   id: string,
   minute: number,
@@ -99,10 +99,10 @@ function walk(
     .sort((a, b) => a.join().localeCompare(b.join()));
 }
 
-describe('materializeReferences — where in the stream the events sit', () => {
+describe('materializeReferences, where in the stream the events sit', () => {
   it('indexes a suffix at exactly the positions a whole stream would have given it', () => {
     // The parameter a cache brought forward depends on. Two events indexed together,
-    // against the same two indexed as a suffix after the first — the rows have to be
+    // against the same two indexed as a suffix after the first: the rows have to be
     // the same, because `ord` is what a history is ordered and joined by.
     const whole = [
       taskCreated('t1', 1),
@@ -124,7 +124,7 @@ describe('materializeReferences — where in the stream the events sit', () => {
     }
   });
 
-  it('a wrong position is NOT caught here — which is why the caller establishes it', () => {
+  it('a wrong position is NOT caught here, which is why the caller establishes it', () => {
     // The honest limit, pinned so nobody relies on the wrong half of it. The primary
     // key is (entity, role, ord), so re-indexing the SAME event at a position it
     // already holds throws…
@@ -140,7 +140,7 @@ describe('materializeReferences — where in the stream the events sit', () => {
   });
 });
 
-describe('materializeReferences — the four roles', () => {
+describe('materializeReferences: the four roles', () => {
   it('gives every event a subject row', () => {
     materializeReferences(db, [taskCreated('t1', 1), memoryCaptured('m1', 2)]);
     expect(listReferences(db, 't1').map((r) => r.role)).toEqual(['subject']);
@@ -192,7 +192,7 @@ describe('materializeReferences — the four roles', () => {
   });
 });
 
-describe('listReferences — one entry per event, in the tree order', () => {
+describe('listReferences: one entry per event, in the tree order', () => {
   it('returns the events in the stream order, not by instant', () => {
     // A clock that steps back must not reorder the tree's proven order.
     materializeReferences(db, [taskCreated('t1', 9), observationRecorded('o1', 't1', 2)]);
@@ -211,13 +211,13 @@ describe('listReferences — one entry per event, in the tree order', () => {
   });
 });
 
-describe('isKnownEntity — authored, not merely pointed at', () => {
+describe('isKnownEntity: authored, not merely pointed at', () => {
   it('knows an entity some event has as its subject', () => {
     materializeReferences(db, [taskCreated('t1', 1)]);
     expect(isKnownEntity(db, 't1')).toBe(true);
   });
 
-  it('does not know a target nothing ever authored — the dangling case', () => {
+  it('does not know a target nothing ever authored: the dangling case', () => {
     materializeReferences(db, [knowledgeLinked('m1', 'gone', 'relates-to', 1)]);
     expect(isKnownEntity(db, 'gone')).toBe(false);
     // …and the reference is still there. Dangling is reported, never hidden.
@@ -225,7 +225,7 @@ describe('isKnownEntity — authored, not merely pointed at', () => {
   });
 });
 
-describe('tallyAuthorship — one count per event', () => {
+describe('tallyAuthorship: one count per event', () => {
   it('counts each event once however many entities it refers to', () => {
     materializeReferences(db, [
       taskCreated('t1', 1),
@@ -259,7 +259,7 @@ describe('tallyAuthorship — one count per event', () => {
   });
 });
 
-describe('listAuthors — who this tree knows', () => {
+describe('listAuthors, who this tree knows', () => {
   it('names each author once, however much they wrote', () => {
     materializeReferences(db, [
       taskCreated('t1', 1),
@@ -274,7 +274,7 @@ describe('listAuthors — who this tree knows', () => {
   });
 });
 
-describe('listSubjectRuns — one row per event of a kind, with its run', () => {
+describe('listSubjectRuns: one row per event of a kind, with its run', () => {
   it('reads the run off the stored envelope, and null when there is none', () => {
     materializeReferences(db, [
       skillConsulted('s1', 1, 'run-a'),
@@ -282,7 +282,7 @@ describe('listSubjectRuns — one row per event of a kind, with its run', () => 
       skillConsulted('s2', 3),
       taskCreated('t1', 4),
     ]);
-    // One row per EVENT — the caller decides what counts as one occurrence, which
+    // One row per EVENT: the caller decides what counts as one occurrence, which
     // is why this does not collapse the two rows of `run-a` itself.
     expect(listSubjectRuns(db, 'skill.consulted')).toEqual([
       { entity: 's1', run: 'run-a' },
@@ -297,7 +297,7 @@ describe('listSubjectRuns — one row per event of a kind, with its run', () => 
   });
 });
 
-describe('walkReferences — the traversal', () => {
+describe('walkReferences: the traversal', () => {
   it('finds the neighbourhood in both directions at one hop', () => {
     materializeReferences(db, [
       observationRecorded('o1', 't1', 1),

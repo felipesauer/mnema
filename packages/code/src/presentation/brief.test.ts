@@ -9,7 +9,7 @@
  * would report a difference in nothing and train its reader to ignore the check.
  *
  * ONE LINE PER RULE is asserted next to the rest of its class, in
- * `one-line-per-item.test.ts` — a title that broke its bullet in two would add a
+ * `one-line-per-item.test.ts`: a title that broke its bullet in two would add a
  * rule the project never made, to the one file whose purpose is that an agent obeys
  * it.
  */
@@ -46,7 +46,7 @@ function governance(over: Partial<Brief> = {}): Brief {
     asking: 0,
     refusing: 0,
     // Nothing waiting by default, so every case that is not about the waiting paragraph
-    // reads the skeleton's own sentence — and the cases that ARE about it say a number.
+    // reads the skeleton's own sentence, and the cases that ARE about it say a number.
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     editPush: { channel: 'edit-rules-push', on: true },
@@ -57,7 +57,7 @@ function governance(over: Partial<Brief> = {}): Brief {
 }
 
 /**
- * The push, switched off by somebody — what the composition answers when a tree holds an
+ * The push, switched off by somebody: what the composition answers when a tree holds an
  * off switch for it.
  *
  * Every field the state can carry is filled the way one write fills them, because a state
@@ -74,7 +74,7 @@ const SWITCHED_OFF: ChannelState = {
 };
 
 /**
- * The GATE, switched off by somebody — the same shape for the other channel.
+ * The GATE, switched off by somebody: the same shape for the other channel.
  *
  * A second fixture rather than the one above with its `channel` changed, because the
  * document says a different sentence for each and a case that reused one state could pass
@@ -103,7 +103,7 @@ function pattern(n: number, name = `Pattern number ${n}`) {
 }
 
 /**
- * The same rule, with the provenance the record asserts for it — as many sources as asked
+ * The same rule, with the provenance the record asserts for it, as many sources as asked
  * for.
  *
  * Every target here is a value a `derived-from` link really takes. The relation holds
@@ -132,7 +132,7 @@ describe('the brief is the same bytes for the same record', () => {
 
   it('prints identically for two equal inputs that are not the same object', () => {
     // The stronger half: equal by value is enough. A document that closed over
-    // anything else — an instant, a directory, a counter — would pass the assertion
+    // anything else (an instant, a directory, a counter) would pass the assertion
     // above (the same object twice) and fail this one.
     const first = governance({ decisions: [decision(1)], skills: [pattern(1)] });
     const second = governance({ decisions: [decision(1)], skills: [pattern(1)] });
@@ -182,7 +182,7 @@ describe('the brief explains the silence at an edit, per channel', () => {
     expect(text).toContain(`edit-rules-push was switched off by ${SWITCHED_OFF.by ?? ''}`);
     expect(text).toContain(SWITCHED_OFF.at ?? '');
     // The two sentences describe the same silence and only one is true; printing both would
-    // leave a reader — a model — to pick.
+    // leave a reader, a model, to pick.
     expect(text).not.toContain('arrive on their own');
     // And the GATE's sentence is untouched: the two switches are separate, and turning off
     // the text must not read as turning off what stops somebody.
@@ -199,7 +199,7 @@ describe('the brief explains the silence at an edit, per channel', () => {
     expect(text).toContain('arrive on their own');
   });
 
-  it('says both, when both are off — and does not confuse one for the other', () => {
+  it('says both, when both are off, and does not confuse one for the other', () => {
     const text = printed(
       governance({
         decisions: [decision(1)],
@@ -218,7 +218,7 @@ describe('the brief explains the silence at an edit, per channel', () => {
 
 describe('the brief costs one line per rule', () => {
   it('grows by exactly one line per decision and per pattern', () => {
-    // The whole size claim, as a slope. A rule is a NAME — a title, a label, an id —
+    // The whole size claim, as a slope. A rule is a NAME (a title, a label, an id)
     // so it is one line; the argument behind it and the text of a pattern are what a
     // second read serves. Anything that printed a rule over two lines, or a blank
     // between them, would break this and would double the cost of the file that is
@@ -249,7 +249,7 @@ describe('the brief costs one line per rule', () => {
     //
     // THE LAST FOUR ARE THE GATE, and they are the growth in this list that is not about
     // explaining a silence. The record can hold a rule that STOPS a write, and a reader
-    // who first learns that from a refusal learns it at the worst moment there is — so
+    // who first learns that from a refusal learns it at the worst moment there is, so
     // these lines are the only warning this product gives, and they are paid once per
     // session against a channel that fires up to 3,424 times in one. They are three lines
     // and a blank because the pointer at `governing_rules` was not repeated: that read
@@ -262,7 +262,7 @@ describe('the brief costs one line per rule', () => {
     // of the repository's own method. Two lines in a file read once against a method
     // file replaced in silence is not a trade this needed a measurement to settle.
     //
-    // AND THE LAST TWO ARE THE GESTURE — how a decision of the reader's OWN gets into
+    // AND THE LAST TWO ARE THE GESTURE: how a decision of the reader's OWN gets into
     // this record (`HOW_A_DECISION_ENTERS`). It is the only thing here that is about the
     // reader's next move rather than about the content, and what put it in was a field
     // measurement rather than symmetry: on one project the document arrived in five
@@ -298,8 +298,8 @@ describe('the brief costs one line per rule', () => {
     // putting the defect back.
     //
     // 1. THE SLOPE IS BLIND TO A FIELD THIS FILE'S FIXTURE DOES NOT SET. Printing a rule's
-    //    provenance on a LINE OF ITS OWN — the shape `presentation/record.ts` uses, and
-    //    the one the delivery that put this fact here refused — left `twoEach - oneEach`
+    //    provenance on a LINE OF ITS OWN (the shape `presentation/record.ts` uses, and
+    //    the one the delivery that put this fact here refused) left `twoEach - oneEach`
     //    at exactly 2 and that whole case green, because no rule in it has a provenance.
     // 2. THE SLOPE COUNTS ELEMENTS OF AN ARRAY AND NOT LINES OF A DOCUMENT. With the
     //    fixture fixed, the same mutation STILL passed: a `\n` written into one element
@@ -331,8 +331,8 @@ describe('the brief costs one line per rule', () => {
   });
 
   it('says how many rules there are, and prints exactly that many', () => {
-    // The count is in the heading and the bullets are under it, so a reader — or a
-    // script — checks one against the other. They are the same number by
+    // The count is in the heading and the bullets are under it, so a reader, or a
+    // script, checks one against the other. They are the same number by
     // construction; this is what makes the construction provable.
     const text = printed(
       governance({
@@ -346,7 +346,7 @@ describe('the brief costs one line per rule', () => {
   });
 
   it('names the scope it carries, and says the number is of what is printed', () => {
-    // The document leaves rules out — the ones that do not travel — and an omission a
+    // The document leaves rules out (the ones that do not travel) and an omission a
     // reader cannot see is the failure this product exists not to have. So the file
     // declares its own scope before any content, and declares what its counts count,
     // in BOTH states: an empty document is exactly where a reader would otherwise
@@ -372,9 +372,9 @@ describe('the brief costs one line per rule', () => {
     expect(firstRule).toBeGreaterThan(declared);
   });
 
-  it('tallies no omission of SCOPE — no "(1 of 4)", no count of the private tree', () => {
+  it('tallies no omission of SCOPE: no "(1 of 4)", no count of the private tree', () => {
     // The second half of the declaration, as an ABSENCE. A heading that said "(1 of 4)"
-    // — or a line counting the private rules — would put a fact about a tree that does
+    // or a line counting the private rules would put a fact about a tree that does
     // not travel into a file that gets committed, and would make the document move when
     // that tree moves, which is what the byte-check exists to rule out.
     //
@@ -390,12 +390,12 @@ describe('the brief costs one line per rule', () => {
     expect(text).not.toMatch(/omitted|hidden|not shown|elsewhere in the record/i);
     // The only numbers in PARENTHESES are the two counts of what is printed. The
     // sentence that used to stand here said "the only numbers in the document", and it
-    // was already false when it was written — the address count and the gate count are
+    // was already false when it was written: the address count and the gate count are
     // both bare numbers in the first two paragraphs.
     expect(text.match(/\(\d+\)/g)).toEqual(['(1)', '(1)']);
   });
 
-  it('names each decision by its ADR label, its title and its id — and no rationale', () => {
+  it('names each decision by its ADR label, its title and its id, and no rationale', () => {
     const text = printed(
       governance({
         decisions: [decision(7, 'Keep the runbook in the record')],
@@ -408,7 +408,7 @@ describe('the brief costs one line per rule', () => {
     expect(text).toContain('- **One slice per PR** · `0198f3c1-7a2e-7b41-9c05-3d8e6f2a2b03`');
     // The doors the file points at are the AGENT's, because the reader of the file is
     // an agent: the command line's own doors are named in `mnema brief --help`. Each
-    // is named beside the list it serves, so an empty list names no door — there is
+    // is named beside the list it serves, so an empty list names no door: there is
     // nothing behind it to ask for.
     expect(text).toContain('`read_record`');
     expect(text).toContain('`skills`');
@@ -417,7 +417,7 @@ describe('the brief costs one line per rule', () => {
 });
 
 /**
- * The document under each heading, split at the second one — what a reader of that
+ * The document under each heading, split at the second one: what a reader of that
  * section actually has in front of it.
  *
  * Every case about the waiting paragraphs reads through this rather than through the
@@ -440,7 +440,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
   it('says the number under each heading, and the two numbers do not swap', () => {
     // THE DEFECT THIS PARAGRAPH EXISTS FOR, at the scale it was measured: a heading that
     // says six over a record holding 247 decisions. Every word of the heading is true and
-    // the reader of this file — a model, reading this file alone — comes away believing
+    // the reader of this file (a model, reading this file alone) comes away believing
     // the project decided six things.
     //
     // TWO DIFFERENT VALUES, AND THEY ARE READ OFF DIFFERENT HALVES OF THE DOCUMENT. A
@@ -462,7 +462,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
     expect(both.patterns).toContain(
       '7 more patterns are recorded here and awaiting a judgement, and none is below.',
     );
-    // Neither number reached the other section — the half that makes the assertion above
+    // Neither number reached the other section: the half that makes the assertion above
     // about placement rather than about presence.
     expect(both.patterns).not.toContain('241');
     expect(both.decisions).not.toContain('7 more');
@@ -470,8 +470,8 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
 
   it('moves with the count: a second record, a second number, nothing else changed', () => {
     // The guard that cannot be satisfied by a constant. A paragraph that printed a fixed
-    // number — or the count of what is PRINTED, which is the number already in the
-    // heading — passes any case that asserts one value; it fails the moment two records
+    // number (or the count of what is PRINTED, which is the number already in the
+    // heading) passes any case that asserts one value; it fails the moment two records
     // that differ only in what is waiting have to print two different documents.
     const fewer = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 3 }));
     const more = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 241 }));
@@ -499,7 +499,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
   it('says ZERO in words, under both headings, and never makes the paragraph vanish', () => {
     // The skeleton rule, on the paragraph that would most plausibly have been left out
     // when it has nothing to report. A section that disappeared at zero would make the
-    // first proposal read as a rewrite of the file — and a reader told that nothing is
+    // first proposal read as a rewrite of the file, and a reader told that nothing is
     // waiting knows something a reader told nothing does not.
     const empty = sections(governance());
     expect(empty.decisions).toContain('No other decision recorded here is awaiting a judgement.');
@@ -510,7 +510,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
     expect(inForce.patterns).toContain('No other pattern recorded here is awaiting a judgement.');
   });
 
-  it('COUNTS and never lists — no title, no id, no state of what is waiting', () => {
+  it('COUNTS and never lists: no title, no id, no state of what is waiting', () => {
     // The line between this paragraph and the work queue the verb refuses to carry. A
     // count over the record moves when the record moves, which is what keeps `mnema brief
     // | diff - AGENTS.md` meaning one thing; a list of 241 names is a queue, and a copy of
@@ -526,7 +526,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
   });
 
   it('holds the document’s own rules while it counts: no clock, no path, no identity', () => {
-    // The paragraph is pure over the record like everything else here — a state is a
+    // The paragraph is pure over the record like everything else here: a state is a
     // fact of the chain, so two clones print the same number.
     const text = printed(
       governance({
@@ -551,7 +551,7 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
     const text = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 241 }));
     expect(text).toContain('ask `bootstrap` for what is waiting');
     expect(text).not.toContain('mnema status');
-    // And the pointer is not repeated under the second heading — that read answers for
+    // And the pointer is not repeated under the second heading: that read answers for
     // both, and a line here would be paid for on every prompt to say it twice.
     expect(text.split('`bootstrap`')).toHaveLength(2);
   });
@@ -620,20 +620,20 @@ describe('the brief declares a label that names more than one rule', () => {
   const rules = { decisions: [decision(1, 'Round over the total'), decision(2)] };
   const clash = { adr: 'ADR-1', ids: [decision(1).id, '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b09'] };
 
-  it('adds NOTHING when every label names one rule — by the list, not by a spot check', () => {
+  it('adds NOTHING when every label names one rule: by the list, not by a spot check', () => {
     // The ordinary case has to be byte-for-byte what it was, because the only thing that
     // detects a stale copy is `mnema brief | diff - AGENTS.md`: a line that appeared for
     // a record with no clash would report a difference in nothing, once, to every reader
     // at the same time.
     const quiet = briefDocument(governance(rules));
     const declared = briefDocument(governance({ ...rules, collisions: [clash] }));
-    // Where the block goes, and how long it is — taken from the two documents rather
+    // Where the block goes, and how long it is: taken from the two documents rather
     // than typed here, so the removal below cannot be tuned to pass.
     const at = declared.findIndex((line) => line.includes('more than one rule'));
     const added = declared.length - quiet.length;
     expect(at).toBeGreaterThan(0);
     expect(added).toBeGreaterThan(0);
-    // Take the inserted block out of the longer document and it IS the shorter one —
+    // Take the inserted block out of the longer document and it IS the shorter one:
     // every line, in order. Nothing else moved, and nothing was reworded.
     const withoutBlock = [...declared.slice(0, at - 1), ...declared.slice(at - 1 + added)];
     expect(withoutBlock).toEqual(quiet);
@@ -642,7 +642,7 @@ describe('the brief declares a label that names more than one rule', () => {
   it('names the label and EVERY id that carries it', () => {
     // A reader told a citation is ambiguous and not told which rules hold the label has
     // been told to distrust a handle with no way to stop. Both ids are on the line, and
-    // one of them is a rule this document does not print — which is regularly the other
+    // one of them is a rule this document does not print, which is regularly the other
     // half of a clash, and the reason the ids are not filtered to what is listed.
     const text = printed(governance({ ...rules, collisions: [clash] }));
     expect(text).toContain(
@@ -710,7 +710,7 @@ describe('the brief declares a label that names more than one rule', () => {
 describe('the brief has the same skeleton whether or not anything was decided', () => {
   it('keeps both headings when both lists are empty', () => {
     // A section that disappeared with its list would make the diff of a first
-    // decision look like a rewrite of the file — and, worse, an absent section says
+    // decision look like a rewrite of the file, and, worse, an absent section says
     // nothing at all, where an empty one can say that nobody has decided yet.
     const text = printed(governance());
     expect(text).toContain('## Decisions in force (0)');
@@ -732,7 +732,7 @@ describe('the brief has the same skeleton whether or not anything was decided', 
 
   it('always says what the file is and how to make it again', () => {
     // Present in both states, because a person who finds a stale copy is not
-    // necessarily the person who generated it — and a generated file with no marker
+    // necessarily the person who generated it, and a generated file with no marker
     // is a file somebody edits by hand.
     for (const brief of [governance(), governance({ decisions: [decision(1)] })]) {
       const text = printed(brief);
@@ -742,7 +742,7 @@ describe('the brief has the same skeleton whether or not anything was decided', 
       expect(text).toContain('mnema brief | diff - <this file>');
       // AND WHAT THE `>` DOES, which is the half the recipe was published without. A
       // reader who follows it over a file that already has content loses all of it,
-      // and this module is one of the two places that can say so — the verb writes
+      // and this module is one of the two places that can say so: the verb writes
       // nothing, so nothing downstream gets a chance to refuse. Asserted as the two
       // facts separately, because a wording that kept "replaces" and dropped "whole"
       // would read as a line-by-line update.
@@ -753,14 +753,14 @@ describe('the brief has the same skeleton whether or not anything was decided', 
       expect(text).not.toContain('AGENTS.md');
       expect(text).not.toContain('CLAUDE.md');
       // WHOSE the content is: the project's own people and agents wrote it. And no longer
-      // what it is NOT — the sentence ended "not instructions from mnema", the idiom that
+      // what it is NOT: the sentence ended "not instructions from mnema", the idiom that
       // marks text a model must not act on, and the clause went.
       expect(text).toContain('the people and agents working on it wrote');
       expect(text).not.toContain('not instructions');
     }
   });
 
-  it('carries no work list — not a task, not a state, not a queue', () => {
+  it('carries no work list, not a task, not a state, not a queue', () => {
     // Asserted here as well as over the composition, because the document is where a
     // list would be ADDED: the shape invites one (a heading, some bullets), and a
     // queue copied into a file that is regenerated by hand is wrong between two runs.
@@ -778,7 +778,7 @@ describe('the brief has the same skeleton whether or not anything was decided', 
  *
  * WHY IT HAS CASES OF ITS OWN, and it is a finding rather than a habit. The delivery that
  * added the gesture deleted it again and ran the suite: TWO tests went red, and both were
- * pinning something else — the golden of the whole transcript, and the skeleton's line
+ * pinning something else: the golden of the whole transcript, and the skeleton's line
  * count. Nothing in this file named the sentence, so a reword that kept the line count
  * would have moved a byte of the document a session opens with and been reported as a
  * snapshot to accept. These cases are what makes that reword a question.
@@ -790,7 +790,7 @@ describe('the brief says how a decision of the reader’s own gets in', () => {
   it('names the door, in the state where the reader needs it most', () => {
     // The empty record is the document of the day somebody ran `mnema init`, and its
     // reader has nothing above to copy the shape from. A gesture printed only beside a
-    // list of rules would reach every project except the one that has decided nothing —
+    // list of rules would reach every project except the one that has decided nothing,
     // which is the project where a first decision has the most to gain from being in.
     expect(printed(governance())).toContain(
       'A decision made here enters this record with `record_decision`, awaiting a judgement.',
@@ -826,11 +826,11 @@ describe('the brief says how a decision of the reader’s own gets in', () => {
     // The line `record-framing.ts` holds, and the reason "Follow them." was removed: the
     // document may name a door of this product and may not instruct a reader about
     // somebody else's code. The gesture names where a decision GOES; it does not say to
-    // decide, how to decide, or what to decide about — and a sentence that grew any of
+    // decide, how to decide, or what to decide about, and a sentence that grew any of
     // those would be the removed one returning under a new name.
     // Non-vacuity FIRST, and it is a defect this case had: with the sentence deleted the
     // filter returns nothing, the fallback is the empty string, and every absence below
-    // holds over a document that says nothing at all. Measured — the mutation that removed
+    // holds over a document that says nothing at all. Measured: the mutation that removed
     // the gesture reddened the three cases above and left this one green.
     const [line, ...rest] = gesture(governance());
     expect(line, 'the document says nothing about how a decision gets in').toBeDefined();
@@ -852,7 +852,7 @@ const theHooksCopy = (brief: Brief): string[] => {
 };
 
 describe('the hook’s copy stops at a whole rule, and says so', () => {
-  /** A title as long as a real one gets — the kind that takes a record past the ceiling. */
+  /** A title as long as a real one gets: the kind that takes a record past the ceiling. */
   const long = (n: number) =>
     `A call numbered ${n} about ${'the invoice run and its retries '.repeat(6)}`;
   /** Sixty decisions and five patterns, which print well past what a hook carries. */
@@ -875,7 +875,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
     expect(file.join('\n')).toContain('mnema brief > <this file>');
   });
 
-  it('fits, where the file does not — and the file keeps every rule', () => {
+  it('fits, where the file does not, and the file keeps every rule', () => {
     expect(printedLength(briefDocument(crowded))).toBeGreaterThan(HOOK_TEXT_CEILING);
     expect(bullets(briefDocument(crowded))).toHaveLength(65);
     expect(printedLength(briefWithin(crowded, HOOK_TEXT_CEILING))).toBeLessThanOrEqual(
@@ -904,7 +904,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
     ]);
   });
 
-  it('says what a section whose bullets were all cut holds — never that it holds none', () => {
+  it('says what a section whose bullets were all cut holds, never that it holds none', () => {
     const hook = briefWithin(crowded, HOOK_TEXT_CEILING).join('\n');
     expect(hook).not.toContain('No pattern has been adopted here yet');
     expect(hook).toContain('Adopted here, and expected to be worked by.');
@@ -968,7 +968,7 @@ describe('the hook’s copy for a host that counts in its own unit', () => {
     // The cut every other host gets is the one it got before: 10,000 units, untouched.
     expect(printedLength(forClaude)).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
     expect(forClaude).toEqual(briefWithin(crowded, HOOK_TEXT_CEILING));
-    // In Codex's unit it would not fit — the defect this cut is for — and Codex's own does.
+    // In Codex's unit it would not fit (the defect this cut is for) and Codex's own does.
     expect(Math.ceil(bytes(forClaude) / 4)).toBeGreaterThan(2_500);
     expect(Math.ceil(bytes(forCodex()) / 4)).toBeLessThanOrEqual(2_500);
   });

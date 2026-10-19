@@ -3,7 +3,7 @@
  *
  * `skills` audits every pattern and `show` opens one, and both have to say the same
  * number the same way. Two readings wording it twice is two wordings, and the second
- * one to change would be the one nobody noticed — the argument this module shares
+ * one to change would be the one nobody noticed: the argument this module shares
  * with `runs.ts`, for the same reason.
  *
  * IT IS ALWAYS SAID, including when the answer is none. A pattern nobody has opened
@@ -11,7 +11,7 @@
  * and a field that disappeared when the count was zero would leave them inferring
  * from a gap: was it never read, or does this verb not report it? For a pattern that
  * was never adopted the answer is a tautology (nothing serves an unadopted pattern,
- * so nothing consults it) and it is printed anyway — a uniform line costs a reader
+ * so nothing consults it) and it is printed anyway: a uniform line costs a reader
  * nothing, and a line that is sometimes there costs them the question of why.
  *
  * It says CONSULTED, never "used" or "followed". The fact behind it records that a

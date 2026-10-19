@@ -26,7 +26,7 @@ export function materializeFoldState<A, P>(
 /**
  * The kinds that say who belongs to an identity. The two readings that ask the order about
  * them (`identitiesFoundedBeside`, `rosterIn`) look at these kinds and no other, and what is
- * stored is the whole of what they read — which is why they can be answered without the
+ * stored is the whole of what they read, which is why they can be answered without the
  * order.
  */
 export function isMembershipFact(event: CatalogEvent): boolean {
@@ -83,7 +83,7 @@ export function materializeDivergences(db: SqliteDatabase, events: readonly Cata
  *
  * AN ENTITY'S DIVERGENCE IS A PROPERTY OF ITS OWN MOVES, which is what makes this exact: the
  * reading keeps every state by the entity it belongs to, and the one comparison it makes
- * across events — a move repeated byte for byte is one move read twice — is between moves of
+ * across events (a move repeated byte for byte is one move read twice) is between moves of
  * one entity. So the whole record's answer is the entities' answers put together, and an
  * arrival that moved an entity changes that entity's row and no other. The moves come from
  * the reference index, which holds every event under its subject as it was written and which

@@ -1,5 +1,5 @@
 /**
- * UNFOLD IT, STRIP THE ESCAPES, AND YOU HAVE THE PLAIN LINE — the folding renderer's
+ * UNFOLD IT, STRIP THE ESCAPES, AND YOU HAVE THE PLAIN LINE: the folding renderer's
  * whole promise, asserted on the primitives and then on every line the CLI writes.
  *
  * It is the styled renderer's promise with one more operation in front of it, and it is
@@ -7,22 +7,22 @@
  * else, so a person reading a report in their terminal and a colleague reading the same
  * report in a CI log are looking at the same characters in the same order. If a fold could
  * drop, add, pad or reorder one of them, the screen would be a fourth account of the
- * record — and this is a tool for auditing one.
+ * record, and this is a tool for auditing one.
  *
  * THE VACUOUS FORM of every case here is a fold that folds nothing: unfolding would be a
  * no-op and each comparison would pass on two identical strings. So the corpus is asserted
  * to have actually folded, by count, and the cases that matter are paired with one that
- * says what the folding DID — where the break landed, and what came after it.
+ * says what the folding DID, where the break landed, and what came after it.
  *
  * THE INSTRUMENT IS A SPLIT, and its mistakes are loud rather than silent. A fold inserts
  * exactly one thing: a break followed by the indent of a continuation. So unfolding is
- * splitting on that pair and joining with nothing — and where the guess about the indent
+ * splitting on that pair and joining with nothing, and where the guess about the indent
  * is wrong, the comparison FAILS rather than quietly passing, which is the property an
  * instrument in this repository has to have before it is believed.
  *
  * AND IT HAS EXACTLY ONE BLIND INPUT, which is measured rather than supposed: a field
  * whose own text holds a break followed by the very spaces a continuation is indented by.
- * The split cannot tell that break from one the fold made, so it answers wrongly — and it
+ * The split cannot tell that break from one the fold made, so it answers wrongly, and it
  * answers wrongly by going red. The fold is not wrong there, and the case that says so
  * checks what cannot be argued with instead: not one character that is neither a break nor
  * a space is lost, and the actor's own break is still a break.
@@ -54,7 +54,7 @@ const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|39)m`, 'g');
 const stripped = (text: string): string => text.replace(SGR, '');
 
 /**
- * Every control sequence, whoever wrote it — the instrument's own idea of what a terminal
+ * Every control sequence, whoever wrote it: the instrument's own idea of what a terminal
  * does not draw.
  *
  * Deliberately NOT the one above and deliberately not `widthOf`: how many columns a row
@@ -77,7 +77,7 @@ const ACTOR_ESCAPE = `${ESC}[35m`;
 /** One folded line put back together: the break and the indent after it, removed. */
 const unfolded = (text: string, hanging: string): string => text.split(`\n${hanging}`).join('');
 
-/** What a line's continuation is indented by — one level under the line itself. */
+/** What a line's continuation is indented by: one level under the line itself. */
 const hangingFor = (line: Line): string => indentOf(line.indent + 1);
 
 /**
@@ -209,8 +209,8 @@ describe('the folded line is the line, broken', () => {
   it('breaks in the same places painted as it does plain', () => {
     // What keeps a terminal and a CI log one row apart from each other: an escape takes no
     // cell on a screen, so a fold that counted bytes would break a painted line earlier
-    // than its plain twin — the same report, folded two different ways, for having colour
-    // switched on.
+    // than its plain twin (the same report, folded two different ways, for having colour
+    // switched on).
     for (const line of corpus) {
       for (const columns of NARROW) {
         expect(
@@ -250,8 +250,8 @@ describe('the break goes between words', () => {
   it('splits a word only when the word is the only thing there is', () => {
     // THE ONE CASE THAT BREAKS MID-WORD, and it breaks there because there is nowhere
     // else: a word wider than the room has no space to be taken after. Both halves are
-    // asserted — that the first row is exactly full, and that the second one carries the
-    // rest — because a fold that dropped the tail would be a fold that truncated.
+    // asserted (that the first row is exactly full, and that the second one carries the
+    // rest), because a fold that dropped the tail would be a fold that truncated.
     const long = 'supercalifragilisticexpialidocious';
     const rows = foldedAt(20, renderPlain)(fact(long)).split('\n');
     expect(rows[0]).toBe(`  ${long.slice(0, 18)}`);
@@ -272,7 +272,7 @@ describe('the break goes between words', () => {
     // THE ONE INPUT THE UNFOLD ABOVE CANNOT READ, measured rather than imagined: a field
     // whose own text holds a break followed by exactly what a continuation is indented by.
     // Splitting on that pair takes out a break the ACTOR wrote, so the instrument answers
-    // wrongly — and it answers wrongly by going RED, which is the property that makes it
+    // wrongly, and it answers wrongly by going RED, which is the property that makes it
     // usable at all. Nothing about the fold is wrong here, and this case says so without
     // the inverse: every character that is not a break or a space survives, and the actor's
     // own break is still a break.
@@ -331,7 +331,7 @@ describe('the continuation hangs one level under the line', () => {
 
   it('gives the indent up when there is no room for anything beside it', () => {
     // A terminal narrower than the depth of the line being written. The indent is what
-    // gives way — the rule the panel and the input area already choose their forms by —
+    // gives way, the rule the panel and the input area already choose their forms by,
     // so the fold still makes progress and every row still fits.
     const deep = fact('the record says what it says whatever the window is doing', 3);
     const folded = foldedAt(8, renderPlain)(deep);
@@ -344,14 +344,14 @@ describe('the continuation hangs one level under the line', () => {
   it('counts the rows the fold really takes, not the ones a division predicts', () => {
     // WHO NEEDS THE COUNT: the console's opening, which decides how much of the name it
     // has room to draw by how many rows the page it is about to write will take
-    // (`repl/panel.ts`). It did that arithmetic itself — fill the row, break at the
-    // margin, start again at column zero — which is the TERMINAL'S rule and stopped being
+    // (`repl/panel.ts`). It did that arithmetic itself (fill the row, break at the
+    // margin, start again at column zero), which is the TERMINAL'S rule and stopped being
     // this product's the moment a line folded between words with an indent under it.
     //
     // The sentence below is the one the session lands under its box. Seventy-seven
     // columns of it: at forty, the division says two rows and the fold takes three, and
     // one row of difference is a page opened with its own top already in the scrollback.
-    // Measured on a real pseudo-terminal — `tests/the-input-has-its-own-place.test.ts`
+    // Measured on a real pseudo-terminal: `tests/the-input-has-its-own-place.test.ts`
     // went red on the delivery that added the fold, with the input's two rules off the
     // bottom of the screen.
     const landed = fact(
@@ -378,7 +378,7 @@ describe('the continuation hangs one level under the line', () => {
 describe('the promise as a function: strip the escapes and you have what a screen shows', () => {
   // IT WAS ASSERTED AND NEVER CALLED. "Strip the escapes and you have the plain line" was
   // a property four test files each wrote their own pattern for, and the product had no
-  // way to ASK it — which is why the console, reading the ids out of a line it has already
+  // way to ASK it, which is why the console, reading the ids out of a line it has already
   // turned into bytes, could not have. {@link withoutSequences} is that question, and it
   // is the fold's own walk rather than a fifth pattern.
 
@@ -407,7 +407,7 @@ describe('the promise as a function: strip the escapes and you have what a scree
       expect(withoutSequences(renderStyled(line))).toBe(withoutSequences(renderPlain(line)));
     }
     // And on a line with nothing of the actor's in it, the plain rendering comes back
-    // exactly — which is the sentence as it is written.
+    // exactly, which is the sentence as it is written.
     const plain = corpus.filter((line) => !renderPlain(line).includes(ESC));
     for (const line of plain) expect(withoutSequences(renderStyled(line))).toBe(renderPlain(line));
     expect(plain.length).toBeGreaterThan(20);
@@ -429,8 +429,8 @@ describe('the promise as a function: strip the escapes and you have what a scree
 
 describe("the console's own rows are composed to fit, so the fold leaves them", () => {
   // The lines this surface turns into bytes are not all reports. The session hands the
-  // same renderer its chrome — the tips under the input, the badge in the corner, the rows
-  // of the palette — and every one of those is composed to fit or dropped by the module
+  // same renderer its chrome (the tips under the input, the badge in the corner, the rows
+  // of the palette) and every one of those is composed to fit or dropped by the module
   // that composes it. So the fold is the identity on all of them, and this is where that
   // is checked rather than reasoned about: a folded badge would be a corner of the frame
   // drawn across two rows in a slot the layout counted as one.
@@ -482,7 +482,7 @@ describe('every line the CLI writes survives the fold', () => {
   }
 
   /**
-   * The reads of the surface, over a record that holds one of each kind — the corpus of
+   * The reads of the surface, over a record that holds one of each kind, the corpus of
    * `styled.test.ts`, for the same reason it has one: what a primitive does to a shape is
    * half the question, and the other half is which shapes the surface actually builds.
    */
@@ -570,8 +570,8 @@ describe('every line the CLI writes survives the fold', () => {
 
   it('leaves the document and the machine channel alone at any width', async () => {
     // TWO OUTPUTS THIS MAY NOT REACH, and neither is protected by a flag: they are
-    // protected by never being handed to a renderer at all. `brief` is form D — markdown
-    // composed as strings, for a file an agent host reads — and `--json` is what a script
+    // protected by never being handed to a renderer at all. `brief` is form D (markdown
+    // composed as strings, for a file an agent host reads) and `--json` is what a script
     // parses, where an inserted break is a parse error. Asserted with the fold FORCED, at
     // a width narrower than any terminal, so the case says the bytes cannot reach them
     // rather than that no terminal was around.
@@ -586,10 +586,10 @@ describe('every line the CLI writes survives the fold', () => {
     }
   }, 30_000);
 
-  it('changes not one byte of what a pipe gets — by the rule, not by a fixture', async () => {
+  it('changes not one byte of what a pipe gets: by the rule, not by a fixture', async () => {
     // THE ENTRY PATH, and it is the case that matters most: the fold is resolved from the
     // capability this process has, and a test has no terminal. So this drives the reads
-    // with NOTHING injected — the same call the binary makes — and asserts the bytes are
+    // with NOTHING injected, the same call the binary makes, and asserts the bytes are
     // the ones the plain renderer produces. The golden is the other half, over the whole
     // surface at once (`cli.golden.test.ts`).
     for (const argv of everyRead) {

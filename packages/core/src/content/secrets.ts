@@ -5,7 +5,7 @@
  * The record is append-only: a value written here cannot be taken back, and in a
  * public tree it is committed to the repository and clones to every machine that
  * ever pulls it. So a credential that reaches the chain is not a bug to fix
- * later — it is a permanent disclosure, and rotating the credential is the only
+ * later: it is a permanent disclosure, and rotating the credential is the only
  * remedy left. That is why the text is cleaned at the door rather than reported
  * afterwards.
  *
@@ -13,14 +13,14 @@
  * defined (`AKIA…`, `ghp_…`, a PEM header, a password in a URL). Generic
  * "high-entropy string" detection is deliberately absent, and not as a matter of
  * taste: this product stamps a v7 id and a key fingerprint on EVERY event, so an
- * entropy rule would replace the record's own identity — measured over a real
+ * entropy rule would replace the record's own identity; measured over a real
  * archive of 4,277 events, a prefix rule flagged 0 values and an entropy rule
  * flagged 13,094, of which 8,208 were fingerprints and 3,649 were ids. A defense
  * that eats the identifiers is worse than none, because the record stops being
  * readable while still not being safe.
  *
  * LENGTHS ARE MINIMUMS, NEVER EXACT. A pattern that pinned a token's length
- * would stop matching the day its issuer added one character — silently, with no
+ * would stop matching the day its issuer added one character: silently, with no
  * failing test anywhere. An early version of the Google pattern fixed 35
  * characters and missed a real 36-character key exactly that way.
  *
@@ -28,13 +28,13 @@
  * replacement is always the whole match. This is structural, not stylistic: the
  * first version of this detector isolated a URL password in group 1 and passed
  * `String.replace` a callback, where the second argument is the match OFFSET when
- * the pattern has no group — so the replacement silently no-oped while the report
+ * the pattern has no group, so the replacement silently no-oped while the report
  * still said "replaced". It told the caller the value was gone and wrote it
  * anyway, which is worse than no defense at all, because a false all-clear ends
  * the investigation. With no groups that shape of bug cannot be written: the
  * password pattern uses a lookbehind for its context (see `url-password`), so the
  * match IS the secret. And the tests assert the VALUE IS ABSENT from the output,
- * never that a counter moved — the assertion that catches this, where checking
+ * never that a counter moved: the assertion that catches this, where checking
  * the report is the assertion that does not.
  *
  * THE PLACEHOLDER IS TYPED AND CARRIES NO DIGEST. `<SECRET:aws-access-key>` says
@@ -59,7 +59,7 @@
  * AND IT ONLY CATCHES WHAT IT RECOGNIZES. A proprietary token, a password
  * written out in prose, a secret split across two records, a base64 blob: all of
  * them pass. This is damage reduction, not a guarantee, and the honest place to
- * say so is where a caller reads the contract — which is why the write surfaces
+ * say so is where a caller reads the contract, which is why the write surfaces
  * declare the limit in their own descriptions instead of letting silence read as
  * safety.
  */
@@ -69,7 +69,7 @@
  *
  * This list is the ONE address of that order: {@link scrubSecrets} walks it, and
  * the shapes next door are a lookup keyed by it rather than a second sequence. The
- * order carries meaning — see `SHAPES` for the prefix families it resolves — so two
+ * order carries meaning, see `SHAPES` for the prefix families it resolves, so two
  * copies of it would be two readings of one rule.
  */
 export const SECRET_CLASSES = [
@@ -108,7 +108,7 @@ export function secretPlaceholder(secret: SecretClass): string {
  *
  * The SIZE of the bound is measured, not guessed. A field of 64 KiB packed with
  * 2,427 unclosed headers is the worst input reachable under the size limit, and the
- * span is what its cost is linear in — this pattern alone over that input, the two
+ * span is what its cost is linear in; this pattern alone over that input, the two
  * spans measured side by side in one process:
  *
  *   span 16384 : 105.3 ms
@@ -121,7 +121,7 @@ export function secretPlaceholder(secret: SecretClass): string {
  * 8 KiB is still generous by a wide margin against what it has to hold: an RSA-4096
  * private key in PEM is about 3.2 KB of body and an Ed25519 one about 400 bytes, so
  * the span covers the largest key anyone uses twice over. Halving it halves the
- * worst case for nothing given up — both of those keys are still replaced whole,
+ * worst case for nothing given up: both of those keys are still replaced whole,
  * asserted in the tests rather than assumed here.
  */
 const PEM_BODY_SPAN = 8_192;
@@ -140,7 +140,7 @@ const PEM_BODY_SPAN = 8_192;
  * claim that "no two patterns here overlap (`sk-` and `sk_` are different
  * prefixes)". That premise was false, and a real key falsified it: `sk-` is a
  * convention several issuers reuse, so a key of Anthropic's shape (`sk-ant-…`) was
- * matched by the OpenAI shape and reported to a person as `openai-key` — the
+ * matched by the OpenAI shape and reported to a person as `openai-key`: the
  * refusal right, the name wrong. The rule now: within a family that shares a
  * prefix, the class whose prefix is MORE SPECIFIC comes first in
  * {@link SECRET_CLASSES}, and the general one is the fallback label. `sk-` is the
@@ -149,9 +149,9 @@ const PEM_BODY_SPAN = 8_192;
  * The rule is held by `secrets.test.ts`, which walks `SECRET_CLASSES` and asserts
  * each class's sample is reported as EXACTLY that class. A class added behind a
  * prefix an earlier shape already swallows fails there rather than shipping the
- * wrong name — which is what this table had no way to catch before.
+ * wrong name, which is what this table had no way to catch before.
  *
- * Every shape is global, and matches the SECRET ONLY — no capture groups, ever
+ * Every shape is global, and matches the SECRET ONLY: no capture groups, ever
  * (see the module comment), so a replacement is the whole match. Each runs over the
  * text the previous ones already cleaned, so a placeholder is never re-matched.
  */
@@ -165,18 +165,18 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
   // It reads a match for a name too, and it HAS to: `ant` is an English word, this
   // class runs FIRST, and a name it swallowed would never reach the fallback below.
   // Measured: behind `sk-ant-` the same 194 names came back 188 destroyed, and with
-  // the second reading on the fallback ALONE, 173 of those 188 were still destroyed
-  // — this shape had already eaten them. Half the fix lives here.
+  // the second reading on the fallback ALONE, 173 of those 188 were still destroyed:
+  // this shape had already eaten them. Half the fix lives here.
   'anthropic-key': /\bsk-ant-[A-Za-z0-9_-]{20,}\b/g,
   // The FALLBACK of the `sk-` family: OpenAI's legacy and project keys, and any
   // other issuer that reuses the convention without a prefix of its own. So the
-  // NAME here is a best guess over a refusal — a trade asserted as a declared limit
+  // NAME here is a best guess over a refusal: a trade asserted as a declared limit
   // in the tests rather than left to be discovered by a reader.
   //
   // The refusal used to be CERTAIN, and that is the half this shape no longer
   // claims: `sk-` is a prefix a person also chooses, so a match here is read once
   // more by {@link readsAsAChosenName} before it is destroyed. What falsified the
-  // old wording was a name, not a key — `sk-check-the-tenant-scope-first` came back
+  // old wording was a name, not a key: `sk-check-the-tenant-scope-first` came back
   // out of the record as `<SECRET:openai-key>`.
   'openai-key': /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g,
   'stripe-key': /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{20,}\b/g,
@@ -191,7 +191,7 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
   // The closing half is optional on purpose: a truncated paste with no END marker
   // would otherwise match nothing at all, and losing the header too is strictly
   // worse than losing only the body. What that costs is stated as a limit rather
-  // than hidden — an unclosed block leaves its body in the text.
+  // than hidden: an unclosed block leaves its body in the text.
   //
   // TWO FRAMINGS, ONE CLASS. The product's own protected key file (`MNEMA PROTECTED KEY`, the
   // private key encrypted under a passphrase) is a private key in the one way that matters
@@ -209,7 +209,7 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
   //
   // The `(?!<SECRET:)` is what keeps this shape from matching its OWN
   // placeholder. It is the only class whose shape is "whatever sits in this
-  // position", so a cleaned URL still has something in the password slot — and
+  // position", so a cleaned URL still has something in the password slot, and
   // without the guard the detector would report a credential in text it had
   // already cleaned. That matters most for the audit, which reads the same
   // detector: every scrubbed record would show up in it forever, and a report that
@@ -222,7 +222,7 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
  * match under it is read a second time before it is destroyed.
  *
  * A mapped record over {@link SecretClass} for the reason `SHAPES` is one: a class
- * added to the list does not compile until it answers. The answer is not cosmetic —
+ * added to the list does not compile until it answers. The answer is not cosmetic:
  * `false` here means a name written under that prefix is destroyed, permanently, by a
  * record that cannot be edited.
  *
@@ -240,7 +240,7 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
  * IT IS NOT EXPORTED AT ALL, and neither is the rule it gates. Nothing outside asks
  * which prefixes are ambiguous, and a consumer able to import either could keep a
  * second opinion about what counts as a name. The module boundary is what makes that
- * impossible rather than merely discouraged — there is no declaration here for a
+ * impossible rather than merely discouraged: there is no declaration here for a
  * surface sweep to check, because there is nothing exported for it to find.
  */
 const A_NAME_COULD_WEAR_THIS_PREFIX: { readonly [K in SecretClass]: boolean } = {
@@ -263,7 +263,7 @@ const NAME_WORD = /^[a-z]+$/;
 /**
  * The same piece, carrying the number people version and count things with: `v2`,
  * `17`, `2026`, `p1`. Four letters at most before the digits, which is what keeps a
- * long mixed token — the shape every real key body has — from reading as one word.
+ * long mixed token (the shape every real key body has) from reading as one word.
  */
 const NAME_NUMBERED_WORD = /^[a-z]{0,4}[0-9]{1,4}$/;
 
@@ -275,17 +275,17 @@ const NAME_SEPARATOR = /[-_]/;
  *
  * THE CRITERION. A credential has to be unguessable, so its body is drawn from a
  * dense alphabet at length; a name has to be sayable, so it is WORDS. A value is a
- * name when every piece of it, cut at the separators a slug uses, is a lowercase word
- * — optionally carrying a short number, which is how people version and number
+ * name when every piece of it, cut at the separators a slug uses, is a lowercase word,
+ * optionally carrying a short number, which is how people version and number
  * things. Nothing here looks at the prefix: `sk` is itself a word, so the whole match
  * is asked the one question and no prefix has to be stripped off first.
  *
  * MEASURED ON BOTH SIDES, because tightening the shape risks letting a real key
- * through and leaving it risks going on destroying names — the tension is the whole
+ * through and leaving it risks going on destroying names: the tension is the whole
  * of the decision, so it was answered with counts. LEFT: the 194 directory and branch
  * names this repository's own work produced, under six spellings (plain, versioned,
  * ADR-numbered, underscored, camelCase, year-suffixed). RIGHT: 20,000 random draws
- * from each of 13 key formats their issuers define — OpenAI legacy at 48 and at 32
+ * from each of 13 key formats their issuers define: OpenAI legacy at 48 and at 32
  * characters and with the `T3BlbkFJ` infix, OpenAI project, service-account and admin
  * keys, both Anthropic product codes, DeepSeek's 32 hex, OpenRouter's `sk-or-v1-`,
  * Moonshot, a generic OpenAI-compatible range, and a UUID-shaped one.
@@ -295,14 +295,14 @@ const NAME_SEPARATOR = /[-_]/;
  *
  * Four other criteria were run over the same two corpora and are rejected by the
  * number, not by taste. "A hyphen anywhere means a name" lets 160,000 of 300,000
- * keys through — every project key, every Anthropic key, every OpenRouter key.
+ * keys through: every project key, every Anthropic key, every OpenRouter key.
  * "No hyphen-free run of twenty or more means a name" lets every UUID-shaped key
  * through, and it also let a handful of REAL base64url keys through at random,
  * because `-` and `_` are in that alphabet: a coverage that turns on a coin toss is
  * worse than a coverage that is merely narrower.
  *
  * WHAT THE CUT COSTS, as a number rather than a shrug. A name carrying a CAPITAL is
- * still destroyed — 139 of the 194 written in camelCase — and that is deliberate: an
+ * still destroyed, 139 of the 194 written in camelCase, and that is deliberate: an
  * uppercase letter is the mark of the dense alphabet every real key here is drawn
  * from, and rescuing camelCase would give up the OpenAI legacy format entirely. And a
  * hypothetical key drawn from a LOWERCASE-ONLY alphabet now reads as a name, 20,000
@@ -311,7 +311,7 @@ const NAME_SEPARATOR = /[-_]/;
  *
  * Held by `secrets.test.ts`: the differential there runs both corpora and asserts the
  * counts on both sides, and the probe table beside it pins which prefixes this rule
- * is reached from. Its cost is asserted there too — this runs only on a value that
+ * is reached from. Its cost is asserted there too: this runs only on a value that
  * already matched, so a clean field never reaches it.
  */
 function readsAsAChosenName(value: string): boolean {
@@ -327,7 +327,7 @@ export interface ScrubbedText {
   readonly text: string;
   /**
    * One entry per value replaced, in the order the classes were applied. Empty
-   * when the text was already clean — and then {@link ScrubbedText.text} is the
+   * when the text was already clean, and then {@link ScrubbedText.text} is the
    * input, unchanged and not rebuilt.
    */
   readonly replaced: readonly SecretClass[];
@@ -338,7 +338,7 @@ export interface ScrubbedText {
  *
  * Each pattern runs over the output of the previous one, so a text carrying two
  * different classes comes back with both replaced. Nothing is allocated when the
- * text is clean, which is the overwhelmingly common case — the whole pass costs
+ * text is clean, which is the overwhelmingly common case: the whole pass costs
  * about two microseconds on a typical record.
  */
 export function scrubSecrets(text: string): ScrubbedText {
@@ -354,7 +354,7 @@ export function scrubSecrets(text: string): ScrubbedText {
 }
 
 /**
- * The CLASSES of credential `text` contains — never the values.
+ * The CLASSES of credential `text` contains, never the values.
  *
  * This is what an audit of the existing record reads, and the return type is the
  * whole of the defense there: a report that listed credentials it found would
@@ -403,7 +403,7 @@ function scrubWith(text: string, secret: SecretClass, re: RegExp): ScrubbedText 
       continue;
     }
     // The second reading, and the only place it happens. Skipping the match leaves
-    // `copied` where it was, so the value is carried through by the next slice —
+    // `copied` where it was, so the value is carried through by the next slice:
     // byte for byte, which is what "the name the person chose" has to mean.
     if (ambiguous && readsAsAChosenName(match[0])) {
       match = re.exec(text);

@@ -1,19 +1,19 @@
 /**
  * The exposure report: a header with the count and how much was read, then one
- * line per record — where it is, when it was written, and WHICH CLASS was found.
+ * line per record, where it is, when it was written, and WHICH CLASS was found.
  *
  * The line carries no value, because the report carries none. It leads with the
  * tree, because that is what decides how far the exposure travelled: a `public`
  * finding is committed and on every machine that cloned the repository, and a
  * `global` one is on this disk. Then the instruction, once, at the bottom: the record
- * is permanent, so rotating is the remedy — nothing here deletes a fact, and
+ * is permanent, so rotating is the remedy; nothing here deletes a fact, and
  * pretending otherwise would send someone looking for a command that does not
  * exist. The empty answer says "nothing RECOGNIZABLE", never "nothing": the
  * detector reads formats, and a password in prose has no format.
  *
  * And it says WHERE IT LOOKED, which the count alone does not. A denominator beside an
- * empty list reads as ground covered, and this command covers one project — the one
- * `cwd` resolves to — plus the machine-global tree. Naming that is what keeps "nothing
+ * empty list reads as ground covered, and this command covers one project, the one
+ * `cwd` resolves to, plus the machine-global tree. Naming that is what keeps "nothing
  * recognizable here" from being read as "nothing anywhere"; the MCP tool, which a
  * client can open on several projects at once, answers with one count per project for
  * the same reason.
@@ -24,7 +24,7 @@ import { fact } from './detail.js';
 import { asId, asScope, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 
-/** How many characters of an instant are the date — what a list column shows. */
+/** How many characters of an instant are the date: what a list column shows. */
 const DATE_LENGTH = 10;
 
 /** The lines an exposure report prints for a person. */
@@ -44,8 +44,8 @@ export function exposureReport(render: Render, report: Exposure): string[] {
     `${report.findings.length} of ${report.scanned} record(s) hold a credential format:`,
   ];
   for (const finding of report.findings) {
-    // The instant and the id say what they are, so the CLASS — the one column this
-    // report exists to put in front of someone — is what the eye lands on. The tree
+    // The instant and the id say what they are, so the CLASS, the one column this
+    // report exists to put in front of someone, is what the eye lands on. The tree
     // still leads, because it is what decides how far the exposure travelled.
     lines.push(
       render(

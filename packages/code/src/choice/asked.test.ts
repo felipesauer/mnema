@@ -1,27 +1,27 @@
 /**
- * ONE KEY, AND WHAT IT DECIDES — the bare name's reducer, asked in this process.
+ * ONE KEY, AND WHAT IT DECIDES: the bare name's reducer, asked in this process.
  *
  * The question is driven end to end at a real pseudo-terminal
  * (`tests/the-bare-name-asks.test.ts`): doors offered, Enter opening one, arrows walking and
  * holding, leaving without choosing. That file proves the SURFACE answers, and it proves it
- * over the built binary — a child process, which instruments no line of this source and
+ * over the built binary: a child process, which instruments no line of this source and
  * observes no value this module produced. Both halves are real and neither is this one.
  *
  * WHAT IS ASKED HERE IS THE REDUCER, and the seam it is asked through is the one the module
  * already has: the screen arrives by dynamic import ({@link theChoice}, `./screen.js`), so
  * standing in for it hands this file the very `pressed` the product installed. Keys go in
  * through that callback and what comes out is the answer the promise settles with and the
- * pages the screen was told to draw — which is why every case below reads a value the
+ * pages the screen was told to draw, which is why every case below reads a value the
  * PRODUCT produced rather than one it built and asserted back.
  *
  * IT IS ITS OWN FILE BECAUSE `vi.mock` IS FILE-GLOBAL, the same reason
  * `tests/mcp-flag-reaches-the-server.test.ts` is one: the screen is stood in for here, and
- * the real one is drawn — with ink, in this process — in
+ * the real one is drawn (with ink, in this process) in
  * `tests/the-screen-a-choice-is-drawn-on.test.ts`. Between the two, and the pty file above
  * them, the reducer, the adapter and the surface are each held by something that can see it.
  *
  * WHAT IT IS NOT: nothing here draws. The screen is a stand-in, so no assertion below says
- * what a terminal shows — it says what rows the product handed a screen, and what line it
+ * what a terminal shows: it says what rows the product handed a screen, and what line it
  * answered with.
  */
 
@@ -80,7 +80,7 @@ vi.mock('./screen.js', () => ({
  * key it was.
  *
  * IT IS SPELLED WHOLE and a case below proves it is, because nothing type-checks a test in
- * this repository — `packages/code/tsconfig.json` excludes the test files under `src`, and
+ * this repository: `packages/code/tsconfig.json` excludes the test files under `src`, and
  * vitest strips types without checking them. A value built out of SOME of the fields would
  * let an arm of the reducer that reads one of the others go unasserted while every
  * assertion here stayed green, so the totality is asked of the product at run time
@@ -126,7 +126,7 @@ const DOWN = press(`${ESC}[B`, { downArrow: true });
 const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
 
 /**
- * THE DOORS THIS PROCESS WILL BE OFFERED — the same two readings the product makes, made
+ * THE DOORS THIS PROCESS WILL BE OFFERED: the same two readings the product makes, made
  * here so a case can name the line it expects back.
  *
  * WHAT each door IS, and that the pair depends on the directory, is `doors.test.ts`; what
@@ -147,7 +147,7 @@ const hooksNothing: Leaving = {
 // Asking, and answering
 // ---------------------------------------------------------------------------
 
-/** What a question that is still on the screen answers with — a value no door can be. */
+/** What a question that is still on the screen answers with: a value no door can be. */
 const STILL_ASKING = Symbol('the question is still on the screen');
 
 /** One question, open: the keys go in here and the answer comes out. */
@@ -257,9 +257,9 @@ describe('the keystroke the product installed is the one this file presses', () 
 });
 
 describe('what the first door is, asked where the question is asked', () => {
-  it('is the console in the home — where `init` refuses — and `init` in a folder under it', async () => {
+  it('is the console in the home, where `init` refuses, and `init` in a folder under it', async () => {
     // THE LINK FROM THE DIRECTORY TO THE DOOR. `doors.test.ts` holds what the doors are for
-    // each state it is HANDED; this holds that the state reaching them is the directory's —
+    // each state it is HANDED; this holds that the state reaching them is the directory's:
     // `standing()`, read by the product at the moment it asks. Return on the first door
     // used to found a project in the home, the tree every folder under it then belonged to.
     const sandbox = mkdtempSync(join(tmpdir(), 'mnema-asked-home-'));
@@ -304,12 +304,12 @@ describe('the three ways of saying this is not what I wanted', () => {
       // are one intention, and the value that says so is `undefined` rather than a line.
       expect(await asked.answered()).toBeUndefined();
       expect(asked.closes(), `${named} left the screen open`).toBe(1);
-      // AND NOT A BYTE WAS WRITTEN BY ASKING — the promise the module's own comment makes.
+      // AND NOT A BYTE WAS WRITTEN BY ASKING: the promise the module's own comment makes.
       expect(asked.wrote()).toBe('');
     });
   }
 
-  it('takes the chord before the character it carries — Ctrl-D leaves, `d` does not', async () => {
+  it('takes the chord before the character it carries: Ctrl-D leaves, `d` does not', async () => {
     // THE ORDER OF THE GUARDS, which the module says is the mechanism rather than tidiness:
     // a control chord carries a character too. `d` is a key this question has no use for.
     const asked = await asking();
@@ -321,7 +321,7 @@ describe('the three ways of saying this is not what I wanted', () => {
 
   it('answers no other chord at all, and does not read it as the key it carries', async () => {
     // CTRL-UP IS NOT UP. The chord is asked FIRST and of the WHOLE keystroke, so a chord
-    // this question has no use for stops there — it neither leaves nor moves the mark.
+    // this question has no use for stops there: it neither leaves nor moves the mark.
     const asked = await asking();
     asked.press(press('x', { ctrl: true }));
     asked.press(press(`${ESC}[A`, { upArrow: true, ctrl: true }));
@@ -343,7 +343,7 @@ describe('Enter answers with the line the marked door runs', () => {
     expect(asked.wrote(), 'answering ran the line here').toBe('');
   });
 
-  it('follows the mark rather than the list — Enter after an arrow is the second door', async () => {
+  it('follows the mark rather than the list: Enter after an arrow is the second door', async () => {
     // WHAT RETURN TAKES AND WHAT THE ROW SHOWS ARE ONE READING, which is what the module
     // asks `theDoorPicked` for rather than comparing inline. Both halves are read here: the
     // mark on the page the product last drew, and the line it answered with.
@@ -360,7 +360,7 @@ describe('the arrows walk this list, and the ends hold', () => {
     const asked = await asking();
     asked.press(DOWN);
     // A STEP IS A PAGE. The reducer redraws where the mark moved, so what a caller sees is
-    // the answer Return is about to give — a move that changed the pick and not the page
+    // the answer Return is about to give: a move that changed the pick and not the page
     // would be a question whose cursor lies.
     expect(asked.pages()).toHaveLength(2);
     expect(markedOn(lastPage(asked))).toEqual(doors[1]);
@@ -388,7 +388,7 @@ describe('the arrows walk this list, and the ends hold', () => {
 
   it('walks up and down by ONE door, in the direction the key names', async () => {
     // THE TWO ARMS ARE NOT ONE. A reducer that read both arrows as the same step would pass
-    // every case above — the ends hold, so a walk that went the wrong way from the first
+    // every case above: the ends hold, so a walk that went the wrong way from the first
     // door would sit still and look like holding.
     const asked = await asking();
     asked.press(DOWN);
@@ -403,7 +403,7 @@ describe('the arrows walk this list, and the ends hold', () => {
 describe('every other key does nothing, which is the arm that has to exist', () => {
   it('answers a letter, a tab and every key it has no use for with the page it drew', async () => {
     // THE ARM THE MODULE SAYS HAS TO EXIST: a page that threw on a function key would be a
-    // question that dies of one. What is asserted is all three halves of doing nothing —
+    // question that dies of one. What is asserted is all three halves of doing nothing:
     // no answer, no new page, and no screen given back.
     const asked = await asking();
     for (const stroke of [
@@ -451,7 +451,7 @@ const SOURCE = readFileSync(new URL('./asked.ts', import.meta.url), 'utf-8');
 
 describe('what is left uncovered here is unreachable, and says so', () => {
   it('never opens with no door, so the pick can never fall back to nothing', () => {
-    // `doors[0]?.word ?? ''` — the empty string is a branch nothing can take, because the
+    // `doors[0]?.word ?? ''`: the empty string is a branch nothing can take, because the
     // list is a pair in both states of the directory and neither arm of `theDoors` can
     // build a shorter one. It is asserted of the VALUE rather than argued about, and in
     // both states, because a reader of the coverage report is owed the reason a line is
@@ -464,7 +464,7 @@ describe('what is left uncovered here is unreachable, and says so', () => {
   });
 
   it('answers from one place, so the second guard on leaving cannot fire', () => {
-    // `leave` opens with `if (left) return`, and no case above reaches it — because every
+    // `leave` opens with `if (left) return`, and no case above reaches it, because every
     // call to it is inside the key reducer, which ALREADY returned on that same flag one
     // line earlier. The inner guard is a second reading of one fact, and it is unreachable
     // today rather than wrong: `leave` is also what a caller would reach for from a hook,

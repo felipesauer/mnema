@@ -14,7 +14,7 @@ import { WORKFLOWS } from '@mnema/chain';
 /** The seven states a task can be in. */
 export const TASK_STATES = WORKFLOWS['task.transitioned'].states;
 
-/** A task's state — one of the seven, as a literal string. */
+/** A task's state: one of the seven, as a literal string. */
 export type TaskState = (typeof TASK_STATES)[number];
 
 /** The state every task is born into. */

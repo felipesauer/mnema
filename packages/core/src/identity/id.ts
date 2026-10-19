@@ -1,7 +1,7 @@
 /**
  * An entity's id: how it is MINTED, and the canonical form of a REFERENCE to it.
  *
- * An id is the one identity of an entity — minted by the operation that creates
+ * An id is the one identity of an entity: minted by the operation that creates
  * it, never chosen by the caller. Deriving it here, from randomness, is the same
  * move the anchor `who` makes: two clones offline can never mint the same id, so
  * two unrelated tasks can never merge into one when their chains are unioned. A
@@ -12,7 +12,7 @@
  *
  * An id is NOT an identity of a person. Unlike a `who`/`which`, when taken as a
  * reference it is:
- *   - NOT trimmed — the chain does not trim, so trimming here would produce a
+ *   - NOT trimmed: the chain does not trim, so trimming here would produce a
  *     key that no stored subject matches (an id never carries meaningful
  *     whitespace anyway; treating it verbatim keeps the reference and the
  *     stored subject byte-aligned).
@@ -27,19 +27,19 @@
  * agreement with the chain, without the identity-only whitespace policy.
  *
  * AND THE FORM AN ID IS WRITTEN IN IS READ OFF THE GENERATOR, once, by both
- * halves of this file — {@link mintId} writes it and {@link mintedIdsIn}
+ * halves of this file: {@link mintId} writes it and {@link mintedIdsIn}
  * recognizes it, out of the same group lengths and the same two masks. A
  * hand-written pattern beside a generator is two accounts of one shape, and the
  * failure is silent in both directions: it would accept a value nothing here can
  * produce, or refuse one it just produced. `id.test.ts` closes it from the only
- * end that can — it feeds the recognizer what the generator makes.
+ * end that can: it feeds the recognizer what the generator makes.
  */
 
 import { randomBytes } from 'node:crypto';
 import { CanonicalizationError, canonicalStringify } from '@mnema/chain';
 
 /**
- * The five hex groups a UUID is written in, in order — which is where the dashes
+ * The five hex groups a UUID is written in, in order, which is where the dashes
  * fall. Read by the generator and by the recognizer, so neither can hold its own
  * idea of what an id looks like.
  */
@@ -56,8 +56,8 @@ const VARIANT_KEPT = 0x3f;
 const VARIANT_SET = 0x80;
 
 /**
- * The 12 bits RFC 9562 calls `rand_a` — the low nibble of byte 6, beside the
- * version, plus the whole of byte 7 — and the largest counter they hold.
+ * The 12 bits RFC 9562 calls `rand_a` (the low nibble of byte 6, beside the
+ * version, plus the whole of byte 7) and the largest counter they hold.
  *
  * {@link mintId} spends them on a counter rather than on randomness, which is
  * what makes two ids minted in one millisecond ORDERED rather than merely
@@ -89,7 +89,7 @@ interface MintPosition {
 }
 
 /**
- * The next position after `last`, given what the clock says now — the whole of the
+ * The next position after `last`, given what the clock says now: the whole of the
  * monotonicity rule, in one pure function so the three branches can each be shown.
  *
  * A NEW MILLISECOND restarts the counter, which is where all 4096 values are spent.
@@ -100,7 +100,7 @@ interface MintPosition {
  *
  * Borrowing rather than refusing or waiting, because those are worse in ways that
  * are not about ids at all. Refusing means a write fails for a reason having nothing
- * to do with what was written — `mintId` is called from inside the create operations,
+ * to do with what was written: `mintId` is called from inside the create operations,
  * so the caller would see a record rejected because a sibling was fast. Waiting means
  * `mintId` sometimes blocks for up to a millisecond on a write path. Borrowing keeps
  * the sequence strictly increasing and costs an id whose embedded timestamp is ahead
@@ -117,7 +117,7 @@ export function nextMintPosition(nowMs: number, last: MintPosition): MintPositio
 
 /**
  * Where the last mint landed. Per PROCESS, which is exactly the reach of the order
- * it buys — see {@link mintId}.
+ * it buys: see {@link mintId}.
  */
 let lastPosition: MintPosition = { ms: 0, counter: 0 };
 
@@ -125,16 +125,16 @@ let lastPosition: MintPosition = { ms: 0, counter: 0 };
  * Mints a fresh entity id: a UUID version 7, per RFC 9562. The high 48 bits are a
  * Unix millisecond, the 12 bits beside them are a counter, and the remaining 62 are
  * cryptographic randomness (`crypto.randomBytes`), so two ids minted in the same
- * millisecond — even across offline clones — do not collide. The version (`7`) and
+ * millisecond, even across offline clones, do not collide. The version (`7`) and
  * variant (`10`) bits are set in place.
  *
  * WITHIN ONE PROCESS, TWO IDS SORT IN THE ORDER THEY WERE MINTED, and that is what
- * the counter is for. This doc-comment used to claim the timestamp alone bought it —
- * *"the high 48 bits are the current Unix time in milliseconds, so ids sort by
- * creation time"* — and that is true BETWEEN milliseconds and false inside one, which
+ * the counter is for. This doc-comment used to claim the timestamp alone bought it
+ * (*"the high 48 bits are the current Unix time in milliseconds, so ids sort by
+ * creation time"*) and that is true BETWEEN milliseconds and false inside one, which
  * is where a burst of writes almost entirely lives. What falsified it: 2000 ids minted
  * in a row put 1986 of 1999 consecutive pairs (99.4%) in a single millisecond, and 988
- * of those 1986 — 49.7%, a coin flip — came back in the wrong order, because the bits
+ * of those 1986 (49.7%, a coin flip) came back in the wrong order, because the bits
  * that separated them were pure randomness. That is a real defect and not a
  * curiosity: every "newest first" reading in the product falls back on the id when the
  * instant ties, so half of those pairs were served backwards. It took the trunk red
@@ -143,8 +143,8 @@ let lastPosition: MintPosition = { ms: 0, counter: 0 };
  * counter existed.
  *
  * OUTSIDE ONE PROCESS THERE IS NO SUCH ORDER, and no fix for it here. The counter is
- * this process's own and nothing shares it, so two ids from two processes — or two
- * machines, or two clones of one tree — that fall in the same millisecond are ordered
+ * this process's own and nothing shares it, so two ids from two processes (or two
+ * machines, or two clones of one tree) that fall in the same millisecond are ordered
  * by their random tails: stable, and arbitrary. A reading that needs more than that
  * needs something the id cannot carry.
  *
@@ -190,7 +190,7 @@ const HEX = '[0-9a-f]';
 
 /**
  * Every hex digit a byte's HIGH NIBBLE can come out of `(byte & kept) | set`
- * with — the generator's own expression, run over all 256 bytes rather than
+ * with: the generator's own expression, run over all 256 bytes rather than
  * reasoned about.
  *
  * That is what makes the recognizer derived rather than parallel: the version
@@ -232,7 +232,7 @@ function shapeOfAMintedId(): string {
 
 /**
  * What may not sit against an id for it to be an id and not part of a longer
- * word — a letter, a digit or the dash an id is punctuated with.
+ * word: a letter, a digit or the dash an id is punctuated with.
  *
  * The value in `019fe236-…-10dca56a5d17-draft` is not an id that happens to have
  * a suffix, it is a different string; and a run of hex one digit too long is not
@@ -262,7 +262,7 @@ export interface MintedId {
  * for why an entity id has no short form to find).
  *
  * WHO ASKS: the console, for the ids it has already shown a caller
- * (`code/src/repl/seen.ts`) — so that a Tab can finish one that was read off the
+ * (`code/src/repl/seen.ts`), so that a Tab can finish one that was read off the
  * screen, which is the only way to type a 36-character value without pasting it.
  */
 export function mintedIdsIn(text: string): readonly MintedId[] {
@@ -280,7 +280,7 @@ export function mintedIdsIn(text: string): readonly MintedId[] {
 
 /**
  * The canonical form of an id reference (NFC, chain-representable), or undefined
- * when the value is none — not a string, empty, or a string the chain cannot
+ * when the value is none, not a string, empty, or a string the chain cannot
  * canonicalize deterministically.
  *
  * NFC IS ALL IT DOES: no case is folded and no `ADR-<n>` label is resolved, so a

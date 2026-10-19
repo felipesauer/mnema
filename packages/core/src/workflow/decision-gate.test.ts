@@ -39,7 +39,7 @@ function byIn(action: DecisionAction): { readonly by?: string } {
   return by === undefined ? {} : { by };
 }
 
-describe('decisionGate — every legal transition passes with valid authority, proof, and by', () => {
+describe('decisionGate: every legal transition passes with valid authority, proof, and by', () => {
   for (const t of DECISION_TRANSITIONS) {
     it(`${t.from} --${t.action}--> ${t.to}`, () => {
       const result = decisionGate({
@@ -62,7 +62,7 @@ describe('decisionGate — every legal transition passes with valid authority, p
   }
 });
 
-describe('decisionGate — legality', () => {
+describe('decisionGate: legality', () => {
   it('rejects every (from, action) pair that is NOT a declared transition', () => {
     const legal = new Set(DECISION_TRANSITIONS.map((t) => `${t.from}::${t.action}`));
     let illegalChecked = 0;
@@ -116,7 +116,7 @@ describe('decisionGate — legality', () => {
   });
 });
 
-describe('decisionGate — required proof', () => {
+describe('decisionGate: required proof', () => {
   const withReq = DECISION_TRANSITIONS.filter((t) => t.requires.length > 0);
 
   it('there are transitions that require proof (guards the suite is meaningful)', () => {
@@ -151,7 +151,7 @@ describe('decisionGate — required proof', () => {
   }
 });
 
-describe('decisionGate — supersede shape (by)', () => {
+describe('decisionGate: supersede shape (by)', () => {
   it('rejects a supersede with no by', () => {
     const result = decisionGate({
       from: 'accepted',
@@ -176,7 +176,7 @@ describe('decisionGate — supersede shape (by)', () => {
   });
 
   it('compares by and subject as opaque ids (a padded lookalike is NOT the same id)', () => {
-    // `by` is an id, compared byte-for-byte — not canonicalized. A whitespace
+    // `by` is an id, compared byte-for-byte, not canonicalized. A whitespace
     // variant is a DIFFERENT id, so it is not a self-supersede here; whether it
     // names a real decision is the operation's existence check, not the gate's.
     const result = decisionGate({
@@ -230,7 +230,7 @@ describe('decisionGate — supersede shape (by)', () => {
   });
 });
 
-describe('decisionGate — authority (who != which)', () => {
+describe('decisionGate: authority (who != which)', () => {
   it('rejects a missing who', () => {
     const result = decisionGate({ from: 'proposed', action: 'accept', subject: SUBJECT, who: '' });
     expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
@@ -272,7 +272,7 @@ describe('decisionGate — authority (who != which)', () => {
   });
 });
 
-describe('decisionGate — never throws on untrusted junk', () => {
+describe('decisionGate, never throws on untrusted junk', () => {
   const junk: unknown[] = [undefined, null, 5, {}, [], true];
 
   it('refuses a non-string who without throwing', () => {
@@ -301,7 +301,7 @@ describe('decisionGate — never throws on untrusted junk', () => {
   });
 });
 
-describe('decisionGate — purity', () => {
+describe('decisionGate: purity', () => {
   it('returns the same verdict for the same input, and never mutates the request', () => {
     const req = {
       from: 'accepted' as const,

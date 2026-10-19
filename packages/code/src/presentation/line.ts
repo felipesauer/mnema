@@ -4,7 +4,7 @@
  *
  * The three terminal forms used to join their own parts and hand back a string, so
  * the two spaces between columns lived in `items.ts`, the `·` between the parts of
- * a heading in `detail.ts` and the colon after a verdict's label in `verdict.ts` —
+ * a heading in `detail.ts` and the colon after a verdict's label in `verdict.ts`:
  * three modules each holding a piece of how the surface is punctuated, and
  * `forms.test.ts` asserting that two of them agreed on the depth. A caller received
  * bytes, so anything that wanted to know which of them were a label and which the
@@ -13,12 +13,12 @@
  * Splitting the two apart costs a caller nothing and buys the question: a primitive
  * says what the parts of a line ARE, and a renderer turns them into the bytes (see
  * `plain.ts`). `presentation/` still returns lines and writes none, and it still
- * knows nothing about a terminal — a part carries no colour, no width and no escape
+ * knows nothing about a terminal: a part carries no colour, no width and no escape
  * byte, only what it is.
  *
  * A part's text is TEXT, not a line: nothing here splits it, joins it or trims it. A
  * newline inside a field is the call site's problem, it is solved there with
- * `oneLine` on the fields that hold what an ACTOR wrote, and it is asserted there —
+ * `oneLine` on the fields that hold what an ACTOR wrote, and it is asserted there:
  * see `items.ts` for why the rule lives at the call site and
  * `one-line-per-item.test.ts` for what a list costs when it does not.
  */
@@ -27,20 +27,20 @@
  * Every role a part can have, and the call site that already tells that kind of
  * field apart:
  *
- *   - `label` and `detail` — the two arguments of {@link statement}. The signature
+ *   - `label` and `detail`: the two arguments of {@link statement}. The signature
  *     is where the distinction already lives: the label leads and takes the colon
  *     because a reader scanning a log for a refusal reads the first word.
  *     THIS USED TO SAY `detail` WAS THAT ARGUMENT AND NOTHING ELSE, and what
  *     falsified it is {@link aside}: a line that says what the reader can DO rather
  *     than what is true. The reason the role fits is the one the entry already
- *     gives — it is what this surface means by secondary — and the reason the
+ *     gives (it is what this surface means by secondary) and the reason the
  *     sentence was too narrow is that it named a CALL SITE where it meant a
  *     meaning. What survived is the punctuation: an aside is one part, so the
  *     `: ` a detail takes after a label never reaches it.
- *   - `field` — one column of {@link itemLine}, and the whole text of a
+ *   - `field`: one column of {@link itemLine}, and the whole text of a
  *     {@link fact}. Those two are the SAME line and `forms.test.ts` pins it, so
  *     telling them apart here would invent a difference the output does not make.
- *   - `id` and `when` — the columns of {@link itemLine} a call site hands over
+ *   - `id` and `when`: the columns of {@link itemLine} a call site hands over
  *     KNOWING what they are. `search` passes a hit's id and the day it was written
  *     and used to throw both facts away by passing them as `field`; recovering them
  *     is not inventing a role, it is stopping the discard. And they are one pair
@@ -48,28 +48,28 @@
  *     A DATE, you copy one or skip past it. Dimming them is what makes the title
  *     beside them the thing the eye lands on, which is what `git log --oneline` does
  *     with a hash and `gh pr list` with a number.
- *   - `scope` — the tree a listed record lives in, and it is the THIRD column nobody
+ *   - `scope`: the tree a listed record lives in, and it is the THIRD column nobody
  *     reads. It joined the two above for their reason and not for one of its own: a
  *     `search` over a project prints `public` on every row of every group, so the
  *     column is a constant a reader has to look PAST to reach the title. See below for
  *     the premise this falsified, which was written in this file and was about a
  *     different question.
- *   - `prompt` and `typed` — the two parts of the ECHO, which is the console showing a
+ *   - `prompt` and `typed`: the two parts of the ECHO, which is the console showing a
  *     caller what they sent (`echo.ts`). They are refinements of the same kind the two
  *     columns above are: what a renderer does with them is what it already does with
  *     something else, and what they buy is a call site saying which half of the row is
  *     the product's own mark and which half is the caller's words.
- *   - `sentmark` and `sent` — the two parts of a command the console keeps on the roll once it
+ *   - `sentmark` and `sent`: the two parts of a command the console keeps on the roll once it
  *     has been sent (`echo.ts`, `sentLine`): the mark that says *this is what you asked*, and
  *     the words. They are not `prompt` and `typed`, which are the row being TYPED: a sent
  *     command is a band across the page in a terminal that paints, and a mark and a line in
  *     one that does not, and what a renderer does with them is a table of its own.
- *   - `sentmark` and `sent` — the two parts of a command the console keeps on the roll once it
+ *   - `sentmark` and `sent`: the two parts of a command the console keeps on the roll once it
  *     has been sent (`echo.ts`, `sentLine`): the mark that says *this is what you asked*, and
  *     the words. They are not `prompt` and `typed`, which are the row being TYPED: a sent
  *     command is a band across the page in a terminal that paints and a mark and a line in
  *     one that does not, and what a renderer does with them is a table of its own.
- *   - `state` — a record's position in its workflow, wherever a reading shows one. THIS
+ *   - `state`: a record's position in its workflow, wherever a reading shows one. THIS
  *     USED TO SAY A TASK'S, and what falsified it is `state.ts` reaching the other two
  *     machines: a decision's and a pattern's position ride this same role in this same
  *     column, and the word here was narrower than the part always was. It is
@@ -77,26 +77,26 @@
  *     (a title), which is why its separator is a single space and not a column's two
  *     (see `plain.ts`). It was inside that field until this role existed, and a part
  *     cannot paint what is inside another one.
- *   - `pick` — the mark on the row a caller CHOSE in the console's list of words
+ *   - `pick`: the mark on the row a caller CHOSE in the console's list of words
  *     (`repl/palette.ts`). It is the second part that is chrome rather than a fact, and it
  *     joined for the reason `prompt` did: it says *this is the row you are on* and nothing
  *     about the record, so it takes the accent and no weight. The COLUMN is what carries
- *     the answer — a glyph in the text of the row, padded on every other row, so a reader
- *     in a pipe or on a monochrome terminal still knows which row it is — and the hue is a
+ *     the answer (a glyph in the text of the row, padded on every other row, so a reader
+ *     in a pipe or on a monochrome terminal still knows which row it is) and the hue is a
  *     second axis over it rather than the carrier. That is why it is a role at all: a
  *     drawing that painted the row itself would need the layout to know WHICH row is
  *     picked, which is a second model of the pick beside the one that decides it.
- *   - `word` — a word a caller could TYPE, in the console's list of what can be typed
+ *   - `word`: a word a caller could TYPE, in the console's list of what can be typed
  *     (`repl/palette.ts`). It joined for `pick`'s reason and not for one of its own: the
- *     list of words says nothing about the record — it is the product's own vocabulary
- *     offered back — so a part of it may take the accent without hue meaning a second
+ *     list of words says nothing about the record (it is the product's own vocabulary
+ *     offered back), so a part of it may take the accent without hue meaning a second
  *     thing. What it buys is the row's SUBJECT: a word and what it does, both at the
  *     weight of a `field`, is two columns competing, and it is the word a reader is
  *     choosing between. The description beside it stays a bare field for exactly that
- *     reason — paint both and neither is the subject.
- *   - `subject` — one part of {@link subjectLine}, which reads as a heading rather
+ *     reason; paint both and neither is the subject.
+ *   - `subject`: one part of {@link subjectLine}, which reads as a heading rather
  *     than as the columns of a table.
- *   - `clause` — one clause of a verdict that arrives in SEVERAL, after the first. The
+ *   - `clause`: one clause of a verdict that arrives in SEVERAL, after the first. The
  *     chain hands `verify` its one-line verdict as the clauses it is made of, and the
  *     call site that knows one clause from another is the one that received them apart;
  *     joining them back into a string here would throw that away again. It is a
@@ -107,7 +107,7 @@
  * THE THREE COLUMN ROLES ARE REFINEMENTS OF `field`, and that is a constraint and not a
  * preference. A separator is a function of the role ALONE (see `PRECEDED_BY`), so a
  * role that joined its neighbour one way inside a list and another inside a heading
- * could not exist. `id`, `when` and `scope` take a column's two spaces — which is what
+ * could not exist. `id`, `when` and `scope` take a column's two spaces, which is what
  * keeps the plain renderer's bytes, and therefore the recorded transcript, identical. It
  * is also why the id in `show`'s heading and the instants inside `show`'s facts stay
  * unmarked: neither is a column, and marking one would move a byte. The scope in that
@@ -133,14 +133,14 @@
  * One hue per value was never the alternative.
  *
  * AND THE TREE IS A ROLE NOW, WHICH THE SENTENCE ABOVE SAID IT WOULD NEVER BE: *a tree
- * and a title really are categories — three trees with no order and no consequence
- * between them — and neither is a role today for exactly that reason*, followed by *the
+ * and a title really are categories, three trees with no order and no consequence
+ * between them, and neither is a role today for exactly that reason*, followed by *the
  * day someone wants a tree apart, the old sentence still answers them*. IT ANSWERED A
  * QUESTION NOBODY ASKED. The question it refused is *tell the three trees apart*, which
  * would take one hue per value and is still refused: `scope` carries no hue, and
  * `public`, `private` and `global` come out of the renderer looking exactly alike. What
- * is asked instead is the question `id` and `when` already answered — a column nobody
- * READS, dimmed so the title beside it is the subject of the line — and a scope is the
+ * is asked instead is the question `id` and `when` already answered (a column nobody
+ * READS, dimmed so the title beside it is the subject of the line) and a scope is the
  * strongest case of it there is, because a reading over one project prints the same word
  * on every row it has. Emphasis by SUBTRACTION needs no order between the values it
  * subtracts, which is what makes the categories argument beside the point.
@@ -173,23 +173,23 @@ export type Role = (typeof ROLES)[number];
  * How bad the news on a part is, where the call site is the thing that knows.
  *
  * IT IS NOT A ROLE, and keeping the two apart is what stops the table of styles from
- * doubling. A verdict's label is still a label — it leads the line and it takes the
- * colon — and a severity is a second axis over that: `REFUSED` is a label that is bad
+ * doubling. A verdict's label is still a label, it leads the line and it takes the
+ * colon, and a severity is a second axis over that: `REFUSED` is a label that is bad
  * news, `ALLOWED` is the same label with the opposite news, and a dimmed id is
  * neither. So a part always has a role and has a severity only where something knows
  * one, and the renderer composes the two (see `styled.ts`).
  *
  * THERE IS A MIDDLE NOW, AND THIS IS WHAT FALSIFIED THE PREMISE THAT SAID THERE WAS
- * NONE. It read: *TWO VALUES AND NO MIDDLE — green and red are what a terminal has
+ * NONE. It read: *TWO VALUES AND NO MIDDLE: green and red are what a terminal has
  * always said, a `warning` would be the third, and this surface has none to say*. The
  * argument for it was `antipatterns`, which states "reopened tasks: 3" and deliberately
  * refuses to call it bad, because three reopenings may be a team learning something (see
- * `verdict.ts`). THAT ARGUMENT SURVIVED WHOLE — a count is still not news — and what
+ * `verdict.ts`). THAT ARGUMENT SURVIVED WHOLE; a count is still not news, and what
  * fell over it is `verify`'s `hash-chain-only`: the level of a record whose hash chain
  * holds and whose signatures were never checked, because none was there to check. Green
  * would be a pass over exactly the record the levels were introduced to stop calling
  * verified. THE ARGUMENT AGAINST RED WAS *it would fail a project between its first
- * event and its first checkpoint, which is a legitimate state* — and that state is gone:
+ * event and its first checkpoint, which is a legitimate state*, and that state is gone:
  * every write seals a checkpoint, so `mnema init` already leaves a fully signed record
  * and there is no window to be in the middle of (`every-write-signs-what-it-wrote.test.ts`
  * is the rule; `wiring/verify.ts` carries the measurement). Red is still wrong, on the
@@ -201,7 +201,7 @@ export type Role = (typeof ROLES)[number];
  *
  * The list is ordered worst news last, which is the only thing its order says: nothing
  * reads a severity by index, and the tables that consume it are total over the union.
- * Severity stays OPTIONAL, and absent stays the common case — most of what this surface
+ * Severity stays OPTIONAL, and absent stays the common case: most of what this surface
  * prints is neither news nor a rank.
  */
 export const SEVERITIES = ['good', 'warn', 'bad'] as const;
@@ -211,7 +211,7 @@ export type Severity = (typeof SEVERITIES)[number];
 
 /** One part of a line: what it is, and what it says. */
 export interface Part {
-  /** What this part is on the line — what a renderer punctuates and may paint. */
+  /** What this part is on the line: what a renderer punctuates and may paint. */
   readonly role: Role;
   /** What it says, verbatim. Not a line: a renderer never splits or joins it. */
   readonly text: string;
@@ -224,7 +224,7 @@ export interface Part {
 }
 
 /**
- * One line of output, as its parts — never as bytes.
+ * One line of output, as its parts, never as bytes.
  *
  * `indent` is a DEPTH and not a string, which is what keeps the width of one level
  * a single constant in the renderer rather than a literal repeated in every form.

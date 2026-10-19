@@ -6,7 +6,7 @@
  * `c9bda74ad2221f938f7d2e0295ca3aad2da710a8` (22/09/2025), whose bytes had SHA-256
  * `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`. There is no TUF here, by
  * decision: when Sigstore turns its keys over, a bundle signed after that reads `not covered` on
- * a binary that carries this root — never verified — until the root here is replaced.
+ * a binary that carries this root, never verified, until the root here is replaced.
  */
 export const PUBLIC_GOOD_TRUSTED_ROOT: unknown = {
   mediaType: 'application/vnd.dev.sigstore.trustedroot+json;version=0.1',

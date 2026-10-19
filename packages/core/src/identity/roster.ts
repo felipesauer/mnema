@@ -5,7 +5,7 @@
  * the facts and sign a checkpoint over them). What this adds is the part that
  * cannot live in a mechanism: the JUDGEMENT of whether the fact should exist at
  * all. An enrollment fact is append-only, so one whose proof does not check out
- * leaves the tree permanently failing verification, with no way to take it back —
+ * leaves the tree permanently failing verification, with no way to take it back,
  * and a revocation of the last key leaves an identity with nothing able to extend
  * its own history. Both are refused here, while refusing is still free.
  *
@@ -79,7 +79,7 @@ export interface EnrollRequestOk {
   readonly ok: true;
   /** The joining key's fingerprint, derived from the key the request carried. */
   readonly fingerprint: string;
-  /** The identity it now belongs to — this machine's own. */
+  /** The identity it now belongs to: this machine's own. */
   readonly anchor: string;
   /**
    * True when the record ALREADY proved this key a member, so nothing was
@@ -125,7 +125,7 @@ export interface EnrollRequestErr {
  *
  * The consent signature is checked against this machine's OWN anchor, never
  * against an anchor the request names. A request is made for one identity, and a
- * signature over `enroll:<other>:<fp>` is not consent to join this one — appending
+ * signature over `enroll:<other>:<fp>` is not consent to join this one: appending
  * it would leave the tree carrying an enrollment its own verifier rejects, for
  * good. So a request made for someone else is refused here, where refusing costs
  * nothing.
@@ -150,7 +150,7 @@ export function enrollFromRequest(
     };
   }
 
-  // WHO this machine is here, decided without writing — and without a writer: an
+  // WHO this machine is here, decided without writing, and without a writer: an
   // anchor already recorded, one the record proves it joined, or the anchor it is
   // about to found. Read again under the tail's lock if anything landed since
   // ({@link onTheRecordAsItStands}): a key retired a moment ago by another session can
@@ -163,8 +163,8 @@ export function enrollFromRequest(
     () => rosterAsItStands(ctx, signer),
     ({ decided, roster, agentKeys }): Judged<EnrollRequestOk | EnrollRequestErr> => {
       const anchor = decided.anchor;
-      // A key that holds the agent role is in an identity already — THIS one or any other the
-      // record holds — and the verifier refuses a second enrolment of it: said here, while
+      // A key that holds the agent role is in an identity already, THIS one or any other the
+      // record holds, and the verifier refuses a second enrolment of it: said here, while
       // refusing is free.
       const holder = agentKeys.get(fingerprint);
       if (holder !== undefined) {
@@ -192,7 +192,7 @@ export function enrollFromRequest(
       }
 
       // The roster as the record proves it now. A tree with no founding yet has an
-      // empty one, and this machine is about to become its only member — which is why
+      // empty one, and this machine is about to become its only member, which is why
       // an unfounded tree may still vouch.
       if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
         return {
@@ -230,7 +230,7 @@ export function enrollFromRequest(
 export interface RevokeMemberInput {
   /** The full fingerprint of the key to retire. */
   readonly fingerprint: string;
-  /** Why it is being retired — recorded in the fact. */
+  /** Why it is being retired: recorded in the fact. */
   readonly reason: string;
 }
 
@@ -246,7 +246,7 @@ export interface RevokeMemberOk extends ScreenedWrite {
   readonly remaining: number;
   /**
    * When the retired key is this machine's own: the one identity the record still proves it a
-   * member of here, read after the revocation by the reading a `key restore` of that key asks —
+   * member of here, read after the revocation by the reading a `key restore` of that key asks,
    * absent when the record proves it a member of none, or of more than one, where a restore here
    * points this checkout nowhere.
    */
@@ -266,14 +266,14 @@ export type RevokeMemberErrorCode =
   /** The reason given was over the per-field size limit. */
   | 'CONTENT_TOO_LARGE'
   /**
-   * A name field of the revocation read as a credential. It cannot be the reason —
-   * that is a body and is redacted — so today it is the pinned `run` or the agent
+   * A name field of the revocation read as a credential. It cannot be the reason
+   * (that is a body and is redacted), so today it is the pinned `run` or the agent
    * name on the envelope, and it is a refusal for the reason those are names.
    */
   | 'NAME_HOLDS_A_SECRET'
   /** The reason came in empty, and no read would have accepted the fact. */
   | 'UNREADABLE_EVENT'
-  /** The reason says nothing — no letter and no digit, or the `<why>` a recipe prints. */
+  /** The reason says nothing: no letter and no digit, or the `<why>` a recipe prints. */
   | 'NOT_A_REASON'
   /**
    * Never earned today: a revocation carries no title. It is here because the door's refusal is
@@ -293,12 +293,12 @@ export interface RevokeMemberErr {
 
 /**
  * Retires a key from THIS machine's identity, from this point forward. Events the
- * key signed before stay valid — a revocation is prospective, never retroactive,
+ * key signed before stay valid: a revocation is prospective, never retroactive,
  * so past work does not become unattributable because a key was later rotated out.
  *
  * The last key is refused. An identity whose every key is retired has no key able
  * to sign another enrollment, so its history can never be extended again and no
- * command can repair it — the one state in the roster with no way back. The order
+ * command can repair it: the one state in the roster with no way back. The order
  * that works is the reverse: bring the replacement in first, and retire the old
  * key once the record proves the new one a member.
  */
@@ -396,7 +396,7 @@ export function revokeMember(
   );
 }
 
-/** Who this machine is in the tree, and the roster of that identity — one reading of both. */
+/** Who this machine is in the tree, and the roster of that identity: one reading of both. */
 function rosterAsItStands(
   ctx: DecideThenWrite,
   signer: ChainSigner,
@@ -422,7 +422,7 @@ function rosterAsItStands(
 }
 
 /**
- * The context's writer, opened at most once and only when first asked — which
+ * The context's writer, opened at most once and only when first asked, which
  * {@link onTheRecordAsItStands} does after the first reading's last refusal, so a refusal still
  * leaves the tree as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`). Once: a
  * deferred context opens a NEW writer each time it is asked, and a second writer of one tail
@@ -448,12 +448,12 @@ function writingOnce(ctx: DecideThenWrite): RecordAndWriter & { opened(): WriteC
  * its revocation.
  *
  * The checkout that retired its own key goes on recording the identity it left. THIS SAID
- * "nothing rereads a recorded anchor — so anything it writes next is signed by a retired key and
+ * "nothing rereads a recorded anchor, so anything it writes next is signed by a retired key and
  * fails verification for good", which was the trap: every write now asks whether the recorded
  * identity still counts the key, and refuses (`ensureFounded`). Where the record still proves
  * the key in one other identity, `mnema key restore` points the checkout there; this asks the
  * question that restore asks ({@link membershipIn}, over the key's committed half), so the
- * surface never offers a restore the record would refuse — and where it proves none, the surface
+ * surface never offers a restore the record would refuse, and where it proves none, the surface
  * says the restore on the condition a pull meets, since what this reads is the copy of the record
  * this checkout holds.
  */
@@ -475,9 +475,9 @@ export interface EnrollAgentOk {
   readonly ok: true;
   /** The agent key's fingerprint, derived from the key the request carried. */
   readonly fingerprint: string;
-  /** The name it was enrolled under — what every fact it signs carries as its `which`. */
+  /** The name it was enrolled under: what every fact it signs carries as its `which`. */
   readonly name: string;
-  /** The identity it speaks for — this machine's own. */
+  /** The identity it speaks for: this machine's own. */
   readonly anchor: string;
   /** True when the record already had this key under this name, so nothing was appended. */
   readonly alreadyAgent: boolean;
@@ -510,7 +510,7 @@ export type EnrollAgentErr =
  * product does not enrol; a consent given for another identity or another name; a machine whose
  * own key the identity no longer counts, or that is itself an agent (an agent vouches for nobody);
  * a key that is already a member of an identity in this record, or an agent under another name, or
- * one the record took out of the role — the verifier refuses each of those facts for good.
+ * one the record took out of the role: the verifier refuses each of those facts for good.
  */
 export function enrollAgentFromRequest(
   ctx: DecideThenWrite,
@@ -647,8 +647,8 @@ export interface AgentKeyConflict {
 /**
  * Whether the records of several trees, read apart from any write, already say something about the
  * key an agent request carries that enrolling it in the others would contradict: it was retired in
- * one — and a key retired anywhere is retired everywhere this machine writes, so enrolling it in
- * the rest would only make a tree that lets it sign — or it is an agent under ANOTHER name in one,
+ * one (and a key retired anywhere is retired everywhere this machine writes, so enrolling it in
+ * the rest would only make a tree that lets it sign) or it is an agent under ANOTHER name in one,
  * and the record keeps a key to the name it was enrolled under. `where` is how each tree is said.
  *
  * It decides nothing about a request that holds up (a line that does not decode, a name the product
@@ -694,7 +694,7 @@ export function agentKeyConflictIn(
 export interface RetireAgentInput {
   /** The full fingerprint of the agent key. */
   readonly fingerprint: string;
-  /** Why — recorded in the fact. */
+  /** Why: recorded in the fact. */
   readonly reason: string;
 }
 
@@ -720,8 +720,8 @@ export type RetireAgentErr =
 
 /**
  * Retires an agent key of THIS machine's identity: from the retirement on it signs nothing, and it
- * is never enrolled again. Events it signed before stay valid. The agent key is not asked — a key
- * somebody holds is not a key that has to agree to be taken back — and only a key of the
+ * is never enrolled again. Events it signed before stay valid. The agent key is not asked (a key
+ * somebody holds is not a key that has to agree to be taken back) and only a key of the
  * identity's own can do it. The retirement is checkpointed at once, because a reader honours it
  * only when it is covered.
  */

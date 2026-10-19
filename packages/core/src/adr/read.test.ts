@@ -74,7 +74,7 @@ describe('reading one decision document', () => {
   it('takes the numbering out of the title, whichever way the document spells it', () => {
     // Three real spellings, from three real corpora. The source's number stays in
     // the file name (which is the provenance), and keeping it in the title too
-    // would put two numbers on one citation — the product freezes its own.
+    // would put two numbers on one citation: the product freezes its own.
     for (const [heading, expected] of [
       ['# ADR-002 — A vaga é opcional', 'A vaga é opcional'],
       ['# ADR 0001 — SessionDB is multi-writer-safe', 'SessionDB is multi-writer-safe'],
@@ -154,8 +154,8 @@ describe('reading one decision document', () => {
   });
 
   it('refuses a document that states a decision and never states a why', () => {
-    // The product requires a rationale — a decision with none records nothing worth
-    // proving — so there is nothing honest to propose from such a file.
+    // The product requires a rationale, a decision with none records nothing worth
+    // proving, so there is nothing honest to propose from such a file.
     expect(readAdr('# Use UTC\n\n## Consequences\n\nclocks agree\n')).toEqual({
       ok: false,
       code: 'NO_RATIONALE',
@@ -191,8 +191,8 @@ describe('whether a status means the decision is still in force', () => {
   });
 
   it('reads a retired status as retired, however the document goes on', () => {
-    // A supersession NAMES ITS SUCCESSOR — `Superseded by ADR-NNN` is the stable
-    // market convention — so a retired status almost never IS the word; it BEGINS
+    // A supersession NAMES ITS SUCCESSOR (`Superseded by ADR-NNN` is the stable
+    // market convention), so a retired status almost never IS the word; it BEGINS
     // with it. Comparing the whole label read the one retired document of a
     // 216-file corpus as live, which is what put the first-word rule here.
     expect(adrIsInForce('superseded by ADR-8')).toBe(false);
@@ -224,12 +224,12 @@ describe('the label tables', () => {
 });
 
 /**
- * WHAT A DOCUMENT WRITES AS PUNCTUATION IS NOT A FIELD — one case per field, and the
+ * WHAT A DOCUMENT WRITES AS PUNCTUATION IS NOT A FIELD: one case per field, and the
  * structural case under them.
  *
  * THE DEFECT THIS HOLDS DOWN WAS MEASURED ON THIS PROJECT'S OWN DECISIONS. Pointed at the
  * 82 documents this repository keeps, the reader proposed 53 and gave 48 of them the
- * rationale `"---"` — the markdown rule that closes a document's header block, read as its
+ * rationale `"---"`: the markdown rule that closes a document's header block, read as its
  * reason, because the only question asked was whether the lead was a non-empty string. The
  * guard against a missing rationale was proved against ABSENCE (`read.test.ts` above, a
  * document with no lead at all) and blind to PUNCTUATION.
@@ -249,7 +249,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
 
   it('refuses a frontmatter title that is a rule rather than a name', () => {
     // No level-1 heading at all, so the frontmatter is the only thing that could name
-    // this — which is the MADR template's newer shape.
+    // this, which is the MADR template's newer shape.
     expect(readAdr('---\ntitle: "***"\n---\n\n## Context\n\nthe zone drifts\n')).toEqual({
       ok: false,
       code: 'NO_TITLE',
@@ -259,7 +259,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
     if (control.ok) expect(control.title).toBe('Use UTC');
   });
 
-  it('refuses a lead that is the rule under the header block — the corpus case', () => {
+  it('refuses a lead that is the rule under the header block: the corpus case', () => {
     // This is the shape of all 48: a title, a blockquote of state that `isMetadataLine`
     // drops, and the `---` that closes the block. There is no `## Contexto`, so the lead is
     // the only rationale on offer, and the lead is a horizontal rule.
@@ -334,7 +334,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
   it('is the only way this module asks whether a field is there', () => {
     // THE STRUCTURAL HALF. Every case above is about one field; this is about the NEXT
     // field. A new reader added to this module that compares its value with the empty
-    // string re-opens the defect for that field alone, and every case above stays green —
+    // string re-opens the defect for that field alone, and every case above stays green,
     // which is exactly how the rationale came to be the one field asked the wrong question
     // while the title was asked it too and nobody noticed.
     //
@@ -343,7 +343,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
     // spells the comparison through that function.
     const source = readFileSync(new URL('./read.ts', import.meta.url), 'utf8');
     // No `g` on any of these: `test` on a global pattern advances `lastIndex`, so
-    // alternate calls answer `false` over input that never changed — a guard that goes
+    // alternate calls answer `false` over input that never changed; a guard that goes
     // quiet on every other line is worse than none.
     const emptiness = [
       /===\s*''/,
@@ -359,7 +359,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
       for (const pattern of emptiness) if (pattern.test(line)) found.push(line.trim());
     }
     expect(found).toEqual([]);
-    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — ten
+    // NOT VACUOUS: the file really is the one being read, and the rule really is asked; ten
     // calls (six before the decision section was read: the frontmatter, a section body, the
     // status in two places, the title and the lead; four more for the decision section (two), the
     // chosen option's title and the options section). The function they call is the one the
@@ -377,7 +377,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
 });
 
 /**
- * A MARKER LEFT WHERE THE WORDS GO IS NOT A FIELD EITHER — a template never filled in.
+ * A MARKER LEFT WHERE THE WORDS GO IS NOT A FIELD EITHER: a template never filled in.
  *
  * What was wrong: `<why>` has letters, so the reader took it for a rationale and handed it to
  * the write door, which refused it and stopped the whole import there; `# <title>` was imported
@@ -427,16 +427,16 @@ describe('a marker left where the words go is not read as a field', () => {
 });
 
 /**
- * A BOLD WORD IN PROSE IS NOT A STATUS LABEL — the case and the control that differ by the
+ * A BOLD WORD IN PROSE IS NOT A STATUS LABEL: the case and the control that differ by the
  * asterisks alone.
  *
  * MEASURED, AND THE COST WAS A VALID DECISION DISAPPEARING. The third place a status is read
  * is a metadata line in the header block, and the colon was OPTIONAL on both sides of the
- * bold word — so `**estado**` anywhere in a sentence before the first `##` became the
+ * bold word, so `**estado**` anywhere in a sentence before the first `##` became the
  * document's status. Found first on a real `ROADMAP.md`, which yielded `status: "de cada"`
  * out of *"O **estado** de cada entrega não está declarado"*, and then isolated below: a
  * sentence whose second word happens to be `rejeitado` makes {@link adrIsInForce} false, and
- * the scan drops the file as `RETIRED` — reported to a person as POLICY, *"the document says
+ * the scan drops the file as `RETIRED`, reported to a person as POLICY, *"the document says
  * it is no longer in force"*, about a document that says nothing of the kind.
  */
 describe('a bold word in prose is not a status label', () => {

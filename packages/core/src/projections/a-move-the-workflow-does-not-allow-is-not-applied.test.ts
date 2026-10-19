@@ -1,11 +1,11 @@
 /**
- * A MOVE THE WORKFLOW DOES NOT ALLOW IS NOT APPLIED — by any reading (FORMAT.md §6.7).
+ * A MOVE THE WORKFLOW DOES NOT ALLOW IS NOT APPLIED: by any reading (FORMAT.md §6.7).
  *
  * Each record here is one the product's writes could not have made since the gate judges the
  * chain, and that a person with the machine's key can: a move appended by hand and signed. It
  * verifies, because every byte is intact; what it lacks is a place in the workflow, and so every
- * reading of the record reads the subject as if it had not been written — the replay, the cache
- * brought forward, the reading of one subject a gate makes — and the divergences do not take it
+ * reading of the record reads the subject as if it had not been written (the replay, the cache
+ * brought forward, the reading of one subject a gate makes) and the divergences do not take it
  * for two machines that had not seen each other.
  */
 

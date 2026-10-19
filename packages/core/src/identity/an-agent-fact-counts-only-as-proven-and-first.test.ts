@@ -2,8 +2,8 @@
  * What `agentKeysIn` takes for an agent: a fact whose consent holds up, and the first that does.
  *
  * It is the reading `verify` uses to say that a key is an agent's, and the one a refusal uses to
- * say whose. A fact the tree merely NAMES — an `agent.enrolled` whose consent the key never gave
- * for that name — is a forged fact, and it must not make a key an agent of an identity (it would
+ * say whose. A fact the tree merely NAMES, an `agent.enrolled` whose consent the key never gave
+ * for that name, is a forged fact, and it must not make a key an agent of an identity (it would
  * then be refused as one, and a `verify` verdict rewritten around it). A key enrolled twice keeps
  * the first enrolment that holds.
  */

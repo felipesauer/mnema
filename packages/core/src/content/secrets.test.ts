@@ -13,7 +13,7 @@ import {
  *
  * The reason is a bug this detector actually had. Its first version isolated a URL
  * password in a capture group and replaced it through a `String.replace` callback,
- * where the second argument is the match OFFSET when the pattern has no group — so
+ * where the second argument is the match OFFSET when the pattern has no group, so
  * the replacement silently no-oped, and the report still said the value had been
  * replaced. A test that checked the report would have passed while the secret went
  * to the chain, and a false all-clear is worse than no defense, because it ends
@@ -22,7 +22,7 @@ import {
 
 /**
  * One real-shaped value per recognized class: the value that must be gone from the
- * output, and the string written into the sentence to carry it — the same string for
+ * output, and the string written into the sentence to carry it, the same string for
  * every class but `url-password`, whose secret is a slot inside a URL.
  *
  * Keyed BY class, so `SECRET_CLASSES` drives every loop below instead of a list kept
@@ -63,13 +63,13 @@ function itself(value: string): Sample {
   return { value, holder: value };
 }
 
-/** The sentence every sample is scrubbed inside — the context has to come back. */
+/** The sentence every sample is scrubbed inside: the context has to come back. */
 function wrote(sample: Sample): string {
   return `deploying with ${sample.holder} against staging`;
 }
 
-describe('scrubSecrets — the value is absent from the output', () => {
-  it('carries one sample per recognized class — the ruler the loops below measure with', () => {
+describe('scrubSecrets: the value is absent from the output', () => {
+  it('carries one sample per recognized class: the ruler the loops below measure with', () => {
     // Both directions. A class with no sample would be skipped by every loop in
     // this file while looking covered, and a sample for a class the sieve does not
     // have is a test measuring nothing.
@@ -84,7 +84,7 @@ describe('scrubSecrets — the value is absent from the output', () => {
       // THE assertion: the value is not in the output. Anywhere, in any form.
       expect(scrubbed.text).not.toContain(sample.value);
       // And in EXACT form: the sentence with the value swapped for the placeholder
-      // and nothing else moved. It says three things at once — the context around
+      // and nothing else moved. It says three things at once: the context around
       // the value survived so the record is still worth having, the placeholder
       // went where the value was, and no FRAGMENT or digest of the value came with
       // it. `not.toContain(value)` alone would pass on a placeholder carrying the
@@ -112,7 +112,7 @@ describe('scrubSecrets — the value is absent from the output', () => {
     const text = `the key is:\n-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\ndone`;
     const scrubbed = scrubSecrets(text);
 
-    // Replacing only the BEGIN marker would leave the key itself in the record —
+    // Replacing only the BEGIN marker would leave the key itself in the record:
     // the failure this asserts against, and the reason the pattern spans the block.
     expect(scrubbed.text).not.toContain(body);
     expect(scrubbed.text).toBe('the key is:\n<SECRET:private-key-block>\ndone');
@@ -120,7 +120,7 @@ describe('scrubSecrets — the value is absent from the output', () => {
 
   it('takes this product’s own protected key file out of a record, body and all', () => {
     // The file `mnema key protect` writes is the private key under a passphrase, framed
-    // `MNEMA PROTECTED KEY` — not a `PRIVATE KEY` — and it was not a thing the detector saw.
+    // `MNEMA PROTECTED KEY`, not a `PRIVATE KEY`, and it was not a thing the detector saw.
     const body = 'eyJ2IjoxLCJrZGYiOiJzY3J5cHQiLCJzYWx0IjoiYWJjZGVmZ2hpamtsbW5vcCJ9AAAAAAAAAAAA';
     const text = `kept:\n-----BEGIN MNEMA PROTECTED KEY-----\n${body}\n-----END MNEMA PROTECTED KEY-----\ndone`;
     const scrubbed = scrubSecrets(text);
@@ -187,7 +187,7 @@ describe('scrubSecrets — the value is absent from the output', () => {
   });
 });
 
-describe('scrubSecrets — a cleaned text is clean', () => {
+describe('scrubSecrets: a cleaned text is clean', () => {
   // Scrubbing has to reach a fixed point, and the reason is the audit: it reads the
   // SAME detector over the existing record, so a placeholder that still read as a
   // credential would make every already-cleaned record appear in the report
@@ -202,7 +202,7 @@ describe('scrubSecrets — a cleaned text is clean', () => {
 
   it('finds nothing left in a URL whose password was already replaced', () => {
     // The one class whose shape is "whatever sits in this position", so its own
-    // placeholder lands exactly where it looks — the case that made this necessary.
+    // placeholder lands exactly where it looks: the case that made this necessary.
     const once = scrubSecrets('postgres://svc:Tr0ub4dor3@db.internal/app');
     expect(once.text).toBe('postgres://svc:<SECRET:url-password>@db.internal/app');
     expect(detectSecrets(once.text)).toEqual([]);
@@ -210,10 +210,10 @@ describe('scrubSecrets — a cleaned text is clean', () => {
   });
 });
 
-describe('scrubSecrets — the `sk-` family, where the prefix does not name the issuer', () => {
+describe('scrubSecrets: the `sk-` family, where the prefix does not name the issuer', () => {
   // `sk-` is a convention several issuers reuse, so the prefix alone does not say
   // whose key it is. Order in `SECRET_CLASSES` is what decides the name a value is
-  // reported under, and these cases pin the outcome of that order — the refusal was
+  // reported under, and these cases pin the outcome of that order: the refusal was
   // never in doubt, the NAME was, and the name is what a person reads.
   const ANTHROPIC = `sk-ant-api03-${'Xy9'.repeat(12)}`;
   const ANTHROPIC_ADMIN = `sk-ant-admin01-${'Xy9'.repeat(12)}`;
@@ -243,7 +243,7 @@ describe('scrubSecrets — the `sk-` family, where the prefix does not name the 
     expect(detectSecrets(`rotate ${NO_ISSUER_PREFIX} today`)).toEqual(['openai-key']);
   });
 
-  it('refuses EVERY member of the family — naming one of them cannot have opened a hole', () => {
+  it('refuses EVERY member of the family: naming one of them cannot have opened a hole', () => {
     // The coverage question, asked WITHOUT reference to the label. Before this class
     // existed all four were replaced under one name; all four are still replaced,
     // once each. A reordering that opened a gap fails here and not somewhere later.
@@ -265,7 +265,7 @@ describe('scrubSecrets — the `sk-` family, where the prefix does not name the 
 
   it('takes an Anthropic key out of a URL’s password slot under its OWN name', () => {
     // `url-password` is the class whose shape is "whatever sits in this position",
-    // and it runs last — so a value that carries an issuer prefix is named by the
+    // and it runs last, so a value that carries an issuer prefix is named by the
     // prefix, and only a password with no shape of its own falls through to it.
     const scrubbed = scrubSecrets(`https://u:${ANTHROPIC}@api.internal/v1`);
 
@@ -278,7 +278,7 @@ describe('scrubSecrets — the `sk-` family, where the prefix does not name the 
  * The 24 names below are REAL: directory and branch names this repository's own work
  * produced, read as the skill id a person would type. They are a frozen sample of the
  * 194 the cut was measured over, chosen so that every spelling of every one of them is
- * long enough to reach the sieve — a corpus that fell short of the pattern would
+ * long enough to reach the sieve: a corpus that fell short of the pattern would
  * measure nothing at all.
  */
 const CHOSEN_NAMES: readonly string[] = [
@@ -319,14 +319,14 @@ const SPELLINGS: readonly { readonly how: string; readonly write: (name: string)
   { how: 'behind a year', write: (name) => `sk-${name}-2026` },
 ];
 
-/** The same name in camelCase — the spelling the cut deliberately does NOT rescue. */
+/** The same name in camelCase: the spelling the cut deliberately does NOT rescue. */
 function inCamelCase(name: string): string {
   return `sk-${name.replace(/-(.)/g, (_, letter: string) => letter.toUpperCase())}`;
 }
 
-describe('scrubSecrets — a name a person chose is not a credential', () => {
+describe('scrubSecrets: a name a person chose is not a credential', () => {
   it('records the name someone typed, not a placeholder where it used to be', () => {
-    // The delivery case, at the unit that decides it. The assertion is the NAME —
+    // The delivery case, at the unit that decides it. The assertion is the NAME,
     // not the absence of a placeholder, which would also pass on a sieve that had
     // eaten the name and put nothing in its place.
     const chosen = 'sk-check-the-tenant-scope-first';
@@ -353,7 +353,7 @@ describe('scrubSecrets — a name a person chose is not a credential', () => {
     });
   }
 
-  it('still destroys all of them in camelCase — the cost of the cut, as a count', () => {
+  it('still destroys all of them in camelCase: the cost of the cut, as a count', () => {
     // NOT an oversight, and the assertion is written as a count so it cannot be
     // read as one. A capital letter is the mark of the dense alphabet every real
     // key in this table is drawn from, and rescuing camelCase would give up the
@@ -377,7 +377,7 @@ describe('scrubSecrets — a name a person chose is not a credential', () => {
  * Keyed BY class so `SECRET_CLASSES` drives the loop, exactly as `SAMPLES` does: a
  * class added to the sieve with no probe here fails, and so does a probe for a class
  * the sieve does not have. This is where "which prefixes the name rule is reached
- * from" is pinned — the table inside the module decides it, and a change to that
+ * from" is pinned: the table inside the module decides it, and a change to that
  * table shows up here as a named failure rather than as a shift in a corpus count.
  */
 interface NameProbe {
@@ -446,14 +446,14 @@ const NAME_UNDER_EACH_PREFIX: Readonly<Record<string, NameProbe>> = {
   },
 };
 
-describe('scrubSecrets — which prefixes the name rule is reached from', () => {
-  it('carries one probe per recognized class — the ruler this section measures with', () => {
+describe('scrubSecrets, which prefixes the name rule is reached from', () => {
+  it('carries one probe per recognized class: the ruler this section measures with', () => {
     expect(Object.keys(NAME_UNDER_EACH_PREFIX).sort()).toEqual([...SECRET_CLASSES].sort());
   });
 
   for (const secret of SECRET_CLASSES) {
     const probe = NAME_UNDER_EACH_PREFIX[secret] as NameProbe;
-    it(`under ${secret}, a name is ${probe.verdict.length === 0 ? 'left alone' : 'still replaced'} — ${probe.why}`, () => {
+    it(`under ${secret}, a name is ${probe.verdict.length === 0 ? 'left alone' : 'still replaced'}: ${probe.why}`, () => {
       expect(detectSecrets(`the skill ${probe.text} governs this path`)).toEqual(probe.verdict);
     });
   }
@@ -463,7 +463,7 @@ describe('scrubSecrets — which prefixes the name rule is reached from', () => 
  * Random draws in the formats their issuers define, so "no key stopped being caught"
  * is a COUNT and not a claim.
  *
- * The draws are deterministic — a fixed seed through a small generator — because a
+ * The draws are deterministic, a fixed seed through a small generator, because a
  * suite that asserts over fresh randomness asserts a probability, and a probability
  * fails one run in some hundreds and gets called a flake instead of a finding.
  *
@@ -472,7 +472,7 @@ describe('scrubSecrets — which prefixes the name rule is reached from', () => 
  */
 const KEY_DRAWS = 5_000;
 
-/** A small deterministic generator — the same draws on every machine, every run. */
+/** A small deterministic generator: the same draws on every machine, every run. */
 function rolls(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
@@ -488,7 +488,7 @@ const BASE62 = `${LOWERCASE}${LOWERCASE.toUpperCase()}0123456789`;
 const BASE64URL = `${BASE62}-_`;
 const HEX = '0123456789abcdef';
 
-/** The formats the cut is measured against — every `sk-` family shape in the wild. */
+/** The formats the cut is measured against: every `sk-` family shape in the wild. */
 const KEY_FORMATS: readonly {
   readonly who: string;
   readonly of: (roll: () => number) => string;
@@ -530,7 +530,7 @@ function pickFrom(roll: () => number, alphabet: string, count: number): string {
   return out;
 }
 
-describe('scrubSecrets — the differential: no key stopped being caught', () => {
+describe('scrubSecrets, the differential: no key stopped being caught', () => {
   for (const [index, format] of KEY_FORMATS.entries()) {
     it(`replaces ${KEY_DRAWS} of ${KEY_DRAWS} draws of ${format.who}`, () => {
       const roll = rolls(0x5eed + index);
@@ -538,7 +538,7 @@ describe('scrubSecrets — the differential: no key stopped being caught', () =>
       for (let draw = 0; draw < KEY_DRAWS; draw += 1) {
         const key = format.of(roll);
         const scrubbed = scrubSecrets(`rotate ${key} today`);
-        // The value is ABSENT from the output — never "the report is non-empty".
+        // The value is ABSENT from the output, never "the report is non-empty".
         if (scrubbed.text.includes(key)) escaped.push(draw);
       }
       // The draw NUMBERS, so a failure names which ones and the key itself is never
@@ -547,7 +547,7 @@ describe('scrubSecrets — the differential: no key stopped being caught', () =>
     });
   }
 
-  it('names the shape a lowercase-only issuer would have — the coverage the cut costs', () => {
+  it('names the shape a lowercase-only issuer would have: the coverage the cut costs', () => {
     // Stated as a test rather than left in a comment, because it IS what the cut
     // gives up: a key drawn from a lowercase-only alphabet is words by shape, and no
     // shape-based sieve can tell it from a name. None of the thirteen formats above
@@ -559,7 +559,7 @@ describe('scrubSecrets — the differential: no key stopped being caught', () =>
   });
 });
 
-describe('scrubSecrets — what it does NOT flag', () => {
+describe('scrubSecrets: what it does NOT flag', () => {
   // The values this product itself stamps on every event. An entropy rule would
   // replace all of them (measured: 13,094 hits over a real archive, of which
   // 8,208 fingerprints and 3,649 ids), which is why there is no entropy rule.
@@ -577,7 +577,7 @@ describe('scrubSecrets — what it does NOT flag', () => {
     });
   }
 
-  it('leaves a URL with a PORT alone — a port is not a password', () => {
+  it('leaves a URL with a PORT alone: a port is not a password', () => {
     const url = 'https://example.com:8080/v1/status';
     expect(scrubSecrets(url).text).toBe(url);
   });
@@ -588,7 +588,7 @@ describe('scrubSecrets — what it does NOT flag', () => {
   });
 });
 
-describe('scrubSecrets — the limits, stated as tests', () => {
+describe('scrubSecrets: the limits, stated as tests', () => {
   // These are the cases the shape cannot reach, and the reason each write surface
   // declares in its own description that what it does not recognize goes in
   // verbatim. They are asserted so the gap stays a known gap: a change that closed
@@ -603,7 +603,7 @@ describe('scrubSecrets — the limits, stated as tests', () => {
     // The two below are a MEASURED refusal, not an oversight. A class anchored on
     // the variable NAME (`password=`, `api_key:`, `token=`) was written and run: it
     // flagged nothing on a real archive of 4,277 events, which reads as safe until
-    // you measure the other side — against twelve notes a knowledge base plausibly
+    // you measure the other side, against twelve notes a knowledge base plausibly
     // records ("api_key: environment", "token: 15000000 tokens spent", "password:
     // unchanged since the migration") it obfuscated NINE. And it missed both values
     // that motivated it: `DATABASE_PASSWORD=…` because `\b` does not fire after an
@@ -620,12 +620,12 @@ describe('scrubSecrets — the limits, stated as tests', () => {
   ];
 
   for (const uncaught of ESCAPES) {
-    it(`does NOT catch ${uncaught.why} — a known limit, not a bug`, () => {
+    it(`does NOT catch ${uncaught.why}: a known limit, not a bug`, () => {
       expect(scrubSecrets(uncaught.text).replaced).toEqual([]);
     });
   }
 
-  it('calls a `sk-` key with no issuer prefix `openai-key` — a best guess, not a reading', () => {
+  it('calls a `sk-` key with no issuer prefix `openai-key`: a best guess, not a reading', () => {
     // A declared LIMIT, and the reason `anthropic-key` did not close the whole
     // question: `sk-` alone is shared by OpenAI's legacy keys and by every other
     // issuer that reuses the convention without a prefix of its own, and nothing in
@@ -650,7 +650,7 @@ describe('scrubSecrets — the limits, stated as tests', () => {
   });
 });
 
-describe('detectSecrets — classes, never values', () => {
+describe('detectSecrets: classes, never values', () => {
   it('answers with the class and gives no way to reach the value', () => {
     const key = 'AKIAIOSFODNN7EXAMPLE';
     const found = detectSecrets(`deploy with ${key}`);
@@ -658,12 +658,12 @@ describe('detectSecrets — classes, never values', () => {
     expect(found).toEqual(['aws-access-key']);
     // The return type is the whole of the defense in an audit report: there is no
     // value in it to print, so no caller can turn the remedy into a second
-    // disclosure. Asserted structurally — every entry is a known class name.
+    // disclosure. Asserted structurally: every entry is a known class name.
     for (const entry of found) expect(SECRET_CLASSES).toContain(entry);
     expect(JSON.stringify(found)).not.toContain(key);
   });
 
-  it('agrees with the scrub exactly — one code path, so they cannot drift', () => {
+  it('agrees with the scrub exactly: one code path, so they cannot drift', () => {
     const text = `AKIAIOSFODNN7EXAMPLE and postgres://u:s3cret@h/d and ${'x'.repeat(40)}`;
     expect(detectSecrets(text)).toEqual(scrubSecrets(text).replaced);
   });

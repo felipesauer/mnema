@@ -2,7 +2,7 @@
  * `restoreKey` is for the key of a person that is gone, and it does not take the key of an agent.
  *
  * A tree proves an agent key a member, in the role of an agent; restoring it as the person's key
- * would put it at the person's key root, where the next write signs with it as the person — and
+ * would put it at the person's key root, where the next write signs with it as the person, and
  * the facts it signs would then name an agent in the `which` they carry that the verifier reads as
  * a break. The refusal is the code `AN_AGENT_KEY`, and it comes before anything is written.
  */

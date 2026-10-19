@@ -47,7 +47,7 @@ function mergeTails(from: string, into: string): void {
   cpSync(join(from, 'keys'), join(into, 'keys'), { recursive: true });
 }
 
-describe('orderedEvents — single tail preserves seq order', () => {
+describe('orderedEvents: single tail preserves seq order', () => {
   it('returns events in the order they were appended', () => {
     const w = openChainForWriting(rootA, { keyRoot: rootA });
     w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: 'first' }));
@@ -58,7 +58,7 @@ describe('orderedEvents — single tail preserves seq order', () => {
   });
 });
 
-describe('orderedEvents — multi-tail is total and deterministic', () => {
+describe('orderedEvents: multi-tail is total and deterministic', () => {
   it('interleaves two tails by timestamp', () => {
     const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', '2026-07-21T00:00:00.000Z'), { title: 'a1' }));
@@ -103,11 +103,11 @@ describe('orderedEvents — multi-tail is total and deterministic', () => {
   });
 });
 
-describe('orderedEvents — within-tail proven order beats a non-monotonic clock', () => {
+describe('orderedEvents: within-tail proven order beats a non-monotonic clock', () => {
   it('keeps seq order when a tail`s `at` steps backward between appends', () => {
     // A clock correction (NTP, VM resume) makes a later-sequenced event carry an
     // EARLIER `at` than the one before it. The proven order is seq2 then seq3;
-    // the wall-clock says the opposite. `seq` must win — anything else lets the
+    // the wall-clock says the opposite. `seq` must win: anything else lets the
     // cache contradict the chain it is derived from.
     const w = openChainForWriting(rootA, { keyRoot: rootA });
     const [c, b] = taskBirth(env('t-1', '2026-07-21T00:00:05.000Z'), {
@@ -139,9 +139,9 @@ describe('orderedEvents — within-tail proven order beats a non-monotonic clock
   });
 });
 
-describe('orderedEventsOfRecord — the same tails, ordered two ways, read once', () => {
+describe('orderedEventsOfRecord: the same tails, ordered two ways, read once', () => {
   /**
-   * Two chains, each with two tails, and every `at` COLLIDING across them — so both
+   * Two chains, each with two tails, and every `at` COLLIDING across them, so both
    * orders are decided by the tie-break rather than by the clock. On a fixture where
    * the instants differ, a merge that got the tie-break wrong still comes out right,
    * and the equivalence below would be asserting nothing.
@@ -187,7 +187,7 @@ describe('orderedEventsOfRecord — the same tails, ordered two ways, read once'
       expect(across.filter((e) => chain.includes(e))).toEqual(chain);
     }
     // Non-vacuity: the fixture really has two tails per chain and both orders have
-    // something to get wrong — three events each, six in the union.
+    // something to get wrong; three events each, six in the union.
     expect(chains.map((chain) => chain.length)).toEqual([3, 3]);
     expect(across).toHaveLength(6);
   });
@@ -222,16 +222,16 @@ function bySubject(a: { subject: string }, b: { subject: string }): number {
  *
  * These hold the repair `TailReach.boundary` names. The frontier used to record the
  * `seq` each tail was read to, and the walk that resumes from a seq stops at the first
- * entry CARRYING it — which a duplicate of the boundary entry satisfies. Measured, a
+ * entry CARRYING it, which a duplicate of the boundary entry satisfies. Measured, a
  * full replay reported one break over such a tail and a resumed reading reported that
  * nothing had arrived. The frontier records the BYTE now.
  *
  * The plant is the tail's last line appended again: the same `seq`, the same `prev`,
- * byte for byte. Its DUPLICATES are the point — a shape whose bytes are identical to
+ * byte for byte. Its DUPLICATES are the point: a shape whose bytes are identical to
  * something already read is exactly what a content hash cannot tell apart, which is why
  * the boundary is a position and not a hash.
  */
-describe('chainArrivals — a break planted at the boundary', () => {
+describe('chainArrivals: a break planted at the boundary', () => {
   /** The tail's last line, appended again. Returns the seqs the tail then holds. */
   function duplicateLastEntries(root: string, howMany: number): number[] {
     const tails = join(root, 'tails');
@@ -265,7 +265,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
     expect(before.linkBreaks).toHaveLength(0);
 
     const seqs = duplicateLastEntries(rootA, many);
-    // The plant really is at or below the frontier — nothing NEW is above it.
+    // The plant really is at or below the frontier: nothing NEW is above it.
     expect(Math.max(...seqs)).toBe(before.frontier.tails.values().next().value?.lastSeq);
 
     const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
@@ -323,18 +323,18 @@ describe('chainArrivals — a break planted at the boundary', () => {
    * THE THIRD WAY A TAIL STOPS CHAINING, which this reading was blind to until it was
    * measured.
    *
-   * `linkBreakAt` rules three ways — an entry stored under a tail it does not name, a seq
+   * `linkBreakAt` rules three ways: an entry stored under a tail it does not name, a seq
    * that does not follow, and a `prev` that names something other than the entry before
    * it. The suffix test asked a rule written in `order.ts` that covered the first two,
    * because the frontier carried no hash for the third to be asked against. Measured: a
    * fresh `chainReplay` over these bytes reported `prev-hash break` and `chainArrivals`
-   * called them a sound suffix — so a live session refreshed straight past a break that
+   * called them a sound suffix, so a live session refreshed straight past a break that
    * the next process to open the record was told about, which is the same shape of hole
    * the boundary repair above closed, one rule over.
    *
    * THE PLANT IS NOT A DUPLICATE, and that is what makes it this case. The entry at the
-   * boundary is replaced by a DIFFERENT entry carrying the same seq — a second branch of
-   * the same tail — so every seq still runs 0, 1, 2, 3, 4 and only the hashes disagree.
+   * boundary is replaced by a DIFFERENT entry carrying the same seq, a second branch of
+   * the same tail, so every seq still runs 0, 1, 2, 3, 4 and only the hashes disagree.
    * Nothing above catches it: the seqs are contiguous, no tail is gone, no segment was
    * cut, and every arrival is stamped later than what was covered.
    */
@@ -363,7 +363,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
     branchTwo[3] = branchOne;
     writeFileSync(file, `${branchTwo.join('\n')}\n`, 'utf-8');
 
-    // The seqs are contiguous — nothing the seq half of the rule could object to.
+    // The seqs are contiguous: nothing the seq half of the rule could object to.
     const seqs = branchTwo.map((line) => (JSON.parse(line) as { link: { seq: number } }).link.seq);
     expect(seqs).toEqual([0, 1, 2, 3, 4]);
 
@@ -385,7 +385,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
    * THE DECLARED LIMIT, asserted so it cannot drift into a belief.
    *
    * A break BELOW the boundary is in bytes a previous reading already accepted, and a
-   * resumed reading does not read them again — that is what makes it cost the arrivals
+   * resumed reading does not read them again, that is what makes it cost the arrivals
    * rather than the chain. So a live session is not told, and a connection opening
    * afterwards replays and IS told. Closing this would mean re-reading each tail whole
    * on every refresh, which is the entire cost the incremental path exists to avoid.
@@ -417,7 +417,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
    *
    * Inserting below the boundary shifts every entry after it forward, so entries a
    * previous reading already took can end up starting past the boundary byte. Handing
-   * those back as arrivals would append events the order already holds — a projection
+   * those back as arrivals would append events the order already holds: a projection
    * counting one fact twice, which is worse than not being told about a break. The
    * chaining rule is what stops it: their seqs do not continue from the frontier, so
    * the answer is a refusal and the caller replays.
@@ -452,7 +452,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
    * THE BOUNDARY IS A BYTE OFFSET, so a walk that ever measured a line in CHARACTERS
    * would put it in the wrong place on any tail carrying text outside ASCII.
    *
-   * The error has to be big enough to cross a whole stored line before it can be seen —
+   * The error has to be big enough to cross a whole stored line before it can be seen:
    * a title with a few accents understates the offset by a dozen bytes and the backward
    * walk still stops on the same line. So this writes a title of several hundred CJK
    * characters, each of which is one UTF-16 code unit and THREE bytes: measured in
@@ -469,7 +469,7 @@ describe('chainArrivals — a break planted at the boundary', () => {
 
     const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
     expect(arrived.suffix).toBe(true);
-    // Exactly the one appended after the frontier — not the covered entries brought
+    // Exactly the one appended after the frontier, not the covered entries brought
     // back by a boundary that fell short of where the reading really stopped.
     expect(arrived.suffix === true && arrived.events.map((e) => e.subject)).toEqual(['t-3']);
   });

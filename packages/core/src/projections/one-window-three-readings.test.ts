@@ -1,5 +1,5 @@
 /**
- * ONE WINDOW, THREE READINGS — the test a doc-comment named for as long as it stood,
+ * ONE WINDOW, THREE READINGS: the test a doc-comment named for as long as it stood,
  * and which did not exist.
  *
  * `reference-store.ts` said, of the predicate over events and the SQL over the
@@ -21,7 +21,7 @@
  *      instants. A condition added to one and not the others is red here.
  *   2. WHAT THE WINDOW IS OVER IS NOT ONE, AND IS DECLARED. `accountability` and the
  *      audit feed select FACTS; the index selects RECORDS by the instant each was made.
- *      That difference is legitimate — the index holds records — and what was wrong was
+ *      That difference is legitimate, the index holds records, and what was wrong was
  *      that one flag name covered both axes and nothing said which. So the axes are
  *      asserted to DIFFER, on a record built to tell them apart: a task born at one
  *      instant and moved at another is one record and two facts, and a window that
@@ -55,7 +55,7 @@ beforeEach(() => {
     subject: 't-1',
   });
   // A task BORN at instant 1 and MOVED at instants 2 and 4. One record, three facts,
-  // and the record's own instant is the birth — which is what makes the two axes
+  // and the record's own instant is the birth, which is what makes the two axes
   // distinguishable at all.
   w.append({ ...env(1), kind: 'task.created', v: 1, payload: { title: 'windowed' } });
   w.append({
@@ -104,7 +104,7 @@ const MATRIX: readonly Window[] = [
   { from: at(4), to: at(1) },
 ];
 
-/** The instants the PREDICATE admits — the reading a stream of facts uses. */
+/** The instants the PREDICATE admits: the reading a stream of facts uses. */
 function byPredicate(window: Window): string[] {
   return [at(0), at(1), at(2), at(3), at(4), at(5)].filter((instant) =>
     matchesAuthorship({ at: instant, who: 'mnid:one' }, window),
@@ -119,7 +119,7 @@ function byRule(window: Window): string[] {
 }
 
 /**
- * The instants the SQL admits, asked of the reference index — the reading a tally uses.
+ * The instants the SQL admits, asked of the reference index: the reading a tally uses.
  *
  * It goes through the cache's own query rather than a hand-built one, because what is
  * being reconciled is the product's reading and not a re-implementation of it here.
@@ -152,8 +152,8 @@ describe('one window, three readings', () => {
   });
 
   it('builds the same boundary in SQL as it applies in memory', () => {
-    // The two readings cannot be expressed as one another — a `WHERE` cannot yield an
-    // event and a predicate cannot be a `GROUP BY` — so what is asserted is that the
+    // The two readings cannot be expressed as one another, a `WHERE` cannot yield an
+    // event and a predicate cannot be a `GROUP BY`, so what is asserted is that the
     // clause SQL gets is the clause the predicate applies: the same ends, the same
     // inclusivity, the same parameters.
     for (const window of MATRIX) {
@@ -189,7 +189,7 @@ describe('one window, three readings', () => {
   });
 
   it('narrows the index by BIRTH while the tally narrows by FACT', () => {
-    // The axes, asserted to DIFFER — the half that was silent under one flag name. The
+    // The axes, asserted to DIFFER: the half that was silent under one flag name. The
     // task was born at instant 1 and moved at instant 4, so a window that begins at
     // instant 3 holds one FACT and no RECORD.
     const late: Window = { from: at(3) };

@@ -77,7 +77,7 @@ function birthSkill(root: string): string {
   return id;
 }
 
-describe('locateEntityScope — the tree an entity was born in', () => {
+describe('locateEntityScope: the tree an entity was born in', () => {
   it('finds a task born in the PUBLIC tree', () => {
     const id = birthTask(publicRoot);
     expect(locateEntityScope(trees(), id, upcasters)).toBe('public');
@@ -98,12 +98,12 @@ describe('locateEntityScope — the tree an entity was born in', () => {
     expect(locateEntityScope(trees(), mintId(), upcasters)).toBeUndefined();
   });
 
-  it('is generic across kinds — a DECISION is located the same way', () => {
+  it('is generic across kinds: a DECISION is located the same way', () => {
     const id = birthDecision(privateRoot);
     expect(locateEntityScope(trees(), id, upcasters)).toBe('private');
   });
 
-  it('is generic across kinds — a SKILL is located the same way', () => {
+  it('is generic across kinds: a SKILL is located the same way', () => {
     const id = birthSkill(globalRoot);
     expect(locateEntityScope(trees(), id, upcasters)).toBe('global');
   });
@@ -131,7 +131,7 @@ describe('locateEntityScope — the tree an entity was born in', () => {
   });
 });
 
-describe('locateEntityScopeWith — the rule stays here, the per-tree question does not', () => {
+describe('locateEntityScopeWith: the rule stays here, the per-tree question does not', () => {
   /** A probe that records every call, answering true only for the given roots. */
   function spy(holders: readonly string[]): BirthProbe & { calls: [string, string][] } {
     const calls: [string, string][] = [];
@@ -164,7 +164,7 @@ describe('locateEntityScopeWith — the rule stays here, the per-tree question d
   });
 
   it('hands the probe the CANONICAL id, never the caller’s composition of it', () => {
-    // The probe must not have to canonicalize — if it did, two probes could
+    // The probe must not have to canonicalize, if it did, two probes could
     // disagree about what "the same id" is, and the two paths would diverge on
     // an id that only differs in composition.
     const probe = spy([]);
@@ -178,7 +178,7 @@ describe('locateEntityScopeWith — the rule stays here, the per-tree question d
     expect(probe.calls).toEqual([]);
   });
 
-  it('is the SAME walk `locateEntityScope` runs — only the probe differs', () => {
+  it('is the SAME walk `locateEntityScope` runs, only the probe differs', () => {
     // The equivalence at the core level: a probe that answers exactly what the
     // replay answers produces exactly what the replay-based read produces, for
     // every entity kind and for an id no tree holds.

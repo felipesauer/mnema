@@ -4,7 +4,7 @@
  * The fact is "this person adopted exactly these bytes, under this name, in this scope", and
  * the record it lands in is append-only and, in the public tree, cloned. So the claim this
  * file holds is that NOTHING ELSE rides in: no path (a folder names the machine and its
- * owner), no credential, and no scope the record does not govern — the free `--to` folder is
+ * owner), no credential, and no scope the record does not govern; the free `--to` folder is
  * not a scope at all and is refused here rather than recorded.
  */
 

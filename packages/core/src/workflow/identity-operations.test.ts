@@ -4,7 +4,7 @@
  * The mechanism (found, enroll, revoke) is pinned by the chain's own suite and by
  * the enrollment integration test. What is pinned HERE is the policy on top: a
  * tree that is deliberately created is born knowing every key of the identity,
- * not just the key at hand — because mnema refuses central recovery, so a key
+ * not just the key at hand, because mnema refuses central recovery, so a key
  * that was never proven a member while the first key existed can never become one
  * afterwards.
  *
@@ -64,7 +64,7 @@ const clock: Clock = () => {
   return `2026-07-27T00:00:${String(tick).padStart(2, '0')}.000Z`;
 };
 
-/** A fresh tree, plus the write context over it — the machine's one key root. */
+/** A fresh tree, plus the write context over it: the machine's one key root. */
 function openTree(prefix: string): { root: string; writer: ChainWriter; ctx: WriteContext } {
   const root = tmp(prefix);
   const writer = openChainForWriting(root, { keyRoot });
@@ -79,7 +79,7 @@ function enrolledIn(root: string): string[] {
     .map((e) => (e.payload as { newFp: string }).newFp);
 }
 
-describe('establishIdentity — a tree is born with the whole identity', () => {
+describe('establishIdentity: a tree is born with the whole identity', () => {
   it('founds the anchor, creates the cold backup, and enrolls it', () => {
     const tree = openTree('mnema-identity-tree-');
     const established = establishIdentity(tree.ctx, { keyRoot });
@@ -114,7 +114,7 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
     expect(verdict.issues).toEqual([]);
   });
 
-  it('a SECOND tree created later carries the same backup — one signature, every tree', () => {
+  it('a SECOND tree created later carries the same backup: one signature, every tree', () => {
     const first = openTree('mnema-identity-first-');
     const established = establishIdentity(first.ctx, { keyRoot });
     const backupFp = established.backup?.fingerprint as string;
@@ -122,7 +122,7 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
     const second = openTree('mnema-identity-second-');
     const later = establishIdentity(second.ctx, { keyRoot });
 
-    // Same identity, same backup — the registration was replayed, not re-made.
+    // Same identity, same backup: the registration was replayed, not re-made.
     expect(later.anchor).toBe(established.anchor);
     expect(later.backup?.created).toBe(false);
     expect(later.enrolled).toEqual([backupFp]);
@@ -146,7 +146,7 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
   it('does NOT resurrect a revoked key, even with its registration still on disk', () => {
     // The reason the roster is read from the CHAIN and not from the key root's
     // files: a key retired from this identity must stay retired. Reading the
-    // files alone, a later init would re-enroll it — and because an enrollment
+    // files alone, a later init would re-enroll it, and because an enrollment
     // checkpoints itself, that re-enrollment would take effect.
     const tree = openTree('mnema-identity-tree-');
     const established = establishIdentity(tree.ctx, { keyRoot });
@@ -164,8 +164,8 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
 
   it('declines a registration made for ANOTHER identity, and gives this one its own backup', () => {
     // The machine's own anchor is what a registration must cover. One made for a
-    // different anchor proves nothing here — emitting it anyway would leave this
-    // tree permanently failing verification — so it is refused with its reason,
+    // different anchor proves nothing here (emitting it anyway would leave this
+    // tree permanently failing verification), so it is refused with its reason,
     // and this identity gets a backup of its own. (This is the state after a lost
     // key: the machine mints a new key, so a new anchor, and the protection must
     // not go missing exactly then.)
@@ -197,7 +197,7 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
     const tree = openTree('mnema-identity-tree-');
     const established = establishIdentity(tree.ctx, { keyRoot });
 
-    // No backup could be identified, so none is claimed — and the fault is
+    // No backup could be identified, so none is claimed, and the fault is
     // reported rather than repaired behind the person's back.
     expect(established.backup).toBeNull();
     expect(established.declined).toEqual([
@@ -210,7 +210,7 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
   });
 });
 
-describe('linkAccount — an identity names its GitHub account', () => {
+describe('linkAccount: an identity names its GitHub account', () => {
   it('records the claim under the identity that signs it, covered by a signature', () => {
     const tree = openTree('mnema-identity-link-');
     const linked = linkAccount(tree.ctx, { account: 'octocat' });

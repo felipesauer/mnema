@@ -1,24 +1,24 @@
 /**
- * THE COMMAND TREE, read off the declarations — the one datum three shells render.
+ * THE COMMAND TREE, read off the declarations: the one datum three shells render.
  *
  * A completion script is a copy of the command tree written in a shell's dialect, and
  * a copy is the whole difficulty: hand-written, it would list every verb and every
  * subcommand there is, and the first pull request to add a verb would leave the
- * script a version behind with nothing failing — a completion that quietly omits a
+ * script a version behind with nothing failing; a completion that quietly omits a
  * word is indistinguishable from a shell that does not know the word exists. So
  * nothing here is typed twice. The tree is WALKED, once, and what the walk finds is
  * this value.
  *
  * IT IS THE SAME WALK THE PARSER'S REFUSALS USE. `everyCommandOf` (see
  * `wiring/misuse.ts`) is what gave every command of the program one voice for a no, and
- * it is what enumerates the commands here — one recursion in this product, not two
+ * it is what enumerates the commands here: one recursion in this product, not two
  * that could disagree about what a command is. A verb registered tomorrow arrives in
  * all three scripts for the same reason its misuse already answers in the product's
  * voice: nobody has to remember it.
  *
  * WHAT EACH LEVEL OFFERS COMES FROM `--help`'s OWN LISTS. `visibleCommands` and
  * `visibleOptions` are the public accessors commander's help composes from, so the
- * words a Tab offers are the words the help prints — including `-h, --help` and the
+ * words a Tab offers are the words the help prints, including `-h, --help` and the
  * implicit `help` command, which are accepted everywhere and live in neither
  * `.options` nor `.commands`. A hidden option stays hidden by the same construction.
  *
@@ -26,12 +26,12 @@
  * because the program reads them for every verb. A GROUP's travel only to a subcommand
  * that reads them (`mnema task move --which …`, which `task`'s help documents in prose
  * precisely because the move's own option list does not show it), and which ones those
- * are is the declaration `wiring/from-the-group.ts` keeps — the same one the subcommand's
+ * are is the declaration `wiring/from-the-group.ts` keeps: the same one the subcommand's
  * refusal reads, so a flag offered here is never one the verb then refuses.
  *
  * THIS PARAGRAPH SAID THE RULE WAS WHAT THE PARSER ACCEPTS, "and nothing narrower": what
- * is offered at a level is what can be TYPED there. It was right about the parser —
- * commander accepts a group's every flag below it — and what falsified it is what the
+ * is offered at a level is what can be TYPED there. It was right about the parser,
+ * commander accepts a group's every flag below it, and what falsified it is what the
  * subcommands did with them: `decision move --alternatives` and `witness stamp --json`
  * were offered, accepted and dropped without a word. Those are refused now, and a word
  * the verb refuses is not a word that can be typed there. The reason the rule was
@@ -41,7 +41,7 @@
  *
  * AND A VALUE IS OFFERED ONLY WHERE THE DECLARATION ENUMERATES IT. That used to mean
  * `--color`'s three whens and this verb's three shells, because a `.choices()` was the
- * only way a declaration could name a set — so the ten workflow actions, the three
+ * only way a declaration could name a set, so the ten workflow actions, the three
  * scopes and the three levels were offered nowhere: they existed as a sentence typed by
  * hand in the help, and reading a sentence to complete a word would be building on the
  * defect. They are now DECLARED (`wiring/enumerated.ts`) without being validated by the
@@ -55,11 +55,11 @@
  * being true one consumer over. The console offers ids now, and the reason it may is that
  * it does not have this file's problem: a session has already PUT records on its own page,
  * so it completes what it has said rather than asking what exists (`repl/seen.ts`). The
- * cost argument above is untouched and is what keeps this side as it is — from a shell,
+ * cost argument above is untouched and is what keeps this side as it is: from a shell,
  * every Tab is a new process, and there is no page to have said anything.
  *
  * NOTHING HERE IS SHELL. The three renderers own the quoting, and a value is a value
- * until one of them writes it out — which is what lets the same tree be asserted once
+ * until one of them writes it out, which is what lets the same tree be asserted once
  * and rendered three ways (the shape `presentation/` already uses for a line).
  */
 
@@ -82,7 +82,7 @@ export interface CompletionFlag {
 
 /** One word a caller can type, and the one-line description of what it does. */
 export interface CompletionWord {
-  /** The word itself — a verb, a subcommand. */
+  /** The word itself: a verb, a subcommand. */
   readonly word: string;
   /** What the declaration says it does, on one line. Empty when it says nothing. */
   readonly description: string;
@@ -94,7 +94,7 @@ export interface CompletionNode {
   readonly path: string;
   /** The subcommands offered here, in the order the help lists them. */
   readonly commands: readonly CompletionWord[];
-  /** Every flag this command reads — its own, the ones it takes from its group, the program's. */
+  /** Every flag this command reads: its own, the ones it takes from its group, the program's. */
   readonly flags: readonly CompletionFlag[];
   /** The values a positional argument enumerates, when one does. */
   readonly values: readonly string[];
@@ -102,7 +102,7 @@ export interface CompletionNode {
 
 /** The whole tree: the command it completes, and every node under it. */
 export interface CompletionTree {
-  /** The name a caller types — `mnema`. */
+  /** The name a caller types: `mnema`. */
   readonly command: string;
   /** Every command, the program first, then depth-first in declaration order. */
   readonly nodes: readonly CompletionNode[];
@@ -131,7 +131,7 @@ function nodeOf(command: Command): CompletionNode {
 }
 
 /**
- * The values a declaration enumerates, from BOTH channels — and there are two because
+ * The values a declaration enumerates, from BOTH channels, and there are two because
  * they mean two different things.
  *
  * `argChoices` is commander's own, and it comes with validation: the parser refuses
@@ -141,7 +141,7 @@ function nodeOf(command: Command): CompletionNode {
  * arrive through `wiring/enumerated.ts` instead, declared and never validated.
  *
  * A Tab cannot tell the difference and should not: both are "the words the declaration
- * says go here". A declaration has one channel or the other, never both — the union is
+ * says go here". A declaration has one channel or the other, never both: the union is
  * written this way so that a day it has both, the offer is still everything it accepts.
  */
 function enumeratedBy(declaration: Argument | Option): readonly string[] {
@@ -149,11 +149,11 @@ function enumeratedBy(declaration: Argument | Option): readonly string[] {
 }
 
 /**
- * Every flag a command reads: its own first, then each ancestor's — of a group, only the
- * ones this command takes from it; of the program, all of them.
+ * Every flag a command reads: its own first, then each ancestor's (of a group, only the
+ * ones this command takes from it; of the program, all of them).
  *
- * The nearest declaration wins a name, which matters for `-h, --help` — declared by every
- * command — and for the flags a subcommand declares that its group declares too (the two
+ * The nearest declaration wins a name, which matters for `-h, --help`, declared by every
+ * command, and for the flags a subcommand declares that its group declares too (the two
  * `witness` acts' `--global`, `decision import`'s `--scope` and `--which`).
  */
 function flagsInScopeOf(command: Command): readonly CompletionFlag[] {
@@ -193,7 +193,7 @@ function visibleOptionsOf(command: Command): readonly Option[] {
  * would end a line of shell and start one the shell would try to run.
  *
  * THE SECOND REASON WAS A BUDGET, AND IT IS GONE. This said the two were also modules
- * with different budgets — that one reached `@mnema/context`, and this one may not load
+ * with different budgets: that one reached `@mnema/context`, and this one may not load
  * the domain at all, because the script it writes is generated on every interactive
  * shell start. The rule of the line moved to a module that imports nothing, so that half
  * is now false: what keeps these two apart is the paragraph above and nothing else.

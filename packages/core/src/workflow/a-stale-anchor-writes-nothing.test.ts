@@ -68,32 +68,32 @@ import {
 import { adoptStack, removeStack } from './stack-operations.js';
 
 /**
- * A checkout whose recorded identity no longer counts its key writes NOTHING — through every
+ * A checkout whose recorded identity no longer counts its key writes NOTHING: through every
  * write the surface has.
  *
  * THE TRAP. A checkout records, locally, which identity it writes as, and nothing read that file
- * again: a key that left the identity — retired by this checkout's own `key revoke`, or by another
- * member and pulled in — went on signing as it. Every such write succeeded and left `verify`
+ * again: a key that left the identity (retired by this checkout's own `key revoke`, or by another
+ * member and pulled in) went on signing as it. Every such write succeeded and left `verify`
  * failing on the record for good. Measured on the built binary before this existed, with git
  * clones (`code/tests/the-checkout-a-key-left.test.ts` holds the binary's cases now). The write
  * asks, before it appends, whether the recorded identity's roster still counts its key
- * (`ensureFounded`), and refuses with `STALE_ANCHOR` — naming the way out, never taking it.
+ * (`ensureFounded`), and refuses with `STALE_ANCHOR`: naming the way out, never taking it.
  *
  * WHY A SWEEP. The question lives in ONE function, which every append goes through, and that is
  * the claim to test rather than to trust: every function the writing surface exports is driven
- * here from such a checkout and must append nothing — or is declared, with the reason, as one
- * that appends nothing at all — and the set is reconciled against the surface's own exports, so a
+ * here from such a checkout and must append nothing (or is declared, with the reason, as one
+ * that appends nothing at all) and the set is reconciled against the surface's own exports, so a
  * write added tomorrow is unclassified and RED until it is driven. Each drive has a CONTROL: the
  * same call made by a member that still counts goes through, so a refusal here is the anchor's
  * and never an input this file got wrong.
  *
- * THE COST, MEASURED — each number against two worktrees of the base commit, pairs alternated,
+ * THE COST, MEASURED: each number against two worktrees of the base commit, pairs alternated,
  * and the base-against-base control within its own noise (±22 µs in process, ±0.65 ms over MCP,
  * ±7 ms on the command line). The question is a roster, and where the caller holds nothing it is
  * a replay of the tree: in process, a later write went from ~0.9 ms to ~6.2 ms at 1,000 events
  * and to ~65 ms at 10,000 (+5.2 to +5.6 ms and +63 to +70 ms). On the command line, one per
  * command over a floor of ~180 ms: +21 ms at 1,036 events, +33 ms at 3,036, +101 ms at 10,036,
- * +264 ms at 30,036 — linear, and paid on the person's side, where a command holds nothing to
+ * +264 ms at 30,036: linear, and paid on the person's side, where a command holds nothing to
  * derive it from. The MCP session holds the record in order already and asks its cache instead
  * (`ProjectionCache.rosterAsOfNow`, the last describe here): a warm session's public write went
  * from ~2.0–2.4 ms to ~2.9–3.9 ms and its private one by +0.2 to +0.9 ms, flat from 100 events to
@@ -115,7 +115,7 @@ afterEach(() => {
   for (const home of homes) rmSync(home, { recursive: true, force: true });
 });
 
-/** A key root of its own — one machine, one key. */
+/** A key root of its own: one machine, one key. */
 function keyRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'mnema-stale-anchor-key-'));
   homes.push(root);
@@ -158,7 +158,7 @@ function thrownBy(drive: () => unknown): unknown {
 const TAKEN_BACK = { subject: 'a link', target: 'to take back', rel: 'r' } as const;
 
 describe('a checkout the key left writes nothing, through every write of the surface', () => {
-  /** K founded A and let N in; then N retired K — the shape in which K's checkout hears nothing. */
+  /** K founded A and let N in; then N retired K: the shape in which K's checkout hears nothing. */
   function aCheckoutTheKeyLeft() {
     const left = contextOf(keyRoot());
     const anchor = ensureFounded(left);
@@ -226,8 +226,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
   interface Probe {
     readonly op: string;
     /**
-     * `the anchor` — the question every append asks refuses it (`STALE_ANCHOR`, thrown).
-     * `the roster` — the verb's own check refuses first, before a writer is opened
+     * `the anchor`: the question every append asks refuses it (`STALE_ANCHOR`, thrown).
+     * `the roster`: the verb's own check refuses first, before a writer is opened
      * (`CANNOT_VOUCH`, returned), because a vouch or a retirement signed by a key the roster does
      * not count would be rejected by the verifier; nothing is appended either way.
      */
@@ -487,7 +487,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     },
   ];
 
-  /** The exports that append nothing, each with the reason — the other half of the reconciliation. */
+  /** The exports that append nothing, each with the reason: the other half of the reconciliation. */
   const APPENDS_NOTHING: Readonly<Record<string, string>> = {
     authorizingAnchor: 'reads which anchor this installation serves',
     agentKeyConflictIn:
@@ -524,7 +524,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     expect([...driven, ...Object.keys(APPENDS_NOTHING)].sort()).toEqual(exported);
   });
 
-  it('refuses each one and appends nothing — and the member it did not leave writes the same call', () => {
+  it('refuses each one and appends nothing, and the member it did not leave writes the same call', () => {
     const shape = aCheckoutTheKeyLeft();
     // The trap is really there: the recorded identity does not count the key any more.
     expect(shape.left.writer.anchor).toBe(shape.anchor);
@@ -585,7 +585,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
   }
 
   it('a member of one other identity: the restore that points the checkout there, and its file', () => {
-    // K founds A; M founds J and brings K in; N joins A and K leaves it — the way out, done.
+    // K founds A; M founds J and brings K in; N joins A and K leaves it: the way out, done.
     const k = keyRoot();
     const left = contextOf(k);
     const anchor = ensureFounded(left);
@@ -648,7 +648,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
     'an anchor recorded with no founding behind it, %s the key’s public half: delete the file',
     (_, withHalf) => {
       // What the code before the anchor followed the founding left when a first write failed: the
-      // anchor file, naming the identity the key would have founded, and nothing on the record —
+      // anchor file, naming the identity the key would have founded, and nothing on the record,
       // written here by the function that code wrote it with.
       const k = keyRoot();
       const scratchTree = mkdtempSync(join(tmpdir(), 'mnema-stale-anchor-scratch-'));
@@ -677,7 +677,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
       );
       expect(refusal.restores).toBeUndefined();
 
-      // Followed: the file goes, and the next write founds — the record then counts the key.
+      // Followed: the file goes, and the next write founds; the record then counts the key.
       rmSync(anchorPath({ root: tree }, fingerprint));
       const founded = contextOf(k);
       expect(captureMemory(founded, { content: 'after the file went' }).ok).toBe(true);
@@ -724,10 +724,10 @@ describe('the roster a write asks is the one the caller hands it, when it hands 
   });
 });
 
-describe('recordedAnchorOf — the question a write asks, asked by what only reads', () => {
+describe('recordedAnchorOf: the question a write asks, asked by what only reads', () => {
   it('answers nothing before an anchor is recorded, the identity while it counts, and the write’s own refusal once it does not', () => {
     const k = keyRoot();
-    // Asked of the SIGNER, as `mnema init` asks it — nothing is opened, nothing is recorded.
+    // Asked of the SIGNER, as `mnema init` asks it: nothing is opened, nothing is recorded.
     const signer = (): AnchorContext => ({
       writer: signerAt(tree, { keyRoot: k }),
       layout: { root: tree },
@@ -753,7 +753,7 @@ describe('recordedAnchorOf — the question a write asks, asked by what only rea
       throw new Error(`not refused: ${JSON.stringify(asked)}`);
     expect(asked.anchor).toBe(anchor);
     expect(asked.refusal.code).toBe('STALE_ANCHOR');
-    // The SAME refusal the write gets — the words and the file its restore takes — because the
+    // The SAME refusal the write gets, the words and the file its restore takes, because the
     // write asks this very function before it appends.
     const thrown = thrownBy(() => captureMemory(left, { content: 'written after it left' }));
     expect(thrown).toBeInstanceOf(IdentityUnavailableError);
@@ -776,7 +776,7 @@ describe('recordedAnchorOf — the question a write asks, asked by what only rea
   });
 });
 
-describe('ProjectionCache.rosterAsOfNow — the roster a session asks, equal to a replay', () => {
+describe('ProjectionCache.rosterAsOfNow: the roster a session asks, equal to a replay', () => {
   it('agrees with a replay before and after another key retires this one, and moves nothing', () => {
     const k = keyRoot();
     const left = contextOf(k);
@@ -790,7 +790,7 @@ describe('ProjectionCache.rosterAsOfNow — the roster a session asks, equal to 
       expect(cache.rosterAsOfNow(anchor)).toEqual(replayed());
       expect(cache.rosterAsOfNow(anchor).has(left.writer.signerFingerprint)).toBe(true);
 
-      // The retirement arrives on ANOTHER tail after the cache read — the shape of a pull.
+      // The retirement arrives on ANOTHER tail after the cache read: the shape of a pull.
       const member = contextOf(memberRoot);
       expect(
         revokeMember(member, { fingerprint: left.writer.signerFingerprint, reason: 'r' }).ok,
@@ -810,8 +810,8 @@ describe('ProjectionCache.rosterAsOfNow — the roster a session asks, equal to 
   });
 
   it('replays the record whole where what arrived out of order changes the answer', () => {
-    // The other half of the fall-back: the order in hand says the key counts, and what arrived —
-    // stamped before something the cache covers — says it does not. K founds A and lets N in; N
+    // The other half of the fall-back: the order in hand says the key counts, and what arrived,
+    // stamped before something the cache covers, says it does not. K founds A and lets N in; N
     // goes offline on a copy; K writes on (2030) and the cache reads; offline, N retires K (2025).
     // Placed by the merge, the retirement falls after the founding and before K's last write,
     // so the key is out; the order the cache holds alone would still count it.
@@ -855,7 +855,7 @@ describe('ProjectionCache.rosterAsOfNow — the roster a session asks, equal to 
   it('replays the record whole where the order of what arrived decides the answer', () => {
     // The shape in which the ORDER decides the roster, so the fall-back is what answers. K founds
     // A and lets N and P in. P goes offline on a copy. In the tree, N retires K (2030), and the
-    // cache reads. Offline, P — which never saw that — retires K (2024) and enrolls it again
+    // cache reads. Offline, P, which never saw that, retires K (2024) and enrolls it again
     // (2025), and its tail arrives later. Appended behind what the cache holds, the re-enrollment
     // would come LAST and K would count; placed by the merge, the 2030 retirement comes last and
     // K does not. Only the replay says which, and that is the answer asked for.

@@ -4,7 +4,7 @@
  *
  * This database is a PURE CACHE: every row in it is derived from the chain and
  * can be thrown away and rebuilt at any time. It is never the source of truth
- * and is never committed. So there are no data migrations here — when the shape
+ * and is never committed. So there are no data migrations here, when the shape
  * changes, the tables are dropped and replayed, not migrated. The pragmas below
  * are about safe, fast local access, nothing more.
  */
@@ -39,14 +39,14 @@ export type SqliteDatabase = Omit<DatabaseSync, 'prepare'> & {
 /** How long a blocked writer waits on a busy database before giving up. */
 export const BUSY_TIMEOUT_MS = 5000;
 
-/** An in-memory database path — a cache that lives only for the process. */
+/** An in-memory database path: a cache that lives only for the process. */
 export const IN_MEMORY = ':memory:';
 
 /**
  * Opens the cache database at `path` (or `:memory:`) with the standard pragmas:
  *   - `journal_mode = WAL`: concurrent readers alongside one writer.
  *   - `synchronous = NORMAL`: safe under WAL, faster than FULL. A crash can lose
- *     the last transaction — acceptable, because the cache is rebuilt from the
+ *     the last transaction; acceptable, because the cache is rebuilt from the
  *     chain, which is the durable record.
  *   - `foreign_keys = ON`: enforce referential integrity between cache tables.
  *   - `busy_timeout`: tolerate brief writer contention instead of erroring.
@@ -102,7 +102,7 @@ function rememberingStatements(db: DatabaseSync): DatabaseSync {
  * is undone and the error goes up.
  *
  * `node:sqlite` has no transaction helper, so this is the one. Called on a handle that is already
- * inside a transaction (`advance` runs inside the refresh's), it is a savepoint instead — the
+ * inside a transaction (`advance` runs inside the refresh's), it is a savepoint instead: the
  * inner failure rolls back to where it began and the outer transaction decides what to do with
  * the error. `immediate` takes the write lock at `BEGIN`, not at the first write: two processes
  * that mean to write serialize there, rather than one of them finding out mid-way that it

@@ -5,8 +5,8 @@
  * to the `runs` table and reads it back. Three shape mismatches are handled at
  * this boundary: the projection's optional fields (goal, outcome, endedAt,
  * lastFactAt) are bound as SQL NULL when absent, the `open` boolean is stored
- * as 0/1 because a STRICT table has no boolean type, and `wrote` — an array, which
- * no column type holds — crosses as JSON.
+ * as 0/1 because a STRICT table has no boolean type, and `wrote` (an array, which
+ * no column type holds) crosses as JSON.
  *
  * `wrote` is NOT an optional handled by NULL, and that asymmetry is the projection's
  * own: an empty tally is the ANSWER for a run that wrote nothing, so it crosses as
@@ -117,7 +117,7 @@ function toProjection(row: RunRow): RunProjection {
     startedAt: row.started_at,
     // Not defended against malformed text: this column is written by `toParams` in
     // this same file and by nothing else, and the cache is dropped and replayed
-    // rather than migrated — so a row this cannot parse is a bug in the pair above,
+    // rather than migrated, so a row this cannot parse is a bug in the pair above,
     // not input a reader should be quietly recovering from.
     wrote: JSON.parse(row.wrote) as readonly WrittenInRun[],
   };

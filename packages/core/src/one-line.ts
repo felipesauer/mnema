@@ -12,7 +12,7 @@
  * nothing.
  *
  * WHAT THIS PACKAGE PUTS THROUGH IT is every value it interpolates into a refusal that
- * came through the argv, back out of the record, or off this machine's disk — an id a
+ * came through the argv, back out of the record, or off this machine's disk: an id a
  * caller typed, a fingerprint nothing has validated yet, an anchor read out of the
  * files. `the-phrase-the-domain-words-is-one-line.test.ts` classifies every one of them
  * and reconciles the classification against this source in both directions.

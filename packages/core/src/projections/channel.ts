@@ -5,7 +5,7 @@
  * A switch is not a workflow entity and it is not a point-in-time fact either, which
  * makes it the third shape in this directory. Like a task it has a CURRENT position
  * derived from a series of events; unlike a task there is no gate, no birth pair and no
- * vocabulary of actions — the position is the `on` of the last `channel.switched` for
+ * vocabulary of actions: the position is the `on` of the last `channel.switched` for
  * that channel, and that one rule reads it without consulting anything else. The rule is
  * the tasks' own ("current state is the `to` of the last transition") with the workflow
  * taken out of it.
@@ -19,7 +19,7 @@
  * WHAT IT DOES NOT DO IS JUDGE THE NAME. The channels this product actually pushes are
  * named in the surface that pushes them, three packages away, and nothing here can reach
  * that vocabulary. So a switch of a channel no surface knows is projected exactly like
- * any other and simply matches nothing when a channel asks about itself — the fold
+ * any other and simply matches nothing when a channel asks about itself: the fold
  * replays what the chain says and never decides what deserved to be written.
  */
 
@@ -33,7 +33,7 @@ import type { CatalogEvent } from '@mnema/chain';
  * product's default and not a query's convention: nothing arrives switched off.
  */
 export interface ChannelSwitchProjection {
-  /** The channel (the event subject) — the name the pushing surface knows it by. */
+  /** The channel (the event subject): the name the pushing surface knows it by. */
   readonly channel: string;
   /** Its position after the last switch: `true` on, `false` off. */
   readonly on: boolean;
@@ -67,7 +67,7 @@ export function projectChannelSwitches(
   return result;
 }
 
-/** The switch one event is, or undefined for any other kind — the fold's rule, one event at a time. */
+/** The switch one event is, or undefined for any other kind: the fold's rule, one event at a time. */
 export function switchOf(event: CatalogEvent): ChannelSwitchProjection | undefined {
   if (event.kind !== 'channel.switched') return undefined;
   return {

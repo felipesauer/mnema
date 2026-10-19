@@ -5,7 +5,7 @@
  * That is the wrong place for three people: whoever reads a checkout they cannot write to, a CI
  * job that wants the cache to outlive the run (a directory the runner's own cache step saves and
  * restores), and several worktrees of one project that would rather build it once. They name a
- * directory instead, and every read — the command line, the server a host spawns, the library —
+ * directory instead, and every read (the command line, the server a host spawns, the library)
  * keeps its cache there.
  *
  * IT IS READ IN ONE PLACE. The surface reads the environment once (`discoveryEnv`) and hands the
@@ -15,7 +15,7 @@
  *
  * IT IS STILL A CACHE, never the record, and the file's NAME is what keeps it from being read for
  * the wrong project: a directory may hold the caches of any number of projects, and each file is
- * named for the tree it was built from — the tails it holds and the first line of each — so a
+ * named for the tree it was built from, the tails it holds and the first line of each, so a
  * tree reads only a file that was made from it. What the name cannot vouch for (the file's own
  * contents) is vouched for as it always was: a file the code that wrote it does not stand behind,
  * or that no longer follows the chain, is replayed (`cache-meta.ts`), and one that cannot be had is
@@ -42,7 +42,7 @@ const FIRST_LINE_BYTES = 64 * 1024;
 /**
  * Takes `$MNEMA_CACHE_DIR` as the environment gave it. Unset or empty is "not chosen"; anything
  * else must be an absolute path to a directory that exists and can be written, or this throws
- * with what to do — and leaves the previous choice as it was.
+ * with what to do, and leaves the previous choice as it was.
  */
 export function keepReadCacheIn(raw: string | undefined): void {
   if (raw === undefined || raw === '') {
@@ -84,7 +84,7 @@ export function readCacheIsChosen(): boolean {
 
 /**
  * What names a tree among the trees of any number of projects: each tail's name and the digest of
- * its first line. A tail's first entry carries what it was founded with — time, author, content —
+ * its first line. A tail's first entry carries what it was founded with (time, author, content)
  * so two projects do not share it even when one installation wrote the first tail of both.
  */
 function identityOf(layout: ChainLayout): string {
@@ -116,7 +116,7 @@ function firstLineOf(path: string): Buffer {
 }
 
 /**
- * The file this tree's cache is kept in when a directory was chosen — `undefined` when none was,
+ * The file this tree's cache is kept in when a directory was chosen: `undefined` when none was,
  * which is "the tree's own place" ({@link keptCachePath}).
  */
 export function readCacheFileFor(layout: ChainLayout): string | undefined {

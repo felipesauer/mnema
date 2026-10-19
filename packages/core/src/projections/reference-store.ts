@@ -7,27 +7,27 @@
  * A reference is a row `(event, entity, role)`. There are exactly four roles,
  * and each one is a field the catalog already proves:
  *
- *   - `subject` — the envelope's own subject. Every event has one, so every
+ *   - `subject`: the envelope's own subject. Every event has one, so every
  *     event contributes exactly one subject row. This is what makes the index
  *     able to answer a history at all.
- *   - `about` — the entity an `observation.recorded` is about.
- *   - `target` — the entity a `knowledge.linked` points at.
- *   - `by` — the SUCCESSOR a `decision.transitioned {action: "supersede"}`
+ *   - `about`: the entity an `observation.recorded` is about.
+ *   - `target`: the entity a `knowledge.linked` points at.
+ *   - `by`: the SUCCESSOR a `decision.transitioned {action: "supersede"}`
  *     names.
  *
  * The fourth is why this exists. `about` and `target` were already reachable by
- * scanning events, and the links table already held one of them — but `by` lives
+ * scanning events, and the links table already held one of them, but `by` lives
  * in a transition payload, on the SUPERSEDED decision's event. A reader looking
  * at the successor could not see that it had superseded anything: the fact names
  * it, and nothing indexed the name. Making the successor's appearance a ROW
- * rather than a special case fixes it from both ends at once — the successor's
+ * rather than a special case fixes it from both ends at once: the successor's
  * history shows the supersede, and the graph carries the edge.
  *
  * ## Two readings from one shape
  *
  * Ask by entity and the rows are that entity's HISTORY. Ask by `ord` and the
  * rows of one event are an EDGE: the subject row is where the edge starts, a
- * referring row is where it ends. Nothing else is needed — no separate edge
+ * referring row is where it ends. Nothing else is needed: no separate edge
  * table that could come to disagree with the history, and no role that means
  * something here and something else there.
  *
@@ -40,8 +40,8 @@
  * subject and named a target.
  *
  * No resolution of the far end, either. A `target` may name an entity that lives
- * in a tree this cache cannot see — that is legitimate by design, not corruption
- * — so the index records the reference as written and a reader reports the far
+ * in a tree this cache cannot see (that is legitimate by design, not corruption),
+ * so the index records the reference as written and a reader reports the far
  * end as unresolved. Refusing or hiding it would turn an honest partial view
  * into a silent one.
  */
@@ -54,7 +54,7 @@ import { windowConditions, withinWindow } from './window.js';
 /** The ways an entity can appear in a fact. */
 export const REFERENCE_ROLES = ['subject', 'about', 'target', 'by'] as const;
 
-/** How an entity appears in an event — the third column of a reference. */
+/** How an entity appears in an event: the third column of a reference. */
 export type ReferenceRole = (typeof REFERENCE_ROLES)[number];
 
 /**
@@ -76,7 +76,7 @@ const ROLE_PRECEDENCE: { readonly [R in ReferenceRole]: number } = {
   by: 3,
 };
 
-/** One appearance of one entity in one event — a row of the index. */
+/** One appearance of one entity in one event: a row of the index. */
 export interface ReferenceRow {
   /** The event's position in this tree's ordered stream. */
   readonly ord: number;
@@ -92,7 +92,7 @@ export interface ReferenceRow {
   readonly who: string;
   /** The agent that executed it, when one did. */
   readonly which?: string;
-  /** The event's OWN subject — not necessarily {@link entity}. */
+  /** The event's OWN subject, not necessarily {@link entity}. */
   readonly subject: string;
   /** The event as written. */
   readonly event: CatalogEvent;
@@ -116,7 +116,7 @@ export interface ReferenceEdgeRow {
   readonly who: string;
   /** The agent that executed it, when one did. */
   readonly which?: string;
-  /** The asserting event as written — where a link's `rel` is read from. */
+  /** The asserting event as written, where a link's `rel` is read from. */
   readonly event: CatalogEvent;
 }
 
@@ -126,7 +126,7 @@ export type ReferenceDirection =
   | 'out'
   /** Into the entity: what points at it. */
   | 'in'
-  /** Either way — the neighbourhood reading, where an edge is a connection. */
+  /** Either way: the neighbourhood reading, where an edge is a connection. */
   | 'both';
 
 /** A node a walk starts from, and how many hops were already spent reaching it. */
@@ -149,20 +149,20 @@ export interface AuthorshipFilter {
 }
 
 /**
- * What a filter selects, read over an EVENT rather than over a table — the second
+ * What a filter selects, read over an EVENT rather than over a table: the second
  * reading of {@link AuthorshipFilter}, deliberately next to the first.
  *
  * There are two readings because there are two questions. {@link tallyAuthorship}
  * COUNTS, and counting happens in SQL over the reference index, one grouped query per
  * tree. A reading that has to emit the facts THEMSELVES has no table to group: it holds
- * the ordered events and decides one at a time. Neither can be expressed as the other —
- * a `WHERE` clause cannot yield an event, and a predicate over a stream cannot be a
- * `GROUP BY` — so the SHAPE is stated twice, and the window inside both is not: both
+ * the ordered events and decides one at a time. Neither can be expressed as the other
+ * (a `WHERE` clause cannot yield an event, and a predicate over a stream cannot be a
+ * `GROUP BY`), so the SHAPE is stated twice, and the window inside both is not: both
  * ask `projections/window.ts`.
  *
  * THIS PARAGRAPH USED TO END WITH A TEST THAT DOES NOT EXIST. It said
  * `one-window-two-readings.test.ts` ran both readings over one record and asserted they
- * selected the same set — *"red there rather than in a review"*. There was no such file,
+ * selected the same set: *"red there rather than in a review"*. There was no such file,
  * and no test named `matchesAuthorship` at all, so the reconciliation was an intention
  * written as a fact for as long as the sentence stood. The count was wrong as well: the
  * full-text index has a window of its own, which made THREE. What reconciles them now is
@@ -171,11 +171,11 @@ export interface AuthorshipFilter {
  * The WINDOW is not decided here: it is {@link withinWindow}, one rule for all three
  * reads that take `--from`/`--to`, inclusive on both ends and compared on the ISO
  * strings directly. It used to be spelled out on these two lines, and the paragraph
- * below said a test reconciled it with the SQL reading — see `projections/window.ts`
+ * below said a test reconciled it with the SQL reading: see `projections/window.ts`
  * for what was wrong with that sentence, and with its count.
  *
  * A `which` filter excludes the facts a person authored with no agent, exactly as
- * `which = @which` never matches a NULL — the narrowing a caller asking about an agent
+ * `which = @which` never matches a NULL: the narrowing a caller asking about an agent
  * means.
  */
 export function matchesAuthorship(
@@ -249,15 +249,15 @@ interface RefParams {
  * rebuild after the table has been recreated empty; the caller owns the
  * transaction.
  *
- * It reads the SAME stream every projection folds — one read of the chain, one
- * order, several materializations — so the index cannot come to disagree with
+ * It reads the SAME stream every projection folds (one read of the chain, one
+ * order, several materializations), so the index cannot come to disagree with
  * the tables about what the chain says, or about the order it says it in.
  *
  * A reference whose entity id is blank is skipped. A blank is not a dangling
  * reference (which is honest and kept); it is the absence of an id, and indexing
  * it would put a node in the graph that no one can ask about.
  *
- * `from` is where in the stream these events sit — 0 for the whole order, and the
+ * `from` is where in the stream these events sit: 0 for the whole order, and the
  * count already indexed when the caller holds only what arrived after it. That is the
  * ONE materialization here that can be brought forward by appending rather than by
  * being replaced, and the reason is `ord`: a row's position is the event's position
@@ -267,7 +267,7 @@ interface RefParams {
  *
  * A WRONG `from` IS NOT CAUGHT HERE. That sentence replaces one claiming the primary
  * key would collide, and the claim is false: the key is (entity, role, ord), so only
- * re-indexing the SAME entity at a position it holds throws — a different event at
+ * re-indexing the SAME entity at a position it holds throws; a different event at
  * that position writes a row claiming it, quietly. So the base is the caller's to
  * establish, and {@link chainArrivals} is what establishes it by proving the slice is
  * a suffix of the order the index was built from. The limit is pinned rather than
@@ -295,7 +295,7 @@ export function materializeReferences(
 }
 
 /**
- * Every (entity, role) pair one event contributes — its subject, plus whichever
+ * Every (entity, role) pair one event contributes: its subject, plus whichever
  * referring field its kind carries. This function IS the graph's definition: a
  * role that is not listed here does not exist, and adding an edge to the product
  * means adding a line to it.
@@ -316,8 +316,8 @@ function appearancesOf(event: CatalogEvent): Array<[string, ReferenceRole]> {
 
 /**
  * Every event that touches `entityId`, in this tree's own order, one entry per
- * event. An entity no event touches yields an empty list — an answer, not an
- * error — and a blank id matches nothing (a whitespace id is never a minted id).
+ * event. An entity no event touches yields an empty list (an answer, not an
+ * error) and a blank id matches nothing (a whitespace id is never a minted id).
  *
  * An event that names the entity twice (a link whose target is its own subject)
  * yields ONE row, carrying the strongest role by {@link ROLE_PRECEDENCE}: being
@@ -347,7 +347,7 @@ export function listReferences(db: SqliteDatabase, entityId: string): ReferenceR
 }
 
 /**
- * True when some event in this tree has `entityId` as its SUBJECT — the honest
+ * True when some event in this tree has `entityId` as its SUBJECT: the honest
  * test of "does the record know this thing". Being referred to is not enough: a
  * dangling target is exactly an id that is pointed at and never authored.
  */
@@ -366,7 +366,7 @@ export function isKnownEntity(db: SqliteDatabase, entityId: string): boolean {
  * It counts SUBJECT rows only, and that is what makes it a count of events:
  * every event has exactly one subject row, so one row per event, no matter how
  * many entities the event refers to. The window is compared on the ISO strings
- * directly — ISO-8601 UTC stamps sort lexically, the same order the chain merges
+ * directly: ISO-8601 UTC stamps sort lexically, the same order the chain merges
  * on.
  */
 export function tallyAuthorship(
@@ -382,7 +382,7 @@ export function tallyAuthorship(
   }
   if (filter.which !== undefined) {
     // `which = @which` never matches a NULL, so filtering by an agent excludes
-    // the facts a human authored with none — the same narrowing a caller means.
+    // the facts a human authored with none: the same narrowing a caller means.
     conditions.push('which = @which');
     params.which = filter.which;
   }
@@ -413,7 +413,7 @@ export function tallyAuthorship(
  * Every identity that authorized a fact in this tree, once each, sorted.
  *
  * The cheapest honest answer to "who does this record know". It reads the same
- * subject rows {@link tallyAuthorship} counts — one per event — so an author with
+ * subject rows {@link tallyAuthorship} counts, one per event, so an author with
  * a single fact is in the list exactly as one with a thousand: this is a question
  * about presence, not about volume.
  */
@@ -426,7 +426,7 @@ export function listAuthors(db: SqliteDatabase): string[] {
 
 /** One event of a kind, reduced to what it is about and the run it happened in. */
 export interface SubjectRun {
-  /** The event's subject — what the fact is about. */
+  /** The event's subject: what the fact is about. */
   readonly entity: string;
   /** The run it belongs to, or null when it belongs to none. */
   readonly run: string | null;
@@ -441,7 +441,7 @@ export interface SubjectRun {
  * would report one session as two).
  *
  * The run comes out of the stored event through SQLite's own JSON reader rather
- * than by parsing every row in JavaScript — the envelope is already in the column,
+ * than by parsing every row in JavaScript: the envelope is already in the column,
  * and pulling one field out of it is what `json_extract` is for.
  */
 export function listSubjectRuns(db: SqliteDatabase, kind: EventKind): SubjectRun[] {
@@ -478,7 +478,7 @@ function byNewestCharge(a: ChargeAt, b: ChargeAt): number {
 }
 
 /**
- * Every run charged at `path` — asked for a person, or refused — in the named channels, with the
+ * Every run charged at `path` (asked for a person, or refused) in the named channels, with the
  * newest `at` of each, newest run first.
  *
  * ONLY THE FACTS THAT CARRY BOTH A PATH AND A RUN. A charge made by a process that has no run (the
@@ -517,7 +517,7 @@ export function listChargesAt(
 
 /**
  * Walks the reference graph of THIS tree from `seeds`, following edges in
- * `direction`, and returns every edge it traversed — not the nodes, because the
+ * `direction`, and returns every edge it traversed, not the nodes, because the
  * caller merges several trees and recomputes depth over the union anyway.
  *
  * The walk is a `WITH RECURSIVE` query: SQLite does the traversal, so a graph of
@@ -537,8 +537,8 @@ export function listChargesAt(
  *
  * Every hop is TWO indexed equality joins over `refs` and nothing else: from the
  * frontier node to a row that names it (the primary key), then to the other row
- * of the same event (`idx_refs_ord`). The obvious formulation — materialize the
- * edge set once, then join the frontier against it with `src = n OR dst = n` —
+ * of the same event (`idx_refs_ord`). The obvious formulation (materialize the
+ * edge set once, then join the frontier against it with `src = n OR dst = n`)
  * measured four times slower for the commonest query of all (one hop, either
  * way), because an `OR` across two columns is not a lookup and every hop scanned
  * the whole edge set. There is no edge set here; there are two lookups.
@@ -551,7 +551,7 @@ export function walkReferences(
 ): ReferenceEdgeRow[] {
   if (seeds.length === 0 || maxDepth < 1) return [];
 
-  // The seeds go in as bound parameters, one pair each — never interpolated.
+  // The seeds go in as bound parameters, one pair each, never interpolated.
   const params: Record<string, string | number> = { max: maxDepth };
   const seedRows = seeds.map((seed, index) => {
     params[`e${index}`] = seed.entity;
@@ -564,8 +564,8 @@ export function walkReferences(
   //
   // CROSS JOIN, and not for a cross product: it is SQLite's one lever for FIXING
   // a join order. The planner cannot estimate how many rows a recursive CTE holds,
-  // so left to itself it drives the outer loop from `refs` and probes the frontier
-  // — a full scan of the index on every call. Driving from the frontier (a handful
+  // so left to itself it drives the outer loop from `refs` and probes the frontier,
+  // a full scan of the index on every call. Driving from the frontier (a handful
   // of rows) and looking each node up is the same answer through two lookups.
   const hop = `CROSS JOIN refs near ON near.entity = w.node ${step.near}
                JOIN refs far ON far.ord = near.ord ${step.far}`;
@@ -598,8 +598,8 @@ export function walkReferences(
  * next frontier node.
  *
  * Following an edge OUT means starting from the node's subject row and landing on
- * a referring one; following it IN is the mirror. Either way — the neighbourhood
- * reading — means starting from any row that names the node and landing on the
+ * a referring one; following it IN is the mirror. Either way, the neighbourhood
+ * reading, means starting from any row that names the node and landing on the
  * other role of that event, which is what keeps a self-reference (an event whose
  * subject and referred entity are the same id) visible instead of joining a row
  * to itself.

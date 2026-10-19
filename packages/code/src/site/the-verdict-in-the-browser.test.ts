@@ -4,9 +4,9 @@
  * A page that verified a record and said something other than the CLI says would be worse
  * than a page that did not verify: a stranger would trust the one they could run without
  * installing anything. So the script a generated page carries is run here the way a browser
- * runs it — in a context with no `Buffer`, no `require`, no filesystem and no
- * `SharedArrayBuffer` (a page without cross-origin isolation has none), reading the files the
- * page embeds — and what it writes is held against the CLI's own verdict over the same
+ * runs it (in a context with no `Buffer`, no `require`, no filesystem and no
+ * `SharedArrayBuffer` , which a page without cross-origin isolation lacks, reading the files the
+ * page embeds) and what it writes is held against the CLI's own verdict over the same
  * record: honest, tampered at the hash chain, tampered at a signature, and the frozen
  * witnessed record.
  */
@@ -130,13 +130,13 @@ function honestRecord(): string {
 }
 
 /**
- * What `mnema verify` says of the public tree to someone who has only the repository — no
+ * What `mnema verify` says of the public tree to someone who has only the repository: no
  * key root of their own, which is who the page's reader is.
  *
  * It is not what the author's machine says, and the difference is one clause: a machine that
  * holds a registered backup key words the census with it ("1 backup key(s), which sign
- * nothing until restored"), and a clone cannot know that. The verdict — level, issues, the
- * rest of the sentence — is the same on both.
+ * nothing until restored"), and a clone cannot know that. The verdict (level, issues, the
+ * rest of the sentence) is the same on both.
  */
 function theCliSays(): { ok: boolean; level: string; summary: string; notes: number } {
   const result = verify(join(repo, '.mnema'));

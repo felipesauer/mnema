@@ -41,7 +41,7 @@ describe('the decision transition table is well-formed', () => {
     }
   });
 
-  it('never lists `create` — birth is not a gated transition', () => {
+  it('never lists `create`: birth is not a gated transition', () => {
     expect(DECISION_TRANSITIONS.some((t) => (t.action as string) === 'create')).toBe(false);
     expect(DECISION_ACTIONS as readonly string[]).not.toContain('create');
   });

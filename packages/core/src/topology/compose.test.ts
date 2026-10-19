@@ -36,7 +36,7 @@ function writeTask(root: string, at: string, title: string): string {
 
 const layout = (root: string): ChainLayout => ({ root });
 
-describe('orderedEventsOfRecord — the union of three trees', () => {
+describe('orderedEventsOfRecord: the union of three trees', () => {
   it('shows events from all three trees, interleaved by time', () => {
     writeTask(publicRoot, '2026-07-21T00:00:00.000Z', 'pub');
     writeTask(privateRoot, '2026-07-21T00:00:01.000Z', 'prv');
@@ -61,7 +61,7 @@ describe('orderedEventsOfRecord — the union of three trees', () => {
 
   it('drops trees that do not exist (empty layouts contribute nothing)', () => {
     writeTask(publicRoot, '2026-07-21T00:00:00.000Z', 'pub');
-    // privateRoot and globalRoot are never written to — no tails on disk.
+    // privateRoot and globalRoot are never written to: no tails on disk.
     const union = orderedEventsOfRecord(
       [layout(publicRoot), layout(privateRoot), layout(globalRoot)],
       upcasters,
@@ -70,7 +70,7 @@ describe('orderedEventsOfRecord — the union of three trees', () => {
   });
 });
 
-describe('orderedEventsOfRecord — distinct ids across trees never collide', () => {
+describe('orderedEventsOfRecord: distinct ids across trees never collide', () => {
   it('two trees each with an event counts BOTH, never de-duplicating', () => {
     // The false-merge base: distinct v7 ids across trees are distinct events; the
     // union is a plain interleave, no de-duplication and no double-counting.

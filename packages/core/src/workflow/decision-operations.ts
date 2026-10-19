@@ -2,8 +2,8 @@
  * The gated write operations for decisions: the only way the core records a
  * decision or moves one, and the seam every surface goes through.
  *
- * They mirror the task operations — read current state from the chain (never
- * the cache), run the gate, append only if authorized — with two things unique
+ * They mirror the task operations (read current state from the chain, never
+ * the cache; run the gate, append only if authorized) with two things unique
  * to a decision:
  *
  *   1. THE FROZEN ADR LABEL. `recordDecision` derives the citable `ADR-<n>`
@@ -13,8 +13,8 @@
  *      slip when a concurrent decision merges ahead of it, silently
  *      re-pointing a citation. Two clones may mint the same label offline; that
  *      is a label collision (the ids stay unique), detected by the projection,
- *      not prevented here. Two sessions of ONE installation could mint it too —
- *      every time, measured: 10 of 10 concurrent pairs — because the count was
+ *      not prevented here. Two sessions of ONE installation could mint it too
+ * (     every time, measured: 10 of 10 concurrent pairs), because the count was
  *      read outside the tail's lock; it is checked under it now
  *      ({@link onTheRecordAsItStands}), so those number in sequence.
  *
@@ -22,8 +22,8 @@
  *      SHAPE (a `by` is present and is not the subject); whether the subject
  *      and `by` actually EXIST needs the event stream, so it is checked here,
  *      against the same projected decisions the state is read from. A supersede
- *      naming a `by` with no record is refused (UNKNOWN_BY) — the anti-dangling
- *      rule — as is one whose subject does not exist (UNKNOWN_SUBJECT).
+ *      naming a `by` with no record is refused (UNKNOWN_BY), the anti-dangling
+ *      rule, as is one whose subject does not exist (UNKNOWN_SUBJECT).
  */
 
 import {
@@ -77,7 +77,7 @@ export type DecisionWriteError =
   /**
    * The decision acted on does not exist (no `decision.recorded` for this id).
    * This is the subject-existence check for every transition, supersede
-   * included — the subject of a supersede is the decision being superseded.
+   * included: the subject of a supersede is the decision being superseded.
    */
   | { readonly ok: false; readonly code: 'UNKNOWN_DECISION'; readonly message: string }
   /** A supersede named a successor `by` that does not exist (a dangling link). */
@@ -112,7 +112,7 @@ export interface RecordInput {
   readonly title: string;
   readonly rationale: string;
   /**
-   * What was considered and turned down, and why not — the other half of the why.
+   * What was considered and turned down, and why not: the other half of the why.
    * Optional: many decisions had no contender. Absent when there is none, never
    * empty; an empty string reaches the append door as an unreadable event, the
    * same refusal any other blank text field earns.
@@ -135,8 +135,8 @@ export interface DecisionTransitionInput {
   /** The run this belongs to, if any. */
   readonly run?: string;
   /**
-   * A precondition of the CALLER'S, asked inside the judgement — at the first reading and, when
-   * the chain moved, again at the second, under the tail's lock — and refused with what it
+   * A precondition of the CALLER'S, asked inside the judgement (at the first reading and, when
+   * the chain moved, again at the second, under the tail's lock) and refused with what it
    * returns. It is how a rule the surface owns (a switch an agent's acceptance depends on) is
    * judged against the record as it stands when the move lands, where asking it before the call
    * left a window in which the switch could be turned off after the answer and before the append.
@@ -157,16 +157,16 @@ export interface SupersedeInput extends DecisionTransitionInput {
  * the current decision count, then appends the birth pair (`decision.recorded`
  * then the birth `decision.transitioned`, `from: null` → proposed) atomically.
  * The id is minted by the operation, never supplied (see {@link mintId}); the
- * `ADR-<n>` label is separate — a human-citable rubric layered OVER the id, not
+ * `ADR-<n>` label is separate: a human-citable rubric layered OVER the id, not
  * the identity, so it stays caller-independent and frozen at write time. Birth
  * is not a gated transition, but it still requires a human `who` who is not the
- * executing agent — the same authority invariant the gate enforces.
+ * executing agent: the same authority invariant the gate enforces.
  */
 export function recordDecision(
   ctx: DecisionWriteContext,
   input: RecordInput,
 ): RecordOk | DecisionWriteError {
-  // The title, the rationale and the alternatives in ONE screen — a decision's
+  // The title, the rationale and the alternatives in ONE screen: a decision's
   // prose is the longest text this domain records, and the likeliest place a
   // connection string is pasted as evidence of what was decided. The alternatives
   // go in the same call rather than a second one: `screenContent` leaves an absent
@@ -175,7 +175,7 @@ export function recordDecision(
   //
   // The pinned run joins them for a different reason: it is not payload at all, it
   // is the envelope's second caller-supplied field, and nothing in this package
-  // proves it names a session — so it goes through the door beside the prose rather
+  // proves it names a session, so it goes through the door beside the prose rather
   // than around it.
   const text = screenContent({
     title: input.title,
@@ -194,17 +194,17 @@ export function recordDecision(
 
   // The id is minted here, not chosen by the caller: derived from randomness so
   // two offline clones never mint the same one. That is what dissolves the
-  // reused-id case entirely — a caller cannot ask to record an id that already
+  // reused-id case entirely: a caller cannot ask to record an id that already
   // exists, so there is no duplicate to refuse. It is canonical by construction.
   const id = mintId();
 
   // Derive the citable label from the writer's local view and FREEZE it. The count is
   // read from the projection the tree keeps, brought forward to the chain as it stands
-  // at that moment ({@link asTheChainIs}) — THIS SAID IT WAS READ "FROM THE CHAIN, not the
+  // at that moment ({@link asTheChainIs}): THIS SAID IT WAS READ "FROM THE CHAIN, not the
   // cache", and the premise was that the only way to be current was to replay the whole
   // record, which cost about 1 s at 100 thousand events and held the lock for as long when
   // it had to be read again under it. A cache brought forward over what arrived is the
-  // chain as it stands, unless somebody edited it, and costs the arrivals — which is enough for a
+  // chain as it stands, unless somebody edited it, and costs the arrivals, which is enough for a
   // label and not for a gate: a count edited by hand repeats a label, and a repeated label is a
   // collision the reader already names, while what a MOVE is judged on is read off the chain
   // ({@link standing}). Unlike
@@ -275,8 +275,8 @@ export function rejectDecision(
 
 /**
  * Supersedes a decision with a later one. Beyond the gate's shape check (a `by`
- * that is present and not the subject), this verifies the successor `by` EXISTS
- * — a supersede that named a decision with no record would leave a dangling
+ * that is present and not the subject), this verifies the successor `by` EXISTS:
+ * a supersede that named a decision with no record would leave a dangling
  * link, which the anti-dangling rule forbids. The subject's existence is the
  * usual UNKNOWN_DECISION path.
  */
@@ -290,7 +290,7 @@ export function supersedeDecision(
 /**
  * The shared transition path: read the current state from the chain, run the
  * gate, and for a supersede also verify the successor exists, then append only
- * if everything passed — under the tail's lock, against the state the record is
+ * if everything passed, under the tail's lock, against the state the record is
  * in at that moment ({@link onTheRecordAsItStands}). `to`, `action`, and the recorded `by` all come from the
  * gate's verdict, never from the caller's assertion.
  *
@@ -336,7 +336,7 @@ function transition(
 
       // Judged again under the tail's lock because something landed since the first
       // reading: if it was THIS decision that moved, the move the caller asked for was
-      // asked of a state it is no longer in, and that is what they are told — not the
+      // asked of a state it is no longer in, and that is what they are told, not the
       // gate's verdict on a state they never saw.
       const was = earlier?.get(id)?.state;
       if (was !== undefined && was !== current.state) {
@@ -347,7 +347,7 @@ function transition(
       const who = authorizingAnchor(ctx);
 
       // Resolved before the gate, and the RESOLVED value is both what the gate judges
-      // and what the envelope records — `which` is free text and goes through the same
+      // and what the envelope records: `which` is free text and goes through the same
       // door as the proof, so screening it and then recording something else would be
       // the very mismatch the resolution exists to prevent.
       const agent = resolveExecutingAgent(who, input.which);
@@ -368,7 +368,7 @@ function transition(
       // Existence of the successor is a stream fact the pure gate cannot see. Check
       // it against the SAME projected view the state came from. `verdict.by` is in
       // the chain's canonical id form, so the lookup key matches both the
-      // successor's own record subject and the `by` this event will record — no
+      // successor's own record subject and the `by` this event will record: no
       // composition variant can split them.
       if (verdict.action === 'supersede' && verdict.by !== undefined) {
         if (!decisions.has(verdict.by)) {

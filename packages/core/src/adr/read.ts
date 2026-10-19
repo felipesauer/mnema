@@ -1,25 +1,25 @@
 /**
- * Reading ONE decision document somebody else wrote — the form the market
+ * Reading ONE decision document somebody else wrote: the form the market
  * converged on, turned into the four things this product records.
  *
  * WHY THIS EXISTS. The record only holds what somebody decided to write into it,
  * and writing is not discoverable the way reading is: an agent finds the read
  * tools on the server and uses them unprompted, while a write happens only when
  * someone remembers to write. So a real project's record starts empty and stays
- * empty — while the same project's decisions are already written down, in
+ * empty, while the same project's decisions are already written down, in
  * markdown, committed, and being read by people. This module reads THOSE.
  *
  * IT IS DETERMINISTIC AND IT CALLS NOTHING. No model, no network, no heuristics
  * that need one: a heading is a heading and a label is a label. That is a
- * requirement rather than an implementation detail — a fact summarized by a model
+ * requirement rather than an implementation detail: a fact summarized by a model
  * entering the record as an accepted entry is a shape this project turned down,
  * and `the-product-calls-no-model.test.ts` is the guard that keeps the whole
  * product on that side of the line.
  *
  * ONE FORM, AND THE REFUSAL IS LOUD. The conventions in the wild are several and
- * mutually incompatible — a single `DECISIONS.md`, one file per decision, YAML
+ * mutually incompatible: a single `DECISIONS.md`, one file per decision, YAML
  * frontmatter, headings in `#`. This reads ONE: **one decision per file, a level-1
- * title, and named `##` sections** — Nygard's original shape and MADR's, which is
+ * title, and named `##` sections**, Nygard's original shape and MADR's, which is
  * what `adr-tools` and `log4brains` generate and what every published template
  * describes. A document this cannot read that way is REFUSED BY NAME: a wrong
  * proposal costs a person's attention, which is the one thing this whole slice
@@ -28,14 +28,14 @@
  * THAT PARAGRAPH SAID *"never guessed at"* AND IT WAS FALSE, so it says what it can
  * stand behind instead. The claim it made was about the OTHER direction: not that a
  * file this refuses is named, which is true and tested, but that a file this accepts
- * is a decision — which nothing here can know. Measured against a real bench
+ * is a decision, which nothing here can know. Measured against a real bench
  * directory: five INDEX pages (`ROADMAP.md`, `DECISIONS.md`, `SURFACE.md` and two
  * more) were read as five decisions, and a markdown table holding 416 decisions
  * entered as ONE, titled *"Registro de decisões da reconstrução"*, with its opening
  * paragraph as the reason. An index page HAS a level-1 title and HAS prose under it;
  * there is no fact of the document that separates it from a decision, and refusing by
  * FILE NAME is what `NOT_A_DECISION` in `scan.ts` already does for the names a
- * tool generates — it cannot cover names a project invents. So the limit is stated
+ * tool generates: it cannot cover names a project invents. So the limit is stated
  * rather than closed, and the product's answer to it is structural and not a guess:
  * an imported decision is born `proposed` and a PERSON rules on it. Nothing here is
  * accepted on anybody's behalf.
@@ -43,14 +43,14 @@
  * THE SECTION LABELS ARE READ IN TWO LANGUAGES, and that is a measurement and not
  * a preference. Of the 227 real decision documents this project has to hand, 223
  * are written in Portuguese; recognizing only the English labels would refuse
- * 98% of the available corpus over its language while its structure — `# ` title,
- * `## ` sections, a status label — is exactly the one described above. The two
+ * 98% of the available corpus over its language while its structure (`# ` title,
+ * `## ` sections, a status label) is exactly the one described above. The two
  * vocabularies are listed as data ({@link CONTEXT_LABELS} and friends), so adding
  * a third language is a row rather than a branch.
  *
  * WHAT IT DOES NOT DO. It does not read code, and it does not infer a decision
  * nobody wrote: the input is a document whose author already decided to state a
- * decision in it. It does not invent a file format — the product has its own (the
+ * decision in it. It does not invent a file format: the product has its own (the
  * record); this reads other people's.
  */
 
@@ -58,7 +58,7 @@ import { isMarker, statesSomething } from '../a-reason-states-something.js';
 
 /** The four things this product records about a decision, read out of a document. */
 export interface AdrDocument {
-  /** The decision's title — the level-1 heading, with any ADR numbering removed. */
+  /** The decision's title: the level-1 heading, with any ADR numbering removed. */
   readonly title: string;
   /**
    * The WHY: what the document's own decision section says (MADR's *because*, or Nygard's
@@ -67,7 +67,7 @@ export interface AdrDocument {
    */
   readonly rationale: string;
   /**
-   * What was considered and turned down. Absent when the document names none — and absent,
+   * What was considered and turned down. Absent when the document names none, and absent,
    * with {@link optionsUnclear} set, when it lists its options without saying which it chose.
    */
   readonly alternatives?: string;
@@ -85,7 +85,7 @@ export interface AdrDocument {
    */
   readonly considered?: string;
   /**
-   * The status label as the document spells it, when it carries one — verbatim,
+   * The status label as the document spells it, when it carries one: verbatim,
    * never normalized, because it is REPORTED to a person and the word they wrote
    * is the word they will look for. Whether it means the decision is still in
    * force is {@link adrIsInForce}'s question, not this field's.
@@ -95,7 +95,7 @@ export interface AdrDocument {
 
 /** Why a document was not read as a decision. */
 export type AdrRefusalCode =
-  /** No level-1 heading and no frontmatter `title` — nothing names the decision. */
+  /** No level-1 heading and no frontmatter `title`: nothing names the decision. */
   | 'NO_TITLE'
   /**
    * No context section and no lead: the document states a decision and never
@@ -144,9 +144,9 @@ export const CONTEXT_LABELS: readonly string[] = [
 /**
  * The `##` labels that hold what was turned down, normalized.
  *
- * This is the slot MADR exists to add to Nygard — *"the considered options with
+ * This is the slot MADR exists to add to Nygard (*"the considered options with
  * their pros and cons are crucial to understand the reasons for choosing a
- * particular design"* — and it is the slot this product added for the same reason.
+ * particular design"*) and it is the slot this product added for the same reason.
  * Reading it is why an imported decision carries the losing option's name and not
  * only the winner's.
  */
@@ -162,7 +162,7 @@ export const ALTERNATIVE_LABELS: readonly string[] = [
 ];
 
 /**
- * The `##` labels, among {@link ALTERNATIVE_LABELS}, that list EVERY option the author weighed —
+ * The `##` labels, among {@link ALTERNATIVE_LABELS}, that list EVERY option the author weighed:
  * the one that was chosen included. This is MADR's `## Considered Options`: in the published
  * template (versions 2, 3 and 4) it is the list the *Chosen option* is picked FROM, so reading it
  * as "what was turned down" records the winner as a loser. The other labels in the table above
@@ -174,7 +174,7 @@ export const EVERY_OPTION_LABELS: readonly string[] = ['considered options', 'op
 /**
  * The `##` labels that hold the decision itself, normalized: MADR's `Decision Outcome` (where the
  * *Chosen option, because* sentence lives) and Nygard's `Decision`. Their text is the WHY this
- * product records — the context above them is the situation, not the reason.
+ * product records: the context above them is the situation, not the reason.
  */
 export const DECISION_LABELS: readonly string[] = [
   'decision outcome',
@@ -191,13 +191,13 @@ export const STATUS_LABELS: readonly string[] = ['status', 'estado'];
  *
  * A document that says this is not proposed. Bringing a decision that its own
  * author marked superseded into the record as a live proposal would ask a person
- * to rule on something already ruled on — and the ruling that replaced it lives in
+ * to rule on something already ruled on, and the ruling that replaced it lives in
  * another document, which this reader has no way to connect. So the skip is by
  * POLICY, said out loud, and never a silent drop.
  *
  * The complement is deliberately NOT a list: an unrecognized status, or none at
  * all, reads as in force. Absence must not decide against the document, and the
- * status of a proposal is the product's own to set — it is born `proposed`
+ * status of a proposal is the product's own to set: it is born `proposed`
  * whatever the file said.
  */
 export const RETIRED_STATUSES: readonly string[] = [
@@ -219,47 +219,47 @@ export const RETIRED_STATUSES: readonly string[] = [
 ];
 
 /*
- * Whether a run of text STATES something — whether one character of it is a letter or
+ * Whether a run of text STATES something, meaning whether one character of it is a letter or
  * a digit in any script: {@link statesSomething}, imported. It was born in this module
  * and lives in `../a-reason-states-something.ts` now, because the write door asks it
- * too — a reason with no word in it was refused here and recorded there, and two
+ * too: a reason with no word in it was refused here and recorded there, and two
  * readings of one rule is the divergence that function exists to end.
  *
  * WHAT IT IS FOR, AND THE MEASUREMENT THAT PUT IT HERE. Every field this module reads is
  * a field somebody has to READ: the title names the decision in a citation, the rationale
  * is the why the record exists to hold, the status is reported back in the word its author
  * wrote. Asking only whether such a field is a non-empty STRING answers a question about
- * storage, not about language — and the corpus says the difference is not hypothetical.
+ * storage, not about language, and the corpus says the difference is not hypothetical.
  * Pointed at this project's own 82 decision documents, the reader accepted 53 of them and
  * gave 48 the rationale `"---"`: the markdown rule under a document's header block, read as
  * its reason. The guard against a missing rationale was proved against ABSENCE and blind to
  * PUNCTUATION, and three characters walked past it.
  *
  * IT IS A FACT OF THE LANGUAGE AND NOT A LIST OF TODAY'S OFFENDERS. A table of strings that
- * do not count — `---`, `***`, `___`, a lone `*`, a `|` — is a table that is wrong the first
+ * do not count (`---`, `***`, `___`, a lone `*`, a `|`) is a table that is wrong the first
  * time somebody's template writes a rule some other way, and is a table nobody remembers to
  * extend. `\p{L}` and `\p{N}` say the thing itself: a reason with no word in it is not a
- * reason in any language, and one word in any script is enough. Markdown's own furniture —
- * rules, emphasis, pipes, quotes, bullets — carries no letter and no digit by construction,
+ * reason in any language, and one word in any script is enough. Markdown's own furniture
+ * (rules, emphasis, pipes, quotes, bullets) carries no letter and no digit by construction,
  * so it falls out rather than being listed.
  *
  * WHERE IT IS ASKED is every place this module used to decide a field was THERE by comparing
  * it with the empty string: the title, the frontmatter's values, a `##` section's body (which
  * is how the context, the alternatives and the status section all arrive), the lead, and the
- * two remaining places a status can be written. Six call sites, ONE function — six spellings
+ * two remaining places a status can be written. Six call sites, ONE function: six spellings
  * of "is this empty" is the shape that produces a reader which refuses `---` in one field and
  * takes it in another. `read.test.ts` ("nothing a document writes as punctuation is read as a
  * field") holds one case per field plus a structural case that fails when a new point asks the
  * old question: no comparison against the empty string survives in this module.
  *
  * WHAT IT DOES NOT DO, said out loud: it does not judge whether the words are a GOOD reason.
- * `n/a` has two letters and is proposed, and that is right — a person rules on a proposal,
+ * `n/a` has two letters and is proposed, and that is right: a person rules on a proposal,
  * and this reader has no business ruling on prose. It rules only that there is prose.
  */
 
 /**
  * Lowercases, strips accents and drops everything that is not a letter, a digit or
- * a single separating space — so `**Contexto**`, `Contexto e Problema` and
+ * a single separating space, so `**Contexto**`, `Contexto e Problema` and
  * `CONTEXT AND PROBLEM STATEMENT` all reduce to a key the tables above hold.
  *
  * The accent strip is what lets ONE Portuguese row cover the spelling with and
@@ -278,13 +278,13 @@ function normalizeLabel(text: string): string {
 /**
  * The ADR numbering a document carries in its own title, removed.
  *
- * `# ADR-002 — A vaga é opcional`, `# ADR 0001 — SessionDB is multi-writer-safe`
+ * `# ADR-002 - A vaga é opcional`, `# ADR 0001 - SessionDB is multi-writer-safe`
  * and `# 1. Record architecture decisions` all name their own number, and that
- * number is the SOURCE's — while this product freezes its OWN `ADR-<n>` into the
+ * number is the SOURCE's, while this product freezes its OWN `ADR-<n>` into the
  * record at write time. Keeping both would put two numbers on one citation
- * (`ADR-3 — ADR-002 — A vaga é opcional`), which is precisely the failure the
+ * (`ADR-3 - ADR-002 - A vaga é opcional`), which is precisely the failure the
  * catalog describes for a label re-derived on read: a citation that silently names
- * a different decision. The source's number is not lost — it is in the file name,
+ * a different decision. The source's number is not lost: it is in the file name,
  * and the file name is the provenance the proposal carries.
  *
  * The separator is REQUIRED, so a title that legitimately opens with a number
@@ -307,7 +307,7 @@ interface Section {
  * Deliberately NOT a YAML parser: MADR's frontmatter is a handful of scalar keys,
  * and the two this reader asks for (`title`, `status`) are scalars in every
  * template that publishes one. A nested block is skipped rather than
- * misunderstood — a wrong value here would produce a wrong proposal, which is the
+ * misunderstood: a wrong value here would produce a wrong proposal, which is the
  * cost this module is built to avoid.
  */
 function frontmatter(text: string): ReadonlyMap<string, string> {
@@ -336,7 +336,7 @@ function withoutFrontmatter(text: string): string {
 }
 
 /**
- * Whether a line is metadata rather than prose — a list item, or a line opening
+ * Whether a line is metadata rather than prose: a list item, or a line opening
  * with a bold label.
  *
  * Both shapes are in the real corpus and both sit between the title and the first
@@ -353,7 +353,7 @@ function isMetadataLine(line: string): boolean {
 }
 
 /**
- * Splits a document into its `##` sections, and returns the LEAD beside them — the
+ * Splits a document into its `##` sections, and returns the LEAD beside them: the
  * prose between the title and the first section, with metadata lines dropped.
  *
  * The lead is not a courtesy. Of the three real dialects this project has to hand,
@@ -417,10 +417,10 @@ function sectionBody(sections: readonly Section[], labels: readonly string[]): s
  * THE THIRD READING REQUIRES THE COLON, and that is a correction the corpus made. It
  * read the word in bold with the colon OPTIONAL on both sides, so any occurrence of
  * `**status**` or `**estado**` anywhere before the first `##` became the document's
- * status — including in a sentence. Measured, case and control differing only by the
+ * status, including in a sentence. Measured, case and control differing only by the
  * asterisks: *"O **estado** rejeitado do banco antigo nos custou duas migrações"*
  * yielded `status: "rejeitado do banco antigo…"`, which {@link adrIsInForce} reads as
- * retired, so the whole document was dropped as `RETIRED` — a policy refusal, reported
+ * retired, so the whole document was dropped as `RETIRED`, a policy refusal, reported
  * to a person as *"the document says it is no longer in force"* about a document that
  * says nothing of the kind. Without the asterisks the same sentence proposed the
  * decision. **A LABEL ENDS IN A COLON; emphasis does not**, and the two spellings this
@@ -452,19 +452,19 @@ function statusOf(text: string, sections: readonly Section[]): string | undefine
  * Whether a status word means the decision is still the one in force.
  *
  * Unknown reads as YES, and that asymmetry is the whole design: {@link
- * RETIRED_STATUSES} lists what is provably retired, and everything else — an
- * unrecognized word, a language nobody listed, no status at all — is proposed and
+ * RETIRED_STATUSES} lists what is provably retired, and everything else (an
+ * unrecognized word, a language nobody listed, no status at all) is proposed and
  * left to the person who rules on it. Getting this backwards would silently drop
  * documents for spelling their status in a way this table never learned.
  *
  * IT MATCHES THE FIRST WORD, NOT THE WHOLE LABEL, and that is a correction the
  * corpus made rather than a generalization. This compared the whole normalized
  * status against the table, and over 216 real documents it read one as in force
- * that says `Status: substituído por [ADR-008](…) (2026-07-28)` — the retired one
+ * that says `Status: substituído por [ADR-008](…) (2026-07-28)`: the retired one
  * of the whole set, and the only one the reader had to catch. A supersession
  * NAMES ITS SUCCESSOR: `Superseded by ADR-NNN` is the stable market convention
  * (it is what `log4brains` writes and what this project's own study of the form
- * recorded), so the status of a retired decision almost never IS the word — it
+ * recorded), so the status of a retired decision almost never IS the word; it
  * BEGINS with it. Reading the first word covers both, and leaves a status whose
  * first word is a live one (`accepted`, `aceito`) in force however it goes on.
  */
@@ -493,14 +493,14 @@ function beforeSubsections(body: string): string {
 }
 
 /**
- * The title of the option a decision section says it CHOSE — MADR's *Chosen option: "{title of
+ * The title of the option a decision section says it CHOSE: MADR's *Chosen option: "{title of
  * option 1}", because {justification}* in the three published versions (2.1.2, 3.0.0 and 4.0.0
  * all use that sentence), the quotes optional because real documents drop them, and the
  * Portuguese `Opção escolhida: …` beside it. Only the title is taken: the sentence as a whole
  * is the rationale, and is recorded as the author wrote it.
  *
  * Nothing is guessed. A section that does not contain the sentence has chosen NOTHING as far as
- * this reader can tell, and returns undefined — the caller says so rather than picking an option.
+ * this reader can tell, and returns undefined: the caller says so rather than picking an option.
  */
 function chosenOption(decisionBody: string): string | undefined {
   const head = beforeSubsections(decisionBody);
@@ -585,7 +585,7 @@ interface TurnedDown {
 
 /**
  * What the document turned down, from a section that lists EVERY option: the list without the
- * option the decision section chose. `unclear` when the list cannot be told from the choice —
+ * option the decision section chose. `unclear` when the list cannot be told from the choice:
  * no list, no chosen option, or a chosen one that matches none or several of the items.
  */
 function turnedDown(optionsBody: string, decisionBody: string | undefined): TurnedDown {
@@ -602,11 +602,11 @@ function turnedDown(optionsBody: string, decisionBody: string | undefined): Turn
  * Reads one decision document. Deterministic, and it calls nothing.
  *
  * The title comes from the level-1 heading, or from the frontmatter `title` when
- * the document has no heading — MADR's newer templates put it there. The rationale
+ * the document has no heading: MADR's newer templates put it there. The rationale
  * is what the document's decision section says (the *because* of MADR's *Chosen
  * option*, or Nygard's `## Decision`), else its context section, else its lead.
- * What was turned down is the alternatives section — minus the option the decision
- * section chose, when the section is MADR's list of every option — and it is ABSENT
+ * What was turned down is the alternatives section (minus the option the decision
+ * section chose, when the section is MADR's list of every option) and it is ABSENT
  * rather than empty when the document names none, which keeps "recorded no
  * contender" distinguishable from "recorded an empty one".
  *

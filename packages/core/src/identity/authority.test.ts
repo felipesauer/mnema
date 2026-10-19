@@ -6,17 +6,17 @@ import { resolveExecutingAgent } from './authority.js';
  * The authority invariant, and the spelling that used to walk past it.
  *
  * `who` is the identity that authorized; `which` is the agent that executed. They
- * must differ, and the check compared exact strings — which was enough for exactly
+ * must differ, and the check compared exact strings, which was enough for exactly
  * as long as an identity had one spelling. Since the reads began printing anchors
  * SHORT (`mnid:b6f3ce0d`, a prefix of the value, checkable and pasteable by design),
  * an identity has two, and only the long one was refused. So `--which mnid:b6f3ce0d`
  * passed as an ordinary agent name and stamped the authorizer's own identity into
- * the slot that exists to say somebody ELSE did the work — the one field whose whole
+ * the slot that exists to say somebody ELSE did the work: the one field whose whole
  * purpose is that separation.
  *
  * The rule is stated in terms of what the surfaces PRINT: any prefix of `who` that
  * carries the anchor scheme is that identity written short. The scheme is required
- * so the refusal is deterministic — a bare `m` is a prefix of every anchor there is,
+ * so the refusal is deterministic: a bare `m` is a prefix of every anchor there is,
  * and refusing it would refuse a one-letter agent name on some machines and not
  * others, depending on the local anchor's hex.
  */
@@ -53,7 +53,7 @@ describe('the executing agent is never the authorizing identity', () => {
 
   it('still accepts an honest agent name, including one that shares leading letters', () => {
     // The half that keeps the rule from being a ban on names. None of these claims
-    // to be an anchor, so none is the authorizer written short — and `mnid` without
+    // to be an anchor, so none is the authorizer written short, and `mnid` without
     // the colon is not the scheme.
     for (const name of ['claude', 'ci-runner', 'm', 'mn', 'mnid', 'b6f3ce0d', 'mnemosyne']) {
       expect(resolveExecutingAgent(WHO, name), name).toMatchObject({ ok: true, which: name });

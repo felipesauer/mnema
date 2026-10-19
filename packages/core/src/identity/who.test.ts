@@ -30,7 +30,7 @@ describe('canonicalIdentity', () => {
     expect(canonicalIdentity(['felipe'])).toBeUndefined();
   });
 
-  it('does NOT case-fold — distinct spellings stay distinct (reconcilable later)', () => {
+  it('does NOT case-fold: distinct spellings stay distinct (reconcilable later)', () => {
     // A false MERGE in an immutable log is irreversible; case folding is
     // deferred to a real identity model. Only whitespace is normalized.
     expect(canonicalIdentity('Felipe')).toBe('Felipe');

@@ -1,5 +1,5 @@
 /**
- * A CREDENTIAL OF A KNOWN FORMAT never reaches the record, in any text and in any field —
+ * A CREDENTIAL OF A KNOWN FORMAT never reaches the record, in any text and in any field:
  * held as a property over generated secrets and generated text, and read off the VALUE.
  *
  * The cases next door drive each class with one sample and each field with one marker. What
@@ -8,8 +8,8 @@
  * (any characters, either side), in every field the catalog carries. This draws all four.
  *
  * WHAT IS ASSERTED, and only that: the credential is ABSENT from what the door hands back,
- * and the door names the class it took out. A name that carries one is refused instead — the
- * door's other outcome — and the refusal carries no value. Nothing here recomputes what the
+ * and the door names the class it took out. A name that carries one is refused instead, the
+ * door's other outcome, and the refusal carries no value. Nothing here recomputes what the
  * scrubber would do: the oracle is the string, found or not found.
  *
  * WHERE A CREDENTIAL STANDS. A pattern anchors on a word boundary, so a secret glued to a
@@ -40,8 +40,8 @@ const run = (alphabet: string, min: number, max: number): fc.Arbitrary<string> =
   fc.string({ unit: fc.constantFrom(...alphabet), minLength: min, maxLength: max });
 
 /**
- * A body of `alphabet` that no person would choose as a name — it carries a capital and a digit,
- * the mark of the dense alphabet — and ends on a character a word boundary can follow.
+ * A body of `alphabet` that no person would choose as a name (it carries a capital and a digit,
+ * the mark of the dense alphabet) and ends on a character a word boundary can follow.
  */
 const dense = (alphabet: string, min: number, max: number): fc.Arbitrary<string> =>
   fc
