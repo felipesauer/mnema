@@ -218,11 +218,11 @@ describe('the control bytes of a line are made visible', () => {
 /**
  * THE CLASS IS A PROPERTY, NOT A LIST OF THE CHARACTERS SOMEBODY THOUGHT OF. Measured on the
  * binary with the class that named five blocks: a soft hyphen, the Hangul fillers, the
- * variation selectors (both blocks \u2014 a payload smuggled one byte per selector needs only the
+ * variation selectors (both blocks: a payload smuggled one byte per selector needs only the
  * sixteen of U+FE00 to carry four bits a character), the musical format marks and the
  * interlinear annotation marks all came out raw in `show`, `search`, `status` and `--json`.
  * The class is now every Default_Ignorable_Code_Point, the line and paragraph separators, the
- * interlinear annotation marks and the Egyptian hieroglyph format controls \u2014 written as a
+ * interlinear annotation marks and the Egyptian hieroglyph format controls, written as a
  * fixed list at Unicode 17, so what a reader sees does not change with the Node it runs on.
  */
 describe('every character the Unicode standard says draws nothing is made visible', () => {

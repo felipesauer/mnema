@@ -578,7 +578,11 @@ with its own changelog.
   `site` writes says `the record` of an issue that has no tail instead of `#undefined`. `inherit` still decides
   nothing by this rule, but a commit whose record holds no tail with an event or a checkpoint now fails the verify
   that reads it, so it is read as unverified and contributes no decision.
-
+- The repository no longer takes a new em dash (U+2014). A test reads every text file in the workspace and
+  fails at the line and column of one written outside the areas not yet rewritten, which it lists with a ceiling
+  that only goes down; where the character is data, its escape is allowed only in the files it lists, with the
+  reason. The escapes that stood in comments as punctuation are rewritten, and `AGENTS.md` and `CONTRIBUTING.md`
+  state the rule.
 - **The version the program says is the one that will reach npm, `0.1.0`.** The repository declared `0.2.0-beta`, a
   withdrawn pre-release that was never published to npm, and the console's recording on the front page showed it. Every
   manifest, the two version constants, the plugin manifests and the golden of `--version` now say `0.1.0`, and the

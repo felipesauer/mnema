@@ -50,6 +50,13 @@ A sentence in a README or `--help` says only what the code guarantees, and a cla
 test or measurement that holds it. A sentence that stopped being true is rewritten with the
 reason, not deleted.
 
+No em dash (U+2014) in anything you write here: docs, comments, test names, strings the product
+prints, manifests, commit messages and pull request descriptions. Use a comma, a colon, a full
+stop or parentheses, as the sentence needs. Where the character is data (a width, a byte count, a
+format someone else defines), write it as an escape (a backslash, then `u2014`) and add the file
+to the list in `packages/code/tests/the-prose-carries-no-em-dash.test.ts`, with the reason. The en
+dash (U+2013) is not covered.
+
 ## Never commit
 
 Keys, tokens or anything that signs; the contents of a real `~/.mnema`, anything under
