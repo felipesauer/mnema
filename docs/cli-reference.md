@@ -160,7 +160,7 @@ CLI and the MCP tools behave identically, because they are the same call.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
 `mnema verify` shows when what is in the record has changed since it was
-signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). With `--require signed` a record whose tails are all gone exits 1, as any record with no signed event does; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of
+signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of
 this project's trees — no private key, no network — and prints each verdict
 verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
@@ -173,7 +173,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine, and `mnema witness stamp` asks for one. What it attests is that a checkpoint EXISTED at an instant, so a chain rebuilt this morning cannot claim a history; it is opt-in, and a record nobody stamped reads `not covered` exactly as every record did before. |
-| **Nothing was deleted** | Still not proven locally, and the sentence that used to stop there was true for a reason worth keeping: a hash chain shows what changed, never what was removed, and a tail deleted together with its key leaves nothing on disk to cross. What is new is the other half — the record can now NAME a cut, so an unexplained absence and an authorized one are no longer the same silence. Committing the record to git is still what preserves the files a deletion would take with it. |
+| **Nothing was deleted** | Still not proven locally, and the sentence that used to stop there was true for a reason worth keeping: a hash chain shows what changed, never what was removed, and a tail deleted together with its key, while another remains, leaves nothing on disk to cross (a record left with no tail holding anything is refused by name). What is new is the other half — the record can now NAME a cut, so an unexplained absence and an authorized one are no longer the same silence. Committing the record to git is still what preserves the files a deletion would take with it. |
 | **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered: removing a line from the middle of a tail stays loud, and so does one off the end while the last checkpoint stays, but a cut off the end that takes the last checkpoint with its events reads `verified (T1/T2/T4)`, as the record before it did. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. `mnema tail prune` is what writes one, on the CLI alone; the cut itself stays yours to make. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **Every move on the record followed the workflow** | Every move a reader applies did, and a green `verify` names any move that broke the workflow. A gate judges a move on its subject as the chain has it — the lines of the record that name the subject, read off the segments — and not on the projection kept beside the record, which nothing signs: an edited projection does not get a refused move written. A move written by hand with a valid key that the workflow does not allow stays on the record, but no reader applies it, and `verify` names it in its census without failing (the workflows are part of the format, `FORMAT.md` §6.7). The second reader beside the format judges every move by the same tables and names the same moves. A binary from before applies every move and names none. |
@@ -297,7 +297,9 @@ mnema verify --workspace ~/work/api ~/work/web
 CI as a check with no extra wiring. It also exits non-zero when a **named** path
 holds no record at all, because a set that quietly skipped a mistyped path would
 be a green gate over a project nobody verified; `--allow-no-record` accepts the
-gap and rules on the rest, and it never accepts a break.
+gap and rules on the rest, and it never accepts a break. A path whose `.mnema/` is there
+but holds no tail with anything in it is a project, not a gap: it is ruled on, and refused
+(below), with the flag or without it.
 
 **A break is not the only way a record can lie, and the default does not catch the
 others.** This paragraph used to say `verify` exits non-zero "when the record is
@@ -337,8 +339,8 @@ would hand somebody who cloned a record with a whole person's history deleted
 that a strict gate had ruled on it. The permissive default at least says `no
 signature was checked` over the record it cannot vouch for.
 
-**And what neither value answers, said plainly.** A removed tail is reported but is
-not a break: `verify` crosses the committed keys against the tails on disk and prints
+**And what neither value answers, said plainly.** One tail removed whole while another
+remains is reported but is not a break: `verify` crosses the committed keys against the tails on disk and prints
 `N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
 One key is said otherwise: the backup `mnema init` creates never signs until it is
 restored, and `init` declares it in the record (`backup.declared`), so every machine reads
@@ -350,20 +352,35 @@ A tail that holds nothing — its directory with only its ownership proof, which
 version left when a key's first write was refused — is not counted as a tail: `verify` says
 `N empty tail(s), which hold no event and are not counted`, and it moves neither the level nor
 the witness. A tail emptied of its events with its proof kept reads the same way.
-A tail removed *together with its key* is not reported at all — that record reads
-`0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
-outside this record (the one a git remote keeps) can testify to what was taken
-out. `--require signed` exits 1 on it, as it does on a record with no signed event at all, so it
-names no removal; it changes which forgery goes green.
+A tail removed *together with its key*, while another remains, may leave nothing to report at
+all, and only a history outside this record (the one a git remote keeps) can testify to what
+was taken out.
 
-**What closes it in CI is the history git already keeps.** Three records exit 0 even
+**A record in which no tail holds anything is refused.** No `tails/` directory, no tail
+directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`
+fails it by name at every `--require`, exit 1: the one-line verdict says `local integrity
+FAILED`, and the issue reads `issue [T1] public the record: NO TAIL: no tail in this record
+holds an event or a checkpoint: there are no tails, …`, with the reason as it found it. The
+census still names each committed key with no tail, so a record whose one tail was deleted
+says whose. A record is never in that shape by being founded: `init` writes the founding and a
+checkpoint before it returns; it is in it when every tail was removed, by a merge, a sparse
+checkout or a commit (whether or not the keys went with them), and when `.mnema/` was left
+half made: an `init` that failed after creating the directory leaves `.gitignore` and
+`.gitattributes` and nothing else, and that project fails `verify` until a first write to the
+public tree founds it (a second `init` answers that there is nothing to found, and does not).
+[`FORMAT.md`](../packages/chain/FORMAT.md) §4 is the rule, and the second reader refuses the
+same records under it.
+
+**What closes it in CI is the history git already keeps.** Four records exit 0 even
 under `--require=signed`: the newest events cut together with their checkpoint, the
-record erased and founded again, and a key holder rewriting the middle and signing it
-again. A fourth — every tail deleted with every key — exits 0 under the default. Each
+record erased and founded again, a key holder rewriting the middle and signing it
+again, and one tail removed whole while another remains. Each
 leaves a record honest in every byte, and each changes files that the commit the change
 started from already held. So `--since <rev>` asks git: every file of the committed
 record at `<rev>` must still be on disk, and every segment and `checkpoints.jsonl` must
-still begin with exactly the bytes it held there — a record only ever grows at the end. It
+still begin with exactly the bytes it held there: a record only ever grows at the end. A
+tail removed in a commit older than the revision `--since` compares with is in neither, so
+`--since` does not find it; a record with every tail removed that way still fails the default `verify`. It
 reads git and never the network, and changes nothing when it is not asked for. In CI,
 `BASE` is the commit the change is measured against — the target branch of a pull
 request, fetched (a shallow checkout holds no base, and `--since` says so and fails):

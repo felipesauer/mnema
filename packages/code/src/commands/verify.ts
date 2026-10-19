@@ -219,10 +219,15 @@ function coverProject(
 ): { readonly trees: readonly TreeReport[]; readonly record: RecordVerdict } {
   // The committed tree is the project — `resolveTrees` found the project BY the
   // directory it was resolved from — so it is the one tree whose presence is already
-  // established, and the one the fold below always has a verdict from. An empty
-  // committed tree still gets the verdict it has always got here (`T1 only`, and a bare
-  // `verify` exits zero on it): a project between its first event and its first
-  // checkpoint is legitimate.
+  // established, and the one the fold below always has a verdict from, ALWAYS, even
+  // when nothing is in it. A committed tree in which no tail holds an event or a
+  // checkpoint used to get `T1 only` here and a bare `verify` exited zero on it; the
+  // chain refuses that record by name now (FORMAT.md section 4), and this tree is where
+  // that refusal is asked, because `init` founds it with events before it returns and
+  // a clone of it is all another machine gets. The private and global trees below are
+  // ruled on only when they hold a record (a key or a tail), so the same rule reaches
+  // them exactly there. A project with events above its last checkpoint is still
+  // legitimate, and still `T1 only` while no checkpoint covers any of them.
   const committed: TreeVerdict = {
     kind: 'verdict',
     scope: 'public',

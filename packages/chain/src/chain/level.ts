@@ -134,11 +134,10 @@ export interface ProvenFacts {
  * That inversion — a sentence that qualifies becoming a sentence that excuses —
  * would make this change worse than the defect it fixes.
  *
- * `signedEvents === 0` covers the empty chain too, and deliberately: a record with
- * no events had no signature checked either, so "T1 only" is the true thing to say
- * about it, and it is also the only honest answer for a tail whose events were ALL
- * deleted along with its checkpoints (nothing is left to contradict, and nothing
- * was proven).
+ * `signedEvents === 0` is a record whose events rest on the hash chain alone. It no
+ * longer covers the record in which no tail holds anything: that one asserts no fact,
+ * and the verifier refuses it as an issue before this is asked (FORMAT.md section 4),
+ * so it reads `broken`: "T1 only" over nothing was a pass over nothing.
  */
 export function provenLevel(facts: ProvenFacts): ProvenLevel {
   if (facts.unreadable) return 'unreadable';
@@ -159,16 +158,24 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  *
  * A verdict this product can serve to a machine has to carry its limits, or the
  * machine reads a `level` and an exit code and concludes it has been told everything.
- * These are the two the record cannot close on its own, both measured:
+ * These are the ones the record cannot close on its own, all measured:
  *
- *   - a tail removed together with its key is not reported AT ALL. That record reads
- *     `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a
- *     history outside the record — the one a git remote keeps — can testify to
- *     what was taken out.
- *   - a removed tail whose committed key REMAINS is reported, and is not a break: the
- *     keys are crossed against the tails on disk and the count comes out as a census
- *     note with exit 0. The roster exists and detects; whether that should be a break
- *     is a decision nobody has taken.
+ *   - one tail removed whole while another remains. With its committed key left it is
+ *     reported, as a census note, and is not a break; with its key removed too it may
+ *     leave nothing to report. Both readers verify that record, `--require signed`
+ *     included. (A record in which NO tail holds anything any more is not this: it is
+ *     refused, by name, at every requirement (FORMAT.md section 4). That used to read
+ *     `0 tail(s); no events yet` with exit 0, and was said here to be indistinguishable
+ *     from a fresh record, which it never was: `init` founds with events.)
+ *   - the newest events cut together with the checkpoint that covered them, and
+ *   - a record erased and founded again: both read as honest records, `--require signed`
+ *     included.
+ *   - a removal of the first kind committed before the revision `--since` compares with:
+ *     that revision no longer holds the files, so nothing is found gone. (The same removal
+ *     of EVERY tail is refused by the default verdict, whatever `--since` reads.)
+ *
+ * Only a copy of the record from before (`--since <rev>`, a git remote) shows those. The
+ * external witness dates a checkpoint and keeps no copy, so it does not.
  *
  * IT IS A CONSTANT AND NOT A PARAGRAPH, because it is printed in two places that must
  * not drift: `docs/cli-reference.md` says it in prose to a person, and `verify
@@ -180,8 +187,10 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  * than beside any one of them.
  */
 export const NOT_ANSWERED_BY_ANY_REQUIREMENT: readonly string[] = [
-  'A tail removed together with its committed key is not reported at all: that record reads as one with no events yet, indistinguishable from a fresh one. Only a history outside this record can testify to what was removed.',
-  'A removed tail whose committed key remains IS reported — as a census note, informational, not a break, so the exit stays 0.',
+  'One tail removed whole while another remains is not a break: with its committed key left it IS reported, as a census note (informational, not a break, so the exit stays 0), and with its key removed too it may leave nothing to report. A record in which no tail holds anything is refused.',
+  'The newest events cut together with their checkpoint read as an honest record, under --require signed too.',
+  'A record erased and founded again reads as an honest record, under --require signed too.',
+  'One tail removed whole in a commit older than the revision --since compares with is not found by it. Only a copy of the record from before (--since <rev>, a git remote) shows any of these; the external witness dates a checkpoint and keeps no copy.',
 ];
 
 /** What a caller may demand — see {@link LEVEL_REQUIREMENTS}. */

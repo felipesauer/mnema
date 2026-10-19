@@ -162,7 +162,7 @@ const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
   },
   {
     phrase: 'nothing can be silently altered',
-    why: 'false for removal: a tail deleted together with its key reads as a record that never held anything',
+    why: 'false for removal: a tail deleted together with its key, beside another, reads as a record that never held it',
   },
   {
     phrase: 'trailing checkpoint cannot be dropped',

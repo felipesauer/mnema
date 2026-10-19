@@ -9,9 +9,9 @@
  * the layer whose whole value is that a stranger can check it.
  *
  * THE RESSALVA IS OBLIGATORY AND IT IS A FIELD. The verdict this makes legible is
- * knowingly insufficient: a tail removed together with its committed key is not
- * reported at all, and a removed tail whose key remains comes out as a census note with
- * exit 0. Making an incomplete verdict machine-readable is better than prose, and the
+ * knowingly insufficient: one tail removed whole while another remains comes out as a
+ * census note with exit 0 (or as nothing, with its key removed too), and the newest
+ * events cut with their checkpoint read as an honest record. Making an incomplete verdict machine-readable is better than prose, and the
  * delivery has to SAY it is incomplete — in the document a machine parses, not in a
  * README it will not open. So the JSON carries `notAnswered`, read from the chain's own
  * constant, which is the one site the README says the same thing from.
@@ -215,19 +215,26 @@ describe('the proof answers a machine', () => {
     // AND THE DECLARATION ITSELF IS HELD, which the line above cannot do: it compares
     // the constant with itself, so emptying one entry moved BOTH sides and left the
     // whole suite green — measured by mutation. There are
-    // TWO measured holes, and each has to still be the same hole the README describes,
+    // FOUR measured holes, and each has to still be the same hole the README describes,
     // because "one site the README says the same thing from" is the reason the constant
-    // exists. The phrase per row is that hole's DISCRIMINANT and nothing else.
-    expect(said.json.notAnswered).toHaveLength(2);
+    // exists. The phrase per row is that hole's DISCRIMINANT and nothing else. (There
+    // were two, and the first said a tail removed with its key read as a fresh record:
+    // a fresh record holds the founding, and a record with no tail holding anything is
+    // refused now: FORMAT.md section 4.)
+    expect(said.json.notAnswered).toHaveLength(4);
     const readme = readFileSync(
       new URL('../../../docs/cli-reference.md', import.meta.url),
       'utf-8',
     );
     for (const discriminant of [
-      // the tail taken out together with its key — reported nowhere
-      'indistinguishable from a fresh one',
-      // the tail taken out with its key left behind — reported, and not a break
-      'informational, not a break',
+      // one tail taken out whole while another remains, not a break
+      'tail removed whole while another remains',
+      // the newest events taken with the checkpoint that covered them
+      'newest events cut together with their checkpoint',
+      // the record replaced by a new one under a fresh key
+      'erased and founded again',
+      // the removal that `--since` reads past
+      'in a commit older than the revision',
     ]) {
       expect(readme, discriminant).toContain(discriminant);
       expect(
