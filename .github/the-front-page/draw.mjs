@@ -762,6 +762,7 @@ function scene(loop, theme) {
   const say = (line, x, y, role, o = {}) =>
     `<text${o.attrs ? ` ${o.attrs}` : ''} x="${n(x)}" y="${n(y)}" font-family="${MONO}" font-size="${TYPE[role].size}"${TYPE[role].weight ? ` font-weight="${TYPE[role].weight}"` : ''} fill="${o.fill ?? (role === 'caption' ? muted : text)}"${o.anchor ? ` text-anchor="${o.anchor}"` : ''}>${escaped(textOf(line))}</text>`;
   return {
+    theme,
     accent,
     text,
     muted,
@@ -822,6 +823,9 @@ function hexagon(x, cy, a) {
  */
 const rowWidth = (count, a, link = 12) => count * 2 * a * COS30 + (count - 1) * link;
 
+/** How strongly the three faces of a cube on a package's picture are filled: top, left, right. */
+const SHADE = Object.freeze([0.3, 0.16, 0.06]);
+
 /**
  * A row of cubes, each linked to the one before; `arrive[i]` is when cube i comes in, or
  * undefined for one that is there from the start.
@@ -831,8 +835,9 @@ const rowWidth = (count, a, link = 12) => count * 2 * a * COS30 + (count - 1) * 
  * @param {number} a
  * @param {readonly (number | undefined)[]} arrive
  * @param {number} [link]
+ * @param {readonly number[]} [shade]
  */
-function cubes(s, x0, cy, a, arrive, link = 12) {
+function cubes(s, x0, cy, a, arrive, link = 12, shade = SHADE) {
   const dx = a * COS30;
   const at = (/** @type {number} */ i) => x0 + dx + i * (2 * dx + link);
   /** @type {string[]} */
@@ -845,7 +850,7 @@ function cubes(s, x0, cy, a, arrive, link = 12) {
       parts.push(
         `<path d="M${n(x - dx - link + 2)} ${n(cy)}H${n(x - dx - 2)}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
       );
-    parts.push(...cube(x, cy, a, s.accent, [0.3, 0.16, 0.06]));
+    parts.push(...cube(x, cy, a, s.accent, shade));
     if (when === undefined) out.push(...parts);
     else out.push(`<g ${s.stays(when)}>`, ...parts, '</g>');
   });
@@ -910,7 +915,12 @@ function chainStory(s) {
   const reader = { x: 346, w: 280, h: 44 };
   const cy = seal.y + seal.h / 2;
   const arrive = [1.6, 2.2, 2.8];
-  const row = cubes(s, seal.x + (seal.w - rowWidth(3, a, between)) / 2, cy, a, arrive, between);
+  // The blocks stand on the seal's tint, and on a light page the tint, the glow and the faces
+  // together would take the outline under three to one against the faces either side of it: there
+  // the side faces are fainter, and the one on the right is the seal's own.
+  const shade = s.theme === 'light' ? [SHADE[0] ?? 0, 0.06, 0] : SHADE;
+  const x0 = seal.x + (seal.w - rowWidth(3, a, between)) / 2;
+  const row = cubes(s, x0, cy, a, arrive, between, shade);
   /** @type {string[]} */
   const out = [];
   // An event comes in as a card, and the first block takes its place, lit as it lands.

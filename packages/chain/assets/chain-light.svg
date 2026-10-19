@@ -59,22 +59,22 @@
 </g>
 <g class="a" style="animation-name:k1">
 <path d="M122.29 116L136.14 124L122.29 132L108.43 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M108.43 124L122.29 132L122.29 148L108.43 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M122.29 132L136.14 124L136.14 140L122.29 148z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M108.43 124L122.29 132L122.29 148L108.43 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M122.29 132L136.14 124L136.14 140L122.29 148z" fill="#997dbf" fill-opacity="0"/>
 <path d="M122.29 116L136.14 124L136.14 140L122.29 148L108.43 140L108.43 124zM108.43 124L122.29 132L136.14 124M122.29 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <g class="a" style="animation-name:k2">
 <path d="M138.14 132H168.14" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
 <path d="M184 116L197.86 124L184 132L170.14 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M170.14 124L184 132L184 148L170.14 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M184 132L197.86 124L197.86 140L184 148z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M170.14 124L184 132L184 148L170.14 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M184 132L197.86 124L197.86 140L184 148z" fill="#997dbf" fill-opacity="0"/>
 <path d="M184 116L197.86 124L197.86 140L184 148L170.14 140L170.14 124zM170.14 124L184 132L197.86 124M184 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <g class="a" style="animation-name:k3">
 <path d="M199.86 132H229.86" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
 <path d="M245.71 116L259.57 124L245.71 132L231.86 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M231.86 124L245.71 132L245.71 148L231.86 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M245.71 132L259.57 124L259.57 140L245.71 148z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M231.86 124L245.71 132L245.71 148L231.86 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M245.71 132L259.57 124L259.57 140L245.71 148z" fill="#997dbf" fill-opacity="0"/>
 <path d="M245.71 116L259.57 124L259.57 140L245.71 148L231.86 140L231.86 124zM231.86 124L245.71 132L259.57 124M245.71 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <path class="a" style="animation-name:k5" opacity="0" d="M122.29 116L136.14 124L136.14 140L122.29 148L108.43 140L108.43 124z" fill="#997dbf" fill-opacity="1"/>
