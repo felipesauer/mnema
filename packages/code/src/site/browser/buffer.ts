@@ -1,5 +1,5 @@
 /**
- * The part of Node's `Buffer` the verifier reads with — a `Uint8Array` that knows its hex,
+ * The part of Node's `Buffer` the verifier reads with: a `Uint8Array` that knows its hex,
  * base64 and UTF-8 spellings and the handful of integer reads the witness code makes.
  *
  * A page has no `Buffer`, and the verifier is the Node one. This is what stands in for it

@@ -1,5 +1,5 @@
 /**
- * THE FLAT LOOKUPS, asked directly — the rows, not the script three shells write.
+ * THE FLAT LOOKUPS, asked directly: the rows, not the script three shells write.
  *
  * This module was at full line coverage and no test named it. What executes it is
  * `tests/the-shell-knows-the-verbs.test.ts`, and that file asks the SCRIPT: it
@@ -7,7 +7,7 @@
  * own and drives a real shell. Its reader only ever looks up a row keyed `path` or
  * `path + ':'`, so every `<path>:<flag>` row this file produces is invisible to it
  * except through two hand-written `toContain` strings and the three byte-for-byte
- * goldens — which a regenerating hand quietly rewrites. So the tables ran and nobody
+ * goldens, which a regenerating hand quietly rewrites. So the tables ran and nobody
  * looked at them.
  *
  * WHAT THAT LEFT UNHELD, measured rather than supposed. Each of these was applied to
@@ -18,7 +18,7 @@
  *     enumerated flags declared ahead of the first free-text one),
  *   - keying the positional row by `path` instead of `path + ':'`.
  * The first and third are silent on the product's own surface today because no mnema
- * flag carries BOTH a short spelling and a set — which is exactly why the program below
+ * flag carries BOTH a short spelling and a set, which is exactly why the program below
  * is this file's own and not `buildProgram`'s. A guard that could only see the shapes
  * the surface happens to have today would go quiet the day one is added.
  *
@@ -66,11 +66,11 @@ function tree(): CompletionTree {
 const asMap = (rows: readonly (readonly [string, string])[]): Map<string, string> =>
   new Map(rows.map(([key, words]) => [key, words]));
 
-describe('valueRows — one key a shell can ask with', () => {
+describe('valueRows: one key a shell can ask with', () => {
   it('gives an enumerated flag a row under BOTH spellings, with the same words', () => {
     const values = asMap(valueRows(tree()));
     // The short row is the half no mnema flag exercises. Both keys, and the same answer
-    // under each — a caller types whichever spelling they know, and the shell looks up
+    // under each: a caller types whichever spelling they know, and the shell looks up
     // what is in front of it.
     expect(values.get('stage:-k')).toBe('a b');
     expect(values.get('stage:--kind')).toBe('a b');
@@ -81,7 +81,7 @@ describe('valueRows — one key a shell can ask with', () => {
 
   it('keeps an enumerated flag declared behind one that enumerates nothing', () => {
     // `--plain` takes no set and is declared FIRST. A loop that stopped at it rather
-    // than stepping over it would drop every enumerated flag after it — and at the root
+    // than stepping over it would drop every enumerated flag after it, and at the root
     // of the real program `-V` comes first, so this is the arrangement the surface has.
     const values = asMap(valueRows(tree()));
     expect(values.has('stage:--plain')).toBe(false);
@@ -105,7 +105,7 @@ describe('valueRows — one key a shell can ask with', () => {
   });
 
   it('never issues one key twice', () => {
-    // A repeated key is a `case` arm the shell can never reach — dead text in a
+    // A repeated key is a `case` arm the shell can never reach: dead text in a
     // generated file nobody reads. The colon is what keeps the two halves apart, and
     // the claim is that it succeeds.
     const keys = valueRows(tree()).map(([key]) => key);
@@ -114,7 +114,7 @@ describe('valueRows — one key a shell can ask with', () => {
   });
 });
 
-describe('commandRows and flagRows — a row per level, keyed by the path alone', () => {
+describe('commandRows and flagRows: a row per level, keyed by the path alone', () => {
   it('emits a row for exactly the levels that have children, and none of them empty', () => {
     const rows = commandRows(tree());
     // The set, both ways: the levels with children and the levels with rows are the same
@@ -128,10 +128,10 @@ describe('commandRows and flagRows — a row per level, keyed by the path alone'
     // that echoed nothing is dead shell, and `leaf` is the level that would produce one.
     expect(rows.map(([key]) => key)).not.toContain('leaf');
     // The words are the level's children in the order the help lists them, and the
-    // implicit `help` commander hangs on any level with children is one of them — a Tab
+    // implicit `help` commander hangs on any level with children is one of them: a Tab
     // offers what can be TYPED there, and `stage help` can.
     expect(asMap(rows).get('stage')).toBe('move help');
-    // The program itself is the row keyed by the empty string — the whole top-level Tab.
+    // The program itself is the row keyed by the empty string: the whole top-level Tab.
     expect(asMap(rows).get('')).toBe('stage leaf help');
   });
 
@@ -142,7 +142,7 @@ describe('commandRows and flagRows — a row per level, keyed by the path alone'
 
   it('answers a level with every flag in scope there, its own and its ancestors’', () => {
     const flags = asMap(flagRows(tree())).get('stage')?.split(' ') ?? [];
-    // Its own, then the program's — the program's flags travel to every level, because the
+    // Its own, then the program's: the program's flags travel to every level, because the
     // program reads them for every verb, and a menu that hid one would leave an absence
     // unreadable.
     expect(flags).toContain('--plain');
@@ -154,7 +154,7 @@ describe('commandRows and flagRows — a row per level, keyed by the path alone'
 
   it('answers a subcommand with its group’s flags only where it takes them', () => {
     // A group's flags are accepted by the parser on every subcommand, and a subcommand that
-    // does not read one refuses it (`wiring/from-the-group.ts`) — so the menu offers the
+    // does not read one refuses it (`wiring/from-the-group.ts`), so the menu offers the
     // ones it reads, and the program's, and nothing else of the group's.
     expect(asMap(flagRows(tree())).get('stage move')?.split(' ')).toEqual([
       '-h',
@@ -183,7 +183,7 @@ describe('commandRows and flagRows — a row per level, keyed by the path alone'
   });
 });
 
-describe('spellingsOf — short before long, per flag, in flag order', () => {
+describe('spellingsOf: short before long, per flag, in flag order', () => {
   it('pairs each flag and drops the half a declaration does not have', () => {
     const leaf = tree().nodes.find((node) => node.path === 'leaf');
     expect(leaf).toBeDefined();

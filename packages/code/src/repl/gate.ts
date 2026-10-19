@@ -1,5 +1,5 @@
 /**
- * WHAT A SESSION DOES WITH A TYPED LINE — the whole language of the read-only
+ * WHAT A SESSION DOES WITH A TYPED LINE: the whole language of the read-only
  * session, decided by one total function over the verbs' own declarations.
  *
  * THE RULE IS DEFAULT-DENY AND IT IS NOT A LIST. A line runs only when the word it
@@ -7,7 +7,7 @@
  * refused: a verb that declared `mutates`, a word no verb answers to, a command hung on
  * the program by some path that carries no declaration, a line that is nothing but
  * flags. A list of allowed verbs kept here would be the thing that goes stale the one
- * time it matters — somebody adds a write, nobody remembers this file, and a session
+ * time it matters: somebody adds a write, nobody remembers this file, and a session
  * advertised as read-only records something. Reading the declaration means the verb
  * added tomorrow is refused because nobody classified it as a read, which is the
  * property this had to have before it could be built at all.
@@ -15,7 +15,7 @@
  * WHICH IS WHY THE DECLARATIONS ARRIVE FROM THE PROGRAM THAT WILL PARSE THE LINE. The
  * session hands over what `buildProgram` returned for THIS line, so what is decided
  * about and what is run are the same registration. Registering the verbs into a program
- * of its own would answer about a program nobody runs — and a command that reached the
+ * of its own would answer about a program nobody runs, and a command that reached the
  * real one by another path would carry no declaration, fall on the deny side, and be
  * refused rather than quietly executed. Both halves of that come from the same sentence.
  *
@@ -27,7 +27,7 @@
  *
  * IT IS NOT A SHELL, and the tokenizer below is the whole of what it understands:
  * whitespace separates, quotes group, a backslash escapes. No expansion, no globbing,
- * no pipes, no redirection — a `|` is a word like any other and the verb refuses it as
+ * no pipes, no redirection: a `|` is a word like any other and the verb refuses it as
  * an argument it does not take. Anything more would be a second way to run a command,
  * which is the shape this series exists to remove.
  */
@@ -40,7 +40,7 @@ import type { Declared } from '../wiring/verb.js';
  *
  * IT HAD A THIRD ANSWER AND THE THIRD WENT WITH `/exit`. A typed line could END the
  * session, so the console had an arm for it; the way out is a KEY now
- * ({@link THE_KEY_THAT_LEAVES}), and the key does not come through here at all — it ends the
+ * ({@link THE_KEY_THAT_LEAVES}), and the key does not come through here at all: it ends the
  * INPUT, which the console reads off the row rather than off a line it ran
  * (`repl/editing.ts`, `repl/console.ts`). An answer nothing can produce is an arm nothing
  * reaches, which is the shape this repository has paid for four times.
@@ -65,13 +65,13 @@ export type Disposition =
  * The verbs a session OFFERS: everything declared `reads`, minus the session's own verb.
  *
  * One function, because two consumers ask the same question and a second derivation
- * would be a menu that disagrees with the gate — a Tab offering what the next line
+ * would be a menu that disagrees with the gate: a Tab offering what the next line
  * refuses. The completer reads it to decide what to offer ({@link
  * completerFor}); {@link dispositionOf} reads it to decide what to run.
  *
  * THE SESSION'S OWN VERB IS EXCLUDED, and it is the one exclusion here that is not the
- * declaration's. `repl` declares `reads` and it is telling the truth — it records
- * nothing — but opening a session inside a session hands one terminal to two readers of
+ * declaration's. `repl` declares `reads` and it is telling the truth, it records
+ * nothing, but opening a session inside a session hands one terminal to two readers of
  * the same keystrokes. It is excluded by IDENTITY (the caller passes the name it was
  * registered under) rather than by a literal, so a rename cannot leave the exclusion
  * pointing at nothing.
@@ -84,7 +84,7 @@ export function verbsOffered(verbs: readonly Declared[], self: string): readonly
 
 /**
  * What a verb offers as a read: its own name when it is one, and for a GROUP whose members
- * answer for themselves, the members that read — each by its whole path, `task next`.
+ * answer for themselves, the members that read (each by its whole path, `task next`).
  *
  * A group with members is never offered as itself, whatever its own effect says: the group's
  * effect is its most powerful member's, and the member is the unit that is run. One that
@@ -99,14 +99,14 @@ function theReadsOf(verb: Declared): readonly string[] {
 }
 
 /**
- * Everything the session runs, by path — the number the opening states. A verb counts once, and a
+ * Everything the session runs, by path: the number the opening states. A verb counts once, and a
  * member of a group counts as the verb it is: `task next` is a thing a caller types.
  */
 export function pathsOffered(verbs: readonly Declared[], self: string): readonly string[] {
   return verbs
     .filter((verb) => verb.act.name() !== self)
     .flatMap((verb) => {
-      // A group that reads whole (`audit`) is the verbs inside it, each one a thing to type — the
+      // A group that reads whole (`audit`) is the verbs inside it, each one a thing to type: the
       // same count the surface had when they were verbs of the root.
       const inside = verb.act.commands.filter((command) => command.name() !== 'help');
       if (verb.members === undefined && verb.effect === 'reads' && inside.length > 0) {
@@ -202,7 +202,7 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   // AND THIS ONE USED TO POINT AT A WORD. It said the reads were listed by `/help`, which
   // was true until the list became a key: what answers *what can I type* now is the palette,
   // and a refusal that named a word the session no longer answers to would be the one thing
-  // this surface may not do — send a caller somewhere that refuses them again.
+  // this surface may not do: send a caller somewhere that refuses them again.
   return {
     does: 'refuse',
     sentence: `This session does not run \`${first}\``,

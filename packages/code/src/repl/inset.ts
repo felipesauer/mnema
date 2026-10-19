@@ -1,19 +1,19 @@
 /**
- * THE PAGE'S LEFT EDGE — how many columns the console keeps to the left of everything it
+ * THE PAGE'S LEFT EDGE: how many columns the console keeps to the left of everything it
  * SAYS, which is THE SAME NUMBER IT KEEPS TO THE RIGHT: none.
  *
  * IT IS ONE STATEMENT WITH THREE READERS, and that is the reason it is a module of its own
  * rather than a number in the layout. The margin is DRAWN by the layout (`region.ts`), the roll
  * is folded and measured against what is left of the width (`console.ts`), and the arrangement
- * at the top is chosen against the same number (`session.ts`) — so a column the drawing spends
+ * at the top is chosen against the same number (`session.ts`), so a column the drawing spends
  * and the arithmetic does not know about is a row of the page folded where nobody expected it,
  * which is the defect this surface has paid for once already in the other direction (`area.ts`,
  * `ABOVE_THE_PALETTE`).
  *
  * WHY IT IS ZERO. The margin was six columns because a purple guide ran down it, drawn beside
- * every row of the roll, marking the region a caller was reading. The guide is gone — what marks
+ * every row of the roll, marking the region a caller was reading. The guide is gone (what marks
  * where a caller's own words begin is a band behind each command, and what marks where an answer
- * begins is a glyph on its first row (`echo.ts`, `region.ts`) — and the six columns stayed as a
+ * begins is a glyph on its first row; see `echo.ts`, `region.ts`) and the six columns stayed as a
  * space nothing was drawn in, wider than the nothing there is on the right, where a row runs to
  * the edge the terminal gives it. The left edge is now the right one: the roll, the opening, the
  * rules and the row being typed all begin in the first column, so what a caller reads is aligned
@@ -39,7 +39,7 @@ export const THE_INSET = 0;
 export const THE_ANSWER_INDENT = 2;
 
 /**
- * How wide the page is INSIDE the margin — what a line of the session is folded to,
+ * How wide the page is INSIDE the margin: what a line of the session is folded to,
  * measured at, and what the arrangement at the top is chosen to fit across.
  *
  * A WIDTH NOBODY REPORTED STAYS NOBODY'S. Zero in is zero out rather than a negative
@@ -53,7 +53,7 @@ export function insideTheMargin(columns: number): number {
 
 /**
  * How wide an ANSWER may be: the page inside its margin, less the indent every row of an answer
- * carries. The same rule about a width nobody reported — zero stays zero.
+ * carries. The same rule about a width nobody reported: zero stays zero.
  */
 export function insideAnAnswer(columns: number): number {
   const inside = insideTheMargin(columns);

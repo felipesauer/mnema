@@ -1,21 +1,21 @@
 /**
- * THE ECHO — what a caller sent, shown back to them: the prompt they typed in front of,
+ * THE ECHO (what a caller sent, shown back to them): the prompt they typed in front of,
  * and their own words.
  *
  * IT IS THE ONE LINE OF THIS PRODUCT THAT IS NOT ABOUT THE RECORD, and that is why it
  * took a delivery of its own to get here. Every other line `presentation/` builds is a
- * reading — a hit, a verdict, a fact — so the console could say, truthfully, that it
+ * reading (a hit, a verdict, a fact), so the console could say, truthfully, that it
  * composed nothing a reader sees. It composed this one: `land(prompt + line)`, three
  * times, in the module that owns the streams (`repl/console.ts`). A concatenated string
- * has no parts, so it has no roles, so a renderer has nothing to weigh or paint — and
+ * has no parts, so it has no roles, so a renderer has nothing to weigh or paint, and
  * what that cost is exactly what a caller reported: scrolling a session, the line they
  * ASKED reads at the same weight as the answer to it, and there is nothing to find.
  *
  * SO IT IS A LINE WITH PARTS, like everything else, and the three consequences are the
  * whole argument for the shape:
  *
- *   - IT CAN BE PAINTED. The prompt takes the accent — the hue this product is marked by,
- *     the one its rules are drawn in — and what the caller typed takes a weight of its
+ *   - IT CAN BE PAINTED. The prompt takes the accent (the hue this product is marked by,
+ *     the one its rules are drawn in) and what the caller typed takes a weight of its
  *     own. That is `styled.ts`'s table, not this file's: nothing here knows a colour.
  *   - A CALLER WHO ASKED FOR NO COLOUR GETS NONE, for free and by construction. Which
  *     renderer answers is resolved once, at the entry, out of the flag and the two
@@ -33,11 +33,11 @@
  * two parts take no separator at all (`plain.ts`, `PRECEDED_BY`), because the prompt
  * carries the space it has always ended in inside its own text. What a session lands is
  * what a session landed, and `echo.test.ts` asserts it over the values a row being typed
- * can hold — nothing, a word, a paste with a break in it, a run of spaces.
+ * can hold: nothing, a word, a paste with a break in it, a run of spaces.
  *
  * AND THE ROW BEING TYPED IS THIS LINE TOO, which is the paragraph this file had to take
  * back. IT READ: *what it is not is the row being TYPED. That row is drawn in the input area,
- * at the foot of the page, and it is handed to the layout as bytes with no style at all —
+ * at the foot of the page, and it is handed to the layout as bytes with no style at all,
  * because the caret is an offset in COLUMNS into it, and escapes a terminal does not print
  * would be arithmetic the console has to do to put the caret where the caller's fingers are.*
  * WHAT FALSIFIED IT is the arithmetic itself: the console counts that column over the prompt
@@ -47,8 +47,8 @@
  * What the reason was really protecting is the FOLD, and that survives whole: the row being
  * typed is the one line of that page rendered for no width, because a break of ours inside the
  * row a caller is writing is a break the terminal was going to make at the margin anyway
- * (`repl/console.ts`, `renderTyped`). So the same two parts are composed here for both — the
- * roll keeps one once the line has been sent, and the other is under the caller's fingers —
+ * (`repl/console.ts`, `renderTyped`). So the same two parts are composed here for both (the
+ * roll keeps one once the line has been sent, and the other is under the caller's fingers)
  * and the prompt carries the same accent in both places, which is what a caller asked for after
  * seeing it in one of them.
  */
@@ -59,13 +59,13 @@ import type { Line } from './line.js';
  * One echo, as a line: the prompt, then what was typed.
  *
  * AT THE EDGE AND NOT UNDER ANYTHING. It is not an item of a list and not a fact under a
- * heading — it is the caller's own line, and the answer to it lands under it at whatever
+ * heading: it is the caller's own line, and the answer to it lands under it at whatever
  * depth the answer has.
  *
  * A line with NOTHING typed is the prompt alone, and it is a real case rather than a
  * degenerate one: a caller who presses Return on an empty row has sent an empty line, and
  * a terminal shows what you sent. The empty part is kept rather than dropped, so the two
- * parts of an echo are always the two parts of an echo — a shape that lost a part when
+ * parts of an echo are always the two parts of an echo: a shape that lost a part when
  * the text was empty would be a shape a reader of the parts has to branch on.
  */
 export function echoLine(prompt: string, typed: string): Line {
@@ -89,11 +89,11 @@ export const SENT_MARK = '❯ ';
  * A command that has been SENT, as the roll keeps it: the mark, then the words.
  *
  * IT IS NOT {@link echoLine}, AND THE TWO ARE ON THE PAGE AT ONCE. The echo is the row being
- * TYPED — the product's prompt, in the product's hue, under the caller's fingers. Once the row
+ * TYPED: the product's prompt, in the product's hue, under the caller's fingers. Once the row
  * is sent it is something the session shows back, and in a terminal that paints it is a band
  * across the page: what a reader scrolling a long session looks for is where each of their
  * questions began, and a band is what the eye finds. The purple stays on the row being typed,
- * on the rules and on the top — the places that say *this is mnema* — and a sent command
+ * on the rules and on the top (the places that say *this is mnema*) and a sent command
  * carries none of it (`styled.ts`).
  *
  * The words are the caller's own, so they are neutralized like every other part's; a line with
@@ -121,7 +121,7 @@ export const DONE_MARK = '✻ ';
 
 /**
  * THE LINE UNDER AN ANSWER: the mark, the verb that was typed, how long it took and the hour it
- * finished — `✻ status · 12ms · done 16:32`. Only what was measured: the console calls no model,
+ * finished (`✻ status · 12ms · done 16:32`). Only what was measured: the console calls no model,
  * so there is no word on it about thinking, and the verb is the first word the caller typed,
  * which is a fact about the line and not a reading of it.
  *

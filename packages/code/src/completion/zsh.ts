@@ -1,10 +1,10 @@
 /**
- * THE TREE, RENDERED FOR ZSH — the one rendering that can show what a verb DOES.
+ * THE TREE, RENDERED FOR ZSH: the one rendering that can show what a verb DOES.
  *
  * The tables are the same tree as bash's (see `lookups.ts`) and the walk is the same
  * walk, because both shells answer a Tab by looking up the level the line has reached.
  * What zsh adds is `_describe`, which puts a description beside each candidate in the
- * menu — so this rendering carries the fourth thing the tree holds: the one-line
+ * menu, so this rendering carries the fourth thing the tree holds: the one-line
  * description each command already declares for `--help`.
  *
  * A COMMAND'S DESCRIPTION TRAVELS AND AN OPTION'S DOES NOT, and the difference is
@@ -17,7 +17,7 @@
  *
  * SPLITTING IS EXPLICIT EVERYWHERE. A description holds spaces, so the described
  * candidates are split on NEWLINES (`${(f)…}`) and the flag lists on words
- * (`${=…}`) — and each is asked only after the string is known to be non-empty, so an
+ * (`${=…}`), and each is asked only after the string is known to be non-empty, so an
  * empty level never reaches `_describe` or `compadd` as a single empty candidate.
  *
  * `#compdef` AND `compdef` BOTH, because a caller may install this file either way: the
@@ -81,7 +81,7 @@ function table(name: string, rows: readonly CompletionRow[]): readonly string[] 
 /**
  * The subcommands of each level as `_describe`'s `word:description` items.
  *
- * One item per LINE of the script, continued — the root offers one per verb, and a single
+ * One item per LINE of the script, continued: the root offers one per verb, and a single
  * line holding the whole surface would be a file nobody can read a diff of.
  * `_describe` splits an item at its FIRST colon, so a description that holds one (the
  * gate's "dry-run the gate: would a move be allowed…") arrives whole.
@@ -102,7 +102,7 @@ function described(name: string, tree: CompletionTree): readonly string[] {
 }
 
 /**
- * The completion function itself — the same shape whatever the tree holds.
+ * The completion function itself: the same shape whatever the tree holds.
  *
  * Written as one template rather than a list of lines so that the shell reads as shell
  * here. Every `${…}` the SHELL is meant to expand is escaped (`\${…}`); the two that are

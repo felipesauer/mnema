@@ -3,7 +3,7 @@
  * fields that kind actually has.
  *
  * A memory is its content, a decision is its rationale and what it turned down, an
- * observation is what it is about — printing one shape for all five would hide
+ * observation is what it is about: printing one shape for all five would hide
  * exactly the field the reader opened the record for.
  *
  * The body goes out verbatim, newlines and all, and that is the form's rule rather
@@ -15,7 +15,7 @@
  *
  * AND THE FIELDS ABOVE IT ARE COLLAPSED, WHICH USED TO READ AS THE BODY'S ARGUMENT
  * EXTENDED OVER THE WHOLE READ. The argument is that a body has no list around it to
- * imitate — and the lines above the body are not a body: they are the indented facts
+ * imitate, and the lines above the body are not a body: they are the indented facts
  * under a subject, and a second line at that same depth is a FACT THIS RECORD DOES NOT
  * HOLD. An observation's `about` is the sharpest of them, because it is the value
  * `observe` does not validate (`tests/a-line-of-success-is-one-line.test.ts` measured
@@ -25,10 +25,10 @@
  * `ADR-<n>`, the kind, the tree and the anchor are the record's own and are left alone.
  *
  * THE STATE IS ITS OWN PART, for all three kinds that have one. It was concatenated into
- * the fact beside the title — `` `${title} (${state})` `` — so a position and the words an
+ * the fact beside the title, `` `${title} (${state})` ``, so a position and the words an
  * actor wrote were one field and nothing could tell them apart. The bytes are unchanged
  * (see `statedFact`); what the split buys is that the position can be painted where the
- * domain says it is news — for all three machines, and this used to say the task machine
+ * domain says it is news: for all three machines, and this used to say the task machine
  * and only it. What that sentence described was never a rule of this read: it was
  * `state.ts` not yet asking the other two domains what their positions mean.
  *
@@ -36,7 +36,7 @@
  * that is a decision rather than a gap. Two rules of one chain can answer to one
  * label (two clones minting offline), and the two answers that carry a label somewhere
  * it will be read ALONE both declare it: the committed document, and the audit. This
- * one is asked BY ID and answers about that id — the reader is already holding the
+ * one is asked BY ID and answers about that id: the reader is already holding the
  * handle that identifies, so a note about a second rule would be a survey of the
  * record inside a read of one record, paid for on every open.
  */
@@ -53,7 +53,7 @@ import { asState } from './state.js';
 
 /** What the record itself does not carry, and two of the five kinds report. */
 export interface RecordContext {
-  /** How each identity the record knows is written — a memory names one. */
+  /** How each identity the record knows is written: a memory names one. */
   readonly anchors: AnchorForms;
   /** How many runs consulted this pattern; absent for anything but a skill. */
   readonly consultations?: number;
@@ -62,7 +62,7 @@ export interface RecordContext {
 }
 
 /**
- * WHAT EACH MOVE SAID — a second body, headed, below the facts.
+ * WHAT EACH MOVE SAID: a second body, headed, below the facts.
  *
  * The prose a transition carried (`note`, `reason`, `feedback`, and the locators
  * beside them) is the ONLY body a task ever has, and measured before this existed it
@@ -73,12 +73,12 @@ export interface RecordContext {
  * IT IS A BODY AND NOT A FACT, and the precedent is three lines up: a decision's
  * `alternatives` is already a second headed body, served whole below the blank line,
  * because collapsing an argument into one line damages the one thing the read exists
- * for. A note is the same kind of value — a paragraph somebody wrote — so it is served
+ * for. A note is the same kind of value, a paragraph somebody wrote, so it is served
  * the same way. The line that NAMES each move stays a one-liner: the action and the
  * instant are the record's own words and go through the same `fact` shape as everything
  * above.
  *
- * ABSENT WHEN NOTHING SAID ANYTHING — no heading, no blank line — for the reason the
+ * ABSENT WHEN NOTHING SAID ANYTHING (no heading, no blank line) for the reason the
  * `alternatives` section is absent: an empty section makes a reader wonder what was
  * left out, and most transitions carry nothing at all.
  */
@@ -93,11 +93,11 @@ function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
 }
 
 /**
- * Where the record says it came from, as facts — one line each, all of them.
+ * Where the record says it came from, as facts: one line each, all of them.
  *
  * A provenance is a FACT and not a body, so it obeys the rule the paragraph above
  * states: everything over the blank line is one line per item. The target goes through
- * {@link oneLine} for the same reason an observation's `about` does — it is a value the
+ * {@link oneLine} for the same reason an observation's `about` does: it is a value the
  * writer supplied and the record never validated, so one holding a newline would
  * otherwise write a second, well-formed fact this record does not hold.
  *
@@ -106,12 +106,12 @@ function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
  *
  * THE WORD IS NOT THIS FILE'S ANY MORE ({@link DERIVED_FROM}). It was, while the fact was
  * served only by the reads somebody ASKS for; the channels that arrive unasked print it
- * too now — the committed document and the two texts pushed at an edit — and four
+ * too now, the committed document and the two texts pushed at an edit, and four
  * printers spelling one relation by hand is the shape that drifts. The collapse stays
  * here, inside this template, because that is what the line guard over this layer can
  * see.
  *
- * ALL OF THEM, in the order the read handed them (by target — see `originOf`), because
+ * ALL OF THEM, in the order the read handed them (by target: see `originOf`), because
  * a record may assert several and choosing one of N would put the answer at the mercy
  * of row order.
  */
@@ -127,7 +127,7 @@ function originFacts(render: Render, body: RecordBody): string[] {
  * It is positional rather than pushed inside the five arms, and that is a choice about
  * where one rule lives: pushing it per kind would be one rule at five sites, and the
  * fifth is the one that would be forgotten. The invariant it leans on is stated in this file's own
- * doc — a body is separated from the facts by exactly one empty line — and a kind that
+ * doc (a body is separated from the facts by exactly one empty line) and a kind that
  * prints no body (a task) has no empty line, so the facts go last, which is still above
  * nothing. `the-origin-travels-beside-the-label.test.ts` drives both shapes.
  */
@@ -148,7 +148,7 @@ function actorText(anchors: AnchorForms, actor: DecisionActor, attested = false)
 }
 
 /**
- * What a retracted note says about its retraction, above its body: when, by whom, and why —
+ * What a retracted note says about its retraction, above its body: when, by whom, and why;
  * nothing when the note stands. The note itself is printed whole below it, because the
  * retraction took it out of the reads that list notes, not out of the record.
  */
@@ -231,7 +231,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       }
       lines.push('');
       lines.push(neutralized(body.record.rationale));
-      // What it turned down, when the record says so — a SECOND body, headed, so
+      // What it turned down, when the record says so: a SECOND body, headed, so
       // the two paragraphs are not read as one argument. Absent when the decision
       // recorded none: no heading, no blank line, nothing that would read as an
       // empty section and make a reader wonder what was left out.

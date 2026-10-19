@@ -87,7 +87,7 @@ describe('the cut: whole items, the most that fit, never past the room', () => {
 });
 
 describe('the document a hook carries', () => {
-  /** What governs, as the composition hands it over — the fields the document reads. */
+  /** What governs, as the composition hands it over: the fields the document reads. */
   function governance(decisions: readonly string[], patterns: readonly string[]): Brief {
     return {
       decisions: decisions.map((title, at) => ({

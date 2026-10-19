@@ -1,5 +1,5 @@
 /**
- * THE TREE AS FLAT LOOKUPS — one key, one answer, which is what a table-driven shell
+ * THE TREE AS FLAT LOOKUPS: one key, one answer, which is what a table-driven shell
  * can hold.
  *
  * bash and zsh both answer a Tab by looking a level up in a `case`, so both need the
@@ -10,13 +10,13 @@
  * them is corrected the other keeps completing the old surface.
  *
  * THE KEY OF A VALUE IS `<path>:<flag>`, and the flag half is empty for a positional
- * argument's own values. One table rather than two, because a shell asks one question —
- * "does the declaration enumerate what goes here?" — and the answer differs only in
+ * argument's own values. One table rather than two, because a shell asks one question
+ * ("does the declaration enumerate what goes here?") and the answer differs only in
  * whether a flag asked for it. The colon cannot collide: a path is words separated by
  * spaces and a flag begins with a dash.
  *
  * fish takes the tree itself and not these rows: it has no `case` in its completion
- * path at all — a condition per candidate is its idiom — so a third consumer here
+ * path at all (a condition per candidate is its idiom), so a third consumer here
  * would be a shape imposed on a shell that does not want it.
  */
 
@@ -36,7 +36,7 @@ export function commandRows(tree: CompletionTree): readonly CompletionRow[] {
   return rows;
 }
 
-/** Every level, and every flag spelling it reads — its own, its group's it takes, the program's. */
+/** Every level, and every flag spelling it reads: its own, its group's it takes, the program's. */
 export function flagRows(tree: CompletionTree): readonly CompletionRow[] {
   const rows: CompletionRow[] = [];
   for (const node of tree.nodes) {

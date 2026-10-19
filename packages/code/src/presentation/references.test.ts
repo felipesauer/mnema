@@ -5,7 +5,7 @@
  * used to tell an entity's own edges from the graph beyond them by indenting the
  * second sort one level deeper, which put the meaning in whitespace: a reader had
  * to work out what two extra spaces said, and it was the only list in the product
- * that nested. Naming the groups moves the meaning into words — so the test asserts
+ * that nested. Naming the groups moves the meaning into words, so the test asserts
  * BOTH halves, because either alone is satisfiable by the bug: headings with the
  * nesting still there, or the nesting gone with nothing saying which list is which.
  */
@@ -53,7 +53,7 @@ function graph(overrides: Partial<ReferenceGraph> = {}): ReferenceGraph {
   };
 }
 
-/** Every line that is an item — indented — with its indentation measured. */
+/** Every line that is an item, indented, with its indentation measured. */
 function indents(lines: readonly string[]): number[] {
   return lines
     .filter((line) => line.startsWith(' '))
@@ -68,7 +68,7 @@ describe('the reference report', () => {
     expect(lines).toContain('reached, by distance (2)');
   });
 
-  it('puts every item at one depth — the label carries the meaning, not the indent', () => {
+  it('puts every item at one depth: the label carries the meaning, not the indent', () => {
     // The edge between two OTHER entities used to be indented twice to say it was
     // not the origin's own. It is in its own named list now, at the same depth as
     // every other item in the product.

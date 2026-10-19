@@ -2,7 +2,7 @@
  * THE SESSION: one process, many reads, and the floor paid once.
  *
  * A command of this CLI costs about a hundred milliseconds before it has read a byte of
- * the record — node starting, then the declarations commander needs to route a word
+ * the record: node starting, then the declarations commander needs to route a word
  * (measured, and brought down as far as a declaration can be brought: see
  * `the-floor-is-the-declaration.test.ts`). Ten reads at a shell prompt pay that ten
  * times. Ten reads in here pay it ONCE, and everything after the first is the work
@@ -12,30 +12,30 @@
  *
  *   - IT IS A VERB, `mnema repl`, and it is still the only word that opens a session
  *     directly. IT SAID *and never the bare invocation. `mnema` with no verb prints the
- *     help and exits, byte for byte as it always has* — and the second sentence is now
+ *     help and exits, byte for byte as it always has*, and the second sentence is now
  *     true of a PIPE and false of a terminal: the bare name asks what you want there, and
  *     one of the two doors it offers is this session (`program.ts`, `start`). The half that
  *     mattered is the half that held. Every shell pipeline, script and CI job that has
  *     ever run this binary with no arguments gets the same bytes on the same stream with
  *     the same exit code, and the agent that ran it in a pty lands on a QUESTION rather
- *     than on a prompt — one that writes nothing however it is answered, or not answered.
+ *     than on a prompt: one that writes nothing however it is answered, or not answered.
  *   - IT ONLY READS, by DEFAULT-DENY over each verb's own declaration (`gate.ts`).
- *     Not a list kept here — a write added tomorrow is refused because nobody
+ *     Not a list kept here: a write added tomorrow is refused because nobody
  *     classified it as a read.
  *   - IT REFUSES WITHOUT A TERMINAL. Reading commands from a pipe would be a second way
  *     to run this product's verbs, with its own parsing and its own rules, and the
  *     first way already exists: type the verb.
  *   - IT PERSISTS NOTHING. What the caller typed lives in the value the console keeps
  *     (`editing.ts`), for the length of the process, and goes nowhere. A file would have
- *     to live in the caller's home — this product writes inside `.mnema/` and nowhere
- *     else — and WHERE is a decision nobody has taken.
+ *     to live in the caller's home, this product writes inside `.mnema/` and nowhere
+ *     else, and WHERE is a decision nobody has taken.
  *   - IT IS NOT A SHELL. No expansion, no globbing, no pipes; and no `cd`, no `set`,
  *     nothing that changes what the session is looking at. One session, one project,
  *     resolved from the directory it was opened in.
  *
  * THE REPORT `/help` PRINTED IS GONE, AND WHAT TOOK IT IS THE LIST rather than a shorter
  * report. It composed the verbs this session runs out of their own declarations, one row
- * each, under two headings — the same table the palette draws, except that it was a REPORT:
+ * each, under two headings, the same table the palette draws, except that it was a REPORT:
  * it landed on the roll, it scrolled away behind the answers a caller then asked for, and
  * you had to know the word `/help` before you could ask for it at all. The list under the
  * prompt says the same sentence about the same verb, beside the word, while the word is
@@ -48,16 +48,16 @@
  * ONE PROGRAM PER LINE, and it is deliberate rather than lazy. commander keeps what it
  * parsed on the command object, so a program reused across lines would answer the
  * second `search` with the first one's `--limit`. Building one costs the declarations
- * and nothing else — no adapter, no domain — which is exactly what the floor work made
+ * and nothing else (no adapter, no domain), which is exactly what the floor work made
  * cheap.
  *
  * THE OUTPUT IS THE SURFACE'S OWN, and the console is only WHERE IT LANDS. Every line a
  * command prints goes through the same `io` and the same renderer every other invocation
- * uses, and inside a terminal that renderer is the styled one — so this is the first
+ * uses, and inside a terminal that renderer is the styled one, so this is the first
  * place where painting is the normal path rather than the exception. `strip(what a
  * command says here)` is what the same command says in a pipe, and that is asserted
  * rather than hoped for. The port this file hands the commands is the CONSOLE'S: both
- * streams land on the same page, because inside one terminal there is no second stream —
+ * streams land on the same page, because inside one terminal there is no second stream;
  * a refusal written past the console's back would land on top of whatever was being
  * drawn.
  *
@@ -71,7 +71,7 @@
  * AND IT IS WHAT MAKES THE PAGE OBEY ONE DECISION ABOUT COLOUR, which is a load this
  * sentence did not use to carry. The library resolves the colour of everything IT draws
  * from a channel it reads once, while it is being loaded (`painting.ts`), so the one moment
- * at which this product's answer can reach it is the instant before that import — which
+ * at which this product's answer can reach it is the instant before that import, which
  * exists, and is here, only because the import is late. Both halves are asserted rather than
  * left to two lines being adjacent: the modules that reach the library are enumerated by
  * what they import, and a static import of any of them from anywhere is an import that would
@@ -120,19 +120,19 @@ import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
 
 /**
- * What a caller types in front of — the text, and the space it ends in.
+ * What a caller types in front of: the text, and the space it ends in.
  *
  * IT WAS *the one string on this surface a renderer never sees*, with the reason written
  * out: *it is not a report and it carries no fact. A painted prompt would be escape bytes
  * the console has to do column arithmetic over to put the caret in the right place.* Both
  * halves were wrong in different ways. Carrying no fact is what makes it CHROME, which is a
- * reason to paint it rather than a reason not to — it is the mark of the product, and it is
+ * reason to paint it rather than a reason not to: it is the mark of the product, and it is
  * the one role the accent is spent on (`presentation/styled.ts`). And the arithmetic never
  * ran over the composed row at all: the console counts the caret's column over this string
  * and over what was typed, the two values it is handed (`repl/console.ts`, `Shown.column`).
  *
  * SO IT IS RENDERED IN BOTH PLACES IT APPEARS, out of one line with two parts
- * (`presentation/echo.ts`) — the echo the roll keeps, and the row under the caller's fingers.
+ * (`presentation/echo.ts`): the echo the roll keeps, and the row under the caller's fingers.
  * The spelling and the trailing space are untouched by that: the space is inside this text
  * because the parts of an echo take no separator, which is what makes the plain rendering the
  * prompt followed by the line, byte for byte (`presentation/plain.ts`, `PRECEDED_BY`).
@@ -149,7 +149,7 @@ const PROMPT = 'mnema> ';
 const BETWEEN_CLAUSES = ' · ';
 
 /**
- * The product, and what this session is — the first row of the text beside the mark.
+ * The product, and what this session is: the first row of the text beside the mark.
  *
  * IT WAS THE BOX'S TITLE, laid on the frame's top edge. The frame is gone; the words did
  * not change and neither did the order they are in.
@@ -163,12 +163,12 @@ const WHAT_IT_IS = 'a session over this project';
  * It is the one fact about the PRODUCT the opening states, and it is there because a
  * console is where somebody reports what they saw: a screenshot of an opening that names the
  * version is a bug report that says which one. The string is the one `mnema --version`
- * prints — one constant, read by both (`version.ts`), so a title and a flag cannot come to
+ * prints: one constant, read by both (`version.ts`), so a title and a flag cannot come to
  * disagree about what is running.
  *
  * A PART OF ITS OWN and not glued to the name: what separates two parts of a heading is
  * the renderer's decision and has been since the first form of this surface, so composing
- * `mnema v0` here would be this file punctuating a line. The `v` is not punctuation — it
+ * `mnema v0` here would be this file punctuating a line. The `v` is not punctuation: it
  * is how a version is written.
  */
 const WHICH_BUILD = `v${VERSION}`;
@@ -178,7 +178,7 @@ const WHICH_BUILD = `v${VERSION}`;
  *
  * THERE WERE TWO OF THEM, and the second was called `Hints`: a heading over the one
  * affordance the panel named. It went because the row under the prompt already says where
- * every word of the session is — the palette the slash opens — and the panel's copy was the
+ * every word of the session is, the palette the slash opens, and the panel's copy was the
  * one that scrolls off the top and never comes back. The heading is kept for the section
  * that stayed, because a section with a heading and one without are two shapes.
  */
@@ -188,12 +188,12 @@ const THE_RECORD = 'The record';
 const UNDER_A_HEADING = 1;
 
 /**
- * THE MARK THE BADGE OPENS WITH — a filled ring, and nothing else about it.
+ * THE MARK THE BADGE OPENS WITH: a filled ring, and nothing else about it.
  *
  * Spelled by its code point rather than typed, like every unusual byte in this repository:
  * a glyph a reader cannot tell from a neighbouring one is a glyph an edit destroys without
  * anybody seeing it happen. It is the one the reference this row was measured from uses,
- * and it says nothing — it is where the eye lands on a row that is otherwise at the far
+ * and it says nothing: it is where the eye lands on a row that is otherwise at the far
  * edge of a wide screen.
  */
 const LEVEL_MARK = '\u25c9';
@@ -208,18 +208,18 @@ const LEVEL_MARK = '\u25c9';
 const AT_THE_EDGE = 0;
 
 /**
- * WHAT THE LEVEL IN THE CORNER IS A STATEMENT ABOUT — the record in front of the reader,
+ * WHAT THE LEVEL IN THE CORNER IS A STATEMENT ABOUT: the record in front of the reader,
  * or the record as this session opened over it.
  *
- * A CLOSED UNION AND NOT A BOOLEAN, so that a third answer — a level ruled on again
- * mid-session, say — does not compile until somebody has written what the corner reads
+ * A CLOSED UNION AND NOT A BOOLEAN, so that a third answer (a level ruled on again
+ * mid-session, say) does not compile until somebody has written what the corner reads
  * like in it. A flag at the call site would read as a mode rather than as which of two
  * things is being said.
  */
 export type WhatTheLevelCovers = 'the-whole-record' | 'the-record-as-it-opened';
 
 /**
- * The clause the badge adds to the level, per {@link WhatTheLevelCovers} — total over the
+ * The clause the badge adds to the level, per {@link WhatTheLevelCovers}: total over the
  * union, so a member added without words does not compile.
  *
  * NOTHING IS ADDED IN THE ORDINARY CASE, which is the whole reason this is a table rather
@@ -235,8 +235,8 @@ const AS_IT_COVERS: Readonly<Record<WhatTheLevelCovers, string>> = {
 /**
  * How a row that has stopped covering the record in front of the reader reads as news.
  *
- * It is the rung the scale already gives an UNCHECKED stretch — `hash-chain-only` is
- * `warn` because no signature was checked over it (`wiring/verify.ts`) — and this is the
+ * It is the rung the scale already gives an UNCHECKED stretch (`hash-chain-only` is
+ * `warn` because no signature was checked over it; see `wiring/verify.ts`) and this is the
  * same fact about a different stretch: what arrived since the verdict was formed has been
  * ruled on by nothing. Green there is the one reading this corner may not offer, because
  * green is what a reader takes for "nothing to look at".
@@ -246,7 +246,7 @@ const CAUTION: Severity = 'warn';
 /**
  * The worse of two severities, by the scale's own order.
  *
- * `SEVERITIES` is the order — good, warn, bad — and it is read rather than retyped, so a
+ * `SEVERITIES` is the order (good, warn, bad) and it is read rather than retyped, so a
  * rung inserted into it is ordered here by the same list every other reader of the scale
  * takes. The badge needs it for one case and one only: a level that is already bad news
  * and a record that has moved past it are still bad news, and taking the caution would be
@@ -267,8 +267,8 @@ function theWorseOf(one: Severity, other: Severity): Severity {
  * allowed to push anything off the top*, which was two claims and the second was false: what
  * was left over was measured against the SCREEN, so a list twenty rows tall on a page with
  * four to spare pushed sixteen rows of the opening into the scrollback on the first keystroke.
- * NOTHING IS PUSHED ANYWHERE NOW — the list grows into the middle region, which is a window
- * onto a roll rather than the roll itself (`area.ts`, `scrolling.ts`) — so the sentence is
+ * NOTHING IS PUSHED ANYWHERE NOW: the list grows into the middle region, which is a window
+ * onto a roll rather than the roll itself (`area.ts`, `scrolling.ts`), so the sentence is
  * true of both halves and for a reason the arithmetic no longer has to keep.
  */
 const NOTHING_OFFERED_YET = 0;
@@ -279,7 +279,7 @@ const NOTHING_OFFERED_YET = 0;
  * THE QUESTION HERE IS WHAT THAT REGION SHOULD BE, so its own height cannot be an input to it:
  * the input area is measured in order to choose a drawing of the name that fits above it
  * (`bannerFor`), and a drawing that had to be known first would be a circle. With no palette
- * open the number cannot change the answer at all — what it budgets is the list — so this says
+ * open the number cannot change the answer at all (what it budgets is the list), so this says
  * what is true rather than standing in for something.
  *
  * IT WAS THE FLOW ON THE SCREEN, and it meant a different thing that happened to be nought
@@ -297,13 +297,13 @@ const NOTHING_ABOVE_YET = 0;
  * that decides something. The row comes and goes with answers, and an arrangement budgeted against
  * it would either spend a row of the shortest window on a row that is usually absent or re-lay the
  * top of the page each time the same read was asked twice. So the page is chosen against the area
- * without it, and while it stands it is taken out of the middle region — the window — exactly as
+ * without it, and while it stands it is taken out of the middle region, the window, exactly as
  * the list of words is (`area.ts`, `AreaRequest.unmoved`).
  */
 const NO_ANSWER_HAS_LANDED = 0;
 
 /**
- * A HEIGHT NO ARRANGEMENT CAN BUST — what the opening is composed against when the question is
+ * A HEIGHT NO ARRANGEMENT CAN BUST: what the opening is composed against when the question is
  * *what would this drawing's arrangement COST*, rather than *does it fit*.
  *
  * The two questions are asked of the same function and only the second one is about a terminal
@@ -324,22 +324,22 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  * THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
  * The rule was right and it was about a promise: a hint naming an affordance that does not
  * answer is the console lying to the reader who cannot check, and until the palette existed
- * the slash answered nothing on its own — you had to type a whole word behind it. It opened
+ * the slash answered nothing on its own; you had to type a whole word behind it. It opened
  * the palette then, so the promise was kept, and the case that held the ban is inverted
  * rather than deleted (`tests/the-input-has-its-own-place.test.ts`).
  *
  * AND IT SAID `\`/\` and a letter list the words` FOR ONE DELIVERY, AND THE HALF-PROMISE IS
  * BACK TO BEING A WHOLE ONE. The reasoning for the longer clause was that the list opened on
  * the LETTER and not on the bare slash, so a hint saying the slash alone listed anything would
- * promise what the console no longer did — right about the ban, and it was written on a
+ * promise what the console no longer did, right about the ban, and it was written on a
  * premise a caller falsified from the page: a bar with a slash in it and nothing under it is
  * somebody asking what there IS, and nothing is the wrong answer to that. The bare slash opens
  * the list again (`palette.ts`, `offeredBy`), so the shorter clause is the true one, and the
  * twelve columns it cost go back to the row.
  *
  * AND THE LAST ONE USED TO NAME `/exit`, AND NOW IT IS THE ONLY WAY OUT THERE IS. It was
- * already the honest half of that pair — the word was a second spelling of the same
- * keystroke — and what the word cost was a line of the list, a line of the help and an arm
+ * already the honest half of that pair (the word was a second spelling of the same
+ * keystroke) and what the word cost was a line of the list, a line of the help and an arm
  * of the gate. What is left is the keystroke, which is in no list and cannot be looked up,
  * which is exactly what a hint is for.
  *
@@ -354,8 +354,8 @@ const HOW_TO_LEAVE = `${THE_KEY_THAT_LEAVES} leaves`;
 /**
  * WHAT THE RULE IS ASKED WITH FOR A LINE THAT MAY NOT FOLD: no screen to fold to.
  *
- * TWO CALLERS AND ONE ARGUMENT. The badge and the hint are CHROME — one row each, in the
- * corner above the input and under the row being typed — and the area draws neither unless it
+ * TWO CALLERS AND ONE ARGUMENT. The badge and the hint are CHROME (one row each, in the
+ * corner above the input and under the row being typed) and the area draws neither unless it
  * fits on one row of this terminal (`area.ts`, `onOneRow`), so a fold there could never have
  * had anything to do and a folded one would be a corner of the console broken in half. The
  * renderer this file hands out BEFORE the console exists answers with it for the neighbouring
@@ -369,8 +369,8 @@ const NO_SCREEN_TO_FOLD_TO = 0;
  * what that key gives (see {@link pickingTips} for why they are beside the list rather than in
  * the row under the prompt).
  *
- * The two arrows are one clause because they are one affordance — a caller who knows Down moves
- * knows Up does — and they are drawn as the glyphs a keyboard has rather than spelled out, which
+ * The two arrows are one clause because they are one affordance (a caller who knows Down moves
+ * knows Up does) and they are drawn as the glyphs a keyboard has rather than spelled out, which
  * is what the reference does and is four columns instead of fifteen. UPWARDS ARROW U+2191 and
  * DOWNWARDS ARROW U+2193, spelled by their code points like every unusual byte in this
  * repository.
@@ -406,7 +406,7 @@ const HOW_TO_SCROLL_BACK = 'PgUp and Home scroll back';
  *
  * THE SECOND IS IN THE PRESENT TENSE, AND THAT IS WHAT DECIDES HOW LONG THE ROW STANDS. The
  * sentence beside it can stand through a scroll because both of its facts are about the answer;
- * this one is about the page NOW, so it is on the page only while it is true of it — the first
+ * this one is about the page NOW, so it is on the page only while it is true of it: the first
  * frame whose window holds the end takes it down, whichever key or size put the end there
  * (`console.ts`, `moved`).
  *
@@ -420,14 +420,14 @@ const END_GOES_THERE = 'End goes there';
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
-  /** Where a command's output goes — the caller's own port. */
+  /** Where a command's output goes: the caller's own port. */
   readonly io: CliIo;
   /**
    * How a line becomes bytes: the renderer for THE PAGE AS IT IS DRAWN NOW.
    *
    * IT WAS *RESOLVED ONCE FOR THE WHOLE SESSION*, which is the sentence a maximised window
-   * falsified. Which colours a line carries is still one answer for the whole session — that
-   * is the flag, the environment and the terminal, and none of them moves — but how wide the
+   * falsified. Which colours a line carries is still one answer for the whole session (that
+   * is the flag, the environment and the terminal, and none of them moves), but how wide the
    * screen is does, and a line folded to the width the session OPENED at is a report in a
    * column down the left of a wide window. So the width is the console's to say, on every
    * frame, and this is the door onto it ({@link openSession}).
@@ -436,14 +436,14 @@ export interface Session {
   /** The name the session's own verb was registered under (see {@link verbsOffered}). */
   readonly self: string;
   /**
-   * WHO THIS SESSION IS SPEAKING AS — the identity the opening resolved, or nothing when
+   * WHO THIS SESSION IS SPEAKING AS: the identity the opening resolved, or nothing when
    * it could not name one.
    *
    * It is the value the panel is drawn with (`standing.ts`), carried rather than asked
    * for again: a verb that requires the asker's identity is given it here instead of
    * demanding a caller type back what the panel above the prompt is showing them
    * (`asking.ts`). Resolved ONCE, when the session opens, from local material and with no
-   * writer opened — so what a line costs is the line's own work and nothing else.
+   * writer opened, so what a line costs is the line's own work and nothing else.
    *
    * `undefined` is a first-class answer and not a missing value: a session outside any
    * project, or on a machine whose key root names no single key, has no identity to speak
@@ -463,19 +463,19 @@ export interface Session {
  */
 export interface SessionRequest extends Omit<Session, 'identity' | 'render'> {
   /**
-   * HOW A LINE BECOMES BYTES ON A SCREEN OF A GIVEN WIDTH — the rule, rather than one
+   * HOW A LINE BECOMES BYTES ON A SCREEN OF A GIVEN WIDTH: the rule, rather than one
    * answer to it (`wiring/color.ts`).
    *
    * A SESSION MAY NOT BE HANDED A RENDERER, and that is the whole of what this delivery
    * changed: it outlives the window it opened in, so the width is not a fact the entry can
-   * resolve on its behalf. What the entry DOES resolve is everything else — the flag, the two
-   * conventional variables and whether the destination is a terminal — and those travel inside
+   * resolve on its behalf. What the entry DOES resolve is everything else (the flag, the two
+   * conventional variables and whether the destination is a terminal) and those travel inside
    * this, read once, so a `--color` typed on a line inside the session still changes nothing.
    */
   readonly renderingAt: RenderingAt;
   /** Where the keystrokes come from. */
   readonly input: NodeJS.ReadStream;
-  /** The page the console draws on. Not where a report goes — that is the console. */
+  /** The page the console draws on. Not where a report goes, that is the console. */
   readonly output: NodeJS.WriteStream;
   /** Whether BOTH ends are a terminal, asked at the entry where the process is. */
   readonly interactive: boolean;
@@ -497,7 +497,7 @@ export type { AfterLine };
  * The three ways out are the ones `node`, `python` and `psql` all answer to, and the
  * distinction between them is the one a person's fingers already know: Ctrl-C abandons
  * the LINE being typed and Ctrl-D ends the session. A Ctrl-C that killed the process
- * would make this worse than the shell prompt it replaces — you would lose the session
+ * would make this worse than the shell prompt it replaces: you would lose the session
  * for mistyping a word.
  */
 export async function openSession(request: SessionRequest): Promise<void> {
@@ -523,8 +523,8 @@ export async function openSession(request: SessionRequest): Promise<void> {
 
   // The port every command inside the session prints through: the page, on both
   // streams. It is a closure over `land` rather than the console itself because the
-  // console has to exist before it can be handed one, and what it is handed — the way
-  // a line answers a typed line — has to exist before the console does.
+  // console has to exist before it can be handed one, and what it is handed, the way
+  // a line answers a typed line, has to exist before the console does.
   let land: (line: string) => void = () => undefined;
   const onThePage: CliIo = {
     out: (line) => land(line),
@@ -540,13 +540,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // BEFORE THE CONSOLE IS UP IT ANSWERS *NO SCREEN TO FOLD TO*, which is not a default to
   // fall back on: it is the honest answer to *how wide is the page* before there is one. The
   // console is opened at the foot of this function and nothing composed above it renders
-  // through this — the two rows of chrome ask the rule themselves, for the same width and by
+  // through this: the two rows of chrome ask the rule themselves, for the same width and by
   // the same argument ({@link NO_SCREEN_TO_FOLD_TO}).
   let renderOn: Render = renderingAt(NO_SCREEN_TO_FOLD_TO);
   const render: Render = (line) => renderOn(line);
   // WHERE THE SESSION IS STANDING, resolved once and read by two things: the line the
   // opening draws, and every line the caller then types. It is one `readdir` and one
-  // small file, and no writer is opened to get it (`standing.ts`) — which is what makes
+  // small file, and no writer is opened to get it (`standing.ts`), which is what makes
   // it affordable to carry and is the whole reason a verb inside here need not ask for
   // the identity it names.
   const whereItStands = standing();
@@ -558,10 +558,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const built = buildProgram(onThePage, [], render);
   const offered = verbsOffered(built.verbs, self);
 
-  // WHAT THE SESSION OPENS WITH, read and composed ONCE — every part of it except the two
+  // WHAT THE SESSION OPENS WITH, read and composed ONCE: every part of it except the two
   // that are functions of how wide the terminal is. Where it is standing is one `readdir`
   // and one small file (see `standing.ts`); what the record IS costs a `verify`, and that
-  // is the one read of this kind this surface pays — declared, paid here, and never paid
+  // is the one read of this kind this surface pays: declared, paid here, and never paid
   // again (see {@link theRecord}).
   const title = subjectLine(NAME, WHICH_BUILD, WHAT_IT_IS);
   const where = standingLine(whereItStands);
@@ -570,12 +570,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // NOT RENDERED HERE, unlike the two below, and the reason is a measurement: how WIDE this
   // sentence is decides whether it is folded into a second row, and a page counted as though
   // it were one row opens with its own top in the scrollback. So it travels as lines and the
-  // composer turns it into bytes and counts the rows (`panel.ts`, `openingFor`) — the count
+  // composer turns it into bytes and counts the rows (`panel.ts`, `openingFor`): the count
   // asks the fold rather than predicting it, which is what the terminal's own arithmetic
   // used to do here (`presentation/folded.ts`, `rowsAt`).
   const refuses = whatItRefuses(pathsOffered(built.verbs, self).length);
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
-  // nothing at all — the same posture the line that says where the session is standing
+  // nothing at all: the same posture the line that says where the session is standing
   // takes about a fact it does not have, and the same one the panel's record section takes.
   // The WIDTH goes with it because the area needs both and only the composer can measure
   // one: a rendered line carries escapes a screen does not print (see `Drawn`).
@@ -595,10 +595,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // THE PAGE IS BUDGETED FOR THE WIDER OF THE TWO, and that is what keeps the arrangement
   // from moving under the caller. How tall the input area is depends on whether the badge
   // fits on one row (`area.ts`), so a page budgeted for the shorter row could find itself
-  // one row short the moment the corner degrades — a page that re-laid itself because a
+  // one row short the moment the corner degrades: a page that re-laid itself because a
   // record grew. One number, taken now, and the opening is a function of the size alone.
   const badgeWidth = Math.max(cornerNow.width, cornerSinceItMoved.width);
-  // What the caller can do, rendered ONCE for the same reason the badge is — and measured
+  // What the caller can do, rendered ONCE for the same reason the badge is, and measured
   // here as well, because two things read the width: the area, which draws no hint the
   // terminal would fold, and the opening, which is budgeted against the area under it.
   const hint = drawn(tips(), renderingAt(NO_SCREEN_TO_FOLD_TO));
@@ -607,7 +607,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // is NOT budgeted against it ({@link NO_ANSWER_HAS_LANDED}), because while it stands it comes
   // out of the window rather than out of anything the page was chosen for. BOTH OF ITS SENTENCES,
   // because which one it says is decided once per answer, inside the session, by where the reader
-  // is standing — and a sentence rendered then would be words composed on an answer's clock.
+  // is standing, and a sentence rendered then would be words composed on an answer's clock.
   const unmovedRow = {
     onThePage: drawn(alreadyOnThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO)),
     belowThePage: drawn(belowThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO)),
@@ -615,7 +615,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
   // completer, which puts them in the same list as the verbs. THEY WENT TO THE CONSOLE AS
   // WELL, so that a slash could be answered out of them, and that is what made the two keys
-  // show two different menus — the slash three words, a Tab fourteen. One reader, one list.
+  // show two different menus: the slash three words, a Tab fourteen. One reader, one list.
   const vocabulary = theSessionsOwnWords();
   // WHAT THIS SESSION HAS NAMED, as one value with two ends: the console fills it with
   // every line that lands, and the completer reads it to offer a record back. One object
@@ -624,20 +624,20 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const seen = whatTheSessionShowed();
   // WHERE THE RECORD STANDS NOW, so that what happens NEXT can be told from what was
   // already there. The trees are the ones the verdict above covered rather than a second
-  // list resolved here — a console that watched a tree it had said nothing about would be
+  // list resolved here: a console that watched a tree it had said nothing about would be
   // reporting from outside its own verdict. What it costs to start is a line per tail, off
   // the end of the tail (`following.ts`); what it costs after that is a question with no
   // read behind it.
   const rootsRuledOn = (proved?.trees ?? []).map((tree) => tree.root);
   const following = followingTheRecord(rootsRuledOn);
   // AND WHETHER THE VERDICT ABOVE STILL COVERS THEM, watched on the same clock and over the
-  // same trees — the ones the verdict itself reported, never a second list resolved here.
+  // same trees: the ones the verdict itself reported, never a second list resolved here.
   // It reads no chain and rules on nothing: what it answers is that the record has moved
   // past what was ruled on, which is the one thing the corner may not go on ignoring
   // (`proving.ts`).
   const proof = watchingTheProof(rootsRuledOn);
   /**
-   * WHAT THE CORNER SAYS RIGHT NOW — the level as proved, or the level with what it covers
+   * WHAT THE CORNER SAYS RIGHT NOW: the level as proved, or the level with what it covers
    * said out loud once the record has moved past it.
    *
    * ASKED ON THE RECORD'S CLOCK AND NEVER ON A FRAME, which is the contract the console
@@ -648,7 +648,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const theCorner = (): Drawn => (proof.coversTheWholeRecord() ? cornerNow : cornerSinceItMoved);
 
   /**
-   * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
+   * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE, and the only thing on this
    * surface the size of the terminal decides.
    *
    * IT USED TO TAKE THE WIDTH ALONE, and the doc here said a width was "the only thing
@@ -659,7 +659,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
    *
    * AND THE HEIGHT RULE IT ARRIVED WITH WAS THE WRONG ONE, which is what this function
    * now carries. The name gave way when the DRAWING was taller than the terminal, and five
-   * rows against twenty-four never is — measured, and the axis chose nothing at any size a
+   * rows against twenty-four never is: measured, and the axis chose nothing at any size a
    * person opens. What the drawing costs is one ADDEND of what the page costs: what the
    * session is, where it is standing, what the record is, the sentence under it and the
    * input area are the others, and only the first depends on which form is drawn. So the
@@ -669,21 +669,21 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * was the layout library's boundary: a region as tall as the viewport was redrawn WHOLE, with
    * the erase of the caller's history inside the sequence, so the opening was budgeted one row
    * short of the screen. The console owns the screen now and its frame IS the viewport on every
-   * frame — that is what three fixed regions means — so there is no boundary to stay under and
+   * frame (that is what three fixed regions means), so there is no boundary to stay under and
    * the page is budgeted against the whole terminal (`area.ts`).
    *
    * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it for the size the
    * device has at the moment of the drawing, and keeps the answer while that size does not move
    * (`console.ts`, `theOpening`). Nothing is read: the lines above already exist, and the
    * answers that depend on the size are which arrangement there is ROOM for (`panelFor`) and
-   * how much of the name is DRAWN (`bannerFor`) — and the first of those took the WIDTH
+   * how much of the name is DRAWN (`bannerFor`), and the first of those took the WIDTH
    * alone until the arrangement was measured against the screen it is fixed on. Both take the
    * pair now, out of the one reading. A recomposition that asked the record again could make
-   * the panel say something different halfway through a session — and the reads are counted
+   * the panel say something different halfway through a session, and the reads are counted
    * rather than promised (`tests/the-name-and-the-hints.test.ts`).
    */
   const theOpening = (columns: number, rows: number): Opening => {
-    // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
+    // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated, and that is what
     // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the text
     // goes beside it, its HEIGHT is most of what the arrangement costs, and the arrangement is
     // what decides whether the mark's rows are added to the text's or shared with them; all of
@@ -698,7 +698,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
         // NOT THE TERMINAL'S WIDTH, BUT THE PAGE'S. Both halves of an opening are drawn inside
         // the margin the console keeps to the left of everything it says (`inset.ts`,
         // `region.ts`): the arrangement, at the top of the screen, and the lines it lands on
-        // the roll. So the width every question below is asked at is what the margin leaves —
+        // the roll. So the width every question below is asked at is what the margin leaves:
         // an arrangement chosen against the whole terminal would be four columns too wide for
         // the box it is drawn in, and a line folded to the whole terminal would be broken again
         // at the margin by the layout.
@@ -731,12 +731,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
       bannerFor({
         columns,
         rows,
-        // HOW TALL A SCREEN A GIVEN DRAWING NEEDS — the taller of two demands, and the second one
+        // HOW TALL A SCREEN A GIVEN DRAWING NEEDS: the taller of two demands, and the second one
         // is what this delivery had to add.
         //
         // IT ASKED ONE QUESTION AND THE QUESTION ANSWERED ITSELF. It was *how many rows does
         // the PAGE need with this drawing in it*, and the answer was measured on the page the
-        // drawing would really produce — including the case where the arrangement had already
+        // drawing would really produce, including the case where the arrangement had already
         // been given up for busting its share, which is a page with NO fixed region at all and
         // therefore the cheapest page there is. So the biggest drawing was kept precisely
         // BECAUSE it had cost the arrangement: at eighty by twenty-four, nine rows of art plus
@@ -746,8 +746,8 @@ export async function openSession(request: SessionRequest): Promise<void> {
         //
         // SO WHAT IS ASKED IS ABOUT THE ARRANGEMENT THIS DRAWING WOULD PRODUCE. The opening is
         // composed a second time with NO CEILING on the height ({@link WHATEVER_THE_HEIGHT}),
-        // which is the form the WIDTH alone allows — what the arrangement would cost if it were
-        // drawn — and the share says the shortest screen that may hold it (`panel.ts`,
+        // which is the form the WIDTH alone allows (what the arrangement would cost if it were
+        // drawn) and the share says the shortest screen that may hold it (`panel.ts`,
         // `theShortestScreenFor`). A drawing whose arrangement wants more than its share is a
         // drawing this screen cannot afford, whatever the page would cost with it gone.
         //
@@ -768,12 +768,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // before a byte of it is loaded (`painting.ts` for the channel and for what the two values
   // mean). It is asked of the RENDERER this invocation was handed rather than of the flag and
   // the environment a second time, so the page and its edges cannot come to disagree
-  // (`wiring/color.ts`, {@link paintsAtAll}) — and it is asked with NO SCREEN TO FOLD TO
+  // (`wiring/color.ts`, {@link paintsAtAll}), and it is asked with NO SCREEN TO FOLD TO
   // because a fold is not a colour: what is wanted is the painting itself, whatever width the
   // frame under it turns out to be.
   //
   // THE ORDER IS THE MECHANISM AND NOT A TIDINESS. The line under this is what loads that
-  // library, and the library reads the channel once while it is being loaded — so this said
+  // library, and the library reads the channel once while it is being loaded, so this said
   // after it would be said to nobody.
   theLibraryIsTold(paintsAtAll(renderingAt(NO_SCREEN_TO_FOLD_TO)));
   const { openConsole } = await import('./console.js');
@@ -793,16 +793,16 @@ export async function openSession(request: SessionRequest): Promise<void> {
     unmoved: unmovedRow,
     // AND THE ROW UNDER THE LIST, as a LINE rather than as bytes: it is one of the palette's own
     // rows, so it is rendered and measured with them (`palette.ts`). Composed once, for the
-    // reason the tips are — three keystrokes, and nothing about the record.
+    // reason the tips are: three keystrokes, and nothing about the record.
     picking: pickingTips(),
     // Both rows rendered once, out of the ONE read this surface pays for, and which of
     // them is shown asked on the clock the record is asked on. It used to be a value, on
     // the reason that it says something about the record and therefore may not be asked
-    // again — true of `verify`, which is what "asked again" meant, and false of the
+    // again: true of `verify`, which is what "asked again" meant, and false of the
     // question this asks ({@link theCorner}, `proving.ts`).
     badge: theCorner,
     saw: seen.saw,
-    // WHAT SOMEBODY ELSE WROTE, as lines — composed where every line of this product is
+    // WHAT SOMEBODY ELSE WROTE, as lines: composed where every line of this product is
     // and rendered with the session's own renderer, so an occurrence reads exactly like
     // the same event read back by `timeline`. This surface writes nothing, so every one
     // of them is another process's append (`following.ts`).
@@ -831,7 +831,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
  *
  * BOTH HALVES ARE ASKED HERE because this is where the line is. The renderer turns it into
  * bytes and `widthOf` counts the plain rendering, which is the same number of columns the
- * painted one takes — the escapes a terminal does not print are exactly the difference
+ * painted one takes: the escapes a terminal does not print are exactly the difference
  * between the two. A console that counted the bytes would make a hint that fits look too
  * wide the moment colour was switched on, and the arrangement it chose would be the narrow
  * one on a screen with room to spare.
@@ -844,21 +844,21 @@ function drawn(line: Line | undefined, render: Render): Drawn {
 }
 
 /**
- * WHAT THE RECORD IS, asked ONCE, when the session opens — and the only read of the
+ * WHAT THE RECORD IS, asked ONCE, when the session opens, and the only read of the
  * record anything on this surface makes without being asked for one.
  *
  * IT IS A DECLARED EXCEPTION AND IT HAS A NUMBER. Everything else the opening says is
  * answered by the filesystem without opening a chain, deliberately, because `verify` over
  * a real record costs about a tenth of a second and a bar that asked the record anything
  * would pay that again on every redraw (`standing.ts`). The panel is not a bar: it is
- * written once and kept, so what it costs is paid once — a session that opened in about a
+ * written once and kept, so what it costs is paid once; a session that opened in about a
  * third of a second opens in a bit more, and what the caller gets for it is a console for
  * auditing a record that says, before they type anything, whether the record is intact.
  * That is the product presenting itself by its own thesis.
  *
  * THE OTHER HALF OF THE RULE IS UNTOUCHED, and it is the half with teeth: nothing that
  * REDRAWS reads the record, ever. `tests/the-name-and-the-hints.test.ts` counts the reads
- * of both — the opening's are exactly one `verify`'s worth, and a frame's are none.
+ * of both: the opening's are exactly one `verify`'s worth, and a frame's are none.
  *
  * The minimum is a bare `verify`'s, because this is not a gate: it shows what the record
  * is and exits nothing, so a stricter minimum would only change a word nobody acts on.
@@ -880,7 +880,7 @@ function theRecord(): TheRecord | undefined {
 interface TheRecord {
   /** Every tree the verdict covered, in the order it reported them. */
   readonly trees: readonly TreeReport[];
-  /** The weakest level any of them reached — what the exit code of the verb reads. */
+  /** The weakest level any of them reached: what the exit code of the verb reads. */
   readonly level: ProvenLevel;
 }
 
@@ -888,7 +888,7 @@ interface TheRecord {
  * What the record is, as a section: the heading, then one line per tree of it.
  *
  * Each line is the tree's verdict SHORTENED BY THE VERB THAT WORDS IT (`wiring/verify.ts`)
- * and never here — what a tree's name and its level clause say is a prefix of what
+ * and never here: what a tree's name and its level clause say is a prefix of what
  * `mnema verify` prints for the same tree, byte for byte, and the surface that shortened a
  * verdict any other way would be wording one.
  */
@@ -901,7 +901,7 @@ function recordSection(trees: readonly TreeReport[] | undefined): readonly Line[
  * Does with one typed line what the session does with it, and says whether it goes on.
  *
  * The whole decision is `dispositionOf`, over the declarations of the program THIS line
- * is about to be parsed by — so what was decided about and what runs are one
+ * is about to be parsed by, so what was decided about and what runs are one
  * registration, and a command reaching that program by any other path carries no
  * declaration and lands on the deny side.
  *
@@ -912,7 +912,7 @@ function recordSection(trees: readonly TreeReport[] | undefined): readonly Line[
 export async function typedLine(line: string, session: Session): Promise<AfterLine> {
   const { render, self } = session;
   // The line's own exit code stays off the process. A session that opened and closed
-  // cleanly exits zero even if a verb inside it refused — which is what `node`,
+  // cleanly exits zero even if a verb inside it refused, which is what `node`,
   // `python` and `psql` all do, and what keeps `$?` from reporting a typo as a failed
   // session. The refusal itself is on the page, painted, like every other no.
   const io: CliIo = { out: session.io.out, err: session.io.err, fail: () => undefined };
@@ -969,19 +969,19 @@ async function sayWhatRecurs(argv: readonly string[], io: CliIo, render: Render)
  * under the panel.
  *
  * It is the only thing that explains, to somebody who just opened a prompt, why half of
- * what they know how to type is about to be refused — and it counts the reads rather than
+ * what they know how to type is about to be refused, and it counts the reads rather than
  * stating a number, so it cannot go stale.
  *
- * IT IS NOT ONE OF THE PANEL'S OWN ROWS, AND THAT IS MEASURED RATHER THAN AESTHETIC — but not
+ * IT IS NOT ONE OF THE PANEL'S OWN ROWS, AND THAT IS MEASURED RATHER THAN AESTHETIC: but not
  * for the reason this paragraph used to give. IT SAID that inside the panel's right-hand
  * column the sentence "would push the box past eighty columns", and that was false from the
  * moment the box stopped being as wide as its content: it was drawn corner to corner, so the
  * width of the box was the TERMINAL'S and nothing inside it could push it anywhere. AND
- * THERE IS NO BOX AT ALL NOW, which does not put the first argument back — it removes the
+ * THERE IS NO BOX AT ALL NOW, which does not put the first argument back: it removes the
  * subject of it.
  *
  * WHAT SURVIVES OF THE ARGUMENT IS ABOUT THE FORM, and it is still a measurement. The panel
- * chooses its arrangement by the width its CONTENT needs (`panel.ts` — the mark, the gap, and
+ * chooses its arrangement by the width its CONTENT needs (`panel.ts`: the mark, the gap, and
  * the widest row of the text beside it), so a line of seventy-odd columns among those rows
  * would make the two columns cost about a hundred and twenty-eight and the form would give way
  * to the stacked one on the terminal a person opens. The sentence keeps the shape it has always
@@ -1005,7 +1005,7 @@ export function whatItRefuses(reads: number): readonly Line[] {
 }
 
 /**
- * Where the session is, as one line — or as no line at all when it knows neither fact.
+ * Where the session is, as one line, or as no line at all when it knows neither fact.
  *
  * Absent rather than apologetic: a session opened outside any project, or on a machine
  * whose key root holds no single key, has nothing true to say here, and a line saying
@@ -1019,7 +1019,7 @@ export function whatItRefuses(reads: number): readonly Line[] {
  * reason: they are what a reader glances at once and then skips past.
  *
  * Exported for the reason {@link tips} is: it is the one line of the opening a WINDOW can be
- * narrower than — a path is as long as the directory somebody is working in — so it is the
+ * narrower than (a path is as long as the directory somebody is working in), so it is the
  * subject of the case that says the opening folds to the terminal it is drawn on, and a case
  * that rebuilt it here would be a second composition of it
  * (`tests/one-width-per-frame.test.ts`).
@@ -1030,7 +1030,7 @@ export function standingLine(where: Standing): readonly Line[] {
 }
 
 /**
- * WHAT THE CALLER CAN DO — the one line of the session that does not scroll away.
+ * WHAT THE CALLER CAN DO: the one line of the session that does not scroll away.
  *
  * It used to be the third line of the opening and it moved, which is the whole of the
  * change that put it here: after ten reads the affordances were somewhere above the top of
@@ -1040,7 +1040,7 @@ export function standingLine(where: Standing): readonly Line[] {
  *
  * IT USED TO SAY FIVE THINGS AND IT SAYS THREE, and that is measured rather than trimmed
  * for taste. Five clauses came to about a hundred and ten characters, which the terminal
- * folded into two rows below ninety-seven columns — so the row that exists in order to be
+ * folded into two rows below ninety-seven columns, so the row that exists in order to be
  * glanced at was the tallest thing in the region on an ordinary screen. The reference this
  * console was measured against says three things in about fifty characters, and three is
  * what a person reads without stopping.
@@ -1051,15 +1051,15 @@ export function standingLine(where: Standing): readonly Line[] {
  * thing nobody wants to look for.
  *
  * IT NAMED TWO WORDS AND IT NAMES NONE, and neither of those words exists any more. The first
- * clause used to be `/help` and the last used to be `/exit`; the palette took the first — the
- * list says what the session runs, beside every word of it — and the key that ends the input
+ * clause used to be `/help` and the last used to be `/exit`; the palette took the first (the
+ * list says what the session runs, beside every word of it) and the key that ends the input
  * took the second. So what is left in the hint is three KEYSTROKES, which are in no list and
  * cannot be looked up, and that is the whole rule for what belongs on this row.
  *
  * WHAT IT COSTS IS MEASURED, because this row has a WIDTH rule over it: a hint the terminal
  * would fold is not drawn at all (`area.ts`), so every column it spends is a narrower terminal
  * that loses it. Seventy-four columns before the palette, sixty-five while the first clause
- * named two keystrokes, and FIFTY-THREE now that the slash alone lists the words again — every
+ * named two keystrokes, and FIFTY-THREE now that the slash alone lists the words again: every
  * one of them a row that every window this console draws on keeps, because no page is laid out
  * under eighty columns (`floor.ts`). The twelve columns went back for the reason they were
  * spent: the clause has to be what the console really does, and what it does moved.
@@ -1080,12 +1080,12 @@ export function tips(): Line {
 }
 
 /**
- * THE KEYS THAT MOVE THE LIST OF WORDS, as the row that sits UNDER it — three clauses, in the
+ * THE KEYS THAT MOVE THE LIST OF WORDS, as the row that sits UNDER it: three clauses, in the
  * voice the row under the prompt already speaks.
  *
  * IT IS A SECOND HINT AND NOT A LONGER FIRST ONE, and where it goes is the whole argument. The
  * row under the prompt says what is true of the session at every moment of it, so it may not
- * grow a clause about a list that is shut most of the time — and the three keys here mean
+ * grow a clause about a list that is shut most of the time, and the three keys here mean
  * nothing until the list is open. It is drawn beside what it governs instead, which is what the
  * console this surface was measured against does with the same sentence: its selector says
  * *Enter to confirm · Esc to cancel* directly under the rows those keys act on, and its
@@ -1098,7 +1098,7 @@ export function tips(): Line {
  *
  * AND WHAT RETURN DOES IS SAID EXACTLY: it FILLS the row rather than running the word. Half the
  * verbs of this product take arguments, so a pick that ran what it landed on would take the
- * caller's chance to finish the line — and a hint that said *Enter runs it* would be promising
+ * caller's chance to finish the line, and a hint that said *Enter runs it* would be promising
  * the one thing this key deliberately does not do.
  *
  * It says nothing about the record and takes no argument, so it is resolved once when the
@@ -1110,12 +1110,12 @@ export function pickingTips(): Line {
 }
 
 /**
- * WHAT THE SESSION SAYS WHEN AN ANSWER LEFT THE PAGE EXACTLY AS IT WAS — the row the input area
+ * WHAT THE SESSION SAYS WHEN AN ANSWER LEFT THE PAGE EXACTLY AS IT WAS: the row the input area
  * draws at its top, directly under the window, while that is true and never otherwise.
  *
  * IT EXISTS BECAUSE A PAGE THAT DID NOT MOVE IS AN ANSWER NOBODY SAW LAND. Asked twice for a
  * document taller than the window, the console puts the second copy on the roll and the window,
- * which follows the tail, shows the tail of the second copy — which says what the tail of the
+ * which follows the tail, shows the tail of the second copy, which says what the tail of the
  * first one said, row for row. The layout writes nothing for a frame identical to the one on the
  * screen, so not a byte moves and a reader decides nothing happened
  * (`tests/a-read-asked-again-draws-what-changed.test.ts`).
@@ -1125,13 +1125,13 @@ export function pickingTips(): Line {
  * guide carry no text by construction (`region.ts`); the corner says what the record proved; the
  * row under the prompt is resolved once, for the whole session; and a permanent count or position
  * would cost a row of the shortest window for ever and would make every pair of identical reads
- * look different, which is the one thing about them that was right — the same refusal the status
+ * look different, which is the one thing about them that was right: the same refusal the status
  * line makes of counts (`standing.ts`).
  *
  * AN ASIDE, LIKE THE TWO ROWS ABOVE, and for their reason: it says something about the console
  * and nothing about the record, so it reads as the console's own and the words are the whole of
  * the carrier. It takes no argument either, so it is resolved once when the session opens and
- * only WHETHER it is on the page changes (`console.ts`, `theRowSays`) — that, and whether the
+ * only WHETHER it is on the page changes (`console.ts`, `theRowSays`): that, and whether the
  * row holds this sentence or {@link belowThePage}, which is said to a reader who has walked back.
  * Exported for the reason {@link tips} is: a case that has to find this row on a page would
  * otherwise retype it.
@@ -1141,13 +1141,13 @@ export function alreadyOnThePage(): Line {
 }
 
 /**
- * WHAT THE SAME ROW SAYS WHEN THE ANSWER LANDED BELOW A READER WHO HAS WALKED BACK — the other of
+ * WHAT THE SAME ROW SAYS WHEN THE ANSWER LANDED BELOW A READER WHO HAS WALKED BACK: the other of
  * its two sentences, and never beside the first one.
  *
  * FOR THAT READER NO ANSWER MOVES THE PAGE, and that is a promise rather than a defect: what they
  * are reading stays where they are reading it, and everything new goes on the roll under it
  * (`scrolling.ts`, `landedIn`). So an answer asked from there lands with nothing on the screen
- * moving, which is the silence {@link alreadyOnThePage} exists to break — and the words of that
+ * moving, which is the silence {@link alreadyOnThePage} exists to break, and the words of that
  * one would be false here, because the end of the answer is NOT on the page. These say where it
  * is and how to get to it.
  *
@@ -1162,7 +1162,7 @@ export function belowThePage(): Line {
 }
 
 /**
- * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does — one value, two
+ * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does: one value, two
  * readers.
  *
  * A Tab completes them and a slash lists them, and they are the same list read off the
@@ -1188,14 +1188,14 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * and `verify`, which is the verb that prints the verdict the level was folded out of.
  *
  * THE LEVEL IS THE WORST OF THE TREES, and it is the worst by the function that already
- * decides it rather than by a fold written here — `runVerify` returns one level over every
+ * decides it rather than by a fold written here: `runVerify` returns one level over every
  * tree it covered, and the exit code of `mnema verify` is decided by that same value
  * (`commands/verify.ts`, `weakerLevel`). A second opinion in a corner would be a console
  * that says a record is fine while the verb says it is not.
  *
  * Exported for the same reason {@link tips} is: a test that has to tell this row apart
  * from a line the record produced would otherwise retype it, and a retyped row goes stale
- * the day the shape changes — which is exactly the case that compares what a verb says
+ * the day the shape changes, which is exactly the case that compares what a verb says
  * inside the console to what it says at a shell (`tests/the-console-on-ink.test.ts`).
  *
  * THIS USED TO SAY *IT CARRIES NO HUE, AND THAT IS A DECISION RATHER THAN AN OMISSION*,
@@ -1210,7 +1210,7 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * the PERSISTENT ASSERTION of the proven level rather than a decoration beside one. The
  * second argument was answered by its own premise: where a level is ruled on it is painted,
  * and this row states a level, so not painting it made it the EXCEPTION to "data is painted
- * by severity and by nothing else" — painting REMOVES an exception instead of adding one.
+ * by severity and by nothing else"; painting REMOVES an exception instead of adding one.
  * The third survived as a fact and stopped being a reason: the words are still the whole
  * carrier, and stripping the escapes still gives this exact line back, byte for byte
  * (`tests/the-input-has-its-own-place.test.ts`).
@@ -1221,15 +1221,15 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * it; what was false was the tense. The premise under it was that a level ruled on when the
  * session opened goes on being a statement about the record, and the measurement that
  * killed it is in a pseudo-terminal: with a duplicate of the last entry appended DURING the
- * session — the break two writers appending at once used to leave — the body printed `seq
+ * session, the break two writers appending at once used to leave, the body printed `seq
  * gap: expected 8, found 7` and this corner said `fully-signed` in the same frame. True
  * about the opening, false about every instant after it.
  *
  * SO THE LEVEL ARRIVES WITH WHAT IT COVERS, and {@link WhatTheLevelCovers} is a closed
  * union rather than a flag so that a third answer does not compile until somebody has said
  * what the corner should read like. Which of the two a session is in is asked of the CHEAP
- * question the follower already pays for — whether the chain moved at all, one `readdir`
- * per tail (`proving.ts`) — and never of `verify` again, which is 54 ms to 1.7 s. This
+ * question the follower already pays for (whether the chain moved at all, one `readdir`
+ * per tail; see `proving.ts`) and never of `verify` again, which is 54 ms to 1.7 s. This
  * said *and linear in the history* as well, and the verifier was quadratic until it
  * stopped walking the whole tail once per checkpoint; `proving.ts` carries what was
  * measured and what a verification costs now.
@@ -1243,7 +1243,7 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * WHAT IS DECIDED HERE IS NOT ABOUT A LEVEL, and that is why it may be. A row that no
  * longer states a level about the record in front of the reader is not good news about a
  * proof; it is an unchecked stretch, which the scale already words as {@link CAUTION} one
- * rung down — `hash-chain-only` is `warn` for the same reason, that NO signature was
+ * rung down: `hash-chain-only` is `warn` for the same reason, that NO signature was
  * checked over it. And it is the WORSE of the two and never the better: a record ruled
  * `broken` that then moved is still broken, and a caution painted over red would be this
  * row talking a verdict down.

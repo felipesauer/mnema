@@ -5,8 +5,8 @@
  * `tests/a-terminal-of-its-own.test.ts`, which enumerates every verb from the
  * declaration and drives the session over a record; with the surface honest, that one
  * can only say "nothing was let through", which exercises neither the deny side nor its
- * limit. So the cases here hand the gate declarations of their own — including the write
- * somebody adds tomorrow, and the command that carries no declaration at all — and check
+ * limit. So the cases here hand the gate declarations of their own (including the write
+ * somebody adds tomorrow, and the command that carries no declaration at all) and check
  * that it can tell the four kinds apart.
  */
 
@@ -28,7 +28,7 @@ function declares(name: string, effect: Declared['effect']): Declared {
 /**
  * A surface of four verbs: two reads, a write, and the session itself.
  *
- * `smuggle` is deliberately absent from it and present in the cases below — a command
+ * `smuggle` is deliberately absent from it and present in the cases below: a command
  * hung on the program by a path that returns no declaration is the shape the entry's own
  * guard was once blind to, and here it is the whole point of default-deny.
  */
@@ -61,8 +61,8 @@ describe('a line becomes the words a parser receives', () => {
     // typable at all.
     expect(argvOf(`search "an actor's run"`)).toEqual(['search', "an actor's run"]);
     expect(argvOf('search a\\ b')).toEqual(['search', 'a b']);
-    // An empty argument is a value the surface takes seriously — it is the one the
-    // content door refuses — so a pair of quotes has to survive as one empty word.
+    // An empty argument is a value the surface takes seriously (it is the one the
+    // content door refuses), so a pair of quotes has to survive as one empty word.
     expect(argvOf('task ""')).toEqual(['task', '']);
     expect(argvOf('')).toEqual([]);
   });
@@ -160,11 +160,11 @@ describe('a session offers the reads and nothing else', () => {
     expect(said.does === 'refuse' && said.detail).toContain('mnema write');
   });
 
-  it('refuses a command that carries NO declaration — which is the whole rule', () => {
+  it('refuses a command that carries NO declaration, which is the whole rule', () => {
     // The write added tomorrow, and the command hung on the program by some other path.
     // Neither is in `VERBS`, and neither has to be: the gate allows what declared
     // itself a read, so everything else is refused without anybody remembering. A gate
-    // written the other way round — refuse what declared `mutates` — would let both of
+    // written the other way round, refuse what declared `mutates`, would let both of
     // these through, and it is the only other way to write this rule.
     expect(on('smuggle').does).toBe('refuse');
     expect(on('smuggle --force').does).toBe('refuse');
@@ -182,7 +182,7 @@ describe('a session offers the reads and nothing else', () => {
     // IT WAS THREE WORDS AND IT IS ONE. `/exit` and `/help` were the other two, and both
     // are gone: the way out is the key that ends the input, and what the session runs is
     // the list a slash and a letter open (`palette.ts`). What survives is the word no key
-    // answers — and the rule that a word of the session's own takes nothing after it,
+    // answers, and the rule that a word of the session's own takes nothing after it,
     // which is what the second half of this case has always been about.
     expect(on(CLEAR)).toEqual({ does: 'clear' });
     expect(on(`${CLEAR} now`).does).toBe('refuse');
@@ -255,7 +255,7 @@ describe('tab offers what the session runs', () => {
     expect(hits).toEqual(['look', 'read', ...SESSION_WORDS]);
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
-    // itself in two keystrokes. And `help` — commander's own implicit command — is
+    // itself in two keystrokes. And `help`, commander's own implicit command, is
     // absent for the same reason: this session does not run it.
     expect(hits).not.toContain('write');
     expect(hits).not.toContain('help');
@@ -270,7 +270,7 @@ describe('tab offers what the session runs', () => {
 
   it('reads the slash as a KEY, so what follows it narrows BOTH vocabularies', () => {
     // THE ONE PLACE THE PREFIX IS UNDERSTOOD. A bare slash asks what an empty line asks,
-    // and a slash with a letter behind it narrows by that letter — over the session's own
+    // and a slash with a letter behind it narrows by that letter: over the session's own
     // words AND over the verbs, which is what makes the list the slash opens the list of
     // everything that can be typed rather than a menu of three words.
     expect(wordsOf(PREFIX)).toEqual(['look', 'read', ...SESSION_WORDS]);

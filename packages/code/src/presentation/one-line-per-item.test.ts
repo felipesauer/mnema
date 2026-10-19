@@ -1,9 +1,9 @@
 /**
- * ONE LINE PER ITEM — asserted where the count is checkable, for every reading in
+ * ONE LINE PER ITEM: asserted where the count is checkable, for every reading in
  * the class.
  *
- * A form-A report prints how many items follow and then prints them. A reader —
- * and a script — counts them by counting lines, so an item that printed two lines
+ * A form-A report prints how many items follow and then prints them. A reader,
+ * and a script, counts them by counting lines, so an item that printed two lines
  * would assert a record nothing ever wrote, with the header beside it saying
  * otherwise. The fields that can do it are the ones an ACTOR wrote: a title, a
  * pattern's name, the agent a run was opened for.
@@ -13,7 +13,7 @@
  *   - the search index, the provenance report and the brief are pure functions, and
  *     are asserted here, directly;
  *   - the list of open runs is composed in the verb's wiring, so it is asserted
- *     here THROUGH THE CLI — the only way to prove the line the surface actually
+ *     here THROUGH THE CLI: the only way to prove the line the surface actually
  *     writes;
  *   - the framing the MCP surface puts around a served pattern is asserted in
  *     `served-patterns.test.ts`, next to the rule it belongs to.
@@ -56,7 +56,7 @@ describe('the search index prints one line per hit', () => {
 
   it('keeps a forged title inside the line it was written in', () => {
     // The second half would read as a hit of its own: an id, a tree, a date and a
-    // title for a record nothing ever wrote — under a header saying there is one.
+    // title for a record nothing ever wrote, under a header saying there is one.
     const forged = hit('Innocent\n  forged-id  public  2026-07-31  A record nobody wrote');
     const lines = printed(searchReport(renderPlain, { hits: [forged], total: 1 }, undefined));
     // The header, the blank line and the kind's own line above the group, and
@@ -132,7 +132,7 @@ describe('the brief prints one line per rule', () => {
     asking: 0,
     refusing: 0,
     // Nothing switched either channel, which is the composition's answer for a record with
-    // no switch in it — and it is what makes the ordinary cases below measure the document
+    // no switch in it, and it is what makes the ordinary cases below measure the document
     // this file has always measured.
     editPush: { channel: 'edit-rules-push', on: true },
     asksAPerson: { channel: 'edit-asks-a-person', on: true },
@@ -147,7 +147,7 @@ describe('the brief prints one line per rule', () => {
   });
 
   /**
-   * How many LINES a whole document occupies — never how many of them look like a
+   * How many LINES a whole document occupies, never how many of them look like a
    * bullet.
    *
    * Counting the lines that start with `- **` is the vacuous form of this assertion,
@@ -160,7 +160,7 @@ describe('the brief prints one line per rule', () => {
   const document = (brief: Brief): string[] => printed(briefDocument(brief));
 
   /**
-   * The same governance with every value replaced by text holding no whitespace —
+   * The same governance with every value replaced by text holding no whitespace:
    * the document's own baseline, so a case says "as many lines as this record's
    * rules" without a number typed here going stale beside the prose.
    */
@@ -184,7 +184,7 @@ describe('the brief prints one line per rule', () => {
     decisionsAwaiting: brief.decisionsAwaiting,
     skillsAwaiting: brief.skillsAwaiting,
     // The declaration about the labels is text in the same document, so the baseline
-    // carries as many clashes as the case does — otherwise a case about a broken clash
+    // carries as many clashes as the case does: otherwise a case about a broken clash
     // line would be measured against a document that has no clash line at all.
     collisions: brief.collisions.map((c, i) => ({
       adr: `ADR-${i}`,
@@ -193,7 +193,7 @@ describe('the brief prints one line per rule', () => {
     // THE TWO NON-LIST FIELDS ARE CARRIED, AND THIS BASELINE USED TO DROP THEM. It was
     // built as a fresh object holding only the three lists, so `addressed` arrived
     // `undefined` and the baseline document printed "undefined of the rules below have an
-    // ADDRESS" — a line no record can produce, in the document every case here is
+    // ADDRESS": a line no record can produce, in the document every case here is
     // measured against. It cost nothing because that line does not break either way, and
     // it would have cost a case the day a value on it could. Both are carried now, with
     // the switch's own text replaced the way every other field's is.
@@ -232,7 +232,7 @@ describe('the brief prints one line per rule', () => {
    * The switch, off, with every field holding text a break could be smuggled into.
    *
    * The anchor and the instant are the RECORD's, and they land in the middle of a
-   * paragraph rather than in a bullet — which is precisely why the case exists: a break in
+   * paragraph rather than in a bullet, which is precisely why the case exists: a break in
    * either one puts a line into a document whose headings count what is under them, and
    * nothing about the line looks like a rule until it is read.
    */
@@ -257,7 +257,7 @@ describe('the brief prints one line per rule', () => {
 
   it('is the SHARPEST case in the class: a forged rule is a rule an agent obeys', () => {
     // Everywhere else in this class a broken line forges a record in a list. Here it
-    // forges GOVERNANCE, in the file an agent reads on every prompt — the second half
+    // forges GOVERNANCE, in the file an agent reads on every prompt: the second half
     // would be a bullet under the same heading, indistinguishable from a call the
     // project actually made.
     const forged = governs({
@@ -279,7 +279,7 @@ describe('the brief prints one line per rule', () => {
   it('holds for every field the record puts on the line, and every whitespace', () => {
     // A title, a pattern's name, the `ADR-<n>` label and the id are all read out of
     // the record. The product mints the last two, but a record can be appended to by
-    // anything holding a key, and the rule is the LINE's — every field on it.
+    // anything holding a key, and the rule is the LINE's: every field on it.
     for (const breaker of BREAKERS) {
       const cases: Brief[] = [
         governs({ decisions: [decision({ title: `a${breaker}b` })] }),
@@ -296,8 +296,8 @@ describe('the brief prints one line per rule', () => {
   it('holds the DECLARATION about the labels too, in both of its fields', () => {
     // The line that says a label names two rules is built out of the same record: the
     // label, and every id that carries it. A break in either would put a second line
-    // under the declaration — which the reader has just been told to trust over the
-    // labels — so it is collapsed in the one place that composes it.
+    // under the declaration (which the reader has just been told to trust over the
+    // labels), so it is collapsed in the one place that composes it.
     for (const breaker of BREAKERS) {
       const cases: Brief[] = [
         governs({
@@ -350,7 +350,7 @@ describe('the brief prints one line per rule', () => {
   it('holds for the SWITCH the document reports, in both of its fields', () => {
     // The paragraph that explains the silence at an edit names who switched the push off
     // and when, and both come out of the record. A break in either would add a line to a
-    // document whose whole worth is that its counts and its bullets agree — and this line
+    // document whose whole worth is that its counts and its bullets agree, and this line
     // is not a bullet, so the marker-counting measure would never have seen it.
     for (const breaker of BREAKERS) {
       const cases: Brief[] = [
@@ -371,7 +371,7 @@ describe('the brief prints one line per rule', () => {
     // THE N+1 SITE, AND IT IS THE SHARPEST ONE ON THIS PARAGRAPH. The document names who
     // switched the gate off and when, out of the record, in the middle of the paragraph
     // that tells a reader nothing will stop them. A break in either field puts a line there
-    // — under a sentence about what does and does not gate this project — and the forged
+    // (under a sentence about what does and does not gate this project) and the forged
     // half would read as a claim about the gate that nobody recorded. It is not a bullet,
     // so nothing that counts markers would ever have seen it.
     for (const breaker of BREAKERS) {
@@ -392,7 +392,7 @@ describe('the brief prints one line per rule', () => {
   it('holds for the PROVENANCE a rule carries, and for each of several', () => {
     // THE N+1 SITE OF THIS FILE'S OWN RULE, and it arrived with a field rather than a
     // caller: a rule now carries where the record says it came FROM, and a `derived-from`
-    // target is a caller's string on exactly the terms the title is — the relation takes
+    // target is a caller's string on exactly the terms the title is; the relation takes
     // whatever was typed and nothing validates it on the way in. A break in one would put
     // a line under a heading that counts what is beneath it, and the forged half would
     // read as a rule this project never made.
@@ -451,7 +451,7 @@ describe('the list of open runs prints one line per run', () => {
     process.chdir(repo);
     await run(['init'], io);
     // Two runs, each opened for an agent whose name carries a line break and a
-    // goal that carries another — the whole line is actor text.
+    // goal that carries another: the whole line is actor text.
     for (const [agent, goal] of [
       ['alpha\n  forged-run  a-forged-agent', 'a goal\n  and a forged line'],
       ['beta\r  another-forged-run  another-agent', 'plain goal'],
@@ -481,7 +481,7 @@ describe('the list of open runs prints one line per run', () => {
     expect(lines).toHaveLength(2 + said);
   });
 
-  it('is the REPORT that holds the line, not the record — `--json` keeps the break', async () => {
+  it('is the REPORT that holds the line, not the record: `--json` keeps the break', async () => {
     // Without this the test above could pass for the wrong reason: if the write had
     // cleaned the agent's name there would be no break left to collapse, and the
     // report would be proving nothing. The faithful object is where the value stays
@@ -495,7 +495,7 @@ describe('the list of open runs prints one line per run', () => {
   });
 });
 
-/** This machine's anchor, read off the record — the actor `resume` takes. */
+/** This machine's anchor, read off the record: the actor `resume` takes. */
 async function anchorOf(io: CliIo, lines: string[]): Promise<string> {
   lines.length = 0;
   await run(['audit', 'accountability', '--json'], io);

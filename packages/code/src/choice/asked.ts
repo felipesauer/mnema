@@ -1,21 +1,21 @@
 /**
- * THE BARE NAME, ASKING — the doors on the screen, the arrows moving through them, and the
+ * THE BARE NAME, ASKING: the doors on the screen, the arrows moving through them, and the
  * one line the caller chose.
  *
  * IT ANSWERS WITH A LINE AND RUNS NOTHING. What comes back is an argv the entry then hands
  * to the same `run` every invocation of this binary goes through, so the whole of what this
- * door can do is the whole of what could be typed — there is no path into the product that
+ * door can do is the whole of what could be typed: there is no path into the product that
  * only exists inside a menu. It is also why nothing here knows what a console or an `init`
  * is: it knows two words and which of them the caller landed on.
  *
  * NOTHING IS WRITTEN BY ASKING. What it reads is where the session is standing
  * (`repl/standing.ts`: one `readdir` and one small file, no chain opened, no writer opened)
  * and what the program declared. A caller who presses Escape leaves a record with exactly as
- * many events in it as it had — which is asserted against the record rather than reasoned
+ * many events in it as it had, which is asserted against the record rather than reasoned
  * about, and with teeth, in `tests/the-bare-name-asks.test.ts`.
  *
  * THE ARROWS ARE THE LIST OF WORDS' ARROWS. `theNextPicked` is the function the console's
- * palette moves its mark with, and it is called here with this list — so the ends HOLD
+ * palette moves its mark with, and it is called here with this list, so the ends HOLD
  * rather than wrap, a step is a step, and there is one answer in this product to *where does
  * an arrow leave the pick*. A second reducer would be a second thing for a finger to learn.
  *
@@ -52,7 +52,7 @@ export interface ChoiceRequest {
   /**
    * Where a verb of this program would write.
    *
-   * Nothing here prints — the page goes to the layout, and what the caller chose is printed
+   * Nothing here prints: the page goes to the layout, and what the caller chose is printed
    * by the line they chose. It travels because the program is BUILT with it, and a program
    * built with a port nobody hands it would answer a refusal onto the wrong stream the day
    * one is reachable from here.
@@ -67,16 +67,16 @@ export interface ChoiceRequest {
 }
 
 /**
- * Asks, and answers with the line the caller chose — or with nothing when they left.
+ * Asks, and answers with the line the caller chose, or with nothing when they left.
  *
  * NOTHING IS NOT AN ERROR, and the exit code says so: asking is not a failure, so a caller
  * who pressed Escape, Ctrl-C or Ctrl-D gets their prompt back with a zero. The three are one
- * answer because they are one intention — this is not what I wanted — and a menu that
+ * answer because they are one intention (this is not what I wanted) and a menu that
  * distinguished them would be inventing a difference a finger does not make.
  *
  * THE PROGRAM IS BUILT HERE FOR ITS DECLARATIONS ALONE: the name it is registered under, and
  * what each verb says it does. It is a second build on this path and it is declarations only
- * — no adapter, no domain — which is exactly what the floor work made cheap
+ * (no adapter, no domain), which is exactly what the floor work made cheap
  * (`wiring/verb.ts`). What it buys is that the line a caller chooses goes through the same
  * `run` as every other invocation, with the same reading of what they typed, rather than
  * through a parser this door kept for itself.
@@ -84,7 +84,7 @@ export interface ChoiceRequest {
 export async function theChoice(request: ChoiceRequest): Promise<readonly string[] | undefined> {
   const built = buildProgram(request.io);
   // WHETHER THERE IS A PROJECT HERE, asked of the one function that answers where a surface
-  // of this product is standing. A second reading — looking for the directory, say — would be
+  // of this product is standing. A second reading (looking for the directory, say) would be
   // a second idea of what a project IS, and this surface already has one.
   const where = standing();
   const doors = theDoors(built.verbs, where.project !== undefined, where.foundable);
@@ -107,7 +107,7 @@ export async function theChoice(request: ChoiceRequest): Promise<readonly string
     const page = (): readonly string[] => theChoicePage(name, doors, picked, built.render);
 
     /**
-     * THE DOOR THE MARK IS ON — the same reading the mark itself is drawn by.
+     * THE DOOR THE MARK IS ON: the same reading the mark itself is drawn by.
      *
      * A pick is a WORD and a word is picked exactly while the list holds it
      * ({@link thePicked}, and `repl/palette.ts` for the argument). Asked here rather than
@@ -119,7 +119,7 @@ export async function theChoice(request: ChoiceRequest): Promise<readonly string
       return doors.find((door) => door.word === word);
     };
 
-    /** The caller answered — with a line, or with nothing. The terminal goes back either way. */
+    /** The caller answered: with a line, or with nothing. The terminal goes back either way. */
     const leave = (chosen: readonly string[] | undefined): void => {
       if (left) return;
       left = true;
