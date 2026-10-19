@@ -21,7 +21,7 @@ function source(scope: ScopedEvents['scope'], events: readonly CatalogEvent[]): 
   return { scope, events };
 }
 
-describe('exposure — what it finds', () => {
+describe('exposure: what it finds', () => {
   it('names the record, the tree, the instant and the CLASS', () => {
     const report = exposure([
       source('public', [
@@ -44,7 +44,7 @@ describe('exposure — what it finds', () => {
   it('reaches the ENVELOPE, where the executing agent lives', () => {
     // The hole this closes, and the worst kind there is: with a payload-only sweep
     // this record answered "nothing recognizable" while the credential sat on disk
-    // in `which`. Not a record written unprotected — the AUDIT declaring it clean,
+    // in `which`. Not a record written unprotected: the AUDIT declaring it clean,
     // which ends the investigation. `which` is one of the two envelope fields a
     // caller supplies, and it is stamped on every event of a session, so one value
     // is many records.
@@ -125,7 +125,7 @@ describe('exposure — what it finds', () => {
     expect(report.findings.map((f) => f.scope)).toEqual(['public', 'global']);
   });
 
-  it('answers oldest first — the oldest exposure has had longest to travel', () => {
+  it('answers oldest first: the oldest exposure has had longest to travel', () => {
     const report = exposure([
       source('public', [
         event('memory.captured', 'later', '2026-07-09T00:00:00.000Z', { content: SECRET }),
@@ -137,12 +137,12 @@ describe('exposure — what it finds', () => {
   });
 });
 
-describe('exposure — never the value', () => {
+describe('exposure, never the value', () => {
   it('has no field anywhere that carries the value, in the object OR its JSON', () => {
     // The structural guarantee: a report that listed credentials would turn the
     // remedy into a second disclosure (a CI log, a scrollback, a screenshot). The
     // detector behind this returns classes only, so there is nothing to print even
-    // by accident — asserted over the serialized form, which is what `--json` and
+    // by accident: asserted over the serialized form, which is what `--json` and
     // an MCP reply emit.
     const password = 'Tr0ub4dor3';
     const report = exposure([
@@ -162,7 +162,7 @@ describe('exposure — never the value', () => {
   });
 });
 
-describe('exposure — what it does NOT claim', () => {
+describe('exposure: what it does NOT claim', () => {
   it('finds nothing in a clean record, and says how much it read', () => {
     const report = exposure([
       source('public', [
@@ -179,7 +179,7 @@ describe('exposure — what it does NOT claim', () => {
   it('finds nothing in the DERIVED envelope fields, which is what makes scanning them safe', () => {
     // The anchor, the fingerprint, the v7 id and the instant are on every event, so
     // a rule that read them as text would flag the record's own identity forever.
-    // A known-prefix rule reads none of them — which is exactly why the envelope can
+    // A known-prefix rule reads none of them, which is exactly why the envelope can
     // be swept whole, and why an entropy rule could never be (it flagged 13,094 of
     // these over a real archive).
     const report = exposure([
@@ -198,7 +198,7 @@ describe('exposure — what it does NOT claim', () => {
     expect(report.findings).toEqual([]);
   });
 
-  it('misses what the detector misses — an empty report is not a clean bill', () => {
+  it('misses what the detector misses: an empty report is not a clean bill', () => {
     const report = exposure([
       source('public', [
         event('memory.captured', 'm-1', '2026-07-13T00:00:00.000Z', {
@@ -217,7 +217,7 @@ describe('exposure — what it does NOT claim', () => {
   });
 });
 
-describe('exposure — one report, or one per record', () => {
+describe('exposure: one report, or one per record', () => {
   /** A source of one tree of one project (or of the projectless global tree). */
   function owned(
     scope: ScopedEvents['scope'],
@@ -245,7 +245,7 @@ describe('exposure — one report, or one per record', () => {
       ['g-1', undefined],
     ]);
     // The AGGREGATE decomposes: one count per record, the projectless one last, and no
-    // total beside them — a workspace figure under this name is what a reader divides by.
+    // total beside them: a workspace figure under this name is what a reader divides by.
     expect(report.scanned).toEqual([
       { project: '/w/alpha', scanned: 2 },
       { project: '/w/beta', scanned: 1 },
@@ -272,7 +272,7 @@ describe('exposure — one report, or one per record', () => {
     // The ordering has to be TOTAL, not merely stable, and the tie is real: the `id` of
     // a finding is the event's SUBJECT, so one entity written in two trees in the same
     // instant ties on both keys. Left to a stable sort, the answer would then follow the
-    // order the trees happened to be read in — and this text goes into the prefix of an
+    // order the trees happened to be read in, and this text goes into the prefix of an
     // agent's prompt, where a list that reshuffles reads as a record that changed.
     const sources = [
       owned('public', '/w/alpha', [held('same', '2026-07-01T00:00:00.000Z')]),

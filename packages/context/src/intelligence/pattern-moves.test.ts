@@ -7,7 +7,7 @@
  * OTHER pattern has proved the witness was operating, so its silence about THIS one is
  * an assertion; a run that recorded no consultation at all has proved nothing, and
  * reading its silence as "moved without consulting" is the defect this module exists to
- * refuse — it would name the people who curate patterns correctly, with `mnema show`,
+ * refuse: it would name the people who curate patterns correctly, with `mnema show`,
  * as the ones who skipped the reading.
  *
  * Nothing here is typed as an event. Every fact goes in through the bench that writes a
@@ -29,7 +29,7 @@ import {
 } from '../../tests/support/chain.js';
 import { type PatternMove, patternMoveWitness } from './pattern-moves.js';
 
-describe('patternMoveWitness — which of three answers the record gives about a move', () => {
+describe('patternMoveWitness, which of three answers the record gives about a move', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -74,7 +74,7 @@ describe('patternMoveWitness — which of three answers the record gives about a
     expect(witness.notObservable).toEqual([]);
   });
 
-  it('a run that recorded NO consultation at all does not accuse — it is NOT OBSERVABLE', () => {
+  it('a run that recorded NO consultation at all does not accuse: it is NOT OBSERVABLE', () => {
     // The border. The record holds a run and a move inside it and nothing else, which
     // is exactly what a person curating a pattern leaves behind: `mnema show` serves a
     // body and records nothing, structurally. Reading this silence as the answer above
@@ -128,7 +128,7 @@ describe('patternMoveWitness — which of three answers the record gives about a
     // consultation would credit the reading to whichever session happened to move a
     // pattern after it. It cannot: the collect is keyed by RUN, so a reading with no run
     // is filed under a key no move with a run ever asks for. The module doc carries the
-    // measurement, and the module doc was rewritten while this line was left standing —
+    // measurement, and the module doc was rewritten while this line was left standing:
     // the two then said opposite things about the same guard. What this case pins is the
     // ANSWER the record gives for such a stream, and never a defence against that.
     const b = bench();
@@ -145,10 +145,10 @@ describe('patternMoveWitness — which of three answers the record gives about a
   it('a run that read TWO patterns read BOTH of them, not just the last', () => {
     // THE COLLECTION ACCUMULATES PER RUN: a session's second consultation joins its first
     // rather than replacing it. That is the left-hand side of the `??` in the collect, and
-    // nothing else in this suite reached it — every other case here gives a run exactly one
+    // nothing else in this suite reached it: every other case here gives a run exactly one
     // consultation, so a collection keeping only the LAST reading of each session answered
     // all of them identically. Measured: with the accumulation dropped, this case is the
-    // one that reddens, and it names `sk-first` as MOVED WITHOUT CONSULTING — an accusation
+    // one that reddens, and it names `sk-first` as MOVED WITHOUT CONSULTING, an accusation
     // against a session that demonstrably read it.
     const b = bench();
     startRun(b, 'run-a', { agent: 'claude' });
@@ -223,7 +223,7 @@ describe('patternMoveWitness — which of three answers the record gives about a
     const [byHand, byAgent] = patternMoveWitness(b.events()).notObservable;
     // `toStrictEqual` and not `toEqual`: the latter treats a key present and undefined
     // as a key absent, so the whole property this case exists for would be invisible to
-    // it. Measured — carrying `run: event.run` unconditionally left this case GREEN under
+    // it. Measured: carrying `run: event.run` unconditionally left this case GREEN under
     // `toEqual` and reddens it under `toStrictEqual`.
     expect(byHand).toStrictEqual({
       skill: 'sk-1',

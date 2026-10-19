@@ -1,5 +1,5 @@
 /**
- * exposure: which records hold something shaped like a credential — and never
+ * exposure: which records hold something shaped like a credential, and never
  * what it is.
  *
  * The content door defends what ARRIVES. It cannot defend what is already there,
@@ -9,16 +9,16 @@
  * without opening every record by hand.
  *
  * IT REPORTS WHERE, NEVER WHAT. Each finding carries the record's id, its kind,
- * the tree it lives in, when it was written and the CLASS of credential found —
+ * the tree it lives in, when it was written and the CLASS of credential found,
  * and no part of the value, not truncated and not partly masked. A report that
  * listed credentials would turn the remedy into a second disclosure: into a CI
  * log, a terminal scrollback, a screenshot, a pasted bug report. That is enforced
- * by the shape rather than by discipline — the detector this calls returns classes
+ * by the shape rather than by discipline: the detector this calls returns classes
  * and nothing else (see `detectSecrets`), so there is no value here to print even
  * by accident, in the human summary or in the JSON.
  *
- * IT SCANS THE WHOLE EVENT GENERICALLY. Every string anywhere in an event —
- * envelope and payload alike — goes through the detector, rather than a per-kind
+ * IT SCANS THE WHOLE EVENT GENERICALLY. Every string anywhere in an event,
+ * envelope and payload alike, goes through the detector, rather than a per-kind
  * list of the fields that hold text. Two reasons, and the second is the one that
  * matters: a transition's proof lives in a nested `fields` object that no
  * projection exposes whole, so a field-by-field reader would miss exactly the
@@ -26,12 +26,12 @@
  * day it is added, with nobody having to remember this file exists.
  *
  * THE ENVELOPE IS IN THE SWEEP, and leaving it out was a hole rather than a
- * saving. `which` — the executing agent — is one of the two envelope fields a
+ * saving. `which`, the executing agent, is one of the two envelope fields a
  * caller supplies (the other is the pinned `run`, an id by contract that no write
  * operation proves), and a payload-only scan answered "nothing recognizable" about
  * a record whose envelope held a credential on disk. That is the exact failure the audit exists
  * to prevent, one level up: not a record written unprotected, but the report
- * declaring it clean. The other envelope fields cost nothing to include — an
+ * declaring it clean. The other envelope fields cost nothing to include: an
  * anchor, a fingerprint, a v7 id and an ISO instant match no known-prefix pattern,
  * which the known-prefix rule is precisely what makes safe (an entropy rule would
  * have flagged all of them, which is why there is none).
@@ -46,7 +46,7 @@
  *
  * ## One record, or every project of a workspace
  *
- * {@link exposure} folds whatever it is given into one report — the answer when the
+ * {@link exposure} folds whatever it is given into one report: the answer when the
  * trees are one record. {@link workspaceExposure} is the same fold over the trees of
  * every project, and it splits the answer the way the SHAPE of each half demands:
  * the findings MERGE, each labelled with the project to rotate in, and the
@@ -57,12 +57,12 @@
 import { detectSecrets, type Scope, type SecretClass } from '@mnema/core';
 import type { CatalogEvent } from './events.js';
 
-/** One tree's events, and which tree they are — the scope every finding carries. */
+/** One tree's events, and which tree they are: the scope every finding carries. */
 export interface ScopedEvents {
   /** The tree these events were read from. */
   readonly scope: Scope;
   /**
-   * The PROJECT that tree belongs to, when it belongs to one — the directory whose
+   * The PROJECT that tree belongs to, when it belongs to one: the directory whose
    * credentials a finding tells someone to rotate.
    *
    * Absent for the machine-global tree, and that absence is the fact rather than a
@@ -77,14 +77,14 @@ export interface ScopedEvents {
 
 /** One record that holds something shaped like a credential. */
 export interface ExposedRecord {
-  /** The event's subject — the entity to look up, or the fact's own id. */
+  /** The event's subject: the entity to look up, or the fact's own id. */
   readonly id: string;
   /** What kind of event it is (`memory.captured`, `task.transitioned`, …). */
   readonly kind: string;
-  /** The tree it lives in — a public one is committed and clones. */
+  /** The tree it lives in: a public one is committed and clones. */
   readonly scope: Scope;
   /**
-   * The project whose tree holds it — WHERE to rotate, which is the point of the
+   * The project whose tree holds it, WHERE to rotate, which is the point of the
    * whole report. Absent for the machine-global tree (see {@link
    * ScopedEvents.project}), and absent throughout when the sources are one record
    * and there is no other project to tell it from.
@@ -107,25 +107,25 @@ export interface ExposedRecord {
 export interface Exposure {
   /** The records that hold something, oldest first. Empty when none do. */
   readonly findings: readonly ExposedRecord[];
-  /** How many events were read to answer — the denominator of the report. */
+  /** How many events were read to answer: the denominator of the report. */
   readonly scanned: number;
 }
 
 /** How much of ONE record was read, and which record it is. */
 export interface ProjectScan {
   /**
-   * The project whose trees were read — absent for the machine-global tree, which
+   * The project whose trees were read: absent for the machine-global tree, which
    * belongs to no project and is the same tree for all of them.
    */
   readonly project?: string;
-  /** How many of its events were read — this record's denominator. */
+  /** How many of its events were read: this record's denominator. */
   readonly scanned: number;
 }
 
 /** What a whole workspace holds: the findings merged, the denominators apart. */
 export interface WorkspaceExposure {
   /**
-   * Every record that holds something, across every project, oldest first — each
+   * Every record that holds something, across every project, oldest first: each
    * labelled with the project to rotate in. Empty when none do.
    *
    * MERGED, because a finding is an item: widening the search adds to the list and
@@ -136,7 +136,7 @@ export interface WorkspaceExposure {
   readonly findings: readonly ExposedRecord[];
   /**
    * How much was read, ONE COUNT PER RECORD: each project of the workspace, and the
-   * machine-global tree. A record that held nothing is still HERE, at its count —
+   * machine-global tree. A record that held nothing is still HERE, at its count,
    * which is what makes an empty `findings` readable as "these records were read and
    * hold nothing recognizable" rather than as "nothing is exposed".
    *
@@ -150,15 +150,15 @@ export interface WorkspaceExposure {
 
 /**
  * Scans every event of every tree handed in and reports the records that hold a
- * recognized credential format — ONE report over whatever it is given, which is the
+ * recognized credential format: ONE report over whatever it is given, which is the
  * right answer when the sources are one record (a project's trees, or a single tree).
  *
  * The order is oldest first, then by id: the oldest exposure is the one that has
- * had the longest to travel, so it is the one to rotate first. Pure — it folds the
+ * had the longest to travel, so it is the one to rotate first. Pure: it folds the
  * streams it is given and reads nothing else.
  *
  * Given the trees of several PROJECTS its denominator would count a workspace under
- * the name of a record — {@link workspaceExposure} is that read.
+ * the name of a record: {@link workspaceExposure} is that read.
  */
 export function exposure(sources: readonly ScopedEvents[]): Exposure {
   const { findings, scans } = fold(sources);
@@ -172,7 +172,7 @@ export function exposure(sources: readonly ScopedEvents[]): Exposure {
  *
  * This is the read the defect asked for. The content door screens what arrives and it
  * is scoped to a project, so a session that adopted one project of three defended
- * that one — while the record of the other two sat on the same disk, written before
+ * that one, while the record of the other two sat on the same disk, written before
  * the door existed or imported from elsewhere. Asked "is a credential already
  * recorded?", this answered about the adopted project and said `scanned: 300` beside
  * it, which reads as a search that covered the ground.
@@ -180,7 +180,7 @@ export function exposure(sources: readonly ScopedEvents[]): Exposure {
  * It does NOT stop a leak, and no text here should suggest it does. The record is the
  * record: a search or a read of a neighbouring project serves the raw value, as it
  * always did, because that is what those reads are for. What this changes is that the
- * WARNING now reaches as far as the service does — the read that would say "rotate
+ * WARNING now reaches as far as the service does: the read that would say "rotate
  * this" stops being the only one that halts at a project boundary.
  *
  * The two halves split by the shape of what they carry, which is the same rule the
@@ -198,7 +198,7 @@ export function workspaceExposure(sources: readonly ScopedEvents[]): WorkspaceEx
  * the events counted per record.
  *
  * Both reads above call THIS. A record contributes its count even when it holds
- * nothing — an entry missing from the decomposition would be indistinguishable from a
+ * nothing: an entry missing from the decomposition would be indistinguishable from a
  * tree the read never opened, and this read exists to be trusted about where it
  * looked.
  */
@@ -233,7 +233,7 @@ function fold(sources: readonly ScopedEvents[]): {
 }
 
 /**
- * Findings oldest first, then by id, then by tree, then by project — a TOTAL order,
+ * Findings oldest first, then by id, then by tree, then by project: a TOTAL order,
  * so two calls over the same record answer in the same order whatever order the trees
  * were read in.
  *
@@ -263,7 +263,7 @@ function projectlessLast(a: ProjectScan, b: ProjectScan): number {
 /**
  * The distinct classes found anywhere in an event, sorted. Walks strings, arrays
  * and nested objects alike, so a proof field inside `fields` is reached without
- * this function knowing that `fields` exists — and so is the envelope's `which`,
+ * this function knowing that `fields` exists, and so is the envelope's `which`,
  * without this function knowing there is an envelope.
  */
 function classesIn(event: unknown): SecretClass[] {

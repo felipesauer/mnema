@@ -1,7 +1,7 @@
 /**
  * Who the record knows: the set two halves of the surface must agree on.
  *
- * The properties that matter are about the SET, not about any one identity — one
+ * The properties that matter are about the SET, not about any one identity: one
  * person writing in two trees is one identity, and an identity with a single fact
  * is in the list exactly as one with many. Get either wrong and a form shortened
  * here would be ambiguous, or refused, over there.
@@ -13,7 +13,7 @@ import { type Bench, birthTask, consultSkill, makeBench } from '../../tests/supp
 import type { ScopedCache } from '../sources.js';
 import { knownAnchors } from './identities.js';
 
-describe('knownAnchors — every identity that authorized a fact', () => {
+describe('knownAnchors: every identity that authorized a fact', () => {
   let benches: Bench[] = [];
   let open: ScopedCache[] = [];
   afterEach(() => {

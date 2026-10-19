@@ -2,7 +2,7 @@
  * Test support: build a real chain and a rebuilt ProjectionCache over it.
  *
  * The derivations read a ProjectionCache, and the honest way to test them is
- * against a cache rebuilt from a real chain — the same path production takes —
+ * against a cache rebuilt from a real chain, the same path production takes,
  * not a hand-mocked cache. This helper writes events through the chain's own
  * builders and topology (so `who` is a real anchor and the tail is signed), then
  * opens and rebuilds a cache over the public tree. It lives in tests/ only; the
@@ -52,7 +52,7 @@ export interface Bench {
   now(): string;
   /** Open and rebuild a cache over the tree written so far. */
   cache(): ProjectionCache;
-  /** The raw, ordered event stream over the tree — the intelligence input. */
+  /** The raw, ordered event stream over the tree: the intelligence input. */
   events(): CatalogEvent[];
 }
 
@@ -60,8 +60,8 @@ export interface Bench {
  * Creates a sandbox, opens the public tree for writing, and returns a Bench.
  *
  * THE SANDBOX IS REMOVED HERE, by the function that made it. It used to be removed nowhere:
- * every caller cleaned up, and every one of them cleaned up `bench.root` — the CHAIN root,
- * which lives several levels inside the sandbox — so the `mkdtemp` directory itself survived
+ * every caller cleaned up, and every one of them cleaned up `bench.root` (the CHAIN root,
+ * which lives several levels inside the sandbox), so the `mkdtemp` directory itself survived
  * each test. 296 of them per suite run, 47.237 of them in `/tmp` by the time an audit counted.
  * A cleanup aimed at what the Bench exposes rather than at what the Bench created is the shape
  * of the defect, and the fix is not a better `afterEach` in fifteen files: it is that whoever
@@ -133,7 +133,7 @@ export interface RunSpec {
   readonly goal?: string;
   /**
    * The authorizing identity to stamp as `who`. Defaults to the writer's anchor.
-   * A test may override it to simulate a DIFFERENT actor sharing the tail — the
+   * A test may override it to simulate a DIFFERENT actor sharing the tail: the
    * projection replays `who` as written, which is exactly what focus filters on.
    * (Such an event would not pass `verify` unless that `who` were founded, but a
    * projection replays facts; it never re-judges them.)
@@ -159,13 +159,13 @@ export function startRun(b: Bench, id: string, spec: RunSpec): string {
 }
 
 /**
- * The same move, at an instant the caller chooses — the only way to make two runs
+ * The same move, at an instant the caller chooses: the only way to make two runs
  * share a `startedAt`, because `b.now()` is monotonic by design.
  *
  * The reason is the one {@link moveTaskAt} gives: a derivation that orders by an
  * instant has a tie-break, and a tie-break is only testable if a tie can be built.
- * Two runs opened in one millisecond is not unrealistic — a session that restarts its
- * agent, or a script opening a run per project — and for the focus read the tie is not
+ * Two runs opened in one millisecond is not unrealistic (a session that restarts its
+ * agent, or a script opening a run per project) and for the focus read the tie is not
  * cosmetic: `latestRun` takes the HEAD of that order, so it decides which run a
  * session is told it is in.
  */
@@ -200,7 +200,7 @@ export function endRun(b: Bench, id: string, outcome?: string): void {
  * other state is a move no reader applies (FORMAT.md §6.7): the subject would not exist at all.
  * So a case that asks for a subject `accepted`, `adopted` or `DONE` gets it born where the
  * workflow begins and moved there by the shortest path of rows, each with the proof its row
- * requires — a record the product could have written.
+ * requires: a record the product could have written.
  */
 function walkTo(b: Bench, kind: TransitionKind, id: string, state: string): void {
   const machine = WORKFLOWS[kind];
@@ -278,7 +278,7 @@ export function moveTask(
 }
 
 /**
- * The same move, at an instant the caller chooses — the only way to make two tasks
+ * The same move, at an instant the caller chooses: the only way to make two tasks
  * share an `updatedAt`, because `b.now()` is monotonic by design.
  *
  * A derivation that orders by an instant has a tie-break, and a tie-break is only
@@ -303,7 +303,7 @@ export function moveTaskAt(
 }
 
 /**
- * Appends one `skill.consulted` — a session was served that pattern's body.
+ * Appends one `skill.consulted`: a session was served that pattern's body.
  *
  * The `run` and the `who` are arguments because the counting derivation is ABOUT
  * them: one run consulting twice is one session, and the same run may record the
@@ -333,7 +333,7 @@ export function consultSkill(
  * to write `PROPOSED`/`ACCEPTED`/`SUPERSEDED`, which no write path of the product can
  * produce: `DECISION_STATES` is lower-case, `isDecisionState('PROPOSED')` is false by
  * its own test, and the projection's `state` column is compared with SQLite's binary
- * collation — so a fixture in the wrong case is a decision no state-keyed read can
+ * collation, so a fixture in the wrong case is a decision no state-keyed read can
  * ever match. It cost nothing while every test keyed on ids and roles; it would have
  * made a state FILTER untestable, which is what {@link decisionsInForce} is.
  */
@@ -344,7 +344,7 @@ export function birthDecision(
   initial = 'proposed',
   // The label the chain would have minted, when a case is ABOUT the label. It
   // defaults to one derived from the id, which keeps every other fixture's labels
-  // distinct without a case having to say so — a shape the product never produces,
+  // distinct without a case having to say so: a shape the product never produces,
   // and harmless everywhere the label is carried rather than compared. A case that
   // compares them passes the number this chain's own count would have frozen.
   adr = `ADR-${id}`,
@@ -373,7 +373,7 @@ export function birthDecision(
 }
 
 /**
- * Appends one `decision.transitioned` — a decision moving as the workflow moves it,
+ * Appends one `decision.transitioned`: a decision moving as the workflow moves it,
  * with the proof field that action requires (`accept` and `reject` take a note).
  *
  * A decision is ALWAYS born `proposed` in production (`INITIAL_DECISION_STATE`), so
@@ -393,7 +393,7 @@ export function moveDecision(
 }
 
 /**
- * The same move, at an instant the caller chooses — the only way to make two
+ * The same move, at an instant the caller chooses: the only way to make two
  * decisions share an `updatedAt`, because `b.now()` is monotonic by design. The
  * reason is the task helper's: a derivation that orders by an instant has a
  * tie-break, and a tie-break is only testable if a tie can be built.
@@ -440,7 +440,7 @@ export function supersedeDecision(b: Bench, id: string, by: string, from = 'acce
 /**
  * Appends a skill's birth pair, returning its id. States are the workflow's own.
  * `which` names the agent that executed the birth; omitted, the events carry no
- * agent — which is what a person acting directly leaves behind.
+ * agent, which is what a person acting directly leaves behind.
  */
 export function birthSkill(
   b: Bench,
@@ -491,7 +491,7 @@ export function moveSkill(
 
 /**
  * Appends a `skill.transitioned {action: 'deprecate'}`, which carries a `reason` and not
- * a `note` — because that is what the gate requires of THIS action and of no other.
+ * a `note`, because that is what the gate requires of THIS action and of no other.
  *
  * IT IS NOT A CONVENIENCE OVER {@link moveSkill}, it is the only correct way to write
  * one. `moveSkill` fills the proof slot with a `note`, and a `deprecate` carrying a note
@@ -509,7 +509,7 @@ interface MoveOpts {
   readonly run?: string;
 }
 
-/** The same, plus the state a deprecation leaves — `adopted` unless a case says otherwise. */
+/** The same, plus the state a deprecation leaves: `adopted` unless a case says otherwise. */
 interface DeprecateOpts extends MoveOpts {
   readonly from?: string;
 }
@@ -520,7 +520,7 @@ interface DeprecateOpts extends MoveOpts {
  * THE BENCH MAY NOT WRITE WHAT THE GATE WOULD REFUSE. A fixture carrying proof the
  * product rejects is a suite green over a record that could not exist, and it does not
  * announce itself: nothing downstream reads a transition's fields back, so the write
- * lands, the projection folds it, and every assertion about the fold passes. Measured —
+ * lands, the projection folds it, and every assertion about the fold passes. Measured:
  * `deprecate` requires a `reason` where the other three actions require a `note`, and two
  * cases wrote `{ note: 'deprecateed' }` through {@link moveSkill}; `skillGate` answers
  * `REFUSED (MISSING_PROOF)` on exactly those fields.
@@ -567,18 +567,18 @@ function appendMove(
 }
 
 /**
- * Appends one `channel.switched` — somebody moved the switch of a pushing channel.
+ * Appends one `channel.switched`: somebody moved the switch of a pushing channel.
  *
  * THE INSTANT AND THE ANCHOR ARE THE CALLER'S, and both because the fold over trees is
  * ABOUT them: `channelStates` answers with the EARLIEST switch-off across the
  * trees and breaks a tie by `who`, so a tie is only testable if two trees can be given
  * the same `switchedAt` and two different anchors. `b.now()` is monotonic by design and
  * a bench has one anchor, so neither could be built otherwise. A projection replays
- * `who` as written and never re-judges it — the same licence {@link RunSpec.who} takes.
+ * `who` as written and never re-judges it: the same licence {@link RunSpec.who} takes.
  *
  * THE SHAPE IS THE CALLER'S TO GET RIGHT, and this sentence used to say only that an
  * anchor is `mnid:` and hex. It is `mnid:` and SIXTY-FOUR hex, and the first caller of
- * this helper wrote thirty-two — a value `isAnchorId` refuses, carried by every case in
+ * this helper wrote thirty-two: a value `isAnchorId` refuses, carried by every case in
  * `switches.test.ts` for a whole delivery. Nothing here can catch that: a projection
  * replaying `who` is exactly a projection that does not judge it. What catches it is the
  * case in that file which runs the predicate on the anchors it writes.
@@ -613,7 +613,7 @@ export function switchChannel(
 }
 
 /**
- * Appends a `memory.captured`, returning its id. `run` pins it to a run — the
+ * Appends a `memory.captured`, returning its id. `run` pins it to a run: the
  * envelope slot every fact of a session carries, and the only way a run comes to have
  * anything recorded IN it.
  */
@@ -633,7 +633,7 @@ export function capture(b: Bench, id: string, content: string, run?: string): st
   return id;
 }
 
-/** Appends a `handoff.recorded` on a task — a fact with no prose of its own. */
+/** Appends a `handoff.recorded` on a task: a fact with no prose of its own. */
 export function handoff(b: Bench, task: string, fromAgent: string, toAgent: string): void {
   b.writer.append(
     handoffRecorded(
@@ -665,7 +665,7 @@ export function link(b: Bench, subject: string, target: string, rel = 'relates-t
 }
 
 /**
- * Lands another bench's tail in this one's tree — the offline merge two clones of a
+ * Lands another bench's tail in this one's tree: the offline merge two clones of a
  * repository produce when their branches meet.
  *
  * It is the only way a chain comes to hold two `ADR-1`s: each bench numbered its own

@@ -1,5 +1,5 @@
 /**
- * Where the product's own switches stand — the one reading whose subject is MNEMA and
+ * Where the product's own switches stand: the one reading whose subject is MNEMA and
  * not the work.
  *
  * ## What a switch is, and why the answer is not just a row
@@ -7,7 +7,7 @@
  * A channel is a place this product puts the record in front of a model WITHOUT being
  * asked. Somebody may switch one off, and the tie behind that says the switching is
  * recorded: it is a signed, attributed, dated fact of the chain, which means it has a
- * SCOPE like every other fact — a switch committed to the repository is the team's, one
+ * SCOPE like every other fact; a switch committed to the repository is the team's, one
  * recorded privately is one machine's. So "is this channel off" is not a row lookup, it
  * is a question over the trees the caller can see, and the rule for folding them is what
  * this module owns.
@@ -15,7 +15,7 @@
  * ## OFF WINS, and it is not a preference
  *
  * There is no total order across trees. An event's `at` is a clock on the machine that
- * wrote it, and two trees have no shared sequence to compare — the chain orders events
+ * wrote it, and two trees have no shared sequence to compare: the chain orders events
  * WITHIN a tail, and that is the whole of what it proves. So "the most recent switch
  * across the trees" is a comparison of two unordered things, and a product deciding
  * whether to speak by that comparison would decide differently on two machines whose
@@ -25,7 +25,7 @@
  * wins. OFF wins here because of what each failure looks like: a switch somebody flipped
  * and that did not take effect is the product ignoring an instruction it recorded, in the
  * one place the tie exists to protect. The other direction is the product going quiet
- * because of a switch nobody meant — recoverable by switching it on, and visible in the
+ * because of a switch nobody meant: recoverable by switching it on, and visible in the
  * reading that says WHICH tree decided.
  *
  * It is the same direction {@link PushedRule.travels} takes for the same kind of reason:
@@ -35,15 +35,15 @@
  *
  * The vocabulary of channels lives in the surface that pushes them, downstream of this
  * package, so the caller names them and the answer is total over that set. Nothing here
- * can invent a channel and nothing here reports one the caller did not name — which is
+ * can invent a channel and nothing here reports one the caller did not name, which is
  * what keeps a switch of some name nobody recognizes out of a document a person reads. A
  * record holding `channel.switched` for `xyzzy` is a fact the record holds and the audit
  * reads; it is not something a governance document announces.
  *
  * ## Every consumer reads it here
  *
- * Two channels consult this today — the document a session opens with, and the push
- * at each edit — and they pass different sources: the document carries the
+ * Two channels consult this today (the document a session opens with, and the push
+ * at each edit) and they pass different sources: the document carries the
  * tree that TRAVELS and nothing else, the push carries every tree the session can see.
  * That is one function asked two questions, not two rules: the fold, the tie-break and
  * the meaning of an absence are decided once, here, and a consumer that narrowed the
@@ -58,13 +58,13 @@ import type { ScopedCache } from '../sources.js';
  *
  * `on` is the answer; everything else is why, and is present only when a switch decided
  * it. A channel nothing ever switched comes back `{ channel, on: true }` and nothing
- * more — the absence of an attribution IS the fact that nobody switched it, and a
+ * more: the absence of an attribution IS the fact that nobody switched it, and a
  * placeholder there would read as a switch somebody made.
  */
 export interface ChannelState {
   /** The channel, as the caller named it. */
   readonly channel: string;
-  /** Whether it is on — `true` when nothing switched it off in any tree given. */
+  /** Whether it is on: `true` when nothing switched it off in any tree given. */
   readonly on: boolean;
   /**
    * The anchor that switched it, when a switch decided this state. Absent when the
@@ -78,7 +78,7 @@ export interface ChannelState {
   /** Why, when the switch carried a reason. */
   readonly reason?: string;
   /**
-   * Whether the tree that decided this state TRAVELS — whether a clone of the
+   * Whether the tree that decided this state TRAVELS: whether a clone of the
    * repository holds the switch.
    *
    * It is the fact a reader needs to know whether a teammate sees the same thing. False
@@ -89,18 +89,18 @@ export interface ChannelState {
 }
 
 /**
- * The one tree whose facts a clone of the repository gets — the same scope
+ * The one tree whose facts a clone of the repository gets: the same scope
  * `context/brief.ts` composes its document out of, named here because
  * {@link ChannelState.travels} is a claim about that and not about a preference.
  */
 const TRAVELS_TO_A_CLONE: Scope = 'public';
 
 /**
- * Where each of `channels` stands across the trees of `sources` — one answer per
+ * Where each of `channels` stands across the trees of `sources`: one answer per
  * channel asked about, in the order they were asked.
  *
  * ON is the answer for a channel no tree ever switched, and it is the product's default
- * rather than this function's convention: nothing arrives switched off — except the channels
+ * rather than this function's convention: nothing arrives switched off, except the channels
  * the caller names in `startsOff`, which stay off until a tree switches them on (the caller
  * owns the vocabulary, so it owns which channels begin that way). A single tree
  * saying OFF makes it off, for the reason the module note gives.
@@ -116,8 +116,8 @@ export function channelStates(
 /**
  * One channel's state: the OFF switch of some tree if any tree holds one, else on.
  *
- * When more than one tree says off, the tie-break is by CONTENT — the earliest instant,
- * then the anchor — and never by the order the sources were opened. A reading whose
+ * When more than one tree says off, the tie-break is by CONTENT (the earliest instant,
+ * then the anchor) and never by the order the sources were opened. A reading whose
  * answer depended on that order could not be compared between two runs, and one of its
  * consumers is a document whose whole worth is that the same record prints the same
  * bytes.
@@ -133,12 +133,12 @@ function stateOf(
     const row = source.cache.channelSwitch(channel);
     if (row?.on === true) switchedOn = true;
     // No row is "never switched here", which says nothing about the other trees; a row
-    // whose last switch turned it ON says this tree wants it on, which also says nothing
-    // — one tree cannot switch a channel back on for another.
+    // whose last switch turned it ON says this tree wants it on, which also says nothing:
+    // one tree cannot switch a channel back on for another.
     if (row !== null && !row.on) off.push({ source, row });
   }
   // A channel that starts OFF is on only where some tree switched it on and none switched it
-  // off — off still wins between trees that cannot be ordered, so the rule is one rule.
+  // off: off still wins between trees that cannot be ordered, so the rule is one rule.
   if (off.length === 0) return { channel, on: startsOff ? switchedOn : true };
   const decided = off.sort(earliestSwitchOffFirst)[0] as {
     readonly source: ScopedCache;
@@ -156,8 +156,8 @@ function stateOf(
 }
 
 /**
- * The switch-off that answers for a channel: earliest instant first, ties broken by who
- * — oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
+ * The switch-off that answers for a channel: earliest instant first, ties broken by who,
+ * oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
  *
  * A CHANNEL IS OFF BECAUSE SOMEONE TURNED IT OFF, and the answer names the switch that
  * did it, so the FIRST one holds; a later tree turning the same channel off again
@@ -165,12 +165,12 @@ function stateOf(
  *
  * THAT USED TO BE INTENT AND IS NOW ASSERTED. The premise written here was that NO test
  * anywhere named {@link channelStates} or `channelIsOn`, and that flipping this
- * comparator to descending turned exactly ONE case red — the structural scan in
+ * comparator to descending turned exactly ONE case red: the structural scan in
  * `one-rule-for-newest-first.test.ts`, which sees the shape and not the answer. What
  * falsified it is `switches.test.ts`, which asks the fold with two trees and in both
  * source orders; remeasured with it in place, the same flip turns FOUR red, three of
- * them behaviour cases that name the answer. Dropping the second key alone — leaving the
- * instants ascending — turns exactly one red, `two trees saying off at the SAME instant`,
+ * them behaviour cases that name the answer. Dropping the second key alone, leaving the
+ * instants ascending, turns exactly one red, `two trees saying off at the SAME instant`,
  * which is the case that exists for it.
  *
  * Written as a named comparator rather than inline at the call because
@@ -185,7 +185,7 @@ function earliestSwitchOffFirst(
 }
 
 /**
- * Whether `channel` may speak, given `sources` — the one question a pushing channel asks
+ * Whether `channel` may speak, given `sources`: the one question a pushing channel asks
  * before it composes anything.
  *
  * It is {@link channelStates} asked about one channel, not a second reading of the rule:

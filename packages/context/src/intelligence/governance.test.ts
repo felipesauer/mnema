@@ -36,7 +36,7 @@ function bench(): Bench {
   return b;
 }
 
-/** The project every query below is about — a directory, never touched on disk. */
+/** The project every query below is about: a directory, never touched on disk. */
 const ROOT = '/work/repo';
 
 function tree(
@@ -53,7 +53,7 @@ function tree(
  * A query over a working tree the test DECLARES, rather than one it creates.
  *
  * The derivation takes the disk probe as a parameter precisely so a case can say
- * what exists — which is what lets the stale count be tested against an address
+ * what exists, which is what lets the stale count be tested against an address
  * whose file was deleted, without a case having to delete one.
  */
 function asking(path: string, present: readonly string[] = []): GovernanceQuery {
@@ -65,7 +65,7 @@ function asking(path: string, present: readonly string[] = []): GovernanceQuery 
  *
  * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
  * every case below is about the relation that INFORMS, so the relation that stops somebody
- * must read zero in all FOUR — and it reading anything else would mean the two walks had
+ * must read zero in all FOUR, and it reading anything else would mean the two walks had
  * started sharing a list. The fourth is `unresolved`: an address naming a rule this read
  * cannot reach, which used to be counted as a rule that governs. The gate's own cases live with the charge that stands on them
  * (`code/tests/the-record-asks-for-a-person.test.ts`).
@@ -76,7 +76,7 @@ const NO_GATE = { matching: 0, addressed: 0, stale: 0, unresolved: 0 };
 const addresses = (rules: readonly { address?: string; rule: string }[]): string[] =>
   rules.map((rule) => `${rule.address ?? '(nowhere)'} → ${rule.rule}`);
 
-describe('governance — an address is a prefix by segment', () => {
+describe('governance: an address is a prefix by segment', () => {
   it('governs the path it names and everything under it', () => {
     const b = bench();
     birthDecision(b, 'dec-1', 'how collation works');
@@ -133,7 +133,7 @@ describe('governance — an address is a prefix by segment', () => {
   });
 });
 
-describe('governance — the order comes from the data', () => {
+describe('governance: the order comes from the data', () => {
   it('puts the most specific address first', () => {
     const b = bench();
     birthDecision(b, 'wide', 'how the source tree is laid out');
@@ -158,7 +158,7 @@ describe('governance — the order comes from the data', () => {
   });
 });
 
-describe('governance — four numbers, always', () => {
+describe('governance: four numbers, always', () => {
   it('answers with all four when there is nothing at all', () => {
     const b = bench();
     capture(b, 'mem-1', 'a note that addresses nothing');
@@ -195,7 +195,7 @@ describe('governance — four numbers, always', () => {
       asks: NO_GATE,
       refuses: NO_GATE,
     });
-    // NAMED, not merely counted — a count of dead addresses is fixed by making the
+    // NAMED, not merely counted: a count of dead addresses is fixed by making the
     // count smaller, and a list is fixed by looking at what it names.
     expect(addresses(reading.stale)).toEqual(['src/gone → orphan']);
     expect(reading.stale[0]?.onDisk).toBe(false);
@@ -241,7 +241,7 @@ describe('governance — four numbers, always', () => {
   });
 });
 
-describe('governance — what it normalizes, and what it does not', () => {
+describe('governance: what it normalizes, and what it does not', () => {
   it('compares a relative path, an absolute one and a climbing one the same way', () => {
     const b = bench();
     birthDecision(b, 'dec-1', 'how collation works');
@@ -313,7 +313,7 @@ describe('governance — what it normalizes, and what it does not', () => {
 
   it('does not read a backslash as a separator', () => {
     // A backslash is a legal character in a POSIX name, so an address written with
-    // one addresses a file whose name contains it — and matches nothing else. The
+    // one addresses a file whose name contains it, and matches nothing else. The
     // behaviour is DECLARED here rather than fixed: guessing would make one address
     // mean two things.
     const b = bench();
@@ -326,7 +326,7 @@ describe('governance — what it normalizes, and what it does not', () => {
   });
 });
 
-describe('governance — whose addresses these are', () => {
+describe('governance, whose addresses these are', () => {
   it('ignores the addresses of another project', () => {
     // An address is relative to A ROOT. A sibling project's `src/` is not this one's,
     // and importing it would make a rule govern code nobody addressed.
@@ -379,7 +379,7 @@ describe('governance — whose addresses these are', () => {
   });
 });
 
-describe('governance — what a rule IS travels with it, and is never judged', () => {
+describe('governance: what a rule IS travels with it, and is never judged', () => {
   it('carries the kind, the name and the state as the record holds them', () => {
     const b = bench();
     birthDecision(b, 'dec-1', 'how collation works');
@@ -430,8 +430,8 @@ describe('governance — what a rule IS travels with it, and is never judged', (
   });
 
   it('reports a rule no visible tree authored as UNRESOLVED, not as one that governs', () => {
-    // THIS CASE USED TO ASSERT THE DEFECT. It read the address off `.rules` — the list
-    // of what GOVERNS the path — and checked only that the fields it could not fill
+    // THIS CASE USED TO ASSERT THE DEFECT. It read the address off `.rules`, the list
+    // of what GOVERNS the path, and checked only that the fields it could not fill
     // were absent. So "an address naming a rule nothing here holds is a rule that
     // governs" was the asserted behaviour, and the number beside it said so too:
     // measured in a clone, `3 govern this path` where one governed.
@@ -451,7 +451,7 @@ describe('governance — what a rule IS travels with it, and is never judged', (
     expect(rule?.kind).toBeUndefined();
     expect(rule?.name).toBeUndefined();
     expect(rule?.scope).toBeUndefined();
-    // And the edge itself is still fully attributed — the assertion is a fact.
+    // And the edge itself is still fully attributed: the assertion is a fact.
     expect(rule?.assertedIn).toBe('public');
     // NOT stale either, and the two are different repairs: a stale address is moved,
     // and this one means the rule is somewhere this reader is not.
@@ -471,7 +471,7 @@ describe('governance — what a rule IS travels with it, and is never judged', (
   });
 });
 
-describe('governance — the relation that refuses a write is a walk of its own', () => {
+describe('governance: the relation that refuses a write is a walk of its own', () => {
   /** A decision in force, the way the product reaches one: born proposed, then accepted. */
   function inForce(b: Bench, id: string, title: string): void {
     birthDecision(b, id, title);

@@ -20,7 +20,7 @@ import {
 import { bootstrap } from './bootstrap.js';
 import { nextActionsForTask } from './next-action.js';
 
-describe('bootstrap — the opening context, focused on the actor', () => {
+describe('bootstrap: the opening context, focused on the actor', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -38,7 +38,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       // Resume: the actor's open run is the anchor.
       expect(b.resume.lastRun?.id).toBe('run-1');
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
-      // Work: the live task, as a NAME — the four fields and nothing more.
+      // Work: the live task, as a NAME, the four fields and nothing more.
       expect(b.work).toEqual([
         {
           id: 'task-1',
@@ -52,7 +52,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('carries no moves on a work item — the ABSENCE of the key, not an empty one', () => {
+  it('carries no moves on a work item: the ABSENCE of the key, not an empty one', () => {
     bench = makeBench();
     const t = birthTask(bench, 'task-1', 'Parse tokens');
     moveTask(bench, t, 'DRAFT', 'READY', 'submit');
@@ -109,7 +109,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
   });
 
   it('decides a TIE at the cut by content, not by the order the record was folded', () => {
-    // The tie-break was cosmetic before there was a cut — it decided what a reader
+    // The tie-break was cosmetic before there was a cut: it decided what a reader
     // saw first. It now decides what is left OUT, so which rule breaks the tie is
     // the difference between a stable answer and one that changes when a tree is
     // added to the call.
@@ -122,7 +122,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     //
     // AND THE DIRECTION IT KEPT WAS THE WRONG ONE. It read the lowest ids as the
     // winners and called that content. The ids here ascend with creation, so on this
-    // fixture "lowest id" and "oldest" are the same thing — which is how a
+    // fixture "lowest id" and "oldest" are the same thing, which is how a
     // newest-first list came to cut the NEWEST items and look reasonable doing it.
     // The rule is `newestFirst` now: highest id wins the tie, and the cut falls on
     // the oldest of the instant.
@@ -172,7 +172,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     try {
       const b = bootstrap([cache], asking(bench.who));
       // Non-regression proved BY THE LIST: every task is there, and `workTotal`
-      // agrees with it — nothing was hidden and nothing says it was.
+      // agrees with it; nothing was hidden and nothing says it was.
       expect(b.work).toHaveLength(wanted);
       expect(b.workTotal).toBe(wanted);
       expect(b.work.every((w) => Object.keys(w).length === 4)).toBe(true);
@@ -203,7 +203,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       if (named === undefined) throw new Error('the live task is missing');
       expect(named.id).toBe('task-1');
       // The information MOVED doors; it did not disappear. Asked per task, the
-      // moves come back whole — every action, and the proof each one demands.
+      // moves come back whole: every action, and the proof each one demands.
       const moves = nextActionsForTask(cache, named.id);
       expect(new Set(moves?.map((a) => a.action))).toEqual(
         new Set(['block', 'submit_review', 'complete', 'cancel']),
@@ -218,10 +218,10 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('omits a task that is OVER — canceled and completed are both off the work list', () => {
+  it('omits a task that is OVER: canceled and completed are both off the work list', () => {
     // This case used to be about `CANCELED` alone, and its title said why: it "has no
-    // next move". That was the old criterion, and `DONE` passed it — `reopen` is legal
-    // from there forever — so a completed task sat on the work list for good. Both
+    // next move". That was the old criterion, and `DONE` passed it (`reopen` is legal
+    // from there forever), so a completed task sat on the work list for good. Both
     // sides are asserted here now, over a record that reaches both.
     bench = makeBench();
     const live = birthTask(bench, 'task-live', 'Still going');
@@ -275,7 +275,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('keeps a BLOCKED task on the work list — stalled is what somebody has to see', () => {
+  it('keeps a BLOCKED task on the work list: stalled is what somebody has to see', () => {
     bench = makeBench();
     const t = birthTask(bench, 'task-stuck', 'Waiting on the API');
     moveTask(bench, t, 'DRAFT', 'READY', 'submit');
@@ -322,7 +322,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('announces the adopted skills by NAME and id — never the body', () => {
+  it('announces the adopted skills by NAME and id, never the body', () => {
     bench = makeBench();
     birthSkill(bench, 'sk-1', 'Small PRs', 'adopted');
     const cache = bench.cache();
@@ -371,7 +371,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('announces the decisions in force by TITLE, ADR and id — never the rationale', () => {
+  it('announces the decisions in force by TITLE, ADR and id, never the rationale', () => {
     bench = makeBench();
     birthDecision(bench, 'dec-1', 'Hand-rolled arithmetic');
     moveDecision(bench, 'dec-1', 'proposed', 'accepted', 'accept');
@@ -390,7 +390,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       ]);
       // Neither half of the body enters the opening context. The fixture writes
       // `why <title>` as the rationale and `turned down for <title>` as the
-      // alternatives, so these are that record's actual prose — and the `toEqual`
+      // alternatives, so these are that record's actual prose, and the `toEqual`
       // above is total, so a new key would fail it as well.
       expect(JSON.stringify(b)).not.toContain('why Hand-rolled arithmetic');
       expect(JSON.stringify(b)).not.toContain('turned down for Hand-rolled arithmetic');
@@ -418,7 +418,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
 
   it('answers about a record whose ONLY content is decisions', () => {
     // The defect that started this: over a real record holding two ADRs and nothing
-    // else, the opening read answered `work: []`, `skills: []` — an empty answer
+    // else, the opening read answered `work: []`, `skills: []`, an empty answer
     // about a full record, which an agent reads as "nothing has been decided here".
     bench = makeBench();
     for (const [id, title] of [
@@ -474,7 +474,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     // One cut function serves every list, so what the call site still owns is which
     // total it hands to which list. Different counts on purpose: with equal ones, a
     // crossed pair would pass. All below the limit, so nothing is cut and the
-    // totals are the lists themselves — the non-regression proved BY THE LIST.
+    // totals are the lists themselves: the non-regression proved BY THE LIST.
     bench = makeBench();
     for (const id of ['task-a', 'task-b']) {
       moveTask(bench, birthTask(bench, id, id), 'DRAFT', 'READY', 'submit');
@@ -524,7 +524,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
   });
 
   it('lists what awaits a judgement across ALL THREE machines, with the state that says which ruling is missing', () => {
-    // The record the measurement was taken over held two ADRs — and BOTH were
+    // The record the measurement was taken over held two ADRs, and BOTH were
     // `proposed`, so the list of what governs said nothing about them either. This
     // is the half that answers for them, and for the curation backlog beside it.
     //
@@ -583,7 +583,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
         'skill',
         'decision',
       ]);
-      // No body travelled: not the argument, not the pattern — and not the moves,
+      // No body travelled: not the argument, not the pattern, and not the moves,
       // which are the task's.
       expect(JSON.stringify(b)).not.toContain('why Nobody has ruled');
       expect(JSON.stringify(b)).not.toContain('body of Nobody has looked');
@@ -597,7 +597,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     // The criterion did not hitch a ride from the work list, and the work list no
     // longer has the ride to give. `DECISION_TRANSITIONS` allows `supersede` from
     // `accepted`, `SKILL_TRANSITIONS` allows `deprecate` from `adopted` and
-    // `TRANSITIONS` allows `reopen` from `DONE`, for as long as each exists — so "has
+    // `TRANSITIONS` allows `reopen` from `DONE`, for as long as each exists, so "has
     // at least one legal move", which used to be what put a task in `work`, would
     // report all three as pendencies that never clear. The first two are served by the
     // lists that say what GOVERNS and the third by no list at all, so their absence
@@ -658,7 +658,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
 
   it('cuts what awaits a judgement at the same limit and says how many there were', () => {
     bench = makeBench();
-    // One more than the limit, so the cut is what separates the two numbers — and
+    // One more than the limit, so the cut is what separates the two numbers, and
     // split across the two machines, so the cut is over the composed list.
     const wanted = SEARCH_DEFAULT_LIMIT + 5;
     for (let i = 0; i < wanted; i += 1) {
@@ -676,7 +676,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
         served: b.awaitingJudgement.length,
         total: b.awaitingJudgementTotal,
       }).toEqual({ served: SEARCH_DEFAULT_LIMIT, total: wanted });
-      // The cut falls on the STALEST, and the freshest is the last item written —
+      // The cut falls on the STALEST, and the freshest is the last item written:
       // whichever machine it came from.
       const last = wanted - 1;
       expect(b.awaitingJudgement[0]?.id).toBe(
@@ -691,8 +691,8 @@ describe('bootstrap — the opening context, focused on the actor', () => {
   it('orders the awaiting list ACROSS the kinds, by content, whatever order the trees come in', () => {
     // One list, not decisions-then-skills. Two things make this discriminate: the
     // freshest item is a SKILL and it sits above a decision, so a list built kind by
-    // kind fails; and a decision and a skill share an instant, so the tie-break —
-    // which for a cut list decides what is left OUT — is exercised across the two
+    // kind fails; and a decision and a skill share an instant, so the tie-break
+    // (which for a cut list decides what is left OUT) is exercised across the two
     // machines and across two trees at once.
     //
     // The tie is built by the clocks rather than by a hand-written instant: each
@@ -713,16 +713,16 @@ describe('bootstrap — the opening context, focused on the actor', () => {
         const forwards = bootstrap([mine, theirs], asking(bench.who)).awaitingJudgement;
         const backwards = bootstrap([theirs, mine], asking(bench.who)).awaitingJudgement;
         // `sk-tie` above `dec-tie` on the shared instant: the tie-break is by id
-        // DESCENDING, so it is also the case that a list built kind by kind — which
-        // would put the decision first — cannot produce.
+        // DESCENDING, so it is also the case that a list built kind by kind (which
+        // would put the decision first) cannot produce.
         expect(forwards.map((i) => `${i.kind}:${i.id}`)).toEqual([
           'skill:sk-fresh',
           'skill:sk-tie',
           'decision:dec-tie',
         ]);
-        // The tie is REAL — without it the two lines above prove only the sort.
+        // The tie is REAL: without it the two lines above prove only the sort.
         expect(forwards[1]?.updatedAt).toBe(forwards[2]?.updatedAt);
-        // Same content, same bytes, whatever order the caller passes the trees in —
+        // Same content, same bytes, whatever order the caller passes the trees in:
         // an unstable order invalidates the host's cache of a prompt that did not change.
         expect(backwards).toEqual(forwards);
       } finally {
@@ -734,7 +734,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('serves EVERY adopted pattern, uncut and uncounted — the list this limit does not reach', () => {
+  it('serves EVERY adopted pattern, uncut and uncounted: the list this limit does not reach', () => {
     // The narrowing the module doc now states, held as a test so the doc cannot go
     // back to generalising. Three of the four lists are cut; this one is not, and
     // it carries no total because there is nothing a total would report.
@@ -809,7 +809,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       // Every list correct, and every one of them empty.
       expect([b.work, b.decisions, b.skills, b.awaitingJudgement]).toEqual([[], [], [], []]);
       // And the answer no longer stops there. Without this field the five empty lists
-      // are the whole of it, and a reader takes that as a statement about the record —
+      // are the whole of it, and a reader takes that as a statement about the record,
       // which is exactly what the run line beside them contradicts.
       expect(b.unread).toEqual([{ kind: 'memory', held: 3 }]);
       expect(b.resume.lastRun?.wrote).toEqual([{ kind: 'memory.captured', count: 3 }]);
@@ -818,7 +818,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('declares nothing over a record that holds nothing — the KEY is absent, not empty', () => {
+  it('declares nothing over a record that holds nothing: the KEY is absent, not empty', () => {
     bench = makeBench();
     const cache = bench.cache();
     try {

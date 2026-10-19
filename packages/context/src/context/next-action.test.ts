@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { type Bench, birthTask, makeBench, moveTask } from '../../tests/support/chain.js';
 import { nextActions, nextActionsForTask } from './next-action.js';
 
-describe('nextActions — derived from the workflow table', () => {
+describe('nextActions: derived from the workflow table', () => {
   it('offers every move that leaves IN_PROGRESS, each with its proof needs', () => {
     const moves = nextActions('IN_PROGRESS');
     const byAction = new Map(moves.map((m) => [m.action, m]));
@@ -40,7 +40,7 @@ describe('nextActions — derived from the workflow table', () => {
   });
 });
 
-describe('nextActionsForTask — a task looked up in the cache', () => {
+describe('nextActionsForTask: a task looked up in the cache', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });

@@ -19,7 +19,7 @@ import {
   skillsAwaitingJudgement,
 } from './skills.js';
 
-describe('adoptedSkills — the patterns an agent may work by', () => {
+describe('adoptedSkills: the patterns an agent may work by', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -124,7 +124,7 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
     }
   });
 
-  it('is empty — never an error — when nothing has been adopted', () => {
+  it('is empty, never an error, when nothing has been adopted', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Only proposed', 'proposed');
     const cache = b.cache();
@@ -137,7 +137,7 @@ describe('adoptedSkills — the patterns an agent may work by', () => {
   });
 });
 
-describe('adoptedSkills — the body comes with the agent that adopted it', () => {
+describe('adoptedSkills: the body comes with the agent that adopted it', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -171,7 +171,7 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
     }
   });
 
-  it('carries NO agent when a person adopted it — nothing is invented', () => {
+  it('carries NO agent when a person adopted it: nothing is invented', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
     moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review');
@@ -180,7 +180,7 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
     try {
       const [served] = adoptedSkills([cache]);
       expect(served).not.toHaveProperty('adoptedBy');
-      // And who PROPOSED it does not travel with the body — that is the audit's.
+      // And who PROPOSED it does not travel with the body, that is the audit's.
       expect(served).not.toHaveProperty('proposedBy');
     } finally {
       cache.close();
@@ -205,7 +205,7 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
   });
 });
 
-describe('lookupServedSkill — asking for one pattern by id', () => {
+describe('lookupServedSkill: asking for one pattern by id', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -265,7 +265,7 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
     }
   });
 
-  it('a served candidate carries NO adopter — nothing invents one', () => {
+  it('a served candidate carries NO adopter: nothing invents one', () => {
     // The field is absent for a pattern a person adopted AND for one nothing has
     // adopted; the `state` is what tells those apart, and a consumer that prints
     // "adopted by a person" without reading it says something false.
@@ -283,7 +283,7 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
   });
 
   it('refuses a CLOSED pattern, saying the state and never the body', () => {
-    // Both closed states, each reached by its own move — the argument that used to
+    // Both closed states, each reached by its own move: the argument that used to
     // justify refusing four states, now written where it holds.
     const b = bench();
     birthSkill(b, 'sk-no', 'Turned down');
@@ -309,8 +309,8 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
 
   /**
    * THE RULE IS THE TABLE, and this is the test that says so at the point the rule is
-   * applied. It enumerates `SKILL_STATES` — the workflow's own tuple, not a list kept
-   * here — reaches each state by the moves that produce it, and asserts the lookup's
+   * applied. It enumerates `SKILL_STATES` (the workflow's own tuple, not a list kept
+   * here) reaches each state by the moves that produce it, and asserts the lookup's
    * answer against `SKILL_DISPOSITION`. A sixth state added to the machine arrives in
    * this loop with no edit, and fails until `stateReachedBy` knows how to reach it;
    * a state whose disposition CHANGES flips the expectation with it.
@@ -409,7 +409,7 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
  * because a skill born straight into `reviewed` is indistinguishable from one a
  * reviewer moved there, and this list is ABOUT which move is still owed.
  */
-describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling on', () => {
+describe('skillsAwaitingJudgement: the patterns somebody still owes a ruling on', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -459,7 +459,7 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     // `SKILL_TRANSITIONS` carries `{from: 'adopted', action: 'deprecate'}` with
     // nothing to ever make it happen, so a rule reading "has a legal move" would keep
     // every adopted pattern on a pendency list for good. That rule used to be the work
-    // list's, and it was wrong there too — see `tasks.ts`; both lists ask the
+    // list's, and it was wrong there too: see `tasks.ts`; both lists ask the
     // disposition now, so there is no ride left to hitch.
     const b = bench();
     adopt(b, 'sk-live', 'A live pattern');
@@ -474,7 +474,7 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     }
   });
 
-  it('serves ONLY proposed and reviewed — adopted, rejected and deprecated are absent', () => {
+  it('serves ONLY proposed and reviewed: adopted, rejected and deprecated are absent', () => {
     // All five states of the machine, each reached by its own move, and both halves
     // of the criterion in one assertion.
     const b = bench();
@@ -498,7 +498,7 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     }
   });
 
-  it('a pattern that gets adopted LEAVES the list — the waiting clears', () => {
+  it('a pattern that gets adopted LEAVES the list: the waiting clears', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'On the table');
     moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review');
@@ -517,7 +517,7 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     }
   });
 
-  it('never carries the BODY — a pattern under review is not one to work by', () => {
+  it('never carries the BODY: a pattern under review is not one to work by', () => {
     // The distinction that keeps this list from contradicting the one above it: a
     // name invites a ruling, a body is an instruction to work by the pattern. Nor
     // the provenance of an adoption that has not happened.
@@ -554,7 +554,7 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     }
   });
 
-  it('is empty — never an error — when every pattern has been ruled on', () => {
+  it('is empty, never an error, when every pattern has been ruled on', () => {
     const b = bench();
     adopt(b, 'sk-1', 'Settled');
     const cache = b.cache();
@@ -567,9 +567,9 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
   });
 });
 
-describe('skillCatalogue — everything, or every name', () => {
+describe('skillCatalogue: everything, or every name', () => {
   /**
-   * An adopted pattern with a body of exactly `bytes` ASCII characters — the shape
+   * An adopted pattern with a body of exactly `bytes` ASCII characters: the shape
    * `adoptedSkills` answers, since that answer is this function's only input.
    */
   const of = (id: string, bytes: number): ServedSkill => ({
@@ -585,7 +585,7 @@ describe('skillCatalogue — everything, or every name', () => {
   });
 
   it('serves the NAMES when they do not, and no body travels with them', () => {
-    // Six patterns of the market's median size (3,427 B) — the sixth is what puts
+    // Six patterns of the market's median size (3,427 B): the sixth is what puts
     // the answer over one read's budget.
     const skills = Array.from({ length: 6 }, (_, i) => of(`sk-${i}`, 3427));
 
@@ -607,7 +607,7 @@ describe('skillCatalogue — everything, or every name', () => {
     expect(catalogue.served === 'names' && catalogue.withheldBytes).toBe(6 * 3427);
   });
 
-  it('is ALL or NAMES — never the ones that would have fit', () => {
+  it('is ALL or NAMES, never the ones that would have fit', () => {
     // A tiny pattern beside a huge one. Serving "the K that fit" would hand over the
     // small body and leave the caller unable to see what was dropped; the rule is
     // that the whole answer changes layer, not that it is trimmed.
@@ -620,13 +620,13 @@ describe('skillCatalogue — everything, or every name', () => {
   it('draws the line at the budget itself: 20 KiB serves, one byte more does not', () => {
     // The number is 20 KiB and it is written in ONE place; this case is where a
     // change to it becomes visible, which is why it names the size rather than
-    // importing it — a test computing the boundary from the constant would pass for
+    // importing it: a test computing the boundary from the constant would pass for
     // any constant at all.
     expect(skillCatalogue([of('sk-1', 20 * 1024)]).served).toBe('bodies');
     expect(skillCatalogue([of('sk-1', 20 * 1024 + 1)]).served).toBe('names');
   });
 
-  it('weighs BYTES, not characters — a body of multi-byte text is bigger than it looks', () => {
+  it('weighs BYTES, not characters: a body of multi-byte text is bigger than it looks', () => {
     // 12,000 characters, well under the budget as a count of characters; three bytes
     // each in UTF-8, which is 36,000 bytes and over it. The content door measures the
     // way in with the same ruler.
@@ -642,7 +642,7 @@ describe('skillCatalogue — everything, or every name', () => {
     expect(catalogue.served === 'names' && catalogue.withheldBytes).toBe(36_000);
   });
 
-  it('an empty record is served as bodies — there is nothing to weigh', () => {
+  it('an empty record is served as bodies: there is nothing to weigh', () => {
     expect(skillCatalogue([])).toEqual({ served: 'bodies', skills: [] });
   });
 });
