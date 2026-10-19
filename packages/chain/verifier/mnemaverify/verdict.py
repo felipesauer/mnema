@@ -19,10 +19,11 @@ absence.
 IT IS PRINTED ON EVERY RUN THAT READS A RECORD - a verified one, a refused one, and one
 this program broke on before it read a byte. That sentence used to say "on every run",
 and it was false on `self-test` and on `vectors`, which read no record, and on all THREE
-of `record`'s own early returns - no record, no tails/ directory, no tails - because the
+of `record`'s own early returns then - no record, no tails/ directory, no tails - because the
 block was declared on the LAST line of the walk, below every one of them. `verify_record`
 declares it first now, and the trunk's suite runs VERIFIED, REFUSED and BROKEN against
-this list. That suite is NOT NAMED HERE on purpose: nothing in this directory may name a
+this list. Only the first of those returns is left: no tails/ directory and no tails are
+section 4's refusal of a record in which no tail holds anything, said after section 6.5. That suite is NOT NAMED HERE on purpose: nothing in this directory may name a
 module of the product, which is the guard on the only thing a second reader is worth, and
 a file name is a name.
 

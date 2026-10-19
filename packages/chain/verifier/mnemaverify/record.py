@@ -1306,7 +1306,8 @@ def declare_scope(report: Report) -> None:
     IT RUNS BEFORE ANY CHECK, which is why it is the first thing `verify_record` does. The
     old call site was the last line of the walk, so every `break_out` above it - no record,
     no tails/ directory, no tails - returned a BROKEN verdict with the block missing, on
-    exactly the runs where a reader is most likely to fix something and try again.
+    exactly the runs where a reader is most likely to fix something and try again. (Only
+    "no record" is a `break_out` now; the other two are section 4's refusal.)
     """
     for entry in gaps.scope():
         report.declare_not_covered(

@@ -229,11 +229,12 @@ of the document alone cannot tell an authorized cut from tampering and should re
 and stop. Both readings are faithful to the document. The same file pins one more place the
 two verdicts differ, and it is wording rather than disagreement: with the public keys gone,
 the product says broken over a signature it cannot verify, and this reader, unable to ask,
-says INCOMPLETE. One more place the two differ is pinned by no test: with every tail deleted
-and the keys left, the product at its default level says verified (T1 only), with a note for
-each key that has no tail, and exits 0 (with `--require signed`, or `--since <rev>` over a
-copy from before, it exits 1), while this reader says BROKEN, "there are no tails", having
-checked nothing, and exits 3 at its default level and with `--require signed`. The disagreement that was closed was
+says INCOMPLETE. On a record in which no tail holds anything — no `tails/` directory, no tail
+directory in it, or only tails that hold no event and no checkpoint — the two agree, and the
+same file pins it: both refuse it by name under `FORMAT.md` §4, at every `--require`, with exit
+1, and both still name each committed key with no tail (§6.5). This reader says BROKEN, exit 3,
+only for a path with no directory at it. One tail deleted whole while another remains is not
+that record: both verify it, `--require signed` included. The disagreement that was closed was
 not an ambiguity of the document — §8 named the rule and the product did not follow it, so
 the product changed and the readers now date the same record from the same block.
 

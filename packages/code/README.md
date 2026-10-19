@@ -45,7 +45,7 @@ unproven.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and `mnema verify`
 shows when what is in the record has changed since it was signed, and a cut that leaves the last
-checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). With `--require signed` a record whose tails are all gone exits 1, as any record with no signed event does; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of the project's trees, with
+checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of the project's trees, with
 no private key and no network, and prints each verdict verbatim.
 
 - It does not say every event is signed: the verdict names the level it reached, and only
@@ -53,8 +53,8 @@ no private key and no network, and prints each verdict verbatim.
 - It does not catch someone holding the signing key who rewrites and signs again; a witness
   outside the machine (`mnema witness stamp`) dates the record, and the history a git remote keeps
   is what shows a cut.
-- It does not prove nothing was deleted: a tail removed together with its key leaves nothing on
-  disk to cross.
+- It does not prove nothing was deleted: a tail removed together with its key, while another
+  remains, leaves nothing on disk to cross.
 - It does not make the agent named on a fact the one that did the work, and it is not access
   control: anyone who can run the command line writes as this machine's identity.
 

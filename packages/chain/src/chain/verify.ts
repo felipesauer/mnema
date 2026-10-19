@@ -273,7 +273,9 @@ export interface BackupKeyNote {
  *
  * WHAT IT COSTS, SAID. A tail whose segments and checkpoints were deleted with its proof
  * kept reads as this too. That is no new blindness: the same tail deleted WHOLE, with its
- * key, is already invisible to everything but a copy of the record from before.
+ * key, beside another tail, is already invisible to everything but a copy of the record
+ * from before. Where it was the only tail holding anything, the record is refused
+ * ({@link NO_TAIL_HELD}), with its proof kept or not.
  */
 export interface EmptyTailNote {
   readonly kind: 'empty-tail';

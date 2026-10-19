@@ -6,7 +6,8 @@
  * events cut together with the checkpoint that covered them (an aligned cut), every tail deleted
  * together with every key, the record erased and founded again, and a key holder rewriting the
  * middle of its own tail and signing it again. Three of the four exit 0 even under
- * `--require=signed`, and the second reader says VERIFIED over them too. Nothing inside the
+ * `--require=signed`, and the second reader says VERIFIED over them too; the fourth, every
+ * tail deleted, is refused by the bare `verify` now (FORMAT.md section 4). Nothing inside the
  * directory remembers what it replaced — what does is git, which kept the commit the change
  * started from. So `docs/cli-reference.md` publishes a gate that asks it.
  *
@@ -261,19 +262,22 @@ describe('the CI recipe the page publishes', () => {
   });
 
   it.each([
-    ['the newest events cut with their checkpoint', alignedCut, 0, ': rewritten — '],
-    ['every tail deleted with every key', tailsAndKeysDeleted, 1, ': gone — '],
-    ['the record erased and founded again', refounded, 0, ': gone — '],
+    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten — '],
+    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone — '],
+    ['the record erased and founded again', refounded, 0, 0, ': gone — '],
     [
       'the middle rewritten and signed again by the key holder',
       rewrittenBySigner,
       0,
+      0,
       ': rewritten — ',
     ],
-  ] as const)('catches %s', (name, change, signedExit, says) => {
+  ] as const)('catches %s', (name, change, bareExit, signedExit, says) => {
     const dir = changed(name.replace(/\W+/g, '-'), change);
     // What the gate alone says over the same commit: the case is only the recipe's when it
-    // passes there.
+    // passes there. Every tail deleted fails even the bare `verify` now: a record in which no
+    // tail holds anything is refused by name (FORMAT.md section 4).
+    expect(mnema(dir, 'verify').status, name).toBe(bareExit);
     expect(mnema(dir, 'verify', '--require=signed').status, name).toBe(signedExit);
     const said = recipe(dir);
     expect(said.status, said.out).not.toBe(0);

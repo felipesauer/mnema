@@ -542,6 +542,20 @@ with its own changelog.
   README, the second reader's README and a test's comment) now say the same five. The lines in the CLI reference
   and the `@mnema/code` README that said verify does not catch a whole tail deleted now say that is the default, and
   what `--require signed` and `--since` do.
+- **A record in which no tail holds anything is refused by both readers, by name.** With no tails/ directory, no tail
+  directory in it, or only tails that hold no event and no checkpoint, the product's verify said verified (T1 only)
+  and exited 0, and the second reader said BROKEN and exited 3 without saying which committed keys had no tail, or
+  VERIFIED when a tail's proof was left behind. Both now refuse it under FORMAT.md section 4, at every level of
+  --require, with exit 1, and both still name each committed key with no tail (section 6.5). The product rules on the
+  committed tree always, and on the private and global trees when they hold a key or a tail. A record init founded is
+  never in that shape, since init writes events and a checkpoint before it returns; a .mnema/ left half made by an
+  init that failed is, and fails until a first public write founds it. The second reader keeps BROKEN for a path with
+  no directory at it. One tail removed whole while another remains is unchanged: a census note, verified by both, with
+  --require signed too. The list verify --json carries of what no requirement answers now says that, the newest
+  events cut with their checkpoint, a record erased and founded again, and a removal older than the revision --since
+  compares with; it no longer says a record whose tails were removed with their keys reads as a fresh one, which it
+  never did. The CLI reference, the second reader's README, FORMAT.md, and the pages on what verify proves say the
+  same.
 
 ## [0.2.0-beta] - 2026-10-11
 
