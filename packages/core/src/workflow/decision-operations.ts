@@ -2,8 +2,8 @@
  * The gated write operations for decisions: the only way the core records a
  * decision or moves one, and the seam every surface goes through.
  *
- * They mirror the task operations (read current state from the chain (never
- * the cache), run the gate, append only if authorized) with two things unique
+ * They mirror the task operations (read current state from the chain, never
+ * the cache; run the gate, append only if authorized) with two things unique
  * to a decision:
  *
  *   1. THE FROZEN ADR LABEL. `recordDecision` derives the citable `ADR-<n>`

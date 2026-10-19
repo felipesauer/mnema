@@ -346,10 +346,10 @@ export type ChainArrivals =
  *     did not grow, it changed.
  *   - `A_TAIL_WAS_CUT`: the tail lost a segment it had, or no longer holds the entry
  *     the replay ended on. A cut is what `mnema tail prune` authorizes and what a
- *     person then carries out, and it removes SEALED segments (so it is caught by
+ *     person then carries out, and it removes SEALED segments, so it is caught by
  *     the segment list rather than by the resume point, which sits above it and would
  *     see nothing.
- *   - `AN_ARRIVAL_IS_NOT_LATER`) an arrival does not follow the covered events of the
+ *   - `AN_ARRIVAL_IS_NOT_LATER`: an arrival does not follow the covered events of the
  *     other tails under the merge's own comparison. Ordinary in a pulled clone, whose
  *     tail carries a colleague's older facts, and ordinary from a clock that stepped
  *     back.

@@ -263,8 +263,8 @@ export interface LinkEdge {
  * directions answerable from the same edge set, the same bidirectional
  * reachability the supersede's two columns give, generalized to N:N.
  *
- * A duplicate edge (the same (subject, target, rel) recorded twice, e.g. by two
- * offline clones) is COLLAPSED to one: the relation is idempotent (X relates-to
+ * A duplicate edge, the same (subject, target, rel) recorded twice, e.g. by two
+ * offline clones, is COLLAPSED to one: the relation is idempotent (X relates-to
  * Y is either true or not; asserting it twice adds nothing), so the fold keeps a
  * single edge per (subject, target, rel), with the FIRST-seen envelope (`who`,
  * `linkedAt`) as its origin. This keeps the union of two clones that both

@@ -18,7 +18,7 @@
  *
  * A supersede is the one multi-entity fact: its subject is the SUPERSEDED
  * decision, and its `by` names the SUCCESSOR. The fold updates BOTH sides (the
- * subject records `supersededBy` (and moves to `superseded`), and the successor
+ * subject records `supersededBy`, moving to `superseded`, and the successor
  * records `supersedes` (the id it replaced)), so a query from either direction
  * is answerable without walking the stream again.
  *

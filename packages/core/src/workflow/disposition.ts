@@ -8,9 +8,9 @@
  * this module classifies, so every row below is a property of `TRANSITIONS` and
  * not a taste.
  *
- * READ AGAINST THE TABLE OF MOVES, state by state (this is the derivation, and
+ * READ AGAINST THE TABLE OF MOVES, state by state: this is the derivation, and
  * `disposition.test.ts` recomputes it from the table rather than trusting the prose:
- *   - `DRAFT`, `READY`, `IN_PROGRESS`) several exits, and at least one of them asks
+ *   - `DRAFT`, `READY`, `IN_PROGRESS`: several exits, and at least one of them asks
  *     for no proof at all: `submit`, `start`, `submit_review`. There is a way FORWARD
  *     that costs nothing but the move. That is `advancing`.
  *   - `BLOCKED`: ONE exit, `unblock`, and it requires nothing. The single way out

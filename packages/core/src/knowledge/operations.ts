@@ -43,7 +43,7 @@
  * in via the context. This operation writes to whatever chain that writer owns.
  *
  * The other knowledge writes share this shape exactly (one append, no gate, and
- * the one refusal a fact can earn (the authority invariant)), because they are
+ * the one refusal a fact can earn: the authority invariant), because they are
  * all point-in-time FACTS:
  *   - {@link recordObservation}: a note ABOUT an entity. It mints its OWN id
  *     (the observation is an entity), and names the observed one in the payload.

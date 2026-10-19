@@ -9,8 +9,8 @@
  * first write that failed between the two left the anchor behind, the next write signed without
  * founding, and `verify` failed on that tree for good (`[T2/T4] … is not a key enrolled for …
  * at this point`). Measured on the built binary with three ordinary triggers (a tail that
- * cannot be born (its birth lives inside the founding's append), a lock directory that is a
- * link to nothing, and the tail's lock held by another live session) and with a process killed
+ * cannot be born, its birth living inside the founding's append; a lock directory that is a
+ * link to nothing; and the tail's lock held by another live session) and with a process killed
  * inside the founding's append.
  *
  * One case per trigger, each PLANTED rather than raced: the founding's append throwing after the

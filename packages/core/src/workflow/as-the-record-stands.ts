@@ -33,7 +33,7 @@
  *
  * WHAT THE SECOND READING COSTS, and what it cost: it was a whole replay, held under the lock
  * (1.35 s at 100 thousand events, and the roster the write checks before it appends was a second
- * one (2.2 s)), so a third session waiting behind two such holds ran out of the lock's 2 s:
+ * one, 2.2 s), so a third session waiting behind two such holds ran out of the lock's 2 s:
  * measured on the binary, three moves of three different decisions at once refused
  * `TAIL_BUSY` in 1 of 3 tries at 50 thousand events and in 3 of 3 at 75 and at 100 thousand.
  * Both reads were then taken from the projection the tree keeps, which made the hold the

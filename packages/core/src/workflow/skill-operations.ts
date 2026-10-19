@@ -3,7 +3,7 @@
  * one, or notes that one was read, and the seam every surface goes through.
  *
  * The LIFECYCLE writes mirror the TASK operations (read current state from the
- * chain (never the cache), run the gate, append only if authorized) and are the
+ * chain, never the cache; run the gate, append only if authorized) and are the
  * simplest of the three workflow entities: a skill is not relational, so there
  * is no supersede, no `by` existence check, and no frozen citation label. A
  * skill is born with a minted id and its `proposed` state; the four transitions

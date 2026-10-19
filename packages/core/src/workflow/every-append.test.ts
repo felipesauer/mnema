@@ -139,8 +139,8 @@ describe('every write refuses what no read could accept', () => {
     // Founded up front, as `mnema init` leaves every project it creates, so the sweep below
     // runs on a tree with a record to replay. THIS SAID it mattered for the count: "on a tree
     // nobody had ever written to the FIRST refused write would still leave that founding
-    // behind". It does not any more (the door refuses before anything is founded
-    // (`appendFact` in append.ts)) and the virgin-tree cases at the end of this file drive
+    // behind". It does not any more (the door refuses before anything is founded,
+    // `appendFact` in append.ts) and the virgin-tree cases at the end of this file drive
     // every case with no setup on a tree nobody wrote to, and hold it at nothing.
     ensureFounded(ctx);
   });

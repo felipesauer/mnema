@@ -211,7 +211,7 @@ export type AnchorDecision =
  * write was refused `STALE_ANCHOR` (`code/tests/the-init-says-a-write-is-refused.test.ts`).
  *
  * It reads and writes nothing else: the recorded anchor, a roster (the one the caller hands
- * (`WriteContext.roster`), or the kept projection brought up to what arrived) and, on a refusal only, the replays the
+ * in `WriteContext.roster`, or the kept projection brought up to what arrived) and, on a refusal only, the replays the
  * refusal's words take.
  */
 export function recordedAnchorOf(
@@ -293,8 +293,8 @@ export type RecordedAnchor =
  * (`the-second-move-sees-the-first.test.ts`, *a second session that decided to found
  * finds the first one's founding under the lock*). The record still takes a second
  * founding as the copy it is (`verify` adds a key to a set that already holds it, and
- * `identitiesFoundedBeside` counts the anchor once (`founded-beside.test.ts`, *counts an
- * anchor founded twice once*)), which is what a record written before this keeps.
+ * `identitiesFoundedBeside` counts the anchor once: `founded-beside.test.ts`, *counts an
+ * anchor founded twice once*), which is what a record written before this keeps.
  *
  * Two paths reach a recorded anchor, and only one of them founds. A key the
  * record already proves a member ADOPTS that identity: it must not found,
