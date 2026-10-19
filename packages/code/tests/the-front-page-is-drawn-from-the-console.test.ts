@@ -210,8 +210,9 @@ function wordsOf(svg: string): string[] {
 /**
  * Every picture whose words are lines of the product: each package's, and the family's, by the
  * path of each theme from the repository's root, with its frame, said here by hand: its width,
- * its height, where the band at its head ends (nothing under it is part of the drawing), and the
- * fewest shapes it draws.
+ * its height, where the band at its head ends (nothing under it is part of the drawing), the
+ * fewest shapes it draws, and the least room left between what is drawn under the band and each
+ * side of the frame (none for the family, whose lanes reach its edges).
  */
 const LINED = [
   ...PACKAGE_PICTURES.map(({ dir, lines }) => ({
@@ -219,14 +220,14 @@ const LINED = [
     lines,
     dark: `packages/${dir}/assets/${dir}-dark.svg`,
     light: `packages/${dir}/assets/${dir}-light.svg`,
-    frame: { w: 720, h: 240, band: 41, shapes: 12 },
+    frame: { w: 720, h: 240, band: 41, shapes: 12, margin: 24 },
   })),
   {
     id: 'family',
     lines: FAMILY_LINES,
     dark: `${ASSETS}/the-family-dark.svg`,
     light: `${ASSETS}/the-family-light.svg`,
-    frame: { w: 880, h: 260, band: 0, shapes: 90 },
+    frame: { w: 880, h: 260, band: 0, shapes: 90, margin: 0 },
   },
 ];
 
@@ -903,10 +904,12 @@ describe('every package, and the family, is drawn inside its frame, on its middl
     expect(outside).toEqual([]);
   });
 
-  it.each(pictures)('$path sets what it draws on the middle of its frame', ({ svg, frame }) => {
-    // What is there in the last frame under the band at the head, shapes and the ink of each
-    // text, spans as far from the left edge as from the right. The glow behind it is not counted:
-    // it is centred by itself, and as wide as it is it would hide a drawing set off the middle.
+  /**
+   * How far left and right what is there in the last frame under the band at the head reaches,
+   * shapes and the ink of each text. The glow behind it is not counted: it is centred by itself,
+   * and as wide as it is it would hide a drawing set off the middle.
+   */
+  const reach = (svg: string, frame: { band: number }): { left: number; right: number } => {
     const d = drawing(svg);
     const frames = keyframesOf(svg);
     const still = d.nodes.filter(
@@ -920,10 +923,54 @@ describe('every package, and the family, is drawn inside its frame, on its middl
       .flatMap((n) => (n.tag === 'text' ? [d.inkOf(n)] : boxesOf(n, frames)))
       .filter((b) => b[3] > frame.band);
     expect(boxes.length).toBeGreaterThan(10);
-    const left = Math.min(...boxes.map((b) => b[0]));
-    const right = Math.max(...boxes.map((b) => b[2]));
+    return {
+      left: Math.min(...boxes.map((b) => b[0])),
+      right: Math.max(...boxes.map((b) => b[2])),
+    };
+  };
+
+  it.each(pictures)('$path sets what it draws on the middle of its frame', ({ svg, frame }) => {
+    // It spans as far from the left edge as from the right.
+    const { left, right } = reach(svg, frame);
     expect(Math.abs(left + right - frame.w) / 2, `${left}..${right}`).toBeLessThanOrEqual(0.5);
   });
+
+  it.each(pictures.filter((p) => p.frame.margin > 0))(
+    '$path leaves room between what it draws and each side of its frame',
+    ({ svg, frame }) => {
+      const { left, right } = reach(svg, frame);
+      expect(
+        Math.min(left, frame.w - right),
+        `${left}..${right} in 0..${frame.w}`,
+      ).toBeGreaterThanOrEqual(frame.margin);
+    },
+  );
+
+  it.each(pictures.filter((p) => p.path.startsWith('packages/')))(
+    '$path sets the text of each card on the card\'s middle, from its top to its foot',
+    ({ svg }) => {
+      // The ink of what a card holds in the last frame, from the top of its first line to the foot
+      // of its last, lies as far from the card's top edge as from its bottom one. A line that comes
+      // and goes is not counted: the card is drawn for what it holds at rest.
+      const d = drawing(svg);
+      const resting = d.texts.filter(
+        (t) => t.at.opacity !== '0' && !t.groups.some((g) => g.opacity === '0'),
+      );
+      const held = d.resting.flatMap((r) => {
+        const [x0, y0, x1, y1] = d.boxOf(r);
+        const inside = resting.filter((t) => {
+          const [x, y] = [Number(t.at.x), Number(t.at.y)];
+          return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+        });
+        if (inside.length === 0) return [];
+        const top = Math.min(...inside.map((t) => d.inkOf(t)[1]));
+        const foot = Math.max(...inside.map((t) => d.inkOf(t)[3]));
+        return [{ card: inside.map((t) => t.text).join(' / '), off: (top + foot - y0 - y1) / 2 }];
+      });
+      expect(held.length).toBeGreaterThan(0);
+      expect(held.filter((h) => Math.abs(h.off) > 1)).toEqual([]);
+    },
+  );
 
   it.each(pictures)('$path writes every text in the size and weight of a role', ({ svg }) => {
     const roles = new Set(Object.values(TYPE).map((r) => `${r.size}/${r.weight}`));

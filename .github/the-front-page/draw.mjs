@@ -621,15 +621,17 @@ function howMnemaFits(blocks, theme) {
 // the package's name on the left and the wordmark on the right, and draws under them with the
 // family's vocabulary (below the family's picture): its glow on the middle of the frame, tonal
 // cards, connections a dot runs, the pulse of a card's edge and a cube lit as it lands. What is
-// drawn sits on the middle of the frame.
+// drawn sits on the middle of the frame, `MARGIN` or more in from each side, and what a card
+// holds at rest sits on the card's middle.
 //
 // EVERY WORD ON A PACKAGE'S PICTURE IS A WORD OF THE PRODUCT. A line is written as pieces, each
 // the literal it puts on the picture and the file of the repository that says it (`said`),
 // joined by one of `SEPARATORS`, or `ELIDED` where a line of output prints a record's id. The
-// test finds every literal in its file, and finds no text on a picture that is not one of these
-// lines. A text inside a box is put there by `sayIn` and by nothing else. The example of the
-// front page (`ADR-2`, `Keep money as integer cents`, `src/billing/total.ts`, `ADR-3`) is
-// anchored on the front page's own picture. No count that changes (kinds, hosts, tools) and no host's name is drawn.
+// test finds every literal in its file, and finds no text on a picture that is
+// not one of these lines. A text inside a box is put there by `sayIn` and by nothing else. The
+// example of the front page (`ADR-2`, `Keep money as integer cents`, `src/billing/total.ts`,
+// `ADR-3`) is anchored on the front page's own picture. No count that changes (kinds, hosts,
+// tools) and no host's name is drawn.
 
 /** The front page's picture, where the example every picture below repeats is told first. */
 const HERO = 'docs/assets/how-mnema-fits-light.svg';
@@ -693,6 +695,8 @@ export const ELIDED = '(…)';
 const FOOT = 220;
 /** Where the band at the head of every package's picture, its name and the wordmark, ends. */
 const BAND = 40;
+/** The least room between what a package's picture draws under the band and each side of it. */
+const MARGIN = 24;
 /** The advance of one character of the monospace face, as a share of its size. */
 const ADVANCE = 0.6;
 
@@ -1019,14 +1023,16 @@ function coreStory(s) {
   const L = CORE_LINES;
   /** @type {string[]} */
   const out = [];
-  // The states on three rows; every move of the table is a line with its head.
+  // The states on three rows, in from the left by the margin; every move of the table is a line
+  // with its head.
   const node = { w: 108, h: 28 };
-  const col = 160;
+  const left = MARGIN;
+  const col = left + 160;
   const [top, middle, bottom] = [52, 112, 172];
   const mid = (/** @type {number} */ y) => y + node.h / 2;
   /** @type {[Line, number, number][]} */
   const nodes = [
-    [L.proposed, 0, middle],
+    [L.proposed, left, middle],
     [L.accepted, col, top],
     [L.superseded, col, middle],
     [L.rejected, col, bottom],
@@ -1048,7 +1054,7 @@ function coreStory(s) {
   ])}"`;
   for (const y of [middle, bottom])
     out.push(
-      ...connection(s, along(node.w + 2, mid(middle), col - 3, mid(y)), 'in', T, false, {
+      ...connection(s, along(left + node.w + 2, mid(middle), col - 3, mid(y)), 'in', T, false, {
         attrs: ['', ''],
         stroke: s.muted,
         draws: false,
@@ -1062,18 +1068,18 @@ function coreStory(s) {
       draws: false,
     }),
   );
-  const taken = along(node.w + 2, mid(middle), col - 3, mid(top));
+  const taken = along(left + node.w + 2, mid(middle), col - 3, mid(top));
   const runs = dot(s, taken, 'in', T);
   out.push(
     ...connection(s, taken, 'in', T, false, { attrs: [turns, turns] }),
     runs.out,
-    s.say(L.request, 0, 100, 'code', { attrs: s.passes(1.8, 4.2) }),
+    s.say(L.request, left, 100, 'code', { attrs: s.passes(1.8, 4.2) }),
     lit(s, { x: col, y: top, w: node.w, h: node.h }, s.stays(runs.last - 0.2)),
   );
-  // The table, flush with the right edge; the chain above it starts where it starts, and the fold
-  // comes down the axis of the middle block. The block the move wrote lands as the dot arrives.
+  // The table, in from the right by the margin; the chain above it starts where it starts, and the
+  // fold comes down the axis of the middle block. The block the move wrote lands as the dot arrives.
   const tableW = Math.ceil(widthOf(L.row, 'value') + 2 * PAD);
-  const x0 = W_PKG - tableW;
+  const x0 = W_PKG - MARGIN - tableW;
   const chain = cubes(s, x0, mid(top), 12, [undefined, undefined, runs.last]);
   out.push(...chain.out, landing(s, chain.at(2), mid(top), 12, runs.last, s.paint.lit));
   // A move it does not allow: asked of `rejected`, the gate hands it back in words, and nothing
@@ -1090,7 +1096,7 @@ function coreStory(s) {
       attrs: s.passes(4.2, 6.4),
     }),
     `<rect ${s.passes(refused.last - 0.2, 6.4)} x="${col + 0.5}" y="${bottom + 0.5}" width="${node.w - 1}" height="${node.h - 1}" rx="10" fill="none" stroke="${s.accent}" stroke-width="1.5" stroke-dasharray="4 3"/>`,
-    s.say(L.refused, 0, FOOT, 'code', { attrs: s.stays(4.8) }),
+    s.say(L.refused, left, FOOT, 'code', { attrs: s.stays(4.8) }),
   );
   // The chain folded into a table, which is thrown away and folded again the same.
   const down = chain.at(1);
@@ -1147,12 +1153,21 @@ function contextStory(s) {
   const L = CONTEXT_LINES;
   /** @type {string[]} */
   const out = [];
-  // The two panels share their rows: ADR-2 and ADR-3 sit on the same line on both sides.
-  // Five rows, the third on the panel's middle; a row is two half rows from the next.
+  // The two panels share their rows: ADR-2 and ADR-3 sit on the same line on both sides. The left
+  // holds five rows, the third on its middle; the right holds four, from the left's second down,
+  // and is as tall as they are, so they sit on its middle too. A row is two half rows from the
+  // next. Both are in from their side by the margin.
   const panel = { y: 52, h: 124 };
-  const left = { x: 0, y: panel.y, w: 180, h: panel.h };
-  const right = { x: 404, y: panel.y, w: W_PKG - 404, h: panel.h };
+  const left = { x: MARGIN, y: panel.y, w: 180, h: panel.h };
+  const right = {
+    x: 404,
+    y: panel.y + 2 * HALF_ROW,
+    w: W_PKG - MARGIN - 404,
+    h: panel.h - 2 * HALF_ROW,
+  };
   const [r1, r2, r3, r4, r5] = [-4, -2, 0, 2, 4];
+  /** A row of the left panel, as a row of the right. */
+  const across = (/** @type {number} */ row) => row - 1;
   out.push(card(s, left));
   /** @type {[Line, number][]} */
   const chain = [
@@ -1162,49 +1177,51 @@ function contextStory(s) {
   ];
   chain.forEach(([line, row], i) => {
     out.push(
-      s.sayIn(line, PAD, panel, 'value', { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }, row),
+      s.sayIn(line, left.x + PAD, left, 'value', { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }, row),
     );
   });
   // The pill around the one in force sits on the panel's middle, and so does its line.
-  const pill = { x: 6, y: panel.y + panel.h / 2 - 13, w: 168, h: 26 };
+  const pill = { x: left.x + 6, y: panel.y + panel.h / 2 - 13, w: 168, h: 26 };
   const axis = pill.y + pill.h / 2;
   // bootstrap lets the ones in force through, and puts what waits on a person apart: a dot runs
   // from the pill to the panel it fills, which lights as it lands.
   const T = 1.9;
-  const hands = along(190, axis, 394, axis);
+  const hands = along(left.x + left.w + 10, axis, right.x - 10, axis);
   const runs = dot(s, hands, 'in', T);
   out.push(
     lit(s, pill, s.stays(T)),
     ...connection(s, hands, 'in', T),
     runs.out,
-    s.say(L.bootstrap, 292, inside(panel, 'caption', r2), 'caption', {
+    s.say(L.bootstrap, (hands[0] + hands[2]) / 2, inside(panel, 'caption', r2), 'caption', {
       anchor: 'middle',
       attrs: s.stays(2.0),
     }),
     card(s, right),
     pulse(s, right, runs.last),
-    s.sayIn(L.decisions, 404 + PAD, panel, 'caption', { attrs: s.stays(2.4) }, r2),
-    s.sayIn(L.inForce, 404 + PAD, panel, 'value', { attrs: s.stays(3.0) }, r3),
-    s.sayIn(L.awaiting, 404 + PAD, panel, 'caption', { attrs: s.stays(4.6) }, r4),
-    s.sayIn(L.waits, 404 + PAD, panel, 'value', { attrs: s.stays(5.0) }, r5),
+    s.sayIn(L.decisions, right.x + PAD, right, 'caption', { attrs: s.stays(2.4) }, across(r2)),
+    s.sayIn(L.inForce, right.x + PAD, right, 'value', { attrs: s.stays(3.0) }, across(r3)),
+    s.sayIn(L.awaiting, right.x + PAD, right, 'caption', { attrs: s.stays(4.6) }, across(r4)),
+    s.sayIn(L.waits, right.x + PAD, right, 'value', { attrs: s.stays(5.0) }, across(r5)),
   );
   // Asked for a path, it names the rule that refuses a write there.
   out.push(
-    s.say(L.asks, 0, FOOT - 20, 'caption', { attrs: s.stays(6.6) }),
-    s.say(L.path, 0, FOOT, 'value', { attrs: s.stays(7.4) }),
+    s.say(L.asks, left.x, FOOT - 20, 'caption', { attrs: s.stays(6.6) }),
+    s.say(L.path, left.x, FOOT, 'value', { attrs: s.stays(7.4) }),
   );
   // And it writes nothing back: the line back stands apart, in grey and struck, on the middle of
   // the foot's line, and nothing runs it.
   const lane = FOOT - 4;
+  const back = along(right.x - 10, lane, left.x + 254, lane);
+  const struck = (back[0] + back[2]) / 2;
   out.push(
     `<g ${s.stays(9.0)}>`,
-    ...connection(s, along(394, lane, 254, lane), 'in', 9.0, true, {
+    ...connection(s, back, 'in', 9.0, true, {
       attrs: ['', ''],
       draws: false,
     }),
-    `<path d="M317 ${lane - 8}L331 ${lane + 8}M331 ${lane - 8}L317 ${lane + 8}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    `<path d="M${struck - 7} ${lane - 8}L${struck + 7} ${lane + 8}M${struck + 7} ${lane - 8}L${struck - 7} ${lane + 8}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
     '</g>',
-    s.say(L.only, 404, FOOT, 'code', { attrs: s.stays(9.4) }),
+    s.say(L.only, right.x, FOOT, 'code', { attrs: s.stays(9.4) }),
   );
   return out;
 }
@@ -1235,17 +1252,35 @@ function stacksStory(s) {
   const out = [];
   // The directory, line by line, and under it the validator, as wide; on the right, the digest.
   // The whole sits on the middle of the frame.
-  // Five rows, the third on the folder's middle; a row is two half rows from the next.
+  // Five rows fit the folder, a row two half rows from the next. At rest it holds four, on its
+  // middle; while the server is in it, the four go up by half a row and the server is the fifth,
+  // so the five sit on its middle, and they come back down as it goes.
   const x = 54;
   const folder = { x, y: 52, w: 240, h: 124 };
-  const rows = [-4, -2, 0, 2];
-  out.push(card(s, folder));
+  const rows = [-3, -1, 1, 3];
+  const [from, to] = [2.0, 4.6];
+  const up = `translate(0px,${-HALF_ROW}px)`;
+  const still = 'translate(0px,0px)';
+  out.push(
+    card(s, folder),
+    `<g class="a" style="animation-name:${s.animate('transform', [
+      [0, still],
+      [from, still],
+      [from + 0.3, up],
+      [to - 0.3, up],
+      [to, still],
+      [s.loop, still],
+    ])}">`,
+  );
   [L.manifest, L.skill, L.agent, L.licence].forEach((line, i) => {
     out.push(
       s.sayIn(line, x + PAD, folder, 'value', { attrs: s.stays(0.3 + i * 0.4) }, rows[i] ?? 0),
     );
   });
-  out.push(s.sayIn(L.mcp, x + PAD, folder, 'value', { attrs: s.passes(2.0, 4.6) }, 4));
+  out.push(
+    '</g>',
+    s.sayIn(L.mcp, x + PAD, folder, 'value', { attrs: s.passes(from, to) }, 4),
+  );
   // The validator bars the server, and passes the directory once it is gone.
   const gate = { x, y: 186, w: folder.w, h: 40 };
   const verdict = x + 130;
@@ -1253,14 +1288,15 @@ function stacksStory(s) {
   out.push(
     card(s, gate),
     s.sayIn(L.validate, x + PAD, gate, 'label', { attrs: s.stays(1.8) }),
-    s.sayIn(L.refused, verdict, gate, 'code', { attrs: s.passes(2.6, 4.6) }),
+    s.sayIn(L.refused, verdict, gate, 'code', { attrs: s.passes(2.6, to) }),
     `<path ${s.stays(4.8)} d="M${verdict} ${gy - 2}L${verdict + 6} ${gy + 4}L${verdict + 18} ${gy - 8}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
     pulse(s, gate, 4.8),
   );
-  // Each file becomes a line, and the lines become the digest, all on one axis.
+  // Each file becomes a line, and the lines meet on the folder's middle and become the digest, all
+  // on one axis.
   const axis = x + 482;
   const into = axis - widthOf(L.line, 'caption') / 2 - 8;
-  const meet = 106;
+  const meet = folder.y + folder.h / 2;
   const bend = (x + folder.w + into) / 2;
   out.push(`<g ${s.stays(5.6)}>`);
   for (const row of rows) {
