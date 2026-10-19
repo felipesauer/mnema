@@ -533,6 +533,11 @@ with its own changelog.
   Features does not describe (the page that verifies itself, the agent in CI), and `docs/where-it-fits.md` said "the most that leaves
   that machine" is a digest without saying that it leaves only when you run the witness verb, and that Sigstore
   sends the identity too; `docs/what-it-proves.md` now says Sigstore's leaving is where somebody ran it.
+  "Not a copy somewhere else" no longer says that what you record privately never leaves the machine: the plugin's
+  second opening hook hands the notes of every tree this machine holds, the private one included, to the agent's
+  host, which sends them to its model, and the line and `docs/where-it-fits.md` now say so; the page also says that
+  the calendar receives a hash of the digest joined to a random nonce, not the digest itself, and the glossary no
+  longer says the private tree "stays on that machine" but that it is not committed.
 
 ## [0.2.0-beta] - 2026-10-11
 

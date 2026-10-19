@@ -68,7 +68,7 @@ const LINES: readonly { label: string; rests: readonly string[] }[] = [
   {
     label: 'Not a copy somewhere else.',
     rests: [
-      'what you record privately stays on the machine that wrote it',
+      "what you record privately stays on this machine, apart from the notes the plugin hands your agent's host when a session opens, which the host sends to its model",
       'only when you run them',
     ],
   },
@@ -92,7 +92,7 @@ describe('"What it is not" on the front page', () => {
   });
 
   it.each(LINES.map((l, at) => [l.label, at] as const))(
-    'says on "%s" only what the page says on it',
+    'has on "%s" each sentence of the page that the front page repeats, in both texts',
     (_label, at) => {
       for (const rest of LINES[at]?.rests ?? []) {
         expect(theirs[at], `the page no longer says: ${rest}`).toContain(rest);
@@ -102,7 +102,7 @@ describe('"What it is not" on the front page', () => {
   );
 
   it('keeps each line short, and sends the reader to the page that gives the reasons', () => {
-    for (const line of mine) expect(line.length).toBeLessThan(330);
+    for (const line of mine) expect(line.length).toBeLessThan(400);
     expect(sectionOf(README, 'What it is not')).toContain('(docs/where-it-fits.md#what-it-is-not)');
   });
 });

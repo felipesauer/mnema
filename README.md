@@ -171,7 +171,7 @@ Each of these is a choice with a reason, and the reasons are in [Where it fits](
 
 - **Not a semantic memory.** Search is by the words written in a record; there are no embeddings.
 - **Not an agent runner.** It calls no model and runs no tool for the agent.
-- **Not a copy somewhere else.** The committed record travels with the repository, and what you record privately stays on the machine that wrote it; the witness verbs send a digest out, and with Sigstore the identity too, only when you run them.
+- **Not a copy somewhere else.** The committed record travels with the repository, and what you record privately stays on this machine, apart from the notes the plugin hands your agent's host when a session opens, which the host sends to its model; the witness verbs send a digest out, and with Sigstore the identity too, only when you run them.
 - **Not access control.** The gate refuses an illegal move; it does not decide who may write.
 
 ## What it proves — and what it does not
