@@ -1,5 +1,5 @@
 /**
- * WHICH MNEMA THIS READER IS — the version a refusal names (`FORMAT.md` §7.1).
+ * WHICH MNEMA THIS READER IS: the version a refusal names (`FORMAT.md` §7.1).
  *
  * A reader that meets a line whose `kind` and `v` no row of its table declares cannot know which
  * later version declares it: the record carries no field saying which binary wrote a line, and

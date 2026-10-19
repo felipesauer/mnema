@@ -3,8 +3,8 @@
  *
  * WHAT IS BEING PINNED IS MOSTLY WHAT DOES *NOT* HAPPEN. A calendar that refuses
  * does not fail the act; a calendar with nothing yet is not an error; a block source
- * that lies does not produce a header; and — the one this layer's whole claim rests
- * on — nothing but a 32-byte digest ever leaves the machine.
+ * that lies does not produce a header; and, the one this layer's whole claim rests
+ * on, nothing but a 32-byte digest ever leaves the machine.
  *
  * No case here reaches the network. The fetcher is a parameter, which is also the
  * reason `verify` can be shown to work with the interface down: the only code that
@@ -33,11 +33,11 @@ import { BLOCK_800000_HEADER, BLOCK_800000_HEIGHT } from './witness-vectors.js';
 
 const DIGEST = createHash('sha256').update('a checkpoint signed message').digest('hex');
 /**
- * The calendars every case here asks of — and they are OPERATOR ADDRESSES on purpose.
+ * The calendars every case here asks of, and they are OPERATOR ADDRESSES on purpose.
  *
  * They used to be `https://one.invalid` and `https://two.invalid`, which nothing reached
  * because the fetcher is a parameter. Once a return visit checks the address it read off
- * the proof, `.invalid` is refused before a packet leaves — so every case in `the return
+ * the proof, `.invalid` is refused before a packet leaves, so every case in `the return
  * visit` below would have gone on passing while testing the SKIP instead of the walk, and
  * the file would have changed subject without saying so. Two subdomains that appear in no
  * list anywhere are what pins the wildcard: `refuseCalendarAddress` allows them because of
@@ -60,7 +60,7 @@ interface Sent {
    *
    * Recorded because it is the one half of the cross-host policy no stub can show: a
    * `Response` this file builds is handed back whatever was asked for, while the real
-   * `fetch` follows a `302` itself unless told not to — and then the code below never
+   * `fetch` follows a `302` itself unless told not to, and then the code below never
    * sees the hop it is supposed to judge. A case that only checks where requests went
    * would pass with `manual` deleted and the product following redirects again.
    */
@@ -258,7 +258,7 @@ describe('the return visit', () => {
 
   it('asks the block source it was GIVEN, and the public one when it was given none', async () => {
     // The link for `mnema witness upgrade --blocks`. Until this case existed the option
-    // reached `blockSource` and nothing anywhere asserted that the value was honoured —
+    // reached `blockSource` and nothing anywhere asserted that the value was honoured:
     // its sibling on the same act was a flag whose value was read by nobody at all, and
     // the two were indistinguishable from outside.
     const before = await pending();
@@ -279,7 +279,7 @@ describe('the return visit', () => {
     for (const url of asked) expect(url.startsWith('https://chosen.invalid/api/')).toBe(true);
 
     // The other side, and the one that makes the first mean something: with no value
-    // given, the default is what is asked — so the assertion above is about the value
+    // given, the default is what is asked, so the assertion above is about the value
     // arriving rather than about this being the only address there is.
     const fallback = stubbed(answer);
     await completeWitness(before, { fetch: fallback.fetch });
@@ -302,7 +302,7 @@ describe('the return visit', () => {
 });
 
 describe('the address a return visit was handed', () => {
-  /** A proof that names ONE address, whatever it is — the shape a `.ots` can arrive in. */
+  /** A proof that names ONE address, whatever it is: the shape a `.ots` can arrive in. */
   function proofNaming(uri: string): Buffer {
     return serializeOtsProof(Buffer.from(DIGEST, 'hex'), {
       attestations: [{ kind: 'pending', uri }],
@@ -333,7 +333,7 @@ describe('the address a return visit was handed', () => {
     ]);
   });
 
-  it('IS contacted at a subdomain no list here enumerates — the rule is a wildcard', async () => {
+  it('IS contacted at a subdomain no list here enumerates: the rule is a wildcard', async () => {
     // The other side, and the one that keeps the case above from being satisfied by a
     // product that refuses everything: neither of these two hosts appears in
     // DEFAULT_CALENDARS or in WITNESS_OPERATOR_DOMAINS, and both are asked.
@@ -394,7 +394,7 @@ describe('the address a return visit was handed', () => {
   it('names the skip with its OWN kind, never the one a silent calendar gets', async () => {
     // The two facts on one list, told apart by the field the surface words them from.
     // With `not-asked` collapsed onto `unanswered`, this file still passes every case
-    // above — the requests that left are the same — and the owner reads "ask again
+    // above (the requests that left are the same) and the owner reads "ask again
     // later" about a proof that names somewhere this machine will never go.
     const { fetch } = stubbed(() => new Error('connection refused'));
     const both = await completeWitness(
@@ -457,7 +457,7 @@ describe('how many of a proof’s requests were really put to somebody', () => {
 describe('what the rule allows, read off the rule', () => {
   it('allows every calendar this package asks by default', () => {
     // THE RULE IN TWO PLACES. `stamp` picks from DEFAULT_CALENDARS and takes no check;
-    // the return visit checks whatever the proof names — so a default this rule refuses
+    // the return visit checks whatever the proof names, so a default this rule refuses
     // is a stamp that can be made and never completed. Adding one lights this up.
     const refused = DEFAULT_CALENDARS.filter((one) => refuseCalendarAddress(one) !== null);
     expect(refused).toEqual([]);

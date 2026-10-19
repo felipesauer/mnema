@@ -12,16 +12,16 @@
  *
  * The registry is keyed by `(kind, fromVersion)` and each entry raises the
  * version by exactly one step, so the path from any version to the latest is
- * unambiguous and total — a gap in the ladder is a bug that surfaces the first
+ * unambiguous and total: a gap in the ladder is a bug that surfaces the first
  * time an old event is read, not a silent misread.
  *
- * WHAT AN UPCAST IS NOT. A lifted event is a READING — it has exactly the
- * standing of a projection, which this product treats as disposable cache — and
+ * WHAT AN UPCAST IS NOT. A lifted event is a READING (it has exactly the
+ * standing of a projection, which this product treats as disposable cache) and
  * it can never be the basis of a proof. Its bytes are not the bytes anyone
  * signed; the event that was written is, and it is still on the tail, unchanged.
  * So an upcaster may be a total rewrite of a shape and cost the chain nothing,
  * but the moment a hash or a signature is recomputed over its output, every
- * chain written before that version reports as tampered — the entry hashes stop
+ * chain written before that version reports as tampered: the entry hashes stop
  * matching and the checkpoint signatures stop verifying. That is why the chain
  * carries both forms of an event side by side and every digest takes
  * `WrittenEvent` (see chain/hash.ts): the type refuses the lifted form, so the
@@ -29,13 +29,13 @@
  *
  * That separation is what makes this mechanism free to use. An upcaster does not
  * need to be byte-preserving, does not need to keep the version number, and does
- * not need to worry about what a verifier will recompute — it only has to produce
+ * not need to worry about what a verifier will recompute: it only has to produce
  * a faithful reading. upcast-vs-proof.test.ts pins it with a synthetic ladder,
  * because a registry that is empty (as it is while every kind is at v1) proves
  * nothing about the code that runs when it is not.
  *
  * The "latest version of each kind" lookup is injected (defaulting to the
- * catalog's) so the walk is defined by data, not hardcoded — and so it can be
+ * catalog's) so the walk is defined by data, not hardcoded, and so it can be
  * exercised against a taller ladder than the current catalog happens to have.
  */
 
@@ -98,7 +98,7 @@ export class UpcasterRegistry {
    * Lifts a parsed event to the latest version of its kind by applying each
    * registered step in turn. A v1 event of a kind whose latest is 1 returns
    * unchanged. Throws if a rung is missing before the latest is reached, or if
-   * an upcaster fails to raise the version by exactly one — both mean the
+   * an upcaster fails to raise the version by exactly one: both mean the
    * ladder is broken and the event cannot be faithfully reproduced.
    */
   upcast(event: VersionedEvent): CatalogEvent {
@@ -136,7 +136,7 @@ const NOT_HELD_CLOSES = 'If a newer mnema wrote the line, read the record with i
  * The refusal of a line whose `kind` and `v` this reader holds no contract for (`FORMAT.md` §7.1).
  *
  * It names the pair, what this reader holds of that kind, and which mnema this reader is. It
- * cannot name the version that reads the line — nothing in a record says which binary wrote it —
+ * cannot name the version that reads the line (nothing in a record says which binary wrote it),
  * so it names the one that does not, and the person reading it knows to look for a newer one.
  */
 function notHeld(kind: string, v: number, latest: number | undefined): string {
@@ -148,8 +148,8 @@ function notHeld(kind: string, v: number, latest: number | undefined): string {
 }
 
 /**
- * The refusal {@link notHeld} words, found inside a text that carries it — a verdict's issue, where
- * the line's parse error is quoted — or `undefined` when the text is about something else.
+ * The refusal {@link notHeld} words, found inside a text that carries it (a verdict's issue, where
+ * the line's parse error is quoted) or `undefined` when the text is about something else.
  *
  * A reading that only has the verdict to hand (`verify` refused, and the caller words the refusal
  * from it) names the pair and the version this way, in the words every other reading gives.

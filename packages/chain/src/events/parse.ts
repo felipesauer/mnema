@@ -3,13 +3,13 @@
  *
  * A line read from the chain is untrusted bytes: it may be malformed, from a
  * newer catalog, forged, or simply wrong. Parsing turns it into a
- * `CatalogEvent` or fails loudly — it never returns a half-valid event. This is
+ * `CatalogEvent` or fails loudly: it never returns a half-valid event. This is
  * STRUCTURAL validation (the shape the catalog promises), not the workflow: a
  * move the workflow does not allow is a line this parses, and that the reading
  * of the record does not apply (`workflow.ts`, FORMAT.md §6.7).
  *
  * A closed catalog means a CLOSED SHAPE: an event may carry ONLY the fields its
- * kind declares. WHAT A KIND DECLARES LIVES IN `schema.ts` AND NOWHERE ELSE —
+ * kind declares. WHAT A KIND DECLARES LIVES IN `schema.ts` AND NOWHERE ELSE:
  * this module walks that table and has no per-kind branch of its own, and the
  * published `event-schema.json` is the same table serialized. It used to be a
  * `switch` of twenty arms here, which is why the declarations could be promised
@@ -19,7 +19,7 @@
  * a forged line cannot smuggle extra data past validation and have it ride along
  * into the signed bytes. Two consequences that serve the proof:
  *   - Unknown top-level or payload fields are rejected outright.
- *   - The returned event — and therefore its canonical bytes — is the
+ *   - The returned event, and therefore its canonical bytes, is the
  *     reconstruction, never the raw parsed object. A line with an extra field
  *     re-canonicalizes to bytes that DIFFER from the stored line, so the
  *     recomputed hash rejects it rather than verifying it green.
@@ -59,7 +59,7 @@ export class EventParseError extends Error {
  * plus `payload`, which is the only top-level key that is not an envelope field.
  *
  * Derived from {@link ENVELOPE_SCHEMA} rather than typed out again, so an envelope
- * field added there is accepted here without a second edit — the shape that used
+ * field added there is accepted here without a second edit: the shape that used
  * to be two lists is one.
  */
 const ENVELOPE_FIELDS: readonly string[] = [...Object.keys(ENVELOPE_SCHEMA), 'payload'];
@@ -83,13 +83,13 @@ export function parseEvent(line: string, upcasters: UpcasterRegistry): CatalogEv
 }
 
 /**
- * Why reading would refuse this event, or undefined when it would accept it —
+ * Why reading would refuse this event, or undefined when it would accept it:
  * the question a WRITER has to ask before it seals anything.
  *
  * It runs {@link validateAndRebuild}, the very function {@link parseEvent} runs,
  * and that identity is the whole point rather than an implementation detail. The
  * rule "a title is a non-empty string" existed here and nowhere on the writing
- * side, so a write accepted what every later read refused — and on an append-only
+ * side, so a write accepted what every later read refused, and on an append-only
  * log that is not a bad record, it is a record that can never be opened again: one
  * unreadable entry fails the replay for the WHOLE tree, and nothing can take it
  * back out. A second copy of the rule on the writing side would have closed the
@@ -97,7 +97,7 @@ export function parseEvent(line: string, upcasters: UpcasterRegistry): CatalogEv
  * a defect this codebase has caught more than once. So the writing side asks the
  * reading side, and the two cannot disagree because there is only one of them.
  *
- * It answers with DATA — the reader's own message, naming the field — because the
+ * It answers with DATA (the reader's own message, naming the field), because the
  * two callers need it in two shapes: the writer turns it into a throw (a producer
  * bug, loud), and a surface turns it into a typed refusal a person or an agent can
  * read and act on.
@@ -132,8 +132,8 @@ function asVersioned(raw: unknown): VersionedEvent {
 
 /**
  * Validates a latest-version event against its catalog contract AND returns a
- * freshly rebuilt event containing only the declared fields. Rebuilding — not
- * casting — is what keeps a forged extra/duplicate field out of the signed
+ * freshly rebuilt event containing only the declared fields. Rebuilding, not
+ * casting, is what keeps a forged extra/duplicate field out of the signed
  * bytes. A failure here on a freshly written event is a producer bug; on a read
  * event it is a corrupt or forged line.
  */
@@ -145,7 +145,7 @@ function validateAndRebuild(event: CatalogEvent): CatalogEvent {
 
 /**
  * The rebuilt envelope: every declared envelope field that was present, and
- * nothing else. Typed loosely on purpose — the shape is the schema's, and naming
+ * nothing else. Typed loosely on purpose: the shape is the schema's, and naming
  * the fields a second time here is the second list this delivery removed.
  */
 type RebuiltEnvelope = Record<string, string | number | readonly string[]>;
@@ -166,7 +166,7 @@ type PayloadValue = string | number | boolean | null | readonly string[] | Trans
 const ABSENT = Symbol('absent');
 
 /**
- * Applies ONE rule to ONE field, and answers the value to rebuild with — or
+ * Applies ONE rule to ONE field, and answers the value to rebuild with, or
  * {@link ABSENT} when the field was legitimately omitted.
  *
  * This is the single site of every field rule in the catalog. It is the function
@@ -268,7 +268,7 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
  * envelope and payload, `fields` is a closed shape: an unknown key is rejected,
  * and the returned object is a fresh reconstruction of only the declared keys,
  * so a forged extra field cannot ride along into the signed bytes. Returns
- * undefined when `fields` is absent — an omitted key, never `{}`, so a
+ * undefined when `fields` is absent: an omitted key, never `{}`, so a
  * transition with no proof canonicalizes to the same bytes it always did.
  */
 function rebuildTransitionFields(kind: string, raw: unknown): TransitionFields | undefined {
@@ -394,7 +394,7 @@ function requireStringOrNull(kind: string, field: string, value: unknown): void 
 /**
  * The exact shape `Date.prototype.toISOString` produces: UTC, millisecond
  * precision, trailing `Z`. Every producer stamps `at` through the clock, which
- * IS `toISOString` — so a well-formed `at` is not merely "some ISO-8601 string"
+ * IS `toISOString`, so a well-formed `at` is not merely "some ISO-8601 string"
  * but this one canonical spelling. Pinning it here makes the ordering invariant
  * (the k-way merge sorts by `at`) enforceable rather than merely documented: a
  * timezone offset, a missing/extra sub-second digit, or a non-date is a corrupt
@@ -407,7 +407,7 @@ function requireIso8601(kind: string, field: string, value: unknown): void {
   requireString(kind, field, value);
   const at = value as string;
   // Shape AND value: the regex fixes the spelling; the round-trip rejects an
-  // impossible date (e.g. month 13, day 32) that still matches the pattern —
+  // impossible date (e.g. month 13, day 32) that still matches the pattern:
   // such a value makes `new Date` yield an invalid date whose toISOString throws.
   let roundTrip: string | null = null;
   if (ISO8601_UTC_MS.test(at)) {
@@ -428,7 +428,7 @@ function requireIso8601(kind: string, field: string, value: unknown): void {
  * Requires the version selector: a whole number of at least one.
  *
  * `kind` and `v` together select exactly one payload contract (section 7), so a
- * version that is not a whole number is not a selector at all — it names no
+ * version that is not a whole number is not a selector at all: it names no
  * contract, and a reader that let it through would be rebuilding against a
  * contract it picked rather than one the line named.
  */
@@ -441,7 +441,7 @@ function requireVersion(kind: string, field: string, value: unknown): void {
 /**
  * Exhaustiveness over the RULE vocabulary, not over the kinds.
  *
- * The kinds are held by {@link PAYLOAD_SCHEMA}'s mapped type — a kind with no row
+ * The kinds are held by {@link PAYLOAD_SCHEMA}'s mapped type: a kind with no row
  * does not compile. What this holds is the other half: a rule name added to
  * {@link FieldRule} and published in `event-schema.json` with nothing here to
  * apply it would be a rule a stranger implements and this reader ignores.
@@ -453,8 +453,8 @@ function assertNeverRule(rule: never): never {
 /**
  * Views a catalog event as a canonicalizable value. An event that came from
  * {@link parseEvent} or a builder is by construction a tree of strings,
- * numbers, and nested objects with only declared fields — exactly what
- * canonicalization accepts — so this is a narrowing, not a transform. Keeping
+ * numbers, and nested objects with only declared fields, exactly what
+ * canonicalization accepts, so this is a narrowing, not a transform. Keeping
  * it in one place means the bytes signed are unambiguously "the whole event".
  */
 export function toCanonical(event: CatalogEvent): CanonicalValue {

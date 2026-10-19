@@ -1,5 +1,5 @@
 /**
- * @mnema/chain — the proof engine.
+ * @mnema/chain: the proof engine.
  *
  * This package is the tamper-evidence core: the typed event catalog, the
  * per-tail hash chain, Ed25519 checkpoints over a content-recomputable root,
@@ -176,7 +176,7 @@ export {
   tailStanding,
   tailWaiversIn,
 } from './chain/waiver.js';
-// T3, the external witness. What crosses this line is what the SURFACE uses — the two
+// T3, the external witness. What crosses this line is what the SURFACE uses: the two
 // acts, where a witness is filed, and how one reads, per checkpoint, per tail, and as
 // the walk down the tail that the reading and the act that completes an attestation
 // share. `witnessOfChain` stays inside: the verifier is its only caller, and an export

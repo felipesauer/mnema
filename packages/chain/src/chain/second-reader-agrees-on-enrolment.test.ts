@@ -1,5 +1,5 @@
 /**
- * THE TWO READERS OVER RECORDS THIS PRODUCT WROTE — and the question is not the one
+ * THE TWO READERS OVER RECORDS THIS PRODUCT WROTE, and the question is not the one
  * the mutation table asks.
  *
  * The mutation table asks *does the second reader refuse what the product refuses*, and
@@ -9,7 +9,7 @@
  * Refusing too much is the quieter of the two failures, because it looks like rigour. It
  * happened here, and it is why this file exists. With no field declarations published, the
  * only derivation of the envelope a stranger could make was the INTERSECTION of the
- * published vectors' top-level keys — which `FORMAT.md` section 7 stated as a fact, in so
+ * published vectors' top-level keys, which `FORMAT.md` section 7 stated as a fact, in so
  * many words. `which` was carried by sixteen of the twenty-three vectors published when
  * this was found, and `run` by three, so an intersection is not the envelope; the second reader consequently REFUSED an
  * honest event for carrying `which`, on a record the product read as fine. Nothing caught
@@ -18,8 +18,8 @@
  * Gap G25.
  *
  * SECTION 6.2 IS THE OTHER HALF, and it is the one with room to be over-strict. Enrolment
- * is a FOLD — an order across tails, a set that grows and shrinks, and two gates that turn
- * on signature coverage — so a reader that got any of that slightly wrong would refuse
+ * is a FOLD (an order across tails, a set that grows and shrinks, and two gates that turn
+ * on signature coverage), so a reader that got any of that slightly wrong would refuse
  * honest records rather than accept forged ones. So the scenarios below are the product's
  * own enrolment cases, written to disk through the product's builders and keys, and the
  * two readers have to reach the same POLARITY on every one: green where the product is
@@ -113,7 +113,7 @@ function commitPublicKey(kp: KeyPair): void {
 /**
  * One tail, hash-chained, with its birth proof and one checkpoint.
  *
- * `residual` leaves that many trailing events OUT of the checkpoint — the window a party
+ * `residual` leaves that many trailing events OUT of the checkpoint: the window a party
  * with no key can write in, and the only way to reach section 6.2's two gates.
  * `breakSignature` corrupts the checkpoint's `sig`, which is how a checkpoint that CLAIMS a
  * range without proving it is built: coverage is what a verified checkpoint reaches, not
@@ -199,7 +199,7 @@ function task(
  * Polarity and not the whole verdict, because the two word themselves differently on
  * purpose and `FORMAT.md` disclaims the wording ("this document specifies the bytes, not
  * … what a verifier's verdict means"). What it does not disclaim is whether a record is
- * refused, and that is what is asserted — in BOTH directions, so a reader that refused
+ * refused, and that is what is asserted: in BOTH directions, so a reader that refused
  * everything would fail here just as loudly as one that refused nothing.
  */
 function bothReaders(): { productOk: boolean; verdict: string; refused: readonly string[] } {
@@ -216,7 +216,7 @@ function productRefused(): readonly string[] {
   return verify(root, catalogUpcasters()).issues.map((issue) => issue.detail);
 }
 
-describe('the two readers agree on records the product itself wrote — enrolment', () => {
+describe('the two readers agree on records the product itself wrote: enrolment', () => {
   it('a founded solo key: green on both, and the second reader says WHY it is green', () => {
     const kp = generateKeyPair();
     commitPublicKey(kp);
@@ -236,7 +236,7 @@ describe('the two readers agree on records the product itself wrote — enrolmen
     expect(said).toContain('VALID FOR ITS ANCHOR');
   });
 
-  it('an honest event carrying `which` and `run`: green on both — the over-refusal, gone', () => {
+  it('an honest event carrying `which` and `run`: green on both, the over-refusal, gone', () => {
     // GAP G25, AS A RECORD. Before the declarations were published, the second reader
     // derived the envelope by intersecting the vectors and REFUSED this, on bytes the
     // product reads as fine. Nothing in the suite could catch it: the frozen fixtures carry
@@ -301,7 +301,7 @@ describe('the two readers agree on records the product itself wrote — enrolmen
 
   it('a reverse signature replayed from another anchor: refused by both', () => {
     // The proof of possession is over `enroll:<anchor>:<newFp>`, so a signature the new key
-    // made for a DIFFERENT anchor does not carry across — which is only checkable by a
+    // made for a DIFFERENT anchor does not carry across, which is only checkable by a
     // reader that knows the message, and section 6.2 is where that message is written.
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -320,7 +320,7 @@ describe('the two readers agree on records the product itself wrote — enrolmen
     expect(refused.join('\n')).toContain('reverse signature does not prove possession');
   });
 
-  it('a revocation is prospective: before stays, after is refused — by both', () => {
+  it('a revocation is prospective: before stays, after is refused, by both', () => {
     // The one scenario where the two readers could disagree by an OFF-BY-ONE and nothing
     // else would show it: a fold that removed the key one event early would refuse `t-1`,
     // and a fold that removed it one late would accept `t-2`.
@@ -360,13 +360,13 @@ describe('the two readers agree on records the product itself wrote — enrolmen
    * Both cases below exist because turning the gate off in the verifier left ZERO tests
    * red. A gate nothing exercises is a gate nobody has checked, and these two are not
    * ornamental: they are what stops a party with NO KEY denying the authenticity of an
-   * honest, fully-signed chain — the only place in this format where an attacker's win
+   * honest, fully-signed chain, the only place in this format where an attacker's win
    * condition is making a good record read as bad.
    */
-  it('a residual key.revoked does NOT remove a key — a keyless denial, refused by both', () => {
+  it('a residual key.revoked does NOT remove a key: a keyless denial, refused by both', () => {
     // A keyless party appends a revocation above the last checkpoint. It is well-formed, it
     // names a member as its signer, and nothing about the line is wrong. If a reader
-    // honoured it, B's later work — which IS signature-covered — would stop verifying, and
+    // honoured it, B's later work, which IS signature-covered, would stop verifying, and
     // an honest chain would read as broken on the say-so of somebody who holds no key.
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -393,7 +393,7 @@ describe('the two readers agree on records the product itself wrote — enrolmen
   it('a checkpoint whose signature FAILS covers nothing, so its range stays residual', () => {
     // The other half of "covered": coverage is what a VERIFIED checkpoint reaches, not what
     // a checkpoint claims. Here the revocation sits inside a range a checkpoint names and
-    // whose signature does not verify — so it is exactly as uncovered as the case above, and
+    // whose signature does not verify, so it is exactly as uncovered as the case above, and
     // B's work must survive it. A reader that counted the claim would refuse B's event too.
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -424,10 +424,10 @@ describe('the two readers agree on records the product itself wrote — enrolmen
     ).not.toContain('not a key enrolled');
   });
 
-  it('a residual re-enrolment does NOT undo a covered revocation — refused by both', () => {
+  it('a residual re-enrolment does NOT undo a covered revocation: refused by both', () => {
     // THE MIRROR OF THE REVOKE GATE, and the third case a mutation had to ask for: turning
-    // this one off left zero tests red too. An ADDITION is usually safe ungated — it only
-    // empowers events naming the key it adds, which sit in the same untrusted window — with
+    // this one off left zero tests red too. An ADDITION is usually safe ungated (it only
+    // empowers events naming the key it adds, which sit in the same untrusted window) with
     // exactly one exception: an addition ordered AFTER a signature-covered revocation of the
     // SAME key RESTORES it, and thereby undoes a signed removal, re-authorizing that key's
     // later checkpointed work. So it is gated exactly as the revocation was.
@@ -469,11 +469,11 @@ describe('the two readers agree on records the product itself wrote — enrolmen
 /**
  * THE NEWEST KIND, READ BY BOTH. `channel.refused` reached the second reader the only way a
  * kind can: as a row of `event-schema.json` and a row of the vectors. Nothing in the Python was
- * edited for it, which is the claim worth testing — that a stranger's reader, handed the two
+ * edited for it, which is the claim worth testing: that a stranger's reader, handed the two
  * published artifacts, accepts the kind exactly where the product does and refuses it exactly
  * where the product does.
  */
-describe('the two readers agree on records the product itself wrote — a refusal', () => {
+describe('the two readers agree on records the product itself wrote: a refusal', () => {
   const RULE = '019f81f8-e400-7006-8000-000000000006';
 
   function refusal(
@@ -499,7 +499,7 @@ describe('the two readers agree on records the product itself wrote — a refusa
   it('a signed refusal and one above the checkpoint: green on both', () => {
     // One inside the checkpoint (byte identity under the signature) and one in the residual
     // window, where the only thing standing between a forger and the record is the per-kind
-    // rebuild of section 4.1 — the path a kind unknown to the schema would fail on.
+    // rebuild of section 4.1: the path a kind unknown to the schema would fail on.
     const kp = generateKeyPair();
     commitPublicKey(kp);
     const anchor = deriveAnchor(kp.fingerprint);
@@ -553,7 +553,7 @@ describe('the two readers agree on records the product itself wrote — a refusa
     expect(refused.join('\n')).toContain('rule');
   });
 
-  it('a refusal at a version no row declares: refused by both — what an older reader does', () => {
+  it('a refusal at a version no row declares: refused by both, what an older reader does', () => {
     // A reader meeting a (kind, v) its table does not hold refuses the line rather than guess
     // (section 4.1). It is the same thing a reader from BEFORE this kind does with a
     // `channel.refused` v1, which is why a version ahead is the case that stands for it here.
@@ -573,11 +573,11 @@ describe('the two readers agree on records the product itself wrote — a refusa
 
 /**
  * A STACK ADOPTED AND REMOVED, READ BY BOTH. The two kinds reached the second reader the way
- * every kind since `channel.refused` has — a row of `event-schema.json` each and a row of the
- * vectors each, and no line of Python — so the claim is the same: the stranger's reader accepts
+ * every kind since `channel.refused` has (a row of `event-schema.json` each and a row of the
+ * vectors each, and no line of Python), so the claim is the same: the stranger's reader accepts
  * the facts exactly where the product does, and refuses them exactly where the product does.
  */
-describe('the two readers agree on records the product itself wrote — a stack adopted', () => {
+describe('the two readers agree on records the product itself wrote: a stack adopted', () => {
   const DIGEST = 'b'.repeat(64);
   const HONEST = { name: 'evidence-first', version: '1.0.0', digest: DIGEST, scope: 'public' };
 
@@ -622,7 +622,7 @@ describe('the two readers agree on records the product itself wrote — a stack 
   });
 
   it('an adoption carrying where it came from, above the checkpoint: refused by both', () => {
-    // The field a careless writer would add — the folder the stack was copied from — is no
+    // The field a careless writer would add (the folder the stack was copied from) is no
     // field the contract declares, so a line carrying it is refused rather than read past.
     const kp = generateKeyPair();
     commitPublicKey(kp);
@@ -654,7 +654,7 @@ describe('the two readers agree on records the product itself wrote — a stack 
     expect(refused.join('\n')).toContain('digest');
   });
 
-  it('an adoption at a version no row declares: refused by both — what an older reader does', () => {
+  it('an adoption at a version no row declares: refused by both, what an older reader does', () => {
     // A reader from before this kind meets `stack.adopted` v1 exactly as this one meets v2: a
     // (kind, v) its table does not hold, refused rather than guessed at (section 4.1).
     const kp = generateKeyPair();
@@ -673,11 +673,11 @@ describe('the two readers agree on records the product itself wrote — a stack 
 
 /**
  * A NOTE TAKEN BACK, READ BY BOTH. `note.retracted` reached the second reader the way
- * `channel.refused` did — a row of `event-schema.json` and a row of the vectors, and no line
- * of Python — so the claim tested is the same: the stranger's reader accepts the retraction
+ * `channel.refused` did (a row of `event-schema.json` and a row of the vectors, and no line
+ * of Python), so the claim tested is the same: the stranger's reader accepts the retraction
  * exactly where the product does, and refuses it exactly where the product does.
  */
-describe('the two readers agree on records the product itself wrote — a retraction', () => {
+describe('the two readers agree on records the product itself wrote: a retraction', () => {
   const MEMORY = '019f81f8-e400-7001-8000-000000000001';
   const REASON = 'The load turned out to be a key lookup.';
 
@@ -759,7 +759,7 @@ describe('the two readers agree on records the product itself wrote — a retrac
     expect(refused.join('\n')).toContain('reason');
   });
 
-  it('a retraction at a version no row declares: refused by both — what an older reader does', () => {
+  it('a retraction at a version no row declares: refused by both, what an older reader does', () => {
     // A reader from BEFORE this kind meets a `note.retracted` v1 the way this one meets a v2:
     // a (kind, v) its table does not hold, refused rather than guessed (section 4.1).
     const kp = generateKeyPair();
@@ -781,14 +781,14 @@ describe('the two readers agree on records the product itself wrote — a retrac
 
 /**
  * A LINK TAKEN BACK, READ BY BOTH. `link.retracted` reaches the second reader the way
- * `note.retracted` did — a row of `event-schema.json` and a row of the vectors, and no line of
- * Python — so the claims are the same: the stranger's reader accepts the retraction exactly
+ * `note.retracted` did (a row of `event-schema.json` and a row of the vectors, and no line of
+ * Python), so the claims are the same: the stranger's reader accepts the retraction exactly
  * where the product does and refuses it exactly where the product does. And one more, the one
  * authorship adds: a retraction by an identity that never recorded the link is NOT a break on
- * either reader — the product names it in its census and does not apply it (FORMAT.md 6.4),
+ * either reader; the product names it in its census and does not apply it (FORMAT.md 6.4),
  * and the format, which decides what verifies and not what is served, accepts it.
  */
-describe('the two readers agree on records the product itself wrote — a link retraction', () => {
+describe('the two readers agree on records the product itself wrote: a link retraction', () => {
   const RULE = '019f81f8-e400-7002-8000-000000000002';
   const EDGE = { target: 'src/billing', rel: 'governs' };
   const REASON = 'The rule is about the ledger, not billing.';
@@ -871,7 +871,7 @@ describe('the two readers agree on records the product itself wrote — a link r
     expect(refused.join('\n')).toContain('rel');
   });
 
-  it('a retraction at a version no row declares: refused by both — what an older reader does', () => {
+  it('a retraction at a version no row declares: refused by both, what an older reader does', () => {
     identityWith((anchor, kp) => [linked(anchor, kp, 2), retraction(anchor, kp, 3, undefined, 2)]);
     const { productOk, verdict, refused } = bothReaders();
     expect(productOk).toBe(false);
@@ -882,12 +882,12 @@ describe('the two readers agree on records the product itself wrote — a link r
 
 /**
  * A KEY THAT SIGNS CHECK RESULTS AND NOTHING ELSE, read by both. The role is a fold rule of
- * section 6.2 — `checker.enrolled` adds a key to the checkers, a `check.passed`/`check.failed`
+ * section 6.2 (`checker.enrolled` adds a key to the checkers, a `check.passed`/`check.failed`
  * is authentic only under such a key and the anchor it derives, and any other kind under such
- * a key is refused — so the stranger's reader has a line of Python for it, and these cases
+ * a key is refused), so the stranger's reader has a line of Python for it, and these cases
  * are where the two have to reach the same polarity.
  */
-describe('the two readers agree on records the product itself wrote — a checker', () => {
+describe('the two readers agree on records the product itself wrote: a checker', () => {
   const RULE = '019f81f8-e400-7006-8000-000000000006';
   const COMMIT = 'a'.repeat(40);
 
@@ -954,7 +954,7 @@ describe('the two readers agree on records the product itself wrote — a checke
 
   it('any other kind signed by a checker key: refused by both', () => {
     // The other half of the role: a leaked runner secret must not be able to say anything
-    // but a result — not a task, and not its own founding.
+    // but a result, not a task, and not its own founding.
     const { a, c, anchor } = personAndChecker();
     const cAnchor = deriveAnchor(c.fingerprint);
     writeTail(`${a.fingerprint}-i1`, [founding(a), enrolChecker(anchor, a, c)], a);
@@ -1068,7 +1068,7 @@ describe('the two readers agree on records the product itself wrote — a checke
 
   it('a retirement in the window no checkpoint covers: ignored by both', () => {
     // A keyless party could append it there; honouring it would turn the honest results the
-    // key signs afterwards into failures with no key at all — the revocation's gate, mirrored.
+    // key signs afterwards into failures with no key at all: the revocation's gate, mirrored.
     const { a, c, anchor } = personAndChecker();
     writeTail(
       `${a.fingerprint}-i1`,
@@ -1152,9 +1152,9 @@ describe('the two readers agree on records the product itself wrote — a checke
  * key is a member of the identity that enrolled it, and the role narrows what it signs: never
  * for another identity, never under another `which`, never a fact that changes who may sign. The
  * fold reads it, so the stranger's reader has lines of Python for it, and every case here is one
- * where the two have to reach the same polarity — and, where it is honest, the same census.
+ * where the two have to reach the same polarity, and, where it is honest, the same census.
  */
-describe('the two readers agree on records the product itself wrote — an agent', () => {
+describe('the two readers agree on records the product itself wrote: an agent', () => {
   function consent(anchor: string, agent: KeyPair, name: string): string {
     return Buffer.from(
       sign(agentEnrollmentMessage(anchor, agent.fingerprint, name), agent.privateKey),
@@ -1202,8 +1202,8 @@ describe('the two readers agree on records the product itself wrote — an agent
   }
 
   /**
-   * What each reader counts of the agents the record's facts name — `attested <name> <n>` for an
-   * agent key's facts, `declared <which> <n>` for a `which` a key without the role wrote — sorted,
+   * What each reader counts of the agents the record's facts name (`attested <name> <n>` for an
+   * agent key's facts, `declared <which> <n>` for a `which` a key without the role wrote) sorted,
    * so the two lists are compared and not two wordings.
    */
   function agentCensus(): { product: readonly string[]; second: readonly string[] } {
@@ -1317,8 +1317,8 @@ describe('the two readers agree on records the product itself wrote — an agent
   });
 
   it('an agent key speaking for another identity that took it in: refused by both', () => {
-    // B makes the agent key a plain member of its own identity — a `key.enrolled` naming an agent
-    // key is accepted as it always was — and the key then writes as B. The first refusal is the
+    // B makes the agent key a plain member of its own identity (a `key.enrolled` naming an agent
+    // key is accepted as it always was) and the key then writes as B. The first refusal is the
     // one that makes the key useless outside the anchor that gave it the role.
     const { a, g, anchor } = personAndAgent();
     const b = generateKeyPair();
@@ -1339,7 +1339,7 @@ describe('the two readers agree on records the product itself wrote — an agent
   });
 
   it('a record that has not heard of the agent enrolment takes the key as an ordinary member: green on both', () => {
-    // Only B's record: B founds, and B's own key vouches for the key g — an `agent.enrolled` in
+    // Only B's record: B founds, and B's own key vouches for the key g; an `agent.enrolled` in
     // another record never reaches this one. The key is a plain member here and writes as B.
     const g = generateKeyPair();
     const b = generateKeyPair();
@@ -1355,7 +1355,7 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(verdict).toBe('VERIFIED');
   });
 
-  it('an agent key signing a change to who may sign — its own retirement too: refused by both', () => {
+  it('an agent key signing a change to who may sign (its own retirement too): refused by both', () => {
     const { a, g, anchor } = personAndAgent();
     const h = generateKeyPair();
     commitPublicKey(h);
@@ -1681,8 +1681,8 @@ describe('the two readers agree on records the product itself wrote — an agent
 
   /**
    * What each reader says of an agent key the record retired: `<fp12> by <by17> <n>`, one per key
-   * that signed accepted facts before its retirement — the count the checker's note carries as
-   * `resultsBefore`, sorted, so the two lists are compared and not two wordings.
+   * that signed accepted facts before its retirement (the count the checker's note carries as
+   * `resultsBefore`), sorted, so the two lists are compared and not two wordings.
    */
   function retiredAgentCensus(): { product: readonly string[]; second: readonly string[] } {
     const product = verify(root, catalogUpcasters())
@@ -1767,12 +1767,12 @@ describe('the two readers agree on records the product itself wrote — an agent
  *
  * A cold backup signs nothing until it is restored, so it never has a tail, and a reader that
  * crosses `keys/` against `tails/` used to say it the only way the bytes allowed: a committed key
- * whose tail may have gone. On every clone, for every honest record — a warning that is always on
+ * whose tail may have gone. On every clone, for every honest record: a warning that is always on
  * teaches a reader to skip the one that is not. `backup.declared` puts the role in the record, so
  * every reader can tell the key built to write nothing from a key whose writing went missing, and
  * the warning keeps its meaning for the second.
  */
-describe('the two readers agree on records the product itself wrote — a declared backup', () => {
+describe('the two readers agree on records the product itself wrote: a declared backup', () => {
   function declared(anchor: string, signer: KeyPair, backup: KeyPair, when = 3): CatalogEvent {
     return backupDeclared(
       { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: anchor },
@@ -1791,7 +1791,7 @@ describe('the two readers agree on records the product itself wrote — a declar
     return { product, second };
   }
 
-  /** A founder, and the cold backup it enrolled — the tree `mnema init` leaves. */
+  /** A founder, and the cold backup it enrolled: the tree `mnema init` leaves. */
   function founderAndBackup(): { a: KeyPair; b: KeyPair; anchor: string } {
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -1927,7 +1927,7 @@ describe('the two readers agree on records the product itself wrote — a declar
 });
 
 /**
- * The entry hashes of `events` laid on `tailId` from seq 0 — what `writeTail` computes, asked
+ * The entry hashes of `events` laid on `tailId` from seq 0: what `writeTail` computes, asked
  * for here so a case can cite an entry of another tail.
  */
 function entryHashesOf(tailId: string, events: readonly CatalogEvent[]): string[] {
@@ -1952,7 +1952,7 @@ function secondNotes(): readonly string[] {
     .map((f) => `${f.section}: ${f.what} (${f.where})`);
 }
 
-describe('the two readers agree on the order a citation gives — a machine whose clock is behind', () => {
+describe('the two readers agree on the order a citation gives: a machine whose clock is behind', () => {
   /**
    * A enrols B at second 5 by A's clock. B pulls, and writes at second 1 by its own, which is
    * behind: the honest record of a second machine with a slow clock (the probe on the binary
@@ -2037,7 +2037,7 @@ describe('the two readers agree on the order a citation gives — a machine whos
     const missing = 'f'.repeat(64);
     const { tailB } = enrolledThenWrittenBehind([missing]);
     // Ignored: B's event stays where its `at` puts it, before the enrolment, and is refused
-    // exactly as an event with no citation is — the citation neither helps nor breaks.
+    // exactly as an event with no citation is; the citation neither helps nor breaks.
     const { productOk, verdict } = bothReaders();
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');

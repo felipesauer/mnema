@@ -5,7 +5,7 @@
  * a reader and a writer of the same author agree with each other for free, and what
  * has to be true is that they agree with the format. So the vector is captured
  * (witness-vectors.ts), the parse is asserted against what the calendars actually
- * said, and the re-serialization is asserted BYTE FOR BYTE — which is the only form
+ * said, and the re-serialization is asserted BYTE FOR BYTE, which is the only form
  * of "we understood every byte" that cannot be satisfied by understanding most of
  * them.
  */
@@ -50,7 +50,7 @@ describe('a detached OpenTimestamps proof', () => {
 
   it('folds the digest through the path, so the message at each promise is derived', () => {
     // The first step of every calendar's path is ours: append a per-calendar nonce
-    // and hash. The message the promise stands at is therefore NOT the digest — if
+    // and hash. The message the promise stands at is therefore NOT the digest, if
     // it were, every calendar would have been handed the same value.
     const reached = reachedAttestations(parseOtsProof(REAL));
     const messages = reached.map((r) => r.message.toString('hex'));
@@ -102,8 +102,8 @@ describe('the operations a path is made of', () => {
 describe('what a hostile clone can put in a tree', () => {
   /**
    * A proof is COMMITTED, so a clone reads whatever the last person to write the
-   * repository put there. Depth costs one byte in this grammar — every `0x08` is
-   * another `sha256` step — so these are built by hand rather than through the writer,
+   * repository put there. Depth costs one byte in this grammar (every `0x08` is
+   * another `sha256` step), so these are built by hand rather than through the writer,
    * which is the only way to reach a depth the writer itself could not produce.
    */
   const deep = (steps: number): Buffer =>
@@ -124,7 +124,7 @@ describe('what a hostile clone can put in a tree', () => {
   it('refuses a deeper one BY NAME, before the stack has an opinion', () => {
     // MEASURED ON THE SHIPPED READER, before this limit: a 30 KB file of nothing but
     // that byte took the parse past V8's stack, and what reached the verdict was
-    // `unreadable: Maximum call stack size exceeded` — survivable only because the
+    // `unreadable: Maximum call stack size exceeded`, survivable only because the
     // catch around it happens to be untyped. Depth is a property of the FORMAT.
     expect(() => parseOtsProof(deep(1001))).toThrow(UnreadableProofError);
     expect(() => parseOtsProof(deep(30_000))).toThrow(/deeper than 1000 steps/);
@@ -133,7 +133,7 @@ describe('what a hostile clone can put in a tree', () => {
   it('refuses a path that INFLATES its message instead of folding it', () => {
     // A small file can still be expensive: every `append` copies, so a thousand of
     // them with a kilobyte each is quadratic. Measured on the reader before this
-    // limit: a 979 KiB file walked in 238 ms and ended holding a megabyte — which can
+    // limit: a 979 KiB file walked in 238 ms and ended holding a megabyte, which can
     // attest nothing, a merkle root being 32 bytes, so the work was pure waste.
     const step = Buffer.concat([
       Buffer.from([0xf0]), // append
@@ -147,7 +147,7 @@ describe('what a hostile clone can put in a tree', () => {
       Buffer.concat(Array.from({ length: 900 }, () => step)),
       Buffer.from('0083dfe30d2ef90c8e020178', 'hex'),
     ]);
-    // It PARSES — depth and size are both inside their limits, which is what makes
+    // It PARSES: depth and size are both inside their limits, which is what makes
     // this a third question rather than a corollary of the first two.
     const parsed = parseOtsProof(inflating);
     expect(() => reachedAttestations(parsed)).toThrow(/past what a path folds/);
@@ -166,7 +166,7 @@ describe('the rule that ends a node', () => {
    * and leaves the LAST one unprefixed, so the first member that arrives without a
    * separator closes the node. A reader that treats every attestation byte (`0x00`)
    * as "another member follows" reads past its own node and into the bytes of the
-   * one above it — measured, and it reported every real calendar answer as
+   * one above it: measured, and it reported every real calendar answer as
    * truncated. A node with an attestation AND a step after it is the shape that
    * tells the two readings apart.
    */

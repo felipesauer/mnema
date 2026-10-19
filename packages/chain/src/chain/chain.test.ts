@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 /**
- * Builds an envelope that carries the WRITER's real identity — its anchor as
+ * Builds an envelope that carries the WRITER's real identity: its anchor as
  * `who` and its fingerprint as `signerFp`. The verifier binds every event to
  * the key that signed its range, so a test chain must stamp the true signer, the
  * same thing the core operations do in production. (In a real write the core
@@ -71,7 +71,7 @@ function found(w: ChainWriter): ChainWriter {
 }
 
 /**
- * Opens a writer for a chain root, with its key root the SAME directory — the
+ * Opens a writer for a chain root, with its key root the SAME directory: the
  * simple layout these tests want (the key pair, materialized pub, installation
  * id, and tails all under one root, exactly the pre-keyRoot shape). The
  * separate-keyRoot model has its own dedicated tests; here keyRoot == chainRoot
@@ -89,7 +89,7 @@ function openFounded(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: numb
   return found(openChain(root, opts));
 }
 
-/** The hash of the last checkpoint a tail stored — what a witness is filed under. */
+/** The hash of the last checkpoint a tail stored: what a witness is filed under. */
 function lastCheckpointHashOf(chainRoot: string, tail: string): string {
   const lines = readFileSync(checkpointsPath({ root: chainRoot }, tail), 'utf-8')
     .trim()
@@ -113,7 +113,7 @@ function writeSome(count: number, opts?: { maxUnsignedEvents?: number; maxSegmen
   return w;
 }
 
-describe('chain — write then verify (happy path, T1/T2/T4)', () => {
+describe('chain: write then verify (happy path, T1/T2/T4)', () => {
   it('verifies a freshly written chain green', () => {
     const w = writeSome(10, { maxUnsignedEvents: 4 });
     w.checkpoint(); // cover the tail fully
@@ -142,7 +142,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   it('says the untouched words, byte for byte, for a record with a checkpoint and no witness', () => {
     // BYTE FOR BYTE, and as a CLAUSE rather than as a substring of the line. The
     // reading learned to walk back to older attestations, and the one thing that walk
-    // may never do is change what a record with no attestation anywhere says — those
+    // may never do is change what a record with no attestation anywhere says: those
     // are the words every reader of this product has matched on. A `toMatch` goes on
     // passing with a whole sentence appended after the words it looked for, which is
     // exactly the change this delivery makes to the record NEXT to this one.
@@ -232,7 +232,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   });
 });
 
-describe('chain — appendAll writes a batch atomically', () => {
+describe('chain: appendAll writes a batch atomically', () => {
   it('appends a birth pair as one write, chained and verifiable', () => {
     const w = openFounded({ maxUnsignedEvents: 100 });
     const birth = taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' });
@@ -268,7 +268,7 @@ describe('chain — appendAll writes a batch atomically', () => {
     expect(verify(root).ok).toBe(true);
   });
 
-  it('an empty batch writes nothing — not even the tail it would have been born into', () => {
+  it('an empty batch writes nothing, not even the tail it would have been born into', () => {
     const w = openChain(root, { maxUnsignedEvents: 100 });
     expect(w.appendAll([])).toEqual([]);
     // The tail is asked of the WRITER. This read it off `tails/`, which held the tail from
@@ -280,14 +280,14 @@ describe('chain — appendAll writes a batch atomically', () => {
 
   it('writes the whole batch in ONE segment file (no straddle)', () => {
     // Both lines land in the same segment, so a birth pair is never split across
-    // a rotation boundary — part of what makes it one atomic unit on disk.
+    // a rotation boundary: part of what makes it one atomic unit on disk.
     const w = openFounded({ maxUnsignedEvents: 100 });
     w.appendAll(taskBirth(env(w, 't-1'), { title: 't', initial: 'draft' }));
     expect(orderedSegments({ root }, tailIdOf(root))).toHaveLength(1);
   });
 });
 
-describe('chain — T1 (hash chain) catches corruption and reordering', () => {
+describe('chain: T1 (hash chain) catches corruption and reordering', () => {
   it('flags a content edit at the exact seq (entry hash mismatch)', () => {
     writeSome(5, { maxUnsignedEvents: 100 });
     tamperLine(root, 2, (entry) => {
@@ -313,14 +313,14 @@ describe('chain — T1 (hash chain) catches corruption and reordering', () => {
   });
 });
 
-describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not stored hashes)', () => {
+describe('chain: T2 (INVARIANT: content root is recomputed from bytes, not stored hashes)', () => {
   it('catches a content edit even after ALL entry hashes are repaired', () => {
     writeSome(6, { maxUnsignedEvents: 100 });
     const w = openChain(root);
     w.checkpoint(); // sign a checkpoint over all 6
 
     // Adversary edits event 3's content AND repairs the keyless hash chain so
-    // T1 would pass. The checkpoint's content root — recomputed from bytes —
+    // T1 would pass. The checkpoint's content root, recomputed from bytes,
     // must still catch it.
     repairChainAfterEdit(root, 3, (title) => `${title} (forged)`);
 
@@ -339,7 +339,7 @@ describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not st
   });
 });
 
-describe('chain — T4 (anonymous verify with only committed material)', () => {
+describe('chain: T4 (anonymous verify with only committed material)', () => {
   it('verifies from public keys + files, with the private key removed', () => {
     writeSome(5, { maxUnsignedEvents: 2 });
     openChain(root).checkpoint();
@@ -362,7 +362,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // The strongest key attack: the forger edits content, mints their OWN key,
     // signs a checkpoint over the edited events but CLAIMS the original
     // fingerprint, and overwrites keys/<originalFp>.pub with their public key.
-    // The signature verifies against the swapped file — so the only thing that
+    // The signature verifies against the swapped file, so the only thing that
     // catches it is re-deriving the loaded key's fingerprint and matching it to
     // the claimed one.
     writeSome(6, { maxUnsignedEvents: 100 });
@@ -401,7 +401,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // holds their own committed key (so the loaded key matches its fingerprint),
     // but rewrites every event's `who`/`signerFp` to a fabricated or victim
     // identity, re-derives the hash chain, and re-signs the range with their real
-    // key. Both T1 and the checkpoint signature pass — the ONLY thing that
+    // key. Both T1 and the checkpoint signature pass: the ONLY thing that
     // catches it is binding each event's claimed identity to the signer of the
     // range. Without that, the envelope's `who`/`signerFp` are decorative.
     const w = openFounded({ maxUnsignedEvents: 100 });
@@ -432,7 +432,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
 
     // Sign the forged range with the HONEST committed key: a fresh writer
     // recovers over the rewritten entries and checkpoints them. Its .pub is
-    // untouched, so fingerprint-binding passes — but every event now claims
+    // untouched, so fingerprint-binding passes, but every event now claims
     // `fakeFp`/`fakeWho`, which the signer never was.
     openChain(root).checkpoint();
 
@@ -440,7 +440,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     expect(result.ok).toBe(false);
     // Caught two ways, either of which is fatal: the checkpoint's signer binding
     // (events claim fakeFp, the honest key signed) and the enrollment fold
-    // (fakeFp is not enrolled for fakeWho — no identity.founded for it).
+    // (fakeFp is not enrolled for fakeWho: no identity.founded for it).
     expect(
       result.issues.some(
         (i) =>
@@ -453,7 +453,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
   it('fails a self-authorization smuggled below the signature (which === who)', () => {
     // The gate refuses a move where the authorizing human equals the executing
     // agent, but the gate is not on the verify path. An editor could rewrite an
-    // event so `which` equals `who` — self-authorization — re-sign with their
+    // event so `which` equals `who`, self-authorization, re-sign with their
     // honest key, and (before the binding guard covered `which`) verify green.
     // The signed record must uphold the same who != which the gate enforces.
     const w = openFounded({ maxUnsignedEvents: 100 });
@@ -463,7 +463,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     const tail = tailIdOf(root);
     const seg = orderedSegments({ root }, tail)[0] as string;
 
-    // Rewrite one event so `which` equals its (honest) `who` — self-authorization,
+    // Rewrite one event so `which` equals its (honest) `who`: self-authorization,
     // keeping signerFp/who honest so only the new which-clause can catch it.
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
     const entries = lines.map((l) => JSON.parse(l) as RawEntry);
@@ -491,7 +491,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
   });
 });
 
-describe('chain — deletion and rollback', () => {
+describe('chain: deletion and rollback', () => {
   it('catches deletion of a checkpointed entry (range no longer matches)', () => {
     writeSome(6, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint(); // signs 0..5
@@ -511,7 +511,7 @@ describe('chain — deletion and rollback', () => {
   it('honestly declares uncheckpointed events as NOT signature-covered (forged append)', () => {
     // An append below the last checkpoint carries only the keyless hash chain,
     // so a party without the key can add one and T1 stays green. verify must
-    // count it as residual and say plainly it is not signed — never imply it is.
+    // count it as residual and say plainly it is not signed, never imply it is.
     writeSome(4, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint(); // signs 0..3
     const w = openChain(root);
@@ -532,7 +532,7 @@ describe('chain — deletion and rollback', () => {
   });
 });
 
-describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, and not an aligned cut', () => {
+describe('chain: checkpoint chaining catches a dropped EARLIER checkpoint, and not an aligned cut', () => {
   it('reads a cut that took the last checkpoint WITH its events as an honest shorter chain', () => {
     // Two checkpoints: 0..3 and 4..7. An adversary truncates the tail to 0..3
     // and deletes the second checkpoint, trying to pass off the shorter chain
@@ -560,7 +560,7 @@ describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, an
     writeFileSync(seg, `${kept.join('\n')}\n`);
 
     // The surviving 0..3 chain + its checkpoint is internally consistent, so
-    // this specific truncation reads as an honest chain ending at 3 — which is
+    // this specific truncation reads as an honest chain ending at 3, which is
     // the inherent keyless-residual limit. What the checkpoint chain guarantees
     // is the INVERSE attack: keeping later events while dropping an EARLIER
     // checkpoint breaks the link. Prove that:
@@ -586,10 +586,10 @@ describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, an
   });
 });
 
-describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsigned hole)', () => {
+describe('chain: checkpoint coverage must be contiguous from seq 0 (no unsigned hole)', () => {
   /**
    * Signs a checkpoint over an arbitrary range of the tail with the tail's OWN
-   * key — everything a checkpoint needs to be genuine (real signature, real
+   * key: everything a checkpoint needs to be genuine (real signature, real
    * content root recomputed from the bytes, real committed key) EXCEPT contiguous
    * coverage. That isolation is the point: these tests must fail on the coverage
    * clause alone, not on a broken signature.
@@ -608,7 +608,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
 
   it('flags a first checkpoint that starts above seq 0, leaving the prefix unsigned', () => {
     // Three events (the founding plus two tasks), and a checkpoint that covers
-    // 1..2 — validly signed, but silent about seq 0. Without the coverage clause
+    // 1..2: validly signed, but silent about seq 0. Without the coverage clause
     // the verifier would advance its cursor to 2 and report the whole tail as
     // fully signed, attesting an event no signature ever covered.
     writeSome(2, { maxUnsignedEvents: 100 });
@@ -626,7 +626,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
   });
 
   it('flags a hole BETWEEN two checkpoints, and keeps the coverage before it', () => {
-    // 0..1 signed, then 3..4 signed with a correct `prev` link — the checkpoint
+    // 0..1 signed, then 3..4 signed with a correct `prev` link: the checkpoint
     // chain is intact and both signatures verify, so seq 2 would slip through as
     // covered on the strength of its neighbours alone.
     writeSome(4, { maxUnsignedEvents: 100 });
@@ -649,7 +649,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
   });
 });
 
-describe('chain — tolerates a torn final line, rejects mid-file corruption', () => {
+describe('chain: tolerates a torn final line, rejects mid-file corruption', () => {
   it('drops a torn trailing write (crash mid-append) so verify and recovery still work', () => {
     writeSome(4, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
@@ -660,7 +660,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     expect(result.ok).toBe(true);
     expect(result.tails[0]?.entryCount).toBe(5);
     // And it SAYS it dropped something. The tolerance is right; being silent about
-    // it was not — a dropped fragment is what an interrupted append leaves AND what
+    // it was not: a dropped fragment is what an interrupted append leaves AND what
     // an appended fragment leaves, so the reader is told and neither reading is
     // chosen for them. It is a census note, so `ok` is untouched.
     expect(result.census).toEqual([
@@ -679,14 +679,14 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
   });
 
   it('reports a malformed line that is NOT the torn trailing fragment as UNREADABLE', () => {
-    // It used to THROW out of verify — correct in its exit code and useless as a
+    // It used to THROW out of verify, correct in its exit code and useless as a
     // verdict: the caller got the parser's message ("not valid JSON: Unexpected end
     // of JSON input") with no tail, no position, and no `issues` to read. The
     // refusal is the same; it has an address now.
     writeSome(4, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
-    // Corrupt a MIDDLE line (has a newline after it) — real corruption.
+    // Corrupt a MIDDLE line (has a newline after it): real corruption.
     lines[1] = '{garbage not json';
     writeFileSync(seg, `${lines.join('\n')}\n`);
 
@@ -697,7 +697,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     const issue = result.issues[0];
     expect(issue?.layer).toBe('T1');
     expect(issue?.tail).toBe(tailIdOf(root));
-    // WHICH line, in a path inside the chain — not wherever this clone sits.
+    // WHICH line, in a path inside the chain, not wherever this clone sits.
     expect(issue?.detail).toContain(`UNREADABLE: tails/${tailIdOf(root)}/`);
     expect(issue?.detail).toContain('line 2');
     expect(issue?.detail).toContain('not valid JSON');
@@ -705,7 +705,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     expect(result.summary).toContain('part of the record is UNREADABLE');
   });
 
-  it('reports an unreadable CHECKPOINT line the same way — the rule is the read, not the file', () => {
+  it('reports an unreadable CHECKPOINT line the same way: the rule is the read, not the file', () => {
     // The second stored file a tail is verified over. A rule that lived only where
     // it was first needed would leave this one throwing.
     writeSome(4, { maxUnsignedEvents: 2 });
@@ -723,7 +723,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
   });
 });
 
-describe('chain — fullySigned distinguishes authenticated from residual', () => {
+describe('chain: fullySigned distinguishes authenticated from residual', () => {
   it('is true only when every event is covered by a verified signature', () => {
     writeSome(4, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint();
@@ -735,7 +735,7 @@ describe('chain — fullySigned distinguishes authenticated from residual', () =
   });
 });
 
-describe('chain — segmentation by size', () => {
+describe('chain: segmentation by size', () => {
   it('spans multiple segments and still verifies', () => {
     // Tiny cap forces a seal every few entries.
     writeSome(20, { maxSegmentBytes: 300, maxUnsignedEvents: 100 });
@@ -756,7 +756,7 @@ describe('chain — segmentation by size', () => {
   });
 });
 
-describe('chain — aggregation across tails (multi-machine)', () => {
+describe('chain: aggregation across tails (multi-machine)', () => {
   it('verifies two independently written tails together', () => {
     // Two roots share nothing; copy tail B's directory into tail A's chain to
     // simulate an offline merge (each machine wrote its own tail).
@@ -781,7 +781,7 @@ describe('chain — aggregation across tails (multi-machine)', () => {
   });
 });
 
-describe('chain — census crosses committed keys against tails on disk', () => {
+describe('chain: census crosses committed keys against tails on disk', () => {
   it('baseline: every tail has its key, so no census note (a two-machine chain)', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
@@ -805,7 +805,7 @@ describe('chain — census crosses committed keys against tails on disk', () => 
   });
 
   it('deleting a tail but LEAVING its key is flagged by the census (still ok, still blind)', () => {
-    // The hash chain sees nothing — the deleted tail is simply not read. But the
+    // The hash chain sees nothing: the deleted tail is simply not read. But the
     // committed key it left behind has no tail, and the census names it. This is
     // the non-adversarial common case (a tail dropped in a botched merge) and
     // the adversarial one (a tail removed to hide events) at once.
@@ -841,10 +841,10 @@ describe('chain — census crosses committed keys against tails on disk', () => 
     }
   });
 
-  it('deleting a tail AND its key is invisible — the honest limit only git can witness', () => {
+  it('deleting a tail AND its key is invisible: the honest limit only git can witness', () => {
     // With both the tail and its key gone, nothing on disk points at what was
-    // removed: the census has nothing to cross. This is the documented residual
-    // — local crypto cannot testify to a wholesale deletion; only an external
+    // removed: the census has nothing to cross. This is the documented residual:
+    // local crypto cannot testify to a wholesale deletion; only an external
     // witness (a git history of the committed files) can.
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
@@ -875,10 +875,10 @@ describe('chain — census crosses committed keys against tails on disk', () => 
   });
 });
 
-describe('chain — one key on several installations keeps distinct tails (copy-key, audit)', () => {
+describe('chain: one key on several installations keeps distinct tails (copy-key, audit)', () => {
   it('the same key copied to a second installation writes a DIFFERENT tail', () => {
     // A person copies their private key to a second machine. The key is the
-    // same, so the identity (anchor, signerFp) is the same — but each
+    // same, so the identity (anchor, signerFp) is the same, but each
     // installation mints its own installation id, so the tail directories
     // differ. This is the property that stops one installation's tail from
     // landing on the other's path.
@@ -909,12 +909,12 @@ describe('chain — one key on several installations keeps distinct tails (copy-
   it('merging the two installations loses NO events and verifies green with one identity', () => {
     // The regression that this whole change exists to prevent: with the tail id
     // equal to the fingerprint, both installations wrote `tails/<fp>/` and the
-    // merge silently overwrote one with the other — data lost, verify still
+    // merge silently overwrote one with the other, data lost, verify still
     // green. With a per-installation suffix the two tails are distinct, so the
     // merge is a union: every event from both machines survives.
     // Both installations found their (shared) anchor. The key is copied, so the
     // anchor is identical and the two `identity.founded` events fold to the same
-    // one-member set — idempotent. Founding on each tail keeps every tail
+    // one-member set: idempotent. Founding on each tail keeps every tail
     // self-verifiable regardless of merge order: the laptop's task never has to
     // hope the desktop's founding sorts ahead of it.
     const desktop = openFounded();
@@ -938,7 +938,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
 
       const result = verify(root);
       expect(result.ok).toBe(true);
-      // Two tails survive — nothing was overwritten.
+      // Two tails survive: nothing was overwritten.
       expect(result.tails).toHaveLength(2);
       const byTail = new Map(result.tails.map((t) => [t.tail, t.entryCount]));
       expect(byTail.get(desktopTail)).toBe(3); // founding + 2 tasks
@@ -982,8 +982,8 @@ describe('chain — one key on several installations keeps distinct tails (copy-
   });
 
   it('still verifies a tail named by a bare fingerprint (no installation suffix)', () => {
-    // A tail directory that is exactly a committed fingerprint — no `-<id>`
-    // suffix — must still be accepted: the whole name is on the roster. This
+    // A tail directory that is exactly a committed fingerprint, no `-<id>`
+    // suffix, must still be accepted: the whole name is on the roster. This
     // pins that the prefix rule did not stop matching the un-suffixed form.
     const kp = generateKeyPair();
     const fp = kp.fingerprint;
@@ -1038,13 +1038,13 @@ describe('chain — one key on several installations keeps distinct tails (copy-
   });
 });
 
-describe('chain — crash resilience beyond the torn last entry (audit)', () => {
+describe('chain: crash resilience beyond the torn last entry (audit)', () => {
   it('tolerates a torn last checkpoint line: verify does not throw, reads the intact prefix', () => {
     writeSome(4, { maxUnsignedEvents: 2 });
     openChain(root, { maxUnsignedEvents: 2 }).checkpoint();
     // A crash while signing a second checkpoint leaves a partial line, no newline.
     appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
-    // Before the fix this THREW a JSON SyntaxError out of verify — a verifier
+    // Before the fix this THREW a JSON SyntaxError out of verify: a verifier
     // that crashes on a crash artifact instead of reporting is the worst read
     // outcome for a proof product.
     let result!: ReturnType<typeof verify>;
@@ -1077,7 +1077,7 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
     // corruption that every later read throws on.
     const w = openChain(root, { maxUnsignedEvents: 100 });
     w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
-    // Re-read and re-verify AFTER the resume — this is what the old recovery
+    // Re-read and re-verify AFTER the resume: this is what the old recovery
     // test never did, so it missed the resurrection of the torn fragment.
     let result!: ReturnType<typeof verify>;
     expect(() => {
@@ -1088,7 +1088,7 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
   });
 });
 
-describe('chain — an entry is bound to the tail directory it lives in (audit)', () => {
+describe('chain: an entry is bound to the tail directory it lives in (audit)', () => {
   it('rejects a residual tail relocated/duplicated under a fabricated directory name', () => {
     // No checkpoint: the events sit in the residual window, where no checkpoint's
     // own `tail` field can catch a relocation.
@@ -1107,7 +1107,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
   it('rejects a RELABELED residual tail: link.tail rewritten and the keyless hash chain recomputed', () => {
     // The sharper attack the naive relocation test above misses: after copying a
     // residual tail into a fabricated directory, the attacker ALSO rewrites every
-    // `link.tail` to the fake name and recomputes the (keyless) hash chain — so
+    // `link.tail` to the fake name and recomputes the (keyless) hash chain, so
     // `link.tail == <dir>` holds again. No key is needed. The only thing left to
     // catch it is that the fabricated directory's fingerprint is not a committed
     // key. Without that binding this counted every event twice, green.
@@ -1140,7 +1140,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     // The sibling of the previous vector, and the one the installation-id suffix
     // opened: the prefix IS a committed key, so the fingerprint guard alone lets
     // it through. A keyless party copies a residual tail into
-    // `tails/<real-fp>-<forged>/`, relabels, recomputes the keyless hash — and
+    // `tails/<real-fp>-<forged>/`, relabels, recomputes the keyless hash, and
     // without a tail proof would have its events counted twice. The tail proof
     // closes it: the forged sibling has no signature over its own id (the
     // attacker lacks the private key), so the copied proof does not match and a
@@ -1174,7 +1174,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
   });
 });
 
-describe('chain — who != which binding survives a canonical-form bypass (audit)', () => {
+describe('chain: who != which binding survives a canonical-form bypass (audit)', () => {
   it('rejects a which that equals who after NFC+trim (a trailing-space self-authorization)', () => {
     // Attacker owns their own key (T3): they can sign with a committed key. They
     // set which = who + " ": byte-distinct from who, so a raw compare passes,
@@ -1213,10 +1213,10 @@ describe('chain — who != which binding survives a canonical-form bypass (audit
   });
 });
 
-describe('chain — whether a root holds a record at all', () => {
+describe('chain: whether a root holds a record at all', () => {
   it('says no for a root that is not there, and no for an empty one', () => {
     // The question a verifier asks about a tree it was merely NAMED. Three trees are
-    // named for every project and one of them — the gitignored private tree — is
+    // named for every project and one of them, the gitignored private tree, is
     // absent on every fresh clone, so "there is nothing here" has to be answerable
     // without replaying a chain that does not exist.
     expect(holdsRecord({ root: join(root, 'nowhere') })).toBe(false);
@@ -1231,7 +1231,7 @@ describe('chain — whether a root holds a record at all', () => {
   it('says yes when the TAILS are gone and the committed keys remain', () => {
     // The case that decides this is not `listTails().length > 0`. A key is written
     // before its machine's first event and its fingerprint IS its tail id, so keys
-    // with no tails is exactly the shape of a tail that went missing — the census
+    // with no tails is exactly the shape of a tail that went missing: the census
     // note exists to say so, and answering "nothing here" would silence it.
     writeSome(2).checkpoint();
     rmSync(join(root, 'tails'), { recursive: true, force: true });
@@ -1285,7 +1285,7 @@ function tamperLine(chainRoot: string, seq: number, mutate: (e: RawEntry) => Raw
 /**
  * Edits an event's content and then re-derives the entire tail's entry hashes
  * from that seq onward, so the keyless hash chain (T1) is internally consistent
- * again — the exact attack the content-root invariant must still catch.
+ * again: the exact attack the content-root invariant must still catch.
  */
 function repairChainAfterEdit(
   chainRoot: string,
@@ -1303,7 +1303,7 @@ function repairChainAfterEdit(
     }
     entry.link.prev = prev;
     // Recompute the entry hash from the (possibly edited) event exactly as the
-    // verifier does — over the bytes on the line, not over a lifted reading of
+    // verifier does: over the bytes on the line, not over a lifted reading of
     // them. This is the adversary "repairing" the keyless chain.
     entry.link.hash = entryHash({
       event: writtenAsStored(entry.event as never),
@@ -1362,7 +1362,7 @@ function cpDir(from: string, into: string): void {
 
 /**
  * Copies a key pair (both `.key` and `.pub`) from one chain into another,
- * WITHOUT the local `.inst` — simulating a person moving their private key to a
+ * WITHOUT the local `.inst`: simulating a person moving their private key to a
  * second machine. The new installation then mints its own installation id.
  */
 function copyKeyOnly(fromRoot: string, intoRoot: string): void {
@@ -1376,7 +1376,7 @@ function copyKeyOnly(fromRoot: string, intoRoot: string): void {
   }
 }
 
-describe('signerAt — who would sign, read without opening the chain', () => {
+describe('signerAt: who would sign, read without opening the chain', () => {
   it('touches nothing in the chain, and keeps no key at the key root even where there is none', () => {
     const chainRoot = join(root, 'chain');
     const keyRoot = join(root, 'identity');
@@ -1385,7 +1385,7 @@ describe('signerAt — who would sign, read without opening the chain', () => {
     const signer = signerAt(chainRoot, { keyRoot });
     // No public half, no installation id, no tail: the chain is exactly as it was.
     expect(readdirSync(chainRoot)).toEqual([]);
-    // A signer is somebody, so a machine with no key gets one — held in this process, and kept
+    // A signer is somebody, so a machine with no key gets one, held in this process, and kept
     // only by a writer's first append: asking who would sign is not a write.
     expect(existsSync(keyRoot)).toBe(false);
     expect(signer.anchor).toBe(deriveAnchor(signer.signerFingerprint));
@@ -1410,7 +1410,7 @@ describe('signerAt — who would sign, read without opening the chain', () => {
     expect(seen(signer)).toEqual(seen(writer));
 
     // An installation that adopted another identity records THAT anchor, and both read the
-    // record the moment it is written — neither holds a copy of it.
+    // record the moment it is written: neither holds a copy of it.
     const adopted = deriveAnchor(generateKeyPair().fingerprint);
     writer.recordAnchor(adopted);
     expect(seen(signer)).toEqual(seen(writer));

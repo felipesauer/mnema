@@ -1,6 +1,6 @@
 /**
  * Who may take a note back: the identity that wrote it, and no other. The anchor is compared,
- * not the key — a second key of the identity carries the same anchor, which is what lets it
+ * not the key: a second key of the identity carries the same anchor, which is what lets it
  * retract (`core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts` drives
  * that through an enrolled key).
  */

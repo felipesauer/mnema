@@ -4,8 +4,8 @@
  * three things a reader of that section relies on.
  *
  *   - P3, the round trip: what `canonicalStringify` writes, `parseCanonicalLine` reads back as
- *     the value it was written from — normalized the way the section says (strings and keys in
- *     NFC, a negative zero as zero) — and writing that again changes no byte;
+ *     the value it was written from, normalized the way the section says (strings and keys in
+ *     NFC, a negative zero as zero), and writing that again changes no byte;
  *   - the bytes ARE the definition: they equal what a model of the section's sentences writes,
  *     a short recursive encoder that shares nothing with the one in `canonical.ts`;
  *   - a line that is not those bytes is REFUSED, whatever the value: spaced out, or with its
@@ -13,7 +13,7 @@
  *
  * The generator draws what makes a canonicalizer fork: text in both Unicode compositions,
  * astral characters, numbers on the edges of what JSON spells, and keys that collide once
- * normalized — which the section says is a refusal, so the model refuses them too.
+ * normalized, which the section says is a refusal, so the model refuses them too.
  *
  * The seed is fixed so the CI is the same run every time; `FC_SEED` explores another.
  */
@@ -94,7 +94,7 @@ function model(value: CanonicalValue): { text: string; normalized: CanonicalValu
   };
 }
 
-/** The model's answer, or the word that it refuses — what a value earns under section 1. */
+/** The model's answer, or the word that it refuses: what a value earns under section 1. */
 function expected(value: CanonicalValue): { text: string; normalized: CanonicalValue } | 'refused' {
   try {
     return model(value);

@@ -6,20 +6,20 @@
  * and, on its own, is bound to nothing: a party who holds no key can copy a
  * residual (uncheckpointed) tail into `tails/<real-fingerprint>-<forged>/`,
  * relabel every `link.tail`, recompute the keyless hash chain, and the verifier
- * would count the same events under two tail ids — a keyless duplication in the
+ * would count the same events under two tail ids, a keyless duplication in the
  * window before the first checkpoint. (A checkpoint already signs the full tail
  * id, so a tail that has checkpointed is immune; the gap is only the residual
  * window.)
  *
- * The tail proof closes that gap the same way the checkpoint does — by
+ * The tail proof closes that gap the same way the checkpoint does: by
  * signature. At birth the owner signs a statement naming THIS tail id with its
  * private key and stores it beside the segments. The verifier requires every
  * tail to carry a valid proof over its own directory name, checked against the
  * committed public key for the fingerprint prefix. A keyless party cannot mint
  * one over a forged suffix, and a genuine proof does not transfer to a
  * different tail id (the signed message is the tail id), so a legitimate second
- * installation of a copied key — which holds the key and signs its OWN distinct
- * id — still verifies, while the fabricated sibling does not.
+ * installation of a copied key, which holds the key and signs its OWN distinct
+ * id, still verifies, while the fabricated sibling does not.
  *
  * The proof is over the id, never the content: integrity of the events is the
  * hash chain's job and their authenticity is the checkpoint's. It is signed
@@ -35,7 +35,7 @@ import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
  *
  * EXPORTED SO THE DOCUMENT CAN NAME IT. `format-doc.test.ts` requires every
  * `mnema-<thing>/<n>` tag written in `FORMAT.md` to be a constant the code
- * exports — its own comment says a new section "has to export its own before it
+ * exports: its own comment says a new section "has to export its own before it
  * can name it". This artifact went undocumented until an independent verifier
  * found it in a tail directory and had to guess what it signs (gap G10), so the
  * document now has a section about it, and this is the constant that section is
@@ -48,7 +48,7 @@ const SCHEME = TAILPROOF_SCHEME;
 /** A signing key's proof that it owns a given tail id. */
 export interface TailProof {
   readonly scheme: string;
-  /** The tail id this proof is over — `<fingerprint>-<installationId>`. */
+  /** The tail id this proof is over: `<fingerprint>-<installationId>`. */
   readonly tail: string;
   /** Full fingerprint of the signing key (equal to the tail's prefix). */
   readonly signerFp: string;
@@ -56,7 +56,7 @@ export interface TailProof {
   readonly sig: string;
 }
 
-/** The canonical bytes that are signed — everything but the signature. */
+/** The canonical bytes that are signed: everything but the signature. */
 function signedMessage(fields: Omit<TailProof, 'sig'>): Uint8Array {
   return canonicalBytes({
     scheme: fields.scheme,

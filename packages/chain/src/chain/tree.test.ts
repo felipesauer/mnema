@@ -25,7 +25,7 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('ensureTree — self-contained .gitignore', () => {
+describe('ensureTree: self-contained .gitignore', () => {
   it('writes a .gitignore that ignores the private subtree and local key material', () => {
     ensureTree({ root });
     const ignore = readFileSync(gitignorePath({ root }), 'utf-8');
@@ -51,14 +51,14 @@ describe('ensureTree — self-contained .gitignore', () => {
   });
 
   it('lets the WITNESS through, and git is the one asked', () => {
-    // The attestation and the block headers are public by construction — a digest, a
-    // Merkle path and eighty bytes of somebody else's block — and they are the only
+    // The attestation and the block headers are public by construction (a digest, a
+    // Merkle path and eighty bytes of somebody else's block) and they are the only
     // thing standing between a clone and a `not covered` it cannot do anything about.
     // A rule that hid them would make T3 a layer only the machine that stamped can see.
     //
     // ASKED OF `git check-ignore`, NOT OF A SUBSTRING. The first draft of this compared
     // the rules to a path by hand, and a mutation that added `/tails/*/witness/` to the
-    // ignore file walked straight past it — a glob is not a substring, and a rule like
+    // ignore file walked straight past it: a glob is not a substring, and a rule like
     // `/tails/*/*/` would not even carry the word. The tool that decides this in
     // production is git, so git is what answers.
     const repo = mkdtempSync(join(tmpdir(), 'mnema-gitignore-'));
@@ -138,7 +138,7 @@ describe('ensureTree — self-contained .gitignore', () => {
   });
 });
 
-describe('ensureTree — a .gitattributes that keeps git from rewriting line ends', () => {
+describe('ensureTree: a .gitattributes that keeps git from rewriting line ends', () => {
   const attributes = (): string => join(root, '.gitattributes');
 
   it('writes `* -text`, so a checkout never turns the record into lines that are not its bytes', () => {

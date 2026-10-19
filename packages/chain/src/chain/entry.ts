@@ -2,12 +2,12 @@
  * A chain entry: one line of a tail's JSONL.
  *
  * An entry keeps the event and the chain-link SEPARATE. The `link` is the
- * chain's own bookkeeping — position and predecessor — added at write time.
+ * chain's own bookkeeping, position and predecessor, added at write time.
  * Keeping them apart is what lets the content root be recomputed from the event
  * alone, independent of any stored hash.
  *
  * The event itself is carried TWICE, and the two are not redundant:
- *   - `event` is the READING — the catalog's current shape, lifted through the
+ *   - `event` is the READING: the catalog's current shape, lifted through the
  *     registered upcasters, which is what anything that wants meaning asks for
  *     (a projection, the enrollment fold, a surface);
  *   - `written` is the form that reached the disk, which is the only form the
@@ -15,7 +15,7 @@
  *
  * They coincide today, when every kind is at v1 and nothing lifts, and they part
  * the first time a kind gains a v2. Proving over the reading instead of the
- * written form is the failure this separation exists to make impossible — see
+ * written form is the failure this separation exists to make impossible: see
  * {@link WrittenEvent}.
  */
 
@@ -39,7 +39,7 @@ export interface EntryLink {
   readonly hash: string;
 }
 
-/** A stored entry: the event — as read and as written — plus its chain-link. */
+/** A stored entry: the event, as read and as written, plus its chain-link. */
 export interface Entry {
   /** The event under the CURRENT contract: lifted, for anything that reads meaning. */
   readonly event: CatalogEvent;
@@ -58,8 +58,8 @@ export class EntryParseError extends Error {
  * and predecessor. The caller supplies the position and predecessor from the
  * tail's current head.
  *
- * The event handed in is by construction the form that will be written — it came
- * from a builder under the current contract and nothing has lifted it — so the
+ * The event handed in is by construction the form that will be written (it came
+ * from a builder under the current contract and nothing has lifted it), so the
  * written form is taken here, once, and everything downstream (the hash, the
  * serialized line, the checkpoint the writer will sign) is over that one value.
  */
@@ -81,7 +81,7 @@ export function sealEntry(input: {
 /**
  * Serializes an entry to its stored JSONL line (canonical, no trailing newline).
  * The line carries the WRITTEN event, so the bytes on disk are exactly the bytes
- * the entry hash was taken over — and re-serializing an entry read back from a
+ * the entry hash was taken over, and re-serializing an entry read back from a
  * line reproduces that line rather than a lifted rewrite of it.
  */
 export function serializeEntry(entry: Entry): string {
@@ -99,7 +99,7 @@ export function serializeEntry(entry: Entry): string {
 
 /**
  * Parses one stored line back into an entry, validating the event against the
- * catalog and the link's shape. Does NOT check the hash chain — that is the
+ * catalog and the link's shape. Does NOT check the hash chain; that is the
  * verifier's job over a whole tail; this only rebuilds the typed entry.
  *
  * It keeps BOTH forms of the event. The written form is taken from the raw
@@ -124,7 +124,7 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   }
   const link = parseLink(obj.link);
   // Sound by construction: `JSON.parse` only ever yields strings, finite
-  // numbers, booleans, null, arrays, and plain objects — the closed set
+  // numbers, booleans, null, arrays, and plain objects, the closed set
   // CanonicalValue names. Whether it can be canonicalized at all (a lone
   // surrogate cannot) USED TO BE decided here only when a proof first asked
   // for the bytes. `parseCanonicalLine` now serializes every line it reads to
@@ -161,7 +161,7 @@ function parseLink(raw: unknown): EntryLink {
 }
 
 /**
- * WHY one entry does not follow the one before it on its tail — or `undefined` if it
+ * WHY one entry does not follow the one before it on its tail, or `undefined` if it
  * does. The THREE structural questions, and nothing that costs a hash.
  *
  * ONE RULE, TWO READERS, and that is the whole reason this is a function rather than a
@@ -169,7 +169,7 @@ function parseLink(raw: unknown): EntryLink {
  * recompute each entry's hash, which is the part that needs the key material and the
  * cost that comes with it); the plain READ of a tail asks it so it can say that what it
  * is about to serve does not chain (`store.ts`). Two loops spelling the same three
- * comparisons is how one of them comes to accept a tail the other refuses — and a
+ * comparisons is how one of them comes to accept a tail the other refuses, and a
  * reader more lenient than the verdict is precisely the shape that lets a broken record
  * be served in silence.
  *
@@ -183,8 +183,8 @@ function parseLink(raw: unknown): EntryLink {
  * seq gap at seq 5, which a whole-tail structural pass run first would have quietly
  * reversed.
  *
- * `expectedPrev` is null for the first entry of a tail, and `expectedSeq` counts from 0
- * — seqs run contiguously from the tail's birth, which is what makes a duplicate one
+ * `expectedPrev` is null for the first entry of a tail, and `expectedSeq` counts from 0:
+ * seqs run contiguously from the tail's birth, which is what makes a duplicate one
  * detectable at all.
  */
 export type LinkBreakKind =
@@ -215,7 +215,7 @@ export function linkBreakAt(
 }
 
 /**
- * The sentence a {@link LinkBreakKind} is reported as — the ONE wording, read by the
+ * The sentence a {@link LinkBreakKind} is reported as: the ONE wording, read by the
  * verdict and by the reads alike.
  *
  * Total over the union, so a fourth way for a tail to stop chaining does not compile

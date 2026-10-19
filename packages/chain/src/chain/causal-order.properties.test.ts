@@ -1,11 +1,11 @@
 /**
- * The order citations give, held as PROPERTIES over generated tails — the sentences FORMAT.md
+ * The order citations give, held as PROPERTIES over generated tails: the sentences FORMAT.md
  * writes under "Reading many tails", each against a model a few lines long written here.
  *
  * WHAT IS DRAWN. A history of writes: each write lands on a drawn tail of a drawn tree, at a
  * drawn instant from a small range (ties are the case the tie-break exists for, and an instant
  * drawn freely is a clock that disagrees with every other), and may cite the heads the other
- * tails of its tree had at that moment — what the product's writer does. So every citation
+ * tails of its tree had at that moment (what the product's writer does). So every citation
  * names an entry that existed before the entry citing it, and the instants say nothing about
  * that.
  *
@@ -182,7 +182,7 @@ describe('the order a citation gives', () => {
         ),
       }));
       // What depends on the citing entry: it, what follows it on its tail, and whatever cites
-      // any of those — closed, since a dependant's own tail followers depend on it too.
+      // any of those (closed, since a dependant's own tail followers depend on it too).
       const moved = new Set<string>();
       const grow = (t: number, from: number) => {
         for (const entry of (changed[t] as DrawnTail).entries.slice(from)) moved.add(entry.hash);

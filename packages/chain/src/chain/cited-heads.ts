@@ -12,11 +12,11 @@
  * tail, and reading the whole tail back before every write to learn it is the cost this must
  * not have. So the heads a tail last cited are kept beside the tail's lock, in `locks/`, which
  * the tree's `.gitignore` already keeps out of the record: it is machinery, never proof. Lost,
- * the next write cites every head again — one redundant citation per tail, which changes no
+ * the next write cites every head again: one redundant citation per tail, which changes no
  * order, since its event already followed them. Two processes of one installation share the
  * tail and its lock, so they read and write the note in turn.
  *
- * WHAT IT COSTS. A record with one tail — one machine, which is most of them — costs one
+ * WHAT IT COSTS. A record with one tail (one machine, which is most of them) costs one
  * directory listing and nothing else: there is no other head to read. Otherwise one `stat` per
  * other tail per write, and one line parsed per tail whose last segment moved since this
  * writer last looked.
@@ -54,7 +54,7 @@ export class HeadsToCite {
   ) {}
 
   /**
-   * `event` with `after` naming every other tail's head this tail has not cited yet — or
+   * `event` with `after` naming every other tail's head this tail has not cited yet, or
    * `event` itself when there is none, or when it already says what it cites.
    */
   cite(event: CatalogEvent): Cited {
@@ -76,7 +76,7 @@ export class HeadsToCite {
     };
   }
 
-  /** The heads this tail last cited, by tail id — empty when the note is absent or unreadable. */
+  /** The heads this tail last cited, by tail id: empty when the note is absent or unreadable. */
   private cited(): Record<string, string> {
     try {
       const parsed: unknown = parseStoredJson(

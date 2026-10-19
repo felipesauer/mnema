@@ -72,7 +72,7 @@ describe('canonicalStringify', () => {
   });
 });
 
-describe('canonicalStringify — Unicode determinism', () => {
+describe('canonicalStringify: Unicode determinism', () => {
   // A composed (NFC) and decomposed (NFD) "é" render identically but are
   // byte-distinct; a renormalizing reformat would otherwise fork the bytes.
   const nfc = 'café'; // café with U+00E9

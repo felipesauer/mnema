@@ -1,5 +1,5 @@
 /**
- * The backward line walk — the bytes it returns, and the bytes it never reads.
+ * The backward line walk: the bytes it returns, and the bytes it never reads.
  *
  * Every reader that resumes a tail enters its file from the end, so the edges
  * that matter here are physical: where a line starts, what a missing final
@@ -24,7 +24,7 @@ import {
 
 /**
  * Counts the reads the walk actually issues. An ESM namespace cannot be spied
- * on, so the module is wrapped instead — every other export is the real one.
+ * on, so the module is wrapped instead: every other export is the real one.
  */
 const reads = vi.hoisted(() => ({ count: 0 }));
 vi.mock('node:fs', async (importActual) => {
@@ -168,7 +168,7 @@ describe('the torn-fragment tolerance', () => {
     return parsed as { n: number };
   };
 
-  /** The locus a caller of the rule has to supply — see {@link parseStoredLine}. */
+  /** The locus a caller of the rule has to supply: see {@link parseStoredLine}. */
   const where = () => 'somewhere.jsonl line 7';
 
   it('drops a line that can be torn and fails to parse', () => {
@@ -192,7 +192,7 @@ describe('the torn-fragment tolerance', () => {
     );
   });
 
-  it('keeps a line that can be torn but parses — that is the caller’s problem', () => {
+  it('keeps a line that can be torn but parses: that is the caller’s problem', () => {
     // A fragment that happens to parse is indistinguishable from a complete
     // line here; a resuming writer heals the file first so it never sees one.
     expect(parseStoredLine(bytesOf('{"n":1}'), true, parse, where)).toEqual({ n: 1 });
@@ -214,7 +214,7 @@ describe('the torn-fragment tolerance', () => {
   });
 
   it('names the OFFSET of the line the backward walk refused, not the file alone', () => {
-    // The backward walk has no line numbers — it has byte offsets, which is the
+    // The backward walk has no line numbers: it has byte offsets, which is the
     // position it actually knows. `{"n":1}\n` is eight bytes, so the corrupt second
     // line starts at eight.
     const corrupt = file('{"n":1}\n{"n":3\n');
@@ -231,7 +231,7 @@ describe('the torn-fragment tolerance', () => {
     const corrupt = file('{"n":1\n{"n":2}\n');
     const walk = parsedFromEnd(corrupt, true, parse);
     expect(walk.next().value).toEqual({ n: 2 });
-    // Reading on would hit the malformed first line and throw — the point is
+    // Reading on would hit the malformed first line and throw: the point is
     // that a caller wanting only the last line never gets there.
     expect(() => [...walk]).toThrow(UnreadableLineError);
   });
@@ -264,7 +264,7 @@ describe('a line that is not UTF-8', () => {
 
   it('keeps a torn fragment cut inside a multi-byte character a torn fragment, dropped', () => {
     // A crash can stop an append between the two bytes of `é`. That fragment is what any
-    // torn write is, and it is dropped as one — it is not a refusal of bytes that are not UTF-8.
+    // torn write is, and it is dropped as one: it is not a refusal of bytes that are not UTF-8.
     expect(parseStoredLine(cutInsideACharacter, true, parse, where)).toBeNull();
     const path = file(Buffer.concat([bytesOf('{"s":"a"}\n'), cutInsideACharacter]));
     expect([...parsedFromEnd(path, true, parse)]).toEqual([{ s: 'a' }]);

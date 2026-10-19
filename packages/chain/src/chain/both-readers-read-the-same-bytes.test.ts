@@ -19,13 +19,13 @@
  *   - the rule is applied by ONE function: no code under `src` reads a stored line with
  *     `JSON.parse` directly.
  *
- * THIS HEADER USED TO END: *what is NOT here is a decision — the product forgives whitespace,
+ * THIS HEADER USED TO END: *what is NOT here is a decision; the product forgives whitespace,
  * key order and Unicode composition on a stored line, the second reader refuses them, and
  * nothing below asserts either side.* The decision was taken (01/10/2026), for the format: a
  * line of the record that is not the canonical serialization of what it holds is refused by
  * the product too, at the same function and the same layer as a duplicate
  * (`parseCanonicalLine`). So this file now also holds, for each way a line can be
- * re-spelled without changing its value — whitespace, key order, composition — that both
+ * re-spelled without changing its value (whitespace, key order, composition) that both
  * readers refuse it and name the same line.
  */
 
@@ -199,7 +199,7 @@ describe('a duplicate key on a stored line is refused wherever a stored line is 
 });
 
 /**
- * A LINE THAT IS NOT CANONICAL IS REFUSED WHEREVER A LINE OF THE RECORD IS READ — the same four
+ * A LINE THAT IS NOT CANONICAL IS REFUSED WHEREVER A LINE OF THE RECORD IS READ: the same four
  * places as the duplicate, by the same function, and named the same way. Each re-spelling
  * below leaves the VALUE exactly as it was (asserted, or the case would be refusing an edit),
  * which is the whole point: the value recomputes every hash and every signature, so only a
@@ -294,7 +294,7 @@ describe('a line that is not the canonical serialization of its value is refused
     }
   });
 
-  it('refuses a line with no canonical bytes at all — a lone surrogate — at the parse', () => {
+  it('refuses a line with no canonical bytes at all, a lone surrogate, at the parse', () => {
     expect(() => parseCanonicalLine('{"a":"\\ud800"}')).toThrow(
       /a value the format has no bytes for/,
     );
@@ -316,7 +316,7 @@ describe('a line that is not the canonical serialization of its value is refused
     expect(readStoredWitness(layout, tail, digest)?.headers.size).toBe(1);
 
     // The second reader used to escape a refused sidecar as a traceback and print no
-    // verdict at all. It says the attestation cannot be checked offline instead — the
+    // verdict at all. It says the attestation cannot be checked offline instead: the
     // whole sidecar where the product drops one line, which is the declared difference.
     const there = python([VERIFIER, '--json', 'record', record]);
     expect(there.stderr).not.toContain('Traceback');
@@ -349,8 +349,8 @@ describe('a line that is not the canonical serialization of its value is refused
  * agree on nothing a person can act on, and the second reader used to be exactly that for a
  * line it refused: it dropped the line, then counted entries by POSITION, so the hole read as
  * a gap in the sequence, a `prev` that does not chain, and a content root that does not
- * fold — three findings naming a cut and an edit the record does not contain, over what was
- * one duplicate key.
+ * fold (three findings naming a cut and an edit the record does not contain, over what was
+ * one duplicate key).
  */
 type Agreement =
   | { readonly name: string; readonly verdict: 'accepted' }

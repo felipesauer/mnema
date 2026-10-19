@@ -24,7 +24,7 @@ import {
   weakerLevel,
 } from './level.js';
 
-/** A fully proven record, as facts — each test bends one thing about it. */
+/** A fully proven record, as facts: each test bends one thing about it. */
 const PROVEN: ProvenFacts = {
   unreadable: false,
   hasIssue: false,
@@ -54,7 +54,7 @@ describe('the level a verification reached', () => {
 
   it('names the empty record hash-chain-only too, not fully signed', () => {
     // Vacuously "every event is covered" is true and useless. No signature was
-    // checked here either, and that is the true thing to say — it is also what a
+    // checked here either, and that is the true thing to say: it is also what a
     // tail whose events AND checkpoints were all deleted looks like.
     expect(provenLevel({ ...PROVEN, signedEvents: 0, uncheckpointedEvents: 0 })).toBe(
       'hash-chain-only',
@@ -69,7 +69,7 @@ describe('the level a verification reached', () => {
     expect(provenLevel({ ...PROVEN, unreadable: true, hasIssue: true })).toBe('unreadable');
   });
 
-  it('DECIDES A BREAK FIRST — a residual can never soften one', () => {
+  it('DECIDES A BREAK FIRST: a residual can never soften one', () => {
     // The inversion this whole change had to avoid. A truncated tail whose
     // checkpoint no longer covers it is `FAILED` today; a sentence that qualifies
     // ("no signature was checked") must not become a sentence that excuses. Every
@@ -125,7 +125,7 @@ describe('the level a verification reached', () => {
 
 describe('what a caller may require', () => {
   it('accepts, for each requirement, exactly the levels at or above what it asks', () => {
-    // The whole matrix, both directions — a requirement that accepted one level too
+    // The whole matrix, both directions: a requirement that accepted one level too
     // many is the shape of a gate that passes a forged record.
     const accepted: Readonly<Record<LevelRequirement, readonly ProvenLevel[]>> = {
       chained: [
@@ -162,7 +162,7 @@ describe('what a caller may require', () => {
 
 describe('how a level reads', () => {
   it('gives every level a sentence, and only the two failures say FAILED', () => {
-    // Totality is a type property; this is the part a type cannot say — that no
+    // Totality is a type property; this is the part a type cannot say: that no
     // level reaches a reader as `undefined`, and that no level short of a full proof
     // borrows the fully-proven wording.
     for (const level of PROVEN_LEVELS) {
@@ -195,8 +195,8 @@ describe('how a level reads', () => {
 
 describe('folding several chains into one level', () => {
   it('answers the WEAKER of two, in either order', () => {
-    // One record can be several chains — a project keeps its committed tree and this
-    // machine's private one — and the aggregate has to be the weak one, whichever
+    // One record can be several chains, a project keeps its committed tree and this
+    // machine's private one, and the aggregate has to be the weak one, whichever
     // order the trees were read in.
     expect(weakerLevel('fully-signed', 'broken')).toBe('broken');
     expect(weakerLevel('broken', 'fully-signed')).toBe('broken');
@@ -205,7 +205,7 @@ describe('folding several chains into one level', () => {
     expect(weakerLevel('unreadable', 'broken')).toBe('unreadable');
   });
 
-  it('is the ORDER of the levels, over every pair — never a favourite', () => {
+  it('is the ORDER of the levels, over every pair, never a favourite', () => {
     // Totality where a table cannot be written: every pair of levels, both ways
     // round, answering the one that {@link PROVEN_LEVELS} puts first. A fold that
     // returned the STRONGER of two would pass a gate on the healthy half of a record,

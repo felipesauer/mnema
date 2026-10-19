@@ -12,8 +12,8 @@
  *     root even if every entry hash was repaired, so a forger without the
  *     private key cannot pass. An anonymous clone runs exactly this, offline,
  *     with no secret. And once a checkpoint verifies, every event it covers must
- *     name the signer that attested it — its `signerFp` equals the checkpoint's
- *     — so a party with their own key cannot re-sign a range whose events claim a
+ *     name the signer that attested it (its `signerFp` equals the checkpoint's),
+ *     so a party with their own key cannot re-sign a range whose events claim a
  *     different signer.
  *   - IDENTITY (enrollment): who a signer speaks for is not its own key by
  *     default; it is resolved by folding the chain's enrollment facts
@@ -34,26 +34,26 @@
  *
  * WHAT EVERY RECOMPUTATION ABOVE IS OVER. Reading a stored line lifts its event
  * through the registered upcasters, so the event this file holds may be the
- * CURRENT expression of a fact written years ago — a reading, not the record.
+ * CURRENT expression of a fact written years ago: a reading, not the record.
  * Both recomputations therefore take `entry.written`, the form that reached the
  * disk (see hash.ts). Doing it the other way is not a smaller mistake at T1 than
  * at T2/T4: at T1 the first kind to gain a v2 reports "content or link was
  * altered" on an untouched chain; at T2/T4 it reports a broken SIGNATURE, which
  * is this product's word for "someone edited this without the key". Pinned by
- * upcast-vs-proof.test.ts, which registers a synthetic v1→v2 lift — the only way
+ * upcast-vs-proof.test.ts, which registers a synthetic v1→v2 lift: the only way
  * to exercise a mechanism that is otherwise dormant while the catalog has one
  * version of everything.
  *
  * The lift is not skipped to get there, and that is deliberate: this verifier
- * also refuses a chain it cannot READ. A line whose ladder is broken — no
- * upcaster for its rung, or a version ahead of this catalog — is refused rather
+ * also refuses a chain it cannot READ. A line whose ladder is broken (no
+ * upcaster for its rung, or a version ahead of this catalog) is refused rather
  * than verified green over bytes nobody can interpret. Both halves are the same
  * promise as the writer's (writer.ts refuses to seal what no reader would accept);
  * one guards the way in, the other the way back.
  *
  * HOW it refuses used to be "it throws out of the read", and that was measured and
  * found to be a message rather than a finding: the caller got the parser's own
- * sentence — `not valid JSON: Unexpected end of JSON input` — with no tail, no
+ * sentence (`not valid JSON: Unexpected end of JSON input`) with no tail, no
  * position, no word for "unreadable", and no `tails`/`issues` to read at all. It is
  * a VERDICT now: an unreadable line becomes an issue with the tail and the position
  * in it, and the level says `unreadable` (see level.ts and `readOrIssue`). Nothing
@@ -62,12 +62,12 @@
  * WHAT IT COSTS IS ONE PASS OVER THE RECORD, and until this was written it was not: each
  * checkpoint's range was a `filter` over the whole tail, and this product signs once per
  * act, so the checkpoints grow with the events and the verdict cost the square of the
- * history — 1.9 s over ten thousand events and 77 s over a hundred thousand, a slope of
- * 1.96 between the two largest of the five sizes measured. Now each tail is read once, each
+ * history (1.9 s over ten thousand events and 77 s over a hundred thousand, a slope of
+ * 1.96 between the two largest of the five sizes measured). Now each tail is read once, each
  * range is found without walking it (range.ts), each committed key is read and
  * fingerprinted once (store.ts), and the rest is the work the proof is made of: an entry
- * hash and a content root per event, a signature per checkpoint — 1.2 s over ten thousand
- * events and 12 s over a hundred thousand, a slope of 0.98 across the five. The shape is
+ * hash and a content root per event, a signature per checkpoint (1.2 s over ten thousand
+ * events and 12 s over a hundred thousand, a slope of 0.98 across the five). The shape is
  * counted, not timed, in `verify-costs-what-the-record-holds.test.ts`.
  *
  * The window of events above the last checkpoint is a declared residual:
@@ -81,21 +81,21 @@
  * proof that its key signed its own id (see tailproof.ts), and a keyless party
  * can neither mint that proof nor relocate a genuine one (the signed message is
  * the tail id). So the only tails that resolve are those whose key actually
- * owns them. What remains indistinguishable — by design — is a legitimate
+ * owns them. What remains indistinguishable, by design, is a legitimate
  * SECOND INSTALLATION of one's own key (copy-key): it holds the key and signs
  * its own distinct id, exactly as the first did. That is benign duplication of
  * the owner's own work, not a foreign tail, and a checkpoint later binds each
  * tail's name so no residual survives into a signed range. A reader that
- * requires `fullySigned` — not merely `ok` — sees any residual plainly.
+ * requires `fullySigned`, not merely `ok`, sees any residual plainly.
  *
  * EVERY VALUE A FINDING NAMES GOES THROUGH `oneLine`, and this is the one file where
  * that rule needs no argument. A verdict is what a third party reads to decide whether
- * to believe the record, and an issue is one per line under a count — so a value
+ * to believe the record, and an issue is one per line under a count, so a value
  * carrying a newline puts a second finding on the page, about a tail nobody has. Every
  * such value here comes from the thing under suspicion: a tail id is a DIRECTORY NAME,
  * so anybody who can write the tree can choose it; a signer fingerprint is a field of a
  * stored entry; a reader's complaint quotes the bytes it choked on. Measured against the
- * shipped binary, two of those forged a line. The numbers do not go through it — a
+ * shipped binary, two of those forged a line. The numbers do not go through it: a
  * `seq`, a count, a word of a closed union cannot hold whitespace, and collapsing them
  * would hide the day one of them stopped being a number. Which is which is classified,
  * value by value, in `code/tests/the-phrase-the-domain-words-is-one-line.test.ts`.
@@ -167,13 +167,13 @@ export interface TailIssue {
  * guilty one, and the disk cannot tell them apart. Reporting the ambiguity is the
  * product's posture; choosing a side on the reader's behalf is not.
  *
- * A WAIVER DOES NOT CHANGE THAT POSTURE — it gives the disk the fact it was
+ * A WAIVER DOES NOT CHANGE THAT POSTURE: it gives the disk the fact it was
  * missing. A key with no tail had three readings and nothing to choose between
  * them; a `tail.pruned` naming that key's tail answers the third one, so the note
  * SAYS SO instead of listing three possibilities (see {@link keysWithoutTail}).
  * With no waiver the note is what it always was, byte for byte. And an accounted-for
  * cut is still not a verdict: it moves neither `ok` nor the exit code, because a cut
- * that was authorized is not a break — and it is not a cure for one either.
+ * that was authorized is not a break, and it is not a cure for one either.
  *
  * It is a union rather than one shape because the observations are about different
  * things, and a reader that has to branch on `kind` is a reader who cannot mistake one
@@ -206,13 +206,13 @@ export type CensusNote =
  * event (an empty tail directory is not versioned by git, so a clone sees the key
  * alone), or a merge that copied the key but not the tail. The guilty one: a tail
  * removed to hide its events. And it is blind to a tail deleted together WITH its
- * key: with nothing left on disk to cross, only a copy of the record from before — the
- * history a git remote keeps — can testify to what was removed; `mnema witness` dates
+ * key: with nothing left on disk to cross, only a copy of the record from before, the
+ * history a git remote keeps, can testify to what was removed; `mnema witness` dates
  * a checkpoint and does not keep one.
  *
  * ONE OF THE THREE CAN NOW BE ANSWERED. A cut made through a waiver leaves a signed
- * `tail.pruned` in the record — written while the tail was still there, so its head
- * hash and its event count were checked against the disk — and the note then names
+ * `tail.pruned` in the record (written while the tail was still there, so its head
+ * hash and its event count were checked against the disk) and the note then names
  * that account instead of listing possibilities. The other two readings are
  * untouched: a merge that dropped a tail and a machine that never wrote produce no
  * waiver, and the note they get is unchanged.
@@ -231,13 +231,13 @@ export interface KeyWithoutTailNote {
 }
 
 /**
- * A committed public key with no tail on disk that is an identity's cold backup — the key
+ * A committed public key with no tail on disk that is an identity's cold backup: the key
  * `mnema init` creates beside the machine's own and tells a person to carry off the machine.
  *
  * A backup signs nothing until it is restored, so having no tail is the state it is made
  * in. Said as a {@link KeyWithoutTailNote}, it was the first thing a person read in their
  * first `verify`: a key whose tail "may have been dropped (a botched merge), never
- * written (an empty tail is not versioned), or removed" — a warning of loss about the one
+ * written (an empty tail is not versioned), or removed", a warning of loss about the one
  * key built so that nothing is lost.
  *
  * WHAT DECIDES IT IS A FACT, NEVER AN ABSENCE, and in every case the record proves the key a
@@ -261,7 +261,7 @@ export interface BackupKeyNote {
 }
 
 /**
- * A tail directory that holds no event and no checkpoint — not counted as a tail
+ * A tail directory that holds no event and no checkpoint, not counted as a tail
  * (FORMAT.md section 4).
  *
  * What an older writer left when a new key's first write was refused: the key, and a tail
@@ -285,7 +285,7 @@ export interface EmptyTailNote {
 }
 
 /**
- * Whether a tail holds anything a reader can count — the ONE wording of the rule, so the
+ * Whether a tail holds anything a reader can count: the ONE wording of the rule, so the
  * verifier and every listing that has to agree with it ask the same question.
  */
 export function isEmptyTail(held: {
@@ -310,7 +310,7 @@ function emptyTail(tail: string): EmptyTailNote {
  * A tail whose last line was a fragment the read dropped.
  *
  * A complete append ends in a newline, so an unterminated final line that will not
- * parse is exactly what a crash mid-append leaves — the one tolerance an
+ * parse is exactly what a crash mid-append leaves: the one tolerance an
  * append-only file earns (see lines.ts). Treating it as a break would fail every
  * legitimate crash recovery; saying NOTHING about it, which is what happened until
  * now, leaves it indistinguishable from an attempt to append to the tail, and
@@ -328,8 +328,8 @@ export interface PartialFinalLineNote {
  * A `note.retracted` signed by an identity that did not write the note it names
  * ({@link mayRetract}), which no reader applies: the note is still served.
  *
- * Not a break, and the reason is the same as a backup key's: the event is intact — hashed,
- * chained, signed by a key of its own `who` — so nothing the crypto proves has failed. What
+ * Not a break, and the reason is the same as a backup key's: the event is intact (hashed,
+ * chained, signed by a key of its own `who`), so nothing the crypto proves has failed. What
  * fails is the event's AUTHORITY over the note, and that is a reading of the record rather
  * than a fact about its bytes. A reader is told, because the person whose note it is has a
  * stranger's claim about it on the record, and a binary older than this rule applies it.
@@ -378,8 +378,8 @@ export interface ForeignLinkRetractionNote {
  * A move the workflow does not allow (FORMAT.md section 6.7), which no reader applies: the
  * subject is read as if it had not been written.
  *
- * Not a break, for the reason a {@link ForeignRetractionNote} is not: the event is intact —
- * hashed, chained, signed by a key of its own `who` — and what it lacks is a place in the
+ * Not a break, for the reason a {@link ForeignRetractionNote} is not: the event is intact
+ * (hashed, chained, signed by a key of its own `who`) and what it lacks is a place in the
  * workflow, a reading of the record rather than a fact about its bytes. A reader is told,
  * because the person whose decision, task or skill it is has a move on the record that the
  * readers do not apply, and a binary older than the rule applies it.
@@ -405,7 +405,7 @@ export interface IllegalMoveNote {
  * Not a break: each of those results was signed while the key held the role, so nothing the
  * record proves has failed, and the results it signs AFTER are breaks of their own. A reader
  * is told anyway, because "before" is the place the merged order gives a result, and that
- * place comes from the `at` the key itself wrote — a leaked key can put a pass before its
+ * place comes from the `at` the key itself wrote: a leaked key can put a pass before its
  * own retirement. The record no longer vouches for any result this key signed; the census
  * says how many there are and who retired it.
  */
@@ -430,7 +430,7 @@ export interface RetiredCheckerNote {
  * Not a break, for the reason a {@link RetiredCheckerNote} is not: each of those facts was signed
  * while the key held the role, and the facts it signs AFTER are breaks of their own. A reader is
  * told anyway, because "before" is the place the merged order gives a fact, and that place comes
- * from the `at` the key itself wrote — a leaked key can put a fact before its own retirement.
+ * from the `at` the key itself wrote: a leaked key can put a fact before its own retirement.
  */
 export interface RetiredAgentNote {
   readonly kind: 'retired-agent';
@@ -451,8 +451,8 @@ export interface RetiredAgentNote {
  *
  * The order ignores it: the event is placed as if it cited nothing, and nothing is refused
  * (FORMAT.md, "Reading many tails"). Innocent causes: a clone that lacks the tail the entry is
- * on, a tail that was cut. A citation cannot make anything less authentic — it can only hold
- * its own event back — so an unresolved one is said and not judged.
+ * on, a tail that was cut. A citation cannot make anything less authentic (it can only hold
+ * its own event back), so an unresolved one is said and not judged.
  */
 export interface CitationNotHeldNote {
   readonly kind: 'citation-not-held';
@@ -484,10 +484,10 @@ export interface ClockBehindNote {
 
 /**
  * An agent key (`agent.enrolled`, FORMAT.md section 6.2) that signed facts the fold accepted: their
- * agent is ATTESTED — every one names, in `which`, the name the identity enrolled the key under.
+ * agent is ATTESTED; every one names, in `which`, the name the identity enrolled the key under.
  *
  * Informational: it moves neither `ok`, the level nor the exit. What it says is what the record
- * holds — which key, enrolled by whom, under which name — and not which process held the key or
+ * holds (which key, enrolled by whom, under which name) and not which process held the key or
  * which model drove it, which are properties of the machine the record does not carry.
  */
 export interface AttestedWhichNote {
@@ -505,11 +505,11 @@ export interface AttestedWhichNote {
 
 /**
  * A `which` that accepted facts carry, signed by a key that is not an agent key: the agent is
- * DECLARED — the key that signed stated it, and nothing in the record holds it to that name.
+ * DECLARED; the key that signed stated it, and nothing in the record holds it to that name.
  *
  * It is the truth of every `which` written before agent keys existed, so it says so instead of
  * leaving the word to read as more than it is. It has NO CLAUSE in the verdict's sentence: it is
- * said where the notes are listed — `--json`, the page, and `mnema verify --verbose` — so a clean
+ * said where the notes are listed (`--json`, the page, and `mnema verify --verbose`), so a clean
  * verify stays the one line it is.
  */
 export interface DeclaredWhichNote {
@@ -555,7 +555,7 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
  * clause from a qualification WITHOUT looking at the words. The word `verified` sits in
  * the middle of a sentence and `FAILED` beside it; a surface that searched the text for
  * either would be re-deriving the verdict from a rendering of it, which is the one thing
- * a tool for auditing a record must not do — and it would break the day a clause was
+ * a tool for auditing a record must not do, and it would break the day a clause was
  * reworded.
  */
 export type VerdictClauseOf = 'level' | 'tails' | 'coverage' | 'census' | 'witness';
@@ -564,7 +564,7 @@ export type VerdictClauseOf = 'level' | 'tails' | 'coverage' | 'census' | 'witne
  * One clause of the one-line verdict: what it is about, and what it says.
  *
  * The WORDS ARE ALWAYS THIS FILE'S. A clause exists so a reader can be shown the
- * sentence differently — a level painted, a census set apart — never so a consumer can
+ * sentence differently (a level painted, a census set apart) never so a consumer can
  * say something else: {@link VerifyResult.summary} is these clauses joined, by the one
  * function that joins them, so no rendering of the verdict can come to disagree with
  * another.
@@ -588,7 +588,7 @@ export interface VerifyResult {
   /**
    * No integrity violation was detected in what is verifiable: the hash chain
    * holds and every checkpoint's signature checks out. This is NOT a claim that
-   * every event is signed — see {@link fullySigned}. A keyless party can still
+   * every event is signed: see {@link fullySigned}. A keyless party can still
    * add or edit events ABOVE the last checkpoint (they carry only the hash
    * chain), and that leaves `ok` true because there is no signed statement to
    * contradict. Read `ok` as "nothing verifiable is broken", never as
@@ -596,13 +596,13 @@ export interface VerifyResult {
    */
   readonly ok: boolean;
   /**
-   * Every event is covered by a verified signature — no residual, keyless
+   * Every event is covered by a verified signature: no residual, keyless
    * window. Only when this is true is the whole chain authenticated; when it is
    * false, {@link uncheckpointedEvents} events rest on the hash chain alone.
    */
   readonly fullySigned: boolean;
   /**
-   * How far the proof got, as ONE value — the same one the summary is worded from
+   * How far the proof got, as ONE value: the same one the summary is worded from
    * and the same one an exit code is decided by (see level.ts). It says what `ok`
    * and `fullySigned` say together, without asking a reader to add them up: it was
    * a reader adding them up WRONG, inside this very file, that let the summary
@@ -614,7 +614,7 @@ export interface VerifyResult {
   readonly issues: readonly TailIssue[];
   /**
    * Census notes: committed public keys with no matching tail on disk. These
-   * are informational — they do NOT affect {@link ok} — because a key without a
+   * are informational (they do NOT affect {@link ok}), because a key without a
    * tail can be a machine that has not written yet. See {@link CensusNote}.
    */
   readonly census: readonly CensusNote[];
@@ -622,10 +622,10 @@ export interface VerifyResult {
   readonly uncheckpointedEvents: number;
   readonly witness: WitnessStatus;
   /**
-   * The verdict as its CLAUSES — the sentence {@link summary} is, before it was joined.
+   * The verdict as its CLAUSES: the sentence {@link summary} is, before it was joined.
    *
    * A pre-joined string is a verdict a reader can only PRINT. One of its clauses is good
-   * news or bad news — the level — and the rest are qualifications of it, so anything
+   * news or bad news, the level, and the rest are qualifications of it, so anything
    * that wanted to say which was which had to find the level's words inside the string.
    * Handing over the parts costs a caller nothing and takes the guess out.
    *
@@ -671,11 +671,11 @@ export function verifyChain(
   // committed key by its fingerprint prefix: a tail whose fingerprint is not a
   // committed public key is not a real tail. Without this, the per-entry
   // `link.tail == <dir>` check only proves a tail is internally consistent with
-  // its own — attacker-chosen — directory name; a party can copy a tail into
+  // its own, attacker-chosen, directory name; a party can copy a tail into
   // `tails/<fabricated>/`, relabel every `link.tail`, recompute the keyless hash
   // chain (no key needed), and have verify count the same events twice, green.
   // Requiring the fingerprint prefix to be committed ties the directory to the
-  // roster and closes that duplication — a fabricated name has no committed
+  // roster and closes that duplication: a fabricated name has no committed
   // fingerprint to match, so it is still rejected. (A pre-suffix tail named by a
   // bare fingerprint matches the whole name, so it is accepted unchanged.)
   const committedFingerprints = new Set(listPublicKeyFingerprints(layout));
@@ -687,7 +687,7 @@ export function verifyChain(
   const entriesByTail = new Map<string, readonly Entry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
-  // The checkpoints each tail was PROVEN over, and how many events it holds — what an
+  // The checkpoints each tail was PROVEN over, and how many events it holds: what an
   // external attestation would be filed under, and what the undated remainder is
   // counted against. Held per tail because T3 is folded over all of them at once, and
   // a tail whose checkpoints did not verify carries an empty list rather than being
@@ -702,8 +702,8 @@ export function verifyChain(
     const issues: TailIssue[] = [];
     issuesByTail.set(tail, issues);
     // Both stored files a tail is verified over are read HERE, through one guard.
-    // A line that will not parse is a finding ABOUT THE RECORD — which tail, which
-    // position, and that it cannot be read — not an exception thrown out of the
+    // A line that will not parse is a finding ABOUT THE RECORD (which tail, which
+    // position, and that it cannot be read) not an exception thrown out of the
     // verifier. Measured before this: the exception reached the CLI's catch-all and
     // printed `not valid JSON: Unexpected end of JSON input`, correct in its exit
     // code and useless as a verdict.
@@ -761,7 +761,7 @@ export function verifyChain(
 
   // Identity by enrollment, folded across every tail in one deterministic order:
   // an event is authentic only if its signer is a key valid for its anchor at
-  // its point in the chain. This is the single identity rule — it replaces the
+  // its point in the chain. This is the single identity rule: it replaces the
   // old per-event `who == deriveAnchor(signerFp)` shortcut with membership
   // proven on the chain. Because enrollment spans tails (a key enrolled on one
   // machine authorizes events on another), it is resolved once over the merged
@@ -904,7 +904,7 @@ const UNREADABLE = Symbol('unreadable');
  * {@link TailIssue} instead of an exception.
  *
  * This is the ONE place the verifier converts "cannot read" into a finding, so the
- * two files a tail is verified over cannot answer differently — and a third one
+ * two files a tail is verified over cannot answer differently, and a third one
  * added tomorrow reaches the same function or it is not read here at all. The layer
  * is T1: what failed is the record's own bytes, below any signature.
  *
@@ -941,7 +941,7 @@ function withinChain(layout: ChainLayout, locus: string): string {
  * Whether a tail directory's fingerprint is a committed public key. The
  * fingerprint is the part before the last `-` (see {@link tailFingerprint}), or
  * the whole name for a bare-fingerprint tail. A fabricated name has no committed
- * fingerprint to match and is rejected — that is what keeps a
+ * fingerprint to match and is rejected; that is what keeps a
  * relocated/duplicated tail from verifying green.
  */
 function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>): boolean {
@@ -953,12 +953,12 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * with NO tail becomes a census note.
  *
  * The match is by fingerprint: a key is covered if some tail carries its
- * fingerprint — the whole name (a bare-fingerprint tail) or the part before the
+ * fingerprint, the whole name (a bare-fingerprint tail) or the part before the
  * last `-` (a `<fingerprint>-<installationId>` tail). One key can own several
  * tails (the same copied key installed on several machines), which is not a
- * concern — the census flags only a key with none.
+ * concern: the census flags only a key with none.
  *
- * The reverse — a tail with no committed key — is not a census concern. If that
+ * The reverse, a tail with no committed key, is not a census concern. If that
  * tail has a checkpoint, verifying it already fails with "no committed public
  * key for signer"; if it has none, its events rest on the hash chain alone and
  * are already reported as the unsigned residual (`fullySigned`). Either way the
@@ -971,13 +971,13 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * account; a key with none gets exactly the note it has always got.
  *
  * AND THE BACKUPS ARE WHAT ANSWERS THE SECOND ONE, for the key a machine made never to
- * write: a key in `backups` becomes a {@link BackupKeyNote}. A waiver still comes first —
+ * write: a key in `backups` becomes a {@link BackupKeyNote}. A waiver still comes first:
  * it is the record's own account of a cut, and a backup that was restored, signed and then
  * cut is exactly the key whose account a reader needs.
  *
  * THE ROSTER IS HANDED IN, the set the tail names were checked against at the top of the
  * verification. This listed the committed keys a second time, from the disk, so one verdict read
- * the roster twice — and a key committed between the two reads was a tail-name check that had not
+ * the roster twice, and a key committed between the two reads was a tail-name check that had not
  * seen it and a census that had. One read, one roster, for the whole verdict.
  */
 function keysWithoutTail(
@@ -1229,14 +1229,14 @@ interface KnownBackup {
   readonly anchor: string;
   /**
    * `record`: a signature-covered `backup.declared` says so, which every clone reads.
-   * `registration`: only this machine's key root says so — a record written before backups were
-   * declared, read on the machine that made the backup.
+   * `registration`: only this machine's key root says so (a record written before backups were
+   * declared, read on the machine that made the backup).
    */
   readonly by: 'record' | 'registration';
 }
 
 /**
- * The keys known to be an identity's backup, each with that identity — kept only where the
+ * The keys known to be an identity's backup, each with that identity: kept only where the
  * record's enrollment fold proves the key a member of it at the end of the record.
  *
  * TWO SOURCES, AND THE RECORD COMES FIRST. A covered `backup.declared` (FORMAT.md section 6.5)
@@ -1268,7 +1268,7 @@ function knownBackups(
 
 /**
  * How a backup key with no tail READS: what it is, who says so, why it has no tail, and the one
- * reading that would make the absence mean something — said, because the record cannot rule it
+ * reading that would make the absence mean something; said, because the record cannot rule it
  * out.
  */
 function backupKeyDetail(backup: KnownBackup): string {
@@ -1284,18 +1284,18 @@ function backupKeyDetail(backup: KnownBackup): string {
 }
 
 /**
- * How a key with no tail READS — the one function that words it, for both cases.
+ * How a key with no tail READS: the one function that words it, for both cases.
  *
  * With nothing to go on, the sentence is the ambiguity, unchanged from the day the
  * note was written: three readings, and the disk cannot choose. With a waiver, the
- * third of them is answered, so the sentence names the account instead — who
+ * third of them is answered, so the sentence names the account instead: who
  * authorized the cut, how many events the tail held, and the head it held them
  * through. Both quantities were compared against the disk when the waiver was
  * written, which is what lets someone holding a copy of the tail check the claim.
  *
  * IT NAMES THE CUT; IT DOES NOT CLAIM ANYTHING IS GONE. Nothing local can know
- * whether the events survive in a clone, a remote, or a backup — that is the same
- * limit the T3 clause states plainly — so the sentence is about what the RECORD
+ * whether the events survive in a clone, a remote, or a backup (that is the same
+ * limit the T3 clause states plainly), so the sentence is about what the RECORD
  * says, never about what the world holds.
  *
  * `declaredFor` is the identity a covered `backup.declared` named the key a backup of, handed in
@@ -1342,7 +1342,7 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
   let expectedPrev: string | null = null;
   let expectedSeq = 0;
   for (const entry of entries) {
-    // THE THREE STRUCTURAL QUESTIONS ARE NOT ASKED HERE ANY MORE — they are asked by
+    // THE THREE STRUCTURAL QUESTIONS ARE NOT ASKED HERE ANY MORE: they are asked by
     // {@link linkBreakAt}, which the plain READ of a tail asks too (`store.ts`). They
     // used to be spelled out in this loop, and a reader that served the tail without
     // asking them was how a chain `verify` exits 1 over was still answered by
@@ -1366,7 +1366,7 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
       });
       return;
     }
-    // Over the WRITTEN event, never the lifted one the reader holds — see
+    // Over the WRITTEN event, never the lifted one the reader holds: see
     // hash.ts and the note at the top of this file.
     const recomputed = entryHash({
       event: entry.written,
@@ -1404,7 +1404,7 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
  * witness reading to recompute which ones were good, which is a second opinion about
  * the thing this function is the authority on.
  *
- * IT USED TO BE ONE HASH — the last that verified — and the premise under that was
+ * IT USED TO BE ONE HASH (the last that verified), and the premise under that was
  * *an attestation over an earlier checkpoint dates what came before it and says
  * nothing about what came after, so only the last one is worth asking about*. The
  * second clause is true; the conclusion is not, and it made the product answer
@@ -1414,7 +1414,7 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
 interface CheckpointCoverage {
   /** Highest seq covered by a verified checkpoint, or -1 if none. */
   readonly covered: number;
-  /** Every checkpoint that verified, oldest first — empty if none did. */
+  /** Every checkpoint that verified, oldest first: empty if none did. */
   readonly proven: readonly ProvenCheckpoint[];
 }
 
@@ -1430,7 +1430,7 @@ function verifyCheckpoints(
   let covered = -1;
   let expectedPrev: string | null = null;
   // Asked once per checkpoint, answered without walking the tail (range.ts). It used to BE
-  // the walk — `entries.filter` over every entry of the tail, for every checkpoint — and
+  // the walk (`entries.filter` over every entry of the tail, for every checkpoint) and
   // with a checkpoint per act that is the square of the history.
   const between = entriesBetween(entries);
 
@@ -1446,7 +1446,7 @@ function verifyCheckpoints(
     // Checkpoint chain: each checkpoint links to the previous one's hash, so an
     // EARLIER checkpoint dropped under a later one breaks here. This said the
     // LAST one could not be dropped to hide what it covered either; that is false
-    // when its events go with it — the survivors close and nothing remembers the
+    // when its events go with it: the survivors close and nothing remembers the
     // longer head (`aligned-cut`, `both-readers-read-the-same-bytes.test.ts`). The
     // last checkpoint dropped ALONE leaves its events above every checkpoint, which
     // the level reports and `--require=signed` refuses.
@@ -1484,7 +1484,7 @@ function verifyCheckpoints(
     // overwrite that file with their own key. Re-derive the loaded key's real
     // fingerprint and require it to equal the one the checkpoint names. Without
     // this, swapping the committed .pub for the forger's key would let a forged
-    // signature verify — the exact gap the signed-message binding alone leaves
+    // signature verify: the exact gap the signed-message binding alone leaves
     // open, since verification uses whatever key the file now holds.
     if (committed.fingerprint() !== checkpoint.signerFp) {
       issues.push({
@@ -1517,14 +1517,14 @@ function verifyCheckpoints(
     // range to name the signer that actually attested it (`signerFp` = the
     // checkpoint's). Without this a party holding their own committed key could
     // rewrite the events' `signerFp` to a fabricated identity, re-sign the range
-    // with their real key, and still verify green here — the signature
+    // with their real key, and still verify green here: the signature
     // integrity-protects the bytes; this makes those bytes name the signer.
     // Whether that signer is authorized to speak for the event's `who` is the
     // enrollment fold's concern (resolveIdentity), applied to every event
     // checkpointed or not; here we only pin that `signerFp` is the real signer.
     // The `which` clause stays: the gate refuses a move where the authorizing
     // human equals the executing agent (self-authorization), and that invariant
-    // must survive to the signed record — otherwise an editor could smuggle
+    // must survive to the signed record; otherwise an editor could smuggle
     // `who === which` below the crypto. So when `which` is present it must differ
     // from `who`, compared in the SAME canonical form the gate uses (NFC,
     // trimmed): a raw byte compare would let `which = who + " "` slip through.
@@ -1550,18 +1550,18 @@ function verifyCheckpoints(
   }
   // `proven` is APPENDED TO at the bottom of the loop and only there, so a checkpoint
   // that took any of the refusals above never becomes one a witness is looked for
-  // under — the property the single hash carried before, over the whole run of them.
+  // under: the property the single hash carried before, over the whole run of them.
   return { covered, proven };
 }
 
 /**
- * The canonical form of an identity for the who-vs-which comparison — NFC then
+ * The canonical form of an identity for the who-vs-which comparison: NFC then
  * trim, the SAME normalization the core's gate applies before it refuses a
  * self-authorizing move (`canonicalIdentity`). The verifier lives in the
  * zero-dependency chain and cannot import the core, so the rule is mirrored
  * here; a property test pins the two forms in agreement. It is only ever used to
  * decide whether `which` and `who` are the same identity, never to rewrite the
- * signed bytes — the event records the identity exactly as it was written.
+ * signed bytes: the event records the identity exactly as it was written.
  */
 export function canonicalIdentityForm(value: string): string {
   return value.normalize('NFC').trim();
@@ -1571,7 +1571,7 @@ export function canonicalIdentityForm(value: string): string {
  * Requires a tail (whose fingerprint prefix is committed) to carry a valid proof
  * that its key signed this exact tail id. A missing, malformed, or wrong-signed
  * proof is an issue: it is the mark of a fabricated sibling tail under a real
- * fingerprint — the residual-window duplication a keyless party could otherwise
+ * fingerprint, the residual-window duplication a keyless party could otherwise
  * mount. A legitimate installation wrote this at birth over its own id.
  */
 function verifyTailOwnership(
@@ -1609,7 +1609,7 @@ function verifyTailOwnership(
   }
 }
 
-/** What every clause of the verdict is worded from — one set of facts. */
+/** What every clause of the verdict is worded from: one set of facts. */
 interface VerdictFacts {
   readonly level: ProvenLevel;
   readonly tailCount: number;
@@ -1619,7 +1619,7 @@ interface VerdictFacts {
   /** Events resting on the hash chain alone. */
   readonly uncheckpointed: number;
   readonly census: readonly CensusNote[];
-  /** What the external witness stands at, and why — see witness.ts. */
+  /** What the external witness stands at, and why: see witness.ts. */
   readonly witness: ChainWitness;
 }
 
@@ -1630,19 +1630,19 @@ interface VerdictFacts {
  * function of `ok` alone while the clause beside it was a function of the residual
  * count, and with no checkpoint at all the two contradicted each other in one
  * sentence: `verified (T1/T2/T4)` next to `6 event(s) … NOT yet signature-covered`.
- * Every clause is now worded from one set of facts — the same facts the level is
- * derived from — so no reading of this sentence can disagree with another.
+ * Every clause is now worded from one set of facts (the same facts the level is
+ * derived from), so no reading of this sentence can disagree with another.
  *
  * THE CLAUSES ARE THE SENTENCE, and the sentence is no longer built beside them: it is
  * {@link verdictSentence} over exactly this list. A caller that shows the verdict its
  * own way therefore shows THESE words, in this order, and the string every other reader
  * gets is the same list joined.
  *
- * The witness clause is last, and it USED TO BE A CONSTANT — *because T3 is out of scope
+ * The witness clause is last, and it USED TO BE A CONSTANT: *because T3 is out of scope
  * for local crypto whatever the rest of the verdict found*. That premise fell with
  * witness.ts: T3 is now read off the disk like everything else, and the clause is a
  * function of what was found there ({@link witnessClause}). What survives of the old
- * argument is the POSITION and the posture — it is still last, and a record with no
+ * argument is the POSITION and the posture: it is still last, and a record with no
  * attestation still says so plainly rather than leaving a green that reads as
  * tamper-proof.
  */
@@ -1657,7 +1657,7 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
 }
 
 /**
- * How the external-witness layer reads — TOTAL over {@link WitnessStatus}, so a
+ * How the external-witness layer reads: TOTAL over {@link WitnessStatus}, so a
  * state added to that union does not compile until it has a sentence.
  *
  * It used to be one constant, and the constant was the honest answer while nothing
@@ -1673,8 +1673,8 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
  *
  * THE WORLDS PAST THE FIRST TWO ARRIVE THROUGH THE DETAIL AND NOT THROUGH A CLAUSE OF
  * THEIR OWN. A record dated to a point, with events written after it, reads `not
- * covered` here — because it is not covered, and because the count after the date is
- * what stops the sentence being read as coverage — and the dating that used to be
+ * covered` here (because it is not covered, and because the count after the date is
+ * what stops the sentence being read as coverage) and the dating that used to be
  * silently dropped is the detail. A record whose only proof is a request nobody has
  * answered reads `PENDING, which is not coverage`, and the calendar it is waiting on
  * is the detail; that one used to be dropped too, and the sentence it left behind was
@@ -1697,7 +1697,7 @@ function witnessClause(witness: ChainWitness): string {
 }
 
 /**
- * What separates two clauses of the verdict — the whole punctuation of the sentence.
+ * What separates two clauses of the verdict: the whole punctuation of the sentence.
  *
  * A consumer that composes the clauses ITSELF holds this punctuation too, because it is
  * doing the joining (the CLI's renderer separates the parts of a line). The two agreeing
@@ -1707,7 +1707,7 @@ function witnessClause(witness: ChainWitness): string {
 const CLAUSE_SEPARATOR = '; ';
 
 /**
- * The clauses as one line — the ONE place they are joined.
+ * The clauses as one line: the ONE place they are joined.
  *
  * So `summary` cannot be a second wording of the verdict. It was one string before this,
  * and the clauses were pieces of it that only ever existed inside a template; now the
@@ -1743,7 +1743,7 @@ function coverageClause(facts: VerdictFacts): string {
 }
 
 /**
- * How each kind of census note reads, and how many there are — TOTAL over the
+ * How each kind of census note reads, and how many there are: TOTAL over the
  * kinds, so a third observation cannot be counted into a sentence written for
  * another one. A note is not an integrity failure, and each clause says so where a
  * reader meets it.

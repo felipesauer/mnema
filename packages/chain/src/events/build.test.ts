@@ -118,7 +118,7 @@ describe('event builders', () => {
 
   it('OMITS an empty-string optional field so the line stays re-readable', () => {
     // An empty optional (pr_url: '') would serialize fine but the parser rejects
-    // an empty string on read — a line the chain could write but never read
+    // an empty string on read: a line the chain could write but never read
     // back. The builder drops it, symmetric with the parser.
     const event = taskTransitioned(env, {
       from: 'in-progress',
@@ -387,7 +387,7 @@ describe('skillConsulted', () => {
     expect(event.subject).toBe('sk-1');
     expect(event.which).toBe('claude');
     expect(event.run).toBe('r-1');
-    // The payload adds nothing — `{}` is the entire canonical payload.
+    // The payload adds nothing: `{}` is the entire canonical payload.
     expect(canonicalStringify(toCanonical(event))).toContain('"payload":{}');
   });
 
@@ -407,7 +407,7 @@ describe('memoryCaptured', () => {
     }
   });
 
-  it('is a lone fact — no birth pair, so it is one event and canonicalizes cleanly', () => {
+  it('is a lone fact: no birth pair, so it is one event and canonicalizes cleanly', () => {
     const event = memoryCaptured({ ...env, which: 'claude', run: 'r-1' }, { content: 'x' });
     expect(event.which).toBe('claude');
     expect(event.run).toBe('r-1');
@@ -419,7 +419,7 @@ describe('the relation that carries an address', () => {
   it('is one string, and the recommended set is built out of it', () => {
     // A reader answering "which rules govern this file" and the help text that
     // suggests the label have to mean the SAME string. Written twice they are two
-    // strings that can come to differ — and the drift would be silent, because a
+    // strings that can come to differ, and the drift would be silent, because a
     // `rel` outside the recommended set is valid: the reader would simply find
     // nothing, and the help would go on suggesting a label nothing reads.
     expect(GOVERNS_RELATION).toBe('governs');

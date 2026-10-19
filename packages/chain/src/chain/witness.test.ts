@@ -8,8 +8,8 @@
  * they are done.
  *
  * THE COVERED CASES REST ON REAL BYTES. Block 800000's header is the vector
- * (witness-vectors.ts) — a header this test could fabricate would meet whatever rule
- * this package happened to implement — and the proof over it is built here with a
+ * (witness-vectors.ts) (a header this test could fabricate would meet whatever rule
+ * this package happened to implement) and the proof over it is built here with a
  * path of no steps, so the digest the proof commits to IS the merkle root the block
  * carries. That shape is legal, it is not the shape a calendar produces, and it is
  * the only one a test can construct: reaching a real merkle root through a real path
@@ -51,7 +51,7 @@ const TAIL = 'ffff-0001';
 const PENDING = Buffer.from(PENDING_PROOF_BASE64, 'base64');
 const HEADER = Buffer.from(BLOCK_800000_HEADER, 'hex');
 
-/** A proof that a block carries the digest itself — see this file's header. */
+/** A proof that a block carries the digest itself: see this file's header. */
 function anchoredProof(digestHex: string, height = BLOCK_800000_HEIGHT): Buffer {
   return serializeOtsProof(Buffer.from(digestHex, 'hex'), {
     attestations: [{ kind: 'bitcoin', height }],
@@ -85,7 +85,7 @@ describe('a record nobody stamped', () => {
       status: 'not-covered',
       detail: 'nothing outside this machine attests this record',
       // The absence is MARKED, because its words are a claim about the whole record
-      // rather than a finding about one file — the one sentence here another file in
+      // rather than a finding about one file: the one sentence here another file in
       // the tree can falsify. `witnessOfTail` is what acts on the mark.
       absent: true,
     });
@@ -147,7 +147,7 @@ describe('an attestation that reached a block', () => {
 });
 
 /**
- * ONE SET OF FACTS, ONE SENTENCE — whatever order the third-party file lists them in.
+ * ONE SET OF FACTS, ONE SENTENCE: whatever order the third-party file lists them in.
  *
  * WHERE THIS COMES FROM. The two non-coverage readings shared one accumulator under
  * `??=`, so whichever the walk reached first won. Measured on the record below, with
@@ -155,7 +155,7 @@ describe('an attestation that reached a block', () => {
  * <uri> and has not confirmed* one way, *anchored in Bitcoin block 800000, whose header
  * this record does not carry* the other. A real calendar writes its attestation before
  * an upgrade appends a block's, so the first sentence is what the product printed and
- * the second never appeared — the more precise of the two, in a record whose anchoring
+ * the second never appeared: the more precise of the two, in a record whose anchoring
  * had already happened.
  *
  * BOTH ORDERS ARE ASSERTED, and asserted to the BYTE rather than by a substring: the
@@ -181,7 +181,7 @@ describe('a proof that reached a block AND a calendar, with no header stored', (
     expect(readWitness(layout, TAIL, digest).detail).toBe(HEADERLESS);
   });
 
-  it('reports the ABSENT HEADER when the CALENDAR is listed first — the order that lost', () => {
+  it('reports the ABSENT HEADER when the CALENDAR is listed first: the order that lost', () => {
     // The order a real proof carries, and the one the product was measured getting
     // wrong. Nothing about the facts differs from the case above.
     writeWitness(layout, TAIL, digest, { proof: mixedProof([CALL, BLOCK]) });
@@ -200,7 +200,7 @@ describe('a proof that reached a block AND a calendar, with no header stored', (
     }
   });
 
-  it('THE CONTRAST — a proof with only the calendar still says the calendar', () => {
+  it('THE CONTRAST: a proof with only the calendar still says the calendar', () => {
     // Without this, the two cases above would pass over a product that had simply
     // stopped printing the calendar's sentence at all.
     writeWitness(layout, TAIL, digest, { proof: mixedProof([CALL]) });
@@ -294,7 +294,7 @@ describe('a stored witness that does not say what it claims', () => {
 
   it('refuses a proof too big to read WITHOUT reading it', () => {
     // The order is what this case is about. `parseOtsProof` refuses a proof past its
-    // limit — the right refusal at the wrong moment, since by then the bytes are in
+    // limit: the right refusal at the wrong moment, since by then the bytes are in
     // memory. A clone can commit a file of any size, so the size is asked first.
     const huge = Buffer.alloc((1 << 20) + 1);
     writeWitness(layout, TAIL, digest, { proof: huge });
@@ -414,8 +414,8 @@ describe('the chain-wide reading', () => {
     // dated and one never stamped: the weakest is still the undated one and still
     // decides the status, but `nothing outside this machine attests this record` is
     // a claim about EVERYTHING and this chain holds a proof. The words that are
-    // untouchable are the ones a record with NO attestation anywhere earns — the
-    // case above — and this is not that record.
+    // untouchable are the ones a record with NO attestation anywhere earns, the
+    // case above, and this is not that record.
     stampCovered('a-1');
     const witness = witnessOfChain(
       layout,
@@ -431,7 +431,7 @@ describe('the chain-wide reading', () => {
 
   it('publishes the DATING only when the weakest tail is the one carrying it', () => {
     // A tail dated to a point beside a tail nobody stamped. The dating is true of the
-    // first and false of the second, so the chain's sentence must not carry it — the
+    // first and false of the second, so the chain's sentence must not carry it: the
     // fold keeps the reading that CLAIMS LESS, not merely the one with the weakest
     // status, because at `not-covered` those two stopped being the same thing.
     stampCovered('a-1');
@@ -448,7 +448,7 @@ describe('the chain-wide reading', () => {
 
   it('publishes the LARGEST remainder when two tails are dated by the same block', () => {
     // FOUND BY A PROBE, NOT BY READING THE CODE. Tied on status, on carrying a dating
-    // and on the instant, the fold kept whichever tail came first — so a chain with
+    // and on the instant, the fold kept whichever tail came first, so a chain with
     // one tail a single event past its dating and one thirty-eight past published
     // `1 event(s)`, which is a floor thirty-eight events too high. The count the chain
     // says has to be one no tail falls below.
@@ -504,7 +504,7 @@ describe('a tail whose attestation is over an OLDER checkpoint', () => {
       events,
     }) as WitnessReading;
 
-  it('gives the date and how much of the record it dates — the delivery’s case', () => {
+  it('gives the date and how much of the record it dates: the delivery’s case', () => {
     const reading = dated(4);
     expect(reading.detail).toBe(
       `the last attested checkpoint is dated by Bitcoin block ${BLOCK_800000_HEIGHT} at ${AT}, ` +
@@ -520,7 +520,7 @@ describe('a tail whose attestation is over an OLDER checkpoint', () => {
     expect(dated(4).detail).not.toContain('nothing outside this machine attests this record');
   });
 
-  it('stays NOT COVERED — a record dated to a point is not a record that is covered', () => {
+  it('stays NOT COVERED: a record dated to a point is not a record that is covered', () => {
     // The mirror of what `pending` got wrong: a state that reads as coverage because
     // it sounds like progress. The date arrives with the count of what it does not
     // cover, in the same sentence, under the word `not covered`.
@@ -634,7 +634,7 @@ describe('a tail whose only proof is a request still in flight', () => {
    *
    * The bytes are the REAL calendar answer (`witness-vectors.ts`) filed under an OLDER
    * checkpoint, with the head holding nothing. Before this, the walk met that file,
-   * saw it was not coverage, and dropped it — so a record holding a proof somebody had
+   * saw it was not coverage, and dropped it, so a record holding a proof somebody had
    * paid for answered the words of a record nobody had ever stamped, and the act that
    * follows from those words is to stamp again.
    */
@@ -655,7 +655,7 @@ describe('a tail whose only proof is a request still in flight', () => {
       events: 4,
     }) as WitnessReading;
 
-  it('does NOT say that nothing attests this record — the sentence that was the defect', () => {
+  it('does NOT say that nothing attests this record: the sentence that was the defect', () => {
     // Asserted as an ABSENCE, because the sentence is the defect and not a wording
     // problem: it makes `nobody asked` and `somebody asked and we are waiting`
     // indistinguishable, and only one of them is answered by stamping.
@@ -672,7 +672,7 @@ describe('a tail whose only proof is a request still in flight', () => {
   it('is PENDING, and the level a record earns with it is the level with no witness', () => {
     // `pending` and not a fourth state: `WITNESS_COVERS` in level.ts is where it says
     // it is not coverage, and it has said so since the delivery that fixed the
-    // opposite mistake. Showing a promise may not reopen that — so the level, and the
+    // opposite mistake. Showing a promise may not reopen that, so the level, and the
     // exit code derived from it, are asserted to be what a record with NOTHING earns.
     const reading = waiting();
     expect(reading.status).toBe('pending');
@@ -697,7 +697,7 @@ describe('a tail whose only proof is a request still in flight', () => {
   it('takes the NEWEST request still open, not the first one it can find', () => {
     // Two open requests over two checkpoints. The newer one is the one whose
     // confirmation would date the most of the record, which is the same rule the walk
-    // follows for confirmed attestations — a proof anchored in a block whose header
+    // follows for confirmed attestations: a proof anchored in a block whose header
     // this record does not carry is `pending` too, and it is the newer here.
     writeWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT, {
       proof: anchoredProof(BLOCK_800000_MERKLE_ROOT),
@@ -719,7 +719,7 @@ describe('a tail whose only proof is a request still in flight', () => {
     // The composition, decided rather than defaulted. A record dated to an old point
     // with a newer request in flight belongs to somebody who has already done the
     // right thing; publishing only the dating would tell them their head is undated
-    // and send them to stamp — the act this exists to prevent. And the frontier does
+    // and send them to stamp: the act this exists to prevent. And the frontier does
     // not move: the dating is the CONFIRMED attestation's, to the second.
     writeWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT, {
       proof: anchoredProof(BLOCK_800000_MERKLE_ROOT),
@@ -748,7 +748,7 @@ describe('a tail whose only proof is a request still in flight', () => {
 
   it('keeps a FINDING about the head’s own file in front of the request', () => {
     // The order is a refusal first and a promise last. A refusal about the head's own
-    // file is a forgery signal, and a promise proves nothing — burying the first under
+    // file is a forgery signal, and a promise proves nothing: burying the first under
     // the second would be worse than the silence this removes.
     writeWitness(layout, TAIL, 'c'.repeat(64), { proof: Buffer.from('not a proof') });
     const reading = witnessOfTail(layout, TAIL, {
@@ -829,7 +829,7 @@ describe('a promise beside another tail', () => {
     expect(witness.detail).not.toContain('dated by Bitcoin block');
     expect(witness.detail).toContain('has not confirmed');
     expect(witness.status).toBe('pending');
-    // The per-tail truth is untouched — the dating is still true of the tail that has it.
+    // The per-tail truth is untouched: the dating is still true of the tail that has it.
     expect(witness.tails.find((t) => t.tail === 'a-1')?.reading.detail).toContain(
       'dated by Bitcoin block',
     );
@@ -883,7 +883,7 @@ describe('a promise beside another tail', () => {
 });
 
 describe("where a tail's status comes from", () => {
-  /** The source of the reading, as the file on disk — not the module's exports. */
+  /** The source of the reading, as the file on disk, not the module's exports. */
   const SOURCE = readFileSync(fileURLToPath(new URL('./witness.ts', import.meta.url)), 'utf-8');
 
   /** The body of `witnessOfTail`, from its opening brace to the next top-level one. */
@@ -896,8 +896,8 @@ describe("where a tail's status comes from", () => {
   };
 
   it('is one derivation, and a reading built past it does not go unnoticed', () => {
-    // The rule — the head's own status, else the request in flight, else the plain
-    // absence — was written twice in the first draft of this delivery, once per world,
+    // The rule (the head's own status, else the request in flight, else the plain
+    // absence) was written twice in the first draft of this delivery, once per world,
     // and two readings of one rule is the shape that drifts in silence. It is one
     // closure now, and this is what fails when a world added later words its own.
     const written = [...bodyOfWalk().matchAll(/\bstatus:\s*([^,\n]+)/g)].map((m) => m[1]);

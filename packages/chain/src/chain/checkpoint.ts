@@ -2,7 +2,7 @@
  * Checkpoints: signed statements over a content-recomputable root.
  *
  * A checkpoint asserts "this contiguous range of this tail has this content
- * root, and I — the machine with this fingerprint — sign it." It is the only
+ * root, and I (the machine with this fingerprint) sign it." It is the only
  * layer of authenticity: it covers T2 (an editor without the private key
  * cannot re-sign a changed root) and T4 (an anonymous clone recomputes the
  * root from the bytes and checks the signature against the committed public
@@ -10,11 +10,11 @@
  *
  * The signed message includes the FULL signer fingerprint, so a signature
  * cannot be re-pointed at a different key. The content root is recomputed from
- * the events, never read from stored entry hashes — see hash.ts.
+ * the events, never read from stored entry hashes: see hash.ts.
  *
  * "From the events" means from the events AS WRITTEN. A range read back from
  * disk has been lifted to today's contract, and folding a root over that reading
- * would make every checkpoint signed before a version bump fail its signature —
+ * would make every checkpoint signed before a version bump fail its signature:
  * the loudest alarm this product has, raised by nothing but an honest read. So
  * both signing and verifying take {@link WrittenEvent}, which a lifted event
  * cannot be.
@@ -31,7 +31,7 @@
  * the head it attested. The premise was that something remembers that head, and
  * nothing in the record does. Measured on the binary: cut the newest events AND
  * the checkpoint that covered them, together, and what is left is a shorter chain
- * whose every link and signature close — `verified (T1/T2/T4); all events are
+ * whose every link and signature close, `verified (T1/T2/T4); all events are
  * signature-covered`, exit 0 under `--require=signed`, and the second reader says
  * VERIFIED too (`aligned-cut` in `both-readers-read-the-same-bytes.test.ts`). Only
  * a copy of the record from before the cut can show it, such as the history a git
@@ -52,7 +52,7 @@ import { type KeyObject, sign, verify } from './keys.js';
 /**
  * The scheme tag a checkpoint declares and a verifier refuses to read past.
  *
- * Exported off the package's public surface — this module, not `index.ts` — for
+ * Exported off the package's public surface (this module, not `index.ts`) for
  * the reason the hash domains are: `FORMAT.md` NAMES it, and a version typed into
  * prose goes stale silently. The doc's guard reads it from here, so bumping this
  * to `/2` reddens the document instead of leaving it describing a scheme nobody
@@ -78,7 +78,7 @@ export interface Checkpoint {
   readonly sig: string;
 }
 
-/** The canonical bytes that are signed — everything but the signature. */
+/** The canonical bytes that are signed: everything but the signature. */
 function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
   return canonicalBytes({
     scheme: fields.scheme,
@@ -91,14 +91,14 @@ function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
   });
 }
 
-/** The hash of a checkpoint (over its signed message) — what the next one links to. */
+/** The hash of a checkpoint (over its signed message): what the next one links to. */
 export function checkpointHash(checkpoint: Checkpoint): string {
   return createHash('sha256').update(checkpointMessage(checkpoint)).digest('hex');
 }
 
 /**
  * The bytes a checkpoint's signature is over (§6), whose SHA-256 is {@link checkpointHash}. A
- * countersignature that is not the record's own — a Sigstore bundle — signs these same bytes,
+ * countersignature that is not the record's own, a Sigstore bundle, signs these same bytes,
  * and a reader recomputes them from `checkpoints.jsonl` rather than trusting a copy.
  */
 export function checkpointMessage(checkpoint: Checkpoint): Uint8Array {

@@ -2,8 +2,8 @@
  * Deterministic canonicalization: an event value → the exact bytes that the
  * hash chain links and the Ed25519 checkpoint signs.
  *
- * The proof stands or falls on one property: any party — the writer now, a
- * verifier in ten years, an anonymous clone with no secret — must derive the
+ * The proof stands or falls on one property: any party (the writer now, a
+ * verifier in ten years, an anonymous clone with no secret) must derive the
  * SAME bytes from the SAME event. If two honest parties disagree on the bytes,
  * every line reads as tampered; if a forger can vary the bytes while keeping
  * meaning, tamper-evidence is defeated.
@@ -29,7 +29,7 @@ export type CanonicalValue =
  * Serializes a value to its canonical JSON string. Object keys are sorted
  * (recursively, by code unit) so key order never affects the output; arrays
  * keep their order (it is semantic). Throws on any value JSON cannot represent
- * deterministically — a caught bug at write time is cheaper than a silently
+ * deterministically: a caught bug at write time is cheaper than a silently
  * unverifiable line later.
  */
 export function canonicalStringify(value: CanonicalValue): string {
@@ -41,7 +41,7 @@ export function canonicalStringify(value: CanonicalValue): string {
  * the input to the hash chain and the signed checkpoint.
  *
  * THIS USED TO ADD *never the raw `.jsonl` line, whose whitespace and key order a
- * reformat or merge can change without changing the fact* — a reading in which a
+ * reformat or merge can change without changing the fact*: a reading in which a
  * reformatted line still verified. It does not any more: a stored line that is not
  * exactly these bytes is refused at the parse (`parseCanonicalLine` in
  * `stored-json.ts`), as `FORMAT.md` section 4 and the second reader already said, so
@@ -72,7 +72,7 @@ function encode(value: CanonicalValue): string {
 function encodeString(value: string): string {
   // Two strings that render identically but differ in Unicode composition
   // (NFC "é" = U+00E9 vs NFD "e"+U+0301) are byte-distinct, so the same text
-  // typed by two tools would fork the bytes — and a homograph gives an adversary
+  // typed by two tools would fork the bytes, and a homograph gives an adversary
   // free bits in the signed fact. (A STORED line in the other composition is not
   // re-normalized into reading: it is refused as not canonical, by
   // `parseCanonicalLine`.) Normalizing to NFC first, the same class of guard as -0, means "same
@@ -120,14 +120,14 @@ function encodeArray(value: readonly CanonicalValue[]): string {
 
 function encodeObject(value: { readonly [key: string]: CanonicalValue }): string {
   // Keys are normalized (NFC) for the same reason as string values, then the
-  // encoded pairs are sorted by their normalized key so key order — and key
-  // composition — never affect the bytes. Two keys that normalize to the same
+  // encoded pairs are sorted by their normalized key so key order, and key
+  // composition, never affect the bytes. Two keys that normalize to the same
   // string would make the object ambiguous, so refuse the collision.
   const seen = new Set<string>();
   const members = Object.keys(value).map((rawKey) => {
     const child = value[rawKey];
     // An explicit `undefined` property is neither valid JSON nor meaningful
-    // proof — drop-or-keep would be an ambiguous choice, so refuse it and make
+    // proof: drop-or-keep would be an ambiguous choice, so refuse it and make
     // the caller decide (omit the key, or use null).
     if (child === undefined) {
       throw new CanonicalizationError(`cannot canonicalize an undefined value at key "${rawKey}"`);

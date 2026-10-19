@@ -21,7 +21,7 @@ describe('key material', () => {
   });
 
   describe('deriveAnchor', () => {
-    it('is the prefixed SHA-256 of the fingerprint — a value distinct from it', () => {
+    it('is the prefixed SHA-256 of the fingerprint: a value distinct from it', () => {
       const fp = 'a'.repeat(64);
       const anchor = deriveAnchor(fp);
       expect(anchor).toBe(ANCHOR_PREFIX + createHash('sha256').update(fp).digest('hex'));
@@ -49,7 +49,7 @@ describe('key material', () => {
   /**
    * A cold key is ONE file, and this is why: the public half is derivable from
    * the private one. If it were not, a person's backup would be a pair of files
-   * that could be separated — and a restore would depend on the half that carries
+   * that could be separated, and a restore would depend on the half that carries
    * no secret and is therefore the easier one to lose.
    */
   describe('keyPairFromPrivatePem', () => {
@@ -66,7 +66,7 @@ describe('key material', () => {
 
     it('throws when the text is not a private key, so unreadable is not silence', () => {
       // A caller has to be able to tell "this file is not a key" from "this key is
-      // not a member" — the two have different answers for the person.
+      // not a member": the two have different answers for the person.
       expect(() => keyPairFromPrivatePem('not a key')).toThrow();
       // The PUBLIC half is not a private key either: restoring from the wrong
       // half of one's own pair is refused, not silently accepted.

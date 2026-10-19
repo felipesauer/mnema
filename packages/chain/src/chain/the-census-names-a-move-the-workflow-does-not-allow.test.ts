@@ -4,7 +4,7 @@
  *
  * The case is the one that verified before the workflows were part of the format: a decision
  * rejected, then `rejected → accepted` appended by hand with the machine's own key and signed
- * over. Every byte is intact, so the verdict is what it was — the same level, the same exit — and
+ * over. Every byte is intact, so the verdict is what it was (the same level, the same exit) and
  * the census carries one note more.
  */
 

@@ -1,6 +1,6 @@
 /**
  * Reading a chain from disk: enumerate tails, read a tail's entries in seq order
- * across its segments — the whole history, or just the end of it — and read its
+ * across its segments (the whole history, or just the end of it) and read its
  * checkpoints and its committed keys.
  *
  * Reading is pure I/O plus parsing; it does no verification. The verifier
@@ -42,7 +42,7 @@ export function listTails(layout: ChainLayout): string[] {
  * Lists the fingerprints of the committed public keys (each `<fingerprint>.pub`
  * under `keys/`). Because a public key is written before a machine's first
  * event and its fingerprint IS its tail id, this set is a committed census of
- * the tails that ought to exist — the verifier crosses it against the tails
+ * the tails that ought to exist: the verifier crosses it against the tails
  * actually present to notice a tail that went missing while its key stayed.
  */
 export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
@@ -60,13 +60,13 @@ export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
  *
  * THE TWO ARE NOT THE SAME CLAIM, and nothing here decides between them. A file named by
  * one fingerprint can be overwritten with another key, so every caller compares
- * {@link fingerprint} with the name it asked for — and what a mismatch MEANS is the
+ * {@link fingerprint} with the name it asked for, and what a mismatch MEANS is the
  * caller's to say: a swapped key under a checkpoint, an enrolment that proves nothing.
  */
 export interface CommittedKey {
   readonly key: KeyObject;
   /**
-   * The SHA-256 of the key's DER `spki` — derived the first time a caller asks, from the
+   * The SHA-256 of the key's DER `spki`: derived the first time a caller asks, from the
    * point in the verification where it used to be derived on every call, and remembered.
    * It was the second cost per checkpoint after the read itself: one export and one hash of
    * the same key, once per checkpoint, for a value that cannot change.
@@ -75,18 +75,18 @@ export interface CommittedKey {
 }
 
 /**
- * The committed key a fingerprint names — `null` when no file carries that name, or the file
+ * The committed key a fingerprint names: `null` when no file carries that name, or the file
  * holds no key.
  */
 export type CommittedKeys = (fingerprint: string) => CommittedKey | null;
 
 /**
  * The committed public keys, each read off the disk AT MOST ONCE for as long as the reader
- * is held — one reader per pass over the record.
+ * is held: one reader per pass over the record.
  *
  * IT EXISTS BECAUSE THE VERIFIER READ ONE KEY ONCE PER CHECKPOINT. Three of its checks need
- * a committed key — a checkpoint's signature, a tail's ownership proof, an enrolment's
- * proof of possession — and each opened the file and parsed the PEM for itself, so a record
+ * a committed key (a checkpoint's signature, a tail's ownership proof, an enrolment's
+ * proof of possession) and each opened the file and parsed the PEM for itself, so a record
  * that one machine signed once per act had that one key read and parsed as many times as
  * it had checkpoints. The three ask this now, and one verification reads each key once,
  * however many checkpoints, tails and enrolments name it (counted in
@@ -108,7 +108,7 @@ export function committedKeys(layout: ChainLayout): CommittedKeys {
   };
 }
 
-/** One read of one committed key off the disk — see {@link committedKeys}. */
+/** One read of one committed key off the disk: see {@link committedKeys}. */
 function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | null {
   const path = publicKeyPath(layout, fingerprint);
   if (!existsSync(path)) return null;
@@ -124,7 +124,7 @@ function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | 
 }
 
 /**
- * Whether a chain root holds a RECORD at all — a tail, or a committed public key.
+ * Whether a chain root holds a RECORD at all: a tail, or a committed public key.
  *
  * The question a verifier asks before ruling on a tree it was merely NAMED: three
  * trees are named for every project (the committed one, this machine's private one,
@@ -135,7 +135,7 @@ function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | 
  * A COMMITTED KEY COUNTS, and that is the whole reason this is not
  * `listTails(...).length > 0`. A key is written before its machine's first event and
  * its fingerprint IS its tail id, so a root with keys and no tails is precisely the
- * shape of a tail that went missing — the census note exists to say so
+ * shape of a tail that went missing: the census note exists to say so
  * (`key-without-tail`), and answering "nothing here" would silence it. Only a root
  * with neither has nothing to say.
  *
@@ -162,7 +162,7 @@ interface SegmentRead {
   /** The file's last line was dropped by the torn-fragment rule. */
   readonly partialFinalLine: boolean;
   /**
-   * The offset, in bytes, just past the last entry this read ACCEPTED — so a torn
+   * The offset, in bytes, just past the last entry this read ACCEPTED, so a torn
    * final fragment is not counted, and a resumed read starts where the intact
    * prefix ended rather than inside the fragment.
    */
@@ -173,14 +173,14 @@ interface SegmentRead {
  * Parses one segment file into its entries, whole and in seq order.
  *
  * `isLast` says whether this is the tail's last segment, because that is the
- * only file whose end is the physical end of the tail — see
+ * only file whose end is the physical end of the tail: see
  * {@link parseStoredLine}, which owns the torn-fragment rule this passes it.
  *
  * It also REPORTS the tolerance it used. The rule drops a torn fragment so the
  * intact prefix still reads, which is right; dropping it in silence is what left
  * garbage at the end of a tail indistinguishable from a tail that simply ended
  * there. Whoever needs to say so gets the fact from here rather than deciding for
- * itself whether the last line looks torn — a second reading of that rule could
+ * itself whether the last line looks torn: a second reading of that rule could
  * disagree with this one.
  */
 function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): SegmentRead {
@@ -226,12 +226,12 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
 }
 
 /**
- * WHERE a reading of a tail stopped — the segment it ended in, and how far into it.
+ * WHERE a reading of a tail stopped: the segment it ended in, and how far into it.
  *
  * It is a POSITION and not a `seq`, and that distinction is the whole point. A seq says
  * which entry a reading ended on, and two entries can carry the same seq: that is
  * exactly what a broken tail holds. Asked "is the entry at seq N still there?", a tail
- * whose last entry was appended a second time answers YES — the duplicate IS at seq N —
+ * whose last entry was appended a second time answers YES, the duplicate IS at seq N,
  * so a resumed reading anchored on the seq finds its boundary intact and reports that
  * nothing arrived. Anchored on the byte it stopped at, that duplicate is past the
  * boundary, so it is an arrival like any other and the chaining rule rules on it.
@@ -251,7 +251,7 @@ export interface LinkBreak {
   readonly tail: string;
   /** The seq of the entry that does not follow the one before it. */
   readonly seq: number;
-  /** The same sentence the verifier's T1 issue carries — see {@link linkBreakAt}. */
+  /** The same sentence the verifier's T1 issue carries: see {@link linkBreakAt}. */
   readonly detail: string;
 }
 
@@ -260,18 +260,18 @@ export interface TailRead {
   readonly entries: Entry[];
   /**
    * The tail's last line was a partial write, dropped by the torn-fragment rule.
-   * Ambiguous by nature — an interrupted append leaves exactly this, and so does
-   * an attempt to append garbage — which is why it is REPORTED rather than judged.
+   * Ambiguous by nature (an interrupted append leaves exactly this, and so does
+   * an attempt to append garbage), which is why it is REPORTED rather than judged.
    */
   readonly partialFinalLine: boolean;
   /**
-   * The first place the tail stops chaining, if it does — a duplicate seq, a gap, an
+   * The first place the tail stops chaining, if it does: a duplicate seq, a gap, an
    * entry whose `prev` names something else, an entry stored under a tail it does not
    * name.
    *
    * REPORTED, NOT THROWN, and not dropped either. Throwing would take the whole
    * record away over a break that costs no fact: every event above and below a
-   * duplicate seq is still on disk, still readable, still the thing somebody wrote —
+   * duplicate seq is still on disk, still readable, still the thing somebody wrote;
    * what a break destroys is the PROOF that nothing was inserted. Dropping it is what
    * the reads used to do, and it is why a chain `verify` exits 1 over could be
    * searched, listed and summarised with no word about it anywhere.
@@ -282,7 +282,7 @@ export interface TailRead {
    */
   readonly linkBreak?: LinkBreak;
   /**
-   * Where this reading stopped, for a later one to resume from — undefined for a tail
+   * Where this reading stopped, for a later one to resume from: undefined for a tail
    * that holds no entry at all, which has no position to name.
    */
   readonly boundary?: TailBoundary;
@@ -292,8 +292,8 @@ export interface TailRead {
  * Reads a whole tail: every entry in seq order across its segments, whether its
  * physical end was a fragment the read had to drop, and whether it CHAINS.
  *
- * The verifier is what needs the second half — it has to report what it could not
- * check — and everything else only wants the entries ({@link readTailEntries}).
+ * The verifier is what needs the second half (it has to report what it could not
+ * check) and everything else only wants the entries ({@link readTailEntries}).
  * Both walk this one function, so a reader cannot see a different tail than the
  * verdict was formed over.
  *
@@ -319,8 +319,8 @@ export function readTail(
     for (const entry of read.entries) entries.push(entry);
     if (read.partialFinalLine) partialFinalLine = true;
     // The end of the last segment that YIELDED an entry, not of the last segment read.
-    // A tail whose current segment is empty — a writer truncated a torn fragment out of
-    // it — ends, as far as a resumed reading goes, at the end of the sealed one before.
+    // A tail whose current segment is empty (a writer truncated a torn fragment out of
+    // it), ends, as far as a resumed reading goes, at the end of the sealed one before.
     if (read.entries.length > 0) boundary = { segment: file, bytes: read.bytes };
   }
   const linkBreak = firstLinkBreakFrom(tailId, entries, 0, null);
@@ -344,14 +344,14 @@ export function readTail(
  *
  * IT TAKES THEM RATHER THAN ASSUMING A WHOLE TAIL because the incremental reading is the
  * caller that was getting this wrong. `@mnema/core`'s {@link chainArrivals} asked a rule
- * of its own over the arrivals — the seq half, which is what it could ask without the
- * boundary hash — and a `prev` that named something other than the entry before it went
+ * of its own over the arrivals (the seq half, which is what it could ask without the
+ * boundary hash) and a `prev` that named something other than the entry before it went
  * through as a sound suffix while a full reading of the same bytes reported the break.
  * Two spellings of one rule is how one of them comes to be more lenient than the verdict,
  * which is the thing `readTail`'s own note says must not happen.
  *
- * It costs three comparisons per entry and no hashing — the entry hash was computed when
- * the line was parsed — which is why a read can afford it and a signature check is still
+ * It costs three comparisons per entry and no hashing (the entry hash was computed when
+ * the line was parsed), which is why a read can afford it and a signature check is still
  * `verify`'s alone.
  */
 export function firstLinkBreakFrom(
@@ -377,7 +377,7 @@ export function firstLinkBreakFrom(
  * Reads all entries of a tail in seq order across its segments.
  *
  * This is the whole history of one machine, which the verifier and the replay
- * both genuinely need. A writer resuming the tail does not — see
+ * both genuinely need. A writer resuming the tail does not: see
  * {@link readTailTip}.
  */
 export function readTailEntries(
@@ -396,7 +396,7 @@ export function readTailEntries(
  * last entry (for the head hash and the next seq) and the events no checkpoint
  * covers yet (for what the next checkpoint signs). Both live at the end. So this
  * walks segments from last to first and, INSIDE each one, lines from last to
- * first — stopping at the first entry it meets at or below `minSeq`, because
+ * first: stopping at the first entry it meets at or below `minSeq`, because
  * seqs only rise along the tail, so everything above the boundary is by then in
  * hand and nothing earlier can hold more.
  *
@@ -408,7 +408,7 @@ export function readTailEntries(
  * The cost is the entries actually returned, not the file they sit in: a covered
  * tail costs one line however many megabytes the segment weighs. Passing
  * `minSeq = -1` (a tail with no checkpoint yet) reads the whole tail, which is
- * the honest answer — the next checkpoint has to cover from seq 0.
+ * the honest answer: the next checkpoint has to cover from seq 0.
  *
  * Torn-fragment tolerance is exactly {@link readTailEntries}'s: both reach
  * {@link parseStoredLine}.
@@ -425,7 +425,7 @@ export function readTailTip(
     const file = segments[s] as string;
     const parse = (line: string): Entry => parseEntry(line, upcasters);
     let reachedCoverage = false;
-    // An empty segment yields nothing and moves no boundary — the last one can
+    // An empty segment yields nothing and moves no boundary: the last one can
     // be empty because a recovering writer truncated a torn fragment out of it,
     // and the walk simply continues into the segment before it.
     for (const entry of parsedFromEnd(file, s === segments.length - 1, parse)) {
@@ -440,7 +440,7 @@ export function readTailTip(
   return tip.reverse();
 }
 
-/** A file's size, or -1 for one that is not there — a segment that vanished is a cut one. */
+/** A file's size, or -1 for one that is not there: a segment that vanished is a cut one. */
 function sizeOf(file: string): number {
   try {
     return statSync(file).size;
@@ -451,14 +451,14 @@ function sizeOf(file: string): number {
 
 /** What a resumed reading of a tail found: the arrivals, and where it now stands. */
 export interface TailSince {
-  /** The entries past the boundary, in seq order — empty for a tail that did not move. */
+  /** The entries past the boundary, in seq order: empty for a tail that did not move. */
   readonly arrivals: Entry[];
   /** Where this reading stopped, for the reading after it. */
   readonly boundary: TailBoundary;
 }
 
 /**
- * The entries of a tail PAST a boundary a previous reading left — the arrivals, in seq
+ * The entries of a tail PAST a boundary a previous reading left: the arrivals, in seq
  * order, or undefined when the tail no longer holds that boundary.
  *
  * It is {@link readTailTip} asked the question a resumed reading actually has. The tip
@@ -466,17 +466,17 @@ export interface TailSince {
  * duplicate of that entry satisfies; this is asked for entries past a BYTE, which an
  * entry appended after the boundary cannot satisfy by being a copy of one before it.
  * That is the difference between a resumed reading that can see a break planted at its
- * own boundary and one that cannot — see {@link TailBoundary}.
+ * own boundary and one that cannot: see {@link TailBoundary}.
  *
  * Undefined means the tail no longer holds the boundary: the segment is gone, or it
  * holds fewer bytes than the reading that set the boundary took from it. Both are FACTS
- * rather than edge cases — segments are sealed and append-only, so the only way either
+ * rather than edge cases: segments are sealed and append-only, so the only way either
  * happens is that the tail was cut.
  *
  * THE SECOND HALF WAS PROMISED AND NOT KEPT, which is what a segment put back to what it
  * was found it. The walk below answers "nothing arrived" the moment it meets a line that
  * starts before the boundary, and the LAST line of a file that was cut short starts before
- * it — so a segment shortened below the boundary, the way restoring an earlier copy of it
+ * it, so a segment shortened below the boundary, the way restoring an earlier copy of it
  * does, read as a tail that did not move, and a cache that had covered the longer file
  * went on serving it. The size is asked first now: one `stat`, and a segment holding fewer
  * bytes than the boundary (less the newline a torn final line may lack) is the cut this
@@ -505,12 +505,12 @@ export function readTailSince(
     for (const found of locatedFromEnd(file, s === segments.length - 1, parse)) {
       // A line STARTING before the boundary is at or below it: the walk has reached what
       // the previous reading covered, and everything pushed so far is new. Only the
-      // boundary's OWN segment is walked into — every segment after it arrived whole.
+      // boundary's OWN segment is walked into: every segment after it arrived whole.
       if (s === at && found.start < boundary.bytes) {
         return { arrivals: arrivals.reverse(), boundary: reached ?? boundary };
       }
       // The walk's first line is the tail's last, so this is set once and names the end
-      // of the newest entry — `+ 1` for the newline that ends it.
+      // of the newest entry: `+ 1` for the newline that ends it.
       reached ??= { segment: file, bytes: found.end + 1 };
       arrivals.push(found.value);
     }
@@ -523,14 +523,14 @@ export function readTailSince(
 /**
  * Reads a tail's checkpoints in stored order.
  *
- * The verifier needs every one of them — it walks the checkpoint chain and
- * checks that the coverage is contiguous — so this reads the whole file. A
+ * The verifier needs every one of them (it walks the checkpoint chain and
+ * checks that the coverage is contiguous), so this reads the whole file. A
  * writer resuming the tail needs only the last, and takes it from
  * {@link lastTailCheckpoint} instead.
  *
  * Torn-fragment tolerance is {@link parseStoredLine}'s: a crash while signing a
  * checkpoint can leave a partial final line, and without the tolerance BOTH the
- * verifier and the writer's own recovery would throw — the machine could neither
+ * verifier and the writer's own recovery would throw; the machine could neither
  * verify nor resume its own tail after a crash mid-checkpoint.
  */
 export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkpoint[] {
@@ -559,21 +559,21 @@ export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkp
  *
  * This is what a resuming writer asks for: how far the coverage reaches and
  * which hash the next checkpoint links to. It answers by walking the file
- * backwards and stopping at the first line that parses — one line, whatever the
+ * backwards and stopping at the first line that parses: one line, whatever the
  * file weighs. Because a checkpoint is signed after every write in this product,
  * that file grows one line per event, and reading it whole to take its last line
  * put an unbounded cost on every single write.
  *
  * The answer is the last line STORED, which is what taking the last of
  * {@link readTailCheckpoints} means, not the highest `toSeq`. For a tail with one
- * writer the two coincide — the verifier sorts by defence, not because the file
- * is out of order — and picking the highest instead would be a change of
+ * writer the two coincide (the verifier sorts by defence, not because the file
+ * is out of order) and picking the highest instead would be a change of
  * behaviour wearing an optimization's clothes.
  *
  * The one thing it cannot see is corruption further up: a malformed line in the
  * MIDDLE of the file makes {@link readTailCheckpoints} refuse and leaves this
  * indifferent, because it never reads that far. That is the same trade the tip
- * already makes for segments, and it costs no proof — the verifier reads every
+ * already makes for segments, and it costs no proof: the verifier reads every
  * checkpoint, and it is what turns an unreadable one into a verdict naming the
  * file and the line.
  */

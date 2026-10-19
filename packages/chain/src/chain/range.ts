@@ -1,20 +1,20 @@
 /**
- * The entries of a tail that a checkpoint covers — found without walking the tail once per
+ * The entries of a tail that a checkpoint covers: found without walking the tail once per
  * checkpoint.
  *
  * THE QUESTION IS ONE `filter`, AND THE ANSWER HAS TO STAY THAT FILTER'S TO THE BYTE:
  * every entry whose `seq` lies in `[fromSeq, toSeq]`, in the order the tail holds them.
- * The verifier used to ask it exactly so, over the whole tail, for every checkpoint — and
+ * The verifier used to ask it exactly so, over the whole tail, for every checkpoint, and
  * this product signs a checkpoint per act, so the checkpoints grow with the events and the
  * question cost the tail's length times its own length. Measured over records the
  * product's own writer wrote: 1.9 s at 10 thousand events, 8.0 to 8.4 s at 31.6 thousand,
- * 77 s at 100 thousand — and 62 to 95 s through the shipped binary, the verb a CI runs on
+ * 77 s at 100 thousand, and 62 to 95 s through the shipped binary, the verb a CI runs on
  * every push. It was quadratic in the history.
  *
  * WHAT MAKES A SHORTER ROUTE EXACT is one fact about the tail, checked once: its seqs never
  * go DOWN along the file. When they do not, the entries that lie in a range are one
- * unbroken run of it — any entry between two that lie in `[fromSeq, toSeq]` has a seq
- * between theirs, so it lies there too — and that run is the slice from the first seq at or
+ * unbroken run of it (any entry between two that lie in `[fromSeq, toSeq]` has a seq
+ * between theirs, so it lies there too) and that run is the slice from the first seq at or
  * above `fromSeq` to the first seq above `toSeq`, in the file's own order. Two binary
  * searches find it. A sound tail runs 0, 1, 2 … and qualifies; so does a tail with an
  * entry appended twice or a line cut out of the middle, which are the breaks two writers
@@ -24,7 +24,7 @@
  * A TAIL WHOSE SEQS DO GO DOWN KEEPS THE FILTER, as written before, because for it the
  * entries in a range need not sit together and the slice would answer something else. It
  * is a tail the hash chain already refuses (T1 reads the first seq out of place), so what
- * it pays is time and never a verdict — and the verdict it gets is the one it always got.
+ * it pays is time and never a verdict, and the verdict it gets is the one it always got.
  * That is a decision and not an oversight: the only tail that still costs the square is a
  * tail somebody reordered, and making it cheap would put a second, cleverer reading of a
  * range beside this one for the one case where nothing is being proven anyway.
@@ -39,7 +39,7 @@ import type { Entry } from './entry.js';
 export type EntriesBetween = (fromSeq: number, toSeq: number) => readonly Entry[];
 
 /**
- * How to ask a tail for the entries a checkpoint covers — the filter's answer, by the
+ * How to ask a tail for the entries a checkpoint covers: the filter's answer, by the
  * cheapest route that stays exact for THESE entries. Decided once per tail, in one pass.
  */
 export function entriesBetween(entries: readonly Entry[]): EntriesBetween {
@@ -62,7 +62,7 @@ function seqsNeverFall(entries: readonly Entry[]): boolean {
 }
 
 /**
- * The first position whose seq satisfies `holds`, or the length when none does — over seqs
+ * The first position whose seq satisfies `holds`, or the length when none does: over seqs
  * that never fall, for a condition that, once true, stays true along them.
  */
 function firstWhere(entries: readonly Entry[], holds: (seq: number) => boolean): number {
