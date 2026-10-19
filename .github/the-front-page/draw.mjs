@@ -641,7 +641,7 @@ function howMnemaFits(blocks, theme) {
   body.push(
     s.say(['src/billing/total.ts'], rx, box.top + 68, 'code'),
     s.say(['refuses-a-write · ADR-2'], rx + 12, box.top + 86, 'code', { fill: s.muted }),
-    `<rect ${s.passes(7.8, 8.8)} x="${rx - 8}" y="${price - 16}" width="${box.w - 20}" height="24" rx="6" fill="${s.accent}" fill-opacity="0.16" stroke="${s.accent}" stroke-opacity="0.7"/>`,
+    `<rect ${s.passes(7.8, 8.8)} x="${rx - 8}" y="${price - 16}" width="${box.w - 20}" height="24" rx="6" fill="${s.accent}" fill-opacity="0.16" stroke="${s.accent}"/>`,
     s.say(['src/cart/price.ts'], rx, price, 'code'),
     s.say(['.mnema/'], rx, box.top + 184, 'code', { fill: s.muted }),
   );
