@@ -1,6 +1,6 @@
 /**
  * FORM A applied to the rules that govern a path: the address, what the rule IS,
- * and where it lives — one line per rule, under a heading that counts them.
+ * and where it lives; one line per rule, under a heading that counts them.
  *
  * IT OPENS WITH THE NUMBERS AND THEY ARE NEVER OMITTED, including when every one of
  * them is zero. A reading that printed only the matching rules would give the same page
@@ -14,7 +14,7 @@
  * A page that reported which rules govern a file and said nothing about which of them
  * gates it would leave the person whose work just stopped with no reading that explains
  * it: the refusal cites an id, and this is where an id is looked up. So the gate gets its
- * own second line — the same three numbers for the other relation — and its own group when
+ * own second line, the same three numbers for the other relation, and its own group when
  * anything is in it, printed whatever was asked about for the reason the stale group is:
  * a gate that has gone stale stops nobody, silently, and only a number that names it
  * separately can be looked at.
@@ -22,12 +22,12 @@
  * THE STALE GROUP IS NAMED, NOT ONLY COUNTED. A count of dead addresses goes down by
  * making the count go down; a list of them goes down by looking at what it names.
  * The group is printed whenever it is non-empty, whatever was asked about, because
- * a rule that has stopped governing is news to whoever asked — silence is never an
+ * a rule that has stopped governing is news to whoever asked: silence is never an
  * answer, and this is the half of that this reading owes.
  *
  * EVERY VALUE ON A ROW CAME OUT OF THE RECORD, so every one of them is collapsed to
  * one line: the address a caller typed into `--rel governs`, the title of the rule,
- * and the rule's own id — which is a caller's string too, since a link's subject is
+ * and the rule's own id, which is a caller's string too, since a link's subject is
  * forwarded to the chain without being verified to exist. The words between them are
  * this surface's own.
  */
@@ -83,8 +83,8 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
    *
    * The ADDRESS leads, because the list is ordered by it and a reader scanning for
    * "which rule is the specific one" is scanning that column. What the rule IS comes
-   * second, and it is the one field that can be missing — a memory has no title of
-   * its own, and an id no visible tree authored has nothing at all — so the kind, or
+   * second, and it is the one field that can be missing (a memory has no title of
+   * its own, and an id no visible tree authored has nothing at all), so the kind, or
    * the word `unresolved`, stands in its place rather than an empty column. That last
    * case now has a GROUP of its own, so the word is a label under a heading that says
    * the same thing rather than the only sign that a row is not a rule at all. Every
@@ -103,7 +103,7 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
       itemLine([
         oneLine(rule.address ?? rule.recorded),
         said,
-        // The STATE is a part of its own, never composed into the title beside it —
+        // The STATE is a part of its own, never composed into the title beside it:
         // the one place its parentheses and its news are decided is `state.ts`. A
         // rule of a kind with no state (a memory) rides without one.
         ...(rule.state === undefined ? [] : [asState(oneLine(rule.state))]),

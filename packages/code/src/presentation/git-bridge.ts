@@ -8,7 +8,7 @@
  * NOTHING HERE CONCLUDES. A commit is listed because a trailer in its message names a decision or
  * because it touched a path the decision addresses, and the page says which of the two; a
  * decision is listed by `aging` because commits landed on its paths, and the page says that and
- * stops — it does not say the decision is wrong, stale or due for a review.
+ * stops: it does not say the decision is wrong, stale or due for a review.
  *
  * WHEN THERE IS NO GIT, THE PAGE SAYS SO AND THE VERB EXITS CLEAN. Absence of git is a fact about
  * the place, not a failure of the question.
@@ -34,14 +34,14 @@ const READ_NOW = 'Read from git just now; nothing was written to the record.';
 /** The one quote a shell reads literally. */
 const QUOTE = "'";
 
-/** A value, already one line, as a shell would take it whole — for a recipe a person pastes. */
+/** A value, already one line, as a shell would take it whole: for a recipe a person pastes. */
 function shellWord(one: string): string {
   if (/^[\w@%+=:,./-]+$/.test(one)) return one;
   const inside = one.split(QUOTE).join([QUOTE, '\\', QUOTE, QUOTE].join(''));
   return [QUOTE, inside, QUOTE].join('');
 }
 
-/** A short hash — enough to find the commit, the full one is in `--json`. */
+/** A short hash: enough to find the commit, the full one is in `--json`. */
 function short(sha: string): string {
   return sha.slice(0, 10);
 }

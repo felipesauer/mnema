@@ -5,7 +5,7 @@
  * It is the piece that mounts the layout library, and the only one. `gate.ts` decides
  * what a typed line MEANS, `editing.ts` decides what a keystroke does to the row being
  * typed, `scrolling.ts` keeps what the session has said, `region.ts` decides where a line
- * lands — and this drives the four: three regions are drawn on every frame, the top one and
+ * lands, and this drives the four: three regions are drawn on every frame, the top one and
  * the bottom one never move, and the middle is a window onto the roll.
  *
  * THE SCROLLBACK USED TO BE THE FEATURE, and this file said so in those words: *what the
@@ -13,12 +13,12 @@
  * if they had typed the verbs at a shell, because the only region redrawn is the input row and
  * everything else was written once and never taken back.* It was true, it was measured, and it
  * cost the caller the one thing they asked for: a header that stays. In that model the opening
- * is CONTENT — it is the first thing written into the region nobody redraws — so it rises off
+ * is CONTENT (it is the first thing written into the region nobody redraws), so it rises off
  * the top of the screen as soon as enough is printed, and no arithmetic anywhere can hold it
  * down. Eight deliveries of this frontier were patches on that, each closing one symptom and
  * uncovering the next.
  *
- * SO THE CONSOLE TAKES THE SCREEN — the alternate screen buffer, which is what every
+ * SO THE CONSOLE TAKES THE SCREEN: the alternate screen buffer, which is what every
  * full-screen program takes and what the console this one is measured against takes. It is
  * asked for by the layout library's own option rather than written here: it is one flag on the
  * call that mounts (`alternateScreen`), and the library enters on mount and leaves on unmount.
@@ -28,8 +28,8 @@
  *     the bottom fixed, and it is also what keeps the library from starting the page over: a
  *     frame equal to the viewport is written in place, and only one TALLER than it makes the
  *     library erase and redraw.
- *   - THE ROLL IS OURS. The alternate screen has no scrollback — on purpose, that is what it is
- *     for — so what the session has said lives in this process and the scroll over it is this
+ *   - THE ROLL IS OURS. The alternate screen has no scrollback (on purpose, that is what it is
+ *     for), so what the session has said lives in this process and the scroll over it is this
  *     console's (`scrolling.ts`, {@link theWheel}).
  *   - THE TRANSCRIPT IS WRITTEN BACK. What the old model got for free is paid for deliberately
  *     on the way out ({@link theTranscriptBack}), because the caller's history ending with what
@@ -37,11 +37,11 @@
  *
  * IT COMPOSES NOTHING A READER SEES, and the ECHO is what that sentence used to make an
  * exception for. It read: *this file writes exactly ONE string of its own, and it is INPUT
- * rather than report — the prompt and what the caller typed, the way a terminal shows what you
+ * rather than report, the prompt and what the caller typed, the way a terminal shows what you
  * sent. It is not a fact about the record and it does not go through a renderer, for the same
  * reason the prompt never did.* Both halves of the reason were true and the conclusion did not
  * follow. What falsified it is what a caller SEES: a session is scrolled by looking for the
- * line you asked in among the answer to it, and a concatenated string has no parts — so
+ * line you asked in among the answer to it, and a concatenated string has no parts, so
  * nothing could weigh it, nothing could paint it, and the one row on the page that is the
  * caller's own read at exactly the weight of everything around it.
  *
@@ -59,7 +59,7 @@
  * caller's fingers are.* The premise is that the caret is counted over the row that is DRAWN, and
  * it was false of this file's own arithmetic: the column is counted over the prompt and the typed
  * text ({@link Showing.column}), which are the values the caller handed over, and it never
- * touched the composed string at all. So painting the row costs the caret nothing — measured on a
+ * touched the composed string at all. So painting the row costs the caret nothing: measured on a
  * real terminal at two widths and nine cases, every column and every row identical to the ones
  * the plain row produced (`tests/the-prompt-is-painted-where-you-type.test.ts`). What the reason
  * was really protecting is the FOLD, and that is answered where it arises
@@ -77,7 +77,7 @@
  * ONE LINE AT A TIME, and it is a chain rather than a flag. A caller who pastes three
  * lines has given the terminal all three before the first one has run, and three verbs
  * running at once over one record would answer interleaved. Each submitted line waits
- * for the one before it — and so does its ECHO, which is why the echo lands inside the
+ * for the one before it, and so does its ECHO, which is why the echo lands inside the
  * queued turn rather than when the key was pressed: a prompt printed above the answer to
  * the question before it would read as though the second had been asked first.
  *
@@ -87,18 +87,18 @@
  * comes composed from `presentation/`, it goes through {@link OpenConsole.land}, and it goes
  * onto the roll where the session put it.
  *
- * AND WHAT IT MAY NOT BE USED TO BE *A REGION OF ITS OWN — a list that GROWS walks the
+ * AND WHAT IT MAY NOT BE USED TO BE *A REGION OF ITS OWN: a list that GROWS walks the
  * region into the height at which the library stops redrawing a PART of the screen*. That
  * sentence, and the whole family of arithmetic it belongs to, is gone with the model: no region
- * here grows with what a session has to say, because what a session says is not drawn at all —
+ * here grows with what a session has to say, because what a session says is not drawn at all;
  * a WINDOW onto it is, and a window is as tall as what the two fixed regions leave.
  *
  * WHAT IT MAY STILL NOT BE is a rewrite of what is above: a fact about a line the caller has
  * already read lands UNDER it, because the one promise of this surface is that what has been
  * said is not unsaid.
  *
- * AND THERE IS A FLOOR UNDER ALL OF IT. Every arrangement above degrades — a smaller drawing,
- * no arrangement at all, an input area without its badge or its rules — and every one of those
+ * AND THERE IS A FLOOR UNDER ALL OF IT. Every arrangement above degrades (a smaller drawing,
+ * no arrangement at all, an input area without its badge or its rules) and every one of those
  * ladders was total, so a page was drawn at any size a device reported. Below the floor it is
  * not: the frame is a SCREEN saying what the window has and what the console
  * needs (`floor.ts`), the session goes on, the roll is untouched, and the page comes back by
@@ -159,8 +159,8 @@ const NO_HEIGHT = 0;
 /**
  * THE WIDTH THE ROW BEING TYPED IS RENDERED FOR: none at all.
  *
- * It is the rule's own vocabulary rather than a flag of ours — a line rendered for a screen
- * whose width nobody reported is not folded (`wiring/color.ts`) — and it is a second constant
+ * It is the rule's own vocabulary rather than a flag of ours (a line rendered for a screen
+ * whose width nobody reported is not folded; see `wiring/color.ts`) and it is a second constant
  * beside {@link NO_WIDTH} rather than the same one because the two say different things: that
  * one is a device that did not answer, and this is a row this console deliberately does not
  * fold ({@link renderTyped}).
@@ -171,15 +171,15 @@ const NOT_FOLDED = 0;
  * How often the record is asked whether it moved, in milliseconds.
  *
  * A tenth of a second, which is the threshold below which a person reads a response as
- * immediate — so a caller watching a record another process is writing sees it happen rather
+ * immediate, so a caller watching a record another process is writing sees it happen rather
  * than notices it later. What it costs is the cheap half of the question: one `readdir` per
  * tail and one `stat`, measured at 26 µs, so ten a second is 0.026% of a core and an hour of
  * an idle session is 36 000 of them (`following.ts`).
  *
  * IT USED TO BE TWO READERS AND THE SECOND ONE IS GONE. This same number was how long the
  * terminal's size had to stop changing before the page was drawn again: a drag of a window
- * edge delivers a size every two or three milliseconds, and each of them turned a PAGE — a
- * screen of the caller's carried into their scrollback and the opening rewritten over it — so
+ * edge delivers a size every two or three milliseconds, and each of them turned a PAGE, a
+ * screen of the caller's carried into their scrollback and the opening rewritten over it, so
  * thirty of them inside one drag was the defect the wait existed to prevent. Nothing is turned
  * now and nothing is carried anywhere: a resize is a frame drawn at the new size, which is what
  * every frame is. So the damper is off the geometry entirely, and what it damped is a cost that
@@ -218,19 +218,19 @@ export interface ConsoleRequest {
   /** The screen the console takes, and the stream the transcript goes back on. */
   readonly stdout: NodeJS.WriteStream;
   /**
-   * What the caller types in front of — the text of it, and nothing about how it is drawn.
+   * What the caller types in front of: the text of it, and nothing about how it is drawn.
    *
    * IT SAID *not a report, and so not rendered*, and the first half is still true while the
    * second no longer follows from it. What is rendered is not what is a report: it is what
-   * a caller SEES, and this string is on the page twice — under their fingers and in the
-   * transcript above ({@link showing}, {@link echoed}) — so it goes through the rule that
+   * a caller SEES, and this string is on the page twice (under their fingers and in the
+   * transcript above; see {@link showing}, {@link echoed}), so it goes through the rule that
    * answers `NO_COLOR` for every other line rather than around it. It arrives here as text
    * for exactly that reason: how it is painted is a role in a table
    * (`presentation/styled.ts`) and never a byte written beside it.
    */
   readonly prompt: string;
   /**
-   * How a line becomes bytes on a screen of a GIVEN WIDTH — the rule, and not one answer to
+   * How a line becomes bytes on a screen of a GIVEN WIDTH: the rule, and not one answer to
    * it (`wiring/color.ts`).
    *
    * IT WAS A RENDERER, *resolved once for the whole session*, AND THIS FILE IS WHY THAT
@@ -238,13 +238,13 @@ export interface ConsoleRequest {
    * frame whose rules, badge and arrangement measure the new terminal and whose CONTENT is
    * still folded to the width the process opened at, which is one frame carrying two widths.
    * This file is the only thing on the surface that asks the device how wide the page is
-   * ({@link theSize}), so it is the only thing that can answer the rule — and the answer it
+   * ({@link theSize}), so it is the only thing that can answer the rule, and the answer it
    * gives out is for the frame it is drawing ({@link OpenConsole.render}).
    *
    * IT IS ASKED FOR THE PALETTE HERE, and for nothing else in this file: everything else
    * arrives already rendered. What the palette shows depends on what has been typed and how
    * wide each row may be depends on the window, so it is composed on the frame that needs it
-   * (`palette.ts`) and turned into bytes with the frame's own renderer — which is the same
+   * (`palette.ts`) and turned into bytes with the frame's own renderer, which is the same
    * thing the opening does one layer up, and is not this file composing anything.
    */
   readonly renderingAt: RenderingAt;
@@ -253,13 +253,13 @@ export interface ConsoleRequest {
    *
    * It stays under the row being typed instead of going onto the roll, which is the
    * difference between a tip and a line: one that has scrolled off the screen is not
-   * a tip any more. Empty means the console offers none and draws no row for it — and so
+   * a tip any more. Empty means the console offers none and draws no row for it, and so
    * does a window too narrow for it to be one row, which is the area's call rather than
    * this file's.
    */
   readonly tips: Drawn;
   /**
-   * WHAT THE FOOT SAYS WHEN AN ANSWER LEFT THE PAGE AS IT WAS, already rendered — the row the
+   * WHAT THE FOOT SAYS WHEN AN ANSWER LEFT THE PAGE AS IT WAS, already rendered: the row the
    * area draws at its top while that is true, and never a line of the roll. It has TWO
    * SENTENCES, one for each side of the tail: that the end of the answer was already on the page,
    * for a reader following it, and that the end is below the page, for a reader who has walked
@@ -272,12 +272,12 @@ export interface ConsoleRequest {
    * no row, which is the area's call rather than this file's, exactly as it is for the hint.
    *
    * IT WAS ONE SENTENCE, and what made it two is the reader it had to leave out. The first was
-   * true only at the tail, so a reader who had walked back was told nothing at all — and for them
+   * true only at the tail, so a reader who had walked back was told nothing at all, and for them
    * EVERY answer lands without the page moving, which is the silence the row exists to break.
    */
   readonly unmoved: { readonly onThePage: Drawn; readonly belowThePage: Drawn };
   /**
-   * WHICH KEYS MOVE THE LIST OF WORDS, as a line — drawn under the list, and only on the frames
+   * WHICH KEYS MOVE THE LIST OF WORDS, as a line: drawn under the list, and only on the frames
    * there is one.
    *
    * A LINE AND NOT BYTES, unlike the row above, and the difference is which of the two the
@@ -289,7 +289,7 @@ export interface ConsoleRequest {
    */
   readonly picking: Line;
   /**
-   * WHAT THE RECORD PROVED, as one row for the corner above the input — already rendered,
+   * WHAT THE RECORD PROVED, as one row for the corner above the input: already rendered,
    * and empty when there is no record to name a level of.
    *
    * A FUNCTION AND NOT A VALUE, AND IT USED TO BE THE OTHER WAY ROUND. The doc here said
@@ -301,9 +301,9 @@ export interface ConsoleRequest {
    * printed `seq gap: expected 8, found 7`.
    *
    * AND THE SENTENCE UNDER IT WAS *IT MAY NOT BE RE-READ EITHER*, which was right about
-   * what it meant and wrong about what it said. What may not happen is another `verify` —
+   * what it meant and wrong about what it said. What may not happen is another `verify`:
    * 54 ms to 1.7 s, on a clock. (It said *linear in the history* here too, which the
-   * verifier was not until it stopped walking the whole tail once per checkpoint —
+   * verifier was not until it stopped walking the whole tail once per checkpoint:
    * `proving.ts` has the measurement.) What this asks is whether the chain
    * moved at all: one `readdir` per tail and one `stat`, latched off once it has answered
    * (`session.ts`, `proving.ts`).
@@ -315,7 +315,7 @@ export interface ConsoleRequest {
    */
   readonly badge: () => Drawn;
   /**
-   * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the arrangement and the lines
+   * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE: the arrangement and the lines
    * that go with it, already composed and already measured.
    *
    * A FUNCTION AND NOT A VALUE, and the size is the whole reason: which drawing there is room
@@ -326,21 +326,21 @@ export interface ConsoleRequest {
    * IT MAY NOT READ THE RECORD, and that is the caller's promise rather than a
    * signature this file can enforce. What the panel says about the record was paid for
    * with the one read this surface declares (`session.ts`), and a redraw that asked again
-   * could say something different halfway through a session — measured by counting the
+   * could say something different halfway through a session: measured by counting the
    * reads three width changes cause, which is none (`tests/the-name-and-the-hints.test.ts`).
    *
    * IT WAS ASKED ONCE PER SETTLED RESIZE AND IT IS ASKED ON EVERY FRAME, which is the
    * correction the geometry needed and not a change to what it means. A number that says where
    * to draw may not come from a value that has settled: the size a frame is laid out at has to
    * be the size the device has AT THE MOMENT OF THE DRAWING, or a frame composed for the old
-   * width is written onto the new screen — which is what made the panel flicker two rows wide
+   * width is written onto the new screen, which is what made the panel flicker two rows wide
    * of the window while a drag settled. What is damped instead is the WORK: the answer is kept
    * for the size it was asked at, so a keystroke costs a comparison and a resize costs one
    * composition ({@link theOpening}).
    */
   readonly openingFor: (columns: number, rows: number) => Opening;
   /**
-   * WHAT A LANDED LINE IS REMEMBERED BY — the records it names, so a Tab can finish one
+   * WHAT A LANDED LINE IS REMEMBERED BY: the records it names, so a Tab can finish one
    * of them (`seen.ts`).
    *
    * It is handed one line at a time rather than reading what this file keeps, because
@@ -355,7 +355,7 @@ export interface ConsoleRequest {
    */
   readonly saw: (line: string) => void;
   /**
-   * WHAT HAS HAPPENED TO THE RECORD since this was last asked, already rendered — the
+   * WHAT HAS HAPPENED TO THE RECORD since this was last asked, already rendered: the
    * lines of every append somebody else made while the caller was watching.
    *
    * ASKED ON A CLOCK AND ANSWERED FOR NOTHING, which is what makes it affordable to ask
@@ -365,25 +365,25 @@ export interface ConsoleRequest {
    *
    * IT MAY NOT READ THE RECORD TO ANSWER "no", and that is the caller's promise rather
    * than a signature this file can enforce. The counter that holds the other reads of this
-   * surface holds this one too — a session that watches for a second and a half asks the
+   * surface holds this one too: a session that watches for a second and a half asks the
    * question fifteen times and opens nothing (`tests/the-name-and-the-hints.test.ts`).
    */
   readonly happened: () => readonly string[];
   /**
-   * WHAT CAN BE TYPED WHERE THE CARET IS, over the command tree the session was built from
-   * — the verbs this session runs, the words it answers to itself, and the records it has
+   * WHAT CAN BE TYPED WHERE THE CARET IS, over the command tree the session was built from:
+   * the verbs this session runs, the words it answers to itself, and the records it has
    * already named.
    *
    * IT WAS *WHAT TAB OFFERS*, AND THERE WAS A SECOND LIST BESIDE IT: the session's own
    * vocabulary, handed over so that a slash could be answered from it. Two lists is two
-   * menus — the slash listed three words and a Tab listed fourteen — so the vocabulary is
+   * menus, the slash listed three words and a Tab listed fourteen, so the vocabulary is
    * gone from here and this is what both keys ask (`palette.ts`, `offeredBy`).
    */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
   readonly answer: (line: string) => Promise<AfterLine>;
   /**
-   * THE CLOCK, in milliseconds since the epoch — what the line under an answer measures how long
+   * THE CLOCK, in milliseconds since the epoch: what the line under an answer measures how long
    * it took and what hour it was done by. A parameter and not a call to the system's, so a case
    * that holds the line asserts on the numbers it handed in; a session left to itself reads the
    * machine's.
@@ -398,20 +398,20 @@ export interface OpenConsole {
   /** Land one already-rendered line in what the session has said. */
   readonly land: (line: string) => void;
   /**
-   * HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the width the ROLL has,
+   * HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW: the width the ROLL has,
    * answered by the one thing that has asked the device for anything.
    *
    * IT IS THE SISTER OF {@link land} AND IT IS HANDED BACK FOR THE SAME REASON: a line
    * reaches the page as bytes, so it is rendered before it lands, and whoever renders it has
    * to fold it to the width of the frame it is about to land on. Between two frames that is
-   * the width the last one was drawn at — a resize is a redraw, so the page a verb is about
+   * the width the last one was drawn at: a resize is a redraw, so the page a verb is about
    * to print onto has already been laid out at the size the device now has.
    *
    * ONE READING PER FRAME is what this buys, and it is the promise the whole of this file's
    * geometry makes about every other number on the page: the rules, the badge, the arrangement
    * and the window come out of one reading of the device ({@link theSize}), and the fold was
    * the last number that did not. IT SAID *ONE WIDTH*, and the page's own margin is what made
-   * that too narrow a word — what a verb prints lands inside it and the rules are drawn corner
+   * that too narrow a word: what a verb prints lands inside it and the rules are drawn corner
    * to corner, so there are two widths and one reading (`inset.ts`,
    * {@link renderOnTheRoll}).
    */
@@ -438,7 +438,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const now = request.now ?? Date.now;
 
   /**
-   * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
+   * How wide the page is, asked of the DEVICE: the one place anything on the FRAME does.
    *
    * Everything the layout draws is HANDED it: the panel's arithmetic, the art of the name, the
    * rules the input area sits between. This is the module that owns the streams, so this is
@@ -454,7 +454,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    *
    * AND *A THIRD IS STILL REFUSED* NAMED A TEST THAT REFUSED NOTHING. It pointed at
    * `tests/the-screen-is-ours.test.ts`, which holds the one WRITE onto the caller's device and
-   * says nothing about who READS its size — so the claim was a sentence rather than a guard for
+   * says nothing about who READS its size, so the claim was a sentence rather than a guard for
    * two deliveries. It is one now: `tests/one-width-per-frame.test.ts` names the two files that
    * ask a device how big it is, over this surface's own source with the prose blanked.
    */
@@ -466,7 +466,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * AND IT IS READ AT THE MOMENT OF THE DRAWING, which is the rule the whole geometry of
    * this file now rests on and the one the model before it broke. A frame is laid out against
    * a height, and a height that was true when a resize SETTLED is not the height the frame is
-   * about to be written onto — so a size event is a reason to draw again rather than a source
+   * about to be written onto, so a size event is a reason to draw again rather than a source
    * of truth to be stored. It is the pattern the field converged on and it is what makes a
    * coalesced or a dropped resize harmless: whatever the events did, the number used is the one
    * the device answers with on the frame that is being built.
@@ -474,16 +474,16 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const howTall = (): number => stdout.rows ?? NO_HEIGHT;
 
   /**
-   * BOTH MEASUREMENTS OF THE DEVICE, IN ONE READING — how wide and how tall, asked once.
+   * BOTH MEASUREMENTS OF THE DEVICE, IN ONE READING: how wide and how tall, asked once.
    *
    * THEY WERE TWO QUESTIONS AND A CALLER CAN RESIZE BETWEEN THEM. The two above are separate
    * getters and each of them asks the operating system: a size that changes between the first and
    * the second gives a frame half one terminal and half another. This file's own doc has warned
-   * about exactly that shape — *two readings of a device that a caller can resize between them is
-   * a frame built out of two different terminals* — and then read the device twice. Measured on a
+   * about exactly that shape (*two readings of a device that a caller can resize between them is
+   * a frame built out of two different terminals*) and then read the device twice. Measured on a
    * loaded machine, three sizes set back to back: a frame came out **24 rows by 120 columns**,
    * which is the height of the first size and the width of the second, and no terminal was ever
-   * that shape. What it costs on a screen is a row too wide, which the terminal folds — and a
+   * that shape. What it costs on a screen is a row too wide, which the terminal folds, and a
    * folded frame is a frame taller than the screen it is on.
    *
    * SO THE DEVICE IS ASKED ONCE, by the one call that answers both. A stream that cannot be asked
@@ -497,7 +497,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   };
 
   /**
-   * EVERY BYTE THIS SESSION WRITES, AND THE ONE PLACE THE ERASE IS ANSWERED — the caller's own
+   * EVERY BYTE THIS SESSION WRITES, AND THE ONE PLACE THE ERASE IS ANSWERED: the caller's own
    * device, with one door in front of the only method that puts anything on it.
    *
    * IT IS THE LAST POINT IN THE PROCESS, and that is the whole of why it is here rather than in a
@@ -506,20 +506,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * new size and no frame this file composes can change it. What IS still ours is the pipe: the
    * bytes it decided on have to leave through a stream, and this file is the one that owns the
    * streams. So the erase of the caller's own history is taken out on the way out
-   * (`erasing.ts`, {@link withoutTheHistoryErase}) — in the alternate screen exactly as in the
+   * (`erasing.ts`, {@link withoutTheHistoryErase}): in the alternate screen exactly as in the
    * normal one, because that sequence reaches past whichever screen is showing and empties the
    * caller's.
    *
    * ONE DOOR AND TWO WRITERS, which is what makes it a pipe rather than a patch: the layout is
-   * handed this instead of the device, and the strings this file writes itself — the modes that
-   * turn the wheel on and off, and the transcript on the way out — go through it too. A second
+   * handed this instead of the device, and the strings this file writes itself (the modes that
+   * turn the wheel on and off, and the transcript on the way out) go through it too. A second
    * writer on the raw stream would be a second mouth with no door on it, which is asserted over
    * this file's own source (`tests/the-screen-is-ours.test.ts`).
    *
    * EVERYTHING BUT THE WRITE IS THE DEVICE'S OWN, and it is delegated rather than listed on
-   * purpose. What a layout library asks a terminal is its business and changes with its version —
-   * how wide, how tall, whether it is a terminal, whether it is still writable, and the watch on
-   * the size — so a stand-in built out of the members one version happens to ask for is a stand-in
+   * purpose. What a layout library asks a terminal is its business and changes with its version
+   * (how wide, how tall, whether it is a terminal, whether it is still writable, and the watch on
+   * the size), so a stand-in built out of the members one version happens to ask for is a stand-in
    * that breaks on the next. This forwards every question to the real device and answers exactly
    * one of them differently.
    */
@@ -535,18 +535,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   });
 
   /**
-   * ONE WRITE, ANSWERED — the bytes with the erase of the caller's history taken out, handed to
+   * ONE WRITE, ANSWERED: the bytes with the erase of the caller's history taken out, handed to
    * the real device.
    *
    * A chunk that is not TEXT goes out exactly as it arrived, and that is a refusal rather than a
    * gap: bytes are where a character can be cut in half, so a door that decoded them in order to
    * search them would be the defect this bench has already paid for once (`support/screen.ts`).
-   * Nothing writes one here — the library assembles a frame into a string, and this file writes
+   * Nothing writes one here: the library assembles a frame into a string, and this file writes
    * what one function returned.
    */
   function throughTheDoor(chunk: unknown): boolean {
     // ONE STATEMENT, AND IT IS THE ONLY PLACE IN THIS SURFACE THAT PUTS A BYTE ON THE CALLER'S
-    // DEVICE — asserted over this file's own source, so a second one is an accusation rather
+    // DEVICE: asserted over this file's own source, so a second one is an accusation rather
     // than a hole (`tests/the-screen-is-ours.test.ts`).
     return stdout.write(
       typeof chunk === 'string' ? withoutTheHistoryErase(chunk) : (chunk as Uint8Array),
@@ -554,7 +554,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * THE SIZE THE FRAME ON THE SCREEN WAS COMPOSED FOR — every number on that frame's
+   * THE SIZE THE FRAME ON THE SCREEN WAS COMPOSED FOR: every number on that frame's
    * geometry, and now its FOLD as well, comes out of this pair.
    *
    * It is written at the top of every frame ({@link showing}), before anything is composed, so
@@ -564,12 +564,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * IT WAS KEPT BY {@link theOpening}, AND THE FLOOR IS WHAT SEPARATED THE TWO. This pair was
    * the opening's cache key as well as the frame's size, which is one variable doing two jobs and
    * true only while every frame composed an opening. A window under the floor composes none
-   * (`floor.ts`) — so a size that stayed here would have been the size of the last frame that
+   * (`floor.ts`), so a size that stayed here would have been the size of the last frame that
    * DID, and the one line of the floor screen that folds would have folded to a window nobody was
    * looking at. Two names now: this is the frame's, and the cache has its own
    * ({@link composedAt}).
    *
-   * AND IT WAS TWO READINGS OF THE DEVICE — `{ columns: theSize()[0], rows: theSize()[1] }` —
+   * AND IT WAS TWO READINGS OF THE DEVICE: `{ columns: theSize()[0], rows: theSize()[1] }`,
    * which is the very shape {@link theSize} exists to make impossible, at the one line that
    * predates it. A caller who resized between the two calls opened a session whose first frame
    * was the width of one terminal and the height of another. One reading, destructured.
@@ -577,7 +577,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const first = theSize();
   let drawnAt = { columns: first[0], rows: first[1] };
   /**
-   * THE SIZE {@link opened} WAS COMPOSED FOR — the opening cache's own key, and nothing about
+   * THE SIZE {@link opened} WAS COMPOSED FOR: the opening cache's own key, and nothing about
    * the frame.
    *
    * It is separate from {@link drawnAt} so that the pair *this is the opening for that size*
@@ -603,7 +603,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let opened: Opening = openingFor(drawnAt.columns, drawnAt.rows);
 
   /**
-   * HOW A LINE OF THE FRAME BECOMES BYTES — the rule, asked for the width of the SCREEN and for
+   * HOW A LINE OF THE FRAME BECOMES BYTES: the rule, asked for the width of the SCREEN and for
    * no other number.
    *
    * WHAT GOES THROUGH IT IS WHAT IS DRAWN CORNER TO CORNER: the rows of the palette, cut and
@@ -615,15 +615,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * IT SAID *ONE FUNCTION AND EVERY DRAWER CALLS IT*, and what falsified it is the page having
    * a left edge. What the session SAYS lands inside a margin ({@link renderOnTheRoll},
    * `inset.ts`), so a line of the roll folded to the width of the terminal would be broken again
-   * — at the margin, mid-word — by a layout that has four fewer columns to put it in. There are
+   * (at the margin, mid-word) by a layout that has four fewer columns to put it in. There are
    * two widths on a frame now and ONE READING behind both: {@link drawnAt}, taken once at the
-   * top of the frame, and a subtraction. What the sentence was protecting is untouched — no
+   * top of the frame, and a subtraction. What the sentence was protecting is untouched: no
    * number here comes from a second question to the device.
    */
   const renderLine: Render = (line) => renderingAt(drawnAt.columns)(line);
 
   /**
-   * HOW A LINE OF THE ROLL BECOMES BYTES — the same rule, asked for the width the page has
+   * HOW A LINE OF THE ROLL BECOMES BYTES: the same rule, asked for the width the page has
    * INSIDE its margin.
    *
    * EVERYTHING THE SESSION SAYS GOES THROUGH THIS: what a verb prints between frames
@@ -635,13 +635,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * IT IS THE SAME NUMBER THE ROLL IS MEASURED BY ({@link theMiddle}), and that is the half that
    * cannot be allowed to drift: how many rows a line takes is a function of the width it is
    * drawn at, so a roll folded to one width and measured at another hands the window more lines
-   * than the region has rows — and the region is clipped, which loses the newest line at the
+   * than the region has rows, and the region is clipped, which loses the newest line at the
    * bottom rather than the oldest at the top.
    */
   const renderOnTheRoll: Render = (line) => renderingAt(insideTheMargin(drawnAt.columns))(line);
 
   /**
-   * HOW A LINE OF AN ANSWER BECOMES BYTES — the same rule, for the width inside the margin LESS
+   * HOW A LINE OF AN ANSWER BECOMES BYTES: the same rule, for the width inside the margin LESS
    * the indent every row of an answer carries ({@link landAnswer}). What a verb prints goes
    * through this ({@link OpenConsole.render}), so it is folded to the room it will have once the
    * glyph and the indent are put in front of it; folded to the width of the roll it would reach
@@ -651,12 +651,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const renderOnAnAnswer: Render = (line) => renderingAt(insideAnAnswer(drawnAt.columns))(line);
 
   /**
-   * HOW THE ROW BEING TYPED BECOMES BYTES — the same rule as every other line on this page,
+   * HOW THE ROW BEING TYPED BECOMES BYTES: the same rule as every other line on this page,
    * asked for NO WIDTH.
    *
    * IT IS THE ONE LINE OF THE PAGE THAT MAY NOT FOLD, and that is why it is a third door rather
    * than {@link renderLine}. What a caller is in the middle of writing is broken by the
-   * TERMINAL, at the margin, exactly as a shell breaks it — and a fold of ours would put a
+   * TERMINAL, at the margin, exactly as a shell breaks it, and a fold of ours would put a
    * newline and a hanging indent inside the row the caret is a column into. Measured before
    * anything was painted, at a hundred columns with a hundred and twenty characters typed: the
    * row is taken to the margin and the caret comes back on the row under it. That number is the
@@ -675,14 +675,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const renderTyped: Render = renderingAt(NOT_FOLDED);
 
   /**
-   * THE OPENING FOR THE SIZE THE DEVICE HAS RIGHT NOW — composed again only when the size is
+   * THE OPENING FOR THE SIZE THE DEVICE HAS RIGHT NOW: composed again only when the size is
    * not the one it was last composed for.
    *
    * IT IS A CACHE AND NOT A DAMPER, and the difference is the whole of what the resize storm
    * taught. A damper delays the ANSWER: the geometry a frame is drawn with lags the window by
    * however long the wait is, so a drag paints the old arrangement onto the new screen. This
-   * delays nothing — the size is read at the moment of the drawing and the answer is always for
-   * that size — and what it saves is the WORK, which is the part that is actually expensive:
+   * delays nothing (the size is read at the moment of the drawing and the answer is always for
+   * that size) and what it saves is the WORK, which is the part that is actually expensive:
    * composing the drawing of the name and choosing an arrangement for it, on every keystroke,
    * for a size that has not moved.
    *
@@ -697,7 +697,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * A ROLL WITH THE OPENING ON IT AND NOTHING ELSE — where a session starts, and what the word
+   * A ROLL WITH THE OPENING ON IT AND NOTHING ELSE: where a session starts, and what the word
    * that clears gives back.
    *
    * ONE FUNCTION AND TWO CALLERS, which is what makes a cleared page the page that opened rather
@@ -717,27 +717,27 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * EVERYTHING THE SESSION HAS SAID, and how far back the reader has walked — beginning with
+   * EVERYTHING THE SESSION HAS SAID, and how far back the reader has walked: beginning with
    * the lines the opening lands.
    *
    * THE OPENING'S LINES ARE ON THE ROLL AND NOT IN THE FIXED REGION, which is the boundary
    * `panel.ts` draws between the two halves of an opening: the ARRANGEMENT is chrome and stays
    * at the top, and what the session SAYS goes where everything it says goes. On a terminal too
    * narrow for an arrangement there is nothing in the top region at all, and the whole opening
-   * is here — which is what the `bare` form has always claimed to be, and what stops a drawing
+   * is here, which is what the `bare` form has always claimed to be, and what stops a drawing
    * that does not fit from being CLIPPED down to the rows that matter least.
    */
   let scrolling: Scrolling = theOpeningOnTheRoll();
   let editing: Editing = NOTHING_TYPED;
   /**
-   * WHICH OF ITS TWO SENTENCES THE ROW AT THE TOP OF THE INPUT AREA SAYS ABOUT THE LAST ANSWER —
+   * WHICH OF ITS TWO SENTENCES THE ROW AT THE TOP OF THE INPUT AREA SAYS ABOUT THE LAST ANSWER:
    * or `undefined`, when the last answer moved the page and there is nothing to say
    * ({@link ConsoleRequest.unmoved}).
    *
    * THE SAME DOCUMENT ASKED TWICE IS AN ANSWER NOBODY SEES LAND, wherever the window is shorter
    * than the answer. The window follows the tail, the tail of the second copy says what the tail
    * of the first one said, and the layout writes nothing for a frame identical to the one on the
-   * screen — so the answer went onto the roll and not a byte of the screen moved
+   * screen, so the answer went onto the roll and not a byte of the screen moved
    * (`tests/a-read-asked-again-draws-what-changed.test.ts`). AND SO IS EVERY ANSWER ASKED BY A
    * READER WHO HAS WALKED BACK, by the promise the roll keeps rather than by accident: what they
    * are reading stays where it is, and the answer goes on the roll under it (`scrolling.ts`,
@@ -750,8 +750,8 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * request is a value this can hold without a line changing here.
    *
    * RAISED WHERE AN ANSWER ENDS AND NOWHERE ELSE ({@link judged}), and lowered in two places: by
-   * the next key that is not a scroll ({@link key}), whichever sentence it holds, and — for the
-   * sentence that says the end is below the page — by the first frame whose window holds the end
+   * the next key that is not a scroll ({@link key}), whichever sentence it holds, and (for the
+   * sentence that says the end is below the page) by the first frame whose window holds the end
    * ({@link moved}). A reader who scrolls keeps the first sentence, which is a case
    * (`tests/a-read-asked-again-draws-what-changed.test.ts`); a resize and another process's append
    * leave it too, and its words stay true through both because they are about the last answer, in
@@ -762,7 +762,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let theRowSays: keyof ConsoleRequest['unmoved'] | undefined;
   /**
    * HOW MANY LINES HAVE BEEN SUBMITTED, counted when the key is pressed rather than when the line
-   * is answered — which is what lets an answer that ends tell whether a later line is already
+   * is answered, which is what lets an answer that ends tell whether a later line is already
    * waiting behind it ({@link judged}).
    */
   let submitted = 0;
@@ -775,7 +775,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * THE THREE REGIONS ARE ONE SUBTRACTION, and it is the whole geometry of this surface: the
    * opening takes what it takes, the input area takes what it takes, and the middle is the
    * rest. Nothing is placed, nothing is anchored, and nothing is remembered from the frame
-   * before — which is what a screen this session owns buys, and what nine of the numbers this
+   * before, which is what a screen this session owns buys, and what nine of the numbers this
    * file used to hold were for.
    */
   function showing(): Shown {
@@ -783,14 +783,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // readings of a device the caller can resize between them is a frame built out of two
     // different terminals ({@link theSize}).
     const [columns, rows] = theSize();
-    // AND THE FIRST THING ASKED OF THAT PAIR IS WHETHER IT SERVES AT ALL — the floor, applied
+    // AND THE FIRST THING ASKED OF THAT PAIR IS WHETHER IT SERVES AT ALL: the floor, applied
     // at its one site (`floor.ts`, {@link theWindowServes}). Everything below this line is
     // arithmetic about a page, and a window under the floor does not get one: it gets a screen
     // saying what it has and what the console needs. Nothing is composed, nothing is budgeted
     // and nothing is cut, which is what *the console does not try to draw* means.
     //
-    // AND NOTHING IS FORGOTTEN EITHER. The roll is untouched — this returns a different
-    // FRAME, not a different session — so the region the roll was last cut to ({@link theMiddle})
+    // AND NOTHING IS FORGOTTEN EITHER. The roll is untouched (this returns a different
+    // FRAME, not a different session), so the region the roll was last cut to ({@link theMiddle})
     // is still the one a line lands in, and the frame drawn when the window grows again is the
     // console with everything on it.
     drawnAt = { columns, rows };
@@ -812,7 +812,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
     // held. It is a function of the terminal's SIZE, of how many words the palette has to
     // show, of how many rows the region above it takes and of whether the last answer left the
-    // page as it was — all four change under a session, so a value kept beside the frame would be
+    // page as it was: all four change under a session, so a value kept beside the frame would be
     // right until the first Tab. It reads seven numbers and composes nothing (`area.ts`).
     const area = areaFor({
       rows,
@@ -843,19 +843,19 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // IT IS THE LAST RESORT AND IT IS NO LONGER THE RULE, which is worth saying because it
     // reads like one. What decides how much of the screen the arrangement may hold is the
     // arrangement's own choice: it is drawn only when it fits inside a SHARE of the height
-    // (`panel.ts`, `panelFor`), and a share of a screen always leaves the input area the rest —
+    // (`panel.ts`, `panelFor`), and a share of a screen always leaves the input area the rest,
     // so this comparison cannot be false for an arrangement that exists. It is kept because what
     // it prevents is a CLIPPED drawing, which is the one thing a fixed region can fail as, and a
     // guard against that is worth a comparison per frame.
     //
     // AND WHAT IT DOES IS NOT WHAT THE `bare` FORM DOES: those lines are on the roll because
     // the panel put them there, and a panel dropped HERE is dropped from the page altogether.
-    // That is a hole this delivery closed the road to rather than the hole itself — declared,
+    // That is a hole this delivery closed the road to rather than the hole itself: declared,
     // and reachable by nothing this file can do to a terminal.
     //
     // AND IT IS REMOVABLE, WHICH IS SAID HERE RATHER THAN ACTED ON. The floor under the window
-    // puts it further out of reach than it already was (`floor.ts`) — nothing is drawn under
-    // the floor, and an arrangement may hold at most a third of the screen — but the
+    // puts it further out of reach than it already was (`floor.ts`) (nothing is drawn under
+    // the floor, and an arrangement may hold at most a third of the screen), but the
     // argument that it can never be false is older and does not need the floor: the palette is
     // budgeted so that the area never takes more than what is left under the region above it
     // (`area.ts`, `roomForThePalette`), so `under` is at least `opening.above` by construction
@@ -869,24 +869,24 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // which the layout works out (`region.ts`); this is the same subtraction done in advance,
     // and the only thing it decides is how many lines of the roll are worth handing over. Being
     // a row out costs a row of nothing at the foot of the window or a row of the window clipped,
-    // and never a frame that is not the screen — because the frame's height is declared rather
+    // and never a frame that is not the screen, because the frame's height is declared rather
     // than added up.
     const room = under - (drawn ? opening.above : 0);
     // WHAT THE MIDDLE IS, kept for the readers that are not this frame: a page of scrolling is a
     // page of THE MIDDLE ({@link aPage}), and where the ends of the roll are is a function of the
-    // same region (`scrolling.ts`, `backAtMost`) — both of them answered after the frame has been
+    // same region (`scrolling.ts`, `backAtMost`), both of them answered after the frame has been
     // built, on a keystroke. They are the numbers this window was cut to, read rather than worked
     // out a second time.
     //
     // AND ITS WIDTH IS THE PAGE'S, NOT THE SCREEN'S. What the session says is drawn inside the
     // margin (`inset.ts`), so how many rows a line of the roll takes is a function of what the
-    // margin leaves — the same number it was folded to ({@link renderOnTheRoll}). Measured at the
+    // margin leaves: the same number it was folded to ({@link renderOnTheRoll}). Measured at the
     // screen's width instead, a line four columns too long for the region would be counted as one
     // row and drawn as two, and the region is clipped at the BOTTOM: the line a caller has just
     // asked for is the one that goes.
     theMiddle = { room, columns: insideTheMargin(columns) };
     // WHAT A READER CAN SEE OF THE ROLL, cut to the rows the middle region has and to the width
-    // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`). Both
+    // it has them at: one answer, from the module that keeps the roll (`scrolling.ts`). Both
     // numbers are the ones just written down, so what is cut and what a later keystroke scrolls
     // are measured by one pair.
     const window = theWindowNow();
@@ -901,7 +901,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       badge: badge.text,
       // AND THE WORDS OF THE ROW OVER THE INPUT AREA, for the same reason: which of its two
       // sentences it holds is decided inside the session, once per answer ({@link theRowSays}).
-      // Empty while it holds none — the area has already said there is no row to put them on.
+      // Empty while it holds none: the area has already said there is no row to put them on.
       unmoved: theRowSays === undefined ? '' : unmoved[theRowSays].text,
       panel: drawn ? opening.panel : undefined,
       window,
@@ -911,20 +911,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // another instant (`region.ts`, {@link Shown.columns}).
       columns,
       rows,
-      // WHAT THE CALLER IS TYPING, COMPOSED AND RENDERED LIKE EVERY OTHER LINE — the same
+      // WHAT THE CALLER IS TYPING, COMPOSED AND RENDERED LIKE EVERY OTHER LINE: the same
       // {@link echoLine} the roll's echo is made of, so the prompt they type in front of carries
       // the accent in the place it is under their eyes and not only in the transcript above it.
       // It used to be `prompt + editing.typed`, a string built here, and what that cost is what
       // a caller reported about the echo one delivery earlier: the same `mnema>` came out of the
       // console two ways.
       present: renderTyped(echoLine(prompt, editing.typed)),
-      // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
+      // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it: by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
       // it says (`palette.ts`).
       //
       // WHAT THE CALLER PICKED TRAVELS WITH THE ROW BEING TYPED, because that is what it is
       // part of: the arrows move it, so it changes on a keystroke exactly as the row does
-      // (`editing.ts`). Nothing about it is decided here — this hands over the word and the
+      // (`editing.ts`). Nothing about it is decided here: this hands over the word and the
       // palette decides whether it is still one of the offers.
       palette: paletteFor({
         offers,
@@ -940,7 +940,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       //
       // AND IT IS COUNTED OVER THE VALUES AND NEVER OVER THE ROW ABOVE, which is what let that
       // row be painted at all. The two summands are the prompt this console was handed and the
-      // text the caller typed — neither of them the composed string — so an escape a renderer
+      // text the caller typed, neither of them the composed string, so an escape a renderer
       // put around either is not a column here. Summing the length of `present` instead is the
       // one mutation that breaks this, and it is a case rather than a comment
       // (`tests/the-prompt-is-painted-where-you-type.test.ts`).
@@ -950,7 +950,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * WHAT A READER CAN SEE OF THE ROLL RIGHT NOW — cut to the middle region as the frame on the
+   * WHAT A READER CAN SEE OF THE ROLL RIGHT NOW: cut to the middle region as the frame on the
    * screen laid it out, by the one function that cuts every window (`scrolling.ts`).
    *
    * ONE CUT AND TWO READERS: the frame, which draws it ({@link showing}), and the question of
@@ -969,7 +969,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * (`session.ts`, `belowThePage`), and the page changes under it by more roads than one: End,
    * enough pages down, the wheel, and a window made tall enough to hold the whole roll. This is
    * the one place every one of them passes through, so it is the one place the question is asked:
-   * whether the frame just built — the one that would be drawn with the row on it — holds the end
+   * whether the frame just built (the one that would be drawn with the row on it) holds the end
    * in its window, by the subtraction the window itself is cut by (`scrolling.ts`,
    * `theTailIsInTheWindow`). If it does, the row comes down and the frame is built again without
    * it, and only that frame is shown.
@@ -992,7 +992,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * WHETHER THE ANSWER TO THE SUBMITTED LINE HAS OPENED YET — has put its first row, the one the
+   * WHETHER THE ANSWER TO THE SUBMITTED LINE HAS OPENED YET: has put its first row, the one the
    * glyph is on. Absent between answers, which is what keeps a line that lands outside one (the
    * opening, an occurrence) exactly what it was.
    */
@@ -1001,8 +1001,8 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * ONE LINE OF AN ANSWER, with what makes it one: the first row that says anything is opened by
    * the glyph and every other row recedes by the same two columns, so an answer reads as one
-   * block with a head. A row with nothing on it stays nothing — a blank row on this page is blank
-   * — and a line the renderer already broke is several rows, each one indented.
+   * block with a head. A row with nothing on it stays nothing (a blank row on this page is blank)
+   * and a line the renderer already broke is several rows, each one indented.
    */
   function landAnswer(line: string, answer: { opened: boolean }): void {
     const step = ' '.repeat(THE_ANSWER_INDENT);
@@ -1026,7 +1026,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   function put(line: string): void {
     // WHAT THE PAGE SAID, NOTICED WHERE IT IS SAID. A record named on this row can be
-    // named back by the caller from here on, and this is the row's one door — so a line
+    // named back by the caller from here on, and this is the row's one door, so a line
     // that reached the screen without passing here would be a record the session showed
     // and cannot complete. Asked BEFORE the frame is rebuilt, so a Tab on the same
     // keystroke sees it.
@@ -1038,35 +1038,35 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * WHAT THE CALLER SENT, LANDED — the prompt and their own words, composed, rendered and put
+   * WHAT THE CALLER SENT, LANDED: the prompt and their own words, composed, rendered and put
    * on the roll like every other line.
    *
    * ONE FUNCTION AND THREE CALLERS, and the three are the three ways a row leaves the input:
    * submitted, abandoned with Ctrl-C, and still on the row when the end of the input arrives.
-   * They each wrote `land(prompt + …)` of their own, which is one string built in three places
-   * — and a string has no parts, so nothing downstream could weigh it, paint it or fold it
+   * They each wrote `land(prompt + …)` of their own, which is one string built in three places,
+   * and a string has no parts, so nothing downstream could weigh it, paint it or fold it
    * between words.
    *
    * WHAT IT IS COMPOSED OF IS NOT DECIDED HERE (`presentation/echo.ts`). This file passes the
-   * prompt it was handed and the text the caller typed, and what comes back is a LINE — which
+   * prompt it was handed and the text the caller typed, and what comes back is a LINE, which
    * is what lets the same renderer that answers `NO_COLOR` for every report answer it for this
    * too, and what keeps the promise that this module composes nothing a reader sees.
    *
    * THE OTHER SITE THAT PUTS THE TWO TOGETHER IS NOT AN ECHO and does not come through here:
    * the row being TYPED ({@link showing}, `present`). IT SAID THAT ROW WAS *plain, because the
    * caret is an offset in columns into it*, and the column is counted over the prompt and the
-   * typed text rather than over the row — so the reason was about a string this file never
+   * typed text rather than over the row, so the reason was about a string this file never
    * measured. It is the same {@link echoLine} now, through a renderer of its own
    * ({@link renderTyped}), which is what makes the prompt under the caller's eyes the one they
    * read back in the transcript. Two places, one shape, and the difference is that only one of
-   * them has a caret in it — and only one of them is left for the terminal to fold.
+   * them has a caret in it, and only one of them is left for the terminal to fold.
    */
   function echoed(typed: string): void {
     put(renderOnTheRoll(sentLine(typed)));
   }
 
   /**
-   * THE SCROLL, wherever it came from — a key, or a notch of the wheel.
+   * THE SCROLL, wherever it came from: a key, or a notch of the wheel.
    *
    * ONE FUNCTION AND FOUR CALLERS, because how far each of them moves is the only thing that
    * differs. A PAGE is the height of the middle region, which is the one number here that has
@@ -1084,7 +1084,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * IT WAS HOW MANY LINES THE WINDOW WAS SHOWING, and that is not symmetric: the lines above
    * the ones a reader is looking at fold differently, so a window of four lines walked back four
    * and a window of three walked forward three, and PgDn did not come back to where PgUp left.
-   * Measured — the case that walks back and forward went red on one line of drift. It is the
+   * Measured: the case that walks back and forward went red on one line of drift. It is the
    * ROOM in rows instead, which is the same number the frame was laid out by ({@link showing})
    * and therefore the same in both directions, whatever the lines at either end do.
    */
@@ -1116,7 +1116,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   });
 
   /**
-   * WHAT SOMEBODY ELSE WROTE, landed — every occurrence since the last time the record was
+   * WHAT SOMEBODY ELSE WROTE, landed: every occurrence since the last time the record was
    * asked, in the order it was appended.
    *
    * NOTHING IS DECIDED HERE AND NOTHING IS COMPOSED: what happened is the session's
@@ -1127,7 +1127,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * IT GOES ON THE QUEUE, for the reason the echo does. A verb answering at the prompt
    * writes its lines over several ticks, and an occurrence landing between two of them
    * would read as part of the answer to a question nobody asked. So it waits for the turn
-   * to drain, exactly as a submitted line waits for the one before it — and a session on
+   * to drain, exactly as a submitted line waits for the one before it, and a session on
    * its way out lands nothing, because the screen is about to stop being this one's.
    */
   function landWhatHappened(): void {
@@ -1144,7 +1144,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    *
    * IT IS COMPARED AND NOT ASSIGNED. The answer is the same bytes on all but one tick of a
    * session, so rebuilding the frame for it would be a redraw ten times a second for a row
-   * that did not change — and the one tick it does change is the whole point, so it cannot
+   * that did not change, and the one tick it does change is the whole point, so it cannot
    * simply not be asked. The question behind it opens nothing and latches off once it has
    * answered (`proving.ts`).
    *
@@ -1162,24 +1162,24 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * EVERYTHING THE SESSION SAID, ON THE CALLER'S OWN BUFFER — written after the screen has
+   * EVERYTHING THE SESSION SAID, ON THE CALLER'S OWN BUFFER: written after the screen has
    * been given back, and the whole reason taking the screen is not a loss.
    *
    * WHERE IT IS WRITTEN IS THE MECHANISM AND IT IS NOT THE OBVIOUS ONE. The layout library
    * treats everything written while it is tearing down as DISPOSABLE and says so in its own
    * documentation: it does not preserve or replay a teardown-time frame, a hook's write or a
    * `console.*` call once it has restored the primary screen. So the transcript may not be a
-   * last frame and may not be a print inside a teardown — it has to be a write of OUR OWN, on
+   * last frame and may not be a print inside a teardown: it has to be a write of OUR OWN, on
    * the stream, AFTER the library has left the alternate screen. That happens inside
    * `unmount()`, which does the whole of its teardown synchronously and writes the sequence
-   * that leaves the alternate screen before it returns — so the line under it is already on the
+   * that leaves the alternate screen before it returns, so the line under it is already on the
    * caller's own buffer. Asserted by position rather than by presence: the transcript has to
    * come after those bytes in the stream, or it is on a screen that is about to be thrown away
    * (`tests/the-screen-is-ours.test.ts`).
    *
    * SYNCHRONOUS BECAUSE THE SIGNAL PATH IS, and that is not a convenience either. Restoring
    * runs from an `exit` listener and from four signal handlers, and a promise scheduled there
-   * is a promise nobody will await (`leaving.ts`) — so awaiting the library's own exit promise
+   * is a promise nobody will await (`leaving.ts`), so awaiting the library's own exit promise
    * before writing would drop the transcript on every death that is not the polite one.
    *
    * WHAT IS NOT COVERED, said out loud so a pass is not read as covering it: `SIGKILL` and
@@ -1217,7 +1217,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * The caller is done: no more keys, the turn drains, the terminal goes back.
    *
    * The drain is what keeps the word that leaves, typed behind a slow read, from cutting its answer
-   * off — the word ends the session, not the turn that is already running.
+   * off: the word ends the session, not the turn that is already running.
    */
   function leave(): void {
     if (left) return;
@@ -1229,11 +1229,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * What arrived from the keyboard — one key, a paste that stands for several, or the mouse.
+   * What arrived from the keyboard: one key, a paste that stands for several, or the mouse.
    *
    * THE MOUSE IS ASKED FIRST AND IT IS ASKED OF THE WHOLE CHUNK, which is where it has to be:
    * a report is one control sequence, the keyboard library hands it over whole, and what is
-   * downstream of here tokenizes a chunk into the keys it stands for — so a report that reached
+   * downstream of here tokenizes a chunk into the keys it stands for, so a report that reached
    * that tokenizer would be typed onto the row a character at a time (`pointing.ts`).
    */
   function pressed(chunk: Keystroke): void {
@@ -1270,7 +1270,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       return;
     }
     // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS COMES DOWN HERE, with the next key
-    // that is not a scroll — a letter, an arrow, a Tab, and the Return of a line typed in one go.
+    // that is not a scroll: a letter, an arrow, a Tab, and the Return of a line typed in one go.
     // So every answer is judged on a page without it, and the frame that raises it is always one
     // row more than the frame before: a third copy of the same document takes the row away as its
     // line is typed and puts it back when it has landed.
@@ -1284,18 +1284,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     //     otherwise the page it was, so what a reader sees land is a row flickering.
     //   - WHEN THE NEXT ANSWER CHANGES THE WINDOW, the third copy finds the row already up and
     //     leaves it there: the same silence, one read later.
-    //   - WHEN THE WINDOW MOVES, the same — and a reader who takes the row's advice and scrolls
+    //   - WHEN THE WINDOW MOVES, the same, and a reader who takes the row's advice and scrolls
     //     back loses the row that gave it.
     //
     // HERE, THE ROW IS OFF FOR AS LONG AS THE LINE IS BEING TYPED, and its coming back is the answer
-    // landing. A line pasted whole — its keys and its Return in one write — cannot be told from the
+    // landing. A line pasted whole, its keys and its Return in one write, cannot be told from the
     // first moment above, and measured the same: one frame without the row, back 76 to 82 ms after.
     //
     // THE FOUR KEYS ABOVE ARE NOT AMONG THEM, which is why this sits below them: moving the window
     // is doing what the row says, and it leaves the row exactly as true as it was.
     //
     // THAT WAS ONE SENTENCE AND IT IS TWO NOW, AND THIS SITE TAKES DOWN EITHER. The one said to a
-    // reader who has walked back — the end of the answer is below the page — is taken down here by
+    // reader who has walked back (the end of the answer is below the page) is taken down here by
     // the same rule and for the same reason: their next line is answered below the page too, and a
     // row already up with the same words would be the same silence one read later. What the four
     // keys above CAN do to that sentence is make it false, by bringing the end onto the page, and
@@ -1357,7 +1357,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
             case 'go on':
               break;
           }
-          // AND WHERE THE ANSWER ENDS — the one place in this file, and the reason it is here: the
+          // AND WHERE THE ANSWER ENDS (the one place in this file, and the reason it is here): the
           // port a verb prints through lands each line the moment it is written (`session.ts`,
           // `onThePage`), so by the time the answer settles everything it printed is on the roll.
           judged(asked, found);
@@ -1376,7 +1376,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * A clean page: the roll emptied, and the reader back at a tail with nothing before it.
    *
-   * IT USED TO BE A PAGE TURNED — a screen of the caller's carried into their scrollback,
+   * IT USED TO BE A PAGE TURNED: a screen of the caller's carried into their scrollback,
    * the opening landed a second time on a new identity, and the layout told to forget what it
    * had written. All of that was machinery for emptying a region the library keeps and never
    * redraws. There is no such region: the middle is a window, and emptying what it looks at is
@@ -1388,14 +1388,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * WHETHER THE ANSWER THAT HAS JUST ENDED LEFT THE PAGE AS IT FOUND IT — asked once per answer,
+   * WHETHER THE ANSWER THAT HAS JUST ENDED LEFT THE PAGE AS IT FOUND IT: asked once per answer,
    * where an answer ends, and never per line landed.
    *
    * PER ANSWER AND NOT PER LINE, because a line at a time is how an answer ARRIVES rather than
    * what it is: {@link land} puts one line on the roll per call, and every window between an
    * answer's first line and its last is a page nobody asked about. What is compared is the window
    * the answer FOUND, taken before its echo, and the window it LEFT once everything it printed has
-   * landed — by what the lines say (`scrolling.ts`, `theSameWindow`). Two cuts of a window, once
+   * landed: by what the lines say (`scrolling.ts`, `theSameWindow`). Two cuts of a window, once
    * per answer, and never on a keystroke: measured at the floor, about 5 µs together, the same over
    * a roll of a hundred lines and of ten thousand, because a cut reads only as many lines as the
    * window holds. The longest answer they follow puts its row on the page 76 to 86 ms after its
@@ -1404,22 +1404,22 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * TWO THINGS KEEP IT FROM SAYING SOMETHING FALSE, and each is a condition here with a case of
    * its own (`tests/a-read-asked-again-draws-what-changed.test.ts`):
    *
-   *   - A READER WHO HAS WALKED BACK sees every answer land without the window moving — that is
-   *     the promise the roll keeps (`scrolling.ts`, `landedIn`) — and for them the end of the
+   *   - A READER WHO HAS WALKED BACK sees every answer land without the window moving (that is
+   *     the promise the roll keeps; see `scrolling.ts`, `landedIn`) and for them the end of the
    *     answer is NOT on the page. The first sentence would be false there, so only a reader at
    *     the tail is told it.
    *   - A LINE ALREADY WAITING BEHIND THIS ONE is answered next, and on a page without the row: its
    *     own keys took the row down before this answer ended, and nothing after this one would take
-   *     it down again — so a row raised here would stand over whatever the next answer does.
+   *     it down again, so a row raised here would stand over whatever the next answer does.
    *
    * AND THE FIRST OF THOSE USED TO END THE QUESTION, and that is the half that fell. It read
-   * *only a reader at the tail is told*, and so a reader who had walked back was told nothing —
+   * *only a reader at the tail is told*, and so a reader who had walked back was told nothing:
    * for whom every answer lands with the page as it was, the silence the row exists for. They
    * are told the other sentence now: the end is below the page, and End goes there
    * (`session.ts`, `belowThePage`). It needs no comparison of windows, because for them the page
    * not moving is the promise rather than the question; and nothing here moves them to the answer,
    * which would be the promise broken to say it. The two sentences are the two sides of ONE
-   * condition — following the tail or not — so they cannot both be true of one answer, and the
+   * condition, following the tail or not, so they cannot both be true of one answer, and the
    * row holds one value that cannot be both ({@link theRowSays}).
    */
   function judged(asked: number, found: readonly string[]): void {
@@ -1434,16 +1434,16 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * The terminal changed size — the frame is drawn again, at whatever size it now is.
+   * The terminal changed size: the frame is drawn again, at whatever size it now is.
    *
    * NOTHING IS DECIDED HERE AND NOTHING IS REMEMBERED. Every number the next frame needs is
    * read off the device while that frame is being built ({@link howTall}), so a resize is a
-   * signal to draw again and never a source of truth to store — which is what makes a
+   * signal to draw again and never a source of truth to store, which is what makes a
    * coalesced event, a dropped one and one that arrived early all the same event.
    *
    * AND IT USED TO WAIT. A drag delivers a size every two or three milliseconds and each of
-   * them cost a PAGE — a screen of the caller's carried away and the opening rewritten over it
-   * — so the page followed the size the caller stopped at, a tenth of a second later. What that
+   * them cost a PAGE (a screen of the caller's carried away and the opening rewritten over it),
+   * so the page followed the size the caller stopped at, a tenth of a second later. What that
    * bought was measured and so was what it cost: the frame between the event and the settling
    * was drawn with the OLD width, so the panel came out two rows of a hundred and two columns
    * on a screen of a hundred, which the terminal folded. Nothing is carried anywhere now, so
@@ -1453,15 +1453,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     moved();
     // AND THE TREE IS RE-RENDERED HERE, SYNCHRONOUSLY, WHICH IS THE HALF THAT CANNOT BE LEFT
     // TO A SCHEDULER. Telling the watchers is what React answers with an update, and React
-    // decides WHEN — at the end of the task, after every listener on this event has run. The
+    // decides WHEN: at the end of the task, after every listener on this event has run. The
     // library's own listener is one of those, and it is synchronous: it lays the tree out again
     // and writes it, without React having re-rendered anything. So a value rebuilt above and a
     // frame written from the tree below can be two different sizes, and on a frame that declares
     // its own height the difference is a frame TALLER than the screen it is written onto.
     //
     // MEASURED, shrinking 120×40 to 80×24: the resize wrote **40 rows onto a 24-row screen**
-    // first — sixteen rows of overflow, which scrolls the page and carries the top region off it
-    // — and the correct 24-row frame second. Arming this watch before the library's was not
+    // first (sixteen rows of overflow, which scrolls the page and carries the top region off it)
+    // and the correct 24-row frame second. Arming this watch before the library's was not
     // enough on its own, and that is the whole reason this line exists rather than an ordering
     // comment: the ordering decides who runs first, and this decides what the tree HOLDS when
     // they do. Re-rendering is synchronous by the library's own contract in this mode
@@ -1481,15 +1481,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     pressed,
   };
 
-  // THE FRAME FOLLOWS THE TERMINAL, AND THIS WATCH GOES ON BEFORE THE LAYOUT IS MOUNTED — the
+  // THE FRAME FOLLOWS THE TERMINAL, AND THIS WATCH GOES ON BEFORE THE LAYOUT IS MOUNTED: the
   // order is the whole of it, and it is measured rather than tidy.
   //
   // IT WAS ARMED SECOND, with the reason written out: *the library keeps its own watch on the
   // same event and recalculates the frame it is redrawing, so arming this one second is what puts
   // this frame in front of a library that has already agreed about how wide the screen is.* That
   // was true of a console whose frame was a few rows at the foot of the caller's page. It is
-  // FALSE of a frame that declares its own height: the library's watch is SYNCHRONOUS — it lays
-  // the tree out again and writes it, without React having re-rendered anything — so a listener
+  // FALSE of a frame that declares its own height: the library's watch is SYNCHRONOUS (it lays
+  // the tree out again and writes it, without React having re-rendered anything), so a listener
   // armed after it lets the library write the OLD height onto the NEW screen. Measured, shrinking
   // 120×40 to 80×24: the first frame of the resize was **40 rows written onto a 24-row screen**,
   // which overflows by sixteen and scrolls the page; the correct 24-row frame came after it, so
@@ -1506,7 +1506,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // tidy. A mode is the TERMINAL's and not a buffer's, so it makes no difference to the device
   // which side of the buffer swap it is asked on; it makes every difference to whoever is reading
   // the stream. The library ends a frame with the sequence that closes its synchronized update,
-  // and an instrument waits for that to be the LAST thing that arrived — so two mode switches
+  // and an instrument waits for that to be the LAST thing that arrived, so two mode switches
   // written after the opening frame leave a session that has drawn its page looking like a session
   // that has not. Measured: the first step of every case in a pseudo-terminal waited out the
   // driver's whole budget (`tests/support/pty.ts`, `aFrameAfter`).
@@ -1517,7 +1517,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   theWayOut.write(WATCHING_THE_WHEEL);
 
   /**
-   * The whole page as one element — asked for again whenever the tree has to be rebuilt without
+   * The whole page as one element: asked for again whenever the tree has to be rebuilt without
    * waiting for a scheduler ({@link resized}).
    *
    * ONE COMPOSITION AND TWO CALLERS, which is what keeps the frame drawn on a resize from being
@@ -1526,7 +1526,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    *
    * THE WORDS OF THE ROW THAT SAYS AN ANSWER LEFT THE PAGE AS IT WAS WERE A PROP HERE, beside the
    * tips, and what moved them is their second sentence. Which of the two is on the page is decided
-   * inside the session, once per answer, so it travels with what is shown — exactly as the corner's
+   * inside the session, once per answer, so it travels with what is shown: exactly as the corner's
    * two forms do ({@link showing}, `region.ts`).
    */
   const theFrame = (): ReactElement => createElement(Region, { watched, tips: tips.text });
@@ -1542,17 +1542,17 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // you would lose the session for mistyping a word.
     exitOnCtrlC: false,
     // The global `console` is left alone. Every line this product prints goes through
-    // its own port, so there is nothing to reroute — and patching a global of the
+    // its own port, so there is nothing to reroute, and patching a global of the
     // caller's process in order to draw a page is a larger thing to borrow than a layout.
     patchConsole: false,
     // WHETHER THERE IS A TERMINAL IS THIS PRODUCT'S ANSWER, not the library's. Left to
     // itself it decides by looking for the marks of a build server, and would draw
     // nothing but a last frame on a machine that has a real terminal and an environment
     // variable saying `CI`. The session refuses without a terminal at both ends before
-    // it ever reaches here, so by this line the question has already been asked — and
+    // it ever reaches here, so by this line the question has already been asked, and
     // asked of the device rather than of the environment.
     interactive: true,
-    // THE SCREEN, TAKEN — the whole of this delivery, in one option of somebody else's.
+    // THE SCREEN, TAKEN: the whole of this delivery, in one option of somebody else's.
     // The library enters the alternate screen buffer on mount and leaves it on unmount, and
     // writing the sequence here instead would be new code for a flag that exists AND a second
     // teardown beside the one the library already runs. What it does NOT do is give the
@@ -1573,7 +1573,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   // WHAT THE RESIZE RE-RENDERS THROUGH, held only once the layout is up: the watch is armed
   // BEFORE the library is mounted, so between those two lines there is an instant with a
-  // listener and no tree — and a caller who resized in it would otherwise be answered by a
+  // listener and no tree, and a caller who resized in it would otherwise be answered by a
   // reference that does not exist yet.
   mounted = app;
 

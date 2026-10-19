@@ -5,8 +5,8 @@
  *
  * IT IS THREE LISTS, AND IT SAYS SO. The entity's own edges, then the edges
  * further out that the walk passed through, then the nodes it reached and how far
- * away they are. They used to be told apart by indentation — an edge touching
- * neither end of the entity was printed one level deeper — which put the meaning
+ * away they are. They used to be told apart by indentation (an edge touching
+ * neither end of the entity was printed one level deeper), which put the meaning
  * in whitespace and made this the only reading in the product that nested. A
  * heading with a count is the shape every other list here already has, it says
  * what the group IS rather than leaving a reader to work out what the extra two
@@ -20,12 +20,12 @@
  * came for.
  *
  * An empty group is not printed. A heading reading `(0)` states an absence nobody
- * asked about, and the groups that ARE there already say what was found — the same
+ * asked about, and the groups that ARE there already say what was found: the same
  * rule `search` follows for a kind it has no hit for.
  *
  * An unresolved far end is marked, never dropped: the reference is a fact even
  * when the thing it names is not visible from here. And when the depth cut the
- * answer the last line says so — a bounded answer that does not say it was
+ * answer the last line says so: a bounded answer that does not say it was
  * bounded reads as everything there is.
  */
 
@@ -72,7 +72,7 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
   const touchesOrigin = (link: ReferenceGraph['links'][number]) =>
     link.from === graph.id || link.to === graph.id;
   const written = (link: ReferenceGraph['links'][number]) => {
-    // The RELATION is an open string — `mnema link a b --rel <anything>` records it
+    // The RELATION is an open string: `mnema link a b --rel <anything>` records it
     // verbatim and nothing here reads meaning into it (see `ReferenceLink.rel`), so
     // it is the one value on an edge's row that a caller wrote. The role beside it is
     // one of three words this walk chose.

@@ -3,7 +3,7 @@
  * indented one level under the row that generated it.
  *
  * WHAT IT IS FOR, measured rather than argued: at eighty columns a hit of `search` came
- * out as `The console is read-` / `only by construction` — a word split down the middle,
+ * out as `The console is read-` / `only by construction`, a word split down the middle,
  * the second half returning to column zero, in the middle of a list whose every other row
  * is indented two. That is the terminal folding, and a terminal folds at the margin
  * because it is counting cells and does not know what a word is. The choice was never
@@ -15,20 +15,20 @@
  * one and hands back one: the bytes of the renderer it was given, broken. So the depth,
  * the separators, the order and the escapes are still the loop's in `plain.ts`, this file
  * decides nothing about what a line SAYS, and the answer is resolved where the other two
- * are — once, at the entry, from the capability the process actually has
+ * are, once, at the entry, from the capability the process actually has
  * (`wiring/color.ts`).
  *
  * THE PROMISE IS THE STYLED ONE, STRENGTHENED: UNFOLD IT, STRIP THE ESCAPES, AND YOU HAVE
- * THE PLAIN LINE — exactly, byte for byte. Not "the same information": a folded line holds
+ * THE PLAIN LINE, exactly, byte for byte. Not "the same information": a folded line holds
  * every character the unfolded one held, in the same order, and the only bytes this file
  * adds are the break and the indent after it. That is what lets a fold be presentation
  * rather than a fourth account of the record, and `folded.test.ts` asserts it over every
  * shape the surface builds and over every line the CLI writes.
  *
  * NOTHING THAT FITS IS TOUCHED, byte for byte, and it is the property everything else on
- * this surface leans on. The console's chrome is composed to fit — the panel picks the
+ * this surface leans on. The console's chrome is composed to fit (the panel picks the
  * widest arrangement the terminal has room for, the palette drops a row it would have to
- * fold, the input area drops a badge or a hint too wide to be one row — so the fold is the
+ * fold, the input area drops a badge or a hint too wide to be one row), so the fold is the
  * identity on all of it, and a box drawn corner to corner comes out corner to corner. It
  * is asserted rather than assumed (`folded.test.ts`), because the failure would be a frame
  * broken in half by the thing that exists to stop lines breaking badly.
@@ -41,7 +41,7 @@
  *
  * A WORD IS NOT SPLIT unless it is the only thing there is: the break goes between words,
  * and a single word wider than the room breaks where the room ends because there is
- * nowhere else. That is not taste — splitting mid-word is exactly what the terminal
+ * nowhere else. That is not taste: splitting mid-word is exactly what the terminal
  * already does, and it is half of what was measured as broken.
  *
  * IT COUNTS COLUMNS AND NOT BYTES, which is why it can be handed the painted renderer. An
@@ -49,7 +49,7 @@
  * the same number of columns and different numbers of bytes ({@link widthOf} says the
  * same); counting the bytes would fold a line for having colour switched on. The two
  * renderings therefore break in the SAME places, which `folded.test.ts` asserts as its own
- * case — a fold that disagreed with itself about where a line breaks would put a terminal
+ * case: a fold that disagreed with itself about where a line breaks would put a terminal
  * and a CI log one row apart.
  *
  * AND THE COUNT THAT USED TO DIVERGE FROM {@link widthOf} NO LONGER DOES. The paragraph here
@@ -70,7 +70,7 @@ import { glyphsOf, widthOfText } from './width.js';
 /** One unit of a rendered line: its bytes, how much of a screen they take, and whether a
  * break may be taken after it. */
 interface Cell {
-  /** The bytes themselves — one glyph, or a whole control sequence. */
+  /** The bytes themselves: one glyph, or a whole control sequence. */
   readonly bytes: string;
   /** How many columns it occupies: two for a wide glyph, none for a sequence or a mark. */
   readonly width: number;
@@ -86,7 +86,7 @@ interface Cell {
  * against and wrong about the one it chose: an East Asian WIDE glyph is one character and two
  * cells in every terminal there is, so a row of a Japanese title measured half of what it draws
  * and the fold left it running off the screen. The bytes and the width of each unit are the
- * authority's now (`width.ts`), which is the one the layout library draws by — so where this
+ * authority's now (`width.ts`), which is the one the layout library draws by, so where this
  * breaks a row and where the terminal would break it cannot come apart. All this adds is which
  * cell is the space a break may be taken after, which is a question about the fold and not
  * about a screen.
@@ -104,7 +104,7 @@ function bytesOf(cells: readonly Cell[], from: number, to: number): string {
 }
 
 /**
- * Where a row that starts at `from` stops fitting in `room` columns — the largest prefix
+ * Where a row that starts at `from` stops fitting in `room` columns: the largest prefix
  * that does.
  *
  * A sequence costs nothing, so the ones sitting at the end of what fits come along: a
@@ -125,7 +125,7 @@ function fitsWithin(cells: readonly Cell[], from: number, room: number): number 
  * margin when there is no space to take.
  *
  * The space stays on the row it ended, so unfolding is putting the rows back together and
- * nothing else — a fold that swallowed the space would be a fold that lost a byte, and the
+ * nothing else: a fold that swallowed the space would be a fold that lost a byte, and the
  * whole promise is that it loses none.
  *
  * NO SPACE AT ALL is a word wider than the room, and then the margin is the only place
@@ -135,7 +135,7 @@ function fitsWithin(cells: readonly Cell[], from: number, room: number): number 
  * THE SPACES A ROW OPENS WITH ARE NOT A PLACE TO BREAK, and a first draft of this that
  * did not know it produced a row holding nothing but the indent: a line at depth one whose
  * first word was wider than the room broke after the depth, so the screen got two spaces,
- * a break, and then the word — a blank row bought at the price of the room it was supposed
+ * a break, and then the word, a blank row bought at the price of the room it was supposed
  * to save. A break is taken after a space that follows something, so every row carries at
  * least one character of what the line says.
  */
@@ -151,7 +151,7 @@ function breakBefore(cells: readonly Cell[], from: number, margin: number): numb
 }
 
 /**
- * One rendered row, folded to `columns` — the row itself when it fits, and the rows it
+ * One rendered row, folded to `columns`: the row itself when it fits, and the rows it
  * becomes when it does not.
  *
  * THE INDENT GIVES WAY when it leaves no room beside it, which is the rule the panel and
@@ -159,7 +159,7 @@ function breakBefore(cells: readonly Cell[], from: number, margin: number): numb
  * fitting. A terminal narrower than one level of depth would otherwise get continuations of
  * one column, and a hanging indent wider than the window is not an indent, it is the whole
  * row. With that, every row has at least one column for a character, so a fold always makes
- * progress and cannot loop — which is why there is no floor written down here.
+ * progress and cannot loop, which is why there is no floor written down here.
  */
 function foldRow(bytes: string, columns: number, hanging: string): string {
   if (columns <= 0) return bytes;
@@ -167,12 +167,12 @@ function foldRow(bytes: string, columns: number, hanging: string): string {
   // of it, and it is worth asking twice because a line an actor broke arrives here as several
   // rows and only one of them may be the long one.
   //
-  // IT USED TO BE TWO QUESTIONS — a cheap bound on the BYTES, and then the exact width of the
-  // cells — and the bound was false. It read *a row with fewer units than the terminal has
+  // IT USED TO BE TWO QUESTIONS: a cheap bound on the BYTES, and then the exact width of the
+  // cells, and the bound was false. It read *a row with fewer units than the terminal has
   // columns cannot be too wide*, on the argument that a character outside the basic plane is
   // two units and one column; a WIDE glyph is one unit and two columns, so a row of forty-one
   // Japanese characters passed a bound of eighty and was handed back unfolded at eighty-two
-  // columns. One question now, asked of the authority (`width.ts`), which is exact — so there
+  // columns. One question now, asked of the authority (`width.ts`), which is exact, so there
   // is nothing left for a bound to be wrong about.
   if (widthOfText(bytes) <= columns) return bytes;
   const cells = cellsOf(bytes);
@@ -198,18 +198,18 @@ function foldRow(bytes: string, columns: number, hanging: string): string {
  *
  * The width arrives as a PARAMETER, which is the whole of how this stays in
  * `presentation/`: nothing here asks how wide a terminal is, or whether the destination is
- * one — the answer is a value the entry reads where the process is and hands down
+ * one; the answer is a value the entry reads where the process is and hands down
  * (`wiring/color.ts`, and `parts.test.ts` refuses a module here that reaches for it). It is
  * the precedent `bannerFor(columns)` set.
  *
  * THE CONTINUATION IS ONE LEVEL UNDER THE LINE THAT GENERATED IT, and the level comes from
- * {@link indentOf} rather than from a number written here — the same two spaces every other
+ * {@link indentOf} rather than from a number written here: the same two spaces every other
  * depth on this surface is made of. A line at depth one continues at depth two, so a
  * folded item stays inside the list it belongs to instead of returning to the left edge,
  * which is what a reader tells a continuation from a new item by.
  *
- * A BREAK AN ACTOR WROTE IS LEFT ALONE. A field may hold a newline — it is text, and the
- * rule about collapsing it lives at the call sites that hold such fields — so what arrives
+ * A BREAK AN ACTOR WROTE IS LEFT ALONE. A field may hold a newline (it is text, and the
+ * rule about collapsing it lives at the call sites that hold such fields), so what arrives
  * here can already be several rows. Each is folded on its own and they are joined back with
  * the break that was between them, unindented: this file adds rows, it does not take over
  * the ones that were already there.
@@ -218,8 +218,8 @@ export function foldedAt(columns: number, render: Render): Render {
   return (line) => {
     const bytes = render(line);
     // THE WHOLE LINE, ANSWERED BEFORE IT IS TAKEN APART: a line no wider than the terminal
-    // holds no row that is too wide, so the common case — almost every line of almost every
-    // report fits — costs one measurement instead of a split, a walk of every glyph and a join.
+    // holds no row that is too wide, so the common case, almost every line of almost every
+    // report fits, costs one measurement instead of a split, a walk of every glyph and a join.
     //
     // IT USED TO BE A BOUND ON THE BYTES and the bound was false in the one direction that
     // matters. It read *a line with fewer UNITS than the terminal has columns cannot hold a row
@@ -234,8 +234,8 @@ export function foldedAt(columns: number, render: Render): Render {
     // both orders: 129 ns for the plain renderer and 130 ns through the bound this replaces,
     // which is the tie identical work has to produce. Without any fast path at all the same line
     // cost 1037 ns. What the exact measurement costs is in the report of the delivery that put
-    // it here; the line that does NOT fit pays the walk either way — 3.4 µs for a hundred
-    // columns of text folded to eighty — and there is no report where that is the cost anybody
+    // it here; the line that does NOT fit pays the walk either way, 3.4 µs for a hundred
+    // columns of text folded to eighty, and there is no report where that is the cost anybody
     // notices.
     if (widthOfText(bytes) <= columns) return bytes;
     const hanging = indentOf(line.indent + 1);
@@ -247,18 +247,18 @@ export function foldedAt(columns: number, render: Render): Render {
 }
 
 /**
- * HOW MANY ROWS a line takes on a terminal `columns` wide — asked of the fold itself.
+ * HOW MANY ROWS a line takes on a terminal `columns` wide: asked of the fold itself.
  *
  * WHO ASKS: the console's opening, which has to know how much of the screen the page it is
  * about to draw will take, so that the drawing of the name can give way before the top of
  * the box ends up in the scrollback (`repl/panel.ts`).
  *
- * IT USED TO BE ARITHMETIC — `ceil(widthOf(line) / columns)`, which is what a TERMINAL
+ * IT USED TO BE ARITHMETIC, `ceil(widthOf(line) / columns)`, which is what a TERMINAL
  * does: fill the row, break at the margin, start again at column zero. That was the right
  * count while the terminal was the thing folding, and this renderer falsified it: a
  * continuation is indented, so it holds fewer characters than the first row and a line can
  * take one row more than the division says. Measured on a real pseudo-terminal, one row
- * was exactly the error — the caret opened one row below the prompt and the two rules
+ * was exactly the error: the caret opened one row below the prompt and the two rules
  * around the input ran off the bottom of the screen
  * (`tests/the-opening-fits-the-screen.test.ts`, `tests/the-input-has-its-own-place.test.ts`,
  * which both went red on the delivery that added the fold).

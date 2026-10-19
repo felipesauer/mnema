@@ -1,11 +1,11 @@
 /**
- * THE LINE BEING TYPED, AS A VALUE — one total function from a keystroke to the next line.
+ * THE LINE BEING TYPED, AS A VALUE: one total function from a keystroke to the next line.
  *
  * The console reads keys and the console draws; between those two there is a question
  * nobody should have to open a terminal to ask: given what is on the input row and a key
  * that was pressed, what is on it now? That question is answered here, by a pure
- * function over a value, so every answer to it — the caret that walked past the end, the
- * history that was browsed and then typed into, the completion that had nothing to add —
+ * function over a value, so every answer to it (the caret that walked past the end, the
+ * history that was browsed and then typed into, the completion that had nothing to add)
  * is a case with no device in it.
  *
  * IT IS NOT A COMPONENT AND IT NEVER DRAWS. Nothing here writes a byte, and nothing here
@@ -23,7 +23,7 @@
  *   - the arrows, along the line, through the list of words, and back through what was
  *     typed before
  *   - Tab, which asks the completer and takes what every candidate agrees on
- *   - Return, which hands the line over — or takes the word the caller picked
+ *   - Return, which hands the line over, or takes the word the caller picked
  *   - Escape, which shuts the list of words
  *   - Ctrl-A and Ctrl-E, the two ends; Ctrl-U, the whole line
  *   - Ctrl-C, which abandons the LINE, and Ctrl-D on an empty line, which leaves
@@ -32,7 +32,7 @@
  * words open? The vertical arrows move through the list when it is and browse the history
  * when it is not; Return takes the picked word when there is one and hands the line over when
  * there is not. That question has exactly ONE reading here ({@link theOffers}), asked of the
- * same function the console asks before it draws (`palette.ts`, `offeredBy`) — two readings
+ * same function the console asks before it draws (`palette.ts`, `offeredBy`): two readings
  * would be a console whose list and whose keys disagreed about whether there was a list.
  *
  * WHAT THE ARROWS DO IS NOT AMBIGUOUS TO A READER, which is what makes the double meaning
@@ -42,10 +42,10 @@
  * AND RETURN NEVER RUNS WHAT THE ARROWS LANDED ON. A pick puts the word on the row and
  * stops there, because half the verbs of this product take arguments and the Return that
  * submits is the same key: a pick that ran the word would take away the caller's chance to
- * finish the line. It is also why nothing is picked until an arrow says so — on a palette
+ * finish the line. It is also why nothing is picked until an arrow says so: on a palette
  * that has just opened, Return still hands the row over.
  *
- * THE HISTORY LIVES HERE AND NOWHERE ELSE — in this value, for the length of the
+ * THE HISTORY LIVES HERE AND NOWHERE ELSE: in this value, for the length of the
  * process, written to no file. Where a history file would live is a decision about the
  * caller's home that nobody has taken, and this product writes inside its own record and
  * nowhere else.
@@ -78,7 +78,7 @@ export interface Keystroke {
   readonly downArrow: boolean;
   readonly tab: boolean;
   /**
-   * THE FOUR KEYS THAT MOVE THE WINDOW rather than the row — a page back, a page forward, the
+   * THE FOUR KEYS THAT MOVE THE WINDOW rather than the row: a page back, a page forward, the
    * oldest line the console still holds, and the tail.
    *
    * THEY ARE DECLARED HERE AND ANSWERED NOWHERE IN THIS FILE, and that is the shape rather than
@@ -132,7 +132,7 @@ export interface Editing {
    *
    * IT USED TO BE `candidates`, AND A LIST OF BARE WORDS. It is renamed rather than
    * widened in place, because the console draws it now as a list of two columns rather
-   * than as a row of tokens (`palette.ts`) — and a field that keeps its spelling while
+   * than as a row of tokens (`palette.ts`), and a field that keeps its spelling while
    * what it holds changes leaves everything that read it asserting the new shape by
    * accident. What a Tab DOES is untouched: the same candidates, the same order, the same
    * common prefix typed for the caller.
@@ -144,7 +144,7 @@ export interface Editing {
    *
    * A WORD RATHER THAN A ROW NUMBER, and the reason is the filter: the list narrows as the
    * caller types, so a position kept from one keystroke to the next names a different offer
-   * afterwards — which is the defect this shape is famous for, and it is absent by
+   * afterwards, which is the defect this shape is famous for, and it is absent by
    * construction here rather than repaired by clamping. Whether the word is still offered is
    * one question with one answer (`palette.ts`, `thePicked`), asked wherever it matters.
    *
@@ -198,19 +198,19 @@ export type Typed =
   | { readonly does: 'leave' };
 
 /**
- * A chunk of input as the keystrokes it stands for — because a CHUNK is not a key.
+ * A chunk of input as the keystrokes it stands for, because a CHUNK is not a key.
  *
  * A terminal hands over whatever arrived since it was last read. Somebody typing gives
  * one character at a time; somebody PASTING gives three lines at once, breaks and all;
  * and somebody who pressed Ctrl-C a moment before the paste gives all of it in one
  * string. Measured, in a pty, on the case that is easiest to get wrong: a chunk holding
  * a chord followed by two commands. A reducer handed that whole thing sees a control
- * byte, refuses to put it on the row, and drops the two commands with it — and the row
+ * byte, refuses to put it on the row, and drops the two commands with it, and the row
  * it did not clear is then submitted by the Return that follows.
  *
  * So a chunk is TOKENIZED here, where it is a value: runs of ordinary characters are
  * typed, and every control byte becomes the key it stands for. The mapping is the
- * terminal's own and not a table of special cases — a byte between one and twenty-six is
+ * terminal's own and not a table of special cases: a byte between one and twenty-six is
  * the corresponding letter with Ctrl held down, which is how Ctrl-C arrives as three and
  * Ctrl-D as four.
  *
@@ -267,22 +267,22 @@ function controlKey(character: string): Keystroke {
   }
   // AN ESCAPE INSIDE A CHUNK IS THE KEY, and it is here for the same reason every other byte
   // above is: a paste, or a fast keyboard, hands over several keys at once. What it may NOT be
-  // asked to decide is whether the bytes after it make an arrow — that is the keyboard
+  // asked to decide is whether the bytes after it make an arrow, that is the keyboard
   // library's, which has already decided by the time a named key arrives ({@link Keystroke}).
   if (code === 0x1b) return { ...NO_KEY, escape: true };
   return { ...NO_KEY };
 }
 
 /**
- * What one keystroke does to the input row — and then, always, WHAT IS STILL PICKED.
+ * What one keystroke does to the input row, and then, always, WHAT IS STILL PICKED.
  *
  * Total: every keystroke reaches exactly one arm of {@link pressing}, and the arm for a key this
  * session has no use for is the row unchanged. A key that fell through to an exception would be a
  * session that dies of a function key.
  *
  * THE PICK IS SETTLED HERE AND IN NO ARM, and that is the difference between one rule and
- * eleven agreements. Every key can change which words the list is showing — a character narrows
- * it, a Backspace widens it, a chord empties the row and shuts it — so after every key the
+ * eleven agreements. Every key can change which words the list is showing (a character narrows
+ * it, a Backspace widens it, a chord empties the row and shuts it), so after every key the
  * question is the same: is the word the caller picked still one of the offers? Asked once, of
  * the one function that answers it (`palette.ts`, {@link thePicked}), against the list the NEW
  * row produces.
@@ -292,7 +292,7 @@ function controlKey(character: string): Keystroke {
  * to narrow can still take it with Return. A filter that excludes it DROPS it, so no mark can
  * survive on a row that is no longer shown. And a key that shuts the list drops it too, which is
  * what stops a pick made a minute ago from coming back to life the next time the same list is
- * opened — measured as the defect it would be: with the pick merely kept on the value, `/` then
+ * opened, measured as the defect it would be: with the pick merely kept on the value, `/` then
  * Down then Ctrl-U then `/` again showed a mark the caller had not put there, and Return would
  * have filled the row with it.
  *
@@ -334,12 +334,12 @@ function pressing(editing: Editing, stroke: Keystroke, complete: Completer): Typ
   if (stroke.return) {
     // THE PICK COMES FIRST, AND IT FILLS RATHER THAN RUNS. A caller who moved the arrows chose
     // a word and not a line; putting it on the row and stopping is what leaves them the
-    // arguments half the verbs of this product take. With nothing picked — which is every
-    // palette nobody has moved through — this is the Return it always was.
+    // arguments half the verbs of this product take. With nothing picked (which is every
+    // palette nobody has moved through) this is the Return it always was.
     //
     // AND THE PICK IS SPENT BY BEING TAKEN, which is the one thing {@link settling} cannot say:
-    // the word is still offered afterwards — it is on the row now, so the list has narrowed to
-    // it — and a pick left standing would make the NEXT Return fill the row with what is already
+    // the word is still offered afterwards (it is on the row now, so the list has narrowed to
+    // it) and a pick left standing would make the NEXT Return fill the row with what is already
     // on it instead of running it. So a caller could never submit a word they had picked, which
     // is measured rather than reasoned: with this line absent, `/` Down Return Return leaves the
     // row at `/clear` twice over and the session never sees the line.
@@ -354,7 +354,7 @@ function pressing(editing: Editing, stroke: Keystroke, complete: Completer): Typ
   // ESCAPE SHUTS THE LIST, and the row is what it was before the list was asked for. There is
   // no third state to put the list in: whether it is open is a function of the row and of what
   // a Tab left (`palette.ts`, `offeredBy`), so shutting one opened by a slash means taking the
-  // row back — and a row that begins with a slash holds nothing BUT a word of the session being
+  // row back, and a row that begins with a slash holds nothing BUT a word of the session being
   // typed, so what is taken back is that word and never a line the caller had assembled.
   if (stroke.escape) return { does: 'edit', editing: cleared(editing) };
   if (stroke.backspace) return { does: 'edit', editing: erasing(editing, editing.at - 1) };
@@ -396,8 +396,8 @@ function chord(editing: Editing, letter: string): Typed {
 /**
  * Whether a character is one a terminal should not put on the row.
  *
- * Raw mode hands over control bytes as characters — an escape, a bell, a carriage
- * return the sequence parser did not claim — and a row that accepted them would hold
+ * Raw mode hands over control bytes as characters (an escape, a bell, a carriage
+ * return the sequence parser did not claim) and a row that accepted them would hold
  * bytes that move the caret when they are drawn. The test is on the CODE POINT rather
  * than on a list, so a byte nobody thought of is out by construction.
  */
@@ -410,13 +410,13 @@ function unprintable(input: string): boolean {
 }
 
 /**
- * WHAT THE LIST IS SHOWING RIGHT NOW — the one reading of it in this file.
+ * WHAT THE LIST IS SHOWING RIGHT NOW: the one reading of it in this file.
  *
  * It is the same function the console asks before it draws (`palette.ts`, `offeredBy`), over the
  * same two things: the row, and what a Tab left behind. So "is the list open" cannot be answered
  * one way by the keys and another by the drawing, and there is nothing kept here to go stale.
  *
- * Asked only by the keys that mean two things — the two vertical arrows and Return — which is
+ * Asked only by the keys that mean two things, the two vertical arrows and Return, which is
  * why it costs nothing on an ordinary keystroke.
  */
 function theOffers(editing: Editing, complete: Completer): readonly CompletionWord[] {
@@ -440,12 +440,12 @@ function moving(editing: Editing, complete: Completer, step: number): Editing {
 /**
  * THE ROW WITH ONE WHOLE WORD ON IT: the word the completer was answering about, replaced.
  *
- * ONE FUNCTION, TWO KEYS, and they hand it two different strings — a Tab hands it everything the
+ * ONE FUNCTION, TWO KEYS, and they hand it two different strings: a Tab hands it everything the
  * candidates agree on, and Return hands it the word the arrows landed on. The rule they share is
  * the one that is easy to get subtly wrong: what is replaced is the word THE COMPLETER SAYS it
  * is answering about, which is the last word of the row up to the caret. That is what makes a
- * pick land correctly in the three shapes this surface has — `/` alone replaced by a whole
- * session word, `/cl` grown into one, and `task mo` with only its last word touched — without a
+ * pick land correctly in the three shapes this surface has (`/` alone replaced by a whole
+ * session word, `/cl` grown into one, and `task mo` with only its last word touched) without a
  * branch anywhere for the slash.
  *
  * AND IT IS WHY PICKING A VERB OFF A BARE SLASH LEAVES NO SLASH BEHIND. The bare prefix asks
@@ -508,7 +508,7 @@ function cleared(editing: Editing): Editing {
 /**
  * The row after a line was submitted: empty, with the line remembered.
  *
- * A blank line is not remembered, and neither is a repeat of the line before it — which
+ * A blank line is not remembered, and neither is a repeat of the line before it, which
  * is what keeps Up from walking back through five identical reads somebody ran in a row.
  */
 function remembering(editing: Editing, line: string): Editing {
@@ -521,7 +521,7 @@ function remembering(editing: Editing, line: string): Editing {
  * The row after Up or Down: the remembered line at the new position, caret at its end.
  *
  * Walking past the newest one lands on the empty row rather than sticking at the last
- * line, because a caller who pressed Down expects to get back to what they were typing —
+ * line, because a caller who pressed Down expects to get back to what they were typing,
  * and this session does not keep a draft, so what they get back is nothing.
  */
 function browsing(editing: Editing, step: number): Editing {
@@ -541,7 +541,7 @@ function browsing(editing: Editing, step: number): Editing {
  *
  * The completer is asked about the line UP TO THE CARET, so completing in the middle of
  * a line completes the word the caller is inside rather than the last one on the row.
- * What is added is the candidates' common prefix and never a choice between them — a Tab
+ * What is added is the candidates' common prefix and never a choice between them: a Tab
  * that picked one would be a session typing something the caller did not.
  *
  * When more than one candidate survives, they are carried on the value. Where they are
@@ -553,8 +553,8 @@ function browsing(editing: Editing, step: number): Editing {
  * had picked is still in that list is settled where every key's is ({@link typeKey}).
  *
  * IT INSERTED THE AGREED SUFFIX AND IT REPLACES THE WHOLE WORD NOW ({@link taking}), which is
- * the same bytes by construction — everything the candidates agree on begins with what was
- * typed — and one function instead of two: a Tab and a pick put a word on the row in exactly the
+ * the same bytes by construction (everything the candidates agree on begins with what was
+ * typed) and one function instead of two: a Tab and a pick put a word on the row in exactly the
  * same way, and the way is the part that is easy to get subtly wrong.
  */
 function completing(editing: Editing, complete: Completer): Editing {

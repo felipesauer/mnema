@@ -1,6 +1,6 @@
 /**
  * Where things stand, for a person: the actor's session, then the four lists the
- * opening context holds — FORM A four times over, under one heading — and then what
+ * opening context holds (FORM A four times over, under one heading) and then what
  * the reading did not look at.
  *
  * The MCP surface hands the same answer back as structure, because its consumer is a
@@ -11,7 +11,7 @@
  * THAT SENTENCE WAS ABOUT ONE SOURCE AND THERE ARE TWO NOW, and the rule it states is
  * kept rather than weakened: nothing is derived HERE. A sixth section reports which
  * decision bases of this checkout hold documents the record has no decision for, and
- * that fact is not `bootstrap`'s — it is read from the DISK, by this package, and
+ * that fact is not `bootstrap`'s: it is read from the DISK, by this package, and
  * handed to this module already counted ({@link statusReport}'s `outside`,
  * `commands/status.ts`). It is a separate argument rather than a field of the
  * derivation for a reason that is the derivation's own: `bootstrap` is served byte for
@@ -24,11 +24,11 @@
  * choice. A pattern appears as its name and a decision as its title and `ADR-<n>`
  * label; neither body is here, and `mnema show <id>` is the second read that serves one
  * (see `context/src/context/bootstrap.ts`). A work item carries no move list for the
- * same reason — `mnema task next <id>` is its second read.
+ * same reason: `mnema task next <id>` is its second read.
  *
  * A CUT SAYS IT WAS CUT. Three of the four lists are capped by the derivation and carry
  * their own total, so each header reads `3 of 12` when it was capped and `3` when it was
- * not — the shape `search` already uses, because a capped list that does not say so is
+ * not: the shape `search` already uses, because a capped list that does not say so is
  * read as everything there is. The adopted patterns are the fourth and carry no total,
  * so that header states the length it has and claims nothing else.
  *
@@ -42,7 +42,7 @@
  * four LISTS. It was believed to be enough, and the measurement that falsified it is the
  * one this reading is named after: four sentences of "nothing", over a record holding
  * three memories, with `wrote 3 memory.captured` on the session line directly above
- * them. Every one of the four was true, because none of the four is about a memory —
+ * them. Every one of the four was true, because none of the four is about a memory,
  * and a person reading the screen has no way to learn that from a screen where every
  * section says nothing. The fifth section ({@link unreadLines}) is what says it, and it
  * follows the OPPOSITE rule for the reason given there: it is absent when it is empty,
@@ -56,7 +56,7 @@
  *
  * THAT SENTENCE WAS A CLAIM ABOUT THE WHOLE READING AND IT WAS FALSE OF ONE FIELD. The
  * four lists kept it; the SESSION line did not. It prints the run's phrase, whose goal is
- * text whoever opened the session typed, and the phrase is worded in `runs.ts` — where
+ * text whoever opened the session typed, and the phrase is worded in `runs.ts`, where
  * the collapse was not. `resume` prints the same phrase and collapsed it at its own line,
  * so the same run came out as one line through one verb and as two through this one. The
  * collapse is in the phrase now, which is what makes the sentence above true rather than
@@ -89,7 +89,7 @@ const KIND_WIDTH = widthOfText('decision');
  * `outside` and `neverImported` are the two arguments that are not `bootstrap`'s, and they
  * are last for the reason {@link unreadLines} is: the four lists are the answer, and what
  * the answer does not reach belongs under it rather than above it. BOTH are REQUIRED and
- * neither has a default — an optional parameter would let a second surface print this
+ * neither has a default: an optional parameter would let a second surface print this
  * screen with a section silently missing, which is the shape of omission this whole
  * reading exists not to have.
  *
@@ -127,7 +127,7 @@ export function statusReport(
 }
 
 /**
- * The conventional decision bases this checkout holds that the record has never read — the
+ * The conventional decision bases this checkout holds that the record has never read: the
  * third section that is ABSENT when it has nothing to say.
  *
  * WHY IT IS A SECTION OF ITS OWN and not more rows under {@link outsideLines}. That section
@@ -138,7 +138,7 @@ export function statusReport(
  * would make the reader work out which of the two each row was, from a count.
  *
  * MEASURED, and it is why the section exists: a real project holding 416 decisions, none of
- * them imported, ran `mnema status` and was answered `No decisions in force` — true about
+ * them imported, ran `mnema status` and was answered `No decisions in force`, true about
  * the record and useless to the person reading it, whose decisions were on the disk under
  * their cursor. The sentence that resolves it was already written on `decision import
  * --help`; what was missing was a path to it from where the person already was.
@@ -147,7 +147,7 @@ export function statusReport(
  * of a directory it found by walking. The whole argument, and the doctrine it is measured
  * against, is in `outside-the-record.ts`.
  *
- * THE SHAPE IS THE ONE ABOVE — a name, its count, and the command that reaches it — taken
+ * THE SHAPE IS THE ONE ABOVE (a name, its count, and the command that reaches it), taken
  * rather than invented, for that section's reason: two readings spelling one fact two ways
  * is the thing the shared shape exists to prevent.
  */
@@ -161,13 +161,13 @@ function neverImportedLines(neverImported: readonly UnimportedBase[]): string[] 
 }
 
 /**
- * The decision documents this repository holds that the record has no decision for —
+ * The decision documents this repository holds that the record has no decision for:
  * the second section that is ABSENT when it has nothing to say.
  *
  * IT FOLLOWS {@link unreadLines}'S RULE AND NOT THE FOUR LISTS', for that section's
  * reason exactly. An empty list above has been looked at and found empty, so leaving it
  * out would read as "I forgot to look". This one is about files on a disk, and there is
- * nothing to report when a project has never imported a decision base — printing
+ * nothing to report when a project has never imported a decision base: printing
  * `Nothing outside the record.` there would be this surface asserting something about a
  * directory it was never pointed at. The reading returns entries only where there is
  * something outside (`outside-the-record.ts`), and this follows it.
@@ -175,7 +175,7 @@ function neverImportedLines(neverImported: readonly UnimportedBase[]): string[] 
  * MEASURED, and it is why the section exists: on a real project, four documents in a
  * base the record had already imported from were outside it, three of them written the
  * day before, with the product running. The information that a gesture was owed reached
- * nobody — the only way to learn it was to run the import, which is the gesture.
+ * nobody: the only way to learn it was to run the import, which is the gesture.
  *
  * IT NAMES THE VERB WITH THE DIRECTORY IN IT, in full, for the reason the section above
  * names its command in full: a reader who has just been told there is something the
@@ -183,8 +183,8 @@ function neverImportedLines(neverImported: readonly UnimportedBase[]): string[] 
  * `decision import`, which PROPOSES and never accepts, because what to do about a
  * document outside the record is the reader's call and not this product's.
  *
- * `docs/decisions (4)` is the shape the section above uses — a name, its count, and the
- * command that reaches it — taken rather than invented, so two readings do not spell one
+ * `docs/decisions (4)` is the shape the section above uses (a name, its count, and the
+ * command that reaches it) taken rather than invented, so two readings do not spell one
  * fact two ways.
  */
 function outsideLines(outside: readonly DecisionsOutside[]): string[] {
@@ -197,7 +197,7 @@ function outsideLines(outside: readonly DecisionsOutside[]): string[] {
 }
 
 /**
- * One base and its count, and the command that reaches it: `docs/decisions (4) — mnema decision
+ * One base, its count and the command: `docs/decisions (4)`, an em dash, `mnema decision
  * import docs/decisions`. The one spelling of that fact, for both sections above and for the
  * paragraph the opening document's hook copy carries (`presentation/brief.ts`), so two surfaces
  * telling a reader about the same files cannot word them two ways.
@@ -207,12 +207,12 @@ export function toImport(directory: string, documents: number): string {
 }
 
 /**
- * What this reading did not look at — the one section that is not a list, and the one
+ * What this reading did not look at: the one section that is not a list, and the one
  * that is ABSENT when it has nothing to say.
  *
  * IT IS THE OPPOSITE RULE FROM THE FOUR ABOVE, and the difference is what each
  * silence means. A list that is empty has been LOOKED AT and found empty, so leaving
- * it out would read as "I forgot to look" — which is why each of them states it. This
+ * it out would read as "I forgot to look", which is why each of them states it. This
  * section is about kinds nothing here looks at, so an empty one has no fact behind it:
  * printing `Nothing else recorded.` over a record with no memories would be this
  * surface asserting something it never asked. The derivation returns the field only
@@ -221,7 +221,7 @@ export function toImport(directory: string, documents: number): string {
  * MEASURED, and it is why the section exists: over a record holding three memories
  * and nothing else, the four sections above printed four sentences of "nothing", with
  * the session line above them reading `wrote 3 memory.captured`. One screen saying
- * both. Asserted in `code/tests/where-things-stand.test.ts` — "says what it did not
+ * both. Asserted in `code/tests/where-things-stand.test.ts`: "says what it did not
  * look at, over a record whose whole content falls outside its lists", against the
  * contrast case beside it.
  *
@@ -230,7 +230,7 @@ export function toImport(directory: string, documents: number): string {
  * reader least able to guess the flag.
  *
  * `memory (3)` is `search`'s own heading for a kind and its count, taken rather than
- * invented — the four lists above can write `3 live task(s)` because `task` takes an
+ * invented: the four lists above can write `3 live task(s)` because `task` takes an
  * `s`, and `memory` does not. One reading that says `memory (3)` and another that says
  * `3 memory(s)` about the same three records is two vocabularies for one fact.
  */
@@ -245,11 +245,11 @@ function unreadLines(status: Bootstrap): string[] {
 }
 
 /**
- * Where the actor left off — the same two facts `resume` answers with, worded by the
+ * Where the actor left off: the same two facts `resume` answers with, worded by the
  * same functions so the two readings cannot drift (see `runs.ts`).
  *
  * WHAT IS NOT HERE IS `NO_RUNS_HINT`, and the reason is what that hint is FOR. It exists
- * so that an empty `focus` or `resume` — which is the whole of those answers — does not
+ * so that an empty `focus` or `resume` (which is the whole of those answers) does not
  * read as something missing; most people working the command line have no run and never
  * will. Here the run is one half of five, the other four carry the answer, and three
  * lines explaining what a run is would push them down the screen in every session that
@@ -267,8 +267,8 @@ function sessionLines(render: Render, status: Bootstrap): string[] {
  *
  * IT SAID `actionable` UNTIL THE WORD BECAME FALSE, and the rename is the point of
  * this paragraph rather than a tidy-up. The list used to mean "has a legal move", and
- * under that rule a completed task was on it forever — `reopen` is legal from `DONE`
- * — which is how a person reading `5 actionable task(s)` on a terminal found one of
+ * under that rule a completed task was on it forever (`reopen` is legal from `DONE`),
+ * which is how a person reading `5 actionable task(s)` on a terminal found one of
  * them marked `(DONE)`. The derivation now asks the disposition (see `context`'s
  * `tasks.ts`), and a word that promises "there is an action available here" would
  * still be true of the task this list correctly leaves out. `live` is what the filter
@@ -284,7 +284,7 @@ function workLines(render: Render, status: Bootstrap): string[] {
   ];
 }
 
-/** The decisions in force — accepted, and nothing else. */
+/** The decisions in force: accepted, and nothing else. */
 function decisionLines(render: Render, status: Bootstrap): string[] {
   if (status.decisions.length === 0) return ['No decisions in force.'];
   return [
@@ -297,7 +297,7 @@ function decisionLines(render: Render, status: Bootstrap): string[] {
 
 /**
  * The adopted patterns, by name, in the order the derivation gives them (by name), and
- * uncut — the one list with no total to report, because nothing cuts it.
+ * uncut: the one list with no total to report, because nothing cuts it.
  */
 function skillLines(render: Render, status: Bootstrap): string[] {
   if (status.skills.length === 0) return ['No adopted patterns.'];
@@ -312,7 +312,7 @@ function skillLines(render: Render, status: Bootstrap): string[] {
  * which machine it is and which ruling is missing.
  *
  * The `kind` is a column of its own rather than folded into the title, because it is
- * what says which second read serves the rest of the item — `mnema show <id>` for a
+ * what says which second read serves the rest of the item: `mnema show <id>` for a
  * decision's argument or a pattern's text, `mnema task next <id>` for the pair of
  * verdicts a task in review allows, which are different things to go and read.
  */
@@ -340,7 +340,7 @@ function awaitingLines(render: Render, status: Bootstrap): string[] {
  * The discriminant is the derivation's own `kind`, and the claim that a third machine
  * with a waiting side "does not compile until somebody has said how its items are
  * named" was written here before there was one. It held: the day the task machine
- * joined the list, `tsc` refused this function — a task carries a `title` and no
+ * joined the list, `tsc` refused this function; a task carries a `title` and no
  * `name`, so the two-armed ternary this used to be had nowhere to put it.
  *
  * The arms are spelled out per kind and there is NO `default`, which is what keeps
@@ -361,7 +361,7 @@ function named(item: AwaitingJudgement): string {
 }
 
 /**
- * How many a list shows out of how many there are — `3 of 12` when it was cut, `3` when
+ * How many a list shows out of how many there are: `3 of 12` when it was cut, `3` when
  * it was not.
  *
  * It is `search`'s wording, taken deliberately: a reader who has met one capped list on

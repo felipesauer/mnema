@@ -1,5 +1,5 @@
 /**
- * Reading a Sigstore bundle — offline, against the trust root this binary carries.
+ * Reading a Sigstore bundle: offline, against the trust root this binary carries.
  *
  * THE CHECKS ARE SIGSTORE'S OWN. `@sigstore/verify` (the library npm uses for provenance) checks
  * the certificate up to Fulcio's root, the certificate-transparency timestamp it carries, Rekor's
@@ -23,7 +23,7 @@ import { PUBLIC_GOOD_TRUSTED_ROOT } from './trusted-root.js';
 export type SigstoreReading =
   | {
       readonly kind: 'signed';
-      /** The identity the certificate names — an e-mail, or a workflow URI. */
+      /** The identity the certificate names: an e-mail, or a workflow URI. */
       readonly identity: string;
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;
@@ -41,13 +41,13 @@ export type SigstoreReading =
 
 /** What a certificate says about the CI run that asked for it; a name is absent when not carried. */
 export interface SigstoreRun {
-  /** Source Repository URI — `1.3.6.1.4.1.57264.1.12`. */
+  /** Source Repository URI: `1.3.6.1.4.1.57264.1.12`. */
   readonly repository?: string;
-  /** Build Signer URI, the workflow that signed — `1.3.6.1.4.1.57264.1.9`. */
+  /** Build Signer URI, the workflow that signed: `1.3.6.1.4.1.57264.1.9`. */
   readonly workflow?: string;
-  /** Source Repository Digest, the commit the run was based on — `1.3.6.1.4.1.57264.1.13`. */
+  /** Source Repository Digest, the commit the run was based on: `1.3.6.1.4.1.57264.1.13`. */
   readonly commit?: string;
-  /** Run Invocation URI, the one execution — `1.3.6.1.4.1.57264.1.21`. */
+  /** Run Invocation URI, the one execution: `1.3.6.1.4.1.57264.1.21`. */
   readonly run?: string;
 }
 
@@ -75,7 +75,7 @@ function utf8StringOf(der: Uint8Array): string | undefined {
   return Buffer.from(der.subarray(at)).toString('utf8');
 }
 
-/** The run a verified signer's certificate names — undefined when it names none of the four. */
+/** The run a verified signer's certificate names: undefined when it names none of the four. */
 function runOf(
   oids: readonly {
     readonly oid?: { readonly id: readonly number[] } | undefined;

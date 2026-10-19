@@ -1,5 +1,5 @@
 /**
- * STRIP THE ESCAPES AND YOU HAVE THE PLAIN LINE — the styled renderer's whole
+ * STRIP THE ESCAPES AND YOU HAVE THE PLAIN LINE: the styled renderer's whole
  * promise, asserted on the primitives and then on every line the CLI writes.
  *
  * It is the property that makes style safe to add to a tool for auditing a record. A
@@ -8,7 +8,7 @@
  * two accounts of one record and the terminal would be the one nobody could quote.
  * So the assertion is bytes, not "the same information".
  *
- * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES — the seven SGR sequences of
+ * WHAT IS STRIPPED IS ONLY WHAT THIS RENDERER WRITES: the seven SGR sequences of
  * {@link SGR}, never every escape. A stored field can hold an escape byte of its own
  * (it is text an actor wrote, and the content door screens for credentials, not for
  * control bytes), and a strip that ate those too would compare a scrubbed styled line
@@ -18,7 +18,7 @@
  * THE VACUOUS FORM of every case below is a styled renderer that paints nothing: the
  * stripping would be a no-op and each comparison would pass on two identical strings.
  * That is why each case that asserts the property is paired with one asserting the
- * escapes are THERE — and why the end-to-end case names the reads whose output the
+ * escapes are THERE, and why the end-to-end case names the reads whose output the
  * flag actually changes, as a set rather than as a count.
  */
 
@@ -44,7 +44,7 @@ const ESC = '\u001b';
  * their closer, three hues and theirs.
  *
  * Built rather than written as a literal, because a regular expression holding a
- * control character is the thing the lint refuses — and it refuses it for the reason
+ * control character is the thing the lint refuses, and it refuses it for the reason
  * that made this file necessary: a control byte in source is invisible to a reader.
  */
 const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|35|39)m`, 'g');
@@ -57,14 +57,14 @@ const stripped = (text: string): string => text.replace(SGR, '');
  *
  * IT USED TO BE RED, and red became OURS the day a refusal was painted. A strip that
  * covers `31` would have taken the actor's own bytes out of the styled line and then
- * compared the scrubbed result against an unscrubbed plain one — which is exactly the
+ * compared the scrubbed result against an unscrubbed plain one, which is exactly the
  * vacuous comparison the header of this file warns about, arriving through the fixture
  * instead of through the renderer.
  *
  * IT WAS MAGENTA, *because nothing in `styled.ts` emits it; the day something does, this
  * constant moves again and the cases below say so*. Something does: the accent a prompt
  * carries is SGR 35, so magenta became ours exactly as red did, and this is that day. Cyan
- * now, and the same sentence stands over it — a hue the renderer does not write, which is
+ * now, and the same sentence stands over it: a hue the renderer does not write, which is
  * what the constant is FOR.
  */
 const ACTOR_ESCAPE = `${ESC}[36m`;
@@ -77,7 +77,7 @@ describe('the styled line is the plain line, wrapped', () => {
    *
    * THE LAST TWO ARE WHITESPACE AT THE EDGE OF A PAINTED PART, and they are here
    * because a mutation walked through this case without them. Wrapping a part in
-   * `text.trim()` — one plausible slip in a renderer that builds strings — left every
+   * `text.trim()`, one plausible slip in a renderer that builds strings, left every
    * other line in this corpus identical, because the parts that CARRY weight all
    * happened to be words. No read prints such a line today; that is not the point. A
    * part's text is a string and the renderer is total over strings: the moment a call
@@ -100,7 +100,7 @@ describe('the styled line is the plain line, wrapped', () => {
     { indent: 0, parts: [] },
     statement(column('ALLOWED', 12), ' submit t-1 → READY '),
     subjectLine(column('task the-id', 20), 'public'),
-    // The two column roles — including one whose id and instant both carry a space at
+    // The two column roles, including one whose id and instant both carry a space at
     // the edge, because a dim column is a painted part and the trap the two lines above
     // closed applies to it just as much.
     itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title']),
@@ -110,8 +110,8 @@ describe('the styled line is the plain line, wrapped', () => {
     statement('REFUSED (MISSING_PROOF)', `needs a note ${ACTOR_ESCAPE}`, 'bad'),
     statement(column('REFUSED', 12), ' complete t-1 ', 'bad'),
     // The verdict whose sentence arrives in clauses: the shape `verify` prints, the
-    // MIDDLE severity — which no other call site produces and which nothing in this
-    // corpus would otherwise ask the strip to know about — and a clause padded at both
+    // MIDDLE severity (which no other call site produces and which nothing in this
+    // corpus would otherwise ask the strip to know about) and a clause padded at both
     // edges, because a painted clause is a painted part and the trim trap above applies
     // to it just as much.
     clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
@@ -123,7 +123,7 @@ describe('the styled line is the plain line, wrapped', () => {
     clauseStatement(column('private', 12), [{ text: ' local integrity FAILED ', severity: 'bad' }]),
     // The two shapes of form C at a DEPTH, which is what the console's opening panel asks
     // for: a tree's verdict written under the heading that names the section. The indent
-    // belongs to the line and not to a part, so it has to stay outside every escape — the
+    // belongs to the line and not to a part, so it has to stay outside every escape: the
     // same property the two spaces between columns have, on the newest place to lose it.
     statement('private', 'no record here', undefined, 1),
     clauseStatement(
@@ -132,7 +132,7 @@ describe('the styled line is the plain line, wrapped', () => {
       1,
     ),
     // A task's position, in both forms that show one: the three dispositions that carry
-    // news, and the one that carries none — which is the majority of what the surface
+    // news, and the one that carries none, which is the majority of what the surface
     // prints and therefore the line that must come out byte for byte the plain one.
     itemLine([asId('an-id'), 'public', asWhen('2026-08-05'), 'a title', asState('BLOCKED')]),
     itemLine(['a title', asState('IN_REVIEW')]),
@@ -140,7 +140,7 @@ describe('the styled line is the plain line, wrapped', () => {
     statedFact('a title', asState('DRAFT')),
     // States belonging to the OTHER TWO machines, which a search lists in this same
     // column. Both shapes are here on purpose: a decision in force is news the same way
-    // an arrived task is, and a superseded one is over and says nothing — so one of the
+    // an arrived task is, and a superseded one is over and says nothing, so one of the
     // pair is in the painted half and the other is byte for byte the plain line. This
     // used to be one entry, `accepted`, asserted PLAIN, which is what a corpus looks
     // like when the surface has not been taught to ask a machine what its position means.
@@ -148,14 +148,14 @@ describe('the styled line is the plain line, wrapped', () => {
     itemLine(['a title', asState('superseded')]),
     // The aside: one `detail` on its own, with no label in front of it to take the
     // colon. It is dim, so it is in the painted half, and the words are the same in
-    // both renderings — which is the whole promise, on the surface's newest shape.
+    // both renderings, which is the whole promise, on the surface's newest shape.
     aside('`/exit` or Ctrl-D leaves'),
-    // The TREE said by the call site, bare and padded — the third column nobody reads. The
+    // The TREE said by the call site, bare and padded: the third column nobody reads. The
     // padded one is the shape a report that lines its columns up hands over, and the padding
     // has to stay inside the wrap for the same reason a trailing space does above.
     itemLine([asId('an-id'), asScope('public'), asWhen('2026-08-05'), 'a title']),
     itemLine([asId('an-id'), asScope(column('public', 7)), 'a name']),
-    // The ECHO, in the three shapes a row leaves the input in — and it is the newest shape
+    // The ECHO, in the three shapes a row leaves the input in, and it is the newest shape
     // on this surface as well as the only one that is not about the record. The last of the
     // three is a caller pressing Return on an empty row, which wraps a part holding nothing:
     // the same trap the empty and the padded parts above are here for, on a part that is
@@ -179,8 +179,8 @@ describe('the styled line is the plain line, wrapped', () => {
     // that shows: the three subject lines, the eight statements, the four clause
     // statements, the two lists with a said column, the FOUR states whose disposition is
     // news, the aside, the two lists whose TREE is said, and the three echoes. The other
-    // ten are bare `field` and bare `state` — a fact, a plain column, an empty part, a
-    // blank line, an advancing task, a superseded decision — and they are byte for byte
+    // ten are bare `field` and bare `state` (a fact, a plain column, an empty part, a
+    // blank line, an advancing task, a superseded decision) and they are byte for byte
     // the plain line by design, which is what the last case in this block asserts on
     // purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
@@ -188,7 +188,7 @@ describe('the styled line is the plain line, wrapped', () => {
   });
 
   it('makes what an actor wrote visible, rather than leaving it alone', () => {
-    // THE PREMISE THIS CASE HELD WAS THE OPPOSITE: "not scrubbed, not honoured, not doubled — a
+    // THE PREMISE THIS CASE HELD WAS THE OPPOSITE: "not scrubbed, not honoured, not doubled: a
     // field's own escape is part of the text, so it appears once in both renderings." It was
     // written when the escape was thought harmless to print. Measured on the binary, a title
     // holding a clear-screen and a title-setting sequence came out of `search` and `brief`
@@ -217,7 +217,7 @@ describe('the styled line is the plain line, wrapped', () => {
   it('wraps a weight and a hue in that order, and closes each with its own', () => {
     // The two axes composed, byte for byte. The weight opens first and closes last,
     // `39` returns the foreground the caller's terminal chose and `22` returns the
-    // intensity — never `0`, which would also reset a colour the caller set for their
+    // intensity, never `0`, which would also reset a colour the caller set for their
     // own reasons. A dim column opens one wrap and closes one.
     expect(renderStyled(statement('ALLOWED', 'submit → READY', 'good'))).toBe(
       '\u001b[1m\u001b[32mALLOWED\u001b[39m\u001b[22m: \u001b[2msubmit → READY\u001b[22m',
@@ -230,7 +230,7 @@ describe('the styled line is the plain line, wrapped', () => {
       '  \u001b[2man-id\u001b[22m  public  \u001b[2m2026-08-05\u001b[22m',
     );
     // The middle hue, on the shape it exists for, and the `; ` between two clauses
-    // staying OUTSIDE both wraps — a separator belongs to the line, exactly like the
+    // staying OUTSIDE both wraps: a separator belongs to the line, exactly like the
     // colon after the label.
     expect(
       renderStyled(
@@ -240,7 +240,7 @@ describe('the styled line is the plain line, wrapped', () => {
       '\u001b[1mpublic\u001b[22m: \u001b[2m\u001b[33mT1 only\u001b[39m\u001b[22m' +
         '; \u001b[2m1 tail(s)\u001b[22m',
     );
-    // A state opens NO weight, so it closes one wrap and not two — and the space that
+    // A state opens NO weight, so it closes one wrap and not two, and the space that
     // joins it to the title stays outside, exactly like the colon after a label. The
     // title is untouched: what carries the news is the position, not the words beside it.
     expect(renderStyled(itemLine(['a title', asState('BLOCKED')]))).toBe(
@@ -251,7 +251,7 @@ describe('the styled line is the plain line, wrapped', () => {
     );
     // And an advancing position is not a painted part at all.
     expect(renderStyled(itemLine(['a title', asState('READY')]))).toBe('  a title (READY)');
-    // The other two machines reach the same three escapes through the same part — the
+    // The other two machines reach the same three escapes through the same part: the
     // scale is the surface's own and there is not a second one per machine.
     expect(renderStyled(itemLine(['a title', asState('proposed')]))).toBe(
       '  a title \u001b[33m(proposed)\u001b[39m',
@@ -260,7 +260,7 @@ describe('the styled line is the plain line, wrapped', () => {
       '  a title \u001b[32m(adopted)\u001b[39m',
     );
     expect(renderStyled(itemLine(['a title', asState('rejected')]))).toBe('  a title (rejected)');
-    // THE THIRD DIM COLUMN, between the two that were already dim — and the two spaces on
+    // THE THIRD DIM COLUMN, between the two that were already dim, and the two spaces on
     // each side of it stay outside every wrap, which is what keeps the plain bytes, and
     // therefore the recorded transcript, exactly where they were.
     expect(
@@ -270,7 +270,7 @@ describe('the styled line is the plain line, wrapped', () => {
         '\u001b[2m2026-08-05\u001b[22m  a title',
     );
     // THE ECHO, byte for byte: the prompt in the accent and closed by the foreground, then
-    // what the caller typed in bold and closed by the intensity — and NOTHING between them,
+    // what the caller typed in bold and closed by the intensity, and NOTHING between them,
     // because the space the prompt ends in is inside the prompt's own text.
     expect(renderStyled(echoLine('mnema> ', 'search'))).toBe(
       '\u001b[35mmnema> \u001b[39m\u001b[1msearch\u001b[22m',
@@ -283,7 +283,7 @@ describe('the styled line is the plain line, wrapped', () => {
   });
 
   it('costs a list of columns nothing at all', () => {
-    // Most of what the surface prints is `field`, which is written bare — so the
+    // Most of what the surface prints is `field`, which is written bare, so the
     // common case is byte for byte the plain line, with no empty pair around it.
     const list = itemLine(['an-id', 'public', 'a title']);
     expect(renderStyled(list)).toBe(renderPlain(list));
@@ -313,7 +313,7 @@ describe('every line the CLI writes says the same thing either way', () => {
    * The reads of the surface, over a record that holds one of each kind.
    *
    * WHAT IS NOT HERE: the read that words a duration relative to NOW (`resume` on an
-   * actor WITH a run — see `runAgeSuffix`). Two invocations of it cannot be compared
+   * actor WITH a run; see `runAgeSuffix`). Two invocations of it cannot be compared
    * byte for byte, because the clock moves between them and the difference would be the
    * age, not the style. It is still driven, over an actor with no run, which is where it
    * prints the hint that says what a run is.
@@ -363,7 +363,7 @@ describe('every line the CLI writes says the same thing either way', () => {
       'It is what a reader asks for',
     ]);
     // `--body` is REQUIRED and this call used to omit it, so the fixture refused
-    // silently and `skill provenance` had nothing to list — which is why a read that composes
+    // silently and `skill provenance` had nothing to list, which is why a read that composes
     // an id column sat outside the corpus of the slice that measured what paints.
     await invoke(['skill', 'create', 'Write the runbook first', '--body', 'Open the runbook.']);
     await invoke(['memory', 'The runbook lives in the record']);
@@ -389,7 +389,7 @@ describe('every line the CLI writes says the same thing either way', () => {
       expect(styled.map(stripped), `mnema ${argv.join(' ')}`).toEqual(plain);
       // AND THE FLAG A READER REACHES FOR LOSES NOTHING. `--color=never` is what
       // someone on a monochrome terminal, or reading through a filter that mangles
-      // escapes, actually types — so it is asserted as its own case rather than left
+      // escapes, actually types, so it is asserted as its own case rather than left
       // to be inferred from the default of a pipe. Same lines, in the same order.
       expect(await invoke(['--color=never', ...argv]), `never: ${argv.join(' ')}`).toEqual(plain);
       compared += plain.length;
@@ -403,7 +403,7 @@ describe('every line the CLI writes says the same thing either way', () => {
     // A corpus that turned out empty would pass the loop above without comparing a
     // line, and a fixture that stopped recording anything is how that happens.
     expect(compared).toBeGreaterThan(50);
-    // WHICH reads paint, and not how many lines — a set, because it is the assertion
+    // WHICH reads paint, and not how many lines, a set, because it is the assertion
     // that discriminates: a verb whose renderer stopped being handed in would drop out
     // of this list while every line of it still passed the comparison above.
     //
@@ -414,7 +414,7 @@ describe('every line the CLI writes says the same thing either way', () => {
     // unpainted is measured too, and each for a reason a reader can check:
     // `audit accountability` and `task next` compose every column out of several values
     // and have no bare id to say; `brief` is facts; `audit exposure` and `resume` do have a
-    // said column, and print none in this fixture — nothing here holds a credential
+    // said column, and print none in this fixture: nothing here holds a credential
     // format, and the actor has no open run.
     expect(painting).toEqual([
       'search',
@@ -431,7 +431,7 @@ describe('every line the CLI writes says the same thing either way', () => {
   it('leaves the machine channel unpainted, even when style is forced', async () => {
     // `--json` is what a script reads, and an escape in it is a parse error. The
     // reads return their object before a line is ever composed, so there is nothing
-    // for a renderer to reach — asserted rather than assumed, because the two are one
+    // for a renderer to reach: asserted rather than assumed, because the two are one
     // `if` apart in every one of these verbs.
     for (const argv of [
       ['search'],

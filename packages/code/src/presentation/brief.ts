@@ -1,10 +1,10 @@
 /**
- * FORM D — the document: a file for a reader that never asked for it.
+ * FORM D (the document): a file for a reader that never asked for it.
  *
  * The other three forms are answers on a terminal, read by a person who typed a
  * verb. This one is a DOCUMENT, and its reader is a model: the plugin hands it to a
  * session as it opens, and a file it is redirected into reaches a session where that is
- * the file the host reads — so what governs the work arrives without anyone thinking to
+ * the file the host reads, so what governs the work arrives without anyone thinking to
  * ask. This paragraph said `mnema brief > AGENTS.md` put the record "where an agent
  * host reads it on its own", with `AGENTS.md` and `CLAUDE.md` side by side; the host
  * the plugin is for reads an `AGENTS.md` only from 2.1.277 and only where no
@@ -17,7 +17,7 @@
  * quality. A generated file rots: the record moves on and the copy in the
  * repository does not, and a stale rule read as a live one is worse than no file.
  * The only thing that detects it is `mnema brief | diff - <the file>`, so this
- * document must be a pure function of the record — the same record twice is the
+ * document must be a pure function of the record: the same record twice is the
  * same bytes twice. Nothing here reads a clock, a path, a run, an actor or an
  * environment, and every fixed word is a constant rather than something composed at
  * print time. The two orders come from the derivations, which order by CONTENT, so
@@ -26,7 +26,7 @@
  * ONE LINE PER RULE, and this is the sharpest case of that rule in the product. A
  * decision's title is text an actor wrote; one holding a newline would end its own
  * bullet and start a second one, and the second would read as a rule the project
- * never made — in the one file whose whole purpose is that an agent obeys what is
+ * never made: in the one file whose whole purpose is that an agent obeys what is
  * in it. Every field taken from the record goes through {@link oneLine} for that
  * reason, the ids and the `ADR-<n>` labels included: the product mints both, but a
  * record can be appended to by anything holding a key, and "every field on the
@@ -37,14 +37,14 @@
  * THE LINE HAS A FOURTH FIELD NOW AND THE RULE IS UNCHANGED, which is the point of
  * saying so here. The bullet carries where the record says the rule CAME FROM
  * ({@link rule}), because the `ADR-<n>` beside it is a counter of this chain and not the
- * number of any file — measured on a real project, 241 of 247 labels name a different
+ * number of any file: measured on a real project, 241 of 247 labels name a different
  * file from the one the decision was imported out of. A provenance sits on the SAME line
  * rather than under it, exactly so that the sentence above stays a fact: two rules are
  * two lines, whatever any of them was derived from.
  *
  * THE SKELETON IS ALWAYS THE SAME, empty record or full. A heading that disappeared
  * when its list was empty would make the diff of a first decision look like a
- * rewrite of the file, and — the reason that matters more — an absent section says
+ * rewrite of the file, and, the reason that matters more, an absent section says
  * nothing, while an empty one says that nobody has decided yet. Those are different
  * facts, and the reader of this file is exactly the reader who cannot tell them
  * apart unless it is spelled out (see {@link NO_DECISIONS}).
@@ -54,7 +54,7 @@
  * reader who wants to check that nothing was lost between the record and this file.
  * ONE number is not a list length ({@link whatHasAnAddress}), and it is here for a reason
  * that has nothing to do with size: it is what makes a SILENCE elsewhere readable. It is
- * still a fact about what is printed below — how many of these rules have an address — and
+ * still a fact about what is printed below (how many of these rules have an address) and
  * it is still pure over the record, so the `diff` that detects a stale copy means exactly
  * what it meant before.
  *
@@ -62,7 +62,7 @@
  * the paragraph above is kept because the file is the reader it was written for. The plugin
  * hands this document to a session through a hook, and the host carries a hook's text whole
  * only up to a ceiling: over it the WHOLE text is replaced by a file path, in silence. So the
- * hook's copy was already cut by size — all of it, by somebody else — past a few dozen rules.
+ * hook's copy was already cut by size (all of it, by somebody else) past a few dozen rules.
  * What it gets now is {@link briefWithin}: whole rules up to the ceiling, and a paragraph
  * that says how many were left out and what serves them. The file keeps every rule.
  *
@@ -72,7 +72,7 @@
  * whole list printed, a total is the list's own length and buys the reader nothing. What
  * falsified the sentence as a rule about totals is omission by STATE. Measured on a real
  * project: this document printed `## Decisions in force (6)` over a record holding 247
- * decisions. Every word of it was true — each heading counts what is printed under it —
+ * decisions. Every word of it was true (each heading counts what is printed under it)
  * and a reader of ONLY this file, which is the reader it is written for, came away
  * believing the project had decided six things. The 241 were not cut; they are not in
  * force, so they are correctly absent from a document about what governs. Their NUMBER is
@@ -80,32 +80,32 @@
  * heading legible ({@link whatAwaitsAJudgement}).
  *
  * The two counts of what is waiting are pure over the record for the reason the address
- * count is — a state is a fact of the chain — so the `diff` still means one thing. What
+ * count is (a state is a fact of the chain), so the `diff` still means one thing. What
  * they are NOT is a queue: see the note on {@link whatAwaitsAJudgement} for why a count
  * is affordable where the list the `--help` refuses would not be.
  *
  * A HANDLE THAT DOES NOT IDENTIFY IS DECLARED TOO, and it is the same doctrine again
- * rather than a new one. The `ADR-<n>` beside each rule is here to be CITED — it is
- * the short name a person writes into a commit — and it is numbered inside one chain,
+ * rather than a new one. The `ADR-<n>` beside each rule is here to be CITED (it is
+ * the short name a person writes into a commit) and it is numbered inside one chain,
  * so two people deciding while apart can freeze the same one onto two rules. Neither
  * write could have been refused and neither label may be renumbered, so what is left
  * is to say so: {@link LABEL_NAMES_TWO} and one line per clash, above the bullets. The
- * document itself was never ambiguous — every bullet carries its id — and that is why
+ * document itself was never ambiguous, every bullet carries its id, and that is why
  * this is a declaration and not a change to the line.
  *
  * WHAT IS LEFT OUT IS DECLARED, and that is the other half of the same doctrine. The
  * composition carries the tree that TRAVELS and no other, so a rule recorded privately
- * is absent from this file — and an absence a reader cannot see is exactly what "no
+ * is absent from this file, and an absence a reader cannot see is exactly what "no
  * silent cut" forbids, whether the cause is a limit or a scope. So the document names
  * its scope before any of the content ({@link WHAT_TRAVELS}) and says that a heading's
  * number is what is printed under it. What it does NOT do is count what the SCOPE left
  * out: a "3 private rules omitted" would put a fact about the private tree into the file
- * that gets committed, and would move with that tree — two things this document exists
+ * that gets committed, and would move with that tree, two things this document exists
  * not to do.
  *
  * THAT SENTENCE READ "COUNT WHAT IT LEFT OUT", FLAT, AND THIS DELIVERY FALSIFIED IT. The
- * document now counts what the STATE left out — the decisions and the patterns recorded
- * here that are awaiting a judgement — and the difference between the two counts is the
+ * document now counts what the STATE left out (the decisions and the patterns recorded
+ * here that are awaiting a judgement) and the difference between the two counts is the
  * whole of why one is refused and the other is not. A private rule is in another tree: its
  * number moves when that tree moves, on one machine, inside a file that is committed and
  * compared with `diff`. A proposal is in THIS tree, and its number moves only when this
@@ -133,7 +133,7 @@ import { CLAUDE_CODE_CEILING, fitWhole, type HookCeiling } from './within-a-hook
  * looking at the top of a file in a diff learns before anything else that editing
  * it is pointless. One marker, not a begin/end pair: a pair would advertise that
  * something here can splice a section into a file it did not write, and nothing
- * can — the recipe is a redirection, and the whole of this output is the file.
+ * can; the recipe is a redirection, and the whole of this output is the file.
  */
 const GENERATED =
   '<!-- Generated by `mnema brief` from this project’s mnema record. Do not edit by hand. -->';
@@ -142,7 +142,7 @@ const GENERATED =
 const TITLE = '# What governs the work here';
 
 /**
- * What the content is, said before any of it — the SAME declaration the agent's
+ * What the content is, said before any of it: the SAME declaration the agent's
  * surface makes when it serves a pattern into a prompt, in the medium this one uses.
  *
  * A file read on every prompt is read as instruction, and these lines are the only
@@ -152,8 +152,8 @@ const TITLE = '# What governs the work here';
  *
  * "THE SAME" IS NOW A FACT AND IT USED TO BE A CLAIM. This constant held its own
  * wording of that declaration and the `skills` answer held another, written months
- * apart, and they had drifted: this one said the text was written "and settled" —
- * false of a pattern the `skills` tool serves so it can be RULED on — and it ended
+ * apart, and they had drifted: this one said the text was written "and settled"
+ * (false of a pattern the `skills` tool serves so it can be RULED on) and it ended
  * with "Follow them." Both are gone. The words come from `record-framing.ts`, which is
  * the one place that decides what a channel says about record text it puts where a
  * model reads it, and this document names the channel it is
@@ -169,13 +169,13 @@ const TITLE = '# What governs the work here';
  * mnema's own voice ordering a reader about somebody else's code, over the whole list
  * at once and citing no rule for it. Nothing measured says it moved a reader, and the
  * product's answer to "the record is not being followed" is a charge that names the
- * rule it comes from — not a sentence in a preamble.
+ * rule it comes from, not a sentence in a preamble.
  *
  * "EVERYTHING ELSE HERE TELLS THEM WHAT THE CONTENT IS" WAS TRUE WHEN IT WAS WRITTEN AND
  * IS NOT NOW, and the sentence above is kept rather than quietly widened because the LINE
  * it draws is the one that admitted the exception. {@link HOW_A_DECISION_ENTERS} tells a
- * reader what to do, and what it tells them to do is about the RECORD — where a decision
- * of theirs goes — which is a door of this product rather than an opinion about their
+ * reader what to do, and what it tells them to do is about the RECORD, where a decision
+ * of theirs goes, which is a door of this product rather than an opinion about their
  * code. "Follow them" was mnema's own voice over somebody else's work, and that is
  * refused exactly as it was. What fell is the flat premise that this document never says
  * what to do; what survives, and is the whole of the rule, is what it may say it ABOUT.
@@ -187,11 +187,11 @@ const WHAT_THIS_IS = recordFraming('brief-document');
  * declaration of what the content is.
  *
  * It is here because the omission has to be visible. What this file carries is the
- * tree that travels, so a rule recorded privately — on one machine, or for one person
- * — is not in it, and a reader of a governance document assumes they are holding all
+ * tree that travels, so a rule recorded privately (on one machine, or for one person)
+ * is not in it, and a reader of a governance document assumes they are holding all
  * of it. Two sentences, both load-bearing: the first names the scope, the second says
  * that the number in a heading counts what is printed under it and not what the record
- * holds elsewhere. Neither says HOW MANY were left out, deliberately — that count is a
+ * holds elsewhere. Neither says HOW MANY were left out, deliberately: that count is a
  * fact about the private tree, and this file is committed.
  *
  * "Committed" rather than "public" because it is the word the reader can act on: it
@@ -215,7 +215,7 @@ const WHAT_TRAVELS = [
  *
  * IT NAMES NO FILE, AND IT USED TO NAME `AGENTS.md`. The old wording put that name in
  * both lines, which said two things this module cannot know: that the document is in a
- * file of that name, and that the name is the one to use. Neither is ours to state —
+ * file of that name, and that the name is the one to use. Neither is ours to state:
  * the redirection belongs to whoever typed it, and nothing here reads a path (the
  * bytes are the contract, above). `<this file>` is what a reader can resolve whatever
  * they called it, and it is the same placeholder for the reader that is a model, which
@@ -223,11 +223,11 @@ const WHAT_TRAVELS = [
  *
  * AND IT SAYS WHAT THE `>` DOES, which is the half that was missing and cost a real
  * repository its method file. The recipe was published with a destination that, in a
- * project that has one, already belongs to somebody — `AGENTS.md` is a convention with
+ * project that has one, already belongs to somebody: `AGENTS.md` is a convention with
  * tens of thousands of repositories behind it, and in most of them it is a file with
  * content. A redirection replaces all of it. The verb cannot refuse, check or merge:
  * it writes nothing and the shell does the truncating, so the only place this can be
- * said is the text, and here is the copy of it that travels INSIDE the file — read by
+ * said is the text, and here is the copy of it that travels INSIDE the file, read by
  * whoever is deciding to regenerate. {@link registerBrief}'s help is the other.
  */
 export const HOW_TO_REGENERATE = [
@@ -244,7 +244,7 @@ export const HOW_TO_REGENERATE = [
  * THIS IS THE OTHER HALF OF A DECISION TAKEN ELSEWHERE, and it does not stand on its own.
  * The product pushes a rule at each edit of a file it addresses (`edit-rules-push.ts`),
  * beside the result of that write, and that channel is silent when no rule addresses the
- * path — because the alternative is paying for the sentence "nothing governs this file" on
+ * path, because the alternative is paying for the sentence "nothing governs this file" on
  * every edit of every session, measured at up to 3,424 edits in one of them. A silence is
  * only readable to somebody who knows there is a mechanism; this is where they are told,
  * once, for the price of one line in a file that is read once.
@@ -253,14 +253,14 @@ export const HOW_TO_REGENERATE = [
  * about the record, and `governing_rules` is a door of this product rather than an opinion
  * about somebody's code.
  *
- * The number is the composition's ({@link Brief.addressed}) — this file counts what it
+ * The number is the composition's ({@link Brief.addressed}): this file counts what it
  * prints and does not go looking. Zero prints too, and it is the most informative value:
  * it says the rules below exist and none of them has been placed, which is a different
  * thing from a project with no rules.
  *
  * AND IT SAYS WHEN THAT MECHANISM IS SWITCHED OFF, which is the half that keeps the rest of
- * it from lying. The push is switchable — every charge this product makes is, and the
- * switching is recorded — so the silence at an edit now has TWO causes, and the count alone
+ * it from lying. The push is switchable (every charge this product makes is, and the
+ * switching is recorded), so the silence at an edit now has TWO causes, and the count alone
  * explains only one of them. A reader told there are eight addresses and then handed nothing
  * would conclude that none of the eight names the file, which is precisely the wrong
  * conclusion when somebody turned the channel off. So the sentence about what arrives is
@@ -268,12 +268,12 @@ export const HOW_TO_REGENERATE = [
  *
  * WHAT THAT DOES NOT BUY, said plainly because the guard cannot say it. The state read here
  * is the COMMITTED record's, like everything else in this file, so a switch recorded
- * `--scope private` is invisible to it — the reader is told the push is on, and on that
+ * `--scope private` is invisible to it: the reader is told the push is on, and on that
  * machine nothing arrives. That is the same omission every private rule has and it is
  * declared to the reader in the same words ({@link WHAT_TRAVELS}), but it is a real hole
  * and the third silence stays open with it: "the hook did not run" is still
  * indistinguishable from both. Closing it would take a fact about ONE MACHINE inside a file
- * that is committed and compared with `diff` — which would make the staleness check report
+ * that is committed and compared with `diff`, which would make the staleness check report
  * a difference that is not the record's, the same reason the stale-address count is not
  * here. The reading that spans every tree is `mnema switch`, and the document points at it.
  */
@@ -286,7 +286,7 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
 }
 
 /**
- * What happens at an edit while the push is on — the sentence the count explains.
+ * What happens at an edit while the push is on: the sentence the count explains.
  *
  * THESE BYTES MOVED ONCE, ON PURPOSE, AND THE REASON IS THAT THE SENTENCE WAS FALSE. It read
  * "When a file is about to be changed, the rules addressed at it arrive on their own", which
@@ -310,7 +310,7 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
  * document it printed yesterday", kept so that nobody's committed copy went stale when the
  * product grew a switch. That held until the sentence itself was found false: a committed
  * copy now differs once, and regenerating it hands over the true sentence. The `diff` that
- * detects a stale copy only means one thing if the bytes move when the record does — or,
+ * detects a stale copy only means one thing if the bytes move when the record does, or,
  * once, when what they said was wrong. `cli.reads.golden.txt` and
  * `the-switch-is-a-fact.test.ts` hold the new bytes.
  */
@@ -324,7 +324,7 @@ const ARRIVES_AT_AN_EDIT = [
  * sentence above rather than being added beside it.
  *
  * The two sentences describe the same silence and only one of them is true. Printing both
- * would leave a reader to decide which — and the reader of this file is a model, which is
+ * would leave a reader to decide which, and the reader of this file is a model, which is
  * exactly the reader who cannot. So the count stays (it is still a fact about the rules
  * below, and it is still what a person needs in order to know what turning the push back
  * on would do) and the claim about what arrives is replaced by the claim that nothing will.
@@ -332,7 +332,7 @@ const ARRIVES_AT_AN_EDIT = [
  * IT NAMES WHO AND WHEN, because those are the only two things that make the sentence
  * actionable: a reader who is told the push is off and not told by whom cannot find the
  * switch. Both come out of the record, so this line is as pure over it as the rest of the
- * file — the same record still prints the same bytes.
+ * file: the same record still prints the same bytes.
  *
  * IT DOES NOT NAME THE REASON, and that is the one omission worth defending. A reason is
  * prose somebody typed to explain a decision about the tooling; it is addressed to whoever
@@ -355,7 +355,7 @@ function switchedOffAtAnEdit(push: ChannelState): string[] {
  * IT IS A PARAGRAPH OF ITS OWN AND NOT A CLAUSE ON THE ONE ABOVE, and the reason is which
  * reader each is for. The address paragraph explains a silence to somebody who noticed
  * nothing arrived; this one is a WARNING, in the only sense this product is willing to
- * warn — it states a fact about the record before that fact happens to anybody. A reader
+ * warn: it states a fact about the record before that fact happens to anybody. A reader
  * whose write is refused and who has never been told the mechanism exists has no way in
  * from here, and the refusal itself arrives at the worst possible moment to learn something
  * new.
@@ -371,7 +371,7 @@ function switchedOffAtAnEdit(push: ChannelState): string[] {
  * is exactly the line `record-framing.ts` exists to hold. It says the fact and stops.
  *
  * IT DOES NOT REPEAT WHERE TO ASK. The paragraph above already points at
- * `governing_rules` with a path, and that read answers for BOTH relations in one reply —
+ * `governing_rules` with a path, and that read answers for BOTH relations in one reply,
  * so a second pointer here would be a line paid for on every prompt to say a sentence the
  * reader has just read. It is three lines and a blank for that reason, and the skeleton's
  * own bound is what holds it to that (`brief.test.ts`).
@@ -420,8 +420,8 @@ function refusalSwitchedOff(gate: ChannelState): string[] {
  * this file is committed and compared with `diff`, so its bytes move when the record moves
  * and at no other time.
  *
- * The second line names what a refusal CARRIES rather than what to do about it — the rule's
- * id — because that is the one thing that makes the refusal answerable: an id is what a
+ * The second line names what a refusal CARRIES rather than what to do about it, the rule's
+ * id, because that is the one thing that makes the refusal answerable: an id is what a
  * person reads, supersedes, or removes the address of.
  */
 const STOPS_AT_AN_EDIT = [
@@ -430,7 +430,7 @@ const STOPS_AT_AN_EDIT = [
 ];
 
 /**
- * What happens at an edit while the gate is switched OFF — replacing the sentence above
+ * What happens at an edit while the gate is switched OFF: replacing the sentence above
  * rather than standing beside it.
  *
  * The two describe the same silence and only one is true, and the reader of this file is a
@@ -447,13 +447,13 @@ function switchedOffAtTheGate(gate: ChannelState): string[] {
 }
 
 /**
- * HOW A DECISION GETS IN — the one thing this document says about its reader's own next
+ * HOW A DECISION GETS IN: the one thing this document says about its reader's own next
  * move, and the measurement that put it here.
  *
  * WHAT WAS MEASURED, on one project. Five sessions opened with this document and recorded
  * ZERO decisions; the session after somebody wrote the gesture by hand into that
  * repository's own method file recorded one the same day. The document ARRIVED in all
- * six — what moved was not whether the record announced itself but whether anybody had
+ * six: what moved was not whether the record announced itself but whether anybody had
  * been told what to do so that a call lands in it. This file named three doors for
  * READING and none for writing, so a reader that asked nothing further knew everything
  * about what governs here and nothing about how to join it.
@@ -465,7 +465,7 @@ function switchedOffAtTheGate(gate: ChannelState): string[] {
  * this product's own door.
  *
  * IT IS COMPLETE WITHOUT A SECOND CALL, which is `record-framing.ts`'s criterion for text
- * pushed at a model unasked. A reader that asks nothing further has the gesture whole —
+ * pushed at a model unasked. A reader that asks nothing further has the gesture whole:
  * the name to call, and the state the call leaves the decision in. It is not "ask
  * somewhere else what to do", which is the shape that criterion exists to refuse.
  *
@@ -473,7 +473,7 @@ function switchedOffAtTheGate(gate: ChannelState): string[] {
  * and the verb's own help names `mnema status`: the reader of this file is a model, and
  * each surface names the door its reader can open. `mnema decision import <source>` is the
  * other way a decision enters and it is NOT here, because it needs a directory this
- * module cannot know and must not guess — the bytes are the contract, above.
+ * module cannot know and must not guess: the bytes are the contract, above.
  *
  * AND IT SAYS `awaiting a judgement`, which is not decoration. A decision is born
  * `proposed` (`core/src/workflow/decision-transitions.ts` has the only transitions there
@@ -502,8 +502,8 @@ const WHERE_THE_RATIONALE_IS = [
  * made it one. Measured on the shipped binary, a clone with a key of its own recorded a
  * decision whose title was an instruction to a model and accepted it itself; after the pull it
  * was the only rule in force in the brief, with no author, under the same heading as the team's.
- * The facts that tell the two apart were already in the chain — the accepting event names the
- * identity and, when one executed it, the agent — and this file did not carry them.
+ * The facts that tell the two apart were already in the chain (the accepting event names the
+ * identity and, when one executed it, the agent) and this file did not carry them.
  *
  * IT SAYS WHAT THE ENVELOPE SAYS AND NOTHING MORE. `a person` is an act with no agent on it, not
  * a claim that a human typed it; `agent <name>` is an act that had one. `unconfirmed` is the
@@ -548,8 +548,8 @@ const WHERE_THE_PATTERN_IS = [
  * The two readings are different facts and this file's reader has no way to tell
  * them apart: an agent told there is nothing governing here proceeds as if that were
  * settled, when what is true is that nobody has settled anything. It is the same
- * failure the opening read names as the worst one it can have — an empty answer that
- * reads like an answer — in the place where it would be read most often.
+ * failure the opening read names as the worst one it can have, an empty answer that
+ * reads like an answer, in the place where it would be read most often.
  */
 const NO_DECISIONS = [
   'Nothing has been decided here yet — which is not the same as there being no rules.',
@@ -561,7 +561,7 @@ const NO_DECISIONS = [
  * What a label that names more than one rule says, and why the file only says it.
  *
  * The bullet already prints the id beside the label, so the DOCUMENT is not
- * ambiguous — a reader who takes the id takes one rule. What is ambiguous is the
+ * ambiguous: a reader who takes the id takes one rule. What is ambiguous is the
  * CITATION: the label exists to be written into a commit or a review, and there it
  * travels alone. So this says which handle does not identify, and tells the reader
  * what to write instead.
@@ -593,12 +593,12 @@ const NO_PATTERNS = [
 ];
 
 /**
- * The words one heading's WAITING paragraph is built from — the one it says when the
+ * The words one heading's WAITING paragraph is built from: the one it says when the
  * number is one, the one it says when it is not, and the sentence under both.
  *
  * A SHAPE PER HEADING RATHER THAN A PARAMETER PER WORD, and the reason is the mistake it
  * makes impossible. The two headings say almost the same thing, and the half-sentence
- * that differs is the NOUN — a decision is not a pattern, and neither governs by being
+ * that differs is the NOUN: a decision is not a pattern, and neither governs by being
  * proposed. Four positional strings would compile with any two of them swapped, which
  * would put the patterns' sentence under the decisions' heading and read as a working
  * document saying something the record never said. It is the argument {@link
@@ -607,7 +607,7 @@ const NO_PATTERNS = [
 interface WaitingWords {
   /** What the count is followed by when exactly one is waiting. */
   readonly one: string;
-  /** What it is followed by otherwise — zero never reaches either ({@link none}). */
+  /** What it is followed by otherwise: zero never reaches either ({@link none}). */
   readonly many: string;
   /** The sentence under the count, whatever the count is. */
   readonly rest: readonly string[];
@@ -617,14 +617,14 @@ interface WaitingWords {
 
 /**
  * What the decisions' heading says about the calls that are recorded here and NOT in
- * force — the paragraph this delivery exists for.
+ * force: the paragraph this delivery exists for.
  *
  * IT NAMES `bootstrap` AND NOT `mnema status`, and the choice is the division this file
  * already draws rather than a preference. The doors named in the document are the ones
  * its READER can open: an agent has `read_record`, `skills`, `governing_rules` and
  * `record_decision` here, and `mnema show` and `mnema status` are named in the verb's
  * `--help`, where the person who typed it reads. The list of what is waiting is `bootstrap`'s answer on the agent's side and
- * `mnema status`'s on the person's — the same derivation through two doors — so each
+ * `mnema status`'s on the person's, the same derivation through two doors, so each
  * surface names its own and neither borrows the other's.
  *
  * AND NAMING A DOOR IS NOT THE SAME AS DEPENDING ON ONE. The FACT is on the line: how
@@ -645,7 +645,7 @@ const DECISIONS_WAITING: WaitingWords = {
  *
  * That is {@link whatAsksForAPerson}'s rule kept rather than a new one: the paragraph
  * above already names the read that answers, and `bootstrap` answers for BOTH in one
- * reply — so a second pointer here would be a line paid for on every prompt to say a
+ * reply, so a second pointer here would be a line paid for on every prompt to say a
  * sentence the reader has just read.
  */
 const PATTERNS_WAITING: WaitingWords = {
@@ -660,7 +660,7 @@ const PATTERNS_WAITING: WaitingWords = {
  * heading that counts what IS in force.
  *
  * WHY THE HEADING NEEDS IT. `## Decisions in force (6)` is true over a record holding
- * 247 decisions and it leaves a reader believing the project decided six things — and
+ * 247 decisions and it leaves a reader believing the project decided six things, and
  * the reader of this file is a model, reading this file alone. The heading's own
  * doctrine is honest and it is not enough: a number that counts what is printed cannot
  * say anything about what is not.
@@ -674,7 +674,7 @@ const PATTERNS_WAITING: WaitingWords = {
  *
  * ZERO IS SAID IN WORDS, like every other empty thing in this document. A paragraph that
  * disappeared at zero would make the first proposal look like a rewrite of the file, and
- * — the reason that matters more — a reader who is told nothing is waiting knows
+ * (the reason that matters more) a reader who is told nothing is waiting knows
  * something a reader who is told nothing does not.
  *
  * The singular and the plural are two constants of this module chosen by the count beside
@@ -687,7 +687,7 @@ function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
 }
 
 /**
- * The whole document, as lines — the committed governance the composition handed over,
+ * The whole document, as lines: the committed governance the composition handed over,
  * ready to be redirected into the file an agent host reads. It prints what it is given
  * and counts what it prints; which trees that came from is settled before it (see
  * `brief` in @mnema/context).
@@ -704,7 +704,7 @@ export function briefDocument(governance: Brief, inherited?: InheritedReading): 
  * IT. The header above says it and it still holds for the file: `mnema brief > MNEMA.md` prints
  * everything, because a file has no ceiling anybody measured. What the plugin hands a session
  * does have one, and it is not this product's: over it the host replaces the WHOLE text by a
- * file path and a preview of 2,000 characters and does not ask the model to open the file —
+ * file path and a preview of 2,000 characters and does not ask the model to open the file;
  * measured, with titles of 80 characters, between 50 rules in force (8,722 characters) and 60
  * (10,092); a record with none prints 1,952.
  * So past that point "nothing is cut" was already false, silently and entirely, and the only
@@ -712,12 +712,12 @@ export function briefDocument(governance: Brief, inherited?: InheritedReading): 
  * and the ceiling and its measurement are in one place ({@link HOOK_TEXT_CEILING}).
  *
  * WHAT MOVES AND WHAT DOES NOT. Under the ceiling this is {@link briefDocument} without the
- * paragraph that teaches regenerating a file ({@link HOW_TO_REGENERATE} — a session handed this
- * text holds no file), and nothing else ({@link fitWhole} asks the whole first). Over it, the skeleton is untouched — every heading,
- * every paragraph, in the same order — and what shortens is the list of bullets, from its end:
+ * paragraph that teaches regenerating a file ({@link HOW_TO_REGENERATE}: a session handed this
+ * text holds no file), and nothing else ({@link fitWhole} asks the whole first). Over it, the skeleton is untouched (every heading,
+ * every paragraph, in the same order) and what shortens is the list of bullets, from its end:
  * decisions first and patterns after, as the document already orders them. Each heading still
  * counts what is printed under it, which is what {@link WHAT_TRAVELS} tells the reader a heading
- * does, and the paragraph under a heading is the one its FULL list earns — a section whose
+ * does, and the paragraph under a heading is the one its FULL list earns: a section whose
  * bullets were all cut says what its rules are, never that there are none.
  */
 export function briefWithin(
@@ -743,14 +743,14 @@ export function briefWithin(
 
 /**
  * What the copy a hook carries says, last, about decision documents in this checkout that the
- * record has no decision for — and nothing at all where there are none, which is every
+ * record has no decision for, and nothing at all where there are none, which is every
  * repository with no decision base.
  *
  * IT IS THE HOOK'S COPY ONLY, and {@link briefDocument} never says it: a count of files on one
  * disk inside a file somebody commits would make `mnema brief | diff - MNEMA.md` report a
  * difference that is not the record's. The entries are `mnema status`'s own spelling
  * ({@link toImport}), and the paragraph is a fact and a door, in the voice of every line here:
- * how many, where, and what the import does — it proposes, and a person accepts.
+ * how many, where, and what the import does; it proposes, and a person accepts.
  */
 function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
   const bases = [
@@ -771,7 +771,7 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
 const STACKS_NAMED = 8;
 
 /**
- * What the copy a hook carries says of the stacks adopted for the project — and nothing at all
+ * What the copy a hook carries says of the stacks adopted for the project, and nothing at all
  * where none is, which is every project that never ran `mnema stack add`.
  *
  * IT IS THE HOOK'S COPY ONLY, for the reason {@link notInTheRecord} is: where the files of a stack
@@ -821,7 +821,7 @@ function stacksSection(stacks: StacksHere | undefined): string[] {
 export const STACKS_SECTION_MOST = 1_800;
 
 /**
- * What another repository's record says governs, in a section of its own — and nothing at all
+ * What another repository's record says governs, in a section of its own, and nothing at all
  * where the project inherits nothing, which is every project that has not pointed at one.
  *
  * IT IS NEVER FOLDED INTO THE SECTIONS ABOVE, and the heading says whose it is: the origin and
@@ -893,7 +893,7 @@ function hookCeilingInWords(ceiling: HookCeiling): string {
 /**
  * What is said at the end of a document that was cut, and nothing when it was not.
  *
- * It is a count, the order it was taken in, the reason, and the door — the four things a
+ * It is a count, the order it was taken in, the reason, and the door: the four things a
  * reader holding only this text needs to know that the list above is not the record's and
  * how to reach the rest without guessing. The door is `search` with a kind and a state
  * because that is the read that lists rules in force by name, the whole of them; the bullets
@@ -917,13 +917,13 @@ function leftOut(decisions: number, patterns: number, ceiling: HookCeiling): str
   ];
 }
 
-/** A count and its noun, singular or plural by the count — both constants of this module. */
+/** A count and its noun, singular or plural by the count: both constants of this module. */
 function counted(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
 /**
- * The document with its first `shown` rules — the one shape both the file and the hook
+ * The document with its first `shown` rules: the one shape both the file and the hook
  * print, so the two can differ only by where the list stops and by the paragraph that says
  * it stopped.
  */
@@ -998,24 +998,24 @@ function composed(
  * One section: the heading with how many are PRINTED under it, what to do about them,
  * what is recorded here and still waiting on somebody, then one line each.
  *
- * The number is `items.length` and it is taken from the caller for that reason — the
+ * The number is `items.length` and it is taken from the caller for that reason: the
  * count and the bullets come from one list, so a heading that says three over four
  * bullets is not a state this can reach. It is not a total of the record: what the
  * composition left out because it does not TRAVEL is declared in words at the top
  * ({@link WHAT_TRAVELS}), never as a number here, since a number would be a fact about
  * the private tree inside a committed file. What the STATE left out is a different
- * question and it is answered — see {@link whatAwaitsAJudgement} — which is why that
+ * question and it is answered, see {@link whatAwaitsAJudgement}, which is why that
  * paragraph is a parameter of this function rather than a sentence in one caller.
  *
  * THE WAITING PARAGRAPH IS ITS OWN, AND NOT A CLAUSE ON `says`. The two answer
- * different readers: `says` is about the rules PRINTED under the heading — where their
- * argument is, which door serves it — and this one is about rules that are not there at
+ * different readers: `says` is about the rules PRINTED under the heading (where their
+ * argument is, which door serves it) and this one is about rules that are not there at
  * all. Read as one paragraph they would be a sentence about the list followed by a
  * sentence contradicting it, in the file whose reader is the one that cannot tell two
  * facts apart unless they are spelled out.
  *
  * Written once for both, because the two sections are the same shape and a shape
- * written twice is a shape that drifts — a heading that counts in one and not in the
+ * written twice is a shape that drifts: a heading that counts in one and not in the
  * other, a blank line in one and not the other, and a diff that reads as a change to
  * the file's structure rather than to the record.
  */
@@ -1047,7 +1047,7 @@ function section(
  * this delivery rather than a detail of it. The fact was already served in a line of its
  * OWN by `show`, `show --json` and `read_record` (`presentation/record.ts`), and copying
  * that shape here would break the invariant this file is sharpest about: a rule is ONE
- * line, asserted as a slope in `brief.test.ts` — exactly two lines for two rules, not
+ * line, asserted as a slope in `brief.test.ts`, exactly two lines for two rules, not
  * "one or more". A line per provenance would make the cost of the file a function of how
  * many sources a rule happens to name. So it is a field, and the invariant is untouched.
  *
@@ -1055,14 +1055,14 @@ function section(
  * the `ADR-<n>` is minted by the record's own counter and, on a project whose decisions
  * were imported, usually does NOT name the file they came from (241 of 247, measured),
  * and the id opens only through `read_record`. The provenance is the one field a reader
- * can act on with what they already hold — `cat`, a file read — which is what the reader
+ * can act on with what they already hold (`cat`, a file read), which is what the reader
  * of this file, who never asked for it, has.
  *
  * ONE FIELD PER SOURCE, and the word is repeated rather than the targets joined. A
  * target is a caller's string and a file name may hold a comma, so `a, b` would leave a
  * reader unable to tell two sources from one. Repeating the word costs the word.
  *
- * EVERY half goes through {@link oneLine}, and they go through it HERE — the one
+ * EVERY half goes through {@link oneLine}, and they go through it HERE: the one
  * place a bullet is built. A caller that had to remember to collapse each field
  * before composing it is a caller that will forget on the field added next, and the
  * failure is silent: the file simply grows a rule the project never made. The
@@ -1089,8 +1089,8 @@ function rule(
  * stale copy still means one thing. The empty case returns an empty list rather than
  * a blank line, because a blank line is a byte.
  *
- * The lines it does add go beside the rules they are about — under the heading, above
- * the bullets — since a reader who takes a label from this file has already passed
+ * The lines it does add go beside the rules they are about (under the heading, above
+ * the bullets) since a reader who takes a label from this file has already passed
  * this point by the time they use it.
  */
 function ambiguousLabels(collisions: readonly AdrCollision[]): string[] {
@@ -1099,7 +1099,7 @@ function ambiguousLabels(collisions: readonly AdrCollision[]): string[] {
 }
 
 /**
- * The declaration about rules moved apart, and nothing at all when none was — the same
+ * The declaration about rules moved apart, and nothing at all when none was, the same
  * doctrine as {@link ambiguousLabels}: the ordinary case adds no byte, and the lines it does
  * add go under the heading, above the bullets, in a shape that does not open with `- **`.
  * Its cause is the one `show` gives in `divergenceNotice` (`wiring/integrity.ts`), in the same
@@ -1123,14 +1123,14 @@ function apart(move: DivergentMove): string {
  *
  * The ids are the whole content of the warning. A reader told that `ADR-7` is
  * ambiguous and not told which rules hold it has been told to distrust a handle with
- * no way to stop — so the line names them, and the one that is not printed as a rule
+ * no way to stop, so the line names them, and the one that is not printed as a rule
  * above (a call that was superseded, or one still on the table) is named too, since
  * that is regularly the other half of the clash.
  *
  * It does NOT open with `- **`, and that is load-bearing rather than a taste: the
  * bullets that do are the rules in force, counted by the heading and by a reader
  * checking one against the other. A warning that borrowed their shape would be
- * counted as a rule the project never made — the same failure the collapsing exists
+ * counted as a rule the project never made: the same failure the collapsing exists
  * to prevent, arriving through the format instead of through a title.
  *
  * Every value on it goes through {@link oneLine}, here, for the reason the rule

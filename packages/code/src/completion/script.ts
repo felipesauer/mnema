@@ -6,7 +6,7 @@
  * rather than through a switch in the verb's action. A fourth shell is a row and a file.
  *
  * It is the entry point of everything under `completion/`, and it is loaded INSIDE the
- * verb's action (see `wiring/completion.ts`) — nothing here is on the path of any other
+ * verb's action (see `wiring/completion.ts`): nothing here is on the path of any other
  * command, and `the-floor-is-the-declaration.test.ts` refuses the day one of these
  * modules arrives eagerly.
  */
@@ -28,7 +28,7 @@ const RENDERED: Readonly<Record<Shell, (tree: CompletionTree) => string>> = {
 /**
  * The completion script for one shell, read off the program's own declarations.
  *
- * Pure: it parses nothing, runs nothing and reads no record — the answer depends on the
+ * Pure: it parses nothing, runs nothing and reads no record; the answer depends on the
  * declared surface and on the shell, and on nothing about the machine it runs on.
  */
 export function completionScript(program: Command, shell: Shell): string {

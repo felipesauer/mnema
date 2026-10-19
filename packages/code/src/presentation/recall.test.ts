@@ -1,5 +1,5 @@
 /**
- * The notes a session opens with, as text — what each line says and what it never says.
+ * The notes a session opens with, as text: what each line says and what it never says.
  *
  * The hits here are what the index serves (`searchRecords`), built by hand with values the
  * product produces: a uuid v7 id, one of the three trees, an ISO instant, and the index's
@@ -45,7 +45,7 @@ const all = (hits: RecordHit[], pertinent = 0): PertinentSearch => ({
   pertinent,
 });
 
-/** A session that touched nothing readable — the order is the newest. */
+/** A session that touched nothing readable: the order is the newest. */
 const untouched: SessionTouch = { words: [], changed: 0, tasks: 0, branch: false, commits: 0 };
 
 /** A session with a changed file, the branch and three commits read. */
@@ -57,7 +57,7 @@ const touched: SessionTouch = {
   commits: 3,
 };
 
-describe('recallDocument — the notes a session opens with', () => {
+describe('recallDocument: the notes a session opens with', () => {
   it('hands a session nothing when nothing is noted', () => {
     // NO LINES AT ALL, not a heading over an empty list: the plugin's handler reads an
     // empty text as silence, so a session in a project with no notes is handed nothing.
@@ -75,7 +75,7 @@ describe('recallDocument — the notes a session opens with', () => {
 
   it('gives each note ONE line, whatever its text holds', () => {
     // A note is text somebody typed, and a newline in it would end its own bullet and start
-    // a note nobody wrote — so every field is collapsed where the line is built. The break
+    // a note nobody wrote, so every field is collapsed where the line is built. The break
     // is planted in the TOPIC because that is where the index can hand one over: it serves
     // an observation's topic as it was stored, while a memory's excerpt is collapsed on the
     // way out of the index already, so a memory with a newline would be a value it cannot
@@ -104,7 +104,7 @@ describe('recallDocument — the notes a session opens with', () => {
 
   it('withholds the words of a note that holds a credential, and keeps that it exists', () => {
     // A PUSHED channel: nobody asked, and the text leaves the machine with every session. A
-    // record written before the content door — or by anything else holding a key — can
+    // record written before the content door, or by anything else holding a key, can
     // still hold a credential, and the line stands in for it.
     const token = 'ghp_0123456789abcdefghijklmnopqrstuvwxyzA';
     // Non-vacuity: the product's own detector does recognize it, so the case below is
@@ -219,7 +219,7 @@ describe('recallDocument — the notes a session opens with', () => {
 });
 
 describe('an observation’s topic is cut by the index’s own rule', () => {
-  /** A topic longer than any line the notes print — a name somebody typed has no length. */
+  /** A topic longer than any line the notes print: a name somebody typed has no length. */
   const topic = `month-end volume ${'and the batch that follows it '.repeat(40).trimEnd()}`;
 
   it('prints the start of a long topic, as a memory prints the start of its text', () => {
@@ -299,7 +299,7 @@ describe('the hook’s copy of the notes stays inside what a hook carries', () =
     );
   });
 
-  it('says a section cut to nothing holds notes — never that none is recorded', () => {
+  it('says a section cut to nothing holds notes, never that none is recorded', () => {
     const notes = {
       touched: untouched,
       memories: full(memory),
@@ -314,7 +314,7 @@ describe('the hook’s copy of the notes stays inside what a hook carries', () =
 
   it('counts the near ones among the lines it printed, when a hook cut the nearest part short', () => {
     // The order is nearest first when the session touched something, and the hook's copy drops
-    // from the end — so a cut that falls inside the near part leaves every printed line near,
+    // from the end, so a cut that falls inside the near part leaves every printed line near,
     // and the count under the heading says so of what is there, never of what was cut.
     const notes = {
       touched,
