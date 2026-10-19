@@ -45,8 +45,8 @@ const AN_ALIAS = new RegExp(
   'g',
 );
 
-/** The day a run happened, as the record prints it. */
-const A_DATE = /\b\d{4}-\d{2}-\d{2}\b/g;
+/** The day a run happened, as the record prints it: alone, or ahead of the `T` of a timestamp. */
+const A_DATE = /\b\d{4}-\d{2}-\d{2}(?=T|\b)/g;
 
 /**
  * What the line under a console's answer says that the machine measured — how long it took and
