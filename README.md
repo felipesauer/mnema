@@ -136,7 +136,7 @@ documented and not measured — and the notes on each host are in
 </div>
 
 `@mnema/code` holds the record, and the command line and the MCP server that read and write it. The rest stand around
-it. What each one does, line by line, is in [Features](docs/features.md).
+it. The detail of most of them is in [Features](docs/features.md); for the rest, the Link column leads to the page that has it.
 
 | Product | What it is for | Status | Link |
 |---|---|---|---|
@@ -165,6 +165,15 @@ A case in the suite runs the scripts again against the built binary and fails wh
 shows what the binary draws, so none of them can go on showing an older product in silence
 ([`the-recordings-are-what-the-binary-draws.test.ts`](packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts)).
 
+## What it is not
+
+Each of these is a choice with a reason, and the reasons are in [Where it fits](docs/where-it-fits.md#what-it-is-not).
+
+- **Not a semantic memory.** Search is by the words written in a record; there are no embeddings.
+- **Not an agent runner.** It calls no model and runs no tool for the agent.
+- **Not a copy somewhere else.** The committed record travels with the repository, and what you record privately stays on this machine, apart from the notes your agent's host receives, when a session opens through the plugin and when the agent asks for them, which the host sends to its model; the witness verbs send a digest out, and with Sigstore the identity too, only when you run them.
+- **Not access control.** The gate refuses an illegal move; it does not decide who may write.
+
 ## What it proves — and what it does not
 
 `mnema verify` reads the events and the committed public keys of a project's trees — no private
@@ -179,11 +188,17 @@ claim about the agent hosts is held, and which are not held yet, is in [`docs/ev
 
 ## Docs
 
-[Install](docs/install.md) · [Your first record](docs/first-record.md) · [How it works](docs/how-it-works.md) ·
-[What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [What it proves](docs/what-it-proves.md) ·
-[Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·
-[How each claim is held](docs/evidence.md) · [Where it fits](docs/where-it-fits.md) · [Packages](docs/packages.md) ·
-[Build from source](docs/build-from-source.md) · [Glossary](docs/glossary.md) · [Contributing](CONTRIBUTING.md)
+- **Use.** [Install](docs/install.md) · [Your first record](docs/first-record.md) · [How it works](docs/how-it-works.md) ·
+  [What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [The command reference](docs/cli-reference.md) ·
+  [Where it fits](docs/where-it-fits.md) · [Glossary](docs/glossary.md)
+- **Verify.** [What it proves](docs/what-it-proves.md) · [How each claim is held](docs/evidence.md) ·
+  [Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·
+  [When two machines disagree](docs/convergence.md) · [The record format](packages/chain/FORMAT.md)
+- **Integrate.** [Packages](docs/packages.md) · [SDK](packages/sdk/README.md) · [GitHub Action](packages/action/README.md) ·
+  [VS Code extension](packages/vscode/README.md) · [Stacks](packages/stacks/README.md) · [The plugin](plugin/README.md) ·
+  [Porting it to a host](plugin/porting-to-a-host.md)
+- **Contribute.** [Contributing](CONTRIBUTING.md) · [Build from source](docs/build-from-source.md) ·
+  [Security policy](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## License
 

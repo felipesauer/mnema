@@ -196,7 +196,8 @@ in — `mnema witness` — does exactly one of them. It does:
   attest the digest of a checkpoint's signed message; `mnema witness upgrade` goes
   back for it once a Bitcoin block carries it. `verify` then reads the answer off
   the disk — never off a network — and reaches `externally-witnessed`. Only the
-  digest leaves this machine: no id, no title, no body, no count. Between the ask
+  hash of that digest, joined to a random nonce, leaves this machine: no id, no
+  title, no body, no count. Between the ask
   and the block the verdict says `PENDING`, which is **not** coverage.
 - **It does not cover omission, and it does not tie the record to an identity.**
   Committing the chain to a shared git remote is still the path for both, because
