@@ -525,6 +525,24 @@ with its own changelog.
   2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
+- **The front page says what mnema is not, and groups the docs by who reads them.** `README.md` carries the four
+  lines of `docs/where-it-fits.md` ("Not a semantic memory", "Not an agent runner", "Not a copy somewhere else", "Not
+  access control") and lists the docs under use, verify, integrate and contribute; a case holds each line to the
+  sentences of the page it comes from, and every page of `docs/` to one group. Two sentences said more than the code
+  holds, and now say less: the front page said "what each one does, line by line, is in Features" of products
+  Features does not describe (the page that verifies itself, the agent in CI), and `docs/where-it-fits.md` said "the most that leaves
+  that machine" is a digest without saying that it leaves only when you run the witness verb, and that Sigstore
+  sends the identity too; `docs/what-it-proves.md` now says Sigstore's leaving is where somebody ran it.
+  "Not a copy somewhere else" no longer says that what you record privately never leaves the machine: the notes
+  of every tree this machine holds, the private one included, reach the agent's host, which sends them to its model,
+  both when a session opens through the plugin and when the agent asks for them (a search, or a record read whole,
+  answers from the private tree too; both were run against the real server for this change), and the line and
+  `docs/where-it-fits.md` now say so. The stamp's page, `docs/what-it-proves.md` and `docs/cli-reference.md` now say
+  what the calendar receives: a hash of the checkpoint's digest joined to a random nonce, and nothing else of the
+  record, not the digest itself (only the Sigstore countersignature, where somebody ran it, sends the digest and the
+  identity); the glossary no longer says the private tree "stays on that machine" but that it is not committed. The
+  guard holds the line to what it contains, not to what it adds, and does not hold what a host does with the text
+  once it has received it.
 - **The second reader's page no longer says a cut cannot take the checkpoints with it.** It can: events cut from the end
   of a tail while `checkpoints.jsonl` stays are reported, and `prev` catches a checkpoint dropped from the start or
   the middle, not the last ones. By default both readers accept the checkpoints file deleted alone, and the last
