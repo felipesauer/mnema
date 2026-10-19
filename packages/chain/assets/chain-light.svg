@@ -2,69 +2,111 @@
 <title>@mnema/chain</title>
 <style>
 .a{animation-duration:11s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
-@keyframes k0{0%{opacity:0}14.55%{opacity:0}17.27%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k1{0%{opacity:0}20%{opacity:0}22.73%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k2{0%{opacity:0}25.45%{opacity:0}28.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k3{0%{opacity:0}1.82%{opacity:0}4.55%{opacity:1}14.55%{opacity:1}17.27%{opacity:0}100%{opacity:0}}
-@keyframes k4{0%{opacity:0}22.73%{opacity:0}25.45%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k5{0%{opacity:0}27.27%{opacity:0}30%{opacity:1}47.27%{opacity:1}49.09%{opacity:0}69.09%{opacity:0}71.82%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k6{0%{opacity:0}47.27%{opacity:0}50%{opacity:1}68.18%{opacity:1}70.91%{opacity:0}100%{opacity:0}}
-@keyframes k7{0%{opacity:0}45.45%{opacity:0}48.18%{opacity:0.9}52.73%{opacity:0.2}57.27%{opacity:0.9}61.82%{opacity:0.2}66.36%{opacity:0.9}67.27%{opacity:0.9}70%{opacity:0}100%{opacity:0}}
-@keyframes k8{0%{opacity:0}21.82%{opacity:0}24.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k9{0%{opacity:0}31.82%{opacity:0}34.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k10{0%{opacity:0}33.64%{opacity:0}36.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k11{0%{opacity:0}49.09%{opacity:0}51.82%{opacity:1}66.36%{opacity:1}69.09%{opacity:0}100%{opacity:0}}
-@keyframes k12{0%{opacity:0}80%{opacity:0}82.73%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k13{0%{opacity:0}80%{opacity:0}82.73%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k14{0%{opacity:0}81.82%{opacity:0}84.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k15{0%{opacity:0}85.45%{opacity:0}88.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k16{0%{opacity:0}83.64%{opacity:0}86.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k17{0%{opacity:0}87.27%{opacity:0}90%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k0{0%{opacity:0}1.82%{opacity:0}4.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k1{0%{opacity:0}14.55%{opacity:0}17.27%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k2{0%{opacity:0}20%{opacity:0}22.73%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k3{0%{opacity:0}25.45%{opacity:0}28.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k4{0%{opacity:0}1.82%{opacity:0}4.55%{opacity:1}14.55%{opacity:1}17.27%{opacity:0}100%{opacity:0}}
+@keyframes k5{0%{opacity:0}14.55%{opacity:0}15.91%{opacity:1}20.45%{opacity:0}100%{opacity:0}}
+@keyframes k6{0%{opacity:0}20%{opacity:0}21.36%{opacity:1}25.91%{opacity:0}100%{opacity:0}}
+@keyframes k7{0%{opacity:0}25.45%{opacity:0}26.82%{opacity:1}31.36%{opacity:0}100%{opacity:0}}
+@keyframes k8{0%{opacity:0}22.73%{opacity:0}25.45%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k9{0%{opacity:0}27.27%{opacity:0}30%{opacity:1}47.27%{opacity:1}49.09%{opacity:0}69.09%{opacity:0}71.82%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k10{0%{opacity:0}47.27%{opacity:0}50%{opacity:1}68.18%{opacity:1}70.91%{opacity:0}100%{opacity:0}}
+@keyframes k11{0%{opacity:0}45.45%{opacity:0}48.18%{opacity:0.9}52.73%{opacity:0.2}57.27%{opacity:0.9}61.82%{opacity:0.2}66.36%{opacity:0.9}67.27%{opacity:0.9}70%{opacity:0}100%{opacity:0}}
+@keyframes k12{0%{opacity:0}21.82%{opacity:0}24.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k13{0%{opacity:0}31.82%{opacity:0}34.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k14{0%{opacity:0}33.64%{opacity:0}36.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k15{0%{opacity:0}49.09%{opacity:0}51.82%{opacity:1}66.36%{opacity:1}69.09%{opacity:0}100%{opacity:0}}
+@keyframes k16{0%{opacity:0}75.45%{opacity:0}76.82%{opacity:1}82.27%{opacity:0}100%{opacity:0}}
+@keyframes k17{0%{transform:translate(278px,124px)}75.45%{transform:translate(278px,124px)}81.82%{transform:translate(342px,104px)}82.73%{transform:translate(342px,104px)}83.64%{transform:translate(278px,124px)}100%{transform:translate(278px,124px)}}
+@keyframes k18{0%{opacity:0}75.45%{opacity:0}76.55%{opacity:1}80.73%{opacity:1}82.27%{opacity:0}100%{opacity:0}}
+@keyframes k19{0%{opacity:0}70.91%{opacity:0}73.64%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k20{0%{opacity:0}71.82%{opacity:0}74.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k21{0%{opacity:0}75.45%{opacity:0}78.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k22{0%{stroke-dashoffset:67.05}71.82%{stroke-dashoffset:67.05}76.36%{stroke-dashoffset:0}80.45%{stroke-dashoffset:0}81.36%{stroke-dashoffset:67.05}100%{stroke-dashoffset:67.05}}
+@keyframes k23{0%{opacity:0}71.82%{opacity:0}73.64%{opacity:1}78.18%{opacity:1}80%{opacity:0}100%{opacity:0}}
+@keyframes k24{0%{opacity:0}81.36%{opacity:0}82.73%{opacity:1}87.27%{opacity:0}100%{opacity:0}}
+@keyframes k25{0%{opacity:0}81.82%{opacity:0}84.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k26{0%{opacity:0}85.45%{opacity:0}88.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k27{0%{transform:translate(278px,140px)}75.45%{transform:translate(278px,140px)}81.82%{transform:translate(342px,160px)}82.73%{transform:translate(342px,160px)}83.64%{transform:translate(278px,140px)}100%{transform:translate(278px,140px)}}
+@keyframes k28{0%{opacity:0}75.45%{opacity:0}76.55%{opacity:1}80.73%{opacity:1}82.27%{opacity:0}100%{opacity:0}}
+@keyframes k29{0%{opacity:0}70.91%{opacity:0}73.64%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k30{0%{opacity:0}71.82%{opacity:0}74.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k31{0%{opacity:0}75.45%{opacity:0}78.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k32{0%{stroke-dashoffset:67.05}71.82%{stroke-dashoffset:67.05}76.36%{stroke-dashoffset:0}80.45%{stroke-dashoffset:0}81.36%{stroke-dashoffset:67.05}100%{stroke-dashoffset:67.05}}
+@keyframes k33{0%{opacity:0}71.82%{opacity:0}73.64%{opacity:1}78.18%{opacity:1}80%{opacity:0}100%{opacity:0}}
+@keyframes k34{0%{opacity:0}81.36%{opacity:0}82.73%{opacity:1}87.27%{opacity:0}100%{opacity:0}}
+@keyframes k35{0%{opacity:0}83.64%{opacity:0}86.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k36{0%{opacity:0}87.27%{opacity:0}90%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.a{animation:none!important}}
 </style>
+<defs>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#997dbf" stop-opacity="0.08"/><stop offset="0.6" stop-color="#997dbf" stop-opacity="0.03"/><stop offset="1" stop-color="#997dbf" stop-opacity="0"/></radialGradient>
+<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#997dbf" stop-opacity="0.07"/><stop offset="1" stop-color="#997dbf" stop-opacity="0.02"/></linearGradient>
+</defs>
 <rect width="720" height="240" fill="#ffffff"/>
+<ellipse class="a" style="animation-name:k0" cx="360" cy="140" rx="300" ry="100" fill="url(#glow)"/>
 <text x="0" y="24" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="15" font-weight="600" fill="#1f2328">@mnema/chain</text>
 <g transform="translate(604.8 6) scale(0.2)">
 <path data-of="blocks" fill="#997dbf" d="M0 0h12.5v24.5h-12.5zM12 0h12.5v24.5h-12.5zM24 0h12v24.5h-12zM84 0h12.5v24.5h-12.5zM96 0h12.5v24.5h-12.5zM108 0h12v24.5h-12zM132 0h12.5v24.5h-12.5zM144 0h12.5v24.5h-12.5zM156 0h12v24.5h-12zM216 0h12.5v24.5h-12.5zM228 0h12v24.5h-12zM252 0h12.5v24.5h-12.5zM264 0h12.5v24.5h-12.5zM276 0h12.5v24h-12.5zM288 0h12.5v24h-12.5zM300 0h12.5v24h-12.5zM312 0h12.5v24h-12.5zM324 0h12v24h-12zM348 0h12.5v24.5h-12.5zM360 0h12.5v24.5h-12.5zM372 0h12v24.5h-12zM432 0h12.5v24.5h-12.5zM444 0h12.5v24.5h-12.5zM456 0h12v24.5h-12zM492 0h12.5v24.5h-12.5zM504 0h12.5v24h-12.5zM516 0h12.5v24h-12.5zM528 0h12.5v24h-12.5zM540 0h12v24.5h-12zM0 24h12.5v24.5h-12.5zM12 24h12.5v24.5h-12.5zM24 24h12.5v24h-12.5zM36 24h12v24.5h-12zM72 24h12.5v24.5h-12.5zM84 24h12.5v24h-12.5zM96 24h12.5v24.5h-12.5zM108 24h12v24.5h-12zM132 24h12.5v24.5h-12.5zM144 24h12.5v24.5h-12.5zM156 24h12.5v24h-12.5zM168 24h12v24.5h-12zM216 24h12.5v24.5h-12.5zM228 24h12v24.5h-12zM252 24h12.5v24.5h-12.5zM264 24h12v24.5h-12zM348 24h12.5v24.5h-12.5zM360 24h12.5v24.5h-12.5zM372 24h12.5v24h-12.5zM384 24h12v24.5h-12zM420 24h12.5v24.5h-12.5zM432 24h12.5v24h-12.5zM444 24h12.5v24.5h-12.5zM456 24h12v24.5h-12zM480 24h12.5v24.5h-12.5zM492 24h12v24.5h-12zM540 24h12.5v24.5h-12.5zM552 24h12v24.5h-12zM0 48h12.5v24.5h-12.5zM12 48h12v24.5h-12zM36 48h12.5v24h-12.5zM48 48h12.5v24.5h-12.5zM60 48h12.5v24.5h-12.5zM72 48h12v24h-12zM96 48h12.5v24.5h-12.5zM108 48h12v24.5h-12zM132 48h12.5v24.5h-12.5zM144 48h12v24.5h-12zM168 48h12.5v24h-12.5zM180 48h12v24.5h-12zM216 48h12.5v24.5h-12.5zM228 48h12v24.5h-12zM252 48h12.5v24.5h-12.5zM264 48h12.5v24.5h-12.5zM276 48h12.5v24h-12.5zM288 48h12.5v24h-12.5zM300 48h12v24h-12zM348 48h12.5v24.5h-12.5zM360 48h12v24.5h-12zM384 48h12.5v24h-12.5zM396 48h12.5v24.5h-12.5zM408 48h12.5v24.5h-12.5zM420 48h12v24h-12zM444 48h12.5v24.5h-12.5zM456 48h12v24.5h-12zM480 48h12.5v24.5h-12.5zM492 48h12.5v24.5h-12.5zM504 48h12.5v24h-12.5zM516 48h12.5v24h-12.5zM528 48h12.5v24h-12.5zM540 48h12.5v24.5h-12.5zM552 48h12v24.5h-12zM0 72h12.5v24.5h-12.5zM12 72h12v24.5h-12zM48 72h12.5v24h-12.5zM60 72h12v24h-12zM96 72h12.5v24.5h-12.5zM108 72h12v24.5h-12zM132 72h12.5v24.5h-12.5zM144 72h12v24.5h-12zM180 72h12.5v24h-12.5zM192 72h12v24.5h-12zM216 72h12.5v24.5h-12.5zM228 72h12v24.5h-12zM252 72h12.5v24.5h-12.5zM264 72h12v24.5h-12zM348 72h12.5v24.5h-12.5zM360 72h12v24.5h-12zM396 72h12.5v24h-12.5zM408 72h12v24h-12zM444 72h12.5v24.5h-12.5zM456 72h12v24.5h-12zM480 72h12.5v24.5h-12.5zM492 72h12v24.5h-12zM540 72h12.5v24.5h-12.5zM552 72h12v24.5h-12zM0 96h12.5v24h-12.5zM12 96h12v24h-12zM96 96h12.5v24h-12.5zM108 96h12v24h-12zM132 96h12.5v24h-12.5zM144 96h12v24h-12zM192 96h12.5v24h-12.5zM204 96h12.5v24h-12.5zM216 96h12.5v24h-12.5zM228 96h12v24h-12zM252 96h12.5v24h-12.5zM264 96h12.5v24h-12.5zM276 96h12.5v24h-12.5zM288 96h12.5v24h-12.5zM300 96h12.5v24h-12.5zM312 96h12.5v24h-12.5zM324 96h12v24h-12zM348 96h12.5v24h-12.5zM360 96h12v24h-12zM444 96h12.5v24h-12.5zM456 96h12v24h-12zM480 96h12.5v24h-12.5zM492 96h12v24h-12zM540 96h12.5v24h-12.5zM552 96h12v24h-12z"/>
 <path data-of="lines" fill="none" stroke="#997dbf" stroke-opacity="0.55" stroke-width="1.5" stroke-linejoin="miter" d="M36 9.25L44.75 9.25L44.75 24M36 14.75L39.25 14.75L39.25 24M120 9.25L128.75 9.25L128.75 24M120 14.75L123.25 14.75L123.25 24M168 9.25L176.75 9.25L176.75 24M168 14.75L171.25 14.75L171.25 24M240 9.25L248.75 9.25L248.75 24M240 14.75L243.25 14.75L243.25 24M336 9.25L344.75 9.25L344.75 24M336 14.75L339.25 14.75L339.25 24M384 9.25L392.75 9.25L392.75 24M384 14.75L387.25 14.75L387.25 24M468 9.25L476.75 9.25L476.75 24M468 14.75L471.25 14.75L471.25 24M552 9.25L560.75 9.25L560.75 24M552 14.75L555.25 14.75L555.25 24M48 33.25L56.75 33.25L56.75 48M48 38.75L51.25 38.75L51.25 48M123.25 24L123.25 48M128.75 24L128.75 48M180 33.25L188.75 33.25L188.75 48M180 38.75L183.25 38.75L183.25 48M243.25 24L243.25 48M248.75 24L248.75 48M288 33.25L279.25 33.25L279.25 48M288 38.75L284.75 38.75L284.75 48M288 33.25L300 33.25M288 38.75L300 38.75M300 33.25L312 33.25M300 38.75L312 38.75M312 33.25L324 33.25M312 38.75L324 38.75M324 33.25L336 33.25M324 38.75L336 38.75M344.75 24L344.75 38.75L336 38.75M339.25 24L339.25 33.25L336 33.25M396 33.25L404.75 33.25L404.75 48M396 38.75L399.25 38.75L399.25 48M471.25 24L471.25 48M476.75 24L476.75 48M516 33.25L507.25 33.25L507.25 48M516 38.75L512.75 38.75L512.75 48M516 33.25L528 33.25M516 38.75L528 38.75M528 33.25L540 33.25M528 38.75L540 38.75M564 33.25L572.75 33.25L572.75 48M564 38.75L567.25 38.75L567.25 48M36 57.25L27.25 57.25L27.25 72M36 62.75L32.75 62.75L32.75 72M96 57.25L87.25 57.25L87.25 72M96 62.75L92.75 62.75L92.75 72M123.25 48L123.25 72M128.75 48L128.75 72M168 57.25L159.25 57.25L159.25 72M168 62.75L164.75 62.75L164.75 72M192 57.25L200.75 57.25L200.75 72M192 62.75L195.25 62.75L195.25 72M243.25 48L243.25 72M248.75 48L248.75 72M312 57.25L320.75 57.25L320.75 72M312 62.75L315.25 62.75L315.25 72M384 57.25L375.25 57.25L375.25 72M384 62.75L380.75 62.75L380.75 72M444 57.25L435.25 57.25L435.25 72M444 62.75L440.75 62.75L440.75 72M471.25 48L471.25 72M476.75 48L476.75 72M567.25 48L567.25 72M572.75 48L572.75 72M27.25 72L27.25 96M32.75 72L32.75 96M39.25 72L39.25 86.75L48 86.75M44.75 72L44.75 81.25L48 81.25M84 81.25L75.25 81.25L75.25 96M84 86.75L80.75 86.75L80.75 96M92.75 72L92.75 86.75L84 86.75M87.25 72L87.25 81.25L84 81.25M123.25 72L123.25 96M128.75 72L128.75 96M159.25 72L159.25 96M164.75 72L164.75 96M171.25 72L171.25 86.75L180 86.75M176.75 72L176.75 81.25L180 81.25M204 81.25L212.75 81.25L212.75 96M204 86.75L207.25 86.75L207.25 96M243.25 72L243.25 96M248.75 72L248.75 96M288 81.25L279.25 81.25L279.25 96M288 86.75L284.75 86.75L284.75 96M288 81.25L300 81.25M288 86.75L300 86.75M300 81.25L312 81.25M300 86.75L312 86.75M320.75 72L320.75 86.75L312 86.75M315.25 72L315.25 81.25L312 81.25M375.25 72L375.25 96M380.75 72L380.75 96M387.25 72L387.25 86.75L396 86.75M392.75 72L392.75 81.25L396 81.25M432 81.25L423.25 81.25L423.25 96M432 86.75L428.75 86.75L428.75 96M440.75 72L440.75 86.75L432 86.75M435.25 72L435.25 81.25L432 81.25M471.25 72L471.25 96M476.75 72L476.75 96M516 81.25L507.25 81.25L507.25 96M516 86.75L512.75 86.75L512.75 96M516 81.25L528 81.25M516 86.75L528 86.75M528 81.25L540 81.25M528 86.75L540 86.75M567.25 72L567.25 96M572.75 72L572.75 96M27.25 96L27.25 120M32.75 96L32.75 120M51.25 96L51.25 110.75L60 110.75M56.75 96L56.75 105.25L60 105.25M60 105.25L72 105.25M60 110.75L72 110.75M80.75 96L80.75 110.75L72 110.75M75.25 96L75.25 105.25L72 105.25M123.25 96L123.25 120M128.75 96L128.75 120M159.25 96L159.25 120M164.75 96L164.75 120M183.25 96L183.25 110.75L192 110.75M188.75 96L188.75 105.25L192 105.25M243.25 96L243.25 120M248.75 96L248.75 120M336 105.25L344.75 105.25L344.75 120M336 110.75L339.25 110.75L339.25 120M375.25 96L375.25 120M380.75 96L380.75 120M399.25 96L399.25 110.75L408 110.75M404.75 96L404.75 105.25L408 105.25M408 105.25L420 105.25M408 110.75L420 110.75M428.75 96L428.75 110.75L420 110.75M423.25 96L423.25 105.25L420 105.25M471.25 96L471.25 120M476.75 96L476.75 120M507.25 96L507.25 120M512.75 96L512.75 120M567.25 96L567.25 120M572.75 96L572.75 120M3.25 120L3.25 134.75L12 134.75M8.75 120L8.75 129.25L12 129.25M12 129.25L24 129.25M12 134.75L24 134.75M32.75 120L32.75 134.75L24 134.75M27.25 120L27.25 129.25L24 129.25M99.25 120L99.25 134.75L108 134.75M104.75 120L104.75 129.25L108 129.25M108 129.25L120 129.25M108 134.75L120 134.75M128.75 120L128.75 134.75L120 134.75M123.25 120L123.25 129.25L120 129.25M135.25 120L135.25 134.75L144 134.75M140.75 120L140.75 129.25L144 129.25M144 129.25L156 129.25M144 134.75L156 134.75M164.75 120L164.75 134.75L156 134.75M159.25 120L159.25 129.25L156 129.25M195.25 120L195.25 134.75L204 134.75M200.75 120L200.75 129.25L204 129.25M204 129.25L216 129.25M204 134.75L216 134.75M216 129.25L228 129.25M216 134.75L228 134.75M228 129.25L240 129.25M228 134.75L240 134.75M248.75 120L248.75 134.75L240 134.75M243.25 120L243.25 129.25L240 129.25M255.25 120L255.25 134.75L264 134.75M260.75 120L260.75 129.25L264 129.25M264 129.25L276 129.25M264 134.75L276 134.75M276 129.25L288 129.25M276 134.75L288 134.75M288 129.25L300 129.25M288 134.75L300 134.75M300 129.25L312 129.25M300 134.75L312 134.75M312 129.25L324 129.25M312 134.75L324 134.75M324 129.25L336 129.25M324 134.75L336 134.75M344.75 120L344.75 134.75L336 134.75M339.25 120L339.25 129.25L336 129.25M351.25 120L351.25 134.75L360 134.75M356.75 120L356.75 129.25L360 129.25M360 129.25L372 129.25M360 134.75L372 134.75M380.75 120L380.75 134.75L372 134.75M375.25 120L375.25 129.25L372 129.25M447.25 120L447.25 134.75L456 134.75M452.75 120L452.75 129.25L456 129.25M456 129.25L468 129.25M456 134.75L468 134.75M476.75 120L476.75 134.75L468 134.75M471.25 120L471.25 129.25L468 129.25M483.25 120L483.25 134.75L492 134.75M488.75 120L488.75 129.25L492 129.25M492 129.25L504 129.25M492 134.75L504 134.75M512.75 120L512.75 134.75L504 134.75M507.25 120L507.25 129.25L504 129.25M543.25 120L543.25 134.75L552 134.75M548.75 120L548.75 129.25L552 129.25M552 129.25L564 129.25M552 134.75L564 134.75M572.75 120L572.75 134.75L564 134.75M567.25 120L567.25 129.25L564 129.25"/>
 </g>
 <path d="M0 40.5H720" stroke="#d1d9e0"/>
-<g class="a" style="animation-name:k3" opacity="0">
-<rect x="0.5" y="52.5" width="150" height="25" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf"/>
-<text x="14" y="68.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">decision.recorded</text>
-</g>
-<g class="a" style="animation-name:k0">
-<path d="M28.29 116L42.14 124L28.29 132L14.43 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M14.43 124L28.29 132L28.29 148L14.43 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M28.29 132L42.14 124L42.14 140L28.29 148z" fill="#997dbf" fill-opacity="0.06"/>
-<path d="M28.29 116L42.14 124L42.14 140L28.29 148L14.43 140L14.43 124zM14.43 124L28.29 132L42.14 124M28.29 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
+<g class="a" style="animation-name:k4" opacity="0">
+<rect x="94.5" y="52.5" width="150" height="25" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+<text x="108" y="68.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">decision.recorded</text>
 </g>
 <g class="a" style="animation-name:k1">
-<path d="M44.14 132H74.14" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M90 116L103.86 124L90 132L76.14 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M76.14 124L90 132L90 148L76.14 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M90 132L103.86 124L103.86 140L90 148z" fill="#997dbf" fill-opacity="0.06"/>
-<path d="M90 116L103.86 124L103.86 140L90 148L76.14 140L76.14 124zM76.14 124L90 132L103.86 124M90 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
+<path d="M122.29 116L136.14 124L122.29 132L108.43 124z" fill="#997dbf" fill-opacity="0.3"/>
+<path d="M108.43 124L122.29 132L122.29 148L108.43 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M122.29 132L136.14 124L136.14 140L122.29 148z" fill="#997dbf" fill-opacity="0"/>
+<path d="M122.29 116L136.14 124L136.14 140L122.29 148L108.43 140L108.43 124zM108.43 124L122.29 132L136.14 124M122.29 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <g class="a" style="animation-name:k2">
-<path d="M105.86 132H135.86" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M151.71 116L165.57 124L151.71 132L137.86 124z" fill="#997dbf" fill-opacity="0.3"/>
-<path d="M137.86 124L151.71 132L151.71 148L137.86 140z" fill="#997dbf" fill-opacity="0.16"/>
-<path d="M151.71 132L165.57 124L165.57 140L151.71 148z" fill="#997dbf" fill-opacity="0.06"/>
-<path d="M151.71 116L165.57 124L165.57 140L151.71 148L137.86 140L137.86 124zM137.86 124L151.71 132L165.57 124M151.71 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
+<path d="M138.14 132H168.14" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M184 116L197.86 124L184 132L170.14 124z" fill="#997dbf" fill-opacity="0.3"/>
+<path d="M170.14 124L184 132L184 148L170.14 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M184 132L197.86 124L197.86 140L184 148z" fill="#997dbf" fill-opacity="0"/>
+<path d="M184 116L197.86 124L197.86 140L184 148L170.14 140L170.14 124zM170.14 124L184 132L197.86 124M184 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
-<path class="a" style="animation-name:k4" d="M44.14 132H74.14" stroke="#997dbf" stroke-width="2" stroke-linecap="round"/>
-<path class="a" style="animation-name:k5" d="M105.86 132H135.86" stroke="#997dbf" stroke-width="2" stroke-linecap="round"/>
-<path class="a" style="animation-name:k6" opacity="0" d="M105.86 132H135.86" stroke="#59636e" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>
-<path class="a" style="animation-name:k7" opacity="0" d="M90 116L103.86 124L103.86 140L90 148L76.14 140L76.14 124z" fill="#59636e"/>
-<text class="a" style="animation-name:k8" x="0" y="180" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">seq · prev · hash</text>
-<rect class="a" style="animation-name:k9" x="0.5" y="100.5" width="179" height="63" rx="10" fill="#997dbf" fill-opacity="0.06" stroke="#997dbf" stroke-width="1.5"/>
-<text class="a" style="animation-name:k10" x="0" y="90" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">checkpoint · Ed25519</text>
-<text class="a" style="animation-name:k11" opacity="0" x="0" y="220" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">entry hash mismatch: content or link was altered</text>
-<path class="a" style="animation-name:k12" d="M188 124L406 106M399.6 103.16L406 106L400.15 109.85" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path class="a" style="animation-name:k13" d="M188 140L406 156M400.12 152.2L406 156L399.63 158.9" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text class="a" style="animation-name:k14" x="420" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">verify</text>
-<text class="a" style="animation-name:k15" x="420" y="120" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">local integrity verified (T1/T2/T4)</text>
-<text class="a" style="animation-name:k16" x="420" y="150" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema_verify.py</text>
-<text class="a" style="animation-name:k17" x="420" y="170" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">VERIFIED</text>
+<g class="a" style="animation-name:k3">
+<path d="M199.86 132H229.86" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M245.71 116L259.57 124L245.71 132L231.86 124z" fill="#997dbf" fill-opacity="0.3"/>
+<path d="M231.86 124L245.71 132L245.71 148L231.86 140z" fill="#997dbf" fill-opacity="0.06"/>
+<path d="M245.71 132L259.57 124L259.57 140L245.71 148z" fill="#997dbf" fill-opacity="0"/>
+<path d="M245.71 116L259.57 124L259.57 140L245.71 148L231.86 140L231.86 124zM231.86 124L245.71 132L259.57 124M245.71 132V148" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<path class="a" style="animation-name:k5" opacity="0" d="M122.29 116L136.14 124L136.14 140L122.29 148L108.43 140L108.43 124z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k6" opacity="0" d="M184 116L197.86 124L197.86 140L184 148L170.14 140L170.14 124z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k7" opacity="0" d="M245.71 116L259.57 124L259.57 140L245.71 148L231.86 140L231.86 124z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k8" d="M138.14 132H168.14" stroke="#997dbf" stroke-width="2" stroke-linecap="round"/>
+<path class="a" style="animation-name:k9" d="M199.86 132H229.86" stroke="#997dbf" stroke-width="2" stroke-linecap="round"/>
+<path class="a" style="animation-name:k10" opacity="0" d="M199.86 132H229.86" stroke="#59636e" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>
+<path class="a" style="animation-name:k11" opacity="0" d="M184 116L197.86 124L197.86 140L184 148L170.14 140L170.14 124z" fill="#59636e"/>
+<text class="a" style="animation-name:k12" x="94" y="180" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">seq · prev · hash</text>
+<rect class="a" style="animation-name:k13" x="94.5" y="100.5" width="179" height="63" rx="14" fill="url(#tint)" stroke="#997dbf" stroke-width="1.5"/>
+<text class="a" style="animation-name:k14" x="94" y="90" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">checkpoint · Ed25519</text>
+<text class="a" style="animation-name:k15" opacity="0" x="360" y="220" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328" text-anchor="middle">entry hash mismatch: content or link was altered</text>
+<rect class="a" style="animation-name:k16" opacity="0" x="88.5" y="94.5" width="191" height="75" rx="19" fill="none" stroke="#997dbf" stroke-width="2"/>
+<g class="a" style="animation-name:k19">
+<rect x="346.5" y="82.5" width="279" height="43" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+</g>
+<path class="a" style="animation-name:k20" d="M278 124L342 104" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k21" d="M335.14 102.63L342 104L337.14 109.04" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k22,k23" opacity="0" d="M278 124L342 104" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="67.05 67.05"/>
+<g class="a" style="animation-name:k17,k18" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
+<rect class="a" style="animation-name:k24" opacity="0" x="347.5" y="83.5" width="277" height="41" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<text class="a" style="animation-name:k25" x="360" y="97.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">verify</text>
+<text class="a" style="animation-name:k26" x="360" y="117.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">local integrity verified (T1/T2/T4)</text>
+<g class="a" style="animation-name:k29">
+<rect x="346.5" y="138.5" width="279" height="43" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+</g>
+<path class="a" style="animation-name:k30" d="M278 140L342 160" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k31" d="M337.14 154.96L342 160L335.14 161.37" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k32,k33" opacity="0" d="M278 140L342 160" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="67.05 67.05"/>
+<g class="a" style="animation-name:k27,k28" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
+<rect class="a" style="animation-name:k34" opacity="0" x="347.5" y="139.5" width="277" height="41" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<text class="a" style="animation-name:k35" x="360" y="153.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema_verify.py</text>
+<text class="a" style="animation-name:k36" x="360" y="173.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">VERIFIED</text>
 </svg>
