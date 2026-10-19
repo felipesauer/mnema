@@ -2,11 +2,11 @@
  * OPENCODE OPENS WITH THE RECORD AND REFUSES THE WRITE, in the real OpenCode with the plugin module
  * of this tree installed in the project: the opening is in the system prompt of the requests, the
  * server's tools are offered, a write under a rule that refuses is not made and the model is handed
- * the rule — for `write`, for `edit`, and for the `apply_patch` the `gpt-` models are given — and a
+ * the rule (for `write`, for `edit`, and for the `apply_patch` the `gpt-` models are given) and a
  * rule that only asks for a person is let through, because the module pauses nothing.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema before-a-write --host
- * opencode` answers, and what `mnema brief --hook` prints — is `a-rule-that-refuses-a-write.test.ts`
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema before-a-write --host
+ * opencode` answers, and what `mnema brief --hook` prints) is `a-rule-that-refuses-a-write.test.ts`
  * and the brief's own cases. What OpenCode does with them is OpenCode's, read here off the requests
  * it sends a stand-in for the model and off the file that was or was not written.
  * NOT HELD: that the model reads what arrived; a ceiling OpenCode may put on a system prompt; the

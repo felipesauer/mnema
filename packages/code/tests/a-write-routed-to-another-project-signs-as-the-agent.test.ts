@@ -3,7 +3,7 @@
  *
  * A connection asked to sign as an agent finds the key per tree. The trees of the project the
  * session opened in are given the agent; so must the trees of every OTHER project of the workspace,
- * because a write can land there too — by the `project` argument, or because a transition names an
+ * because a write can land there too: by the `project` argument, or because a transition names an
  * id that only another project holds. Without it the write there found no agent, fell to the
  * person's root, and either minted a key (a machine that holds only the agent's) or signed as the
  * person in silence (a machine that holds both) while the project enrols the agent.

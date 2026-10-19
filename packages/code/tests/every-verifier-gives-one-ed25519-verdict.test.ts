@@ -8,8 +8,8 @@
  * Wycheproof, CCTV and ed25519-speccheck, they followed three different rules, and one of them
  * was not even one rule: Node 22 and Node 24 up to 24.18 accepted 301 vectors, Node 24.19 and
  * later accepted 132 (nodejs/node#64026 began refusing small-order points), and the Python and
- * the page agreed with each other on a third set. The same forged record — a public key of
- * small order, whose signatures anybody can produce one time in eight — verified under one
+ * the page agreed with each other on a third set. The same forged record (a public key of
+ * small order, whose signatures anybody can produce one time in eight) verified under one
  * Node and failed under the other.
  *
  * SO THE RULE IS NOW WRITTEN, IN `FORMAT.md` SECTION 6, AND IT IS THE STRICT ONE: A and R decode

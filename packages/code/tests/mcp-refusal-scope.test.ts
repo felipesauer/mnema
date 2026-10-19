@@ -2,7 +2,7 @@
  * What a refusal is allowed to claim about an id it did not find.
  *
  * The MCP surface used to answer "task <id> does not exist" for every id its own
- * trees did not hold — and a workspace holds several projects, of which a session
+ * trees did not hold, and a workspace holds several projects, of which a session
  * sees one. So the reply denied the existence of records that exist, are intact,
  * and are answerable by a `mnema` command two directories away. The fix is a
  * sentence that reports the SEARCH and never the world.
@@ -10,22 +10,22 @@
  * EIGHT call sites relay that refusal, and there is a test per site. Not one test
  * for the sentence: a sentence with one test is a sentence that gets restored in
  * seven places and lost in the eighth, and the failure has to name the tool that
- * lost it. They are not one parametrized loop for the same reason — a loop reports
+ * lost it. They are not one parametrized loop for the same reason: a loop reports
  * one failure for eight broken sites.
  *
  * The eight split into THREE groups now, and the split is the finding:
  *
- *   - FIVE fire when no tree of the WORKSPACE holds the birth — the three transitions,
+ *   - FIVE fire when no tree of the WORKSPACE holds the birth: the three transitions,
  *     `next_actions` and `guard`, whose walk covers every project the client
  *     announced. Their sentence names those projects, because a sentence that named
  *     one while the walk read five understates itself exactly as "does not exist"
  *     overstated itself, and a reader can check neither.
  *   - ONE fires over a search of the session's OWN record: `skills` serves the
  *     patterns of the trees this session can see, which is a narrower search. It keeps
- *     the narrower sentence, and that is the point — a sentence follows the search
+ *     the narrower sentence, and that is the point: a sentence follows the search
  *     that produced it, not the module it lives in.
  *   - TWO fire when a tree DOES hold the entity and the state still cannot be read.
- *     They must not say "was not found" — the walk just found it — so they carry their
+ *     They must not say "was not found", the walk just found it, so they carry their
  *     own sentence, and it names the project the entity was found IN, which need not
  *     be the session's.
  */
@@ -70,7 +70,7 @@ function openOn(project: string): Session {
 
 /**
  * The sentence the five workspace-wide sites must produce, over the projects it
- * searched — quoted and comma-separated, the one spelling of that list.
+ * searched: quoted and comma-separated, the one spelling of that list.
  */
 function notFoundAcross(projects: readonly string[], kind: string, id: string): string {
   return (
@@ -97,7 +97,7 @@ function noStateIn(project: string, scope: Scope, kind: string, id: string): str
 }
 
 /**
- * Appends a task RECORD with no initial transition — the truncated birth a
+ * Appends a task RECORD with no initial transition: the truncated birth a
  * complete write never produces (the pair is appended atomically) but a chain
  * fetched in part can carry. Every replay finds it; no projection holds it, so
  * the locate succeeds and the state read comes back empty.
@@ -127,7 +127,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('no tree of the workspace holds it — the five sites say where they looked', () => {
+describe('no tree of the workspace holds it: the five sites say where they looked', () => {
   it('task_transition', () => {
     const project = makeProject('proj');
     const session = openOn(project);
@@ -186,11 +186,11 @@ describe('no tree of the workspace holds it — the five sites say where they lo
 });
 
 describe('the search of one RECORD keeps its own sentence', () => {
-  it('skills — the read that serves one pattern by id', () => {
+  it('skills: the read that serves one pattern by id', () => {
     // The one site whose walk is narrower than the locate's: `skills` reads the
     // adopted patterns of the trees the session can see. Giving it the workspace
     // sentence would be the same defect as the one this file exists for, pointing the
-    // other way — a refusal claiming to have read five projects when it read one.
+    // other way: a refusal claiming to have read five projects when it read one.
     const project = makeProject('proj');
     const session = openOn(project);
     expect(runSkillsTool(session, { id: NOWHERE })).toEqual({
@@ -201,7 +201,7 @@ describe('the search of one RECORD keeps its own sentence', () => {
     closeSession(session);
   });
 
-  it('and it is a DIFFERENT sentence from the five — not a copy that drifted', () => {
+  it('and it is a DIFFERENT sentence from the five, not a copy that drifted', () => {
     // Asserting the two texts apart, because the risk is that one of them is quietly
     // made to produce the other: they differ in what they claim to have searched, and
     // that difference is the only thing keeping both of them true.
@@ -219,7 +219,7 @@ describe('the search of one RECORD keeps its own sentence', () => {
   });
 });
 
-describe('a tree DOES hold it — the two sites name that tree instead', () => {
+describe('a tree DOES hold it: the two sites name that tree instead', () => {
   it('next_actions, over a birth with nothing after it', () => {
     const project = makeProject('proj');
     const session = openOn(project);
@@ -248,7 +248,7 @@ describe('a tree DOES hold it — the two sites name that tree instead', () => {
 
   it('does not claim the entity is absent from the project it is in', () => {
     // The claim these two sites must never make. The birth IS in this project, and
-    // the walk found it there a line earlier — so the sentence the other six carry
+    // the walk found it there a line earlier, so the sentence the other six carry
     // would be false here, in the opposite direction from "does not exist".
     const project = makeProject('proj');
     const session = openOn(project);
@@ -263,10 +263,10 @@ describe('a tree DOES hold it — the two sites name that tree instead', () => {
 });
 
 describe('what the sentence is careful not to say', () => {
-  it('the id a project it never opened holds is not denied — it says where it looked', () => {
+  it('the id a project it never opened holds is not denied: it says where it looked', () => {
     // The measured case, in the only shape it still has: a project the client never
     // ANNOUNCED. The walk covers the projects the host said were open, so a repository
-    // sitting beside them on disk is exactly as invisible as it always was — and
+    // sitting beside them on disk is exactly as invisible as it always was, and
     // "does not exist" was as false about it then as it would be now.
     const here = makeProject('here');
     const elsewhere = makeProject('elsewhere');
@@ -302,7 +302,7 @@ describe('what the sentence is careful not to say', () => {
     // The other half of the same honesty: from inside this session, "held by
     // another project" and "never minted" are the same observation, so they get
     // the same answer. What the answer must not do is imply the second is the
-    // first — a caller told to look elsewhere for an id that was never minted
+    // first: a caller told to look elsewhere for an id that was never minted
     // would go looking forever.
     const project = makeProject('only');
     const session = openOn(project);
@@ -340,7 +340,7 @@ describe('what the sentence is careful not to say', () => {
   it('a project directory holding a newline cannot forge a second refusal', () => {
     // The sentence names a PATH, and a directory name may hold a newline. Without
     // the guard this reply came back as two lines, the second a complete, correctly
-    // shaped `Refused (UNKNOWN_TASK): …` about an id nobody asked about — the exact
+    // shaped `Refused (UNKNOWN_TASK): …` about an id nobody asked about: the exact
     // claim this whole file exists to stop the product making. The name need not be
     // the operator's doing: a checkout or an archive can carry one, and the host
     // announces whatever folder is open.
@@ -351,7 +351,7 @@ describe('what the sentence is careful not to say', () => {
     const refused = runNextActionsTool(session, { id: NOWHERE });
     if (refused.ok) throw new Error('expected a refusal');
     expect(refused.message).not.toContain('\n');
-    // The path is still there, and still recognisable — collapsed, not dropped.
+    // The path is still there, and still recognisable: collapsed, not dropped.
     expect(refused.message).toContain('proj Refused');
     // And the reply the server builds around it stays ONE refusal.
     expect(`Refused (${refused.code}): ${refused.message}`.split('\n')).toHaveLength(1);
@@ -359,7 +359,7 @@ describe('what the sentence is careful not to say', () => {
     closeSession(session);
   });
 
-  it('a task in the session’s OWN project is still found — the fix refuses nothing new', () => {
+  it('a task in the session’s OWN project is still found: the fix refuses nothing new', () => {
     // The refusal's reach, from the other side: rewording it must not widen it.
     const project = makeProject('proj');
     const session = openOn(project);

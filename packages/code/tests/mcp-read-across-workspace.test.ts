@@ -2,31 +2,31 @@
  * What an id-keyed read looks in when the workspace holds several projects.
  *
  * A write already says which project it belongs to. A read by ID did not: the three
- * that take an id — `read_record`, `audit_timeline`, `audit_refs` — asked the ONE
+ * that take an id (`read_record`, `audit_timeline`, `audit_refs`) asked the ONE
  * project the cascade landed on and answered about the world. So the question the
- * whole sequence exists for, *"have I normalized this in all three?"* — which is
- * `audit_refs --direction in` over the origin's id — came back with the edges of one
+ * whole sequence exists for, *"have I normalized this in all three?"* (which is
+ * `audit_refs --direction in` over the origin's id) came back with the edges of one
  * project and nothing saying the other two were never opened.
  *
  * The boundary of a project is not a property of these three questions. An id is
  * minted once and lives in one tree, so "what does this say" has one answer wherever
  * it was written; the entities that point AT something are exactly the ones in the
  * other projects; and a history does not end where a repository does. That is the
- * whole rule, and it is not a flag — the same rule the surface already applies to
+ * whole rule, and it is not a flag: the same rule the surface already applies to
  * `skills` (every tree, because a capability is not scoped) and to `work` (one,
  * because work is).
  *
  * What is tested here:
  *
  *   1. ONE test per read, so a union lost in one of the three fails naming that one;
- *   2. the GLOBAL tree — which every project resolves to the same path — is read
+ *   2. the GLOBAL tree, which every project resolves to the same path, is read
  *      ONCE, whatever the project count;
  *   3. an entity of another project is FOUND (it used to be `does not exist`), and
  *      the answer says WHICH project it came from;
  *   4. an id no project holds is still refused, in a sentence that names where the
  *      read looked and never claims the id exists;
  *   5. `truncated` stays true in both directions when the cut is by project;
- *   6. a ONE-project workspace does not regress — same nodes, same edges, same
+ *   6. a ONE-project workspace does not regress: same nodes, same edges, same
  *      history, and the label present rather than the shape changing with a count.
  *
  * Every fact is written through the write tools and read back through the read
@@ -110,7 +110,7 @@ afterEach(() => {
 
 /**
  * The shape this read exists for: one fix, normalized into two other codebases, each
- * of them recording the normalization in ITS OWN record — which is what the routed
+ * of them recording the normalization in ITS OWN record, which is what the routed
  * write made possible and what left the reading behind.
  */
 function normalizedInThree(): {
@@ -171,7 +171,7 @@ describe('the three id-keyed reads span every project of the workspace', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('unreachable');
 
-    // Its own capture, plus the two links whose target it is — one per project.
+    // Its own capture, plus the two links whose target it is: one per project.
     expect(result.value.map((entry) => entry.kind)).toEqual([
       'memory.captured',
       'knowledge.linked',
@@ -200,7 +200,7 @@ describe('the three id-keyed reads span every project of the workspace', () => {
 
   it('sums two trees of the SAME role from different projects, and tells them apart', () => {
     // The shape the source list documents: two `public` trees are two repositories,
-    // not one read twice. Same scope, same role, two projects — the answer has to hold
+    // not one read twice. Same scope, same role, two projects: the answer has to hold
     // both edges AND say which is which, or a reader cites one project as the other.
     const first = makeProject('first');
     const second = makeProject('second');
@@ -260,7 +260,7 @@ describe('the global tree is read once, whatever the project count', () => {
       'memory.captured',
       'knowledge.linked',
     ]);
-    // The machine-global tree belongs to no project, so it is labelled with none —
+    // The machine-global tree belongs to no project, so it is labelled with none,
     // which is what distinguishes it from a fact that came from one.
     expect(result.value.every((entry) => entry.project === undefined)).toBe(true);
     expect(result.value.every((entry) => entry.scope === 'global')).toBe(true);
@@ -281,11 +281,11 @@ describe('an id no project holds is refused, and the refusal says where it looke
     expect(refused.message).toContain(`"${first}"`);
     expect(refused.message).toContain(`"${second}"`);
     expect(refused.message).toContain('machine-global tree');
-    // And it never claims the id does not exist — only that this read did not find it.
+    // And it never claims the id does not exist, only that this read did not find it.
     expect(refused.message).not.toContain('does not exist');
 
     // The sentence is held to the SEARCH, not asserted beside it: a record in the
-    // second project — one the sentence names — is found by the same session. The
+    // second project, one the sentence names, is found by the same session. The
     // claim and the reach are two edits, and this is what keeps one from outliving
     // the other.
     const held = memoryIn(session, second);
@@ -327,7 +327,7 @@ describe('an id no project holds is refused, and the refusal says where it looke
 describe('a cut by PROJECT still declares itself', () => {
   it('says truncated when the next hop lives in another project, and not when it does not', () => {
     // The chain crosses a project boundary at every hop, so the depth cap cuts on the
-    // project axis. An answer cut there has to say so — the failure the walk used to
+    // project axis. An answer cut there has to say so: the failure the walk used to
     // have was `truncated: false` over a graph it had not finished.
     const here = makeProject('here');
     const there = makeProject('there');
@@ -429,7 +429,7 @@ function replyText(result: unknown): string {
 describe('over the real transport', () => {
   it('carries the project as DATA, so a directory holding a newline forges nothing', () => {
     // The answer is a JSON payload, not a line, so the project travels through no
-    // `oneLine` — and must not: collapsing it would report a directory the host never
+    // `oneLine`, and must not: collapsing it would report a directory the host never
     // named. What makes that safe is the encoding, and this is the proof: a path with
     // a newline in it round-trips through the reply exactly, inside a field nothing in
     // it can escape. The REFUSAL is the opposite case, and is one line (above).
@@ -441,7 +441,7 @@ describe('over the real transport', () => {
     const result = runReadRecordTool(session, { id: held });
     if (!result.ok) throw new Error('unreachable');
     const payload = JSON.stringify(result.value);
-    // Parsed back, the field is the directory as it is on disk — one field, one value.
+    // Parsed back, the field is the directory as it is on disk: one field, one value.
     expect((JSON.parse(payload) as { project: string }).project).toBe(project);
     // And the newline never reached the text: it is escaped inside the string.
     expect(payload).toContain('\\n');

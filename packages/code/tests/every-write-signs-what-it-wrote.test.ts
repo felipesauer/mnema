@@ -79,14 +79,14 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *
  * WHAT GOES WRONG WITHOUT IT is quiet, which is why nothing had caught it. A write
  * that forgets its checkpoint still succeeds: the event lands, the reply says so, the
- * chain still reads. What changes is the record's LEVEL — the events sit above the
+ * chain still reads. What changes is the record's LEVEL: the events sit above the
  * last checkpoint, so the tree drops from `fully-signed` to
  * `signed-through-last-checkpoint`, and it says so only to somebody who runs `verify`
  * and reads the word. The proof the product sells is that a fact is signed; a fact
  * resting on the hash chain alone is a fact whose signature nobody made.
  *
  * IT WAS NOT HYPOTHETICAL. Building this guard found two live paths on the MCP
- * surface — the one an agent actually uses — and both were measured before they were
+ * surface, the one an agent actually uses, and both were measured before they were
  * fixed:
  *
  *   - `closeSession` appended a `run.ended` for every run the connection opened and
@@ -96,12 +96,12 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *   - `ensureRun` appended `run.started` (and, on a fresh tree, the founding under it)
  *     and left both to whatever the tool did next. When the tool was REFUSED it
  *     checkpointed nothing by design, so a session whose first call was refused left
- *     the tree at `hash-chain-only` with 2 events uncovered — a record that has never
+ *     the tree at `hash-chain-only` with 2 events uncovered: a record that has never
  *     been signed at all.
  *
  * THE CADENCE THIS GUARDS IS ONE SIGNATURE PER ACT OF WRITING, and it is not new: it
  * is what 33 writing paths already did by remembering to. Measured on the binary over
- * 30 writes to a fresh record — 32 events, 31 checkpoints, 1.03 events per
+ * 30 writes to a fresh record: 32 events, 31 checkpoints, 1.03 events per
  * checkpoint. This file does not change it; it makes it a rule instead of a habit.
  *
  * So the tests come in two halves, and neither is sufficient alone:
@@ -110,8 +110,8 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *      append must also reach a checkpoint. This is the half that catches a write
  *      path added TOMORROW, which no behavioural test can, because a test cannot
  *      drive an operation nobody has written yet. Both ends of it are derived from
- *      the source — the operations that append are found from the append door, not
- *      listed — so the guard cannot be made vacuous by renaming an operation.
+ *      the source (the operations that append are found from the append door, not
+ *      listed), so the guard cannot be made vacuous by renaming an operation.
  *   2. THE BEHAVIOURAL SWEEP. Every one of those paths is driven for real, in its own
  *      sandbox, and after each the whole workspace is asked the product's own
  *      question: how many events rest above a checkpoint? The answer must be zero,
@@ -127,7 +127,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *   - THE SOURCE GUARD READS THAT A CHECKPOINT IS WRITTEN, NEVER THAT IT RUNS. A
  *     signature behind a condition that is never true reads exactly like one that
  *     signs. Measured: inverting `recordServices`'s `appended > 0` lights the
- *     behavioural half and ONE test, and the source half stays green — which is the
+ *     behavioural half and ONE test, and the source half stays green, which is the
  *     division of labour between the two halves rather than a hole, and the reason
  *     neither is delivered alone.
  *   - A path that signs through a LOCAL HELPER instead of on its own line. That is
@@ -146,7 +146,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *     that fail rather than pass.
  *   - The CLI's virgin-tree case. THIS SAID it was deliberate and pinned: "a CLI write
  *     refused on a tree nobody ever wrote to leaves the founding behind unsigned".
- *     Measured on the binary, it was not only a tree with no `init` — a key new to a
+ *     Measured on the binary, it was not only a tree with no `init`: a key new to a
  *     project another key founded left that unsigned founding too, and `verify
  *     --require=signed` failed on the project. The append door asks before the founding
  *     now, so there is no such founding to sign (`every-append.test.ts`, the virgin-tree
@@ -157,7 +157,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  */
 
 // ---------------------------------------------------------------------------
-// Half 1 — the source guard
+// Half 1: the source guard
 // ---------------------------------------------------------------------------
 
 const HERE = join(import.meta.dirname, '..');
@@ -221,7 +221,7 @@ function sourceFiles(dir: string): string[] {
  *
  * Required, not tidiness. This codebase writes long doc-comments that NAME the
  * operations they describe, and a scanner reading them would report a write path in
- * every file that merely explains one — the failure mode is a guard that accuses the
+ * every file that merely explains one: the failure mode is a guard that accuses the
  * innocent, which this bench has already had once (a sweep that matched from one
  * string literal into the next and accused its own file). Newlines survive so the
  * function boundaries below still line up with the real ones.
@@ -281,7 +281,7 @@ interface Fn {
 /**
  * The top-level function declarations of a file.
  *
- * A declaration starts at column 0 and ends at the first line that is exactly `}` —
+ * A declaration starts at column 0 and ends at the first line that is exactly `}`:
  * true of every function in these two packages because the formatter says so. It is
  * a real limit and it is declared in this file's doc; the pinned counts are what turn
  * a violation of it into a failure instead of a silence.
@@ -308,7 +308,7 @@ function calls(body: string, name: string): boolean {
 }
 
 /**
- * Every function of the core that reaches a writer's append — directly through the
+ * Every function of the core that reaches a writer's append: directly through the
  * door (`appendEvent`/`appendEvents`), through the one deliberate exception that
  * calls the writer itself (the founding), or through another operation that does.
  *
@@ -366,12 +366,12 @@ function surfaceWritePaths(operations: ReadonlySet<string>): WritePath[] {
 const OPERATIONS = coreOperationsThatAppend();
 const PATHS = surfaceWritePaths(OPERATIONS);
 
-describe('the source guard — no write path can skip the signing', () => {
+describe('the source guard: no write path can skip the signing', () => {
   it('reads its own instrument correctly before it accuses anything', () => {
     // The instrument gets its own case, because an instrument that cannot say it
     // broke is worse than none. Three things are checked on a fixture nobody else
     // touches: a call inside a line comment is not a call, a call inside a block
-    // comment is not a call, and a call inside a string is not a call — while a real
+    // comment is not a call, and a call inside a string is not a call, while a real
     // one in the same file still is.
     const fixture = [
       'function innocent() {',
@@ -412,13 +412,13 @@ describe('the source guard — no write path can skip the signing', () => {
     expect(PATHS).toHaveLength(SURFACE_WRITE_PATHS);
     // THE RULE. A path listed here appended an event and returned without signing it,
     // which leaves the record below `fully-signed` with nothing coming back for it.
-    // Sign before you return — `writer.checkpoint()` on the context you wrote through.
+    // Sign before you return: `writer.checkpoint()` on the context you wrote through.
     expect(PATHS.filter((path) => !path.signs).map((path) => path.at)).toEqual([]);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Half 2 — the behavioural sweep
+// Half 2: the behavioural sweep
 // ---------------------------------------------------------------------------
 
 const upcasters = catalogUpcasters();
@@ -475,7 +475,7 @@ function otherMachine(name: string): DiscoveryEnv {
 }
 
 /**
- * Merges a tail this machine did not write into a tree, the way an offline copy is —
+ * Merges a tail this machine did not write into a tree, the way an offline copy is:
  * the only kind of tail a prune waiver may ever name.
  */
 function mergeAForeignTail(into: string): string {
@@ -517,7 +517,7 @@ interface Driven {
   readonly drive: () => void | Promise<void>;
 }
 
-/** A path the sweep does not drive, and the reason — the honest half of the list. */
+/** A path the sweep does not drive, and the reason: the honest half of the list. */
 const NOT_DRIVEN: Readonly<Record<string, string>> = {};
 
 /**
@@ -880,7 +880,7 @@ describe('every write path leaves the record fully signed', () => {
    * The MCP surface, driven over its own project, in order.
    *
    * It is the surface an agent actually uses and the surface both defects were on, so
-   * the session's own lifecycle — opening a run, closing the connection — has rows of
+   * the session's own lifecycle (opening a run, closing the connection) has rows of
    * its own rather than being treated as plumbing under the tools.
    */
   function mcpSweep(): readonly Driven[] {
@@ -909,7 +909,7 @@ describe('every write path leaves the record fully signed', () => {
         // this row proves is that the RUN is signed and not that some later write
         // happened to cover it. The door prepares it; the write's first fact writes it,
         // at the point every operation founds (`ensureFounded`), under the hold every tool
-        // takes — and nothing is appended after, so nothing else signs.
+        // takes, and nothing is appended after, so nothing else signs.
         at: 'mcp/session.ts:ensureRun',
         drive: () => {
           const { ctx } = openWrite(on(), 'public');
@@ -1082,7 +1082,7 @@ describe('every write path leaves the record fully signed', () => {
 
   it('sweeps every path the source guard found, or says why not', () => {
     // The completeness check, and the reason the two halves share one key. Without it
-    // the sweep is a list, and a list is what nobody remembers to extend — the exact
+    // the sweep is a list, and a list is what nobody remembers to extend: the exact
     // failure this whole file exists against.
     const driven = [...cliSweep(), ...mcpSweep()].map((row) => row.at);
     expect(new Set(driven).size, 'a path is driven twice').toBe(driven.length);
@@ -1144,7 +1144,7 @@ describe('every write path leaves the record fully signed', () => {
 
   it('keeps the cadence at one signature per act of writing', () => {
     // The non-regression the delivery owes: this is what the cadence WAS before any
-    // of it, measured on the binary (30 writes to a fresh record — 32 events, 31
+    // of it, measured on the binary (30 writes to a fresh record: 32 events, 31
     // checkpoints, 1.03 events per checkpoint), and it must not have moved. Counted
     // off the files rather than through `verify`, because what is being pinned is the
     // ratio and not the level. `init` writes one event more since it declares the backup
@@ -1274,8 +1274,8 @@ interface Trap {
  * its two seconds and is refused, and the reply says "this write was not appended" about a fact
  * that is on the chain. The timing of a real race cannot be scheduled in a test, so this puts a
  * LIVE holder there instead: whenever a hold ends with events of this writer still unsigned, the
- * trap writes the tail's lock file naming this process — a pid that answers, so no waiter may
- * break it — exactly as the other session would have held it.
+ * trap writes the tail's lock file naming this process (a pid that answers, so no waiter may
+ * break it) exactly as the other session would have held it.
  *
  * A path that signs inside the hold that wrote never trips it, and a path that does not trips it
  * every time, whatever the machine's speed.

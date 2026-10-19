@@ -11,7 +11,7 @@
  * that costs: an agent that went to the record on its own was answered out of a
  * project it had never mentioned (a stray `.mnema/` above home, first among the
  * roots), and the emptiness of that record read as "nothing was decided here". The
- * answer was WRONG and it was LOAD-BEARING — it decided which of two systems to fix.
+ * answer was WRONG and it was LOAD-BEARING: it decided which of two systems to fix.
  *
  * So the operator can name the project, and the tests here are about the two halves
  * of what naming it must mean:
@@ -19,7 +19,7 @@
  *   - it WINS over the roots, including when a root would have resolved to a project
  *     of its own (the originating case); and
  *   - being told wrong is a REFUSAL, not a fallback. A path that is no project, or a
- *     path that is relative, stops the session — because "I said which project and
+ *     path that is relative, stops the session, because "I said which project and
  *     you served another in silence" is the defect, and continuing the cascade IS
  *     that defect. The refusal lands before anything is written: not one event, not
  *     the machine's identity.
@@ -69,7 +69,7 @@ function makeFolder(name: string): string {
 
 /**
  * Connects a real SDK client to a server built over `configProject`, announcing
- * `roots` — the handshake as a host performs it.
+ * `roots`: the handshake as a host performs it.
  */
 async function connect(
   roots: readonly string[],
@@ -124,7 +124,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('mnema mcp --project — the project the server serves', () => {
+describe('mnema mcp --project: the project the server serves', () => {
   it('serves the named project even when a root would have resolved to another', async () => {
     // The originating shape, exactly: the host announces a folder that IS a project
     // (a stray `.mnema/` the operator forgot about), and the work is somewhere else.
@@ -145,7 +145,7 @@ describe('mnema mcp --project — the project the server serves', () => {
 
   it('names the configured project among the workspace projects, unannounced by any root', async () => {
     // The list is what the seven union reads walk and what a write may name, and the
-    // configured project is regularly in NO root — that is the point of the flag. A
+    // configured project is regularly in NO root, that is the point of the flag. A
     // session that served it while listing only the roots would be unable to name
     // the very project it is writing to.
     const stray = makeProject('stray');
@@ -180,17 +180,17 @@ describe('mnema mcp --project — the project the server serves', () => {
     const { client, close } = await connect([pathToFileURL(stray).href], typo);
     const answer = await client.callTool({ name: 'bootstrap', arguments: {} });
     expect(answer.isError).toBe(true);
-    // The path AS CONFIGURED — the string to go and find in the host's config.
+    // The path AS CONFIGURED: the string to go and find in the host's config.
     expect(allText(answer)).toContain(`the configured project "${typo}" is not a project`);
     expect(allText(answer)).toContain('will not serve another instead');
     // The root that WOULD have won is untouched, and so is the machine: the refusal
     // fires while the trees are being resolved, before the anchor is read, which is
-    // the first thing that reaches for a key — and mints one where there is none, so
+    // the first thing that reaches for a key, and mints one where there is none, so
     // an absent `~/.mnema` is the evidence. (It said "opens a writer", which it did
     // until asking stopped opening one; the mint is what it still does.)
     expect(eventsIn(stray)).toBe(0);
     expect(existsSync(join(sandbox, 'home', '.mnema'))).toBe(false);
-    // The operator's own channel says it too — the host's log, where a session that
+    // The operator's own channel says it too: the host's log, where a session that
     // never opened is otherwise indistinguishable from one that opened quietly.
     expect(logged.join('\n')).toContain('could not open session at initialize');
     await close();

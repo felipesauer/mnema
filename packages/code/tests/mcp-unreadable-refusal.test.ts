@@ -4,7 +4,7 @@
  *
  * This is the second half of the door, and the half the agent lives on. The core
  * refuses the write and hands back a typed refusal; the MCP tools have to relay it
- * as DATA — code and message — so the server shapes it into a tool error the agent
+ * as DATA, code and message, so the server shapes it into a tool error the agent
  * reads and retries from. Anything that reached the agent as a thrown engine error
  * would arrive as an SDK failure with no field named and nothing to fix, which this
  * series has already recorded as the worse outcome.
@@ -15,7 +15,7 @@
  *
  * Each case asserts three things, because two of them would let the defect back:
  *   1. the reply is a refusal with `UNREADABLE_EVENT` and NAMES the field;
- *   2. nothing was appended — read off the tree's own events, not off the reply;
+ *   2. nothing was appended: read off the tree's own events, not off the reply;
  *   3. the record still READS afterwards, which is the whole point: the entry that
  *      was kept out is precisely the one that would have made every later read of
  *      this project fail, forever.
@@ -64,7 +64,7 @@ beforeEach(() => {
   // longer enough, because the tree a write lands in follows its kind: a memory reads
   // the author and goes private, and everything refused below is routed by its kind to
   // the tree that travels. Warming both leaves the counts measuring the refusal and
-  // nothing else — and it is also the state a real session is in by the time an agent
+  // nothing else, and it is also the state a real session is in by the time an agent
   // gets an argument wrong.
   const warmPrivate = runCaptureMemory(session, { content: 'the record already exists' });
   expect(warmPrivate.ok).toBe(true);
@@ -146,7 +146,7 @@ describe('the agent surface relays the refusal instead of throwing', () => {
   });
 
   it('refuses an empty handoff, including the task that becomes the SUBJECT', () => {
-    // The task is the envelope's subject, not a payload field — so a check written
+    // The task is the envelope's subject, not a payload field, so a check written
     // over payload fields only would have let this one through, and did.
     for (const [input, field] of [
       [{ task: '', from: 'a', to: 'b' }, 'at subject'],

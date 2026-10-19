@@ -8,7 +8,7 @@
  *
  * The first used to be false. The run opened as soon as the handshake finished, so a
  * client that attached and called nothing still left an identity founding and a run
- * in whichever project the cascade picked — a record of a session nobody worked in.
+ * in whichever project the cascade picked: a record of a session nobody worked in.
  * The second was never true: the line named the agent, the anchor, the scope and the
  * run, and never the project, so a cascade that walked up into the wrong repository
  * did so invisibly. The third is the half the name alone cannot carry: one project
@@ -81,8 +81,8 @@ const NO_RUN_NOTE = 'has not opened a run of its own yet';
 /**
  * Asserts the reply carries the note as its OWN block, and returns the payload.
  *
- * Every read that answers about runs makes the same two promises — the note is
- * there, and it is NOT in the JSON — so those live here. What each read answers
+ * Every read that answers about runs makes the same two promises (the note is
+ * there, and it is NOT in the JSON), so those live here. What each read answers
  * WITH is its own, so the payload goes back to the caller to be named there: that
  * is what keeps one test speaking for one call site instead of for the sentence.
  *
@@ -102,7 +102,7 @@ function payloadBesideTheNote(reply: unknown, blocks = 2): unknown {
   return JSON.parse(payload);
 }
 
-/** The kinds in a project's three trees, flattened — what the session left behind. */
+/** The kinds in a project's three trees, flattened: what the session left behind. */
 function kindsLeftBy(project: string): string[] {
   const trees = resolveTrees(project, env);
   return [trees.projectPublic as string, trees.projectPrivate as string, trees.global].flatMap(
@@ -149,8 +149,8 @@ describe('a connection that only reads', () => {
     // The run used to be appended by a callback nobody awaited, so the count right
     // after a call was not the count a moment later. Give the old shape time to show.
     //
-    // The connection's close is not reached here — this pair has no stdin to end and
-    // no process to signal — and what a close leaves behind is the subject of
+    // The connection's close is not reached here (this pair has no stdin to end and
+    // no process to signal) and what a close leaves behind is the subject of
     // `mcp-session-close.test.ts`, which drives that seam directly.
     await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -159,7 +159,7 @@ describe('a connection that only reads', () => {
 
   // FOUR reads list the actor's runs, so four of them carry the note, and there is
   // a test per read. They are the same sentence, so what tells them apart is the
-  // PAYLOAD each one answers with — `work`/`skills`/`decisions` for bootstrap, a bare
+  // PAYLOAD each one answers with: `work`/`skills`/`decisions` for bootstrap, a bare
   // `openRuns` for focus, a `lastRun` for resume, a `verdict` for guard. Naming the
   // payload is what makes a missing note fall on the read that lost it: dropping
   // the note from `bootstrap` cannot be absorbed by the `focus` test, and the
@@ -168,7 +168,7 @@ describe('a connection that only reads', () => {
   // Not a loop over the four: a single parametrized test would report one failure
   // for four broken call sites, and which one broke is the answer worth having.
 
-  it('is told by `bootstrap` — the opening read — that it has no run of its own', async () => {
+  it('is told by `bootstrap`, the opening read, that it has no run of its own', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
 
@@ -206,7 +206,7 @@ describe('a connection that only reads', () => {
     const roots = [pathToFileURL(project).href];
 
     // A run that belongs to an EARLIER connection, so resume's answer here is not
-    // empty — it names a real run. That is when the note earns its place: the run
+    // empty: it names a real run. That is when the note earns its place: the run
     // is the actor's, from elsewhere, and without the sentence the reply reads as
     // "you are in the middle of this".
     const first = await connect(roots);
@@ -225,11 +225,11 @@ describe('a connection that only reads', () => {
     await second.client.close();
   });
 
-  it('is told by `guard` too — its verdict travels with the asker’s focus', async () => {
+  it('is told by `guard` too: its verdict travels with the asker’s focus', async () => {
     const project = makeProject('proj');
     const roots = [pathToFileURL(project).href];
 
-    // A verdict needs a task to be about, and creating one is a WRITE — so it
+    // A verdict needs a task to be about, and creating one is a WRITE, so it
     // happens in an earlier connection. This one only asks, which is the whole
     // point: `guard` is a dry-run, so it is a read that can be the ONLY thing a
     // session does, and its reply says "here is what you are in the middle of".
@@ -252,13 +252,13 @@ describe('a connection that only reads', () => {
     await second.client.close();
   });
 
-  it('stops being told it once the write opens the run — in all four reads', async () => {
+  it('stops being told it once the write opens the run: in all four reads', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
 
     // The other half of the same honesty, and the one a note appended
     // unconditionally would break: a session that HAS a run must not be told it
-    // has none. One test for the condition, not four — a broken condition is a
+    // has none. One test for the condition, not four: a broken condition is a
     // single fact about `withRunState`, not a fact about any one read.
     const created = await client.callTool({
       name: 'create_task',
@@ -266,7 +266,7 @@ describe('a connection that only reads', () => {
     });
     const id = /\(([^)]+)\)/.exec(blocksOf(created)[0]?.text ?? '')?.[1] as string;
 
-    // `bootstrap` keeps its own second block — where this session landed is true
+    // `bootstrap` keeps its own second block, where this session landed is true
     // whether or not a run is open, and it is the note alone that must go.
     for (const { call, blocks: expected } of [
       { call: { name: 'bootstrap' }, blocks: 2 },
@@ -292,7 +292,7 @@ describe('a connection that only reads', () => {
     await first.client.close();
 
     // A later connection asks the opening question. It used to be answered with the
-    // empty run this very connection had just opened at the handshake — the reading a
+    // empty run this very connection had just opened at the handshake: the reading a
     // session begins with, pointing at nothing.
     const second = await connect(roots);
     const reply = await second.client.callTool({ name: 'resume' });
@@ -332,13 +332,13 @@ describe('the first write opens the run', () => {
     await client.close();
   });
 
-  it('leaves a chain that verifies — after the first write, and after the tenth', async () => {
+  it('leaves a chain that verifies: after the first write, and after the tenth', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
     const privateRoot = join(project, PROJECT_DIR, 'private');
 
     // The order inside the door is what this measures. Opening the run at the point
-    // of USE — after the write's own context exists — puts a second writer on the
+    // of USE, after the write's own context exists, puts a second writer on the
     // tree and the write lands with a stale predecessor: same events, same count,
     // and a chain that no longer verifies.
     await client.callTool({ name: 'capture_memory', arguments: { content: 'the first' } });
@@ -350,7 +350,7 @@ describe('the first write opens the run', () => {
     const verdict = verify(privateRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
     expect(verdict.fullySigned).toBe(true);
-    // Ten writes, one run — the run belongs to the connection, not to the fact.
+    // Ten writes, one run: the run belongs to the connection, not to the fact.
     expect(eventsIn(privateRoot).filter((e) => e.kind === 'run.started')).toHaveLength(1);
 
     await client.close();
@@ -372,7 +372,7 @@ describe('the first write opens the run', () => {
     const privateRoot = join(publicRoot, 'private');
     expect(eventsIn(publicRoot).map((e) => e.kind)).toContain('memory.captured');
     expect(eventsIn(publicRoot).filter((e) => e.kind === 'run.started')).toHaveLength(1);
-    // And the private tree took nothing at all — not the fact, not a run for it.
+    // And the private tree took nothing at all, not the fact, not a run for it.
     expect(eventsIn(privateRoot).filter((e) => e.kind === 'run.started')).toHaveLength(0);
     // The fact cites the run of its OWN tree.
     const captured = eventsIn(publicRoot).find((e) => e.kind === 'memory.captured');
@@ -445,7 +445,7 @@ describe('the session says how many projects it chose from', () => {
   it('the log counts them, and counts the one it walked up to', async () => {
     // The workspace the count exists for: a folder opened inside one project, and
     // another project beside it. The line names where the session landed and says
-    // it was one of two — which is the whole of what the server honestly knows.
+    // it was one of two, which is the whole of what the server honestly knows.
     const legacy = makeProject('legacy');
     const notes = join(legacy, 'notes');
     mkdirSync(notes, { recursive: true });
@@ -499,7 +499,7 @@ describe('the session says how many projects it chose from', () => {
     );
 
     // A FACT and not an alarm. This fires in every workspace with two folders open,
-    // so a caution here would be a caution in most sessions — and one that constant
+    // so a caution here would be a caution in most sessions, and one that constant
     // is one nobody reads. The server also cannot know which project was meant, so
     // there is nothing to warn ABOUT that would be true.
     for (const alarm of [
@@ -575,7 +575,7 @@ describe('the session says how many projects it chose from', () => {
 describe('the log never carries the announced name', () => {
   const SECRET = 'AKIAIOSFODNN7EXAMPLE';
 
-  it('holds no credential a client put in its own name — before or after a write', async () => {
+  it('holds no credential a client put in its own name: before or after a write', async () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href], `agent-${SECRET}`);
     await client.callTool({ name: 'focus' });
@@ -590,8 +590,8 @@ describe('the log never carries the announced name', () => {
     await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact' } });
 
     // And no run line is written at all, because no run opened. This case used to
-    // assert the other outcome — "once the run exists the agent IS named — as the
-    // chain recorded it", `which=agent-<SECRET:aws-access-key>` — and the premise
+    // assert the other outcome ("once the run exists the agent IS named — as the
+    // chain recorded it", `which=agent-<SECRET:aws-access-key>`) and the premise
     // under that was that the chain would record such an agent. It no longer does:
     // `which` is a name, so the write that would have opened the run is refused and
     // the log has nothing to name. The absence is asserted TOGETHER with the presence

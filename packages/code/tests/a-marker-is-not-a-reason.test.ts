@@ -1,5 +1,5 @@
 /**
- * A MARKER THE PRODUCT PRINTS WHERE A REASON GOES IS REFUSED AS ONE — every marker, read off the
+ * A MARKER THE PRODUCT PRINTS WHERE A REASON GOES IS REFUSED AS ONE: every marker, read off the
  * product's own sources and pages rather than off a list.
  *
  * WHAT WAS WRONG. The refusal of a key the record proves in two identities hands a person
@@ -8,8 +8,8 @@
  * recorded as the reason, permanently. `<why>` has letters, so "does it state something" could
  * not see it.
  *
- * WHAT IS CHECKED. Every marker the product writes as the value of a reason flag — in a string of
- * its source, a help text, or a page it publishes — is collected here by the flag it follows, and
+ * WHAT IS CHECKED. Every marker the product writes as the value of a reason flag (in a string of
+ * its source, a help text, or a page it publishes) is collected here by the flag it follows, and
  * each one is typed at the binary's door as the reason of a move that requires one. Each must be
  * refused `NOT_A_REASON`, and the move must not land. The door knows markers by their SHAPE
  * (`<` a lowercase word `>`, `a-reason-states-something.ts`), so a marker a page prints tomorrow
@@ -31,7 +31,7 @@ const REASON_FLAGS = ['--reason', '--note', '--feedback', '--alternatives'] as c
 /** A marker written as the value of a reason flag: `--reason "<why>"`, `--note <text>`. */
 const WRITTEN = new RegExp(`(?:${REASON_FLAGS.join('|')})[ =]+["']?(<[^<>\\n"']+>)`, 'g');
 
-/** Every tracked file that is product source or a page — tests are the reading, not the read. */
+/** Every tracked file that is product source or a page: tests are the reading, not the read. */
 function theProductsText(): readonly string[] {
   const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf-8' }).split('\n');
   return tracked.filter(

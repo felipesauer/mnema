@@ -2,8 +2,8 @@
  * A RETIRED AGENT KEY WITH NO TAIL IS CALLED RETIRED, NOT "ENROLLED".
  *
  * The census sentence for a committed key with no tail that the record enrols as an agent says
- * "the record enrols it". Once `key revoke --agent` has retired the key that is no longer true —
- * the key is a member of nothing — and the sentence says that it was retired instead, in the
+ * "the record enrols it". Once `key revoke --agent` has retired the key that is no longer true
+ * (the key is a member of nothing) and the sentence says that it was retired instead, in the
  * private and the global tree as in the committed one.
  */
 

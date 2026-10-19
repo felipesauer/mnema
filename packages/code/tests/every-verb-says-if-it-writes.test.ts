@@ -1,5 +1,5 @@
 /**
- * Every verb says whether it can change the record — and the record says whether it told
+ * Every verb says whether it can change the record, and the record says whether it told
  * the truth.
  *
  * The thing built on this surface next was a session that offers a caller only the verbs
@@ -8,8 +8,8 @@
  * remembered. So the classification had to exist, and it was looked for before it was
  * declared. It is not in the code:
  *
- *   - `grep writer` over the adapters names FIFTEEN files, and six of them are reads —
- *     `show`, `timeline`, `resume`, `brief`, `audit` — because
+ *   - `grep writer` over the adapters names FIFTEEN files, and six of them are reads
+ * (    `show`, `timeline`, `resume`, `brief`, `audit`), because
  *     the word appears in their PROSE. The usual trap on this bench is a phrase that
  *     under-counts; this one over-counts, which is worse, because the extra names look
  *     like the answer.
@@ -19,7 +19,7 @@
  *     that founds an identity. THIS SAID ELEVEN, which was true the day it was written
  *     and stopped being true as the surface grew; the figure was then copied into
  *     `record-effect.ts`, where it was wrong on arrival. Fourteen written sites serve
- *     fifteen command paths, and neither number is counted by eye any more —
+ *     fifteen command paths, and neither number is counted by eye any more:
  *     `the-refused-run-is-refused-everywhere.test.ts` derives the paths that ask from the
  *     program and reddens when the set changes.
  *
@@ -44,20 +44,20 @@
  * one verb writes nothing by hashing the whole sandbox, and that is the stronger
  * statement. This paragraph said it was "only available to a verb that opens no cache",
  * because "most reads rebuild the projection cache, which writes a file". That premise was
- * false when it was written — the projection was held in memory — and the tools' guard, which
+ * false when it was written (the projection was held in memory) and the tools' guard, which
  * does digest its whole sandbox, finds no read that changes a path of it. IT IS TRUE OF THE
  * COMMAND LINE NOW (`CacheOptions.persist`): a read leaves `locks/projection.db`, and the
  * verbs whose digest covers the whole sandbox excuse that one file by its shape
  * (`support/the-cache-is-not-the-record.ts`) while
  * `the-record-is-kept-between-reads.test.ts` holds that it is the only thing a read adds.
  * What stands is the other half: the question this classification answers is
- * not "does it touch the disk" but "can this reach the record" — an event in a chain, or
- * the key material an identity is — and those two are what is counted here. Whether every
+ * not "does it touch the disk" but "can this reach the record" (an event in a chain, or
+ * the key material an identity is) and those two are what is counted here. Whether every
  * VERB also leaves its whole sandbox as it found it has not been measured.
  *
  * AND THE EXERCISE IS CHECKED FOR HAVING HAPPENED. A refused invocation writes nothing,
  * so a fixture that quietly stopped producing a valid id would leave every read passing
- * for the wrong reason — the shape that made ten cases of another guard green under
+ * for the wrong reason: the shape that made ten cases of another guard green under
  * mutation. So every exercise must exit zero, and the WRITES are measured too: the count
  * of verbs that appended something is asserted, and the ones that appended nothing are
  * declared one by one with the reason. That is what makes a pass mean the measurement can
@@ -70,11 +70,11 @@
  *   - `repl` is not exercised either, and this one is on the READ side, which is the
  *     side with the rule. It refuses without a terminal at both ends, so no invocation
  *     from a test process can reach its loop, and a row that ran it would be measuring a
- *     refusal — the shape this file already refuses everywhere else. Its claim to read
+ *     refusal: the shape this file already refuses everywhere else. Its claim to read
  *     is measured in `a-terminal-of-its-own.test.ts` instead, where the session is driven
  *     over a real record and what reached the chain is counted the same way: the
  *     measurement moved, it was not dropped.
- *   - The MCP tools are a second surface with the same rule and are not classified here —
+ *   - The MCP tools are a second surface with the same rule and are not classified here:
  *     they are classified THERE now, by the same two functions and the same type
  *     (`record-effect.ts`), and held to it by `every-tool-says-if-it-writes.test.ts`,
  *     which exercises each one and counts what reached the chain exactly as this file
@@ -84,10 +84,10 @@
  *     been one tool short since `rules_before_an_edit` was added. A count read off prose
  *     is not a count. They are still reached only through a server this surface's `mcp`
  *     verb starts, and that verb is declared a write, so a caller reading THESE
- *     declarations refuses the whole server in one — which is what a read-only session
+ *     declarations refuses the whole server in one, which is what a read-only session
  *     needs, and why this file's pass never depended on the tools being classified.
  *   - The declaration is per TOP-LEVEL verb. No group mixes a read with a write today,
- *     and the exercise runs the invocation the table names, not every subcommand — a read
+ *     and the exercise runs the invocation the table names, not every subcommand: a read
  *     group whose subcommand wrote would need a row of its own here.
  */
 
@@ -152,7 +152,7 @@ function verbsThat(effect: RecordEffect): string[] {
 // ---------------------------------------------------------------------------
 
 /**
- * A verb no invocation can exercise, and why — the marker, so the row still exists.
+ * A verb no invocation can exercise, and why: the marker, so the row still exists.
  *
  * THREE verbs carry it. Two, one on each side of the classification, share a reason: both
  * serve the surface for the length of a connection instead of doing a piece of work and
@@ -166,15 +166,15 @@ const CANNOT_BE_EXERCISED = Symbol('cannot-be-exercised');
 
 /** What the fixture hands an invocation: the values only a founded project can produce. */
 interface Fixture {
-  /** The identity `init` printed — what `--actor` takes. A `who` is derived, never typed. */
+  /** The identity `init` printed: what `--actor` takes. A `who` is derived, never typed. */
   readonly anchor: string;
-  /** A task the fixture created — what the reads that take an id are asked about. */
+  /** A task the fixture created: what the reads that take an id are asked about. */
   readonly task: string;
   /** The backup key `init` created, which `key revoke` retires. Named by the product. */
   readonly backupKey: string;
   /**
    * A tail this machine did not write, merged into the committed tree the way an
-   * offline copy is — the only kind of tail `tail prune` can name.
+   * offline copy is: the only kind of tail `tail prune` can name.
    *
    * A waiver may never name the tail it is written to, so the verb has no successful
    * invocation over a record holding one machine's tail alone. Every fixture gets one
@@ -183,9 +183,9 @@ interface Fixture {
    * directories in) costs one write here and keeps this interface total.
    */
   readonly foreignTail: string;
-  /** A memory the fixture captured — the note `retract` takes back. */
+  /** A memory the fixture captured: the note `retract` takes back. */
   readonly note: string;
-  /** The decision the fixture recorded — the rule `check declare` gives a check to. */
+  /** The decision the fixture recorded: the rule `check declare` gives a check to. */
   readonly rule: string;
 }
 
@@ -198,7 +198,7 @@ interface Exercise {
    *
    * `init` is the one verb whose write depends on this. Inside a project that already has
    * one it reports what is there and records nothing, so a mis-declaration of the verb
-   * that founds an identity would be the one the chain could not see — which was measured:
+   * that founds an identity would be the one the chain could not see, which was measured:
    * declaring `init` a read left the count table and the stale check red and this
    * measurement silent. It is typed where it founds.
    */
@@ -209,7 +209,7 @@ interface Exercise {
 type Invocation = Exercise | typeof CANNOT_BE_EXERCISED;
 
 /**
- * One real invocation per verb — the whole surface, exercised.
+ * One real invocation per verb: the whole surface, exercised.
  *
  * Every row succeeds, and that is asserted: a refusal writes nothing, so a row that
  * decayed into one would make its verb pass this guard for a reason that has nothing to
@@ -218,7 +218,7 @@ type Invocation = Exercise | typeof CANNOT_BE_EXERCISED;
  *
  * The table covers the WRITES as well as the reads, which is what lets the measurement
  * follow a re-classification: a verb wrongly declared a read is then EXERCISED, and the
- * events it appends accuse it — where a reads-only table would only report a missing row.
+ * events it appends accuse it, where a reads-only table would only report a missing row.
  * So each write's line is the one that RECORDS, not merely the one that is easiest: `key`
  * retires a key rather than printing a request, because a request records nothing and
  * would have left this verb's declaration unmeasured.
@@ -262,7 +262,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The one verb of this surface that would REACH SOMEBODY ELSE, and the row is chosen
   // so that it does not: `upgrade` over a record nothing has been asked about skips
   // every tail before a fetch is composed. `stamp` is the powerful member and it needs a
-  // calendar to answer, which a guard may not depend on — so what is measured here is
+  // calendar to answer, which a guard may not depend on, so what is measured here is
   // the group entering its own act and touching nothing, and `RECORDS_NOTHING` says the
   // rest out loud.
   witness: { argv: () => ['witness', 'upgrade'] },
@@ -273,12 +273,12 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
     argv: () => ['switch', 'off', 'edit-rules-push', '--reason', 'too much noise while porting'],
   },
   // A HOST FEEDS IT, and this harness drives the program in process, where the port for the
-  // standard input is absent and reads as empty — so the verb answers `{}` and records nothing.
+  // standard input is absent and reads as empty, so the verb answers `{}` and records nothing.
   // The one invocation that records, an asking, is exercised through the binary with a payload
   // (`a-host-that-runs-commands-asks-for-a-person.test.ts`) and in the signing sweep.
   'before-a-write': { argv: () => ['before-a-write', '--host', 'vscode'] },
   // It reads another repository, so the exercise needs one: a git repository holding a record,
-  // which this harness's fixture is not. What it does to THIS project's record — nothing — is
+  // which this harness's fixture is not. What it does to THIS project's record, nothing, is
   // measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
   inherit: CANNOT_BE_EXERCISED,
   mcp: CANNOT_BE_EXERCISED,
@@ -298,7 +298,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   'rules-file': { argv: () => ['rules-file', '--host', 'vscode'] },
   trailer: { argv: () => ['trailer', 'ADR-1'] },
   // It writes a hook into a git repository, which this harness's fixture is not; refusing there
-  // would measure a refusal. What it does to the record — nothing — and to the repository is
+  // would measure a refusal. What it does to the record, nothing, and to the repository is
   // measured in `a-commit-hook-only-suggests.test.ts`.
   'commit-hook': CANNOT_BE_EXERCISED,
   commits: { argv: () => ['commits', 'ADR-1'] },
@@ -333,13 +333,13 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
  * decision is deliberate: the classification is about the POWER, never the exercise. A
  * write refused for a missing project appended nothing and is still a write. Treating this
  * as a failure would make the guard demand a successful write from every row, and the way
- * to satisfy it would be to declare a verb a READ — the guard pushing the surface towards
+ * to satisfy it would be to declare a verb a READ: the guard pushing the surface towards
  * the unsafe side of its own classification.
  *
  * What it is instead is DECLARED, and reconciled in both directions: a verb here that
  * starts recording has to leave, and one that stops recording has to arrive. So the write
  * side is not simply unmeasured. It said it holds ONE entry, the verb no invocation can
- * exercise at all; it holds three now — that one, `witness`, which writes what this instrument
+ * exercise at all; it holds three now: that one, `witness`, which writes what this instrument
  * cannot count, and `before-a-write`, which records only on a payload the in-process harness has
  * no standard input to hand it.
  */
@@ -380,7 +380,7 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
 // ---------------------------------------------------------------------------
 
 // WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
-// written out in `a-terminal-of-its-own.test.ts`, and a third case needed it — so the counting of
+// written out in `a-terminal-of-its-own.test.ts`, and a third case needed it, so the counting of
 // events and the hashing of key material moved to one place, where the argument above about what
 // it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).
 
@@ -392,7 +392,7 @@ interface Exercised {
   readonly appended: number;
   /** Whether it minted, adopted or installed key material. */
   readonly touchedKeys: boolean;
-  /** How many forms of the verb were run — the human one, and `--json` when it has one. */
+  /** How many forms of the verb were run: the human one, and `--json` when it has one. */
   readonly forms: number;
 }
 
@@ -416,7 +416,7 @@ function recordedNothing(exercised: readonly Exercised[]): string[] {
     .sort();
 }
 
-/** What a declaration table tolerates, and what it does not — checked both ways. */
+/** What a declaration table tolerates, and what it does not: checked both ways. */
 function reconcile(
   found: readonly string[],
   declarations: Readonly<Record<string, string>>,
@@ -469,14 +469,14 @@ async function mnema(argv: readonly string[]): Promise<{ out: string[]; failed: 
  *
  * Each verb gets a fresh one, so what is measured is that verb's invocation and not the
  * residue of the one before it. The two values it hands over are both PRODUCED by the
- * product — an anchor derived from a key, an id minted at a birth — never invented here.
+ * product (an anchor derived from a key, an id minted at a birth) never invented here.
  */
 async function fixture(name: string): Promise<Fixture> {
   const project = join(sandbox, name, 'project');
   mkdirSync(project, { recursive: true });
   // A machine of its own as well as a project of its own: the backup key is minted once
   // per machine, so a shared home would give the first verb a founding and every verb
-  // after it a project that only re-enrolled — and the fingerprint one of them needs
+  // after it a project that only re-enrolled, and the fingerprint one of them needs
   // would be reported by exactly one row.
   process.env.HOME = join(sandbox, name, 'home');
   process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
@@ -535,8 +535,8 @@ async function fixture(name: string): Promise<Fixture> {
  * IT ASKED THE VERB, and the verb is not always what a row runs. `witness` declares
  * `--json` for its reading and its row runs `witness upgrade`, so the second form was
  * `witness upgrade --json`: the group took the flag, the act dropped it, and the "JSON
- * form" was the prose one again, run twice. The act refuses the flag now — a group's flag
- * reaches a subcommand only when it reads it (`wiring/from-the-group.ts`) — and so the
+ * form" was the prose one again, run twice. The act refuses the flag now, a group's flag
+ * reaches a subcommand only when it reads it (`wiring/from-the-group.ts`), and so the
  * question is asked of the command the line reaches, its own flags and the ones it takes.
  */
 function offersJson(argv: readonly string[]): boolean {
@@ -553,14 +553,14 @@ function offersJson(argv: readonly string[]): boolean {
 }
 
 /**
- * How many verbs are exercised twice — the witness of the derivation above.
+ * How many verbs are exercised twice: the witness of the derivation above.
  *
  * A read's human summary and its `--json` object are two code paths, and a write behind
  * the one this file did not run would be invisible. The number is asserted so a
  * `command.options` that stopped answering cannot silently halve the exercise.
  *
  * IT WENT 14 -> 16 when `verify` and `witness` gained `--json`. They were the only two
- * reads of this product that refused it, and they are the PROOF layer — so the delivery
+ * reads of this product that refused it, and they are the PROOF layer, so the delivery
  * that gave them one is visible here as a count, which is what this number is for.
  *
  * AND IT CAME BACK TO 15, because the `witness` half of that was never true here. This
@@ -623,7 +623,7 @@ describe('every verb says if it writes', () => {
     // exists. Both directions, sorted, so a verb added or removed shows up here.
     //
     // IT ASKS THE ENTRY, not the wiring. It used to build a program of its own and
-    // register the verbs into it, which made this direction a tautology — the same
+    // register the verbs into it, which made this direction a tautology: the same
     // function supplied both sides. Measured: a `program.command('smuggled')` added to
     // `buildProgram` right after `registerVerbs` left all five cases here GREEN. What
     // the caller of tomorrow parses is the entry's program, so that is what is walked.
@@ -632,7 +632,7 @@ describe('every verb says if it writes', () => {
     expect(program.commands.map((command) => command.name()).sort()).toEqual(
       [...EFFECT_BY_VERB.keys()].sort(),
     );
-    // And the exercise covers the same set — a verb with no row would be a verb this
+    // And the exercise covers the same set: a verb with no row would be a verb this
     // file never measured, silently.
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
@@ -699,7 +699,7 @@ describe('every verb says if it writes', () => {
   it('classifies every member of a group that answers for its members, and exercises each reading one', async () => {
     // A group is exercised by ONE act above, and a group whose members differ in what they can do
     // (`task`, `skill`) would have its readers measured by nobody. So each such group is asked in
-    // both directions — the members it declares are the subcommands the program holds — and each
+    // both directions (the members it declares are the subcommands the program holds) and each
     // member that says it reads is run for real, in both forms, and counted in the chain.
     const grouped = DECLARED.filter((verb) => verb.members !== undefined);
     expect(grouped.map((verb) => verb.act.name()).sort()).toEqual(['skill', 'stack', 'task']);
@@ -797,13 +797,13 @@ describe('every verb says if it writes', () => {
     const exercised = await exerciseEverything();
 
     // THE RULE. Every verb that declared itself a read was invoked for real, and the
-    // record it left behind holds exactly what it held before — no event in any tail of
+    // record it left behind holds exactly what it held before: no event in any tail of
     // any tree, and not a byte of key material different.
     expect(accused(exercised)).toEqual([]);
 
     // The measurement's own teeth, on the same data: the writes that DID record are
-    // counted, so a `held` that stopped seeing segments — or a fixture whose project
-    // stopped being a project — cannot leave the assertion above passing over nothing.
+    // counted, so a `held` that stopped seeing segments, or a fixture whose project
+    // stopped being a project, cannot leave the assertion above passing over nothing.
     const wrote = exercised.filter((one) => one.appended > 0);
     expect(wrote.map((one) => one.verb).sort()).toEqual([
       'check',
@@ -838,7 +838,7 @@ describe('every verb says if it writes', () => {
     });
   }, 240_000);
 
-  it('accuses a read that writes, and never a write that does not — on input of its own', () => {
+  it('accuses a read that writes, and never a write that does not: on input of its own', () => {
     // The mechanism's non-vacuity. With the surface honest, the case above says only
     // "nothing is accused": it exercises neither the accusation nor its limit, so nothing
     // has ever shown these two functions can tell the four cases apart. The rows are
@@ -857,7 +857,7 @@ describe('every verb says if it writes', () => {
       'liar declares reads and appended 1',
       'thief declares reads and appended 0',
     ]);
-    // A write that recorded nothing is reported for the declaration table, not accused —
+    // A write that recorded nothing is reported for the declaration table, not accused,
     // and a write that recorded is not reported at all.
     expect(recordedNothing(rows)).toEqual(['idle-writer']);
     // The table's two directions, which is what keeps it from becoming an allowlist.
@@ -900,7 +900,7 @@ describe('every verb says if it writes', () => {
     await mnema(['init']);
     expect(held(sandbox).keys).not.toBe(afterWrite.keys);
     // The anchor the fixture produced is what the reads take, and it came from the
-    // product rather than from this file — the one value here that could be invented.
+    // product rather than from this file: the one value here that could be invented.
     expect(project.anchor.startsWith('mnid:')).toBe(true);
   }, 60_000);
 });

@@ -2,7 +2,7 @@
  * One source for a vocabulary: the closed sets of domain words the CLI's declarations
  * take, and the two things that read them.
  *
- * Twenty-two declarations used to write a domain vocabulary out by hand — the ten
+ * Twenty-two declarations used to write a domain vocabulary out by hand: the ten
  * workflow actions in `task move` and again in `task guard`, the three scopes in seven
  * births, the three levels `--require` accepts, and, at nine more, WHICH actions each
  * proof flag is required by. Nothing compared any of those sentences to the machine, so
@@ -12,16 +12,16 @@
  *
  * Three things are asserted here, and they are different:
  *   - THE PROSE IS THE MACHINE'S. Every declaration that names a set lists exactly that
- *     set's members, and the sets themselves are the domain's own constants — compared
+ *     set's members, and the sets themselves are the domain's own constants: compared
  *     against `@mnema/core` and `@mnema/chain`, never against a string typed in this
  *     file, which would just move the copy from `src` to `tests`.
  *   - NOTHING VALIDATES. Not one of those declarations carries a `.choices()`, because
- *     commander's version installs a parser that throws before an action runs — and the
+ *     commander's version installs a parser that throws before an action runs, and the
  *     refusal a caller must get is the GATE's, by its own code. Asserted twice: on the
  *     declarations, and on the real binary, which is the only place that can show
  *     `UNKNOWN_ACTION` is still reachable.
  *   - NOBODY TYPES A LIST AGAIN. A source scan over BOTH surfaces, so a site that goes
- *     back to spelling out a vocabulary in a string is red — the regression this slice
+ *     back to spelling out a vocabulary in a string is red: the regression this slice
  *     exists to prevent, and the one review does not catch, because a hand-typed list
  *     that is CORRECT today looks like nothing at all.
  *
@@ -30,7 +30,7 @@
  * given for leaving them was that this slice built help and completion, and completion
  * does not exist for MCP. WHAT FALSIFIED IT: the MCP was not only re-typing prose. It
  * validated `scope` with `z.enum(['public', 'private', 'global'])` at eight sites and
- * `direction` with `z.enum(['both', 'out', 'in'])` at a ninth — arrays, not sentences —
+ * `direction` with `z.enum(['both', 'out', 'in'])` at a ninth (arrays, not sentences)
  * and a tool's input schema is what the tool ACCEPTS. So a fourth tree added to the domain
  * would have reached this surface's help, its Tab and its refusal, and left the other door
  * refusing a word the same product takes. Two doors telling a reader different stories is
@@ -39,7 +39,7 @@
  * The scan covers `wiring/` and `mcp/` now, and it looks for three shapes rather than one:
  * a pair of members inside one literal, a set re-tupled into an array of literals, and a
  * list with each member's gloss wedged between them. The second and third were invisible
- * to the first — which is why `mcp/server.ts` measured at NINE hits and held
+ * to the first, which is why `mcp/server.ts` measured at NINE hits and held
  * TWENTY-SEVEN sites. What a pass here still does not cover is `commands/`, which speaks
  * about the domain in prose and holds one module-private tuple of scopes, and a list of
  * ONE member anywhere (see the blind spot named below).
@@ -82,7 +82,7 @@ const declared = buildProgram(silent).program;
 /** `packages/code/src`, where the scan starts and stays. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The words that reach a command, without the program's own name. */
@@ -96,7 +96,7 @@ function pathOf(command: Command): string {
 
 /** One declaration that names a set: where it is, what it says, and what it takes. */
 interface Declared {
-  /** `task move <action>`, `search --kind` — how a reader would name it. */
+  /** `task move <action>`, `search --kind`: how a reader would name it. */
   readonly where: string;
   /** The help commander would print for it. */
   readonly description: string;
@@ -222,14 +222,14 @@ describe('a declaration lists the set it takes', () => {
     expect(setAt('verify --require').values).toBe(LEVEL_REQUIREMENTS);
     expect(setAt('refs --direction').values).toBe(REFERENCE_DIRECTIONS);
     // The one set here the DOMAIN does not own: a channel is a place this product pushes
-    // the record unasked, and the core knows of none. It is still read from ONE place —
-    // the module that decides what a channel is — rather than typed into the declaration.
+    // the record unasked, and the core knows of none. It is still read from ONE place
+    // (the module that decides what a channel is) rather than typed into the declaration.
     expect(setAt('switch off <channel>').values).toBe(SWITCHABLE_CHANNELS);
     expect(setAt('switch on <channel>').values).toBe(SWITCHABLE_CHANNELS);
     // `decision move` offers the decision vocabulary MINUS what has a verb of its own:
     // `supersede` needs a successor id the generic `move <action> <id>` cannot take, so
     // it is `mnema decision supersede <old> <new>`. Derived by exclusion, so a fourth
-    // decision action arrives in the help by itself — and the exclusion is asserted as
+    // decision action arrives in the help by itself, and the exclusion is asserted as
     // an exclusion, not as the pair of words that are left.
     expect(setAt('decision move <action>').values).toEqual(
       DECISION_ACTIONS.filter((action) => action !== 'supersede'),
@@ -250,7 +250,7 @@ describe('a declaration lists the set it takes', () => {
     expect([...SCOPES]).toEqual(['public', 'private', 'global']);
   });
 
-  it('offers `task move` and `task guard` the very same array — not two equal ones', () => {
+  it('offers `task move` and `task guard` the very same array, not two equal ones', () => {
     // The two sites the inventory called out as one vocabulary typed twice, with two
     // different openings ("the transition" and "the transition to test"). Identity and
     // not equality: two arrays that happen to match today are exactly the defect.
@@ -307,7 +307,7 @@ describe('a declaration lists the set it takes', () => {
       `why it fell out of use (required by ${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason')})`,
     );
     // Each list has to have something in it, or the six assertions above would pass on
-    // empty strings — which is what a table read the wrong way round would produce.
+    // empty strings, which is what a table read the wrong way round would produce.
     expect(requiring(TRANSITIONS, TASK_ACTIONS, 'reason').length).toBeGreaterThan(0);
     expect(requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason').length).toBeGreaterThan(0);
   });
@@ -316,7 +316,7 @@ describe('a declaration lists the set it takes', () => {
     // The assumption the sentence rests on: an action legal from several states requires
     // the same proof from all of them. A workflow where `cancel` needed a reason from one
     // state and not another could not be described by "required by cancel" in any order
-    // of words — the flag's help would have to name a state, and there is no such
+    // of words: the flag's help would have to name a state, and there is no such
     // sentence on this surface.
     for (const table of [TRANSITIONS, DECISION_TRANSITIONS, SKILL_TRANSITIONS]) {
       const seen = new Map<string, string>();
@@ -330,7 +330,7 @@ describe('a declaration lists the set it takes', () => {
     }
   });
 
-  it('has a declaration for every set it publishes — none plumbed to nowhere', () => {
+  it('has a declaration for every set it publishes: none plumbed to nowhere', () => {
     // A public value has a caller, asked of this module's own exports. A vocabulary declared,
     // glossed and exported with no declaration taking it is the shape four defects of this series
     // had: the code under the gap is right, nothing feeds it, and every test passes because ABSENCE
@@ -351,7 +351,7 @@ describe('a declaration lists the set it takes', () => {
     // Two constants, two rules: what `--scope` accepts, and the order a composed read
     // opens the trees in. They are the same three words and a fourth tree would have to
     // be in both, so a divergence is a defect in whichever is behind. (A third copy is
-    // module-private in `commands/show.ts` — the order that read looks in — and is
+    // module-private in `commands/show.ts`, the order that read looks in, and is
     // declared as debt rather than reached into from here.)
     expect([...OPENED_IN_ORDER].sort()).toEqual([...SCOPES].sort());
   });
@@ -364,7 +364,7 @@ describe('a declaration lists the set it takes', () => {
 describe('naming a set does not make the parser own it', () => {
   it('carries no `.choices()` on any domain set', () => {
     // The structural half of the rule. `.choices()` would enumerate AND validate, and
-    // the validation runs before any action — so the gate's own refusal, with its own
+    // the validation runs before any action, so the gate's own refusal, with its own
     // code, would never be reached for a bad action.
     for (const declaration of DECLARED_SETS) {
       expect(declaration.argChoices, `${declaration.where} carries .choices()`).toBeUndefined();
@@ -383,8 +383,8 @@ describe('naming a set does not make the parser own it', () => {
 
   it('and a declaration that named a set can still be given one, which is the danger', () => {
     // This file's own non-vacuity: the assertion above is about ABSENCE, and an
-    // `argChoices` this mechanism could never carry would make it say nothing. It can —
-    // the two are independent — which is exactly why it is asserted.
+    // `argChoices` this mechanism could never carry would make it say nothing. It can
+    // (the two are independent), which is exactly why it is asserted.
     const argument = enumeratedArgument('<action>', 'the transition', ['one', 'two']);
     expect(argument.argChoices).toBeUndefined();
     expect(valuesDeclaredOn(argument)).toEqual(['one', 'two']);
@@ -408,7 +408,7 @@ function sourcesUnder(directory: string): readonly string[] {
   return found;
 }
 
-/** A string literal — single-quoted, double-quoted or a template. */
+/** A string literal: single-quoted, double-quoted or a template. */
 const LITERAL = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g;
 
 /** The source with every comment blanked, so prose about a vocabulary is not one. */
@@ -444,7 +444,7 @@ function membersOf(array: string): readonly string[] {
 
 /** One shape a hand-typed list takes, and how a hit on it reads. */
 interface Shape {
-  /** The hit without the literal — `[scope] public, private`. */
+  /** The hit without the literal: `[scope] public, private`. */
   readonly says: string;
   /** What it is recognised by. */
   readonly pattern: RegExp;
@@ -453,7 +453,7 @@ interface Shape {
 /**
  * EVERY SHAPE A HAND-TYPED LIST TAKES, BUILT ONCE.
  *
- * None of them depends on the literal being read — only on the vocabulary — so they are made
+ * None of them depends on the literal being read, only on the vocabulary, so they are made
  * here rather than inside the walk. They used to be made inside it, per literal: 1550
  * literals against 1022 shapes is 1,584,100 `RegExp` objects for 1022 distinct patterns, and
  * compiling them was 82% of what the scan cost — 1029 ms against 181 ms for the same walk
@@ -477,7 +477,7 @@ const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([voca
         })),
         // The same list with each member's gloss wedged in after it. The gloss may
         // hold commas of its own ("this machine, this project"), so what separates
-        // the two members is a parenthesis and then a join — and the parenthesis
+        // the two members is a parenthesis and then a join, and the parenthesis
         // must not itself contain one, or the shape would jump over a whole clause.
         {
           says: `[${vocabulary}] ${first} (…), ${second}`,
@@ -499,7 +499,7 @@ const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([voca
  *   - PAIRS IN ONE LITERAL: `'(submit, start, block)'`. The CLI's shape, and for a while
  *     the only one looked for.
  *   - AN ARRAY OF LITERALS: `z.enum(['public', 'private', 'global'])`. Invisible to the
- *     first, because the members are in different literals — and the one shape that is
+ *     first, because the members are in different literals, and the one shape that is
  *     not prose at all: a `z.enum` is what a tool ACCEPTS. Nine of these sat in
  *     `mcp/server.ts` while the pair scan reported the file at fourteen hits.
  *   - A GLOSSED LIST: `'public (team-visible), private (this machine, …), or global (…)'`.
@@ -534,7 +534,7 @@ function handTypedLists(source: string): readonly string[] {
   return found;
 }
 
-/** The directories of `src` the scan covers — every surface, and the shared declaration. */
+/** The directories of `src` the scan covers: every surface, and the shared declaration. */
 const SCANNED = ['wiring', 'mcp'];
 
 describe('no declaration writes a vocabulary out by hand', () => {
@@ -588,7 +588,7 @@ describe('no declaration writes a vocabulary out by hand', () => {
     expect(handTypedLists("['public', 'a directory name']")).toEqual([]);
     // A KNOWN BLIND SPOT, said out loud: a list of ONE member is invisible to a scan for
     // pairs, so `(required by request_changes)` typed by hand would pass. What covers it
-    // is that no site composes such a sentence any more — every one of them interpolates
+    // is that no site composes such a sentence any more: every one of them interpolates
     // {@link actionsRequiring}, which is what the case above asserts, flag by flag.
     expect(handTypedLists("'what must change (required by request_changes)'")).toEqual([]);
   });
@@ -600,7 +600,7 @@ describe('no declaration writes a vocabulary out by hand', () => {
 
 describe('a word the machine gains tomorrow', () => {
   it('reaches the help and every shell without a line of code', () => {
-    // The mechanism, over a set this test owns — the real one is proved by mutating
+    // The mechanism, over a set this test owns: the real one is proved by mutating
     // `TASK_ACTIONS` in the core, which is in the report. A program of its own, so the
     // twenty-eight verbs that exist cannot satisfy the case.
     const later = new Command().name('later');
@@ -649,7 +649,7 @@ describe('the gate still owns the vocabulary', () => {
   it('refuses an unknown action with the gate’s own code, not a usage error', () => {
     // THE REASON THIS SLICE DOES NOT USE `.choices()`, asserted where it can be: in the
     // process. A `.choices()` on `<action>` would have commander throw during the parse,
-    // and this line would become a usage error about an invalid argument — the refusal
+    // and this line would become a usage error about an invalid argument: the refusal
     // below would be unreachable, and a typed code the product answers with would be
     // gone from the surface.
     expect(cli('init').status).toBe(0);
@@ -664,7 +664,7 @@ describe('the gate still owns the vocabulary', () => {
     // WORD and not about a move that stopped working.
     expect(cli('task', 'move', 'submit', id).out).toContain('READY');
     // FOUR PROCESSES OF THE REAL BINARY — the `init`, the task, the refusal and the legal
-    // move — and each pays node's start over again: 464 ms on a machine at rest, 1048 ms
+    // move, and each pays node's start over again: 464 ms on a machine at rest, 1048 ms
     // with the rest of the suite running beside it. The ceiling is here to NAME that, not
     // to tighten it: at the default five seconds a busy machine goes red saying only that
     // something timed out, which is the reading this line exists to prevent.
@@ -685,7 +685,7 @@ describe('the gate still owns the vocabulary', () => {
     );
     // FOUR MORE PROCESSES, an `init` and one refusal per place the check lives: 436 ms on a
     // machine at rest, 961 ms with the rest of the suite beside it. What it waits on is node
-    // starting four times, which is what the case is FOR — a refusal is only proved where a
+    // starting four times, which is what the case is FOR: a refusal is only proved where a
     // caller would meet it.
   }, 60_000);
 });

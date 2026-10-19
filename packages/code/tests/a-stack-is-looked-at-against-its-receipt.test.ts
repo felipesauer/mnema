@@ -1,5 +1,5 @@
 /**
- * A STACK IS LOOKED AT AGAINST ITS RECEIPT — held on the built binary.
+ * A STACK IS LOOKED AT AGAINST ITS RECEIPT: held on the built binary.
  *
  * `list`, `show`, `diff` and `check` say whether the files an installation wrote are still the
  * ones written and whether the record still stands on the same digest; `export` copies the skills

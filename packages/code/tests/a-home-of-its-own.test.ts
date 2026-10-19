@@ -1,11 +1,11 @@
 /**
- * A home of its own — the guard every test process runs under catches what it says it catches.
+ * A home of its own: the guard every test process runs under catches what it says it catches.
  *
  * `.github/a-home-of-its-own/setup.mjs` points each test process at a `HOME` made for it and stands
  * in front of every process a test starts. A guard of that shape is green by default: take its
  * wrappers away and the suite stays green, because nothing in it happens to start a process in the
- * machine's home today. So this file starts such processes on purpose — one per way a child can
- * end up there — and asserts, for each, that the child saw the test's home instead and that the
+ * machine's home today. So this file starts such processes on purpose (one per way a child can
+ * end up there) and asserts, for each, that the child saw the test's home instead and that the
  * start was caught. It reads what was caught itself (`takeCaught`), which is why these cases pass
  * where any other case doing the same would fail.
  *
@@ -31,7 +31,7 @@ import { codeOnly } from './support/reading-source.js';
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const THIS_FILE = 'a-home-of-its-own.test.ts';
 
-/** A child that prints the home it resolves — `os.homedir()`, the product's own fallback. */
+/** A child that prints the home it resolves: `os.homedir()`, the product's own fallback. */
 const PRINTS_ITS_HOME = ['-e', "process.stdout.write(require('node:os').homedir())"];
 
 /** A child that prints the relocation variable it was handed, or `undefined`. */
@@ -67,7 +67,7 @@ describe('every test process runs in a home of its own', () => {
 });
 
 describe('a child that would resolve the machine’s home starts in the test’s, and is caught', () => {
-  it('when its environment carries no HOME — the password database answers, with the machine’s', () => {
+  it('when its environment carries no HOME: the password database answers, with the machine’s', () => {
     const child = spawnSync(process.execPath, PRINTS_ITS_HOME, {
       encoding: 'utf-8',
       env: { PATH: process.env.PATH ?? '' },
@@ -76,7 +76,7 @@ describe('a child that would resolve the machine’s home starts in the test’s
     expect(caughtOnce()).toContain('HOME=null');
   });
 
-  it('when its HOME is empty, or relative — neither names a home, so the account’s is used', () => {
+  it('when its HOME is empty, or relative: neither names a home, so the account’s is used', () => {
     for (const home of ['', 'relative/home']) {
       const child = spawnSync(process.execPath, PRINTS_ITS_HOME, {
         encoding: 'utf-8',
@@ -96,7 +96,7 @@ describe('a child that would resolve the machine’s home starts in the test’s
     caughtOnce();
   });
 
-  it('when its relocation points inside the machine’s home — and the child never sees the value', () => {
+  it('when its relocation points inside the machine’s home, and the child never sees the value', () => {
     const child = spawnSync(process.execPath, PRINTS_THE_VARIABLE, {
       encoding: 'utf-8',
       env: {
@@ -109,7 +109,7 @@ describe('a child that would resolve the machine’s home starts in the test’s
     expect(caughtOnce()).toContain(`${THE_VARIABLE}=`);
   });
 
-  it('through the other ways a process starts — the synchronous file, and a promisified shell', async () => {
+  it('through the other ways a process starts: the synchronous file, and a promisified shell', async () => {
     const env = { PATH: process.env.PATH ?? '' };
     expect(execFileSync(process.execPath, PRINTS_ITS_HOME, { encoding: 'utf-8', env })).toBe(
       HOME_OF_ITS_OWN,
@@ -133,7 +133,7 @@ describe('the question it asks of an environment', () => {
     expect(reachesTheMachine({ ...env, [THE_VARIABLE]: '/srv/another' }, started)).toEqual([]);
   });
 
-  it('lets a sandbox under the machine’s home through — only the home itself is the machine’s', () => {
+  it('lets a sandbox under the machine’s home through, only the home itself is the machine’s', () => {
     const sandbox = join(THE_MACHINES_HOME, 'somewhere', 'sandbox');
     expect(reachesTheMachine({ HOME: sandbox }, undefined)).toEqual([]);
     expect(reachesTheMachine({ HOME: THE_MACHINES_HOME }, undefined)).toHaveLength(1);
@@ -141,7 +141,7 @@ describe('the question it asks of an environment', () => {
 });
 
 describe('what it cannot stand in front of, counted', () => {
-  /** Every `.ts` under a package's `src/` and `tests/`, walked on disk — tracked or not. */
+  /** Every `.ts` under a package's `src/` and `tests/`, walked on disk: tracked or not. */
   function testSources(): string[] {
     const files: string[] = [];
     const walk = (dir: string): void => {
@@ -164,13 +164,13 @@ describe('what it cannot stand in front of, counted', () => {
     return files.filter((file) => /\.test\.ts$|[\\/]tests[\\/]/.test(file));
   }
 
-  it('walks the test tree it counts over — a count over nothing would read as zero', () => {
+  it('walks the test tree it counts over: a count over nothing would read as zero', () => {
     expect(testSources().length).toBeGreaterThan(300);
   });
 
-  it('no test reads the account’s home by hand — the one in-process way past the guard', () => {
-    // A CALL, read over the code alone: a sentence that names `userInfo()` — the floor's own
-    // declaration of what `env.ts` imports does — reads nothing, and matching it would be the
+  it('no test reads the account’s home by hand: the one in-process way past the guard', () => {
+    // A CALL, read over the code alone: a sentence that names `userInfo()` (the floor's own
+    // declaration of what `env.ts` imports does) reads nothing, and matching it would be the
     // mention taken for the act.
     const readers = testSources()
       .filter((file) => !file.endsWith(THIS_FILE))
@@ -179,9 +179,9 @@ describe('what it cannot stand in front of, counted', () => {
     expect(readers).toEqual([]);
   });
 
-  it('no test starts a process with an environment built from nothing — the grandchild it cannot see', () => {
-    // Read raw, and on purpose: the thing looked for IS text inside a string — a shell command
-    // handed to a process — which a code-only reading would blank.
+  it('no test starts a process with an environment built from nothing: the grandchild it cannot see', () => {
+    // Read raw, and on purpose: the thing looked for IS text inside a string, a shell command
+    // handed to a process, which a code-only reading would blank.
     const builders = testSources()
       .filter((file) => !file.endsWith(THIS_FILE))
       .filter((file) =>

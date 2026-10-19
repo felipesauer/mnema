@@ -1,5 +1,5 @@
 /**
- * EVERY FLAG A GROUP DECLARES IS READ BY THE SUBCOMMAND IT REACHES, OR REFUSED THERE — never dropped.
+ * EVERY FLAG A GROUP DECLARES IS READ BY THE SUBCOMMAND IT REACHES, OR REFUSED THERE: never dropped.
  *
  * commander hands a group every flag it declares, wherever the flag is written, and what runs is the
  * subcommand. So a flag of the group that the subcommand did not read was accepted with exit 0 and
@@ -13,7 +13,7 @@
  * subcommand of that group, enumerated from the tree and not listed here:
  *
  *   - written after the subcommand, the flag is refused by name or it is not, and which is
- *     {@link WHAT_A_SUBCOMMAND_READS} — reconciled both ways, so a subcommand added under a group
+ *     {@link WHAT_A_SUBCOMMAND_READS}: reconciled both ways, so a subcommand added under a group
  *     with options is red until somebody writes down what it reads;
  *   - written BEFORE the subcommand, a flag it declares itself is refused and pointed after it, the
  *     rule `decision import` had first; one it takes from the group is read in either place; and one
@@ -104,7 +104,7 @@ function flagOf(option: Option): string {
   return option.long ?? option.flags;
 }
 
-/** The words that satisfy a subcommand's required operands — nothing here gets that far. */
+/** The words that satisfy a subcommand's required operands: nothing here gets that far. */
 function operandsOf(sub: Command): string[] {
   const needed = sub.registeredArguments.filter((argument) => argument.required).map(() => 'x');
   // A flag the subcommand cannot run without is part of what satisfies it (`task guard --actor`):

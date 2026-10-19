@@ -9,7 +9,7 @@
  *
  * Seven verbs take `project`, so each is driven here, over the real transport, and the
  * expected path is the directory the test made, and the files that grew on disk say which
- * directory took the write — the reply is checked against the disk, not against itself.
+ * directory took the write: the reply is checked against the disk, not against itself.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';

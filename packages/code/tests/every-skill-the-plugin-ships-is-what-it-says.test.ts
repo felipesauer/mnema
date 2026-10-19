@@ -31,7 +31,7 @@ const SKILLS = join(fileURLToPath(new URL('../../../', import.meta.url)), 'plugi
 /** The host's own prefixes on a tool's name, which a skill may spell. */
 const HOST_PREFIXES = ['mcp__plugin_mnema_mnema__', 'mcp__mnema__'];
 
-/** The skills the plugin ships, by directory — and at least the ones this product wrote. */
+/** The skills the plugin ships, by directory, and at least the ones this product wrote. */
 function skillDirectories(): string[] {
   return readdirSync(SKILLS).filter((name) => statSync(join(SKILLS, name)).isDirectory());
 }

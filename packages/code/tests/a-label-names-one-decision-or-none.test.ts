@@ -1,5 +1,5 @@
 /**
- * AN `ADR-<n>` TYPED WHERE AN ID GOES NAMES ONE DECISION OR IT NAMES NONE — in every verb.
+ * AN `ADR-<n>` TYPED WHERE AN ID GOES NAMES ONE DECISION OR IT NAMES NONE: in every verb.
  *
  * `decision move accept ADR-1` refused the label while `link ADR-1 src/gen --rel refuses-a-write`
  * accepted it, exit 0, and recorded the text "ADR-1" as the subject of an edge that pointed at

@@ -1,5 +1,5 @@
 /**
- * A STACK GOES WHERE NOTHING IS — held on the built binary, the layer a person runs.
+ * A STACK GOES WHERE NOTHING IS: held on the built binary, the layer a person runs.
  *
  * `commands/stack-install.test.ts` holds every refusal at the function; this file holds that the
  * verb shows the plan whole, writes nothing without the digest the plan showed, refuses a link in

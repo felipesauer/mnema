@@ -67,7 +67,7 @@ function controlBytesIn(text: string): string[] {
   return found;
 }
 
-/** Every string value of `text` read as JSON — what a host's parser would hand on. */
+/** Every string value of `text` read as JSON: what a host's parser would hand on. */
 function stringsOf(text: string): string[] {
   const walk = (value: unknown): string[] => {
     if (typeof value === 'string') return [value];
@@ -83,7 +83,7 @@ function stringsOf(text: string): string[] {
 }
 
 /**
- * THE CHARACTERS THAT DRAW NOTHING, by the engine's own property — the independent source the
+ * THE CHARACTERS THAT DRAW NOTHING, by the engine's own property: the independent source the
  * product's fixed list is held against. Measured before the class grew: a soft hyphen, the
  * Hangul fillers, the variation selectors of both blocks, a musical format mark and the
  * interlinear annotation marks came out raw in `show`, `search`, `status` and `--json`.

@@ -41,7 +41,7 @@ let originalCwd: string;
 let originalHome: string | undefined;
 let originalXdg: string | undefined;
 
-/** Runs `mnema <argv>` in process and refuses to continue if it failed — setup, not assertion. */
+/** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<void> {
   const err: string[] = [];
   let failed = false;

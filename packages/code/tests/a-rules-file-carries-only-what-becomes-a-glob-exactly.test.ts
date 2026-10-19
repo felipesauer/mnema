@@ -1,5 +1,5 @@
 /**
- * `mnema rules-file` — the committed rules that have an address, in another host's rules format,
+ * `mnema rules-file`: the committed rules that have an address, in another host's rules format,
  * for the addresses that become a glob EXACTLY, and every other one named with the reason.
  *
  * The exactness is asserted against a real glob matcher, Node's own `path.matchesGlob`, rather
@@ -127,7 +127,7 @@ describe('what goes into the file', () => {
     }
   });
 
-  it('leaves out the root, a stale address and what is not committed — each with its reason', async () => {
+  it('leaves out the root, a stale address and what is not committed: each with its reason', async () => {
     await governing('Everything is reviewed', '.');
     await governing('Legacy is frozen', 'src/legacy');
     await governing('Private one', 'src/billing/invoice.ts', '--scope', 'private');
@@ -180,7 +180,7 @@ describe('the translation is exact where it is made, and the reasons are true of
     }
   });
 
-  it('keeps out what a real matcher would read otherwise — the bracket and the dot', () => {
+  it('keeps out what a real matcher would read otherwise: the bracket and the dot', () => {
     // The two reasons, shown against Node's own matcher.
     expect(matchesGlob('app/i', 'app/[id]')).toBe(true);
     expect(matchesGlob('app/[id]', 'app/[id]')).toBe(false);
@@ -200,7 +200,7 @@ describe('the translation is exact where it is made, and the reasons are true of
     expect('why' in globFor(at('src/bill[ing', { onDisk: 'directory' }))).toBe(true);
   });
 
-  it('prints no file for nothing — an empty pattern is every file to some matchers', () => {
+  it('prints no file for nothing: an empty pattern is every file to some matchers', () => {
     expect(rulesFileText('vscode', [])).toBeUndefined();
     expect(rulesFileText('cursor', [])).toBeUndefined();
   });
@@ -238,7 +238,7 @@ describe('mnema rules-file, as a person runs it', () => {
   it('says beside a VS Code file that the host reads a file pattern more widely than it is written', async () => {
     // VS Code puts "**/" before a relative applyTo and matches the file's absolute path (its own
     // glob, run on 30 Sep 2026), so a file address is carried and the widening is
-    // said where the file is printed — and for Cursor, which matches on its servers, it is not.
+    // said where the file is printed, and for Cursor, which matches on its servers, it is not.
     await governing('Invoices are immutable', 'src/billing/invoice.ts');
     const vscode = cli('rules-file', '--host', 'vscode');
     expect(vscode.status).toBe(0);

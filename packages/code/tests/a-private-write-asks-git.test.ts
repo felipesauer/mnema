@@ -3,7 +3,7 @@
  * trust a committed file to say so.
  *
  * THE DEFECT, MEASURED ON THE SHIPPED BINARY. `.mnema/.gitignore` is what keeps `private/`
- * out of git, and it is committed — so a commit by anybody with push access that drops the
+ * out of git, and it is committed, so a commit by anybody with push access that drops the
  * `/private/` line reads as housekeeping. A private memory written over that file answered
  * *"it is not committed and does not travel"* and was staged by the `git add -A` that
  * followed (six paths, the memory's tail among them).
@@ -19,7 +19,7 @@
  *   - with the line gone, the CLI and the MCP server both still write there, and `git add`
  *     stages nothing private; `verify` has nothing to say about it;
  *   - a private tree inside the working tree that nothing ignores is STILL refused, with
- *     nothing written — the case a guard that said "outside" of every tree would let through;
+ *     nothing written: the case a guard that said "outside" of every tree would let through;
  *   - where git cannot answer (no repository, no git on the PATH) the write goes on as it did;
  *   - git's answer is the whole answer: a rule that lives elsewhere (`.git/info/exclude`)
  *     counts, which a read of the one file never did.
@@ -173,7 +173,7 @@ describe('a committed .gitignore that lost its /private/ line', () => {
 
 /**
  * The refusal, where it still belongs: a private tree INSIDE the working tree. Discovery puts
- * one there only outside a repository, so these trees are named by hand — the old
+ * one there only outside a repository, so these trees are named by hand: the old
  * `.mnema/private/`, in a repository whose `.gitignore` lost its line.
  */
 describe('a private tree inside the working tree that nothing ignores', () => {
@@ -233,7 +233,7 @@ describe('a private tree inside the working tree that nothing ignores', () => {
     expect(existsSync(join(project, '.mnema', 'private'))).toBe(false);
   }, 120_000);
 
-  it('is written where git’s answer is that it is ignored — by a rule that lives somewhere else than the committed file', () => {
+  it('is written where git’s answer is that it is ignored: by a rule that lives somewhere else than the committed file', () => {
     aRepository();
     withoutThePrivateLine();
     appendFileSync(join(project, '.git', 'info', 'exclude'), '/.mnema/private/\n');

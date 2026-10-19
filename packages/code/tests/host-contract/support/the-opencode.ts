@@ -166,8 +166,8 @@ async function anOpencodeSession(
   // OpenCode installs `@opencode-ai/plugin` from the npm registry into each folder it reads
   // configuration from, and with a plugin loaded it waits for that: with only loopback, measured at
   // about 70 s of name lookups before every run. A person's machine has it installed already, so
-  // each folder gets what that install leaves — the dependency named in `package.json` and its
-  // lock, and a `node_modules` — and the host asks the registry for nothing. The module imports
+  // each folder gets what that install leaves (the dependency named in `package.json` and its
+  // lock, and a `node_modules`) and the host asks the registry for nothing. The module imports
   // nothing from it.
   for (const folder of [
     join(box.project, '.opencode'),

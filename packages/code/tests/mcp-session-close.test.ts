@@ -3,7 +3,7 @@
  * about it.
  *
  * Both halves used to be false, and they were false together. No MCP session closed
- * its run — in six of six exit modes, `run.started` without `run.ended` — because the
+ * its run (in six of six exit modes, `run.started` without `run.ended`), because the
  * only caller of `closeSession` was a transport hook the SDK never fires. So a machine
  * accumulated one open run per session forever, `focus` listed them as identical
  * lines, and the note that would have qualified them switched OFF for exactly the
@@ -12,13 +12,13 @@
  * The close is exercised through `armClose`, the seam `connect()` uses, with a FAKE
  * process: signalling the real one would signal the test runner, and stdio here is an
  * in-memory pair with no stdin to end. What that leaves unproven is the one line where
- * `connect()` calls it — proven instead by the six-mode probe against `mnema mcp` over
+ * `connect()` calls it: proven instead by the six-mode probe against `mnema mcp` over
  * real stdio, whose table is the entry's headline number.
  *
  * Nothing here asserts that an old run is DEAD. The record holds no fact about a
  * process, and two sessions provably alive at once falsify every rule that would let
- * one session close another's run. So the tests below check what is reported — whose
- * the run is, how old, how long idle — and there is deliberately no test for a sweeper,
+ * one session close another's run. So the tests below check what is reported (whose
+ * the run is, how old, how long idle) and there is deliberately no test for a sweeper,
  * because there deliberately is no sweeper.
  */
 
@@ -136,7 +136,7 @@ function runTally(project: string): { started: number; ended: number } {
 }
 
 /**
- * The `run.ended` facts a project's record holds — read off the DISK, not off a
+ * The `run.ended` facts a project's record holds: read off the DISK, not off a
  * reply, because what is under test is what the close appended.
  */
 function endsIn(project: string) {
@@ -146,7 +146,7 @@ function endsIn(project: string) {
   );
 }
 
-/** The JSON payload of a tool reply — always its first content block. */
+/** The JSON payload of a tool reply: always its first content block. */
 function payloadOf(reply: unknown): Record<string, unknown> {
   const content = (reply as { content: { text?: string }[] }).content;
   return JSON.parse(content[0]?.text ?? '{}') as Record<string, unknown>;
@@ -207,7 +207,7 @@ describe('a connection that ends', () => {
   it('ends the run of EVERY project it wrote to, each in that project’s own record', async () => {
     // A connection holds one run per destination since writes began routing by
     // project. A close that reached only the session's own tree would end one run and
-    // leave the others open forever — and nothing afterwards could ever come back to
+    // leave the others open forever, and nothing afterwards could ever come back to
     // them, because this connection was the only party that knew they were its own.
     const a = makeProject('alpha');
     const b = makeProject('beta');
@@ -257,10 +257,10 @@ describe('a connection that ends', () => {
     await client.close();
   });
 
-  it('credits EVERY project’s close to that same agent — one connection, one executor', async () => {
+  it('credits EVERY project’s close to that same agent: one connection, one executor', async () => {
     // A connection opens a run per project it writes to, so the close writes one
     // sealing fact per record. All of them were executed by the one agent that
-    // connected — there is no second executor to attribute anything to — and a read
+    // connected (there is no second executor to attribute anything to) and a read
     // in any of those projects has to be able to say so on its own.
     const a = makeProject('alpha');
     const b = makeProject('beta');
@@ -297,8 +297,8 @@ describe('a connection that ends', () => {
 
   it('leaves NOTHING behind when it only read', async () => {
     // Closing is the last chance to write, which makes it exactly the place a
-    // read-only connection could be given a whole run — a founding, a start and an
-    // end — in a project it never touched.
+    // read-only connection could be given a whole run (a founding, a start and an
+    // end) in a project it never touched.
     const project = makeProject('proj');
     const { client, end } = await connect([pathToFileURL(project).href]);
     await client.callTool({ name: 'focus' });
@@ -311,14 +311,14 @@ describe('a connection that ends', () => {
     await client.close();
   });
 
-  it('says nothing was written when the write that would open the run could not begin — and none was', async () => {
-    // A run's opening is two writes for a key with no anchor in the tree — the founding, then
-    // `run.started` — and the line said "(nothing was written)" whenever no run was in the map,
+  it('says nothing was written when the write that would open the run could not begin, and none was', async () => {
+    // A run's opening is two writes for a key with no anchor in the tree (the founding, then
+    // `run.started`) and the line said "(nothing was written)" whenever no run was in the map,
     // which is false the moment the first of the two lands; `writesBegun` tells the two apart.
     // Here the tree's lock directory is a link to nothing. This case asserted "a write began",
     // when the run opened before the operation decided and its attempt was counted as a write.
     // The run is written by the write's first fact now, under the hold the operation takes, so
-    // a hold that cannot be taken writes nothing at all, and the line says so — read off the disk.
+    // a hold that cannot be taken writes nothing at all, and the line says so: read off the disk.
     const project = makeProject('proj');
     const locks = join(project, PROJECT_DIR, 'locks');
     rmSync(locks, { recursive: true, force: true });
@@ -358,7 +358,7 @@ describe('a connection that ends', () => {
 
     expect(reply.isError).toBe(true);
     expect(reply.content[0]?.text).toContain('this connection has ended');
-    // One fact, and the end after it — nothing pinned to a run the record has closed.
+    // One fact, and the end after it: nothing pinned to a run the record has closed.
     expect(kindsIn(project)).toEqual([
       'identity.founded',
       'run.started',
@@ -372,8 +372,8 @@ describe('a connection that ends', () => {
 describe('what an open run says about itself', () => {
   it('tells the asker’s own run from the ones left behind, and ages them all', async () => {
     // Ten sessions that were killed (they never reach a close), then an eleventh that
-    // asks. The list is not pruned and not ranked — nothing here decides another
-    // session is dead — but it is no longer ten identical lines.
+    // asks. The list is not pruned and not ranked (nothing here decides another
+    // session is dead), but it is no longer ten identical lines.
     const project = makeProject('proj');
     const root = pathToFileURL(project).href;
     for (let i = 0; i < 10; i += 1) {
@@ -394,7 +394,7 @@ describe('what an open run says about itself', () => {
 
     end();
     // Ending this one leaves the other ten open. Nothing closes a run it did not
-    // open — the rule two provably-live sessions demand.
+    // open: the rule two provably-live sessions demand.
     expect(runTally(project)).toEqual({ started: 11, ended: 1 });
     await client.close();
   });
@@ -406,7 +406,7 @@ describe('what an open run says about itself', () => {
     //
     // The ORDER is what makes this discriminate, and it is the order that was measured:
     // A's run opens FIRST, B's second, and then A asks. With the newest run winning, A
-    // is handed B's — so this fails on the old rule instead of agreeing with it by
+    // is handed B's, so this fails on the old rule instead of agreeing with it by
     // accident. (Written the other way round it passed either way.)
     const project = makeProject('proj');
     const root = pathToFileURL(project).href;
@@ -419,7 +419,7 @@ describe('what an open run says about itself', () => {
     const lastRun = resume.lastRun as Reported & { agent: string };
     expect(lastRun.thisSession).toBe(true);
     expect(lastRun.agent).toBe('agent-a');
-    // B's run is still there, still open, and still reported — as not this session's.
+    // B's run is still there, still open, and still reported, as not this session's.
     const runs = openRunsOf(await a.client.callTool({ name: 'focus' }));
     expect(runs).toHaveLength(2);
     expect(runs.filter((r) => !r.thisSession)).toHaveLength(1);
@@ -434,7 +434,7 @@ describe('what an open run says about itself', () => {
   it('keeps qualifying the runs of a session that HAS already written', async () => {
     // This is what the old note could not do. It was suppressed the moment
     // `session.runs` was non-empty, so a connection an hour into recording work saw
-    // every leftover run with no qualifier at all — the state where telling them apart
+    // every leftover run with no qualifier at all: the state where telling them apart
     // is worth the most. The qualifier is a property of the run now, so writing cannot
     // switch it off.
     const project = makeProject('proj');
@@ -450,7 +450,7 @@ describe('what an open run says about itself', () => {
     expect(runs.filter((r) => r.thisSession)).toHaveLength(1);
     expect(runs.filter((r) => !r.thisSession)).toHaveLength(1);
     // And the sentence about the connection is gone, because this connection HAS a
-    // run — the sentence only ever answered that.
+    // run: the sentence only ever answered that.
     const blocks = ((await client.callTool({ name: 'focus' })) as { content: { text?: string }[] })
       .content;
     expect(blocks).toHaveLength(1);

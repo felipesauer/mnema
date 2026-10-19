@@ -352,7 +352,7 @@ export function theResultOfTheCall(session: TheCodexSession): string | undefined
 }
 
 /**
- * What the first request's tool search says it can reach — where Codex lists the MCP servers it
+ * What the first request's tool search says it can reach, where Codex lists the MCP servers it
  * connected, each with the instructions its handshake gave, and defers their tools behind the
  * search for a model of the catalog.
  */

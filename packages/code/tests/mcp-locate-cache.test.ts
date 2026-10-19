@@ -1,5 +1,5 @@
 /**
- * Locating an entity's home tree inside a session — the FAST HALF of it.
+ * Locating an entity's home tree inside a session: the FAST HALF of it.
  *
  * What a session changes about the locate is how ONE tree is asked whether it
  * holds a birth: from its warm projection, where the id is a primary key, instead
@@ -10,8 +10,8 @@
  * Every case runs on a workspace of ONE project, which is what makes that
  * comparison exact: the trees the session's locate covers are then the same three
  * `locateEntityScope` covers, so a difference in the answer can only come from the
- * probe. The walk over SEVERAL projects — what it finds, what it refuses, and that a
- * one-project workspace still produces exactly this list — is
+ * probe. The walk over SEVERAL projects (what it finds, what it refuses, and that a
+ * one-project workspace still produces exactly this list) is
  * `mcp-move-across-workspace.test.ts`.
  *
  * The comparison is computed, never written down as a literal: each case asks
@@ -105,18 +105,18 @@ function makeProject(name: string): string {
   return dir;
 }
 
-/** Opens an agent session on a project — the shape every test starts from. */
+/** Opens an agent session on a project: the shape every test starts from. */
 function openOn(project: string): Session {
   return openSession({ clientName: 'claude-code', roots: [pathToFileURL(project).href], env });
 }
 
-/** Where a replay of each chain says the entity lives — what a fresh process answers. */
+/** Where a replay of each chain says the entity lives: what a fresh process answers. */
 function viaReplay(session: Session, id: string): Scope | undefined {
   return locateEntityScope(session.trees, id, upcasters);
 }
 
 /**
- * Where the session's own locate says the entity lives, as a SCOPE — the shape these
+ * Where the session's own locate says the entity lives, as a SCOPE: the shape these
  * comparisons are in. Every case here runs on a workspace of one project, so the
  * scope is the whole of the answer and the comparison against a fresh process is
  * exact; what the wider walk adds is in `mcp-move-across-workspace.test.ts`.
@@ -126,13 +126,13 @@ function viaSession(session: Session, id: string): Scope | undefined {
   return located.outcome === 'found' ? located.home.scope : undefined;
 }
 
-/** Where the session's PROJECTIONS alone say it lives — the fast half, on its own. */
+/** Where the session's PROJECTIONS alone say it lives: the fast half, on its own. */
 function viaProjectionsOnly(session: Session, id: string): Scope | undefined {
   return locateEntityScopeWith(session.trees, id, cachedBirthProbe(session.caches));
 }
 
 /**
- * Appends a birth RECORD with no initial transition — the truncated birth a
+ * Appends a birth RECORD with no initial transition: the truncated birth a
  * complete write never produces (the pair is appended atomically) but a
  * partially-fetched chain can carry. No projection will hold it; every replay
  * will find it.
@@ -159,7 +159,7 @@ function truncatedBirth(
   writer.checkpoint();
   // The tree was written to behind the registry's back; tell it, exactly as
   // `writeContext` would have. Without this the session would be answering from
-  // a projection taken before the append — a different question from this one.
+  // a projection taken before the append: a different question from this one.
   session.caches.invalidate(chainRootForScope(session.trees, scope) as string);
   return id;
 }
@@ -200,7 +200,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
   it('every entity kind, in every tree, plus the ids nothing holds', () => {
     const session = openOn(makeProject('proj'));
 
-    // One of each kind in each tree the session can reach — nine entities whose
+    // One of each kind in each tree the session can reach: nine entities whose
     // home the two paths must agree on, born through the real write tools.
     const ids: string[] = [];
     for (const scope of ['public', 'private', 'global'] as const) {
@@ -232,10 +232,10 @@ describe('a session locates an entity exactly where a fresh process would', () =
     closeSession(session);
   });
 
-  it('a knowledge fact has no home — its id is located by neither path', () => {
+  it('a knowledge fact has no home: its id is located by neither path', () => {
     // Memories, observations, handoffs and links are facts, not workflow
     // entities: nothing transitions them and nothing reads them by entity. The
-    // probe consults the three entity projections only — the same three kinds
+    // probe consults the three entity projections only: the same three kinds
     // the core counts as births.
     const session = openOn(makeProject('proj'));
     const memory = runCaptureMemory(session, { content: 'the auth flow uses PKCE' });
@@ -297,7 +297,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
 
   it('an entity in a tree this context does not have is located by neither path', () => {
     // A session outside a project sees only the global tree. A task born in some
-    // project is invisible to it — no probe is even asked about that tree.
+    // project is invisible to it: no probe is even asked about that tree.
     const project = makeProject('proj');
     const inProject = openOn(project);
     const created = runCreateTask(inProject, { title: 'lives in a project', scope: 'public' });
@@ -312,19 +312,19 @@ describe('a session locates an entity exactly where a fresh process would', () =
   });
 });
 
-describe('the projections answer first — the chain is not replayed for an entity they hold', () => {
+describe('the projections answer first: the chain is not replayed for an entity they hold', () => {
   it('a warm session still locates a task the chain has stopped carrying', () => {
     // The decisive proof that the fast half is the one answering, and that the
     // slow half is not run behind it: the public tree's events are emptied under
     // the session, so a replay can no longer produce that birth, and the session
-    // still locates it. If the locate had gone to the chain first — or at all,
-    // for an entity the projection holds — this would not come back 'public'.
+    // still locates it. If the locate had gone to the chain first (or at all,
+    // for an entity the projection holds) this would not come back 'public'.
     //
     // Emptied WITHOUT changing a byte count, which is the only way to take the
     // events away and leave the session's view of the tree standing. That is not
     // a trick around the test: it is the freshness probe's declared blind spot,
     // exercised. A rewrite that preserves the size is tampering, and tampering is
-    // `verify`'s subject — the probe answers "did anything move", and here
+    // `verify`'s subject: the probe answers "did anything move", and here
     // nothing observably did.
     const project = makeProject('proj');
     const session = openOn(project);
@@ -349,8 +349,8 @@ describe('the projections answer first — the chain is not replayed for an enti
     // AND THE OTHER HALF, WHICH USED TO BE A COMMENT. Saying "tampering is `verify`'s
     // subject" while never calling it left the claim resting on the sentence above rather
     // than on the product: this file used the probe's blind spot and never asked what the
-    // thing the blind spot defers to actually says. It says the record is broken — the
-    // checkpoints still name a range of events the tail no longer holds — so the projection
+    // thing the blind spot defers to actually says. It says the record is broken, the
+    // checkpoints still name a range of events the tail no longer holds, so the projection
     // answering `public` is a warm read of a record a verifier refuses, which is the whole
     // shape of the trade and now an assertion.
     const verdict = verify(
@@ -367,7 +367,7 @@ describe('the projections answer first — the chain is not replayed for an enti
 
 describe('what the projections alone would have got wrong', () => {
   it('a TRUNCATED birth: the projection cannot see it, the session still can', () => {
-    // A birth is two appends — the record and its initial transition — written
+    // A birth is two appends, the record and its initial transition, written
     // atomically, so an intact chain never carries one without the other; a
     // partially-fetched chain can. The projection drops such a subject rather
     // than invent a state for it, so on its own it would have reported the
@@ -397,7 +397,7 @@ describe('what the projections alone would have got wrong', () => {
             ? runDecisionTransition(session, { id, action, note: 'n' })
             : runSkillTransition(session, { id, action, note: 'n' });
 
-      // What the operation itself answers once the entity HAS been located — the
+      // What the operation itself answers once the entity HAS been located: the
       // refusal the tool must be relaying, computed rather than written down.
       const scope = viaReplay(session, id);
       expect(scope).toBe('private');
@@ -449,7 +449,7 @@ describe('what the projections alone would have got wrong', () => {
     const project = makeProject('proj');
     const session = openOn(project);
     // Warm every tree through the probe itself, so the setup does not depend on
-    // how the locate happens to be composed — only on the projections existing.
+    // how the locate happens to be composed, only on the projections existing.
     expect(viaProjectionsOnly(session, unusedId())).toBeUndefined();
 
     const outside = writeContext(resolveTrees(project, env), 'private', createCacheRegistry());
@@ -485,7 +485,7 @@ describe('what the projections alone would have got wrong', () => {
     // What the sentence claims is load-bearing. The task is right here, in this
     // project's private tree, and the walk just found it there: a refusal saying
     // it does not exist would be false, and one saying it is not in this project
-    // would be false in a second way. So it stops at what this session can see —
+    // would be false in a second way. So it stops at what this session can see:
     // the creation, and nothing after it.
     const project = makeProject('proj');
     const session = openOn(project);
@@ -509,13 +509,13 @@ describe('what the projections alone would have got wrong', () => {
 });
 
 describe('no MCP tool locates an entity its own way', () => {
-  /** The two halves of the walk, and the rule about what an id IS — the locate's own. */
+  /** The two halves of the walk, and the rule about what an id IS: the locate's own. */
   const PIECES = ['cachedBirthProbe', 'replayingBirthProbe', 'canonicalId'];
 
   it('only the locate module names the pieces of the walk', () => {
     // The structural guard behind the design, the counterpart of the one that pins
-    // every write to the invalidation door. The composition matters — the projections
-    // over every record first, the chains only if none of them claimed the entity —
+    // every write to the invalidation door. The composition matters (the projections
+    // over every record first, the chains only if none of them claimed the entity)
     // and a tool that reached for a piece directly would quietly get a different
     // answer than the other four: a bare replay pays a full scan per call, a bare
     // projection walk loses entities the chain still holds, and a walk of its own
@@ -532,7 +532,7 @@ describe('no MCP tool locates an entity its own way', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('and the locate module names every one of them — the ban is not vacuous', () => {
+  it('and the locate module names every one of them: the ban is not vacuous', () => {
     // The half that keeps the guard above honest. A rename that emptied the walk of
     // these symbols would leave that assertion passing over a ban on nothing, which
     // is the failure mode of every structural test written as an absence.
@@ -545,7 +545,7 @@ describe('no MCP tool locates an entity its own way', () => {
 
   it('and NO file of the surface reaches for the core’s one-record locate', () => {
     // `locateEntityScope` searches ONE `ResolvedTrees` and is the right read where a
-    // `cwd` resolves one project — which is the command line, not this surface. Here
+    // `cwd` resolves one project, which is the command line, not this surface. Here
     // it would answer about the session's own project while the tool beside it
     // answered about the workspace, and the two answers look identical until the id
     // belongs to a sibling. So the ban covers the locate module too.
@@ -556,7 +556,7 @@ describe('no MCP tool locates an entity its own way', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('and the two BRANCH sentences are not on the module surface — the picker is', async () => {
+  it('and the two BRANCH sentences are not on the module surface: the picker is', async () => {
     // What a tool needs from this module is the CHOICE between the two negative
     // answers, never one of the branches: reaching for a branch directly can only
     // ever use it where the picker would have chosen the other, and the mistake reads
@@ -582,7 +582,7 @@ describe('no MCP tool locates an entity its own way', () => {
     );
   });
 
-  it('and one function composes it — five tools, one call', () => {
+  it('and one function composes it: five tools, one call', () => {
     // The locate takes the tree list, so composing it is picking the coverage. Five
     // tools ask, and every one of them must ask through the same pairing: a second
     // composition is a second answer to "which trees" the day one of them is edited.

@@ -78,7 +78,7 @@ function capture(): { io: CliIo; out: string[]; err: string[]; failed: () => boo
 }
 
 /**
- * Founds a project and returns the identity it printed — the value the reads take.
+ * Founds a project and returns the identity it printed: the value the reads take.
  *
  * `mnema init` is where a person first sees their own anchor, and every verb that
  * asks for one says so. A test that invented a name instead would be passing a
@@ -144,7 +144,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('mnema CLI — init → task → verify, end to end', () => {
+describe('mnema CLI: init → task → verify, end to end', () => {
   it('walks the full loop: init creates a tree, task adds an event, verify is ok', async () => {
     // 1. init establishes the project.
     const i = capture();
@@ -217,8 +217,8 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
   it('keeps a task WHOLE in one tree: create + every move land together, private stays empty', async () => {
     // The study's probe, inverted: prove the history is NOT split. A CLI task is
-    // born public and every move follows it there; the private tree — which the
-    // agent would have written to under the old fixed scope — receives nothing,
+    // born public and every move follows it there; the private tree (which the
+    // agent would have written to under the old fixed scope) receives nothing,
     // so the team (who reads only public) sees the whole history.
     await run(['init'], capture().io);
     const c = capture();
@@ -234,7 +234,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
       { root: trees.projectPublic as string },
       catalogUpcasters(),
     ).filter((e) => e.subject === id);
-    // created + birth transition + submit + start — the full journey, all public.
+    // created + birth transition + submit + start: the full journey, all public.
     expect(publicForTask.map((e) => e.kind)).toEqual([
       'task.created',
       'task.transitioned',
@@ -242,7 +242,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
       'task.transitioned',
     ]);
 
-    // The private tree has no event for this task at all — nothing was split off.
+    // The private tree has no event for this task at all: nothing was split off.
     const privateRoot = trees.projectPrivate as string;
     const privateForTask = existsSync(privateRoot)
       ? orderedEvents({ root: privateRoot }, catalogUpcasters()).filter((e) => e.subject === id)
@@ -266,7 +266,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
       catalogUpcasters(),
     ).filter((e) => e.subject === id);
     expect(privateForTask.map((e) => e.kind)).toContain('task.created');
-    // The public tree has no event for this task — the override truly routed it.
+    // The public tree has no event for this task: the override truly routed it.
     const publicRoot = trees.projectPublic as string;
     const publicForTask = existsSync(publicRoot)
       ? orderedEvents({ root: publicRoot }, catalogUpcasters()).filter((e) => e.subject === id)
@@ -275,7 +275,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
   });
 
   it('--scope global on create works with no project', async () => {
-    // No init — an orphan directory. Global needs no project.
+    // No init: an orphan directory. Global needs no project.
     const orphan = join(repo, 'nowhere');
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
@@ -339,7 +339,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     await run(['task', 'create', 'a task'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
-    // start from DRAFT is illegal — the gate refuses, the CLI prints it and fails.
+    // start from DRAFT is illegal: the gate refuses, the CLI prints it and fails.
     const bad = capture();
     await run(['task', 'move', 'start', id], bad.io);
     expect(bad.failed()).toBe(true);
@@ -422,14 +422,14 @@ describe('mnema CLI — init → task → verify, end to end', () => {
       expect(verdict.fullySigned).toBe(true);
       return events.map((e) => `${e.who}:${JSON.stringify(e.payload)}`);
     });
-    // Same anchor, same founding key, same enrolled backup — one identity, two
+    // Same anchor, same founding key, same enrolled backup: one identity, two
     // trees, each carrying the proof on its own.
     expect(rosters[0]).toEqual(rosters[1]);
   });
 
   it('names every key it enrolls, not only the backup', async () => {
     // Enrolling a key changes WHO may speak for the identity. The backup is the
-    // one the person must act on, but it is not the only key a roster can hold —
+    // one the person must act on, but it is not the only key a roster can hold,
     // and a key that joins in silence is one nobody can notice joining.
     const first = capture();
     await run(['init'], first.io);
@@ -496,12 +496,12 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
 /**
  * What the CLI does with an argument that would have made a record no read could
- * open — and, the half that matters most, what the project can still do afterwards.
+ * open, and, the half that matters most, what the project can still do afterwards.
  *
  * Eighteen commands of the shipped CLI accepted an empty argument, wrote a SIGNED
  * event the parser refuses, and reported success. From that moment every read of the
- * project failed — search, show, timeline, resume, verify, all of them, on the
- * whole tree rather than the one record — and a tail is append-only, so nothing could
+ * project failed (search, show, timeline, resume, verify, all of them, on the
+ * whole tree rather than the one record) and a tail is append-only, so nothing could
  * take the line back out.
  *
  * So a refusal here is not a usability nicety, and the test asserts the pair: the
@@ -509,7 +509,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
  * would have died still answer. The second half is what the golden cannot say,
  * because its reads run before its refusals.
  */
-describe('mnema CLI — a record no read could open, end to end', () => {
+describe('mnema CLI: a record no read could open, end to end', () => {
   beforeEach(async () => {
     await run(['init'], capture().io);
   });
@@ -537,7 +537,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
       [['observe', 'x', '--topic', '', '--text', 't'], 'payload.topic'],
       [['observe', 'x', '--topic', 'k', '--text', ''], 'payload.text'],
       // The two whose empty argument becomes the envelope's SUBJECT, not a payload
-      // field — the pair a payload-shaped check would have missed.
+      // field: the pair a payload-shaped check would have missed.
       [['task', 'handoff', '', 'a', 'b'], 'at subject'],
       [['task', 'handoff', 't', '', 'b'], 'payload.fromAgent'],
       [['task', 'handoff', 't', 'a', ''], 'payload.toAgent'],
@@ -557,7 +557,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
 
   it('leaves every read answering, and the project writable, after all of them', async () => {
     // Drive one refusal of each shape, then ask the reads. Before this door, ONE of
-    // these would have made all of them fail — so this is the assertion the whole
+    // these would have made all of them fail, so this is the assertion the whole
     // slice exists for.
     for (const argv of [
       ['task', 'create', ''],
@@ -614,7 +614,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
   });
 });
 
-describe('mnema CLI — decision, end to end', () => {
+describe('mnema CLI: decision, end to end', () => {
   /** Reads the id out of a `Recorded decision ADR-n (<id>)` line. */
   function idOf(out: string): string {
     return (out.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
@@ -625,7 +625,7 @@ describe('mnema CLI — decision, end to end', () => {
     const c = capture();
     await run(['decision', 'record', 'adopt the ledger', 'it is the audit surface'], c.io);
     expect(c.failed()).toBe(false);
-    // The human name is the ADR — never a `t-xxxx`-style alias, which a decision
+    // The human name is the ADR, never a `t-xxxx`-style alias, which a decision
     // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
     // no alias in between.
     // Two lines: the headline, then WHERE it landed — a decision is a declaration
@@ -644,7 +644,7 @@ describe('mnema CLI — decision, end to end', () => {
     expect(verify(root).fullySigned).toBe(true);
   });
 
-  it('records both a title AND a rationale — a missing rationale is a parser error', async () => {
+  it('records both a title AND a rationale: a missing rationale is a parser error', async () => {
     await run(['init'], capture().io);
     const c = capture();
     // Only the title given; the rationale positional is missing.
@@ -778,7 +778,7 @@ describe('mnema CLI — decision, end to end', () => {
   });
 });
 
-describe('mnema CLI — skill, end to end', () => {
+describe('mnema CLI: skill, end to end', () => {
   /** Reads the id out of a `Proposed skill "<name>" (<id>)` line. */
   function idOf(out: string): string {
     return (out.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
@@ -788,7 +788,7 @@ describe('mnema CLI — skill, end to end', () => {
     // THE DELIVERY CASE, reproduced at the surface the defect was found on. `sk-` is
     // a prefix several key issuers reuse AND two letters a person reaches for in a
     // product whose verb is `skill`, so the sieve replaced the name with
-    // `<SECRET:openai-key>` — permanently, because the record is append-only.
+    // `<SECRET:openai-key>`: permanently, because the record is append-only.
     await run(['init'], capture().io);
     const chosen = 'sk-check-the-tenant-scope-first';
     const c = capture();
@@ -804,7 +804,7 @@ describe('mnema CLI — skill, end to end', () => {
     const root = resolveTrees(repo, {
       home: join(sandbox, 'home'),
     }).projectPublic as string;
-    // The RECORD is what has to carry it — the printed line is a copy, and the copy
+    // The RECORD is what has to carry it: the printed line is a copy, and the copy
     // is not what the next session reads.
     const created = orderedEvents({ root }, catalogUpcasters()).filter(
       (event) => event.kind === 'skill.created',
@@ -835,9 +835,9 @@ describe('mnema CLI — skill, end to end', () => {
   });
 
   it('refuses a skill NAME that reads as a credential, and records nothing', async () => {
-    // THE DELIVERY CASE, at the surface. `xoxb-` is not anybody's word — the rule that
+    // THE DELIVERY CASE, at the surface. `xoxb-` is not anybody's word (the rule that
     // rescues a sayable name deliberately does not reach it, measured and pinned by
-    // name in `secrets.test.ts` — so this value IS caught. What changed is what happens
+    // name in `secrets.test.ts`), so this value IS caught. What changed is what happens
     // next: it used to be recorded as `<SECRET:slack-token>`, a skill nobody can name,
     // ask for or export, permanently. Now the person is told and nothing is written.
     await run(['init'], capture().io);
@@ -846,7 +846,7 @@ describe('mnema CLI — skill, end to end', () => {
     expect(c.failed()).toBe(true);
 
     // The refusal says the class (what to rotate) and the field (what to rename), and
-    // it quotes no part of the value — a terminal is scrollback and a CI log.
+    // it quotes no part of the value: a terminal is scrollback and a CI log.
     const said = c.err.join('\n');
     expect(said).toContain('Refused (NAME_HOLDS_A_SECRET)');
     expect(said).toContain('slack-token');
@@ -914,7 +914,7 @@ describe('mnema CLI — skill, end to end', () => {
     expect(verify(root).fullySigned).toBe(true);
   });
 
-  it('--body is required — a missing --body is a usage error, nothing is born', async () => {
+  it('--body is required: a missing --body is a usage error, nothing is born', async () => {
     await run(['init'], capture().io);
     const c = capture();
     // Only the name given; the body flag is missing.
@@ -970,7 +970,7 @@ describe('mnema CLI — skill, end to end', () => {
     expect(r.err.join('\n')).toContain('Refused (MISSING_PROOF)');
   });
 
-  it('an unknown action is UNKNOWN_ACTION — never a silent transition', async () => {
+  it('an unknown action is UNKNOWN_ACTION, never a silent transition', async () => {
     await run(['init'], capture().io);
     const c = capture();
     await run(['skill', 'create', 'a-habit', '--body', 'x'], c.io);
@@ -1039,7 +1039,7 @@ describe('mnema CLI — skill, end to end', () => {
   });
 });
 
-describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end', () => {
+describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', () => {
   function treesOf() {
     return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
@@ -1050,7 +1050,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     await run(['memory', 'the auth flow uses PKCE'], c.io);
     expect(c.failed()).toBe(false);
     // The headline plus the tree it landed in. A memory keeps the AUTHOR rule, so a
-    // person's capture is public — and the line is what makes that visible at the
+    // person's capture is public, and the line is what makes that visible at the
     // moment it happens instead of afterwards, in the record.
     expect(c.out.join('\n')).toMatch(
       /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
@@ -1086,7 +1086,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   it('observe records an observation about an entity (dangling `about` accepted), and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    // `about` names an entity that does not exist — accepted, not refused.
+    // `about` names an entity that does not exist: accepted, not refused.
     await run(
       ['observe', '00000000-0000-7000-8000-000000000000', '--topic', 'perf', '--text', 'O(n^2)'],
       c.io,
@@ -1114,7 +1114,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   it('handoff records the fact (no id), from == to accepted, and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    // The same agent from and to — a chat restart, legitimate.
+    // The same agent from and to: a chat restart, legitimate.
     await run(['task', 'handoff', 'a-task-id', 'claude-code', 'claude-code'], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toBe(
@@ -1131,7 +1131,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
 
   it('link records a cross-tree edge with a rel OUTSIDE the recommended set, and verifies', async () => {
     await run(['init'], capture().io);
-    // subject in private, pointing at a public target that need not exist — a
+    // subject in private, pointing at a public target that need not exist: a
     // link is legitimately cross-tree; the rel is not one of the recommended set.
     const c = capture();
     await run(
@@ -1214,13 +1214,13 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     await run(['task', 'move', 'cancel', id, '--reason', 'abandoned'], capture().io);
 
-    // Terminal task — an existing task with no move (not an error).
+    // Terminal task: an existing task with no move (not an error).
     const terminal = capture();
     await run(['task', 'next', id], terminal.io);
     expect(terminal.failed()).toBe(false);
     expect(terminal.out.join('\n')).toContain('terminal — no legal moves');
 
-    // Unknown id — an honest refusal, distinct from terminal.
+    // Unknown id: an honest refusal, distinct from terminal.
     const unknown = capture();
     await run(['task', 'next', 'not-a-real-id'], unknown.io);
     expect(unknown.failed()).toBe(true);
@@ -1233,7 +1233,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     // --json emits the faithful object — the WHOLE anchor, never the short form:
     // that channel is data an agent may feed back, not a line a person reads. A fresh
     // project has no runs (runs are opened by a session, not the CLI), so the actor's
-    // open runs are empty — reported honestly, not as silent output.
+    // open runs are empty: reported honestly, not as silent output.
     const json = capture();
     await run(['resume', '--actor', who, '--json'], json.io);
     const resumed = JSON.parse(json.out.join('\n')) as {
@@ -1271,7 +1271,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(r.out.join('\n')).toContain('mnema run start --which <agent>');
 
     // Outside a project, a context read refuses NO_PROJECT. The orphan must be a
-    // SIBLING of repo, not under it — resolveTrees walks UP and would otherwise
+    // SIBLING of repo, not under it: resolveTrees walks UP and would otherwise
     // find repo's own `.mnema`.
     const orphan = join(sandbox, 'elsewhere');
     mkdirSync(orphan, { recursive: true });
@@ -1299,7 +1299,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   });
 });
 
-describe('mnema CLI — search and show (the record made readable), end to end', () => {
+describe('mnema CLI: search and show (the record made readable), end to end', () => {
   /** Runs a verb and returns its stdout as one string. */
   async function output(argv: string[]): Promise<string> {
     const c = capture();
@@ -1357,7 +1357,7 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     expect(lines[2]).toBe('task (2)');
     expect(found).not.toContain(`\n${forgedLine}`);
 
-    // --json keeps each title as written — the faithful answer beside the report.
+    // --json keeps each title as written: the faithful answer beside the report.
     const json = JSON.parse(await output(['search', '--json'])) as {
       hits: { title: string }[];
     };
@@ -1413,7 +1413,7 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     expect(await output(['search', 'zebra'])).toContain('Nothing recorded matching "zebra".');
   });
 
-  it('rejects a kind, a scope and a limit that are not valid — nothing is searched', async () => {
+  it('rejects a kind, a scope and a limit that are not valid: nothing is searched', async () => {
     await run(['init'], capture().io);
 
     const kind = capture();
@@ -1468,7 +1468,7 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     expect(missing.failed()).toBe(true);
     expect(missing.err.join('\n')).toContain('No record not-a-real-id here.');
 
-    // Outside a project the global tree is still a record worth searching — the
+    // Outside a project the global tree is still a record worth searching: the
     // one place these two part from the intelligence reads, which refuse.
     const outside = join(sandbox, 'elsewhere');
     mkdirSync(outside, { recursive: true });
@@ -1498,10 +1498,10 @@ describe('mnema CLI — search and show (the record made readable), end to end',
   });
 });
 
-describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
+describe('mnema CLI: guard (dry-run of the gate), end to end', () => {
   /**
    * Founds a project with one task, and returns the task's id and the identity
-   * that made it — which every guard here asks AS. A real move's `who` comes from
+   * that made it, which every guard here asks AS. A real move's `who` comes from
    * a key, so a dry-run for a value naming no identity is refused.
    */
   async function taskAndIdentity(): Promise<{ id: string; who: string }> {
@@ -1540,7 +1540,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     const c = capture();
     // cancel is legal but needs a reason; without it → REFUSED (MISSING_PROOF).
     await run(['task', 'guard', 'cancel', id, '--actor', who], c.io);
-    // A refused verdict is a successful dry-run — it does not signal CLI failure.
+    // A refused verdict is a successful dry-run: it does not signal CLI failure.
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (MISSING_PROOF)');
   });
@@ -1594,12 +1594,12 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
  *
  * Nothing here types a value of its own. Every case runs a reading, pulls the
  * identity OUT of the text it produced, and feeds exactly that back through the real
- * CLI — because a test that asserted "the flag accepts eight hex" would pass while
+ * CLI, because a test that asserted "the flag accepts eight hex" would pass while
  * the reads printed twelve, and the person copying from their terminal would be the
  * one to find out. The value under test is the one that came out.
  */
-describe('mnema CLI — the identity a read prints is the identity a flag takes', () => {
-  /** The identity as it appears in `text` — the short form, from the output itself. */
+describe('mnema CLI: the identity a read prints is the identity a flag takes', () => {
+  /** The identity as it appears in `text`: the short form, from the output itself. */
   function printedIdentity(text: string): string {
     const found = /mnid:[0-9a-f]+/.exec(text);
     if (found === null) throw new Error(`no identity in the output: ${text}`);
@@ -1642,7 +1642,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
     expect(forms.size, JSON.stringify(reads, null, 2)).toBe(1);
     const short = [...forms][0] as string;
 
-    // It is the anchor's own leading characters — checkable against the whole value
+    // It is the anchor's own leading characters: checkable against the whole value
     // by eye, which a hashed label would not be.
     expect(whole.startsWith(short)).toBe(true);
     expect(short.length).toBeLessThan(whole.length);
@@ -1665,7 +1665,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
     const short = printedIdentity(account.out.join('\n'));
 
     // The three reads that take an actor, and the filter over the very read it came
-    // from — each given the text the terminal showed, not a value computed here.
+    // from: each given the text the terminal showed, not a value computed here.
     for (const argv of [
       ['resume', '--actor', short],
       ['task', 'guard', 'submit', id, '--actor', short],
@@ -1707,11 +1707,11 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
  * copy, lose the key, restore, keep working.
  *
  * This is the proof the backup key was worth making. The property under test is
- * not "the command succeeds" — it is that the identity AFTER the loss is the
+ * not "the command succeeds": it is that the identity AFTER the loss is the
  * identity from before it, so the record stays one person's record rather than
  * splitting into two strangers who share a name.
  */
-describe('mnema CLI — key restore, end to end', () => {
+describe('mnema CLI: key restore, end to end', () => {
   /** The key root of the sandboxed machine. */
   function keyRoot(): string {
     return join(sandbox, 'home', '.mnema', 'identity');
@@ -1746,7 +1746,7 @@ describe('mnema CLI — key restore, end to end', () => {
     writeFileSync(vaultCopy, readFileSync(coldPath, 'utf-8'), { mode: 0o600 });
     rmSync(join(keyRoot(), 'backup'), { recursive: true, force: true });
 
-    // The loss: the private half of the machine's own key. Nothing else — the
+    // The loss: the private half of the machine's own key. Nothing else: the
     // cold path init printed is named by the backup's fingerprint, so the other
     // `.key` at the key root is the machine's own.
     const backupFp = basename(coldPath, '.key');
@@ -1795,11 +1795,11 @@ describe('mnema CLI — key restore, end to end', () => {
     });
   });
 
-  it('WITHOUT the restore the same loss splits the identity — what the command prevents', async () => {
+  it('WITHOUT the restore the same loss splits the identity: what the command prevents', async () => {
     const lost = await initThenLoseTheKey();
 
     // No restore. The machine has no private key, so it mints a fresh one and
-    // founds a SECOND identity in the team's tree — appended, unappendable-back.
+    // founds a SECOND identity in the team's tree: appended, unappendable-back.
     const m = capture();
     await run(['memory', 'written by a machine that lost its key'], m.io);
     expect(m.failed()).toBe(false);
@@ -1840,7 +1840,7 @@ describe('mnema CLI — key restore, end to end', () => {
  * A SECOND MACHINE joining one identity, driven through the real CLI: two key
  * roots, one shared record, and the three verbs that put them together.
  *
- * The property under test is not "the commands succeed" — it is that after the
+ * The property under test is not "the commands succeed": it is that after the
  * handshake the two machines are ONE author. A record where a person's second
  * machine appears as a stranger is the failure this whole flow exists to prevent,
  * and it is a failure that cannot be undone: the events are appended.
@@ -1848,7 +1848,7 @@ describe('mnema CLI — key restore, end to end', () => {
  * Both machines share the repository directory (the state a `git pull` leaves) and
  * differ only in their key root, which is what makes them two machines.
  */
-describe('mnema CLI — a second machine joins one identity, end to end', () => {
+describe('mnema CLI: a second machine joins one identity, end to end', () => {
   /** Points the next commands at one machine's key root. Two roots, two machines. */
   function asMachine(name: string): void {
     process.env.HOME = join(sandbox, name, 'home');
@@ -1886,14 +1886,14 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     return r.out.find((line) => line.startsWith('mnema-key-request:')) as string;
   }
 
-  /** The private keys a machine holds — the ambiguity that must never be created. */
+  /** The private keys a machine holds: the ambiguity that must never be created. */
   function privateKeysOf(name: string): string[] {
     const dir = join(keyRootOf(name), 'keys');
     if (!existsSync(dir)) return [];
     return readdirSync(dir).filter((f) => f.endsWith('.key'));
   }
 
-  it('after joining, `init` reports the adopted identity — not the key its own derives', async () => {
+  it('after joining, `init` reports the adopted identity, not the key its own derives', async () => {
     // `init` is the command a person runs to check that joining worked, and it is
     // reached BEFORE the first write settles the anchor on disk. Reporting the
     // derived anchor there would name an identity the very next write corrects.
@@ -1930,7 +1930,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     asMachine('a');
     const { anchor } = await initHere();
 
-    // B asks to join. It has no key yet, so this is also where its key is born —
+    // B asks to join. It has no key yet, so this is also where its key is born,
     // and it records NO anchor: asking is not being accepted.
     asMachine('b');
     const request = await requestToJoin(anchor);
@@ -1978,7 +1978,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
 
   it('WITHOUT the enrollment the same second machine becomes a stranger', async () => {
     // The neutralization: skip the handshake and let B just write. Two identities in
-    // a record the team shares — the state the three verbs exist to avoid.
+    // a record the team shares: the state the three verbs exist to avoid.
     asMachine('a');
     const { anchor } = await initHere();
 
@@ -2015,7 +2015,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     expect(enrollments).toHaveLength(1);
   });
 
-  it('still wants the WHOLE fingerprint to retire a key — a prefix is not a key', async () => {
+  it('still wants the WHOLE fingerprint to retire a key: a prefix is not a key', async () => {
     // An anchor may now be named by a prefix, and a fingerprint may not. The two are
     // different values: an anchor is an identity the record lists, so a prefix
     // resolves against something and an ambiguous one is refused by name — a
@@ -2043,7 +2043,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     asMachine('a');
     const { anchor } = await initHere();
     // The identity has two keys from founding (this machine's and the cold backup),
-    // so retiring one is allowed — and then the other is the last.
+    // so retiring one is allowed, and then the other is the last.
     const own = privateKeysOf('a')[0]?.replace('.key', '') as string;
     const backup = orderedEvents({ root: publicTree() }, catalogUpcasters())
       .filter((event) => event.kind === 'key.enrolled')
@@ -2070,16 +2070,16 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
 });
 
 /**
- * Getting OUT of a split: a machine that lost its key, minted another, and wrote —
+ * Getting OUT of a split: a machine that lost its key, minted another, and wrote,
  * so a record the team shares now carries the same person twice.
  *
  * This is the case `key restore` could not reach (it refuses while a key is
  * installed, and rightly: two private keys would make the machine's identity
  * depend on directory order). What the handshake adds is a way to ask on behalf of
- * a key the machine does NOT sign with — the cold copy — while the wrong key still
+ * a key the machine does NOT sign with, the cold copy, while the wrong key still
  * occupies the key root.
  */
-describe('mnema CLI — asking with the cold copy while the wrong key is installed', () => {
+describe('mnema CLI: asking with the cold copy while the wrong key is installed', () => {
   function asMachine(name: string): void {
     process.env.HOME = join(sandbox, name, 'home');
   }
@@ -2096,7 +2096,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
 
   /**
    * The state: the person's identity, their cold copy in a vault, the machine's own
-   * key gone, and one fact written after the loss — which minted a fresh key and
+   * key gone, and one fact written after the loss, which minted a fresh key and
    * founded a SECOND identity in the shared record.
    */
   async function loseTheKeyThenWrite(): Promise<{
@@ -2175,7 +2175,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
   it('and enrolling the wrong key makes the ambiguity REFUSE the write, never guess it', async () => {
     const lost = await loseTheKeyThenWrite();
     // The tempting move: bring the wrong-but-present key into the original identity.
-    // It works — and now that key belongs to TWO identities in this record, because
+    // It works, and now that key belongs to TWO identities in this record, because
     // it also founded one. A machine cannot choose between them on the person's
     // behalf, so the next write into a tree it has no recorded anchor for refuses.
     asMachine('m');
@@ -2223,15 +2223,15 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
 
 /**
  * The SESSION on the command line, end to end: open a run, work inside it, close
- * it — and prove the chain of authorization the run exists to carry.
+ * it, and prove the chain of authorization the run exists to carry.
  *
  * The property under test is not "the commands succeed". It is that the facts
  * written between `run start` and `run end` all name the SAME session, that the
  * session is the one a human opened for a named agent, and that a value the
  * environment merely CLAIMS is a run cannot get anywhere near the chain.
  */
-describe('mnema CLI — run (the session), end to end', () => {
-  /** Inits and returns the anchor `init` printed — the actor of every read here. */
+describe('mnema CLI: run (the session), end to end', () => {
+  /** Inits and returns the anchor `init` printed: the actor of every read here. */
   async function initHere(): Promise<string> {
     const i = capture();
     await run(['init'], i.io);
@@ -2270,7 +2270,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const anchor = await initHere();
 
     // 1. The session opens, for a NAMED agent, and hands back the line that pins
-    //    a shell to it — a process cannot export into its parent shell.
+    //    a shell to it: a process cannot export into its parent shell.
     const started = await startRun('claude-code', 'wire the run into the CLI');
     expect(started.out).toContain(`export MNEMA_RUN=${started.id}`);
     expect(started.out).toContain('for claude-code — wire the run into the CLI');
@@ -2286,7 +2286,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['task', 'create', 'close the pair', '--which', 'claude-code'], t.io);
     expect(t.failed()).toBe(false);
 
-    // 3. BOTH facts carry the SAME run on the envelope — the chain of
+    // 3. BOTH facts carry the SAME run on the envelope: the chain of
     //    authorization, not two unrelated events that happen to share an author.
     const trees = treesOf();
     const written = [...eventsOf(trees.projectPrivate), ...eventsOf(trees.projectPublic)].filter(
@@ -2302,7 +2302,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(session).toMatchObject({ agent: 'claude-code', who: anchor, open: true });
     expect(projectRuns(eventsOf(trees.projectPrivate)).has(started.id)).toBe(false);
 
-    // 4. resume ANSWERS now with the run still open — the list that was empty forever for a
+    // 4. resume ANSWERS now with the run still open: the list that was empty forever for a
     //    CLI user.
     const f = capture();
     await run(['resume', '--actor', anchor], f.io);
@@ -2311,7 +2311,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(f.out.join('\n')).toContain(started.id);
     expect(f.out.join('\n')).toContain('wire the run into the CLI');
 
-    // 5. The session closes — by MNEMA_RUN, with no id retyped — and says how to
+    // 5. The session closes (by MNEMA_RUN, with no id retyped) and says how to
     //    let go of a variable that would otherwise refuse every later write.
     const e = capture();
     await run(['run', 'end', '--which', 'claude-code', '--outcome', 'shipped'], e.io);
@@ -2319,7 +2319,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(e.out.join('\n')).toContain(`Ended run ${started.id}`);
     expect(e.out.join('\n')).toContain('unset MNEMA_RUN');
     // The close names the agent that executed it, the way the birth named the one the
-    // session was for — and it is on the ENVELOPE of the fact, not only on the line.
+    // session was for, and it is on the ENVELOPE of the fact, not only on the line.
     expect(e.out.join('\n')).toContain('by claude-code');
     const closed = eventsOf(treesOf().projectPublic).find((x) => x.kind === 'run.ended');
     expect(closed?.which).toBe('claude-code');
@@ -2373,7 +2373,7 @@ describe('mnema CLI — run (the session), end to end', () => {
   });
 
   it('a run opened in ANOTHER project is not accepted here', async () => {
-    // A session vouches for work in the project it was opened in — never in a
+    // A session vouches for work in the project it was opened in, never in a
     // repository it never saw.
     await initHere();
     const started = await startRun('claude-code');
@@ -2404,7 +2404,7 @@ describe('mnema CLI — run (the session), end to end', () => {
   });
 
   it('`run start` without --which is a usage error, and no session is born', async () => {
-    // A run with no agent proves no delegation — it is the correlation id the
+    // A run with no agent proves no delegation: it is the correlation id the
     // design rejected, so there is no way to ask for one.
     await initHere();
     const s = capture();
@@ -2426,7 +2426,7 @@ describe('mnema CLI — run (the session), end to end', () => {
   it('`run end` without --which is a usage error at PARSE time, and the run stays open', async () => {
     // The other half of the pair reading the same. `run start` has no way to open a
     // session unnamed; a close that could omit its executor would record an agent's
-    // session as sealed by the person — which is what it did, and what no read could
+    // session as sealed by the person, which is what it did, and what no read could
     // tell apart from a person who really did close it.
     await initHere();
     const started = await startRun('claude-code');
@@ -2443,7 +2443,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     // It used to assert commander's own sentence, `required option '--which <agent>'
     // not specified`. That sentence no longer reaches a stream: the parser's no is
     // said in the product's voice now (`wiring/misuse.ts`), built from the very
-    // declaration this case is about — which is why the discriminant survived the
+    // declaration this case is about, which is why the discriminant survived the
     // change intact. The flags come from the `requiredOption`, and the half after the
     // colon is its help.
     const said = e.err.join('\n');
@@ -2489,7 +2489,7 @@ describe('mnema CLI — run (the session), end to end', () => {
   it('an AGENT NAME holding a newline cannot forge a run in `resume`', async () => {
     // `resume` lists one line per open run, `<id>  <agent>`, and the agent's name
     // is text an actor wrote. Split across two lines, its second half would read
-    // as a run of its own — an id the record never minted, for an agent that is
+    // as a run of its own: an id the record never minted, for an agent that is
     // not this actor's. The goal sits on the same line and is just as writable.
     const anchor = await initHere();
     const forgedLine = '  019f0000-0000-7000-8000-000000000000  someone-else';
@@ -2500,7 +2500,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
     const lines = f.out.join('\n').split('\n');
-    // Where the actor left off, the count, and exactly one line per open run — two runs,
+    // Where the actor left off, the count, and exactly one line per open run: two runs,
     // two lines.
     expect(lines).toHaveLength(4);
     expect(lines[1]).toContain('2 run(s) still open');
@@ -2533,7 +2533,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     //
     // The ENDED run is the case that matters most and the one `runAgeSuffix` cannot
     // reach: it prints no age and no idleness, so without this clause a finished
-    // session — which is exactly what "where was I" lands on — said nothing at all
+    // session (which is exactly what "where was I" lands on) said nothing at all
     // about what happened in it.
     const anchor = await initHere();
     const worked = await startRun('claude-code', 'a session that did things');
@@ -2550,7 +2550,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     // Two kinds per task, and that is the record being literal rather than a surprise:
     // a task is BORN as a `task.created` and a `task.transitioned` into its initial
     // state, so a session that opened two tasks wrote four facts. The two 2s also make
-    // the tie-break part of the claim — equal counts are ordered by the kind's own
+    // the tie-break part of the claim: equal counts are ordered by the kind's own
     // spelling, which is why `task.created` leads `task.transitioned`.
     expect(open.out.join('\n')).toContain(
       '· wrote 2 task.created, 2 task.transitioned, 1 memory.captured',
@@ -2582,8 +2582,8 @@ describe('mnema CLI — run (the session), end to end', () => {
 
   it('`resume` says a run wrote NOTHING rather than leaving the clause off', async () => {
     // Distinguishable from "I do not know", which is what silence would claim. A run
-    // that opened and closed with no write in it is a real state — a session whose
-    // first write did not land — and the reading has to say so.
+    // that opened and closed with no write in it is a real state (a session whose
+    // first write did not land) and the reading has to say so.
     const anchor = await initHere();
     const empty = await startRun('claude-code', 'a session that did nothing');
     await run(['run', 'end', empty.id, '--which', 'claude-code'], capture().io);
@@ -2597,7 +2597,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     // The hole a mutation battery found: `resume` prints the clause and NOTHING held it.
     // Handing the wording function a run that wrote nothing left every case green,
     // because the only fixture that reached this line was a run that had written
-    // nothing anyway — a guard blind for want of a value, not for want of a case.
+    // nothing anyway: a guard blind for want of a value, not for want of a case.
     //
     // Two runs, one that recorded work and one that recorded none, so the line tells
     // them apart on the axis this clause exists for.
@@ -2605,7 +2605,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const worked = await startRun('claude-code', 'with work in it');
     process.env.MNEMA_RUN = worked.id;
     // A TASK and not a memory: routing sends a memory to the private tree while the run
-    // stays in the committed one, and a projection is per tree — so the pair would show
+    // stays in the committed one, and a projection is per tree, so the pair would show
     // a run that wrote nothing while something was written. (The same limit the
     // idleness case below is built around.)
     await run(['task', 'create', 'a job done in that session'], capture().io);
@@ -2620,7 +2620,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const lines = f.out.join('\n').split('\n').slice(2);
     const forWorked = lines.find((l) => l.includes(worked.id)) ?? '';
     const forEmpty = lines.find((l) => l.includes(empty.id)) ?? '';
-    // A task is born as a pair — the creation and the move into its initial state.
+    // A task is born as a pair: the creation and the move into its initial state.
     expect(forWorked).toContain('· wrote 1 task.created, 1 task.transitioned');
     expect(forEmpty).toContain('· wrote nothing');
     // Still ONE line per run: the clause rides the run's own line, like the durations.
@@ -2650,7 +2650,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const f = capture();
     await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
-    // Still one line per run — the age rides the run's own line, because a reader
+    // Still one line per run: the age rides the run's own line, because a reader
     // counts runs by lines. The first two lines are where the actor left off and the count.
     const lines = f.out.join('\n').split('\n').slice(2);
     expect(lines).toHaveLength(2);
@@ -2699,12 +2699,12 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(ended.out.join('\n')).not.toContain('· open ');
   });
 
-  it('and the MCP surface seals a session with the SAME fact — one shape, each its own agent', async () => {
+  it('and the MCP surface seals a session with the SAME fact: one shape, each its own agent', async () => {
     // The agreement, over the one record both surfaces write to. What a `run.ended`
     // carries cannot depend on which surface closed it: a reader replays one chain and
     // has no idea which door a fact came through, so a close attributed on one surface
     // and anonymous on the other would make the attribution a property of the caller.
-    // It WAS one — the MCP close and the CLI close were the same operation, and the
+    // It WAS one: the MCP close and the CLI close were the same operation, and the
     // operation took no agent, so both were the person's.
     await initHere();
     const started = await startRun('cli-agent');
@@ -2731,7 +2731,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const shapes = sealed.map((e) => Object.keys(e).sort());
     expect(shapes[0]).toEqual(shapes[1]);
     expect(shapes[0]).toContain('which');
-    // And each names the agent of ITS session — the surfaces agree on the field, not
+    // And each names the agent of ITS session: the surfaces agree on the field, not
     // on the value, which is the whole point of recording it.
     expect(new Set(sealed.map((e) => e.which))).toEqual(new Set(['cli-agent', 'mcp-agent']));
   });
@@ -2742,18 +2742,18 @@ describe('mnema CLI — run (the session), end to end', () => {
  *
  * The property under test is not "the flag is validated". It is that an agent
  * cannot become indistinguishable from a person by DECLARING itself and naming
- * nothing — which is what `--which "$AGENT"` with an unset variable does in a CI
+ * nothing, which is what `--which "$AGENT"` with an unset variable does in a CI
  * step, and what the record used to swallow twice over: the `which` dropped out of
  * every event (so the fact asserted a human acted directly) and the birth was
  * routed to the team's COMMITTED tree, because "no agent" is read as "a person
  * captured this".
  *
  * The three forms are not decoration. `canonicalIdentity` is the one rule that
- * decides this, and what it says about a form is the answer here — so a form it
+ * decides this, and what it says about a form is the answer here, so a form it
  * reads as an identity (the zero-width one) is asserted to be ACCEPTED, not
  * refused. Guessing would have written the opposite test.
  */
-describe('mnema CLI — a --which that names nobody', () => {
+describe('mnema CLI: a --which that names nobody', () => {
   function treesOf() {
     return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
@@ -2795,7 +2795,7 @@ describe('mnema CLI — a --which that names nobody', () => {
       expect(said).toContain('names no agent');
       expect(said).toContain('a person acted directly');
 
-      // Nothing was born — in ANY tree. The refusal is at the door, before a
+      // Nothing was born: in ANY tree. The refusal is at the door, before a
       // scope is even resolved, so there is no "it landed somewhere else".
       const trees = treesOf();
       expect(eventsOf(trees.projectPublic).length).toBe(before);
@@ -2804,13 +2804,13 @@ describe('mnema CLI — a --which that names nobody', () => {
     });
   }
 
-  it('a MOVE refuses it too — the flag is read off the parent group, the rule is not', async () => {
+  it('a MOVE refuses it too: the flag is read off the parent group, the rule is not', async () => {
     await run(['init'], capture().io);
     const c = capture();
     await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     // A birth is a PAIR (created + the transition into the initial state), so the
-    // count before is what "it did not move" is measured against — not zero.
+    // count before is what "it did not move" is measured against, not zero.
     const transitions = () =>
       eventsOf(treesOf().projectPublic).filter((e) => e.kind === 'task.transitioned').length;
     const before = transitions();
@@ -2835,7 +2835,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(eventsOf(treesOf().projectPublic).some((e) => e.kind === 'run.started')).toBe(false);
   });
 
-  it('`guard --which "   "` refuses — the dry-run answers for the move it mirrors', async () => {
+  it('`guard --which "   "` refuses: the dry-run answers for the move it mirrors', async () => {
     const who = await foundIdentity();
     const c = capture();
     await run(['task', 'create', 'ship it'], c.io);
@@ -2848,15 +2848,15 @@ describe('mnema CLI — a --which that names nobody', () => {
   });
 
   // The three below probe a MEMORY rather than a task, and the reason is the point:
-  // this rule lands in two places — the `which` on the envelope, and the tree a birth
-  // routes to — and the second one only reads the author for the two knowledge kinds
+  // this rule lands in two places (the `which` on the envelope, and the tree a birth
+  // routes to) and the second one only reads the author for the two knowledge kinds
   // now. A task is routed by its kind, so a task would still assert the envelope half
   // while quietly dropping the half where the two could disagree.
   it('a zero-width name is a NAME, not a blank: it is recorded and lands private', async () => {
     // What `canonicalIdentity` does with U+200C is the answer, and it keeps it: the
     // char is not whitespace, so this is an (invisible) agent name and not an
-    // absent one. That means the two things the hole broke are intact — the `which`
-    // is on the event, and the capture went to this machine's private tree — so there
+    // absent one. That means the two things the hole broke are intact (the `which`
+    // is on the event, and the capture went to this machine's private tree), so there
     // is nothing here to refuse. Asserting the opposite would have been asserting
     // a guess.
     await run(['init'], capture().io);
@@ -2880,7 +2880,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     const captured = eventsOf(trees.projectPrivate).find((e) => e.kind === 'memory.captured');
     expect(captured?.which).toBe('claude-code');
     // A name with stray whitespace around it is still that name (trimmed), never
-    // a refusal — the accident the canonical rule exists to absorb.
+    // a refusal: the accident the canonical rule exists to absorb.
     const padded = capture();
     await run(['memory', 'and again', '--which', '  claude-code  '], padded.io);
     expect(padded.failed()).toBe(false);
@@ -2893,7 +2893,7 @@ describe('mnema CLI — a --which that names nobody', () => {
 
   it('an ABSENT --which still means a person acted: no which, and the capture is PUBLIC', async () => {
     // The rule that must NOT change. Defaulting an omitted flag to some agent name
-    // would invent an agent where there was a person — the same fiction, inverted.
+    // would invent an agent where there was a person: the same fiction, inverted.
     await run(['init'], capture().io);
     const t = capture();
     await run(['memory', 'a fact'], t.io);
@@ -2905,15 +2905,15 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(eventsOf(trees.projectPrivate).some((e) => e.kind === 'memory.captured')).toBe(false);
   });
 
-  it('EVERY verb that declares an executing agent validates it — no site can forget', () => {
+  it('EVERY verb that declares an executing agent validates it: no site can forget', () => {
     // The structural half of the proof: the behaviour above is asserted on a few
-    // verbs, and this is what makes it true of the rest — and of the next one
+    // verbs, and this is what makes it true of the rest, and of the next one
     // somebody adds. A `--which` with no parser is a verb where the hole is open.
     const { program } = buildProgram(capture().io);
     const declaring: string[] = [];
     const unvalidated: string[] = [];
     // The program's own walk, the one its refusals and its completion tree take, so a verb
-    // this misses is a verb those miss too — and the exact list below still reads every
+    // this misses is a verb those miss too, and the exact list below still reads every
     // omission, in both directions.
     for (const command of everyCommandOf(program)) {
       const path = pathOf(command).join(' ');
@@ -2968,12 +2968,12 @@ describe('mnema CLI — a --which that names nobody', () => {
   });
 });
 
-describe('mnema CLI — what enters the record', () => {
+describe('mnema CLI: what enters the record', () => {
   function treesOf() {
     return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
 
-  /** Every string anywhere in every payload of a tree — the generic sweep. */
+  /** Every string anywhere in every payload of a tree: the generic sweep. */
   function recordedText(root: string | undefined): string[] {
     if (root === undefined || !existsSync(root)) return [];
     const found: string[] = [];
@@ -3006,7 +3006,7 @@ describe('mnema CLI — what enters the record', () => {
     const printed = m.out.join('\n');
     expect(printed).toContain('Captured memory');
 
-    // 2. What is IN THE CHAIN does not contain the value — the assertion that
+    // 2. What is IN THE CHAIN does not contain the value: the assertion that
     //    matters, over the record itself rather than over the report.
     const trees = treesOf();
     for (const value of recordedText(trees.projectPublic)) {
@@ -3017,7 +3017,7 @@ describe('mnema CLI — what enters the record', () => {
       'the deploy key is <SECRET:aws-access-key>',
     );
 
-    // 3. The AGENT was told, and told what to do — a silent scrub would leave a
+    // 3. The AGENT was told, and told what to do: a silent scrub would leave a
     //    live credential unrotated because nobody knew it had been typed.
     expect(printed).toContain('1 value(s) replaced before recording');
     expect(printed).toContain('<SECRET:aws-access-key>');
@@ -3038,7 +3038,7 @@ describe('mnema CLI — what enters the record', () => {
 
     // The echo and the notice sit on consecutive lines, so printing the typed
     // value would put a credential directly above the line saying it was
-    // replaced — the product contradicting itself in two lines.
+    // replaced: the product contradicting itself in two lines.
     expect(printed).not.toContain(SECRET);
     expect(printed).toContain('deploy with <SECRET:aws-access-key>');
     expect(printed).toContain('1 value(s) replaced before recording');
@@ -3112,12 +3112,12 @@ describe('mnema CLI — what enters the record', () => {
     expect(e.failed()).toBe(false);
     const printed = e.out.join('\n');
 
-    // It found it, and named where it is and what class — the actionable half.
+    // It found it, and named where it is and what class: the actionable half.
     expect(printed).toContain('019fa8b7-0410-717b-9af2-cfeb013fc4ac');
     expect(printed).toContain('public');
     expect(printed).toContain('aws-access-key');
     expect(printed).toContain('Rotate the credentials');
-    // And NOT the value — not whole, not as a prefix. A command that printed it
+    // And NOT the value, not whole, not as a prefix. A command that printed it
     // would move the credential into the terminal scrollback and the CI log.
     expect(printed).not.toContain(SECRET);
     expect(printed).not.toContain('AKIA ');
@@ -3139,7 +3139,7 @@ describe('mnema CLI — what enters the record', () => {
     const printed = e.out.join('\n');
     expect(printed).toContain('Nothing recognizable');
     // WHERE it looked, beside the count. A denominator next to an empty list reads as
-    // ground covered, and this command covers the project `cwd` resolves to — the MCP
+    // ground covered, and this command covers the project `cwd` resolves to: the MCP
     // tool, opened over several at once, decomposes its denominator for the same reason.
     expect(printed).toContain('this project’s trees and the machine-global tree');
     // The limit, said where the person reads it: a password in prose has no
@@ -3149,7 +3149,7 @@ describe('mnema CLI — what enters the record', () => {
 
   it('every writing verb declares the contract in its own --help', async () => {
     // The instruction is the layer that covers what the shape cannot reach, so it
-    // has to be present at the point of use — not only in a README.
+    // has to be present at the point of use, not only in a README.
     for (const verb of [
       ['task'],
       ['decision'],
@@ -3174,7 +3174,7 @@ describe('mnema CLI — what enters the record', () => {
   });
 });
 
-describe('mnema CLI — skills, the provenance audit', () => {
+describe('mnema CLI: skills, the provenance audit', () => {
   /** Runs a verb and returns its stdout as one string. */
   async function output(argv: string[]): Promise<string> {
     const c = capture();
@@ -3184,7 +3184,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
   }
 
   /**
-   * The id printed by a verb that mints one — read from the parentheses the verb
+   * The id printed by a verb that mints one: read from the parentheses the verb
    * prints it in, never as the first uuid-shaped run in the line. A name is text
    * an actor wrote, so it can HOLD something uuid-shaped, and the first match
    * would then be the actor's text instead of the record's id.
@@ -3221,7 +3221,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     expect(printed).toContain('proposed by agent-A · adopted by agent-A (the same agent)');
     // The state and the tree, which together say how far the pattern reaches. A
     // pattern is a declaration about the project, so it lands in the tree that
-    // travels — whether an agent or a person proposed it.
+    // travels: whether an agent or a person proposed it.
     expect(printed).toMatch(/adopted\s+public\s+a-habit/);
   });
 
@@ -3307,7 +3307,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     expect(JSON.stringify(json)).not.toContain('the pattern of');
   });
 
-  it('writes NOTHING — not a consultation, not a byte (the MCP tool records, this does not)', async () => {
+  it('writes NOTHING, not a consultation, not a byte (the MCP tool records, this does not)', async () => {
     await run(['init'], capture().io);
     await adopt('a-habit', 'agent-A', 'agent-A');
     const before = digestOf(join(repo, '.mnema'));
@@ -3362,7 +3362,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     ]);
 
     const lines = (await output(['skill', 'provenance'])).split('\n');
-    // The header plus exactly one line — the count matches the pattern count.
+    // The header plus exactly one line: the count matches the pattern count.
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe('1 pattern(s):');
     // The name as written is still in --json; the report just keeps it on one line.
@@ -3375,20 +3375,20 @@ describe('mnema CLI — skills, the provenance audit', () => {
   it('an AGENT NAME holding a newline cannot forge a second line in the report', async () => {
     await run(['init'], capture().io);
     // The name was closed already. These two acts carry a crafted AGENT name,
-    // which sits on the same line and is just as much text an actor wrote — one
+    // which sits on the same line and is just as much text an actor wrote: one
     // forging through the proposal, one through the adoption.
     const forgedLine =
       '  019f0000-0000-7000-8000-000000000000  adopted     public   ' +
       'padrao-forjado  ·  proposed by a person · adopted by a person';
     await adopt('legit-one', `agente\n${forgedLine}`, 'agente');
     await adopt('legit-two', 'agente', `agente\n${forgedLine}`);
-    // And one carrying a break in EVERY field of its line at once — the name and
+    // And one carrying a break in EVERY field of its line at once: the name and
     // both agents. Three fields, still one line.
     await adopt(`legit-three\n${forgedLine}`, `agente\n${forgedLine}`, `agente\n${forgedLine}`);
 
     const printed = await output(['skill', 'provenance']);
     const lines = printed.split('\n');
-    // The header plus exactly one line per pattern — three patterns, three lines.
+    // The header plus exactly one line per pattern: three patterns, three lines.
     expect(lines).toHaveLength(4);
     expect(lines[0]).toBe('3 pattern(s):');
     expect(printed).not.toContain(`\n${forgedLine}`);
@@ -3413,7 +3413,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
   });
 });
 
-describe('where a pattern came from — across the two surfaces', () => {
+describe('where a pattern came from: across the two surfaces', () => {
   /** A session for one agent over the sandbox project, as the transport opens it. */
   function sessionFor(agent: string) {
     return openSession({
@@ -3426,7 +3426,7 @@ describe('where a pattern came from — across the two surfaces', () => {
   it('agent A proposes and adopts; agent B is served the body WITH its provenance; the CLI shows both ends', async () => {
     await run(['init'], capture().io);
 
-    // 1. agent-A does the whole cycle itself — three tool calls, no human. This is
+    // 1. agent-A does the whole cycle itself: three tool calls, no human. This is
     // the act the study proved and the product does not block: it is legal, and
     // what was missing is that nobody downstream could see it.
     const a = sessionFor('agent-A');
@@ -3441,7 +3441,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     }
 
     // 2. agent-B, a different connection, asks for the patterns to work by. The
-    // body arrives verbatim — and now the adopter arrives with it.
+    // body arrives verbatim, and now the adopter arrives with it.
     const b = sessionFor('agent-B');
     const served = runSkillsTool(b);
     expect(served.ok).toBe(true);
@@ -3456,7 +3456,7 @@ describe('where a pattern came from — across the two surfaces', () => {
       },
     ]);
     // What the transport puts beside the bodies: the declaration and one line of
-    // provenance. It states, never asks — no "careful", no "verify".
+    // provenance. It states, never asks: no "careful", no "verify".
     const framing = patternsFraming(served).join('\n');
     expect(framing).toContain('the people and agents working on it wrote');
     expect(framing).toContain('adopted by agent-A');
@@ -3465,7 +3465,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     }
 
     // 3. The person auditing on the command line sees BOTH acts, and that one
-    // agent stands on both ends — the reading the served line does not carry.
+    // agent stands on both ends: the reading the served line does not carry.
     const audit = capture();
     await run(['skill', 'provenance'], audit.io);
     expect(audit.failed()).toBe(false);
@@ -3474,7 +3474,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     );
 
     // And the adoption itself was never blocked: the pattern is live, in the tree that
-    // TRAVELS — a pattern an agent proposed is still a declaration about the project —
+    // TRAVELS (a pattern an agent proposed is still a declaration about the project)
     // on a chain that still verifies.
     const trees = resolveTrees(repo, {
       home: join(sandbox, 'home'),
@@ -3490,8 +3490,8 @@ describe('where a pattern came from — across the two surfaces', () => {
   it('counts how many sessions were served each pattern, and says so when none were', async () => {
     // The fact this reads back is the one the agent surface writes and NOTHING read
     // until now: a pattern every session leans on and a pattern nobody has opened
-    // looked identical on both surfaces. The writer is the real one — the tool that
-    // serves the body — so the two halves are proven against each other.
+    // looked identical on both surfaces. The writer is the real one, the tool that
+    // serves the body, so the two halves are proven against each other.
     await run(['init'], capture().io);
     const a = sessionFor('agent-A');
     const live = runCreateSkill(a, { name: 'Build hygiene', body: 'Always squash first.' });
@@ -3503,7 +3503,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     }
 
     // Two connections read it; one of them reads it twice. That is TWO sessions
-    // that used the pattern — the second call in a session is the same session.
+    // that used the pattern: the second call in a session is the same session.
     const b = sessionFor('agent-B');
     expect(runSkillsTool(b).ok).toBe(true);
     expect(runSkillsTool(b).ok).toBe(true);
@@ -3515,7 +3515,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     expect(audit.failed()).toBe(false);
     const lines = audit.out.filter((line) => line.startsWith('  '));
     expect(lines.find((line) => line.includes(live.id))).toContain('consulted in 2 run(s)');
-    // Never adopted, so never served, so never consulted — stated, not left blank.
+    // Never adopted, so never served, so never consulted: stated, not left blank.
     expect(lines.find((line) => line.includes(shelved.id))).toContain('never consulted');
 
     // And the same number when the pattern is opened on its own.
@@ -3554,8 +3554,8 @@ describe('where a pattern came from — across the two surfaces', () => {
   });
 });
 
-describe('mnema CLI — brief, the record as the file an agent reads', () => {
-  /** Runs a verb and returns its stdout as one string — the bytes a redirection gets. */
+describe('mnema CLI: brief, the record as the file an agent reads', () => {
+  /** Runs a verb and returns its stdout as one string: the bytes a redirection gets. */
   async function output(argv: string[]): Promise<string> {
     const c = capture();
     await run(argv, c.io);
@@ -3565,12 +3565,12 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     return `${c.out.join('\n')}\n`;
   }
 
-  /** The id printed inside the parentheses a birth reports — never the first uuid on the line. */
+  /** The id printed inside the parentheses a birth reports, never the first uuid on the line. */
   function idOf(text: string): string {
     return (text.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
   }
 
-  /** Records a decision and accepts it — the two moves that put one in force. */
+  /** Records a decision and accepts it: the two moves that put one in force. */
   async function accept(title: string): Promise<string> {
     const id = idOf(await output(['decision', 'record', title, 'because the record says so']));
     await output(['decision', 'move', 'accept', id, '--note', 'agreed in review']);
@@ -3596,7 +3596,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     return id;
   }
 
-  /** Creates a pattern and adopts it — the three moves that make one served. */
+  /** Creates a pattern and adopts it: the three moves that make one served. */
   async function adopt(name: string, body: string, scope?: string): Promise<string> {
     const id = idOf(
       await output([
@@ -3630,7 +3630,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
   it('prints the same bytes for the same record, with the clock moved on', async () => {
     // The property the whole reading rests on. `mnema brief | diff - AGENTS.md` is
     // the only thing that can tell a stale copy from a live one, so anything in the
-    // output that moved on its own — an instant, a run count, a path — would report a
+    // output that moved on its own (an instant, a run count, a path) would report a
     // difference in nothing, and a check that cries wolf is a check nobody runs.
     await run(['init'], capture().io);
     await accept('Keep the runbook in the record');
@@ -3647,7 +3647,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     const second = await output(['brief']);
     expect(second).toBe(first);
     // Non-vacuity, and it is what keeps the assertion above from passing for a verb
-    // that prints a constant: the moment the RECORD changes, the bytes change — and
+    // that prints a constant: the moment the RECORD changes, the bytes change, and
     // they change by exactly the rule that was added.
     const another = await accept('Write the rollback section first');
     const third = await output(['brief']);
@@ -3658,13 +3658,13 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // THE WAIT IS THE CLOCK, and it is spent on purpose: `pastTheSecond` spins until the
     // wall clock crosses a second, which is anything from nothing to a full second
     // depending on where in the second the case started. Two runs of the same suite
-    // measured it at 108 ms and 1090 ms, and the difference between them is the spin —
+    // measured it at 108 ms and 1090 ms, and the difference between them is the spin,
     // so a reading that called the second one slow would be reading the clock, not the case.
   }, 60_000);
 
   it('is what a redirection writes, and `diff` is what finds it stale', async () => {
     // The recipe, played out: redirect the document into a file, and the file matches
-    // the record until the record moves. Nothing here is a flag of the verb — the
+    // the record until the record moves. Nothing here is a flag of the verb: the
     // comparison is the shell's, and this is the assertion that the shell has
     // something exact to compare.
     //
@@ -3672,7 +3672,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // here. Nothing in the verb, the document or this comparison reads it: `brief` prints
     // to stdout and never learns there was a file, and `diff` is handed the path by
     // whoever typed it. The published recipe names `MNEMA.md` because a destination has
-    // to be shown and that one collides with nothing — not because the check depends on
+    // to be shown and that one collides with nothing, not because the check depends on
     // it. A case pinned to the published name would read as though it did.
     await run(['init'], capture().io);
     await accept('Keep the runbook in the record');
@@ -3687,7 +3687,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     const lines = (await output(['brief'])).split('\n');
     const stale = readFileSync(generated, 'utf-8').split('\n');
     expect(lines.filter((line) => !stale.includes(line))).toEqual([
-      // The heading counts the rules, so it changes with them — and it comes first,
+      // The heading counts the rules, so it changes with them, and it comes first,
       // because the document's order is the document's order.
       '## Decisions in force (2)',
       // No count of rules marked unconfirmed: with one identity in the record there is nobody to
@@ -3698,7 +3698,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
 
   it('carries the committed record: no label twice, no private rule, and it says so', async () => {
     // THE MEASUREMENT THAT ORDERED THIS SLICE, replayed on the bytes. Three accepted
-    // decisions — two public, one `--scope private` — used to print two lines labelled
+    // decisions (two public, one `--scope private`) used to print two lines labelled
     // `ADR-1`, because the label is numbered inside one chain and the document folded
     // three of them. And the private TITLE reached a file whose published recipe is a
     // redirection into `AGENTS.md` and a commit.
@@ -3714,11 +3714,11 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     await adopt('Keep the scratch notes here', 'This machine keeps its own notes.', 'private');
 
     const document = await output(['brief']);
-    // No label identifies two rules — the defect, stated as the property it broke.
+    // No label identifies two rules: the defect, stated as the property it broke.
     const labels = [...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1]);
     expect([...labels].sort()).toEqual(['ADR-1', 'ADR-2']);
     // What is not in it: the private title, the private id, and the private pattern's
-    // name. The body of neither pattern is in it either — but that is the other rule.
+    // name. The body of neither pattern is in it either, but that is the other rule.
     expect(document).not.toContain('The staging secret lives in the vault');
     expect(document).not.toContain(secret);
     expect(document).not.toContain('Keep the scratch notes here');
@@ -3730,7 +3730,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(document).toContain('COMMITTED to this project');
     expect(document.indexOf('COMMITTED to this project')).toBeLessThan(document.indexOf('- **'));
     // The record still holds the private rule and still serves it to whoever asks for
-    // the record — proof the absence above is the document's scope and not a lost write.
+    // the record: proof the absence above is the document's scope and not a lost write.
     // Asked through a read this slice did not touch.
     const found = await output(['search', 'staging secret']);
     expect(found).toContain('The staging secret lives in the vault');
@@ -3742,11 +3742,11 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // the committed tree alone stopped the document folding two trees' labels together;
     // it did nothing about two CLONES of that one tree. Each numbers its first decision
     // from the chain it can see, so both freeze `ADR-1`, and neither write could have
-    // been refused — the machines could not see each other.
+    // been refused: the machines could not see each other.
     //
     // The fixture is the merge itself: a second working copy, on its own machine (its
     // own home, so its own key), and its committed tail landing in this one. That is
-    // the only way one chain holds two `ADR-1`s — a second decision on ONE machine is
+    // the only way one chain holds two `ADR-1`s: a second decision on ONE machine is
     // `ADR-2`, so a hand-made pair would be a record the product cannot produce.
     await run(['init'], capture().io);
     const ours = await accept('Round the tax once, over the invoice total');
@@ -3781,7 +3781,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(declaration).toContain('Cite these by id rather than by label');
     expect(declaration).toContain(ours);
     expect(declaration).toContain(yours);
-    // The document is still a pure function of the record — the check that finds a stale
+    // The document is still a pure function of the record: the check that finds a stale
     // copy has to keep meaning one thing.
     expect(await output(['brief'])).toBe(document);
     // And the same clash is known WITHOUT generating the file, through a verb this slice
@@ -3807,7 +3807,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(await output(['audit', 'antipatterns'])).not.toContain('label naming');
   });
 
-  it('writes nothing — not an event, not a cache, and not the operator’s file', async () => {
+  it('writes nothing, not an event, not a cache, and not the operator’s file', async () => {
     // Three claims in one digest. Two are the ordinary read's (no event, no derived
     // database left behind); the third is this verb's own, and it is the reason the
     // output goes to stdout: a verb that wrote `AGENTS.md` itself would own a file the

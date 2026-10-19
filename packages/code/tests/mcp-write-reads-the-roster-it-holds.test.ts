@@ -1,15 +1,15 @@
 /**
- * That an MCP write asks the roster the SESSION already holds — the half a behaviour test cannot
+ * That an MCP write asks the roster the SESSION already holds: the half a behaviour test cannot
  * see.
  *
  * Every append asks, first, whether the identity the checkout recorded still counts its key (the
  * core's `ensureFounded`), and asked of a replay that question is linear in the record, on every
  * write an agent makes. The session holds the record in order already, so its write context hands
- * the core a cheaper reading — `WriteContext.roster`, served by `CacheRegistry.rosterAsOfNow` —
+ * the core a cheaper reading (`WriteContext.roster`, served by `CacheRegistry.rosterAsOfNow`)
  * and a context that did not would still be RIGHT: the core replays where it is handed nothing.
  * That is exactly the shape of an option plumbed to the end and fed by nobody, which a behaviour
  * test cannot tell apart from a fed one. So this asserts the link itself, in the mould of
- * `mcp-flag-reaches-the-server.test.ts`: that the reading ARRIVES, not what it answers — that is
+ * `mcp-flag-reaches-the-server.test.ts`: that the reading ARRIVES, not what it answers, that is
  * `a-stale-anchor-writes-nothing.test.ts`, core side, and the agent's refusal end to end in
  * `the-checkout-a-key-left.test.ts`.
  */
@@ -87,7 +87,7 @@ describe('the write context of a session hands the core the roster it holds', ()
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
     try {
-      // A read first — the ordinary opening of a session — which opens the trees' caches.
+      // A read first, the ordinary opening of a session, which opens the trees' caches.
       const read = (await client.callTool({ name: 'search', arguments: {} })) as {
         isError?: boolean;
       };

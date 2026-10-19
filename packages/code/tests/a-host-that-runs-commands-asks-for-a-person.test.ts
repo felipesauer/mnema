@@ -4,7 +4,7 @@
  *
  * WHAT IS MEASURED AND WHAT IS HELD HERE. That VS Code 1.137 with Copilot Chat 0.65 runs a plugin's
  * `PreToolUse` command before `create_file`, ignores the hook's matcher, hands the path as
- * `tool_input.filePath`, and holds the write when the reply carries `permissionDecision: "ask"` —
+ * `tool_input.filePath`, and holds the write when the reply carries `permissionDecision: "ask"`,
  * that is the host, and it was measured against the real window, with the real plugin and the
  * built binary. What a suite can hold is this product's half: that
  * `mnema before-a-write --host vscode` asks exactly where the MCP tool would, records the same
@@ -51,7 +51,7 @@ let originalXdg: string | undefined;
 let asking: string;
 let governing: string;
 
-/** Runs `mnema <argv>` in process and refuses to continue if it failed — setup, not assertion. */
+/** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<string> {
   const out: string[] = [];
   const err: string[] = [];
@@ -200,7 +200,7 @@ describe('mnema before-a-write --host vscode', () => {
     expect(publicEvents().length).toBe(before);
   });
 
-  it('answers nothing where no rule asks — a rule that only governs included', () => {
+  it('answers nothing where no rule asks: a rule that only governs included', () => {
     const before = publicEvents().length;
     // `src/other` is GOVERNED, and the text that informs is not this door's to carry: it would
     // record a service fact on every edit, which the fact's own declaration refuses.
@@ -282,7 +282,7 @@ describe('what a VS Code write names', () => {
         ],
       }),
     ).toEqual([`${at}/a.ts`, `${at}/b.ts`]);
-    // A patch names its files on the lines that open them — added, updated, deleted, moved to.
+    // A patch names its files on the lines that open them: added, updated, deleted, moved to.
     const patch = [
       '*** Begin Patch',
       `*** Update File: ${at}/u.ts`,
@@ -336,10 +336,10 @@ describe('the plugin command VS Code runs', () => {
     return found[0] as { matcher: string; command: string };
   }
 
-  it('names, in its matcher and in its filter, exactly the tools the verb reads — both ways', () => {
-    // FOUR PLACES HOLD ONE LIST — the verb's table, the matcher Claude Code and Cursor apply and
+  it('names, in its matcher and in its filter, exactly the tools the verb reads: both ways', () => {
+    // FOUR PLACES HOLD ONE LIST: the verb's table, the matcher Claude Code and Cursor apply and
     // never match, the filter in the shell in front of the process that VS Code, which ignores the
-    // matcher, runs on every tool, and the tools the handler checks again — so they are reconciled
+    // matcher, runs on every tool, and the tools the handler checks again, so they are reconciled
     // here in both directions. A tool missing from a filter is a write never asked about, in silence.
     const tools = [...writeToolsOf('vscode')].sort();
     const { matcher, command } = declared();
@@ -404,7 +404,7 @@ describe('the plugin command VS Code runs', () => {
     ]);
   });
 
-  it('starts no process at all — not even node — on a VS Code read, or for a write outside Cursor', () => {
+  it('starts no process at all, not even node, on a VS Code read, or for a write outside Cursor', () => {
     // VS Code runs EVERY command of the plugin on every tool call, whatever the matcher says, so a
     // read meets both gates; Claude Code runs Cursor's gate at each of its own writes. A filter in
     // the handler would still start `node` each time, so the shell the hooks file generates in

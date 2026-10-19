@@ -1,6 +1,6 @@
 /**
- * `mnema doctor`: what a machine says about how mnema is installed — the binary on the PATH,
- * the plugin and its version, the MCP server declared twice, a namesake — one line to a finding,
+ * `mnema doctor`: what a machine says about how mnema is installed (the binary on the PATH,
+ * the plugin and its version, the MCP server declared twice, a namesake) one line to a finding,
  * and not one byte written. Each case builds the machine in a sandbox and reads the answer.
  */
 

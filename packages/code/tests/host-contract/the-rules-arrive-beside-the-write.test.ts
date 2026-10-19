@@ -3,8 +3,8 @@
  * path with `governs`, the host's own write to that path succeeds and the rules addressed at it
  * are in the next request, beside the result of that write; a path no rule names gets nothing.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — which rules are addressed at a path and
- * what the reply says — is `the-rule-reaches-the-writing.test.ts`. What it cannot say is that the
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (which rules are addressed at a path and
+ * what the reply says) is `the-rule-reaches-the-writing.test.ts`. What it cannot say is that the
  * host calls the plugin's server at the edit, under the name the plugin gave it, and hands the
  * reply to the model. That is read here, off the request the host sends after the write, with a
  * stand-in for the model. The server's name is the one thing a rename of either half of the plugin

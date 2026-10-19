@@ -1,5 +1,5 @@
 /**
- * A HOOK IS TURNED ON BY A PERSON — held on the built binary.
+ * A HOOK IS TURNED ON BY A PERSON: held on the built binary.
  *
  * A stack declares its hooks and installation never turns one on. `stack enable` approves ONE
  * hook, after showing the script whole and asking its name at a terminal; with no terminal it
@@ -8,7 +8,7 @@
  *
  * WHAT A TERMINAL PROVES, and this file does not pretend otherwise: that standard input and
  * standard error are terminals, which a person at a keyboard has and a pipe does not. It does not
- * prove a person — a program that wants one can open a pseudo-terminal as `script` does below, and
+ * prove a person: a program that wants one can open a pseudo-terminal as `script` does below, and
  * the case "a terminal made by script is believed" is here to say so out loud. What the approval
  * adds on top is that the answer has to be the hook's own name, so a reflexive "yes" is not one.
  */
