@@ -321,6 +321,9 @@ with its own changelog.
 
 ### Fixed
 
+- **The convergence page's test no longer depends on the day it runs.** The page shows the time of each move
+  with the day it was written; the test read a bare date as minted but not the same date ahead of the `T` of a
+  timestamp, so it passed only on the day the page was written. Both are read as a date now.
 - **The second reader breaks a tie between two tails by UTF-16 code unit, as `FORMAT.md` §6.2 says and `verify`
   does.** It compared tail ids by code point, which puts a character above U+FFFF after one from U+E000 to U+FFFF where
   the format puts it before. With two heads at one `at` on tails whose ids differ there, it took them in the other order
