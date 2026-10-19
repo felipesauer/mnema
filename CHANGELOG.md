@@ -588,6 +588,11 @@ with its own changelog.
   manifest, the two version constants, the plugin manifests and the golden of `--version` now say `0.1.0`, and the
   console's recording was made again from the built binary. The records of the withdrawn pre-releases below stay as
   they were.
+- **The front page's banner, steps and "how mnema fits" are drawn in the family's paint and motion.** Each carries its
+  own page and the accent's glow, tonal cards and dots that run their arrows; the banner's light is faint and moves
+  nothing, the steps' numbers light one after the other, and a reader who asks for less motion sees the last frame.
+  Their words, frames and text alternatives do not change; their text takes the family's sizes, and the family's
+  guards hold them too.
 
 ## [0.2.0-beta] - 2026-10-11
 
