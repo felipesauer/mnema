@@ -94,7 +94,7 @@ describe('focus: what an actor is touching now', () => {
     // The chain NFC-normalizes but does not TRIM, so a `who` sealed with
     // surrounding spaces is stored verbatim. No gate or operation produces such a
     // `who` (they derive it from the writer anchor), so focus is right not to
-    // match it — this pins that contract: the actor is canonicalized (trim+NFC),
+    // match it; this pins that contract: the actor is canonicalized (trim+NFC),
     // and only a `who` in that same canonical form is found.
     bench = makeBench();
     startRun(bench, 'run-padded', { agent: 'claude', who: '  alice  ' });

@@ -10,8 +10,8 @@
  * subjects (the observation's own id, the linking entity's id), so a filter on
  * `subject` alone would miss them.
  *
- * Which is exactly what the REFERENCE INDEX holds (one row per (event, entity,
- * role)), so this reads the index rather than scanning the stream. Two things
+ * Which is exactly what the REFERENCE INDEX holds, one row per (event, entity,
+ * role), so this reads the index rather than scanning the stream. Two things
  * follow from that, and both are the point:
  *
  *   - The fourth role costs nothing. `by` used to be invisible from the
@@ -48,7 +48,7 @@
  * rather than approximating it, and a test holds it to that.
  *
  * What it does NOT do: resolve what KIND the entity is, or what kind a referring
- * target is. timeline answers in events and ids — the honest minimum. A surface
+ * target is. timeline answers in events and ids, the honest minimum. A surface
  * that wants types crosses the projections on top (`references` does exactly
  * that for the graph reading).
  */
@@ -90,7 +90,7 @@ export interface TimelineEntry {
 /**
  * The history of `entityId` across `sources`: every event where it is the
  * subject, or is referred to by an observation's `about`, a knowledge link's
- * `target`, or a supersede's `by` — in the union's own order. An entity that no
+ * `target`, or a supersede's `by`, in the union's own order. An entity that no
  * event touches yields an empty list (a legitimate answer, never an error), and
  * a blank entityId matches nothing.
  *

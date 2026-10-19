@@ -109,7 +109,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the cases beside @mnema/code
   'packages/code/tests/': 5727,
   // @mnema/context
-  'packages/context/': 1124,
+  'packages/context/': 10,
   // the page of @mnema/context
   'packages/context/README.md': 41,
   // @mnema/core

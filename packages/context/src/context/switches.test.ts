@@ -249,7 +249,7 @@ describe('channelStates, where a switch stands across the trees a caller can see
     const team = bench();
     const mine = bench();
     const asked = (...sources: ScopedCache[]) => channelStates(sources, [CHANNEL], [CHANNEL])[0];
-    // Never switched: off, and carrying nothing else — nobody switched it off, so no attribution.
+    // Never switched: off, and carrying nothing else; nobody switched it off, so no attribution.
     expect(asked(source(team), source(mine, 'private'))).toStrictEqual({
       channel: CHANNEL,
       on: false,

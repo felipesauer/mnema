@@ -114,10 +114,10 @@ export interface Antipatterns {
   readonly labelCollisions: readonly AdrCollision[];
   /**
    * Decisions, skills and tasks that left one state more than once, each with every move out
-   * of it (two moves on machines that had not seen each other,
+   * of it: two moves on machines that had not seen each other,
    * which is what two machines moving one subject offline leave (`divergentMoves` in @mnema/core says why the same `from` twice is
    * enough for decisions and skills, and why tasks, whose machine has a cycle, are read by the
-   * record's order instead) this said tasks were not read at all). Like a label collision it
+   * record's order instead: this said tasks were not read at all). Like a label collision it
    * is stated, not judged: both moves are signed facts, the projection keeps the last one, and
    * nothing here picks between them.
    */
@@ -130,7 +130,7 @@ export interface RecordEvents {
    * That record's events in one proven order. ONE ENTRY PER RECORD: the merge across
    * a project's own trees belongs to whoever read them (it is a k-way merge over
    * tails, which a pure fold cannot redo), so two entries for one project would come
-   * back as two entries here — visibly, rather than by silently concatenating two
+   * back as two entries here, visibly, rather than by silently concatenating two
    * streams into an order neither one proves.
    */
   readonly events: readonly CatalogEvent[];
@@ -238,8 +238,8 @@ function order(a: string, b: string): number {
  * project whose work kept reopening, so a candidate list that mixed projects would
  * point a person at work they are not doing.
  *
- * `labelCollisions` is the field that is NOT a count, and it does not weaken the rule
- * — it is the sharpest case of it. Merging counts inflates an answer; merging labels
+ * `labelCollisions` is the field that is NOT a count, and it does not weaken the rule;
+ * it is the sharpest case of it. Merging counts inflates an answer; merging labels
  * INVENTS one, because two projects numbering their own first decision `ADR-1` is two
  * records doing exactly what they should, and a pooled read would report the pair as a
  * clash nobody can reconcile. So the argument for keeping records apart no longer

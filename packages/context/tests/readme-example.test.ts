@@ -2,11 +2,11 @@
  * The README's usage example, RUN, and run as the very bytes the page publishes.
  *
  * THIS FILE USED TO PROMISE SOMETHING IT DID NOT DO. It said: *"If this drifts from the
- * README, fix one or the other — the example must run."* That is an intention, not a
+ * README, fix one or the other; the example must run."* That is an intention, not a
  * guard, and the file was a parallel TRANSLATION of the page rather than a reading of it.
  * What falsified it, measured on 11/09/2026 against `a41a9ea8`: renaming `bootstrap` to
- * `bootstrapZZZ` inside the README's own ```ts block — an edit that makes the published
- * example impossible to run — left this case green. The two copies had also already aged
+ * `bootstrapZZZ` inside the README's own ```ts block (an edit that makes the published
+ * example impossible to run) left this case green. The two copies had also already aged
  * four lines apart, in ways nobody introduced on purpose: three comment rewraps, and two
  * places where the page said more than the code that ran.
  *
@@ -22,8 +22,8 @@
  *
  * WHICH MAKES THIS THE ONE PAGE WHOSE BLOCK DOES NOT COMPILE ALONE: it names `cache` and
  * `chainRoot` and declares neither. `code/tests/the-example-is-type-checked.test.ts`
- * supplies them with the two types this setup really produces — `bench.cache()` and
- * `bench.root` — and holds that supply to exactly the names the page needs, so a
+ * supplies them with the two types this setup really produces (`bench.cache()` and
+ * `bench.root`) and holds that supply to exactly the names the page needs, so a
  * declaration cannot quietly grow into one the page never asked for.
  */
 import { rmSync } from 'node:fs';
@@ -83,9 +83,9 @@ describe('README example', () => {
       const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
       const didWrite = opening.resume.lastRun?.wrote; // WHAT went in: [{ kind, count }, …]
       // A run does not repeat the actor: `opening.resume.actor` says it once for all of them.
-      const firstJob = opening.work[0]; // the freshest live task: a NAME
+      const firstJob = opening.work[0]; // the freshest live task — a NAME
       const more = opening.workTotal > opening.work.length; // was the list cut?
-      const patterns = opening.skills.map((s) => s.name); // names only: one line each
+      const patterns = opening.skills.map((s) => s.name); // names only — one line each
       const governing = opening.decisions.map((d) => `${d.adr} ${d.title}`); // names only
 
       // A name that turned out to matter: ask what that ONE task allows.
@@ -96,12 +96,12 @@ describe('README example', () => {
 
       // A decision that bears on the task at hand: ask for the argument behind it.
       // `readRecord` spans trees, so it takes each cache paired with the tree it stands
-      // for: `chainRoot` is that tree's chain directory (see `@mnema/core`).
+      // for — `chainRoot` is that tree's chain directory (see `@mnema/core`).
       const settled = opening.decisions[0];
       const sources = [{ scope: 'public' as const, chainRoot, cache }];
       const argued = settled && readRecord(sources, settled.id); // { kind: 'decision', record: … }
 
-      // Everything that governs, whole: for a file an agent host reads on its own.
+      // Everything that governs, whole — for a file an agent host reads on its own.
       // Same two derivations as `bootstrap`, with no cut: every rule or none. It takes the
       // scoped sources and keeps the PUBLIC ones, because the file it feeds is committed:
       // a rule in the private or the global tree governs your work and does not travel.
@@ -128,7 +128,7 @@ describe('README example', () => {
       expect(openFor).toBeTypeOf('number');
       expect(didWrite).toEqual([{ kind: 'skill.consulted', count: 2 }]);
       expect(firstJob?.id).toBe('task-7');
-      // One task in the record, so nothing was cut: the example's own claim.
+      // One task in the record, so nothing was cut — the example's own claim.
       expect(more).toBe(false);
       expect(moves).toContain('complete');
       expect(patterns).toEqual(['Small PRs']);
@@ -140,7 +140,7 @@ describe('README example', () => {
         record: { rationale: 'why Hand-rolled arithmetic' },
       });
       // The whole of what governs, and it is the same governance the opening read
-      // served: one accepted decision and one adopted pattern, neither cut.
+      // served — one accepted decision and one adopted pattern, neither cut.
       expect(rules).toBe(2);
       expect(governs.decisions).toEqual(opening.decisions);
       expect(governs.skills).toEqual(opening.skills);

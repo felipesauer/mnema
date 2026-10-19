@@ -158,7 +158,7 @@ describe('brief: everything that governs the work here', () => {
       refusing: 0,
       // Nothing is waiting: the one decision and the one pattern of this record were both
       // carried all the way to in force, so the counts that make the headings legible are
-      // zero — a legitimate value the document says in words.
+      // zero, a legitimate value the document says in words.
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       // Nothing switched either, which is a channel being on, and the answers carry no
@@ -597,7 +597,7 @@ describe('brief: everything that governs the work here', () => {
     );
     expect(composed.decisions.slice(0, SEARCH_DEFAULT_LIMIT)).not.toEqual(opening.decisions);
     // And the agreement that survives the break: every rule of the opening page that
-    // TRAVELS is in this document, field for field — one definition of "in force", two
+    // TRAVELS is in this document, field for field: one definition of "in force", two
     // readers. Compared as whole items, so a second definition that agreed on the ids
     // and disagreed on a label would still fail.
     const travelled = opening.decisions.filter((d) => !privately.includes(d.id));
@@ -640,7 +640,7 @@ describe('brief: everything that governs the work here', () => {
   it('declares a printed decision two machines moved apart, and stays quiet about one it does not print', () => {
     // Each decision was born here and moved on a clone that had pulled it while `proposed`;
     // the clone's tail holds only its own moves, as a clone's does. `dec-apart` was rejected
-    // on the clone before it was accepted here, so the merged order leaves it accepted — in
+    // on the clone before it was accepted here, so the merged order leaves it accepted, in
     // force, printed, and in force only because of that order: the document owes its reader
     // the other move. `dec-out` was rejected on both: moved apart too, and not printed, so it
     // is the audit's answer and not this file's.

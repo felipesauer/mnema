@@ -10,8 +10,8 @@ import { describe, expect, it } from 'vitest';
  * suite together make "reads only" an enforced property, not a promise.
  *
  * The boundary is STRUCTURAL, not a hand-maintained list. The core splits its
- * surface in two: `@mnema/core` (reads (projections, the pure gate, workflow
- * tables, identity and scope resolution) and `@mnema/core/write` (every write)
+ * surface in two: `@mnema/core` (reads: projections, the pure gate, workflow
+ * tables, identity and scope resolution) and `@mnema/core/write` (every write:
  * the operations that append events, and opening a tree's writer). A read-only
  * layer imports the read surface and NEVER the write subpath. A new write
  * operation added to the core is born on `/write`, so it is caught here with no
@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
  *
  * Two writing surfaces exist, so there are two structural bans:
  *   1. `@mnema/core/write`: the core's own write operations.
- *   2. `@mnema/chain` DIRECTLY — the chain is reachable transitively (it is the
+ *   2. `@mnema/chain` DIRECTLY; the chain is reachable transitively (it is the
  *      core's dependency), and it holds writers the `/write` ban does not cover:
  *      the raw builders, `openChainForWriting`, and `writeAnchor`/`persistKeyPair`
  *      which write to disk WITHOUT going through `.append`. The context package reaches

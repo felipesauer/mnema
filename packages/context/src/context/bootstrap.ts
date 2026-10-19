@@ -4,7 +4,7 @@
  * When an agent starts, it needs five things: where the actor left off, what can
  * be done next, what patterns it is expected to work by, what has already been
  * decided, and what is waiting on somebody to decide. bootstrap composes exactly
- * those — {@link resume} for the "where was I" (the actor's latest run and open
+ * those: {@link resume} for the "where was I" (the actor's latest run and open
  * focus), the live pieces of work for the "what now", the NAMES of the adopted
  * skills ({@link adoptedSkills}) for the "how we do things here", the NAMES of the
  * decisions in force ({@link decisionsInForce}) for the "what governs here", and
@@ -30,9 +30,9 @@
  * work list and one of them was wrong there.
  *
  * BOTH LISTS ASK THE DISPOSITION, WHICH IS ONE RULE AND NOT TWO. A disposition is
- * what a state MEANS to a reader (derived from the machine's own transition table,
+ * what a state MEANS to a reader, derived from the machine's own transition table,
  * classified once per machine (`core`'s `TASK_DISPOSITION`, this package's
- * {@link DECISION_DISPOSITION} and {@link SKILL_DISPOSITION})) and it is exactly
+ * {@link DECISION_DISPOSITION} and {@link SKILL_DISPOSITION}), and it is exactly
  * the question these two lists ask. {@link Bootstrap.work} carries the tasks whose
  * disposition still has something to do about it (`advancing`, `stalled`);
  * {@link Bootstrap.awaitingJudgement} carries everything, of any machine, whose
@@ -68,8 +68,8 @@
  * is missing".
  *
  * NAMES, NEVER BODIES. The skills appear as name + id and nothing else, and the
- * decisions as title + `adr` + id. A body is the pattern, or the argument, in full
- * — paragraphs of it — and putting twenty of those in every session's opening
+ * decisions as title + `adr` + id. A body is the pattern, or the argument, in full,
+ * paragraphs of it, and putting twenty of those in every session's opening
  * context would bury what matters and charge for what rarely applies. A name is one
  * line: it is both the index and the trigger, and an agent cannot ask for what it
  * does not know exists. The body comes from a separate read, when a name turns out
@@ -88,7 +88,7 @@
  * EVERY ITEM ON THIS LIST HAS A SECOND READ THAT ANSWERS IT: a decision's is
  * {@link readRecord} (the `read_record` tool), a pattern's is
  * {@link lookupServedSkill} (the `skills` tool, with the id), and a task's is
- * {@link nextActions} (the `next_actions` tool) — the pair of verdicts `IN_REVIEW`
+ * {@link nextActions} (the `next_actions` tool): the pair of verdicts `IN_REVIEW`
  * allows and the proof each one demands, which is the same second read a task on the
  * work list has. Each serves the rest of something still being decided, and that is
  * the point of naming them here: an index that points at a door which refuses its
@@ -96,7 +96,7 @@
  *
  * THIS PARAGRAPH USED TO SAY THE OPPOSITE, and what falsified it is worth keeping.
  * It read: "A PATTERN'S IS NOT SERVED TO AN AGENT AT ALL, and that is measured, not
- * assumed" — measured correctly, on a `skills` tool that refused every state on this
+ * assumed", measured correctly, on a `skills` tool that refused every state on this
  * list, and then generalized into an axis. It was not one. The gate never required a
  * consultation, so the body was two writes away (`review`, `adopt`) and those two
  * writes were false: a ruling by somebody who could not read what they ruled on. The
@@ -107,8 +107,8 @@
  *
  * What did NOT change is the door being ONE: `read_record` still refuses a skill
  * (`USE_SKILLS_TOOL`), because the `skills` tool records the consultation and a
- * second door would let the body out without the fact. Asserted in `mcp-e2e.test.ts`
- * — "answers the SECOND READ each kind names, for every item awaiting a judgement".
+ * second door would let the body out without the fact. Asserted in `mcp-e2e.test.ts`:
+ * "answers the SECOND READ each kind names, for every item awaiting a judgement".
  *
  * The CLI is unchanged and still serves any state to a person (`mnema show <id>`),
  * recording nothing, because a command line has no session to attribute a
@@ -189,7 +189,7 @@
  * item, and no new field, below the limit", "cuts the decisions at the same
  * limit and says how many there were", "cuts what awaits a judgement at the same
  * limit and says how many there were", and "serves EVERY adopted pattern, uncut and
- * uncounted — the list this limit does not reach".
+ * uncounted, the list this limit does not reach".
  *
  * ONE number and ONE cut, for every list that has one. The limit is the search's own
  * default taken by reference (see {@link SERVED_LIMIT}), because a second number for
@@ -202,8 +202,8 @@
  *     it names now carries WHAT WAS WRITTEN IN IT (`core`'s `RunProjection.wrote`),
  *     which is the same NAMES-not-bodies economy read off a session instead of a list:
  *     a tally per kind, bounded by the catalog, never the facts themselves;
- *   - the work list carries ONLY live tasks (those a reader still has something to
- *     do about, which is `advancing` or `stalled` (see {@link liveWork})) most
+ *   - the work list carries ONLY live tasks, those a reader still has something to
+ *     do about, which is `advancing` or `stalled` (see {@link liveWork}), most
  *     recently touched first, so the freshest work leads and the cut falls on the
  *     stalest;
  *   - the skill list carries ONLY adopted patterns, by name;
@@ -218,14 +218,14 @@
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
  * projection carries no `who`, so the tasks cannot be attributed to the actor
  * the way the runs can (see {@link focus}). bootstrap surfaces the actor's focus
- * (their runs) AND the workspace's live work — the two honest halves the
+ * (their runs) AND the workspace's live work: the two honest halves the
  * read model supports today. When a future slice ties a task to the actor, the
  * work list can narrow to the actor with no change to this shape.
  *
  * ONE WORLD NOW, AND THAT IS THE CORRECTION. The four halves read the SAME caches:
- * every tree the caller can see. The split used to be deliberate (skills from every
+ * every tree the caller can see. The split used to be deliberate: skills from every
  * tree (a pattern is a capability), work and runs from the actor's single tree
- * (because "work is scoped to a tree")) and the second half of that sentence stopped
+ * (because "work is scoped to a tree"), and the second half of that sentence stopped
  * being true when routing became a function of the KIND. A task lands in the tree
  * that travels and a memory in the machine's own, whoever wrote either; so "the
  * actor's tree" names no tree in particular, and a work list read from one of them
@@ -325,8 +325,8 @@ export interface Bootstrap {
    */
   readonly skills: readonly SkillRef[];
   /**
-   * The decisions in force — `accepted`, and nothing else — by title, `adr` label
-   * and id, never the body — neither the `rationale` nor the `alternatives` (see
+   * The decisions in force (`accepted`, and nothing else) by title, `adr` label
+   * and id, never the body: neither the `rationale` nor the `alternatives` (see
    * the module doc; both come from {@link readRecord}). Most recently settled
    * first, so the freshest calls lead
    * and the cut falls on the oldest, and everything past
@@ -390,7 +390,7 @@ export interface Bootstrap {
    *
    * Asserted in `bootstrap.test.ts`: "declares the knowledge it does not look at,
    * over a record whose content is entirely outside its lists" and "declares nothing
-   * over a record that holds nothing — the KEY is absent, not empty". The derivation's
+   * over a record that holds nothing: the KEY is absent, not empty". The derivation's
    * own cases, including the totality over every searchable kind, are in
    * `unread.test.ts`.
    */
@@ -408,8 +408,8 @@ export interface Bootstrap {
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
   // Ordered HERE and not in `tasks.ts`, for the reason the awaiting halves give: the
   // order belongs to the list that is served and cut, and the same comparator settles
-  // both, so "most recently moved first, ties by id DESC" is one rule in one function
-  // — the core's `newestFirst`, which every recency listing in the product now asks.
+  // both, so "most recently moved first, ties by id DESC" is one rule in one function:
+  // the core's `newestFirst`, which every recency listing in the product now asks.
   const live = liveWork(caches).sort(byUpdatedDesc);
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.

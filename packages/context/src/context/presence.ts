@@ -1,5 +1,5 @@
 /**
- * presence: which OTHER runs of this machine were charged at a path lately — the one reading
+ * presence: which OTHER runs of this machine were charged at a path lately: the one reading
  * behind "another run consulted this path N min ago".
  *
  * WHAT IT IS MADE OF, and nothing is new. The record already holds two things that, put side by

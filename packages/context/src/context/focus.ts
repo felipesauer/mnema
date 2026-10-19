@@ -5,7 +5,7 @@
  * of". There is no notion of a current actor in the record (a `who` is only ever
  * stamped on past events), so the actor is a PARAMETER: the caller says whose
  * focus to derive, and the derivation stays pure and testable. Who the actor is
- * — the local key, the open session — is a question for the surface, not for a
+ * (the local key, the open session) is a question for the surface, not for a
  * read-only view.
  *
  * The same argument settles two more parameters, and it is the same argument

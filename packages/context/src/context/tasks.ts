@@ -2,7 +2,7 @@
  * tasks: the work that is still live, and the work that awaits a verdict.
  *
  * The task machine's two halves of the opening context, in the module that owns that
- * machine's reads — the shape `decisions.ts` and `skills.ts` already have, arrived at
+ * machine's reads, the shape `decisions.ts` and `skills.ts` already have, arrived at
  * from the other direction: those two were born beside their table, and this one was
  * a filter written inline in the composition (`bootstrap.ts`) where nothing could
  * compare it to the classification standing next to it.
@@ -35,9 +35,9 @@
  * it forever".
  *
  * WHAT AWAITS A JUDGEMENT IS `awaiting-judgement`, THE SAME WORD THE OTHER TWO
- * MACHINES ANSWER WITH. `IN_REVIEW` is classified that way in `core` (both exits
+ * MACHINES ANSWER WITH. `IN_REVIEW` is classified that way in `core`, both exits
  * (`approve`, `request_changes`) require a proof field, so every way out is a verdict
- * somebody owes) and the opening context's waiting list simply did not ask. A task
+ * somebody owes, and the opening context's waiting list simply did not ask. A task
  * submitted for review appeared as one more line of work to pick up, next to tasks
  * nobody was waiting on, and the list of what a person owes a ruling on did not
  * mention it. Asserted in `tasks.test.ts`: "a task IN_REVIEW awaits a judgement, and
@@ -167,8 +167,8 @@ export function liveWork(caches: readonly ProjectionCache[]): WorkItem[] {
 /**
  * Every task awaiting a judgement across `caches`, in no particular order.
  *
- * Half of ONE list (tasks, decisions and skills interleaved by when each last moved
- * (see {@link bootstrap})), so the ordering is the composition's, exactly as it is
+ * Half of ONE list: tasks, decisions and skills interleaved by when each last moved
+ * (see {@link bootstrap}), so the ordering is the composition's, exactly as it is
  * for {@link decisionsAwaitingJudgement} and {@link skillsAwaitingJudgement}.
  */
 export function tasksAwaitingJudgement(

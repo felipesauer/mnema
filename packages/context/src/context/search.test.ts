@@ -34,8 +34,8 @@ function bench(): Bench {
 }
 
 /**
- * A tree, labelled with the scope it stands for. Each bench is its own sandbox
- * — its own chain root, which is what makes it a tree; the scope is only the
+ * A tree, labelled with the scope it stands for. Each bench is its own sandbox,
+ * its own chain root, which is what makes it a tree; the scope is only the
  * role it stands in, and two benches may stand in the same one.
  */
 function tree(b: Bench, scope: Scope, project?: string): ScopedCache {

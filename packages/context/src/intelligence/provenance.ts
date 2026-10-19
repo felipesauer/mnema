@@ -46,7 +46,7 @@ export interface PatternProvenance {
   readonly scope: Scope;
   /** The agent that proposed it; ABSENT means a person recorded it directly. */
   readonly proposedBy?: string;
-  /** The adoption, when it has one: when, and the agent — absent, a person. */
+  /** The adoption, when it has one: when, and the agent (absent, a person). */
   readonly adoption?: SkillAdoption;
   /**
    * True when ONE NAMED AGENT stands on both ends: it proposed the pattern and

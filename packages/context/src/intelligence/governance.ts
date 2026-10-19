@@ -5,7 +5,7 @@
  * The record already holds rules (a decision that was accepted, a pattern that
  * was adopted) and until now nothing tied one of them to a place in the code.
  * A link under {@link GOVERNS_RELATION} does: its subject is the rule, its target
- * is a path, and this reads that graph BACKWARDS — given a path, which rules
+ * is a path, and this reads that graph BACKWARDS: given a path, which rules
  * cover it.
  *
  * ## THREE relations, ONE derivation
@@ -26,7 +26,7 @@
  * (`accepted`, `superseded`, an adopted pattern, a rejected one) and the caller decides
  * what to do with it. That is deliberate: deciding "in force" a second time here is a
  * second rule that can come to disagree with `decisionsInForce`, and the disagreement
- * would be silent — one reader would simply obey a different set.
+ * would be silent: one reader would simply obey a different set.
  *
  * "NOTHING HERE DECIDES WHETHER A RULE STILL HOLDS" was the first half of that sentence
  * and it is no longer true of the module, only of {@link governingRules}. There are two
@@ -47,7 +47,7 @@
  * lights it and its end-to-end twin: two red, nothing else.
  *
  * A glob was refused, with the reason written down: a glob is a second language
- * with its own semantics, and a glob with a typo governs NOTHING, in silence —
+ * with its own semantics, and a glob with a typo governs NOTHING, in silence,
  * exactly the class of defect this reading exists to make visible. A prefix either
  * matches or it does not, and its absence is countable (see the third number). The
  * diffuse reach a glob would buy belongs to SEARCH, where being wrong costs one
@@ -63,8 +63,8 @@
  * fire about. So every answer carries {@link GovernanceCounts}: how many rules
  * cover this path, how many address this project at all, and how many address
  * something the working tree does not hold. The third is not decoration; without it
- * the reading is not finished — measured: emptying the stale list turns TEN cases
- * red, across both surfaces and the golden.
+ * the reading is not finished (measured: emptying the stale list turns TEN cases
+ * red, across both surfaces and the golden).
  *
  * ## What it normalizes, and what it deliberately does not
  *
@@ -96,7 +96,7 @@
  * An address is relative to A ROOT, and the root is the asking project's. So the
  * sources are narrowed to that project's own trees: a rule written in ANOTHER
  * project's record addresses that project's `src/`, and importing it here would
- * make it govern code nobody addressed — the same defect the segment comparison
+ * make it govern code nobody addressed, the same defect the segment comparison
  * exists to prevent, one level up. The machine-global tree is left out for the same
  * reason: it belongs to no project, so a path in it is relative to nothing.
  *
@@ -298,7 +298,7 @@ export interface GoverningRules {
    */
   readonly asksUnresolved: readonly AddressedRule[];
   /**
-   * The addresses that REFUSE a write around this path — reported beside the text and the
+   * The addresses that REFUSE a write around this path, reported beside the text and the
    * gate, named for the reason the gate is: a person whose write was refused has to be able
    * to find the fact that refused it. Whatever state its rule is in travels with it; only
    * the decision a write meets narrows to what is in force.
@@ -449,7 +449,7 @@ interface Addressed {
  *
  * IT IS NOT DROPPED, and that is the other half. The record really does hold the address;
  * a reader who saw the count fall silently would have lost a fact. So it becomes its own
- * class beside `stale`, counted and NAMED — the same treatment, for the same reason: a
+ * class beside `stale`, counted and NAMED, the same treatment, for the same reason: a
  * count of broken addresses is fixed by making the count smaller, and a list is fixed by
  * looking at what it names.
  */

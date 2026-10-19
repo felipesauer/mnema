@@ -22,7 +22,7 @@
  * excludes a superseded one; no cross-check against the supersede edge is done
  * here, and that is deliberate. Two rules answering one question can come to
  * disagree, and the projected state is the one the chain proves. Asserted in
- * `decisions.test.ts`: "serves ONLY the accepted — proposed, rejected and
+ * `decisions.test.ts`: "serves ONLY the accepted: proposed, rejected and
  * superseded are all absent" and "drops a decision the moment a successor
  * supersedes it".
  *
@@ -32,7 +32,7 @@
  *
  * THIS PARAGRAPH USED TO ARGUE AGAINST THE WORK LIST'S RULE, and it is worth keeping
  * because the argument was right and its premise was not. It read: the work list's
- * rule is "has at least one legal move", and it does not transport to this machine —
+ * rule is "has at least one legal move", and it does not transport to this machine;
  * `supersede` is legal from `accepted` (`DECISION_TRANSITIONS`), so a decision in
  * force has a legal move FOREVER and that rule would report it as a pendency that
  * never clears. True of this machine, and the premise underneath it, that the rule
@@ -85,7 +85,7 @@ import { type Disposition, statesMeaning } from './disposition.js';
  *
  * Read against `DECISION_TRANSITIONS`, which is the source of truth for every
  * claim below:
- *   - `proposed` — `accept` and `reject` both leave from it, and both are a
+ *   - `proposed`: `accept` and `reject` both leave from it, and both are a
  *     verdict a person owes. That is the whole of "awaiting a judgement".
  *   - `accepted`: it governs. `supersede` is still legal from it, which is
  *     precisely why "has a legal move" is the wrong criterion for either of the
@@ -162,7 +162,7 @@ const AWAITING_JUDGEMENT = statesMeaning(
  * ever spoken to itself, and no second identity has ruled with it either way. It is a fact
  * about the record's shape, computed over the trees handed in, and it is not a judgement of
  * the decision. IT NEEDS SOMEBODY TO CONFIRM: with one identity in the record there is nobody
- * to ask, so a solo project's rules are never marked — the label said "unconfirmed" of every
+ * to ask, so a solo project's rules are never marked; the label said "unconfirmed" of every
  * rule there, truthfully and with nobody to act on it, and it is only meaningful once a second
  * identity is in the trees handed in. From then the first rule one identity accepts that another
  * recorded (or another accepts of its) ends it.
@@ -271,7 +271,7 @@ export function ruleIdsInForce(caches: readonly ProjectionCache[]): ReadonlySet<
 export interface DecisionAwaitingJudgement {
   /**
    * Always `decision`: the discriminant, and what says the second read will hand
-   * back an ARGUMENT — the `rationale` and the alternatives, through `readRecord`.
+   * back an ARGUMENT (the `rationale` and the alternatives, through `readRecord`).
    */
   readonly kind: 'decision';
   /** The decision's id: the key `readRecord` takes. */

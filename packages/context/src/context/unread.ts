@@ -12,7 +12,7 @@
  *
  * MEASURED, ON THE COMMAND LINE, over a record that held three memories and nothing
  * else: `No live tasks. / No decisions in force. / No adopted patterns. / Nothing
- * awaiting a judgement.` — with the session line directly above it reading `wrote 3
+ * awaiting a judgement.`, with the session line directly above it reading `wrote 3
  * memory.captured`. One screen asserting both. The reproduction is in
  * `unread.test.ts` ("counts the kinds it does not look at, over a record whose
  * content is entirely outside its lists") and in
@@ -49,13 +49,13 @@
  * knowledge kinds get a list of their own, and whether they get one list or two, is
  * UNDECIDED, and this read settles it neither way: it counts, and a count is not that
  * list: it names a kind and a number, never a body, and it is the same economy the
- * rest of this read already runs on — NAMES, never bodies, and here not even names.
+ * rest of this read already runs on (NAMES, never bodies, and here not even names).
  *
  * "UNDECIDED" IS NO LONGER TRUE OF THE OPENING A SESSION IS HANDED, and it is still true
  * of this read. The text the plugin pushes as a session opens now carries the knowledge
- * kinds (two lists, one per kind, each the index's own ranking of the notes that share a
+ * kinds, two lists, one per kind, each the index's own ranking of the notes that share a
  * word with what the session touches, then its newest-first listing of the rest, cut where
- * the index cuts (`code/src/commands/recall.ts`)), because a note an agent records
+ * the index cuts (`code/src/commands/recall.ts`), because a note an agent records
  * reached no later session otherwise. That answer was given for the PUSHED opening, whose
  * reader did not ask; this read is the one an agent asks for, and whether it grows a list
  * as well is the question that stays open here.
@@ -90,7 +90,7 @@
  *
  * It is total over the SEARCHABLE kinds and over nothing else. The record also
  * holds handoffs, knowledge links, skill consultations and channel facts, and none
- * of those is counted here — for the reason {@link readRecord} already gives about
+ * of those is counted here, for the reason {@link readRecord} already gives about
  * the same set: they have no record of their own to read, so they are not in the
  * index, so there is no `search` call this count could send a reader to make. A
  * number a reader cannot act on is the weight this module's own argument rejects.
@@ -135,7 +135,7 @@ type OpeningCoverage = 'listed' | 'unread';
  * Exported from the MODULE and from nothing else, which is the same shape the other
  * six take: the guard resolves this module and compares what it published against
  * what it declared, so a table kept file-private would be one the guard can name but
- * never hold — it would watch an empty list and pass whatever happened. The export is
+ * never hold; it would watch an empty list and pass whatever happened. The export is
  * what gives it something to watch, and `unread.test.ts` reads the table through it.
  */
 export const SERVED_BY_THE_OPENING: { readonly [K in SearchKind]: OpeningCoverage } = {

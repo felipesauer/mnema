@@ -25,7 +25,7 @@
  * adoptedSkills}', and neither rule is restated here. That is the whole reason this
  * function exists instead of two calls at the surface: "in force" written a second
  * time is two rules that can come to disagree about which calls govern, and the
- * disagreement would be invisible — one of the two readers would simply obey a
+ * disagreement would be invisible: one of the two readers would simply obey a
  * different set. The opening context ({@link bootstrap}) composes the same two
  * derivations, so the file and the session's first read cannot disagree about what
  * being in force means. What they are asked ABOUT differs, and deliberately: see the
@@ -72,11 +72,11 @@
  *     that what is in it does not travel.
  * So what this composes is the tree that travels ({@link TRAVELS}) and nothing else:
  * the content of a committed document is what a clone gets, the ADR label is NUMBERED
- * inside one chain — this line said "unique inside one chain", which is what the
+ * inside one chain: this line said "unique inside one chain", which is what the
  * numbering intends and not what it guarantees; two tails of one chain falsify it, and
- * the paragraph below is what the answer does about that —
+ * the paragraph below is what the answer does about that:
  * a rule kept on one machine does not govern the team's work, and
- * the `diff` against a copy comes to mean ONE thing — the copy is stale — where it
+ * the `diff` against a copy comes to mean ONE thing (the copy is stale) where it
  * used to mean "stale or from another tree", and a signal with two meanings is not a
  * signal. Everything else the caller can see is still the AGENT's context, which is
  * what {@link bootstrap} answers, over the union, unchanged.
@@ -241,14 +241,14 @@ export interface Brief {
    */
   readonly asking: number;
   /**
-   * How many of the rules below REFUSE A WRITE somewhere — {@link Brief.asking} under the
+   * How many of the rules below REFUSE A WRITE somewhere: {@link Brief.asking} under the
    * other relation, for the same reasons: it counts RULES, only those printed, and no
    * staleness. Zero is the ordinary value, and it is printed.
    */
   readonly refusing: number;
   /**
-   * How many decisions of the tree that travels are recorded and AWAITING A JUDGEMENT
-   * — proposed, and nothing has ruled on them yet.
+   * How many decisions of the tree that travels are recorded and AWAITING A JUDGEMENT:
+   * proposed, and nothing has ruled on them yet.
    *
    * WHY A COUNT OF WHAT IS NOT PRINTED IS IN THIS ANSWER, since everything else it
    * carries is about what IS. It is {@link Brief.addressed}'s argument applied to the
@@ -388,7 +388,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     decisions: decisions.map((decision) => withOrigin(travels, decision)),
     // The body is dropped by MAPPING, not by typing: a `ServedSkill` satisfies
     // `SkillRef`, so assigning the list straight across would compile and carry
-    // every pattern's whole text along at run time — into a file that is read on
+    // every pattern's whole text along at run time, into a file that is read on
     // every prompt. The same drop, for the same reason, as the opening context's.
     // What it drops the `state` for is narrower: this file carries only what
     // GOVERNS, and `adoptedSkills` answers `adopted` and nothing else, so a state
@@ -475,7 +475,7 @@ function channelPair(
  *
  * The links are read from the SAME caches the rules came from, which is what makes the
  * number a fact about this document rather than about the workspace: an address asserted
- * in the private tree is not counted, for the reason nothing private is printed — it does
+ * in the private tree is not counted, for the reason nothing private is printed: it does
  * not travel, and a reader of a clone would find a number they cannot account for.
  *
  * It counts a rule that has any address relation (`ADDRESS_RELATIONS`), once however many it

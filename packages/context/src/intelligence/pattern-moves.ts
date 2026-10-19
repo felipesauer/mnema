@@ -13,8 +13,8 @@
  * out of a convention written for people. Both facts carry the same envelope field, so
  * for a move of skill S inside run R the record answers one of exactly three ways:
  *
- *   - R holds a `skill.consulted` of S (CONSULTED.
- *   - R holds none of S, but holds one of some OTHER pattern) MOVED WITHOUT CONSULTING.
+ *   - R holds a `skill.consulted` of S: CONSULTED.
+ *   - R holds none of S, but holds one of some OTHER pattern: MOVED WITHOUT CONSULTING.
  *     This is the only case this reading asserts anything in, and what licenses it is R
  *     itself: a run that recorded a consultation has PROVED the witness was operating,
  *     so its silence about S means something.
@@ -105,7 +105,7 @@ export interface PatternMoveWitness {
    *
    * It rides with the data for the reason the harness's own caveat columns do: a
    * qualification kept in the prose next to a table travels one copy of that table and
-   * then stops, and this one is load-bearing — a reader who takes the second count for
+   * then stops, and this one is load-bearing: a reader who takes the second count for
    * "these people did not do the reading" has misread every row of it. So it is a field
    * of the answer, printed under the counts and carried in the JSON.
    */
@@ -113,8 +113,8 @@ export interface PatternMoveWitness {
   /** Moves whose own run recorded a consultation of the same pattern. */
   readonly consulted: readonly PatternMove[];
   /**
-   * Moves whose run recorded a consultation of SOME OTHER pattern and none of this one
-   * — the one case this reading asserts something in.
+   * Moves whose run recorded a consultation of SOME OTHER pattern and none of this one,
+   * the one case this reading asserts something in.
    */
   readonly movedWithoutConsulting: readonly PatternMove[];
   /**

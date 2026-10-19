@@ -209,7 +209,7 @@ export {
 // name the relation is a caller free to charge for a label nobody defined.
 //
 // `addressReach` is the fourth and it asks the question the other way round: not which
-// rules cover a path, but how much of the tree ONE address covers — the number nothing
+// rules cover a path, but how much of the tree ONE address covers, the number nothing
 // said at the moment somebody recorded it. It takes an injected walk for the reason the
 // other three take an injected probe, and it is in the same module so that it compares an
 // address by the very prefix the gate is decided by.

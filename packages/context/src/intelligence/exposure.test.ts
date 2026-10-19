@@ -245,7 +245,7 @@ describe('exposure: one report, or one per record', () => {
       ['g-1', undefined],
     ]);
     // The AGGREGATE decomposes: one count per record, the projectless one last, and no
-    // total beside them — a workspace figure under this name is what a reader divides by.
+    // total beside them: a workspace figure under this name is what a reader divides by.
     expect(report.scanned).toEqual([
       { project: '/w/alpha', scanned: 2 },
       { project: '/w/beta', scanned: 1 },

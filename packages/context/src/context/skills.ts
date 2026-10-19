@@ -9,7 +9,7 @@
  * WHICH BODIES ARE SERVED IS DECIDED BY DISPOSITION, NEVER BY ONE STATE.
  * {@link SKILL_DISPOSITION} is the table and {@link BODY_SERVED} says what each
  * disposition gets:
- *   - `in-force` — served, and served as an INSTRUCTION: this is how work is done here;
+ *   - `in-force`: served, and served as an INSTRUCTION (this is how work is done here);
  *   - `awaiting-judgement`: served too, and only to a caller that NAMES it by id;
  *   - `closed`: refused, with the state said out loud.
  *
@@ -36,7 +36,7 @@
  * the rule moved. This module used to say "AND NO READ OF THE AGENT'S SURFACE SERVES
  * ONE OF THOSE BODIES", and read the refusal as protecting the body. It protected
  * nothing. The gate does not require a consultation, so an agent holding the id an
- * opening read hands it could `review`, `adopt`, and then be served the body — two
+ * opening read hands it could `review`, `adopt`, and then be served the body: two
  * writes, and both of them false on the chain: a review and an adoption by somebody
  * who could not read what they ruled on. The refusal made the body dearer, not
  * unreachable, and charged the record for it. And the same surface already served
@@ -70,7 +70,7 @@
  * here. A pattern `proposed` waits for a review and a `reviewed` one waits for the
  * adoption; both are a judgement somebody owes, and a curation backlog nobody is
  * told about is a backlog that does not clear.
- * {@link skillsAwaitingJudgement} names them — WITHOUT the body, which is what keeps
+ * {@link skillsAwaitingJudgement} names them, WITHOUT the body, which is what keeps
  * an index an index: a name invites a ruling and costs one line, a body is paragraphs
  * of instruction and belongs to whoever asked for that pattern by id.
  *
@@ -120,16 +120,16 @@ import { type Disposition, statesMeaning } from './disposition.js';
  *
  * Read against `SKILL_TRANSITIONS`, which is the source of truth for every claim
  * below:
- *   - `proposed` — `review` and `reject` leave from it; somebody has to look.
+ *   - `proposed`: `review` and `reject` leave from it; somebody has to look.
  *   - `reviewed`: `adopt` and `reject` leave from it; somebody has to rule. It is
  *     the state that makes this machine's waiting side TWO states, and it is why
  *     the state travels with the item: "needs a review" and "needs a decision"
  *     ask for different moves and would otherwise be the same line.
- *   - `adopted` — it is a live pattern. `deprecate` is still legal from it, which
+ *   - `adopted`: it is a live pattern. `deprecate` is still legal from it, which
  *     is why "has a legal move" is the wrong criterion for either of the opening
- *     read's lists (including the work list, which is where that rule came from
+ *     read's lists, including the work list, which is where that rule came from
  *     and where it was equally wrong (`tasks.ts`).
- *   - `rejected`, `deprecated`) terminal, no row leaves either.
+ *   - `rejected`, `deprecated`: terminal, no row leaves either.
  *
  * Exported so the claims above are CHECKABLE against the table they are read from,
  * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
@@ -157,7 +157,7 @@ export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
 };
 
 /**
- * Whether the BODY of a pattern in each disposition is served — the ONE place that
+ * Whether the BODY of a pattern in each disposition is served, the ONE place that
  * decision is written, and the reason it is a table and not a condition: a fourth
  * disposition does not COMPILE until it has an answer here, where a predicate naming
  * the two it serves would silently refuse a disposition it had never heard of.
@@ -193,7 +193,7 @@ export function skillDisposition(state: SkillState): Disposition {
 }
 
 /**
- * Whether this module serves the body of a pattern recorded in `state` — the single
+ * Whether this module serves the body of a pattern recorded in `state`, the single
  * site where a recorded word becomes that decision, and a NARROWING: what it
  * accepts is the workflow's own vocabulary.
  *
@@ -287,7 +287,7 @@ export type SkillLookup =
  * deprecated are absent") and over the tool in `mcp-e2e.test.ts`.
  *
  * The state is the BUCKET each row was read under, not a second reading of the
- * projection — the same thing {@link skillsAwaitingJudgement} does, for the same
+ * projection, the same thing {@link skillsAwaitingJudgement} does, for the same
  * reason: the indexed read already knows the answer.
  *
  * IT ANSWERS WITH EVERY BODY AND THAT IS NOT WHAT A SURFACE SERVES. How much a
@@ -314,7 +314,7 @@ export function adoptedSkills(caches: readonly ProjectionCache[]): ServedSkill[]
  * a `SKILL.md` loaded when that skill is activated. At the four-characters-per-token
  * ratio that is ~20,000 bytes, taken here as 20 KiB. The rule it encodes: serving N
  * bodies to a caller that named NONE must not cost more than the market spends
- * serving the one a caller DID name — otherwise the mass read is strictly worse than
+ * serving the one a caller DID name; otherwise the mass read is strictly worse than
  * the N reads by id this module already answers, and the cheapest thing an agent
  * could do with it is never call it.
  *
@@ -336,7 +336,7 @@ const BODY_BUDGET = 20 * 1024;
  *
  * Two arms and no third, which is the decision rather than a shape: serving "the K
  * that fit" would mean choosing WHICH, and a cut with no criterion is worse than the
- * list of names — the caller cannot see what was left out, and the consultation
+ * list of names; the caller cannot see what was left out, and the consultation
  * recorded for the ones that made it would assert that a subset nobody chose informed
  * the work.
  */
@@ -345,8 +345,8 @@ export type SkillCatalogue =
   | { readonly served: 'bodies'; readonly skills: readonly ServedSkill[] }
   /**
    * Over budget: the same patterns BY NAME, and the bytes of the bodies that were
-   * weighed and not served — the number that says why this arm was taken, and the
-   * one a surface can put in the sentence it frames the names with.
+   * weighed and not served (the number that says why this arm was taken, and the
+   * one a surface can put in the sentence it frames the names with).
    */
   | {
       readonly served: 'names';
@@ -361,7 +361,7 @@ export type SkillCatalogue =
  * WHAT IT FALLS BACK TO IS A LAYER THAT ALREADY EXISTS. The names are what the
  * opening context and the committed brief have always carried ({@link bootstrap},
  * `brief`: id and name, never the body), so a caller over budget gets no new shape
- * to handle — it gets the index, and the body stays one read by id away, where it is
+ * to handle; it gets the index, and the body stays one read by id away, where it is
  * served whole and with no ceiling at all.
  *
  * THE PREMISE THIS FALSIFIES was that a mass read costs what the record happens to

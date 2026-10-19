@@ -148,7 +148,7 @@ describe('patternMoveWitness, which of three answers the record gives about a mo
     // nothing else in this suite reached it: every other case here gives a run exactly one
     // consultation, so a collection keeping only the LAST reading of each session answered
     // all of them identically. Measured: with the accumulation dropped, this case is the
-    // one that reddens, and it names `sk-first` as MOVED WITHOUT CONSULTING — an accusation
+    // one that reddens, and it names `sk-first` as MOVED WITHOUT CONSULTING, an accusation
     // against a session that demonstrably read it.
     const b = bench();
     startRun(b, 'run-a', { agent: 'claude' });

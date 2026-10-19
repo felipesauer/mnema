@@ -11,7 +11,7 @@
  * an {@link AuditEnvelope} and not an event.
  *
  * THE PRODUCT ALREADY SAID WHERE THE LINE IS. `mnema audit exposure` reports which records
- * hold something shaped like a credential and prints *"never the value — not truncated,
+ * hold something shaped like a credential and prints *"never the value: not truncated,
  * not partly masked, and not in `--json`"*, because a command that printed one would
  * turn the remedy into a second disclosure. The content door (`core/src/content/screen.ts`)
  * screens free text on the way IN, and it has only existed since a point in this record's
@@ -192,7 +192,7 @@ interface AuditMapping {
  *
  * `channel.asked` and `channel.refused` are the TWO kinds at `99 Other`, and it is not a gap
  * in the effort. It said "the ONE kind", and the refusal made it two by the same argument:
- * each fact records that a rule of the record exercised authority over somebody else's call —
+ * each fact records that a rule of the record exercised authority over somebody else's call:
  * asked a person to look before a file was written, or refused the write. That is not a
  * create, a read, an update or a delete of the channel; Entity Management has no honest
  * verb for it, and forcing it into `Update` would tell a SIEM the channel was modified
@@ -214,7 +214,7 @@ interface AuditMapping {
  * in this record ever removes one.
  *
  * `tail.pruned` is `Delete`, with a caveat the product states loudly elsewhere: the fact
- * AUTHORIZES a cut and removes nothing itself — it is written while the tail is still
+ * AUTHORIZES a cut and removes nothing itself; it is written while the tail is still
  * there, which is what makes the claim checkable. `Delete` is still the honest
  * normalization, because the event is the audit record OF a destructive act, and a SIEM
  * rule that watches for deletions is a rule that should fire here. The exact kind travels
@@ -296,7 +296,7 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityType: 'channel',
   },
   // `Update` and not `Delete`: a retraction removes nothing (the note's own event stays and
-  // is still served by id) it changes what the note is taken to be, as a supersede does.
+  // is still served by id); it changes what the note is taken to be, as a supersede does.
   'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
   // `Update`, for the note's reason: the link's own event stays; what it is taken to be changes.
   // The subject originates the edge and may be of any kind, as on the link itself.

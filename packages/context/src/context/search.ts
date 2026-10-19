@@ -151,7 +151,7 @@ export interface HiddenMatches {
  * it can serialize the envelope as it stands.
  *
  * WHERE it lives is two answers, not one: the `scope` is which of a project's trees
- * holds it, and the `project` is which project that is — absent when the holder is
+ * holds it, and the `project` is which project that is, absent when the holder is
  * the machine-global tree, which belongs to none. Both are spelled out on every arm
  * rather than factored into a shared shape, because the arms are what a caller reads
  * to know what a `RecordBody` is.

@@ -67,7 +67,7 @@ export type Disposition =
  *
  * `wanted` is variadic and not one value for the same reason: the live-work question
  * is answered by TWO dispositions (`advancing` and `stalled`), and a caller that had
- * to call this twice and concatenate would be deciding the union at the call site —
+ * to call this twice and concatenate would be deciding the union at the call site,
  * one more place for the rule to be written differently. Typed as a non-empty tuple,
  * so asking for the states that mean nothing at all does not compile.
  *

@@ -38,7 +38,7 @@ describe('bootstrap: the opening context, focused on the actor', () => {
       // Resume: the actor's open run is the anchor.
       expect(b.resume.lastRun?.id).toBe('run-1');
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
-      // Work: the live task, as a NAME — the four fields and nothing more.
+      // Work: the live task, as a NAME, the four fields and nothing more.
       expect(b.work).toEqual([
         {
           id: 'task-1',
@@ -172,7 +172,7 @@ describe('bootstrap: the opening context, focused on the actor', () => {
     try {
       const b = bootstrap([cache], asking(bench.who));
       // Non-regression proved BY THE LIST: every task is there, and `workTotal`
-      // agrees with it — nothing was hidden and nothing says it was.
+      // agrees with it; nothing was hidden and nothing says it was.
       expect(b.work).toHaveLength(wanted);
       expect(b.workTotal).toBe(wanted);
       expect(b.work.every((w) => Object.keys(w).length === 4)).toBe(true);
@@ -418,7 +418,7 @@ describe('bootstrap: the opening context, focused on the actor', () => {
 
   it('answers about a record whose ONLY content is decisions', () => {
     // The defect that started this: over a real record holding two ADRs and nothing
-    // else, the opening read answered `work: []`, `skills: []` — an empty answer
+    // else, the opening read answered `work: []`, `skills: []`, an empty answer
     // about a full record, which an agent reads as "nothing has been decided here".
     bench = makeBench();
     for (const [id, title] of [

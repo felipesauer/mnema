@@ -7,7 +7,7 @@
  * A channel is a place this product puts the record in front of a model WITHOUT being
  * asked. Somebody may switch one off, and the tie behind that says the switching is
  * recorded: it is a signed, attributed, dated fact of the chain, which means it has a
- * SCOPE like every other fact — a switch committed to the repository is the team's, one
+ * SCOPE like every other fact; a switch committed to the repository is the team's, one
  * recorded privately is one machine's. So "is this channel off" is not a row lookup, it
  * is a question over the trees the caller can see, and the rule for folding them is what
  * this module owns.
@@ -133,8 +133,8 @@ function stateOf(
     const row = source.cache.channelSwitch(channel);
     if (row?.on === true) switchedOn = true;
     // No row is "never switched here", which says nothing about the other trees; a row
-    // whose last switch turned it ON says this tree wants it on, which also says nothing
-    // — one tree cannot switch a channel back on for another.
+    // whose last switch turned it ON says this tree wants it on, which also says nothing:
+    // one tree cannot switch a channel back on for another.
     if (row !== null && !row.on) off.push({ source, row });
   }
   // A channel that starts OFF is on only where some tree switched it on and none switched it
@@ -156,8 +156,8 @@ function stateOf(
 }
 
 /**
- * The switch-off that answers for a channel: earliest instant first, ties broken by who
- * — oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
+ * The switch-off that answers for a channel: earliest instant first, ties broken by who,
+ * oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
  *
  * A CHANNEL IS OFF BECAUSE SOMEONE TURNED IT OFF, and the answer names the switch that
  * did it, so the FIRST one holds; a later tree turning the same channel off again
