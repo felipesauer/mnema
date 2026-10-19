@@ -39,8 +39,8 @@ function tree(b: Bench, scope: Scope = 'public'): ScopedCache {
   return { scope, chainRoot: b.root, cache };
 }
 
-describe('timeline — the history of one entity', () => {
-  it('gathers every axis — subject, about, target — in stream order', () => {
+describe('timeline: the history of one entity', () => {
+  it('gathers every axis (subject, about, target) in stream order', () => {
     const b = bench();
     // A task is created and moved (it is the SUBJECT of these).
     birthTask(b, 'task-1', 'ship the thing'); // created + birth transition
@@ -59,7 +59,7 @@ describe('timeline — the history of one entity', () => {
       ['observation.recorded', 'about'],
       ['knowledge.linked', 'target'],
     ]);
-    // The order is the stream's own (ascending `at` here) — not re-sorted.
+    // The order is the stream's own (ascending `at` here), not re-sorted.
     const stamps = story.map((e) => e.at);
     expect([...stamps]).toEqual([...stamps].sort());
   });
@@ -99,7 +99,7 @@ describe('timeline — the history of one entity', () => {
   });
 });
 
-describe('timeline — the supersede is visible from BOTH sides', () => {
+describe('timeline: the supersede is visible from BOTH sides', () => {
   it('shows the successor that it superseded something, and the superseded that it was', () => {
     // The fourth role, and the bug it closes. The fact lives on the SUPERSEDED
     // decision's event (`subject: dec-old`, `payload.by: dec-new`), so a reader
@@ -136,7 +136,7 @@ describe('timeline — the supersede is visible from BOTH sides', () => {
   });
 });
 
-describe('timeline — across the trees', () => {
+describe('timeline: across the trees', () => {
   it('merges the trees and marks each entry with the tree it lives in', () => {
     const team = bench();
     const mine = bench();
@@ -155,7 +155,7 @@ describe('timeline — across the trees', () => {
     // The guard against the merge drifting from the core's union order: the index
     // is read per tree and merged here, so the merge has to reproduce the union's
     // order rather than approximate it. Both benches tick from the same instant,
-    // so their events interleave on equal `at` — the tie-break case.
+    // so their events interleave on equal `at`: the tie-break case.
     const team = bench();
     const mine = bench();
     birthTask(team, 'task-1', 'the work');

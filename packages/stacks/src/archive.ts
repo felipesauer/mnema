@@ -45,7 +45,7 @@ function paxPath(body: Buffer): Buffer | undefined {
  * file; a directory entry is skipped; a symbolic link, a hard link, a device or anything else is
  * a problem; a name that is not UTF-8 or that the digest would refuse (`..`, absolute, a control
  * character) is a problem. `.git/` is left out. When every file sits under one directory and
- * there is no `stack.json` at the top — the shape a code host gives an archive of a repository —
+ * there is no `stack.json` at the top, the shape a code host gives an archive of a repository,
  * that directory is taken off.
  */
 export function readStackArchive(bytes: Uint8Array): StackFiles {

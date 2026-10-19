@@ -20,6 +20,7 @@ import { pathToFileURL } from 'node:url';
 import {
   catalogUpcasters,
   ensureTree,
+  holdsRecord,
   loadOrCreateKeyPair,
   memoryCaptured,
   verify,
@@ -2967,8 +2968,11 @@ describe('MCP server — end to end over a real client', () => {
     expect(noBy.isError).toBe(true);
     expect(textOf(noBy)).toContain('Refused (MISSING_BY)');
 
+    // Nothing here was written private, so the private tree was never made: verify reports such a
+    // tree as holding no record and rules on the committed one, which took every write.
     const privateRoot = join(project, PROJECT_DIR, 'private');
-    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+    expect(holdsRecord({ root: privateRoot })).toBe(false);
+    expect(verify(join(project, PROJECT_DIR), catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });
@@ -3004,8 +3008,11 @@ describe('MCP server — end to end over a real client', () => {
     expect(bad.isError).toBe(true);
     expect(textOf(bad)).toContain('Refused (UNKNOWN_ACTION)');
 
+    // Nothing here was written private, so the private tree was never made: verify reports such a
+    // tree as holding no record and rules on the committed one, which took every write.
     const privateRoot = join(project, PROJECT_DIR, 'private');
-    expect(verify(privateRoot, catalogUpcasters()).ok).toBe(true);
+    expect(holdsRecord({ root: privateRoot })).toBe(false);
+    expect(verify(join(project, PROJECT_DIR), catalogUpcasters()).ok).toBe(true);
 
     await client.close();
   });
@@ -3139,11 +3146,11 @@ describe('MCP server — end to end over a real client', () => {
     );
     expect(consulted[0]?.run).toBe(runs[0]?.subject);
 
-    // Both trees verify, and the tree that took the write is fully signed.
+    // The committed tree verifies and is fully signed; nothing was written private, so the private
+    // tree was never made and holds no record to rule on.
     const publicVerdict = verify(publicRoot, catalogUpcasters());
-    const privateVerdict = verify(join(project, PROJECT_DIR, 'private'), catalogUpcasters());
     expect(publicVerdict.ok).toBe(true);
-    expect(privateVerdict.ok).toBe(true);
+    expect(holdsRecord({ root: join(project, PROJECT_DIR, 'private') })).toBe(false);
     expect(publicVerdict.fullySigned).toBe(true);
 
     await client.close();

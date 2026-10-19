@@ -2,10 +2,10 @@
  * governance: which rules of the record address this path, and which address
  * nothing at all.
  *
- * The record already holds rules — a decision that was accepted, a pattern that
- * was adopted — and until now nothing tied one of them to a place in the code.
+ * The record already holds rules (a decision that was accepted, a pattern that
+ * was adopted) and until now nothing tied one of them to a place in the code.
  * A link under {@link GOVERNS_RELATION} does: its subject is the rule, its target
- * is a path, and this reads that graph BACKWARDS — given a path, which rules
+ * is a path, and this reads that graph BACKWARDS: given a path, which rules
  * cover it.
  *
  * ## THREE relations, ONE derivation
@@ -15,7 +15,7 @@
  * {@link REFUSES_A_WRITE_RELATION} has it too, with the strongest power of the three: under
  * this part of the tree, nobody writes while the rule stands. Everything
  * about how an address is normalized, compared, ordered and counted is identical, so it
- * is the same walk with a different label — {@link addressesUnder} — and never a second
+ * is the same walk with a different label, {@link addressesUnder}, and never a second
  * reading of the same rule. Two readings of an address is how the segment comparison
  * would come to mean one thing for the text that informs and another for the gate that
  * stops somebody, and the second would be found by whoever it trapped.
@@ -26,17 +26,17 @@
  * (`accepted`, `superseded`, an adopted pattern, a rejected one) and the caller decides
  * what to do with it. That is deliberate: deciding "in force" a second time here is a
  * second rule that can come to disagree with `decisionsInForce`, and the disagreement
- * would be silent — one reader would simply obey a different set.
+ * would be silent: one reader would simply obey a different set.
  *
  * "NOTHING HERE DECIDES WHETHER A RULE STILL HOLDS" was the first half of that sentence
  * and it is no longer true of the module, only of {@link governingRules}. There are two
- * readings in this file now, and the second one — {@link rulesInForceAt} — narrows to
+ * readings in this file now, and the second one, {@link rulesInForceAt}, narrows to
  * what is in force, because it answers a channel that PUSHES rather than a caller that
  * asked. The rule the sentence protected is intact and is what makes the second reading
  * safe: it does not decide "in force" itself either, it asks the two derivations that
  * already do.
  *
- * ## An address is a PREFIX, by segments — never a glob
+ * ## An address is a PREFIX, by segments, never a glob
  *
  * `src/collate` governs `src/collate` and everything under `src/collate/`. It does
  * NOT govern `src/collate_test.rb`, and that is the whole reason the comparison is
@@ -44,10 +44,10 @@
  * a file nobody addressed, and it would do it silently. Held by
  * `governance.test.ts` ("does NOT govern a sibling whose name merely starts the
  * same"), and the mutation that turns the comparison back into a string prefix
- * lights it and its end-to-end twin — two red, nothing else.
+ * lights it and its end-to-end twin: two red, nothing else.
  *
  * A glob was refused, with the reason written down: a glob is a second language
- * with its own semantics, and a glob with a typo governs NOTHING, in silence —
+ * with its own semantics, and a glob with a typo governs NOTHING, in silence,
  * exactly the class of defect this reading exists to make visible. A prefix either
  * matches or it does not, and its absence is countable (see the third number). The
  * diffuse reach a glob would buy belongs to SEARCH, where being wrong costs one
@@ -58,13 +58,13 @@
  * An answer that only listed the matching rules could not be told from an answer
  * where the whole mechanism is empty, and neither could be told from one where the
  * rules exist and their addresses have gone stale. A rule whose address named a
- * file that was since moved, renamed or deleted stops governing SILENTLY — and a
+ * file that was since moved, renamed or deleted stops governing SILENTLY, and a
  * charge that never fires is indistinguishable from a charge that had nothing to
  * fire about. So every answer carries {@link GovernanceCounts}: how many rules
  * cover this path, how many address this project at all, and how many address
  * something the working tree does not hold. The third is not decoration; without it
- * the reading is not finished — measured: emptying the stale list turns TEN cases
- * red, across both surfaces and the golden.
+ * the reading is not finished (measured: emptying the stale list turns TEN cases
+ * red, across both surfaces and the golden).
  *
  * ## What it normalizes, and what it deliberately does not
  *
@@ -80,7 +80,7 @@
  *     read a path for a person add the reading at the place a link leads to
  *     (`code/src/governed-tree.ts`), so this derivation stays text. The DISK PROBE
  *     does follow one,
- *     because it is `existsSync` and that is what existing means — so an address at a
+ *     because it is `existsSync` and that is what existing means, so an address at a
  *     live link is held and one at a dangling link is stale. Both halves are fixed by
  *     `code/tests/the-rule-has-an-address.test.ts` ("compares the text of a path" and
  *     "asks the working tree through the link");
@@ -96,7 +96,7 @@
  * An address is relative to A ROOT, and the root is the asking project's. So the
  * sources are narrowed to that project's own trees: a rule written in ANOTHER
  * project's record addresses that project's `src/`, and importing it here would
- * make it govern code nobody addressed — the same defect the segment comparison
+ * make it govern code nobody addressed, the same defect the segment comparison
  * exists to prevent, one level up. The machine-global tree is left out for the same
  * reason: it belongs to no project, so a path in it is relative to nothing.
  *
@@ -104,7 +104,7 @@
  * nothing here refuses it. It is worth saying what that means, since the reading is
  * what a charge will later cite: a private rule is invisible to a clone, so a charge
  * citing one cites something a teammate cannot open. That is a product decision and
- * it is not taken here — the reading reports the tree, so whoever charges can.
+ * it is not taken here: the reading reports the tree, so whoever charges can.
  */
 
 import {
@@ -123,10 +123,10 @@ import type { ScopedCache } from '../sources.js';
 
 /** What to ask: a path, the project it is in, and how to test the working tree. */
 export interface GovernanceQuery {
-  /** The path to ask about, as the caller writes it — relative or absolute. */
+  /** The path to ask about, as the caller writes it: relative or absolute. */
   readonly path: string;
   /**
-   * The project's root directory — the parent of its `.mnema/`, absolute. Every
+   * The project's root directory: the parent of its `.mnema/`, absolute. Every
    * address is relative to this, and it is what tells a source of THIS project
    * from a source of a sibling one.
    */
@@ -144,7 +144,7 @@ export interface GovernanceQuery {
 
 /** One rule of the record and the address it was given. */
 export interface AddressedRule {
-  /** The rule's id — the subject of the link, and what a charge would cite. */
+  /** The rule's id: the subject of the link, and what a charge would cite. */
   readonly rule: string;
   /** The address as the record holds it, verbatim. */
   readonly recorded: string;
@@ -155,7 +155,7 @@ export interface AddressedRule {
    */
   readonly address?: string;
   /**
-   * How specific the address is — how many segments it names. The ordering key:
+   * How specific the address is: how many segments it names. The ordering key:
    * the longest address wins, because the most specific rule is the one that
    * speaks to this file. Absent exactly when {@link address} is.
    */
@@ -166,12 +166,12 @@ export interface AddressedRule {
   readonly kind?: SearchKind;
   /** The rule's short name, when its kind has one (a memory has none). */
   readonly name?: string;
-  /** Its state, when its kind has one — never interpreted here. */
+  /** Its state, when its kind has one, never interpreted here. */
   readonly state?: string;
   /** The tree that holds the rule itself, absent when no tree here holds it. */
   readonly scope?: Scope;
   /**
-   * Who accepted the rule, when it is a decision that was accepted — the same reading the
+   * Who accepted the rule, when it is a decision that was accepted: the same reading the
    * opening document gives each rule (`decisionsInForce`), so the three places a rule is told
    * say who ruled it in one voice. Absent for every other kind, and for a decision nobody has
    * accepted.
@@ -200,7 +200,7 @@ export interface GovernanceCounts {
   /** How many of those name something the working tree does not hold. */
   readonly stale: number;
   /**
-   * How many addresses name a rule this read cannot READ — the subject resolves in no
+   * How many addresses name a rule this read cannot READ: the subject resolves in no
    * tree it can see.
    *
    * NOT part of `governing`, and that is the number this field exists to correct: they
@@ -210,15 +210,15 @@ export interface GovernanceCounts {
    */
   readonly unresolved: number;
   /**
-   * The same four numbers for the relation that ASKS FOR A PERSON — the gate rather
+   * The same four numbers for the relation that ASKS FOR A PERSON: the gate rather
    * than the text.
    *
    * They are here, and they are three rather than one, because the gate has exactly the
    * three worlds the governing addresses do and they are worse to confuse: a path where
    * no gate applies, a project whose record holds no gate at all, and a gate whose
    * address went stale when a directory was renamed and now stops nobody. The last is
-   * the dangerous one — a gate that quietly stopped closing is indistinguishable from a
-   * gate that never had anything to close on — and only a number that names it separately
+   * the dangerous one (a gate that quietly stopped closing is indistinguishable from a
+   * gate that never had anything to close on) and only a number that names it separately
    * can be looked at.
    */
   readonly asks: AddressCounts;
@@ -238,7 +238,7 @@ export interface AddressCounts {
   readonly addressed: number;
   /** How many of those name something the working tree does not hold. */
   readonly stale: number;
-  /** How many name a rule this read cannot read — see {@link GovernanceCounts.unresolved}. */
+  /** How many name a rule this read cannot read: see {@link GovernanceCounts.unresolved}. */
   readonly unresolved: number;
 }
 
@@ -249,41 +249,41 @@ export interface GoverningRules {
   /**
    * The path as it was compared: POSIX, relative to the root (`.` for the root
    * itself). ABSENT when the path
-   * lies outside the project — which is why an empty list there does not read as
+   * lies outside the project, which is why an empty list there does not read as
    * "nothing governs this file".
    */
   readonly relative?: string;
   /**
-   * The addresses covering the path, MOST SPECIFIC FIRST — most segments, then the
+   * The addresses covering the path, MOST SPECIFIC FIRST: most segments, then the
    * address itself, then the rule's id, so the order is total and comes from the
    * data rather than from the order trees were read in.
    */
   readonly rules: readonly AddressedRule[];
   /**
-   * The addresses that match nothing in the working tree — named, not merely
+   * The addresses that match nothing in the working tree: named, not merely
    * counted, because a count of stale rules is fixed by making the count smaller
    * and a list is fixed by looking at what it names. Same order rule as
    * {@link rules}.
    */
   readonly stale: readonly AddressedRule[];
   /**
-   * The addresses whose RULE this read cannot reach — the subject resolves in no tree
+   * The addresses whose RULE this read cannot reach: the subject resolves in no tree
    * it can see. Named for the same reason `stale` is, and separate from it because the
    * two are different repairs: a stale address is moved, and an unresolved one means
    * the rule it names is somewhere this reader is not.
    *
    * They carry no `kind`, no `name` and no `state`, because nothing was read to fill
-   * them — which is what the id beside each is for.
+   * them, which is what the id beside each is for.
    */
   readonly unresolved: readonly AddressedRule[];
   /**
-   * The addresses that ASK FOR A PERSON around this path — the gate, reported beside
+   * The addresses that ASK FOR A PERSON around this path: the gate, reported beside
    * the text rather than instead of it.
    *
    * It is named as well as counted, for the reason the stale list is: a person who
    * cannot see WHICH fact gates a directory cannot remove it, supersede it or argue
    * with it, and the one thing worse than a gate is a gate whose cause nobody can find.
-   * Whatever state its rule is in travels with it exactly as it does above — this
+   * Whatever state its rule is in travels with it exactly as it does above: this
    * reading judges neither, and only the charge narrows to what is in force.
    */
   readonly asks: readonly AddressedRule[];
@@ -294,11 +294,11 @@ export interface GoverningRules {
    *
    * The worse half of the same defect: a gate counted from an address nobody can read
    * would tell a person a write is watched by a rule they cannot open. It is reported
-   * here and it charges nobody — the charge has always narrowed to what is in force.
+   * here and it charges nobody: the charge has always narrowed to what is in force.
    */
   readonly asksUnresolved: readonly AddressedRule[];
   /**
-   * The addresses that REFUSE a write around this path — reported beside the text and the
+   * The addresses that REFUSE a write around this path, reported beside the text and the
    * gate, named for the reason the gate is: a person whose write was refused has to be able
    * to find the fact that refused it. Whatever state its rule is in travels with it; only
    * the decision a write meets narrows to what is in force.
@@ -364,7 +364,7 @@ export function governingRules(
 
 /**
  * Every address of ONE relation in this project's trees, split into what covers the
- * asked path and what covers nothing on disk — the whole walk, done once per relation.
+ * asked path and what covers nothing on disk: the whole walk, done once per relation.
  *
  * It exists so the relations cannot come to disagree about what an address MEANS.
  * Normalizing, the segment comparison, the disk probe and the counting are here and
@@ -398,7 +398,7 @@ function addressesUnder(
   // saying its address also went stale would be a claim about a rule nobody can read.
   const readable = found.filter(readableRule);
   return {
-    // `all` is what this project's record holds as RULES — the middle number — so an
+    // `all` is what this project's record holds as RULES, the middle number, so an
     // address naming nothing readable is not in it.
     all: readable,
     matching: asked === null ? [] : readable.filter((entry) => covers(entry.segments, asked)),
@@ -408,7 +408,7 @@ function addressesUnder(
 }
 
 /**
- * One addressed rule and the segments it was compared by — the segments kept
+ * One addressed rule and the segments it was compared by: the segments kept
  * beside the answer rather than inside it, so the comparison is done once and the
  * reply carries a path a reader can read.
  */
@@ -421,8 +421,8 @@ interface Addressed {
    *
    * Carried explicitly rather than inferred from the absence of `kind`, because the
    * whole point of {@link readableRule} is that one question has one answer here. An
-   * address whose subject resolves nowhere is not a rule that governs — nobody can read
-   * what it says — and it used to be counted as one.
+   * address whose subject resolves nowhere is not a rule that governs (nobody can read
+   * what it says) and it used to be counted as one.
    */
   readonly resolves: boolean;
 }
@@ -432,7 +432,7 @@ interface Addressed {
  *
  * The one site that decides it, and the reason it needs a site at all. MEASURED in a
  * clone: a `governs` edge written into the PUBLIC tree whose subject is a decision in
- * the PRIVATE tree — which `mnema link --scope public` accepts today — travels with the
+ * the PRIVATE tree, which `mnema link --scope public` accepts today, travels with the
  * repository while the rule it names does not. Over one such record with two of them,
  * the four readings of this graph disagreed about the same committed bytes:
  *
@@ -442,14 +442,14 @@ interface Addressed {
  *   the edit gate          named one rule          right
  *
  * AND THE TWO THAT WERE RIGHT WERE RIGHT BY ACCIDENT. `brief` and the gate go through
- * {@link inForceUnder}, which keeps only rules it can find in the in-force set — so an
+ * {@link inForceUnder}, which keeps only rules it can find in the in-force set, so an
  * unresolved subject fell out because it has no STATE, not because anything asked whether
  * it resolved. A correctness nothing states is a correctness the next reading does not
  * inherit, which is exactly what the two that were wrong demonstrate.
  *
  * IT IS NOT DROPPED, and that is the other half. The record really does hold the address;
  * a reader who saw the count fall silently would have lost a fact. So it becomes its own
- * class beside `stale`, counted and NAMED — the same treatment, for the same reason: a
+ * class beside `stale`, counted and NAMED, the same treatment, for the same reason: a
  * count of broken addresses is fixed by making the count smaller, and a list is fixed by
  * looking at what it names.
  */
@@ -467,8 +467,8 @@ function ordered(entries: readonly Addressed[]): AddressedRule[] {
  *
  * A tree that names its project answers for that project alone; the machine-global
  * tree names no project and belongs to none, so it is never a source of addresses.
- * A tree that names NO project and is not global is the command line's shape — it
- * resolves one project's trees and labels neither — so it is taken as this
+ * A tree that names NO project and is not global is the command line's shape, it
+ * resolves one project's trees and labels neither, so it is taken as this
  * project's, which is exactly what it is.
  */
 function governsThisProject(source: ScopedCache, root: string): boolean {
@@ -535,7 +535,7 @@ function nameAndState(record: RecordBody | null): { name?: string; state?: strin
 }
 
 /**
- * Whether an address covers a path — a prefix over SEGMENTS.
+ * Whether an address covers a path: a prefix over SEGMENTS.
  *
  * The empty address (the project root) covers everything, which is the honest
  * reading of a rule someone addressed at the whole repository. An address with more
@@ -555,7 +555,7 @@ function covers(wanted: readonly string[] | null, path: readonly string[]): bool
   return wanted.every((segment, index) => path[index] === segment);
 }
 
-/** Most segments first, then the address, then the rule — a total order from the data. */
+/** Most segments first, then the address, then the rule: a total order from the data. */
 function bySpecificity(a: Addressed, b: Addressed): number {
   const depth = (b.segments?.length ?? -1) - (a.segments?.length ?? -1);
   if (depth !== 0) return depth;
@@ -567,7 +567,7 @@ function bySpecificity(a: Addressed, b: Addressed): number {
  * Segments as ONE readable path: the POSIX spelling, with the project root written
  * `.` rather than as the empty string it is in segments. A column of a report and a
  * probe of the working tree both take this, so "the root" is one spelling and not
- * two — and `.` is what a person would have typed to mean it.
+ * two, and `.` is what a person would have typed to mean it.
  */
 function posix(segments: readonly string[]): string {
   return segments.length === 0 ? '.' : segments.join('/');
@@ -578,11 +578,11 @@ function posix(segments: readonly string[]): string {
  * names something outside the project.
  *
  * Textual and deliberate about it: `.` segments drop, `..` pops the previous one, a
- * trailing slash is nothing, and repeated slashes are one — and the climbing is
+ * trailing slash is nothing, and repeated slashes are one, and the climbing is
  * resolved BEFORE the root is compared, so `/repo/../repo/src` is `src` rather than
  * a miss. An absolute path is made relative when it lies under the root and is null
  * otherwise; a relative path that climbs past its own start is null for the same
- * reason. No symlink is resolved and no disk is touched — see the module note on
+ * reason. No symlink is resolved and no disk is touched: see the module note on
  * what that costs.
  */
 function relativeSegments(path: string, root: string): string[] | null {
@@ -597,7 +597,7 @@ function relativeSegments(path: string, root: string): string[] | null {
 
 /**
  * The segments a path names, with `.` dropped and `..` resolved textually, or null
- * when the climbing goes above the first segment — which for an absolute path is
+ * when the climbing goes above the first segment, which for an absolute path is
  * above the filesystem root and for a relative one is out of the project.
  */
 function normalized(path: string): string[] | null {
@@ -619,53 +619,53 @@ function compare(a: string, b: string): number {
 }
 
 /**
- * One rule that governs a path and still holds — the shape a channel that PUSHES
+ * One rule that governs a path and still holds: the shape a channel that PUSHES
  * carries, which is narrower than what {@link GoverningRules} reports on request.
  *
  * Every field is present, and that is the difference. {@link AddressedRule} leaves the
  * name, the kind and the state optional because it answers about an address whatever
- * the record holds at the other end of it — including nothing. This shape is built
+ * the record holds at the other end of it, including nothing. This shape is built
  * from the two derivations that decide what is IN FORCE, so a rule that reached it has
  * a projection some tree holds, and the name came out of that projection rather than
  * out of a second lookup that could have missed.
  */
 export interface PushedRule {
-  /** The rule's id — what a charge would cite, and what {@link readRecord} takes. */
+  /** The rule's id: what a charge would cite, and what {@link readRecord} takes. */
   readonly id: string;
   /** What the rule says: a decision's title, a pattern's name. */
   readonly name: string;
   /** The address it was matched by, as it was compared or as the record wrote it. */
   readonly address: string;
   /**
-   * Whether the tree that holds the rule TRAVELS — whether a clone of the repository
+   * Whether the tree that holds the rule TRAVELS: whether a clone of the repository
    * gets it.
    *
    * False is the case that has to be visible: a rule recorded `--scope private` or in
    * the machine's global tree governs the work here and its id resolves nowhere else,
    * so a reader that cited it would be citing something a teammate cannot open. It is
    * false whenever the tree is not the committed one AND whenever no tree here holds
-   * the rule at all — unsure and not-travelling get the same answer, which is the
+   * the rule at all: unsure and not-travelling get the same answer, which is the
    * direction that cannot mislead.
    */
   readonly travels: boolean;
   /**
-   * Who accepted the rule, when it is a decision that was accepted — the line a push carries says
+   * Who accepted the rule, when it is a decision that was accepted: the line a push carries says
    * it as the opening document does, so a rule is not told in one voice here and another there.
    */
   readonly acceptance?: Acceptance;
   /**
-   * Where the record says the rule CAME FROM — the target of every `derived-from` edge
+   * Where the record says the rule CAME FROM: the target of every `derived-from` edge
    * the rule's own tree asserts about it. Absent when it asserts none, which is the
    * ordinary case for a rule decided here rather than imported.
    *
    * WHY A PUSHED LINE CARRIES IT. Everything else on the line is a handle into this
-   * product: the id opens with `read_record`. That tool IS called — this sentence used to
+   * product: the id opens with `read_record`. That tool IS called (this sentence used to
    * say the measurements behind the informing channel show it is not, and the cells that
-   * opened with an id called it 62 times — but by a reader for whom this product is the
+   * opened with an id called it 62 times), but by a reader for whom this product is the
    * door; on a real project the reader followed the opening document's citation with
    * `cat` and made none of its calls here (`code/src/record-framing.ts` records both). A
    * provenance is the one fact on the line that opens with the tools the reader is ALREADY
-   * holding — `cat`, a file read — so it is what makes an unasked text followable without
+   * holding (`cat`, a file read), so it is what makes an unasked text followable without
    * asking for anything.
    *
    * IT IS A TARGET AND NOT A PATH, and nothing here checks that it resolves: the
@@ -681,11 +681,11 @@ export interface RulesAtPath {
   readonly path: string;
   /**
    * The path as it was compared: POSIX, relative to the project root. Absent when the
-   * path lies outside the project — in which case {@link rules} is empty, because
+   * path lies outside the project: in which case {@link rules} is empty, because
    * nothing in this project addresses it.
    */
   readonly relative?: string;
-  /** The rules, most specific first — {@link governingRules}' own order, kept. */
+  /** The rules, most specific first: {@link governingRules}' own order, kept. */
   readonly rules: readonly PushedRule[];
 }
 
@@ -695,25 +695,25 @@ export interface RulesAtPath {
  * ## Why this exists beside {@link governingRules} instead of being a flag on it
  *
  * The reading that answers a CALLER reports every address it found with each rule's
- * state beside it, and judges none of them — a caller that asked can read a `superseded`
+ * state beside it, and judges none of them: a caller that asked can read a `superseded`
  * and decide. A channel that PUSHES has no such reader: the text arrives unasked, in the
  * middle of somebody's work, and a superseded decision arriving that way is this product
  * asserting that a rule governs when the record says it stopped. So the push carries what
  * is in force and nothing else, and the two answers are two functions rather than one
- * function with a mode, because the difference is not a filter — it is which of the two
+ * function with a mode, because the difference is not a filter: it is which of the two
  * has the right to decide.
  *
  * ## It does not decide "in force" a second time
  *
  * The set comes from {@link decisionsInForce} and {@link adoptedSkills}, which are the
  * product's only readings of it: supersession is a graph fact and `accepted` is a state,
- * and a second rule here — "state is not superseded", say — is exactly the silent
+ * and a second rule here ("state is not superseded", say) is exactly the silent
  * divergence `governance.ts` already refuses to open. The NAME comes out of the same two
  * answers for the same reason: reading it from a second lookup could hand back a title
  * for a rule those two never listed.
  *
  * A consequence worth naming: nothing else can be in force. A task, a memory or an
- * observation given a `governs` link is not a rule, so it is addressed and never pushed —
+ * observation given a `governs` link is not a rule, so it is addressed and never pushed:
  * `governing_rules` reports it, with its kind, to whoever asks.
  *
  * ## The three numbers are NOT here, and that is deliberate
@@ -722,7 +722,7 @@ export interface RulesAtPath {
  * `matching` of an asked reading counts the addresses covering the path whatever their
  * state, so it is larger than this list whenever a superseded rule addresses the file. The
  * numbers belong to the reading that reports all of them, and to the once-per-session
- * document — never to a text pushed on every edit, where they would be paid for again and
+ * document, never to a text pushed on every edit, where they would be paid for again and
  * again to say the same thing.
  */
 export function rulesInForceAt(
@@ -733,7 +733,7 @@ export function rulesInForceAt(
 }
 
 /**
- * The rules of `sources` that ASK FOR A PERSON at `query.path` AND are still in force —
+ * The rules of `sources` that ASK FOR A PERSON at `query.path` AND are still in force:
  * the reading a CHARGE stands on, and the only one in this file whose answer can stop
  * somebody's work.
  *
@@ -749,7 +749,7 @@ export function rulesInForceAt(
  * ## What an empty answer means, and it is one thing only
  *
  * No gate applies. It does not mean the mechanism is missing and it does not mean the
- * channel is off — those are the caller's to distinguish, and both are answered where a
+ * channel is off: those are the caller's to distinguish, and both are answered where a
  * session opens. The three numbers that separate them belong to {@link governingRules},
  * which reports all of them to whoever asks, and never to a text a hook adds to the request at each edit.
  */
@@ -761,14 +761,14 @@ export function asksForAPersonAt(
 }
 
 /**
- * The rules of `sources` that REFUSE a write at `query.path` AND are still in force — the
+ * The rules of `sources` that REFUSE a write at `query.path` AND are still in force: the
  * reading a refusal stands on.
  *
  * The third question over the same body, and in force for the reason the gate's reading
  * is, one step harder again: a retired rule refusing a write would stop somebody's work
  * outright on the authority of something the team set aside, and the refusal would be the
- * only thing they saw. An empty answer means one thing — no rule in force refuses this
- * path — and which of the two grades a write meets when both apply is decided by the
+ * only thing they saw. An empty answer means one thing, no rule in force refuses this
+ * path, and which of the two grades a write meets when both apply is decided by the
  * caller that asks both questions, once, never here.
  */
 export function refusesAWriteAt(
@@ -779,13 +779,13 @@ export function refusesAWriteAt(
 }
 
 /**
- * The in-force rules addressed at a path under ONE relation — the single site both
+ * The in-force rules addressed at a path under ONE relation: the single site both
  * readings above route through.
  *
  * TWO ENTRY POINTS AND ONE BODY, deliberately, and the relation is not a parameter of
  * either of them. What a caller chooses is the QUESTION ("which rules govern this" or
  * "which rules gate this"), never the label, because a label a caller passes is a label a
- * caller can invent — and the reading behind a charge must not answer for a relation
+ * caller can invent, and the reading behind a charge must not answer for a relation
  * nobody defined. `the-record-asks-for-a-person.test.ts` holds that both entry points
  * come through here, so a third question cannot be answered by a third copy of this.
  */
@@ -804,8 +804,8 @@ function inForceUnder(
 }
 
 /**
- * The rules of this project in force under `governs`, EVERY address each one holds — not the
- * ones covering a path — with the tree that asserted each address and whether it lies inside
+ * The rules of this project in force under `governs`, EVERY address each one holds, not the
+ * ones covering a path, with the tree that asserted each address and whether it lies inside
  * the project.
  *
  * It answers the question a FILE for another host is composed from (`mnema rules-file`): which
@@ -830,7 +830,7 @@ export function governsInForceEverywhere(
 }
 
 /**
- * The entries of a walk whose rule is in force, as the line a channel pushes — the one body
+ * The entries of a walk whose rule is in force, as the line a channel pushes: the one body
  * both readings above narrow through.
  */
 function inForceOf(
@@ -844,7 +844,7 @@ function inForceOf(
   return ordered(entries).flatMap((rule) => {
     // THIS FILTER USED TO BE THE ONLY THING KEEPING AN UNREADABLE RULE OUT OF HERE,
     // and it kept it out for the wrong reason. An address whose subject resolves
-    // nowhere has no STATE, so it was never in the in-force set and fell out — which
+    // nowhere has no STATE, so it was never in the in-force set and fell out, which
     // made `brief` and the edit gate right by accident while `rules` and
     // `governing_rules` counted it as a rule that governs. `addressesUnder` now
     // answers the question by name, so what is left here is the narrowing this
@@ -856,7 +856,7 @@ function inForceOf(
     // about a public decision; serving that here would put a file of one machine into
     // a text pushed at everybody's edit, and the id beside it would resolve in a clone
     // while the path would not. `rule.scope` is the rule's own tree and it is defined
-    // for everything that reaches this point — an address whose subject resolves
+    // for everything that reaches this point: an address whose subject resolves
     // nowhere has no state, so it was never in the in-force set.
     const origin = originOf(cachesOf(sources, rule.scope), rule.rule);
     return [
@@ -866,8 +866,8 @@ function inForceOf(
           id: rule.rule,
           name,
           // The compared form when the address resolved into this project, and the
-          // record's own spelling otherwise. A matching rule always has the first —
-          // `covers` compares its segments — so the fallback is a type narrowing and
+          // record's own spelling otherwise. A matching rule always has the first,
+          // `covers` compares its segments, so the fallback is a type narrowing and
           // not a case, and it prints something true either way.
           address: rule.address ?? rule.recorded,
           travels: rule.scope === TRAVELS_TO_A_CLONE,
@@ -882,12 +882,12 @@ function inForceOf(
 }
 
 /**
- * The caches of `sources` that are in `scope` — the trees a rule of that scope lives in.
+ * The caches of `sources` that are in `scope`: the trees a rule of that scope lives in.
  *
  * It is a FILTER and not a lookup because a caller may be holding several projects' trees
  * at one scope, and this module never decides which project a rule belongs to: the query
  * carries a root and the addressing does that work. What this narrowing buys is the one
- * thing that is this module's to get right — that a fact read about a rule comes from the
+ * thing that is this module's to get right: that a fact read about a rule comes from the
  * kind of tree the rule itself lives in, so nothing private is served beside a rule that
  * travels.
  *
@@ -900,7 +900,7 @@ function cachesOf(sources: readonly ScopedCache[], scope: Scope | undefined): Pr
 }
 
 /**
- * The one tree whose rules a clone of the repository gets — the same scope
+ * The one tree whose rules a clone of the repository gets: the same scope
  * `context/brief.ts` composes its document out of, named here because
  * {@link PushedRule.travels} is a claim about that and not about a preference.
  */
@@ -911,7 +911,7 @@ const TRAVELS_TO_A_CLONE: Scope = 'public';
  *
  * Injected for the reason {@link GovernanceQuery.onDisk} is: the derivation stays pure
  * over an address, and the one place that touches a disk is the surface. It is a
- * CALLBACK rather than a list because the answer is two counts and nothing else — a
+ * CALLBACK rather than a list because the answer is two counts and nothing else: a
  * caller that returned an array of every path would materialize a tree's worth of
  * strings to have them counted and thrown away.
  *
@@ -927,10 +927,10 @@ export interface TreeWalk {
   readonly walk: (visit: (relative: string) => void) => WalkOutcome;
 }
 
-/** What a walk left out — the two ways its count is not the whole tree. */
+/** What a walk left out: the two ways its count is not the whole tree. */
 export interface WalkOutcome {
   /**
-   * The directory names the walk did not descend into, as it actually met them —
+   * The directory names the walk did not descend into, as it actually met them,
    * never the whole list it would have skipped. A base that names what it excluded is
    * a base a reader can argue with; one that does not is a number with a hidden
    * premise.
@@ -939,7 +939,7 @@ export interface WalkOutcome {
   /**
    * True when the walk stopped at a ceiling, which makes every count a FLOOR. It
    * travels rather than being handled here because a truncated number that does not
-   * announce itself is worse than no number — cutting in silence is a defect this
+   * announce itself is worse than no number: cutting in silence is a defect this
    * product names elsewhere and would be committing here.
    */
   readonly truncated: boolean;
@@ -947,9 +947,9 @@ export interface WalkOutcome {
 
 /** What to ask about an address: the address, its project, and how to walk the tree. */
 export interface ReachQuery {
-  /** The address as the record holds it — the link's target, verbatim. */
+  /** The address as the record holds it: the link's target, verbatim. */
   readonly address: string;
-  /** The project's root directory — the parent of its `.mnema/`, absolute. */
+  /** The project's root directory: the parent of its `.mnema/`, absolute. */
   readonly root: string;
   /** How to walk the project's files. */
   readonly tree: TreeWalk;
@@ -958,8 +958,8 @@ export interface ReachQuery {
 /**
  * What an address covers, against the base it was counted over.
  *
- * Two numbers and never one: `under` alone says nothing — 128 files is most of a small
- * repository and a corner of a large one — and it is the FRACTION that makes the cliff
+ * Two numbers and never one: `under` alone says nothing (128 files is most of a small
+ * repository and a corner of a large one) and it is the FRACTION that makes the cliff
  * visible. The base's own qualifications ride along, because they are what the fraction
  * means.
  */
@@ -967,13 +967,13 @@ export interface AddressReach {
   /**
    * The address as it was compared: POSIX segments joined by `/`, relative to the root,
    * the root itself being `.`. Absent when the address lies outside the project and
-   * therefore covers nothing here — the same absence {@link AddressedRule.address} has,
+   * therefore covers nothing here: the same absence {@link AddressedRule.address} has,
    * for the same reason.
    */
   readonly address?: string;
   /** How many of the files counted the address covers. */
   readonly under: number;
-  /** How many files were counted at all — what `under` is a fraction OF. */
+  /** How many files were counted at all: what `under` is a fraction OF. */
   readonly counted: number;
   /** The directory names the walk did not descend into. See {@link WalkOutcome.skipped}. */
   readonly skipped: readonly string[];
@@ -982,7 +982,7 @@ export interface AddressReach {
 }
 
 /**
- * How much of the working tree an address covers — the number nothing said before the
+ * How much of the working tree an address covers: the number nothing said before the
  * address was recorded.
  *
  * IT IS A FACT AND STOPS THERE. No threshold, no warning, no refusal: an address that
@@ -997,8 +997,8 @@ export interface AddressReach {
  * The surfaces that print it say so on the line, because a fraction the reader takes for
  * a rate of firing is a number that misleads more than silence would.
  *
- * It goes through {@link relativeSegments} and {@link covers} — the same normalization
- * and the same segment prefix the gate is decided by — so the reach describes the very
+ * It goes through {@link relativeSegments} and {@link covers} (the same normalization
+ * and the same segment prefix the gate is decided by), so the reach describes the very
  * address that will stop somebody, and not one that merely spells the same.
  */
 export function addressReach(query: ReachQuery): AddressReach {
@@ -1008,7 +1008,7 @@ export function addressReach(query: ReachQuery): AddressReach {
   const outcome = query.tree.walk((relative) => {
     counted += 1;
     // A walked path is already project-relative, so this only splits and normalizes
-    // it — and it does so through the function every address goes through, which is
+    // it, and it does so through the function every address goes through, which is
     // what keeps a file's segments and an address's segments one idea.
     if (covers(wanted, relativeSegments(relative, query.root) ?? [])) under += 1;
   });

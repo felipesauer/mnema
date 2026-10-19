@@ -3,8 +3,8 @@
  * absence is the answer that nobody switched it.
  *
  * WHY IT IS A FOLD AND NOT A ROW LOOKUP: a switch is a signed, attributed, dated fact of
- * the chain, so it has a SCOPE — one committed to the repository is the team's, one
- * recorded privately is one machine's — and there is no total order between two trees to
+ * the chain, so it has a SCOPE (one committed to the repository is the team's, one
+ * recorded privately is one machine's) and there is no total order between two trees to
  * ask which switch is the latest. Every case here therefore holds TWO sources, except the
  * ones whose subject IS a single tree; a case with one source only ever walks the ON path
  * that any test opening a document already walks, and asserts nothing about the rule.
@@ -34,8 +34,8 @@ const CHANNEL = 'edit-rules-push';
  *
  * THE WIDTH WAS WRONG, AND IS NOW CHECKED RATHER THAN CLAIMED. These were first written
  * with THIRTY-TWO hex, under a premise this comment stated in those words. An anchor is
- * `mnid:` and SIXTY-FOUR, and `isAnchorId` — the predicate the surface itself resolves a
- * typed anchor with — answered `false` for both of them.
+ * `mnid:` and SIXTY-FOUR, and `isAnchorId`, the predicate the surface itself resolves a
+ * typed anchor with, answered `false` for both of them.
  *
  * Nothing here asserted any less for it, and that is the point: this fold never reads the
  * width of a `who`, it only orders two of them, so a fixture could carry a value no record
@@ -52,7 +52,7 @@ const LATER = '2026-03-01T00:00:00.000Z';
 
 describe('the anchors these cases hand the fold are anchors the product could have minted', () => {
   it('is asked of the predicate the surface resolves a typed anchor with', () => {
-    // The fold under test never reads the WIDTH of a `who` — it only orders two of them —
+    // The fold under test never reads the WIDTH of a `who`, it only orders two of them,
     // so a fixture carrying a value no record could hold leaves every case below green
     // over a world that cannot exist. These two were exactly that at thirty-two hex. The
     // check lives here and not in the prose above because a claim in a comment cannot go
@@ -66,7 +66,7 @@ describe('the anchors these cases hand the fold are anchors the product could ha
   });
 });
 
-describe('channelStates — where a switch stands across the trees a caller can see', () => {
+describe('channelStates, where a switch stands across the trees a caller can see', () => {
   let benches: Bench[] = [];
   let open: ScopedCache[] = [];
   afterEach(() => {
@@ -90,7 +90,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
 
   it('a channel no tree ever switched comes back on, and carries NOTHING else', () => {
     // The absence of an attribution IS the fact that nobody switched it. A placeholder
-    // there — a `by`, an `at`, a `travels: false` — would read as a switch somebody made,
+    // there (a `by`, an `at`, a `travels: false`) would read as a switch somebody made,
     // so the comparison is over the whole object and not over `on`.
     const team = bench();
     const mine = bench();
@@ -142,7 +142,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     // One tree cannot switch a channel back on for another, so an ON row is not a vote:
     // the OFF in the second tree still decides, and the answer names IT.
     // THE ON ROW IS THE ONE THAT WOULD WIN. It is written at the EARLIER instant and by
-    // the anchor that sorts first, so a rule counting it as a vote would answer with IT —
+    // the anchor that sorts first, so a rule counting it as a vote would answer with IT:
     // by a different anchor, at a different instant, from a tree of the other scope. The
     // earlier draft of this case had the ON row late and losing on both keys, which made
     // it green under the very mutation its name is about: an ON row counted as a vote
@@ -174,7 +174,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     // The answer names the switch that turned it off, so the first one holds; a later
     // tree turning the same channel off again decided nothing. Asked in both orders
     // because an answer that depended on the order the sources were opened could not be
-    // compared between two runs — and one consumer of this is a document whose whole
+    // compared between two runs, and one consumer of this is a document whose whole
     // worth is that the same record prints the same bytes.
     const first = bench();
     const second = bench();
@@ -189,7 +189,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
 
   it('two trees saying off at the SAME instant: the anchor breaks the tie, in either order', () => {
     // Two machines whose clocks agree to the millisecond is one script run twice, and
-    // the second key has to be content too — falling back to the order the sources were
+    // the second key has to be content too: falling back to the order the sources were
     // opened is the thing the tie-break exists to avoid.
     const first = bench();
     const second = bench();
@@ -204,7 +204,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
 
   it('travels is the scope of the tree that DECIDED, not of any tree that said off', () => {
     // Both cases hold one public and one private tree saying off. What changes is which
-    // of them the tie-break picked, and `travels` follows THAT one — the fact a reader
+    // of them the tie-break picked, and `travels` follows THAT one: the fact a reader
     // needs to know whether a teammate sees the same thing.
     const team = bench();
     const mine = bench();
@@ -249,7 +249,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     const team = bench();
     const mine = bench();
     const asked = (...sources: ScopedCache[]) => channelStates(sources, [CHANNEL], [CHANNEL])[0];
-    // Never switched: off, and carrying nothing else — nobody switched it off, so no attribution.
+    // Never switched: off, and carrying nothing else; nobody switched it off, so no attribution.
     expect(asked(source(team), source(mine, 'private'))).toStrictEqual({
       channel: CHANNEL,
       on: false,
@@ -276,7 +276,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
   });
 });
 
-describe('channelIsOn — the same reading, asked about one channel', () => {
+describe('channelIsOn: the same reading, asked about one channel', () => {
   let benches: Bench[] = [];
   let open: ScopedCache[] = [];
   afterEach(() => {
@@ -300,7 +300,7 @@ describe('channelIsOn — the same reading, asked about one channel', () => {
 
   it('is the `on` of the state, for a channel switched off in one of two trees', () => {
     // A pushing channel that decided for itself whether a switch applies is a channel
-    // that comes to disagree with the document telling a reader what to expect — so the
+    // that comes to disagree with the document telling a reader what to expect, so the
     // case asserts the AGREEMENT and not just the boolean.
     const team = bench();
     const mine = bench();

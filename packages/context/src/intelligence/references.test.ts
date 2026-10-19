@@ -41,7 +41,7 @@ function edges(graph: { links: readonly { from: string; role: string; to: string
   return graph.links.map((l) => `${l.from} ${l.role} ${l.to}`).sort();
 }
 
-describe('references — the neighbourhood', () => {
+describe('references: the neighbourhood', () => {
   it('reports what points at an entity and what it points at', () => {
     const b = bench();
     birthTask(b, 'task-1', 'the work');
@@ -121,7 +121,7 @@ describe('references — the neighbourhood', () => {
   });
 });
 
-describe('references — the lineage', () => {
+describe('references: the lineage', () => {
   it('walks the supersede chain the links table never held', () => {
     const b = bench();
     birthDecision(b, 'd1', 'first');
@@ -193,7 +193,7 @@ describe('references — the lineage', () => {
   });
 });
 
-describe('references — across the trees', () => {
+describe('references: across the trees', () => {
   it('finds an edge whose far end lives in another tree, with the right scopes', () => {
     const team = bench();
     const mine = bench();
@@ -232,21 +232,21 @@ describe('references — across the trees', () => {
       ['dec-1', 1],
       ['dec-2', 2],
     ]);
-    // At one hop the cross-tree continuation is beyond the cap — and says so.
+    // At one hop the cross-tree continuation is beyond the cap, and says so.
     const cut = references(sources, { id: 'mem-1', direction: 'out', depth: 1 });
     expect(edges(cut)).toEqual(['mem-1 target dec-1']);
     expect(cut.truncated).toBe(true);
   });
 });
 
-describe('references — every tree is walked', () => {
+describe('references: every tree is walked', () => {
   /**
    * The counting tests. A walk over N trees that each assert one edge into the
    * same hub must report N edges: any tree left unwalked shows up as a number
    * that is short, which no assertion about the SHAPE of the answer would catch.
    */
   it('sums the edges of every tree, including several of the same scope', () => {
-    // Two trees per scope — the multi-project read, where a scope stops being a
+    // Two trees per scope: the multi-project read, where a scope stops being a
     // name for one tree.
     const scopes: Scope[] = ['public', 'public', 'private', 'private', 'global', 'global'];
     const sources = scopes.map((scope, index) => {
@@ -265,7 +265,7 @@ describe('references — every tree is walked', () => {
   it('keeps two assertions apart when both are the same event position', () => {
     // The other half: an `ord` is a position in ONE tree's stream, so two trees
     // written the same way assert their edge at the same one. Identical scope,
-    // identical ord, identical role — everything a key made of those three has.
+    // identical ord, identical role: everything a key made of those three has.
     const first = bench();
     capture(first, 'mem-a', 'a note');
     link(first, 'mem-a', 'hub', 'relates-to');
@@ -281,7 +281,7 @@ describe('references — every tree is walked', () => {
   it('reports one edge when the same tree is opened twice', () => {
     // A tree reached by two paths is still ONE tree, and its edge is one
     // assertion. Reporting it twice would put two facts in the graph where the
-    // record holds one — a reader counts edges as evidence.
+    // record holds one: a reader counts edges as evidence.
     const b = bench();
     capture(b, 'mem-1', 'a note');
     link(b, 'mem-1', 'hub', 'relates-to');

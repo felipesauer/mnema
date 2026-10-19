@@ -5,7 +5,7 @@
  * the transition table, and nothing but a test keeps the two agreeing. Every case
  * here enumerates from the product's own vocabulary (`DECISION_STATES`,
  * `SKILL_STATES`, `TASK_STATES`) and its own tables (`DECISION_TRANSITIONS`,
- * `SKILL_TRANSITIONS`, `TRANSITIONS`) — never from a list typed in this file — so a
+ * `SKILL_TRANSITIONS`, `TRANSITIONS`), never from a list typed in this file, so a
  * state or a move added tomorrow is covered without this file being edited.
  *
  * IT COVERED TWO MACHINES, and the third arrived with the slice that made the opening
@@ -14,8 +14,8 @@
  * forever" said `checked` was three, and a task `IN_REVIEW` was the fourth waiting
  * state in the product with nothing here reading its exits.
  *
- * The task machine's table is `core`'s and stays there — it is derived from
- * `TRANSITIONS` and cross-checked against it in that package — so what this file gets
+ * The task machine's table is `core`'s and stays there (it is derived from
+ * `TRANSITIONS` and cross-checked against it in that package), so what this file gets
  * of it is `taskDisposition`, the accessor, which is the whole of what crosses the
  * boundary. Its five words are NOT this layer's three, and nothing here unifies them:
  * the two cases that need to speak of both name the word each vocabulary uses.
@@ -48,8 +48,8 @@ interface Machine {
  * The task machine's classification, as a table, built by ASKING the accessor for
  * every state the workflow publishes.
  *
- * `TASK_DISPOSITION` itself is deliberately off `@mnema/core`'s surface — a consumer
- * gets the question and never the table — so this is how a reader outside that package
+ * `TASK_DISPOSITION` itself is deliberately off `@mnema/core`'s surface, a consumer
+ * gets the question and never the table, so this is how a reader outside that package
  * holds the whole of it, and it is a projection of the real one rather than a copy: a
  * state added to the machine appears here without this file being edited, and a row
  * changed there changes here.
@@ -85,7 +85,7 @@ function movesFrom(machine: Machine, from: string): string[] {
 describe('the disposition tables agree with the workflow', () => {
   it('classifies every state of all three machines, and invents none', () => {
     // The compiler already refuses a `Record<State, Disposition>` with a state
-    // missing — that is the guard, and it lives in `src` where it is real. This is
+    // missing, that is the guard, and it lives in `src` where it is real. This is
     // the other direction plus the non-vacuity: a table with an EXTRA key (a state
     // that was renamed out of the union, say) type-checks and would leave a bucket
     // nothing can ever land in, and an empty enumeration would make every other
@@ -115,12 +115,12 @@ describe('the disposition tables agree with the workflow', () => {
       }
     }
     // Four: a task `IN_REVIEW`, a decision `proposed`, a skill `proposed`, a skill
-    // `reviewed` — and the count is asserted so the loop cannot silently stop covering
+    // `reviewed`, and the count is asserted so the loop cannot silently stop covering
     // the machines. It said three until the task machine joined the waiting list.
     expect(checked).toBe(4);
   });
 
-  it('and no cycle keeps one waiting either — the waiting side is a DAG', () => {
+  it('and no cycle keeps one waiting either: the waiting side is a DAG', () => {
     // A way out is not enough on its own: `proposed → reviewed` is a move WITHIN
     // the waiting side, so a machine whose waiting states pointed at each other in
     // a loop could keep an item legally moving and never leaving. Walked from every
@@ -148,7 +148,7 @@ describe('the disposition tables agree with the workflow', () => {
     // The count is of EDGES followed, not of states walked from, and that is the
     // whole point of it: what can go vacuous here is the WALK, and the walk
     // disappears when no move leads from one waiting state to another. Counting
-    // starting states would report three with zero edges followed — a counter that
+    // starting states would report three with zero edges followed: a counter that
     // does not count the thing that can be missing, which is what the other four
     // cases in this file carry a count against.
     //
@@ -162,9 +162,9 @@ describe('the disposition tables agree with the workflow', () => {
     expect(edges).toBe(1);
   });
 
-  it('a state that ARRIVED keeps a legal move forever — which is why "has a move" is the wrong rule', () => {
+  it('a state that ARRIVED keeps a legal move forever, which is why "has a move" is the wrong rule', () => {
     // The evidence for the decision this file's slice was built on, held as a test so
-    // it cannot quietly stop being true — and now over all three machines, which is
+    // it cannot quietly stop being true, and now over all three machines, which is
     // where it stopped being hypothetical. `supersede` is legal from `accepted`,
     // `deprecate` from `adopted` and `reopen` from `DONE`, with nothing to make any of
     // them happen, so a rule reading "has at least one legal move" would report every
@@ -174,7 +174,7 @@ describe('the disposition tables agree with the workflow', () => {
     //
     // TWO WORDS, NOT ONE. `in-force` is what the decision and skill machines call the
     // position that arrived and `settled` is the task machine's; naming both here is
-    // reading two vocabularies, not merging them — whether three machines should ever
+    // reading two vocabularies, not merging them: whether three machines should ever
     // speak one is a question this file does not answer.
     let arrived = 0;
     for (const machine of MACHINES) {
@@ -186,12 +186,12 @@ describe('the disposition tables agree with the workflow', () => {
         arrived += 1;
       }
     }
-    // `DONE`, `accepted`, `adopted` — one per machine, and the count is what stops the
+    // `DONE`, `accepted`, `adopted`: one per machine, and the count is what stops the
     // loop above passing over a machine whose arrived states stopped being classified.
     expect(arrived).toBe(3);
   });
 
-  it('a CLOSED state is terminal — nothing leaves it', () => {
+  it('a CLOSED state is terminal: nothing leaves it', () => {
     // The third bucket's own claim, and the cross-check that keeps the
     // classification honest if the workflow grows an edge: a move out of a state
     // called closed would mean something IS pending there, and this fails until the

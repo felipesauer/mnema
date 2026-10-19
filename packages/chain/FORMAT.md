@@ -18,7 +18,10 @@ this reader reports a gap it cannot judge, because §3 leaves a reader of this d
 unable to tell an authorized cut from tampering. On a line holding bytes that are not UTF-8,
 found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the
 line canonical, while this reader refused it. Both refuse it now, naming the same byte (§4,
-`packages/chain/src/chain/outside-vectors.test.ts`). Twenty-seven points
+`packages/chain/src/chain/outside-vectors.test.ts`). On a record in which no tail holds
+anything, the two used to part as well: the product said verified, exit 0, and this reader
+said BROKEN, exit 3, or VERIFIED when a tail proof was left. Both refuse it now, by name,
+exit 1 (§4). Twenty-seven points
 where this document was **not enough** for that were found in the writing.
 `python3 verifier/mnema_verify.py gaps` lists them, with which were resolved by reading a
 specification, which by experiment against the published bytes, and which are still open.
@@ -226,8 +229,24 @@ one. A line of whitespace is not canonical (§1.6), so a segment holding one is 
 empty; it is read, and refused. The cost, said: a tail
 whose segments and checkpoints were deleted with its tail proof kept reads as one
 that never held anything. That is no new blindness — the same tail deleted whole,
-with its key, already leaves nothing for a reader to cross — and only a copy of the
-record from before can testify to either.
+with its key, beside another tail, already leaves nothing for a reader to cross, and
+only a copy of the record from before can testify to either. Where it was the only tail
+holding anything, the record is refused, by the rule below.
+
+**A record in which no tail holds anything asserts no fact, and is refused.** When no
+tail is counted (there is no `tails/` directory, there is no tail directory in it, or
+every tail directory in it holds no event and no checkpoint), a reader refuses the record
+by name, whatever level the caller requires of it, and with the same refusal as any other,
+not a verdict of its own. It still says what §6.5 says of each committed key with no tail,
+so a record whose one tail was deleted says whose key it was. A record is never in this
+shape by being founded, because founding writes events and a checkpoint before it returns;
+it is in it when every tail was removed, with the keys or without them, or when the
+directory was made and nothing public was ever written to it. A record with another tail
+that holds something is not this case: one tail removed whole beside it is §6.5's note,
+and a reader verifies that record. A path with no directory at it is not a record, and
+this rule says nothing of it
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, "a record in which
+no tail holds anything, to both readers").
 
 Each line of a segment is the **canonical** serialization (§1) of:
 
@@ -783,7 +802,11 @@ uncovered declaration would let it silence the warning about a tail it removed.
 backup revoked since is not), the absence is expected and is said as a backup's. Any other key
 with no tail is said as one whose tail may have gone; a key declared a backup and revoked since
 is said so, as declared and revoked, rather than as a key the record declares no backup for. Both are notes, never a refusal: an
-absence is not something a reader can prove was tampering. A record written before this kind
+absence is not something a reader can prove was tampering. They still run, and still say the
+same, when no tail of the record holds anything: that record is refused by §4, and these notes
+are said beside the refusal, so each committed key with no tail is still named
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, "both readers still
+name every committed key with no tail"). A record written before this kind
 existed carries no declaration, so its backup reads as any other key with no tail; this
 product's `verify` still says it as a backup on the machine that made it, from that machine's
 own registration, and the words of the note say why elsewhere. A binary from before this kind

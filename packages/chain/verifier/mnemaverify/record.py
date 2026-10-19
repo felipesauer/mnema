@@ -868,16 +868,14 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         report.unchecked("6", "no keys/ directory, so no signature can be checked", gap="G03")
 
     tails_dir = os.path.join(root, "tails")
-    if not os.path.isdir(tails_dir):
-        report.break_out(f"there is no tails/ directory under {root}")
-        return
-    tail_ids = sorted(
-        (name for name in os.listdir(tails_dir) if os.path.isdir(os.path.join(tails_dir, name))),
-        key=utf16_order,
+    tail_ids = (
+        sorted(
+            (name for name in os.listdir(tails_dir) if os.path.isdir(os.path.join(tails_dir, name))),
+            key=utf16_order,
+        )
+        if os.path.isdir(tails_dir)
+        else []
     )
-    if not tail_ids:
-        report.break_out(f"there are no tails under {tails_dir}")
-        return
 
     declarations = _load_declarations(report)
 
@@ -906,7 +904,39 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     _check_retractions(report, entries_by_tail)
     _check_moves(report, entries_by_tail, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
+    _refuse_a_record_no_tail_holds(report, tails_dir, tail_ids, entries_by_tail)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
+
+
+NO_TAIL_HELD = "no tail in this record holds an event or a checkpoint"
+
+
+def _refuse_a_record_no_tail_holds(
+    report: Report, tails_dir: str, tail_ids: list[str], entries_by_tail: dict[str, list[Entry]]
+) -> None:
+    """Section 4: a record in which no tail holds an event or a checkpoint asserts no fact.
+
+    No tails/ directory, no tail directory in it, or only tails that hold nothing - which section 4
+    does not count - and the record is refused by name, at every --require, with the exit of any
+    other refusal. These used to be two early stops that said BROKEN and returned before section
+    6.5 ran, while the same nothing with a tail proof left behind said VERIFIED. It runs AFTER
+    section 6.5, so each committed key with no tail is still named. A path with no directory at it
+    is still BROKEN: there is no record there to refuse.
+    """
+    if entries_by_tail:
+        return
+    if not os.path.isdir(tails_dir):
+        why = "there is no tails/ directory"
+    elif not tail_ids:
+        why = "there are no tails"
+    else:
+        why = "every tail in it holds no event and no checkpoint"
+    report.fail(
+        "4",
+        f"{NO_TAIL_HELD}: {why}, so the record asserts no fact, and nothing verifies over "
+        "nothing",
+        "tails/",
+    )
 
 
 def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) -> None:
@@ -1276,7 +1306,8 @@ def declare_scope(report: Report) -> None:
     IT RUNS BEFORE ANY CHECK, which is why it is the first thing `verify_record` does. The
     old call site was the last line of the walk, so every `break_out` above it - no record,
     no tails/ directory, no tails - returned a BROKEN verdict with the block missing, on
-    exactly the runs where a reader is most likely to fix something and try again.
+    exactly the runs where a reader is most likely to fix something and try again. (Only
+    "no record" is a `break_out` now; the other two are section 4's refusal.)
     """
     for entry in gaps.scope():
         report.declare_not_covered(

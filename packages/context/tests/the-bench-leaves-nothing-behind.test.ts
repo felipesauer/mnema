@@ -1,5 +1,5 @@
 /**
- * THE BENCH LEAVES NOTHING BEHIND — watched under the real `/tmp`, by path.
+ * THE BENCH LEAVES NOTHING BEHIND: watched under the real `/tmp`, by path.
  *
  * WHY THIS EXISTS BESIDE THE STRUCTURAL CASE. `every-sandbox-is-removed-where-it-was-made.test.ts`
  * reads every file in the workspace and asks whether a file that makes a sandbox under `tmpdir()`
@@ -11,7 +11,7 @@
  *
  * THIS PARAGRAPH USED TO SAY THAT QUESTION WAS ANSWERED *"by the FILE, not by the PATH"*, and that
  * is no longer what the structural case does. It now follows the created NAME to the removal that
- * reaches it — through a loop, a collection, or the field a helper returns it as — so the shape
+ * reaches it (through a loop, a collection, or the field a helper returns it as), so the shape
  * this file's second half describes (`rmSync(join(sandbox, 'chain'))`, aimed inside rather than at)
  * is caught by reading, in one file, and has a case of its own there. What survives of the old
  * division of labour is narrower and worth naming: the structural case reads ONE file at a time,
@@ -20,12 +20,12 @@
  *
  * SO THIS ONE FOLLOWS THE PATH ACROSS FILES. It names the directory `makeBench` created, and then
  * asks the filesystem whether it is still there. It does that for ONE of the 187 prefixes this
- * workspace builds under — the one whose helper hands back a root the sandbox can be derived from.
+ * workspace builds under: the one whose helper hands back a root the sandbox can be derived from.
  * The other 186 are swept by `.github/what-the-suite-left-behind/`, from outside the suite, for
  * the reason the paragraph below gives.
  *
  * IT USED TO NAME IT BY A DIFF OF `tmpdir()`, AND THAT WAS A RACE. The first case listed the
- * sandboxes before and after the call and required exactly ONE new one — but vitest runs several
+ * sandboxes before and after the call and required exactly ONE new one, but vitest runs several
  * files at once and every one of them makes a sandbox under this same prefix, so a second worker's
  * directory appearing inside that window was attributed to this call and the length assertion
  * reddened. Measured on the trunk it shipped on: six of six runs of this package alone, and two
@@ -36,7 +36,7 @@
  * had to stop doing. `readdirSync(tmpdir())` reads every entry of a directory nobody here owns:
  * 58,522 of them on the machine this was rewritten on, where one listing took 6.7 s cold and
  * 77–85 ms warm. Inside a busy suite the case ran 7.4–10.7 s against 0.6–0.7 s on its own, and
- * went red at the five-second ceiling in two verifications of one week — a red about the
+ * went red at the five-second ceiling in two verifications of one week: a red about the
  * machine's `/tmp`, not about the bench. So while `makeBench` runs, `tmpdir()` answers with a
  * directory this file made for itself under the real one ({@link withTmpdir}); `makeBench` asks
  * `tmpdir()` at the moment it is called, so it is the same code on the same path. What proves the
@@ -45,7 +45,7 @@
  *
  * That needs two tests, because a test cannot watch its own cleanup: `onTestFinished` fires after
  * the test body has returned and before the next test starts, so the first case below records
- * what appeared and the second reads whether it went. The order matters and is not incidental —
+ * what appeared and the second reads whether it went. The order matters and is not incidental,
  * if these are ever reordered or run in isolation, the second becomes an assertion about nothing,
  * which is why it refuses to run without the first.
  */
@@ -103,18 +103,18 @@ function sandboxOf(root: string, dir: string): string | null {
   return first;
 }
 
-/** What the first case saw appear. `null` until it has run — see the header on ordering. */
+/** What the first case saw appear. `null` until it has run: see the header on ordering. */
 let appeared: string | null = null;
 
 describe('the bench leaves nothing behind', () => {
   it('makes a directory under the machine’s temp, and this case can name it', () => {
     // Nothing is in this file's directory before the call, so whatever is there after it is
-    // what the call made — the NEW this case has to prove, without reading anybody else's.
+    // what the call made: the NEW this case has to prove, without reading anybody else's.
     expect(readdirSync(own), `${own} was not empty before makeBench ran`).toEqual([]);
     const bench = withTmpdir(own, () => makeBench());
 
     // NOT VACUOUS, in the two ways it has to be: if `makeBench` stopped using tmpdir, or
-    // used a different prefix, the root is under no sandbox of ours and this is null — and
+    // used a different prefix, the root is under no sandbox of ours and this is null, and
     // the case below would otherwise be asking whether a directory that never existed still
     // exists, and would pass.
     const sandbox = sandboxOf(bench.root, own);
@@ -127,7 +127,7 @@ describe('the bench leaves nothing behind', () => {
     expect(readdirSync(own), `makeBench left more than its sandbox in ${own}`).toEqual([sandbox]);
     appeared = join(own, sandbox as string);
 
-    // The bench is real and usable, and the directory just named is the one it is built in —
+    // The bench is real and usable, and the directory just named is the one it is built in:
     // otherwise this measures the cleanup of something other than the sandbox under test.
     expect(existsSync(bench.root), 'the chain root the bench reports does not exist').toBe(true);
     expect(

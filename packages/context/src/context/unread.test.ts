@@ -17,7 +17,7 @@ import {
 import { bootstrap } from './bootstrap.js';
 import { unreadKinds } from './unread.js';
 
-describe('unread — what the opening read does not look at', () => {
+describe('unread: what the opening read does not look at', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -78,7 +78,7 @@ describe('unread — what the opening read does not look at', () => {
     const cache = bench.cache();
     try {
       const unread = unreadKinds([cache]);
-      // Ordered by SEARCH_KINDS, which puts memory before observation — a property of
+      // Ordered by SEARCH_KINDS, which puts memory before observation: a property of
       // the vocabulary, so two records with the same kinds declare them alike.
       expect(unread).toEqual([
         { kind: 'memory', held: 1 },
@@ -115,10 +115,10 @@ describe('unread — what the opening read does not look at', () => {
     }
   });
 
-  it('accounts for EVERY searchable kind — each one is listed by the opening read, or declared unread', () => {
+  it('accounts for EVERY searchable kind: each one is listed by the opening read, or declared unread', () => {
     // THE TOTALITY, asserted over the vocabulary rather than over a list kept here by
     // hand. `SERVED_BY_THE_OPENING` is total in the compiler, which forces a sixth kind
-    // to be classified; this is the other half — that the classification is ACTED on,
+    // to be classified; this is the other half: that the classification is ACTED on,
     // so a kind marked `listed` really does reach a list and one marked `unread` really
     // does reach this declaration. A sixth kind that reached neither would arrive here
     // as a failure, which is this slice's own defect arriving a second time.
@@ -140,7 +140,7 @@ describe('unread — what the opening read does not look at', () => {
       ]);
       const declared = new Set((b.unread ?? []).map((item) => item.kind));
       // The record holds one of every searchable kind, so every kind has to turn up on
-      // one side or the other — and on exactly one.
+      // one side or the other, and on exactly one.
       for (const kind of SEARCH_KINDS) {
         expect(listed.has(kind) || declared.has(kind), `${kind} reaches neither`).toBe(true);
         expect(listed.has(kind) && declared.has(kind), `${kind} reaches both`).toBe(false);
@@ -154,7 +154,7 @@ describe('unread — what the opening read does not look at', () => {
     }
   });
 
-  it('does not reach the kinds that have no record to read — the limit it declares in its own doc', () => {
+  it('does not reach the kinds that have no record to read: the limit it declares in its own doc', () => {
     bench = makeBench();
     // A handoff and a knowledge link are facts of the record that no list here shows
     // AND that this declaration does not count, because they are not in the index:

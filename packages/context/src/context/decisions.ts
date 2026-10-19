@@ -8,7 +8,7 @@
  * exists proceeds as if none did, and re-decides what was already settled.
  *
  * ONE TABLE SAYS WHICH IS WHICH. {@link DECISION_DISPOSITION} gives every state of
- * the machine a meaning — what governs, what waits for somebody, what is over —
+ * the machine a meaning (what governs, what waits for somebody, what is over)
  * and the two lists below are DERIVED from it. Neither states its own set beside
  * it: "which state governs" written twice in one module is the shape where the
  * second copy is the one a later edit amends, and the two readers then disagree in
@@ -16,13 +16,13 @@
  *
  * IN FORCE IS `accepted`, AND ONE READ IS ENOUGH. Proposed is a call still on the
  * table, rejected is one that was refused, and superseded is one a later decision
- * replaced — none of the three governs anything. The workflow moves a replaced
+ * replaced: none of the three governs anything. The workflow moves a replaced
  * decision INTO `superseded` (`DECISION_TRANSITIONS`: `supersede` reaches it from
  * both `proposed` and `accepted`), so filtering on the in-force states already
  * excludes a superseded one; no cross-check against the supersede edge is done
  * here, and that is deliberate. Two rules answering one question can come to
  * disagree, and the projected state is the one the chain proves. Asserted in
- * `decisions.test.ts` — "serves ONLY the accepted — proposed, rejected and
+ * `decisions.test.ts`: "serves ONLY the accepted: proposed, rejected and
  * superseded are all absent" and "drops a decision the moment a successor
  * supersedes it".
  *
@@ -32,37 +32,37 @@
  *
  * THIS PARAGRAPH USED TO ARGUE AGAINST THE WORK LIST'S RULE, and it is worth keeping
  * because the argument was right and its premise was not. It read: the work list's
- * rule is "has at least one legal move", and it does not transport to this machine —
+ * rule is "has at least one legal move", and it does not transport to this machine;
  * `supersede` is legal from `accepted` (`DECISION_TRANSITIONS`), so a decision in
  * force has a legal move FOREVER and that rule would report it as a pendency that
- * never clears. True of this machine, and the premise underneath it — that the rule
- * held for the machine it came FROM — was false: `reopen` is legal from `DONE`, so
+ * never clears. True of this machine, and the premise underneath it, that the rule
+ * held for the machine it came FROM, was false: `reopen` is legal from `DONE`, so
  * the work list called a completed task live work forever, which is the same defect
  * this module was written to avoid. The work list asks the disposition now
  * (`tasks.ts`), so there is no other rule left to transport. Asserted in
- * `decisions.test.ts` — "an ACCEPTED decision is not awaiting anything, though
+ * `decisions.test.ts`: "an ACCEPTED decision is not awaiting anything, though
  * `supersede` is legal from it forever".
  *
- * NAMES, NEVER BODIES — the rule this layer already had, applied to the one entity
- * whose body is the longest. A decision's BODY is now two fields — the `rationale`
- * that argues it and the `alternatives` it turned down — and twenty of those in
+ * NAMES, NEVER BODIES: the rule this layer already had, applied to the one entity
+ * whose body is the longest. A decision's BODY is now two fields, the `rationale`
+ * that argues it and the `alternatives` it turned down, and twenty of those in
  * every session's opening context would bury what matters and charge for what
  * rarely applies. What comes back is the NAME: the title a reader recognizes, the
  * `adr` label they cite it by, and the id that asks for the rest. Both halves of the
  * body come from a second read (`readRecord`, the `read_record` tool), asked about
  * the one decision that turned out to bear on the task at hand. Asserted in
- * `decisions.test.ts` — "never carries the RATIONALE".
+ * `decisions.test.ts`: "never carries the RATIONALE".
  *
  * The instant is NOT served, and it is what the order is made of. A decision in
  * force was last moved by its acceptance, so `updatedAt` is when it came into
- * force — freshest first is "most recently settled first". Serving it would be a
+ * force: freshest first is "most recently settled first". Serving it would be a
  * fourth line per item for a fact no consumer acts on: an agent does not choose
  * which decision to obey by date, and a person auditing the sequence has
  * `audit_timeline`, which shows the events themselves.
  *
  * ACROSS THE TREES the caller can see, like the patterns and for the same reason.
  * The team's decisions are committed to the public tree, a machine's own to the
- * private one, a personal convention to the global one — and all three govern
+ * private one, a personal convention to the global one, and all three govern
  * whatever is being done here. Reading per-tree projections and concatenating is
  * not an approximation of reading the union: a decision's whole history lands in
  * ONE tree (a move follows the entity), so the per-tree fold and the union fold
@@ -80,23 +80,23 @@ import {
 import { type Disposition, statesMeaning } from './disposition.js';
 
 /**
- * What each state of the decision machine means to a reader — TOTAL, so a fifth
+ * What each state of the decision machine means to a reader: TOTAL, so a fifth
  * state cannot be added to the workflow without being classified here.
  *
  * Read against `DECISION_TRANSITIONS`, which is the source of truth for every
  * claim below:
- *   - `proposed` — `accept` and `reject` both leave from it, and both are a
+ *   - `proposed`: `accept` and `reject` both leave from it, and both are a
  *     verdict a person owes. That is the whole of "awaiting a judgement".
- *   - `accepted` — it governs. `supersede` is still legal from it, which is
+ *   - `accepted`: it governs. `supersede` is still legal from it, which is
  *     precisely why "has a legal move" is the wrong criterion for either of the
  *     opening read's lists; being replaceable is not being pending.
- *   - `rejected`, `superseded` — terminal, no row leaves either. Nothing is
+ *   - `rejected`, `superseded`: terminal, no row leaves either. Nothing is
  *     pending and nothing governs.
  *
  * Exported so the claims above are CHECKABLE against the table they are read from,
  * rather than asserted in prose: `disposition.test.ts` cross-checks every row of
- * this against `DECISION_TRANSITIONS`. It is not on the package's public surface —
- * a consumer gets the two lists, not the classification behind them — and that it
+ * this against `DECISION_TRANSITIONS`. It is not on the package's public surface
+ * (a consumer gets the two lists, not the classification behind them) and that it
  * stays off it is checked, not declared: `no-classification-table-reaches-the-surface.test.ts`
  * walks every entry point's runtime exports.
  *
@@ -106,7 +106,7 @@ import { type Disposition, statesMeaning } from './disposition.js';
  * position in the same column as a task's, and paints a position by what a reader has
  * to do about it. That surface has exactly the reason the sentence said did not exist,
  * and without {@link decisionDisposition} its only path was to write `state ===
- * 'proposed'` for itself — the copy this table is hidden to prevent. The accessor is
+ * 'proposed'` for itself: the copy this table is hidden to prevent. The accessor is
  * the honest path, and it is held ON the surface by the same test that holds the table
  * off it.
  */
@@ -118,7 +118,7 @@ export const DECISION_DISPOSITION: Readonly<Record<DecisionState, Disposition>> 
 };
 
 /**
- * What one state MEANS to a reader — the classification, asked rather than restated.
+ * What one state MEANS to a reader: the classification, asked rather than restated.
  *
  * The twin of `skills.ts`'s `skillDisposition`, and it exists for the same kind of
  * consumer: one that has to SAY something about a decision it is showing and must not
@@ -129,26 +129,26 @@ export function decisionDisposition(state: DecisionState): Disposition {
   return DECISION_DISPOSITION[state];
 }
 
-/** The states whose decisions govern — derived, never restated. */
+/** The states whose decisions govern: derived, never restated. */
 const IN_FORCE = statesMeaning(DECISION_STATES, decisionDisposition, 'in-force');
 
-/** The states whose decisions are waiting on somebody — derived, never restated. */
+/** The states whose decisions are waiting on somebody: derived, never restated. */
 const AWAITING_JUDGEMENT = statesMeaning(
   DECISION_STATES,
   decisionDisposition,
   'awaiting-judgement',
 );
 
-/** A decision in force, named but not spelled out — what an index is made of. */
+/** A decision in force, named but not spelled out: what an index is made of. */
 /**
- * WHO RULED A DECISION IN FORCE, as the record says it — and whether anybody else has looked.
+ * WHO RULED A DECISION IN FORCE, as the record says it, and whether anybody else has looked.
  *
  * The brief a session opens with hands over the decisions in force as rules, and a rule is
  * only as trustworthy as whoever made it one. Measured on the shipped binary: a second clone
  * with a key and an identity of its own recorded a decision whose title was an instruction to
  * a model, accepted it itself, and after the pull it was the ONLY rule in force in the
  * victim's brief, with nothing to say who had put it there. The facts to say it were all in
- * the chain — the actor of the accepting event is on its envelope — and the document did not
+ * the chain (the actor of the accepting event is on its envelope) and the document did not
  * carry them.
  *
  * `by` is the identity (shortened, see below) and `agent`
@@ -162,7 +162,7 @@ const AWAITING_JUDGEMENT = statesMeaning(
  * ever spoken to itself, and no second identity has ruled with it either way. It is a fact
  * about the record's shape, computed over the trees handed in, and it is not a judgement of
  * the decision. IT NEEDS SOMEBODY TO CONFIRM: with one identity in the record there is nobody
- * to ask, so a solo project's rules are never marked — the label said "unconfirmed" of every
+ * to ask, so a solo project's rules are never marked; the label said "unconfirmed" of every
  * rule there, truthfully and with nobody to act on it, and it is only meaningful once a second
  * identity is in the trees handed in. From then the first rule one identity accepts that another
  * recorded (or another accepts of its) ends it.
@@ -181,7 +181,7 @@ export interface Acceptance {
 }
 
 export interface DecisionRef {
-  /** The decision's id — the key that asks `readRecord` for the rationale. */
+  /** The decision's id: the key that asks `readRecord` for the rationale. */
   readonly id: string;
   /**
    * The citable `ADR-<n>` label, frozen into the record at write time. It is how a
@@ -191,16 +191,16 @@ export interface DecisionRef {
    *
    * A LIST OF THESE MAY HOLD THE SAME LABEL TWICE, and no reader of this type is
    * told otherwise. The number is minted within one chain, so a list built across
-   * the trees an actor can see — which is what {@link decisionsInForce} answers —
+   * the trees an actor can see (which is what {@link decisionsInForce} answers)
    * carries a public `ADR-1` beside a private one as soon as both trees have a rule.
    * That is the design and not a clash, and the id beside it is why it costs
    * nothing: everything a consumer does with a decision, it does by id. The one
    * place a repeat IS a defect is a single chain, where the number claims to be
    * sequential, and the two answers that carry a label somewhere it will be cited
-   * on its own — the committed document and the audit — report it there.
+   * on its own, the committed document and the audit, report it there.
    */
   readonly adr: string;
-  /** The decision's title — DISPLAY, and the trigger a reader recognizes. */
+  /** The decision's title: DISPLAY, and the trigger a reader recognizes. */
   readonly title: string;
   /**
    * Who ruled it in force (see {@link Acceptance}). Present for every decision in force that the
@@ -216,7 +216,7 @@ export interface DecisionRef {
  * whole way down.
  *
  * The order is a property of the CONTENT (when the decision came into force, then
- * its id), never of the tree it happens to live in — so adding a tree to the list,
+ * its id), never of the tree it happens to live in, so adding a tree to the list,
  * or reading them in a different order, cannot reshuffle the answer. Callers put
  * this in a prompt, and a stable order is what keeps the host's cache of that
  * prefix valid; the same argument the search's ordering is written on.
@@ -229,13 +229,13 @@ export interface DecisionRef {
  * serves the first page of this list; the per-prompt brief ({@link brief}) serves the
  * whole of it, uncut, into a file. "In force" written in two places is two rules that
  * can come to disagree about which decisions govern, which is the one thing this
- * answer must never be uncertain about — and the disagreement would be silent, since
+ * answer must never be uncertain about, and the disagreement would be silent, since
  * each reader would simply obey its own set.
  *
  * The two consumers ask over DIFFERENT trees, and neither of them narrows this
  * function to do it: the brief is asked about the tree that travels alone, because
  * its answer becomes a committed file, and it filters its own sources before calling
- * here (see {@link brief}). Which is the shape this rule has to keep — a filter
+ * here (see {@link brief}). Which is the shape this rule has to keep: a filter
  * pushed down into this function to satisfy one consumer would silently shrink the
  * other's answer, and an opening context that stops mentioning a decision says
  * nothing about having stopped.
@@ -250,7 +250,7 @@ export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRe
 }
 
 /**
- * The ids of the rules in force over these caches — the set the checks a runner owes are
+ * The ids of the rules in force over these caches: the set the checks a runner owes are
  * taken from. It asks {@link decisionsInForce}, so the rule for which decisions govern is
  * still decided in one place and the caller never restates it.
  */
@@ -259,26 +259,26 @@ export function ruleIdsInForce(caches: readonly ProjectionCache[]): ReadonlySet<
 }
 
 /**
- * A decision nobody has ruled on yet — a name, plus the state that says WHICH
+ * A decision nobody has ruled on yet: a name, plus the state that says WHICH
  * ruling is missing.
  *
  * It carries the same three name fields {@link DecisionRef} does, and never the
  * body: the `rationale` and the `alternatives` come from `readRecord`, asked about
  * the one call that turned out to matter. What it adds over a ref is the pair a
- * reader of a mixed list needs — the `kind`, which says which second read serves
+ * reader of a mixed list needs: the `kind`, which says which second read serves
  * this item, and the `state`, which says what is owed.
  */
 export interface DecisionAwaitingJudgement {
   /**
    * Always `decision`: the discriminant, and what says the second read will hand
-   * back an ARGUMENT — the `rationale` and the alternatives, through `readRecord`.
+   * back an ARGUMENT (the `rationale` and the alternatives, through `readRecord`).
    */
   readonly kind: 'decision';
-  /** The decision's id — the key `readRecord` takes. */
+  /** The decision's id: the key `readRecord` takes. */
   readonly id: string;
-  /** The citable `ADR-<n>` label — DISPLAY, never identity (see {@link DecisionRef.adr}). */
+  /** The citable `ADR-<n>` label: DISPLAY, never identity (see {@link DecisionRef.adr}). */
   readonly adr: string;
-  /** The decision's title — the trigger a reader recognizes. */
+  /** The decision's title: the trigger a reader recognizes. */
   readonly title: string;
   /**
    * The state it is waiting in, which is what says what is owed: `proposed` is a
@@ -287,7 +287,7 @@ export interface DecisionAwaitingJudgement {
    * bucket the indexed lookup asked for), not a second reading of the projection.
    */
   readonly state: DecisionState;
-  /** `at` of its last transition — what the composed list orders on. */
+  /** `at` of its last transition: what the composed list orders on. */
   readonly updatedAt: string;
 }
 
@@ -295,8 +295,8 @@ export interface DecisionAwaitingJudgement {
  * Every decision awaiting a judgement across `caches`, in no particular order.
  *
  * ORDERING IS THE CALLER'S HERE, and that is the one difference from
- * {@link decisionsInForce}. This answer is half of ONE list — decisions and skills
- * interleaved by when each last moved (see {@link bootstrap}) — so an order imposed
+ * {@link decisionsInForce}. This answer is half of ONE list, decisions and skills
+ * interleaved by when each last moved (see {@link bootstrap}), so an order imposed
  * here would be an order the composition immediately discards, and a reader of this
  * function could take it for the answer's.
  *

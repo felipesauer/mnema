@@ -39,7 +39,7 @@ function tree(b: Bench, scope: Scope = 'public', project?: string): ScopedCache 
   return { scope, chainRoot: b.root, ...(project !== undefined ? { project } : {}), cache };
 }
 
-describe('accountability — who authorized what, which agent executed', () => {
+describe('accountability, who authorized what, which agent executed', () => {
   it('counts every fact and attributes it to its authorizing who', () => {
     const b = bench();
     birthTask(b, 'task-1', 'a'); // 2 events (created + birth transition)
@@ -112,7 +112,7 @@ describe('accountability — who authorized what, which agent executed', () => {
     startRun(b, 'r-a2', { agent: 'claude', who: 'alice' });
     startRun(b, 'r-b1', { agent: 'claude', who: 'bob' });
     const acc = accountability([tree(b)]);
-    // Alice (2) before Bob (1) — a deterministic order, not a claim of importance.
+    // Alice (2) before Bob (1): a deterministic order, not a claim of importance.
     expect(acc.byWho.map((w) => [w.who, w.total])).toEqual([
       ['alice', 2],
       ['bob', 1],
@@ -173,7 +173,7 @@ describe('accountability — who authorized what, which agent executed', () => {
   });
 });
 
-describe('accountabilityByProject — one account per record, never a sum', () => {
+describe('accountabilityByProject: one account per record, never a sum', () => {
   it('keeps the same author’s work apart, project by project', () => {
     // One human, two codebases. Summed, the answer says 2 for a record holding 1.
     const first = bench();
@@ -190,7 +190,7 @@ describe('accountabilityByProject — one account per record, never a sum', () =
       { project: '/w/first', total: 1, byWho: [aliceRan(1)] },
       { project: '/w/second', total: 1, byWho: [aliceRan(1)] },
     ]);
-    // Nothing adds them up — not instead of the entries, and not beside them.
+    // Nothing adds them up, not instead of the entries, and not beside them.
     expect('total' in account).toBe(false);
     expect(JSON.stringify(account)).not.toContain('"total":2');
   });
@@ -249,7 +249,7 @@ describe('accountabilityByProject — one account per record, never a sum', () =
   });
 });
 
-/** Alice, having started `count` runs through claude — the shape the fold produces. */
+/** Alice, having started `count` runs through claude: the shape the fold produces. */
 function aliceRan(count: number) {
   return {
     who: 'alice',
@@ -262,8 +262,8 @@ function aliceRan(count: number) {
 }
 
 /**
- * A key of its own, under `home`, founding its identity in the bench's tree — the event
- * `ensureFounded` appends, signed by that key, for the anchor that key derives — and then
+ * A key of its own, under `home`, founding its identity in the bench's tree (the event
+ * `ensureFounded` appends, signed by that key, for the anchor that key derives) and then
  * writing one fact as that identity. Returns the anchor.
  */
 function arrives(b: Bench, home: string): string {
@@ -287,7 +287,7 @@ function arrives(b: Bench, home: string): string {
 }
 
 describe('beside an author, where its identity was founded among others', () => {
-  it('names the tree, the instant, and who was already there — and says "none" for the first', () => {
+  it('names the tree, the instant, and who was already there, and says "none" for the first', () => {
     const b = bench();
     const first = arrives(b, join(dirname(b.root), 'home-first'));
     const second = arrives(b, join(dirname(b.root), 'home-second'));

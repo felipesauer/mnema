@@ -1,6 +1,6 @@
 /**
  * `samePattern`: which rules of the record are, word for word, the same rule in more than
- * one project — and the ONE function the listing and the write both ask.
+ * one project, and the ONE function the listing and the write both ask.
  *
  * Every case goes through the bench that writes a real, signed chain. The two things this
  * reading must never do are held here by name: it never counts an instance that is not in
@@ -40,7 +40,7 @@ function adopted(b: Bench, id: string, name: string, body?: string): void {
 
 const SAME = 'Run the suite before every push.';
 
-describe('samePattern — the same rule, in force, in the committed trees of two projects', () => {
+describe('samePattern: the same rule, in force, in the committed trees of two projects', () => {
   it('names a skill whose name and body are equal in two projects, with where it is', () => {
     const a = makeBench();
     const c = makeBench();
@@ -127,7 +127,7 @@ describe('samePattern — the same rule, in force, in the committed trees of two
   });
 });
 
-describe('judgePromotion — the same reading, asked about the ids a person cites', () => {
+describe('judgePromotion: the same reading, asked about the ids a person cites', () => {
   const BOTH = [
     { project: '/work/a', id: 'sk-a' },
     { project: '/work/c', id: 'sk-c' },

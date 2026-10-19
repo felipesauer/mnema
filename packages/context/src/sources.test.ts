@@ -5,8 +5,8 @@
  * A scope is a role, not a name for one tree, and a read that spans projects
  * holds several trees standing in the same one. So the rule has as many points
  * as there are readers over a list of trees, and this file spends one test on
- * each of them: the same shape every time — two benches, the same scope, one
- * fact each — asked to report both.
+ * each of them: the same shape every time (two benches, the same scope, one
+ * fact each) asked to report both.
  *
  * The point of writing them together is that a reader added later has an
  * obvious place to be counted, and a reader that gets this wrong fails HERE,
@@ -44,7 +44,7 @@ afterEach(() => {
   benches = [];
 });
 
-/** A fresh tree standing in `scope` — two calls give two trees, same role. */
+/** A fresh tree standing in `scope`: two calls give two trees, same role. */
 function tree(scope: Scope = 'public'): { bench: Bench; source: ScopedCache } {
   const bench = makeBench();
   benches.push(bench);
@@ -59,7 +59,7 @@ function tree(scope: Scope = 'public'): { bench: Bench; source: ScopedCache } {
 }
 
 describe('two trees in the same role are two trees', () => {
-  it('searchRecords — hits from both', () => {
+  it('searchRecords: hits from both', () => {
     const first = tree();
     capture(first.bench, 'mem-a', 'the shared word here');
     const second = tree();
@@ -73,7 +73,7 @@ describe('two trees in the same role are two trees', () => {
     expect(found.total).toBe(2);
   });
 
-  it('readRecord — the holder answers, whichever of the two it is', () => {
+  it('readRecord: the holder answers, whichever of the two it is', () => {
     const first = tree();
     capture(first.bench, 'mem-a', 'in the first');
     const second = tree();
@@ -85,7 +85,7 @@ describe('two trees in the same role are two trees', () => {
     expect(readRecord(sources, 'mem-b')?.id).toBe('mem-b');
   });
 
-  it('timeline — the entity’s story merged across both', () => {
+  it('timeline: the entity’s story merged across both', () => {
     const first = tree();
     observe(first.bench, 'obs-a', 'task-1', 'seen from here');
     const second = tree();
@@ -95,7 +95,7 @@ describe('two trees in the same role are two trees', () => {
     expect(story.map((e) => e.subject).sort()).toEqual(['obs-a', 'obs-b']);
   });
 
-  it('accountability — the facts of both are counted', () => {
+  it('accountability: the facts of both are counted', () => {
     const first = tree();
     capture(first.bench, 'mem-a', 'one fact');
     const second = tree();
@@ -105,7 +105,7 @@ describe('two trees in the same role are two trees', () => {
     expect(account.total).toBe(2);
   });
 
-  it('patternProvenance — patterns from both', () => {
+  it('patternProvenance: patterns from both', () => {
     const first = tree();
     birthSkill(first.bench, 'skill-a', 'a pattern');
     const second = tree();
@@ -115,7 +115,7 @@ describe('two trees in the same role are two trees', () => {
     expect(provenance.map((p) => p.id)).toEqual(['skill-a', 'skill-b']);
   });
 
-  it('references — the edges of both', () => {
+  it('references: the edges of both', () => {
     const first = tree();
     capture(first.bench, 'mem-a', 'a note');
     link(first.bench, 'mem-a', 'hub', 'relates-to');
@@ -127,7 +127,7 @@ describe('two trees in the same role are two trees', () => {
     expect(graph.links).toHaveLength(2);
   });
 
-  it('exposure — the streams of both are scanned', () => {
+  it('exposure: the streams of both are scanned', () => {
     const first = tree();
     capture(first.bench, 'mem-a', 'a note');
     const second = tree();
@@ -140,7 +140,7 @@ describe('two trees in the same role are two trees', () => {
     expect(scan.scanned).toBe(first.bench.events().length + second.bench.events().length);
   });
 
-  it('adoptedSkills — every cache, and no scope to collapse in the first place', () => {
+  it('adoptedSkills: every cache, and no scope to collapse in the first place', () => {
     // This reader takes bare caches: it never sees a scope, so it cannot mistake
     // one for a tree. The test is here to keep it counted among the points.
     const first = tree();

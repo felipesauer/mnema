@@ -2,16 +2,16 @@
  * accountability: who authorized what, and which agent carried it out.
  *
  * This is the derivation the proof exists FOR. Every event carries `who` (the
- * human who AUTHORIZED the fact, an anchor derived from a key — unforgeable) and,
+ * human who AUTHORIZED the fact, an anchor derived from a key: unforgeable) and,
  * when an agent acted, `which` (the agent that EXECUTED it, a free name). The two
  * are distinct identities by construction. accountability folds the record into a
  * factual account of authorship: per authorizing `who`, how many facts, of which
  * kinds, and which agents acted under that authority. The human authorized; the
- * agent executed — kept visibly separate, because that separation is the whole
+ * agent executed: kept visibly separate, because that separation is the whole
  * point of recording both.
  *
  * It COUNTS, it does not JUDGE. There is no "X did too much", no "Y is
- * suspicious", no valued ranking — a count is a count. The rows are ordered by
+ * suspicious", no valued ranking: a count is a count. The rows are ordered by
  * count only so the output is deterministic and stable, NOT as a verdict of
  * importance; a reader who wants a different order sorts the rows themselves. The
  * moment this said "excessive" or "concerning" it would stop being a derivation
@@ -22,7 +22,7 @@
  * A count is about a RECORD, so how far it reaches is part of what it says.
  * {@link accountability} folds whatever it is given into one account, which is the
  * answer when the trees are one record. {@link accountabilityByProject} keeps a
- * workspace's projects apart — one account each, never a sum — because a total over
+ * workspace's projects apart (one account each, never a sum), because a total over
  * several codebases answers a different question under the same name. The second is
  * the derivation, not a variant: it calls the same fold, once per record.
  *
@@ -30,7 +30,7 @@
  *
  * The counting happens in the REFERENCE INDEX, one grouped query per tree, and
  * the trees' tallies are summed here. It counts subject rows, of which every
- * event has exactly one — so an event that refers to three entities is still one
+ * event has exactly one, so an event that refers to three entities is still one
  * fact, and the total is a count of events, not of references.
  *
  * The two breakdowns (by kind, by agent) come from ONE grouping, summed along
@@ -38,19 +38,19 @@
  * disagreeing: they cannot report different totals for the same author, because
  * they are two sums of the same cells.
  *
- * It reads only the envelope — `who`, `which`, `kind`, `at` — never a payload, so
+ * It reads only the envelope (`who`, `which`, `kind`, `at`) never a payload, so
  * it is blind to WHAT each fact was beyond its kind, which is right: authorship
  * is an envelope property.
  *
  * ## And, beside an author, where its identity was founded among others
  *
- * A count says there are two authors; it cannot say which one ARRIVED second — somebody
+ * A count says there are two authors; it cannot say which one ARRIVED second: somebody
  * new to the record, or one person under a second key, which only the reader can tell.
  * So each author carries the foundings of its identity in a tree where others were
  * already founded ({@link WhoAccount.foundedBeside}): the tree, the instant, and who was
  * there. It comes from the caches like the counts do (`ProjectionCache.foundedBeside`,
  * the core's own reading asked of the order a cache already holds), through ONE
- * selection in the one fold — so the command line's summary, its `--json` and the
+ * selection in the one fold, so the command line's summary, its `--json` and the
  * agent's decomposed account cannot come to disagree about who arrived second.
  */
 
@@ -73,7 +73,7 @@ export interface WhoAccount {
    */
   readonly byKind: readonly KindCount[];
   /**
-   * The agents that executed facts under this authority, each with its count —
+   * The agents that executed facts under this authority, each with its count:
    * the who≠which distinction made explicit. A fact with no agent (a human
    * acting directly) is counted under the `null` agent. Sorted by count then
    * name for a stable shape.
@@ -81,7 +81,7 @@ export interface WhoAccount {
   readonly byWhich: readonly WhichCount[];
   /**
    * Every founding of this identity, in the trees this account reads, that came after other
-   * identities were already founded there — somebody new to the record, or one person who
+   * identities were already founded there: somebody new to the record, or one person who
    * arrived under a second key; the reader knows which. ALWAYS PRESENT, and empty for an
    * identity that founded first or joined by being vouched for, so "none" is said rather
    * than left out. Not narrowed by the window or the filters: they choose which facts are
@@ -91,7 +91,7 @@ export interface WhoAccount {
   /**
    * True when this identity is a MACHINE: a key the record enrolls as a checker, which signs
    * check results under its own anchor and nothing else. Its facts are counted like anyone's;
-   * this says that nobody authorized them in the sense a person does — a runner reported them.
+   * this says that nobody authorized them in the sense a person does: a runner reported them.
    */
   readonly machine: boolean;
   /**
@@ -126,7 +126,7 @@ export interface WhichCount {
   /**
    * How many of those facts the record's own agent key for that name signed, for this very
    * identity: the agent is then attested by the key, not only declared by whoever signed. The
-   * others were signed by a key with no such role — the person's own, as before agent keys — and
+   * others were signed by a key with no such role (the person's own, as before agent keys) and
    * `which` there is the name the signer wrote. ABSENT where none was, so an account over a record
    * with no agent key reads as it always did (and an agent's reading of it costs what it cost).
    * Never more than `count`.
@@ -150,13 +150,13 @@ export interface Accountability {
  * The account of authorship across `sources`, after narrowing by the optional
  * filter. The window is inclusive on both ends and compared on the ISO strings
  * directly (ISO-8601 UTC stamps sort lexically, the same order the chain merges
- * on). An empty record — or filters that exclude everything — yields a zero
+ * on). An empty record, or filters that exclude everything, yields a zero
  * account (`total: 0`, empty `byWho`), never an error.
  *
  * ONE account over whatever it is given, which is the right answer when the sources
  * are one record: a project's trees, or a single tree. Given the trees of several
  * PROJECTS it would sum them into a number that answers a different question under
- * this name — {@link accountabilityByProject} is that read.
+ * this name: {@link accountabilityByProject} is that read.
  */
 export function accountability(
   sources: readonly ScopedCache[],
@@ -172,7 +172,7 @@ export function accountability(
 /** One record's account of authorship, and which record it is. */
 export interface ProjectAccount {
   /**
-   * The project whose trees this counts — absent for the machine-global tree, which
+   * The project whose trees this counts: absent for the machine-global tree, which
    * belongs to no project and is the same tree for all of them.
    */
   readonly project?: string;
@@ -212,12 +212,12 @@ export interface WorkspaceAccountability {
  * authorized what in this workspace" while still being called the first thing, and a
  * reader takes the larger number for the smaller question with nothing in the answer
  * to warn them. Every count here means exactly what it meant when the project was the
- * only one open — which is the property that makes the answer usable at all.
+ * only one open, which is the property that makes the answer usable at all.
  *
  * And NOT decomposing is not the safe alternative, which is what settles it: these
  * reads take no project argument, by the same rule that keeps a flag off the id-keyed
  * ones. An account locked to the session's own project leaves an agent with no way to
- * ask about the others at all — the blindness that a routed write already fixed for
+ * ask about the others at all: the blindness that a routed write already fixed for
  * writing, left in place for auditing.
  *
  * So: no total across the entries, not even beside them. A workspace figure offered
@@ -233,7 +233,7 @@ export interface WorkspaceAccountability {
  * The entries are NOT ordered by count. `byWho` inside one is, for a stable shape and
  * explicitly not as a verdict; ordering the records that way would rank the projects,
  * which is the one thing this read must not do. Source order is already deterministic
- * and it carries a fact instead — the session's own project comes first.
+ * and it carries a fact instead: the session's own project comes first.
  */
 export function accountabilityByProject(
   sources: readonly ScopedCache[],
@@ -263,7 +263,7 @@ export function accountabilityByProject(
  * breakdown.
  *
  * Both reads above call THIS, so a single account and one entry of a decomposition
- * cannot come to disagree about what a count is — the same reason the two breakdowns
+ * cannot come to disagree about what a count is: the same reason the two breakdowns
  * inside an author come from one grouping.
  */
 function fold(
@@ -300,12 +300,12 @@ function fold(
 }
 
 /**
- * The foundings beside others of the identity `who`, out of every tree the fold reads — the
+ * The foundings beside others of the identity `who`, out of every tree the fold reads: the
  * ONE selection behind {@link WhoAccount.foundedBeside}.
  *
  * It lived in the command line (`commands/accountability.ts`), where it served the summary
- * line and `--json` from one reading, and the agent's account — a third reading of the same
- * account — had none of it. Here, inside the fold every account is made by, a reading that
+ * line and `--json` from one reading, and the agent's account, a third reading of the same
+ * account, had none of it. Here, inside the fold every account is made by, a reading that
  * shows an author cannot show it without this.
  */
 function foundedBesideOf(
@@ -394,17 +394,17 @@ function finishWho(
   };
 }
 
-/** Accounts by count descending, then by `who` ascending — stable, not a verdict. */
+/** Accounts by count descending, then by `who` ascending: stable, not a verdict. */
 function byTotalThenWho(a: WhoAccount, b: WhoAccount): number {
   if (a.total !== b.total) return b.total - a.total;
   return a.who < b.who ? -1 : a.who > b.who ? 1 : 0;
 }
 
-/** Agent counts by count descending, then by name — `null` (no agent) last. */
+/** Agent counts by count descending, then by name: `null` (no agent) last. */
 function byCountThenWhich(a: WhichCount, b: WhichCount): number {
   if (a.count !== b.count) return b.count - a.count;
   // `null` last, decided by ONE expression that reads both sides, so the answer cannot depend
-  // on which side the sort happens to hand over as `a` — a branch per side would be taken by
+  // on which side the sort happens to hand over as `a`: a branch per side would be taken by
   // whichever orientation the engine and the row order produce, and by no other.
   const nullLast = Number(a.which === null) - Number(b.which === null);
   if (nullLast !== 0) return nullLast;

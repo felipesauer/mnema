@@ -1,5 +1,5 @@
 /**
- * @mnema/sdk — the record, from a program. See the package README for what it promises.
+ * @mnema/sdk: the record, from a program. See the package README for what it promises.
  */
 
 export type {

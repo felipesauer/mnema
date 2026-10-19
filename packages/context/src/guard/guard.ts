@@ -1,21 +1,21 @@
 /**
- * guard: the workflow gate asked as a QUESTION — "may I do this?" — never as a
+ * guard: the workflow gate asked as a QUESTION ("may I do this?") never as a
  * write.
  *
  * The core's {@link gate} is already a pure function that decides whether a
  * transition is authorized and returns a typed verdict. guard exposes that
  * verdict as a read-only CONSULTATION from the context package layer: a caller asks
  * "would this move be allowed, and if not, why?" and gets the answer back as
- * data, having written nothing. It is deliberately a thin pass-through — the
+ * data, having written nothing. It is deliberately a thin pass-through: the
  * whole point is that the authorization rule lives in ONE place (the gate), and
  * the context package never re-implements or relaxes it.
  *
  * WHAT THIS IS NOT. This is not a guard that INTERCEPTS an action before it
- * happens — that belongs to the surface, where there is an actual action to
+ * happens: that belongs to the surface, where there is an actual action to
  * stop. Here there is no action, only a question; guard reaches no writer and
  * changes no state. It answers, and that is all.
  *
- * The verdict type is the gate's own ({@link GateResult}) — no new type — so
+ * The verdict type is the gate's own ({@link GateResult}), no new type, so
  * "what guard says" and "what a write would do" can never drift.
  */
 
@@ -26,7 +26,7 @@ import { type AskerContext, type Focus, focus } from '../context/focus.js';
  * Asks the gate whether a move would be authorized, and returns its verdict
  * unchanged. Read-only: it calls the pure gate and writes nothing. A legal move
  * comes back `{ ok: true, to, ... }`; an illegal or unauthorized one comes back
- * `{ ok: false, code, message }` with the gate's typed reason — including the
+ * `{ ok: false, code, message }` with the gate's typed reason, including the
  * `who === which` refusal, the identity invariant the gate exists to hold.
  */
 export function guard(request: GateRequest): GateResult {
@@ -42,7 +42,7 @@ export interface GuardWithFocus {
 }
 
 /**
- * The same verdict, plus the asker's current focus — "you may (or may not) do
+ * The same verdict, plus the asker's current focus: "you may (or may not) do
  * this, and here is what you are in the middle of". Composes {@link guard} with
  * {@link focus} so a caller gets the decision and the context in one read. Still
  * read-only: two pure reads, no write. The `who` of the request is taken as the
@@ -51,13 +51,13 @@ export interface GuardWithFocus {
  * The ACTOR comes from the request and the rest of the asker's position comes from
  * `asker`, separately, because only one of the two is in the request: a gate request
  * says who is asking, and nothing in it says which runs the asking session opened or
- * what time it is where the question was asked. Composing the scope here — rather
- * than taking a whole {@link ActorScope} — is what keeps the focus attached to the
+ * what time it is where the question was asked. Composing the scope here, rather
+ * than taking a whole {@link ActorScope}, is what keeps the focus attached to the
  * `who` the verdict was decided for, with no second spelling of it to disagree.
  *
  * The caches are the FOCUS's, and the verdict needs none: {@link guard} is pure, and
  * the state it decides from arrives in the request. So what belongs here is every
- * tree whose runs the asker may have — not the tree the entity happens to live in,
+ * tree whose runs the asker may have, not the tree the entity happens to live in,
  * which is a different question and answers about somebody else's record as readily
  * as the asker's own.
  */

@@ -39,7 +39,7 @@ import { brief } from './brief.js';
  * spellings are the same string is the surface's own case to make
  * (`code/tests/the-switch-is-a-fact.test.ts`).
  */
-/** A rule without the mark that needs somebody to ask — it is read over the trees a reading is handed. */
+/** A rule without the mark that needs somebody to ask: it is read over the trees a reading is handed. */
 const unmarked = <T extends { acceptance?: { unconfirmed: boolean } }>(item: T): T => ({
   ...item,
   ...(item.acceptance !== undefined
@@ -56,7 +56,7 @@ const CHANNELS = {
 /**
  * Every fixture reaches its state through the move the workflow defines, from the
  * state the entity is actually born in. Writing a state straight into a birth would
- * test this composition against a record the product cannot produce — the mistake
+ * test this composition against a record the product cannot produce: the mistake
  * that once put `ACCEPTED` in this bench, a value `isDecisionState` rejects and no
  * state-keyed read can ever match.
  *
@@ -65,7 +65,7 @@ const CHANNELS = {
  * exercised here for one reason: this composition carries the tree that travels, and a
  * suite that only ever handed it public trees would assert nothing about the filter.
  */
-describe('brief — everything that governs the work here', () => {
+describe('brief: everything that governs the work here', () => {
   let benches: Bench[] = [];
   let opened: ProjectionCache[] = [];
   afterEach(() => {
@@ -90,7 +90,7 @@ describe('brief — everything that governs the work here', () => {
   }
 
   /**
-   * Births a decision and accepts it — the two moves that put one in force.
+   * Births a decision and accepts it: the two moves that put one in force.
    *
    * `adr` is the label the chain would have frozen, and it is an argument for the cases
    * that are ABOUT the label: the default derived from the id keeps every other
@@ -102,7 +102,7 @@ describe('brief — everything that governs the work here', () => {
     return id;
   }
 
-  /** Births a decision and refuses it — in the record, and out of force. */
+  /** Births a decision and refuses it: in the record, and out of force. */
   function reject(b: Bench, id: string, title: string, adr?: string): string {
     birthDecision(b, id, title, 'proposed', adr);
     moveDecision(b, id, 'proposed', 'rejected', 'reject');
@@ -114,7 +114,7 @@ describe('brief — everything that governs the work here', () => {
    *
    * Every bench runs its own clock from the same first second, so two trees written
    * side by side come out interleaved in time. A case that needs one tree's rules to be
-   * the FRESHEST — which is where the cut falls — has to say when they were settled.
+   * the FRESHEST (which is where the cut falls) has to say when they were settled.
    */
   function acceptAt(b: Bench, id: string, title: string, at: string): string {
     birthDecision(b, id, title);
@@ -122,12 +122,12 @@ describe('brief — everything that governs the work here', () => {
     return id;
   }
 
-  /** Gives a record an address — a link under one of the two relations that carry one. */
+  /** Gives a record an address: a link under one of the two relations that carry one. */
   function address(b: Bench, subject: string, path: string): void {
     link(b, subject, path, GOVERNS_RELATION);
   }
 
-  /** Births a pattern and adopts it — the three moves that make one served. */
+  /** Births a pattern and adopts it: the three moves that make one served. */
   function adopt(b: Bench, id: string, name: string): string {
     birthSkill(b, id, name);
     moveSkill(b, id, 'proposed', 'reviewed', 'review');
@@ -146,7 +146,7 @@ describe('brief — everything that governs the work here', () => {
           adr: 'ADR-dec-1',
           title: 'Hand-rolled big-integer arithmetic',
           // WHO RULED IT: the one identity this bench has, which recorded the decision and
-          // accepted it itself, and it is the record's only identity — so there is nobody to confirm with and it is not marked.
+          // accepted it itself, and it is the record's only identity, so there is nobody to confirm with and it is not marked.
           acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: false },
         },
       ],
@@ -158,10 +158,10 @@ describe('brief — everything that governs the work here', () => {
       refusing: 0,
       // Nothing is waiting: the one decision and the one pattern of this record were both
       // carried all the way to in force, so the counts that make the headings legible are
-      // zero — a legitimate value the document says in words.
+      // zero, a legitimate value the document says in words.
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
-      // Nothing switched either, which is a channel being on — and the answers carry no
+      // Nothing switched either, which is a channel being on, and the answers carry no
       // attribution at all, because there is no switch to attribute them to.
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
@@ -173,7 +173,7 @@ describe('brief — everything that governs the work here', () => {
     // THE CASE A MUTATION ASKED FOR. Turning this count into a count of `governs` links
     // left the whole suite green: every fixture that had a link had it on a rule the
     // document prints, so the two numbers could not be told apart. They differ in three
-    // ways, and each of them would mislead the reader in the same direction — telling
+    // ways, and each of them would mislead the reader in the same direction: telling
     // them to expect a rule at an edit that nothing will ever push.
     const b = bench();
     accept(b, 'dec-1', 'Bill on the last business day');
@@ -240,7 +240,7 @@ describe('brief — everything that governs the work here', () => {
     expect([...tree(machine, 'private').cache.linksByRelation(GOVERNS_RELATION)]).toHaveLength(1);
   });
 
-  it('serves ONLY the accepted — proposed, rejected and superseded are all absent', () => {
+  it('serves ONLY the accepted: proposed, rejected and superseded are all absent', () => {
     // The four states of the decision machine, each reached by its own move, and both
     // halves of the criterion in ONE assertion: who is in, and who is not. Split in
     // two, a filter that let everything through would still pass the half that lists
@@ -267,7 +267,7 @@ describe('brief — everything that governs the work here', () => {
     expect(states.filter((s) => !isDecisionState(s))).toEqual([]);
   });
 
-  it('serves ONLY the adopted patterns — the other four states are absent', () => {
+  it('serves ONLY the adopted patterns: the other four states are absent', () => {
     const b = bench();
     adopt(b, 'sk-adopted', 'Adopted');
     birthSkill(b, 'sk-proposed', 'Proposed');
@@ -289,7 +289,7 @@ describe('brief — everything that governs the work here', () => {
   it('carries the tree that TRAVELS, and leaves the private and the global one out', () => {
     // Both halves of the criterion in ONE assertion, per list: what is in and what is
     // not. Split in two, a composition that filtered nothing would still pass the half
-    // that says the committed rule is served — which is how this defect got here.
+    // that says the committed rule is served, which is how this defect got here.
     //
     // It is the requirement of the whole slice. What this composes becomes a file with
     // a published recipe (a redirection) and a commit, so a rule recorded on one machine
@@ -325,7 +325,7 @@ describe('brief — everything that governs the work here', () => {
     }
   });
 
-  it('carries NO work list — a queue would be wrong between two regenerations', () => {
+  it('carries NO work list: a queue would be wrong between two regenerations', () => {
     // Asserted as ABSENCE, over a record whose work is LIVE: three tasks somebody
     // still has something to do about, which is exactly what the opening context DOES
     // serve. A brief
@@ -368,8 +368,8 @@ describe('brief — everything that governs the work here', () => {
   it('counts what is recorded here and AWAITING A JUDGEMENT, per kind, in the tree that travels', () => {
     // WHAT THIS NUMBER IS FOR. The heading counts what is printed under it, which is
     // honest and is not enough: measured on a real project, `## Decisions in force (6)`
-    // over a record of 247 decisions left the reader of this file — a model, reading this
-    // file alone — believing the project had decided six things. The 241 were not cut by
+    // over a record of 247 decisions left the reader of this file (a model, reading this
+    // file alone) believing the project had decided six things. The 241 were not cut by
     // size; they are not in force. Their number is the fact the heading cannot carry.
     const team = bench();
     const machine = bench();
@@ -424,11 +424,11 @@ describe('brief — everything that governs the work here', () => {
     expect(both.filter((item) => item.kind === 'skill').length).toBe(7);
   });
 
-  it('carries no BODY and no RATIONALE — the keys are absent, not empty', () => {
+  it('carries no BODY and no RATIONALE: the keys are absent, not empty', () => {
     // Absence, not an empty string: a present-but-blank body would say the pattern is
     // a way of working with no content, which is the opposite of what is true. Both
     // are what a second read serves, asked about the one item that turned out to
-    // matter — and both would be paid for on every prompt if they were here.
+    // matter, and both would be paid for on every prompt if they were here.
     const b = bench();
     accept(b, 'dec-1', 'A call with a long argument behind it');
     adopt(b, 'sk-1', 'A pattern with a body');
@@ -464,7 +464,7 @@ describe('brief — everything that governs the work here', () => {
     // instant, so `updatedAt` settles nothing; and the ids are written in DESCENDING
     // order across two trees, so the fold order disagrees with the id order. On a
     // fixture where the two agree, a sort with no tie-break passes (`Array.sort` is
-    // stable) — the assertion that looks like a test and is not one.
+    // stable): the assertion that looks like a test and is not one.
     //
     // Both trees are PUBLIC, which is what a caller holding two projects' committed
     // records hands over: the command line resolves one project, and the property has
@@ -501,7 +501,7 @@ describe('brief — everything that governs the work here', () => {
 
   it('is a SUBSET of the opening context, and the opening context is not one of it', () => {
     // THIS REPLACES A DEVICE THIS SLICE BROKE ON PURPOSE. The test here used to assert
-    // that the page `bootstrap` serves is the exact PREFIX of this list — the guard on
+    // that the page `bootstrap` serves is the exact PREFIX of this list: the guard on
     // both readers composing one derivation. It cannot hold any more, and not because
     // something regressed: the two answer different questions. "What may I, this agent,
     // see" is not "what does this repository carry", and a private rule is in the first
@@ -521,7 +521,7 @@ describe('brief — everything that governs the work here', () => {
     const mine = tree(machine, 'private');
 
     const composed = brief([committed, mine], CHANNELS);
-    // The agent's own context reads every tree it was given — the union, unchanged.
+    // The agent's own context reads every tree it was given: the union, unchanged.
     const opening = bootstrap([committed.cache, mine.cache], asking(team.who));
     // Unchanged in its SHAPE too, and by the list rather than by a spot check: this
     // slice narrowed one consumer of two derivations, and the way that goes wrong is
@@ -540,7 +540,7 @@ describe('brief — everything that governs the work here', () => {
     // Every rule of the document is a rule the agent may see…
     // EXCEPT FOR THE MARK THAT NEEDS SOMEBODY TO ASK. `unconfirmed` is read over the trees each
     // reading is handed, and this opening context was handed a second identity (the machine's
-    // own tree) that the committed document was not — so the same rule may be marked in one
+    // own tree) that the committed document was not, so the same rule may be marked in one
     // and not the other, and what is compared is the rule without it.
     for (const rule of composed.decisions) {
       expect(opening.decisions.map(unmarked)).toContainEqual(unmarked(rule));
@@ -553,14 +553,14 @@ describe('brief — everything that governs the work here', () => {
     expect(ids(composed.skills)).toEqual(['sk-team']);
   });
 
-  it('CUTS NOTHING BY SIZE, where the opening context cuts — and "in force" means one thing', () => {
+  it('CUTS NOTHING BY SIZE, where the opening context cuts, and "in force" means one thing', () => {
     // The deliberate asymmetry, asserted on one record: past the limit the opening
     // context serves a page and says how many there were, and this serves every rule it
     // carries. A decision left out of a queue waits for a second read; a decision left
     // out of this file is a rule the agent does not follow.
     //
     // The fixture puts the private rules at the FRESHEST end, which is where the cut
-    // falls, so the two lists disagree at their heads — the replaced device's own
+    // falls, so the two lists disagree at their heads: the replaced device's own
     // assertion (`brief.slice(0, LIMIT)` equals the opening page) is false here BY
     // CONSTRUCTION, and that is asserted below rather than left implied. What still
     // holds is what the device was really guarding: one definition of "in force", so
@@ -585,19 +585,19 @@ describe('brief — everything that governs the work here', () => {
     expect(composed.decisions).toHaveLength(committed);
     expect(opening.decisions).toHaveLength(SEARCH_DEFAULT_LIMIT);
     // The total the opening context declares is of the UNION it read, and it is not
-    // this document's length — two numbers about two questions.
+    // this document's length: two numbers about two questions.
     expect(opening.decisionsTotal).toBe(committed + privately.length);
     // The freshest rules are the private ones, so the opening page opens with them:
     // the old prefix relation is broken, and this is the assertion that says so. All
     // three share an instant, so among themselves they come back by id DESCENDING
-    // (`newestFirst`) — reversed here rather than re-typed, so the fixture stays the
+    // (`newestFirst`): reversed here rather than re-typed, so the fixture stays the
     // one list and the ORDER is the only thing this line claims.
     expect(opening.decisions.slice(0, privately.length).map((d) => d.id)).toEqual(
       [...privately].reverse(),
     );
     expect(composed.decisions.slice(0, SEARCH_DEFAULT_LIMIT)).not.toEqual(opening.decisions);
     // And the agreement that survives the break: every rule of the opening page that
-    // TRAVELS is in this document, field for field — one definition of "in force", two
+    // TRAVELS is in this document, field for field: one definition of "in force", two
     // readers. Compared as whole items, so a second definition that agreed on the ids
     // and disagreed on a label would still fail.
     const travelled = opening.decisions.filter((d) => !privately.includes(d.id));
@@ -632,7 +632,7 @@ describe('brief — everything that governs the work here', () => {
       ['dec-clone', 'ADR-1'],
       ['dec-here', 'ADR-1'],
     ]);
-    // And the fact is declared, with every id that carries the label — a reader told a
+    // And the fact is declared, with every id that carries the label: a reader told a
     // citation is ambiguous and not told which rules hold it can do nothing about it.
     expect(composed.collisions).toEqual([{ adr: 'ADR-1', ids: ['dec-clone', 'dec-here'] }]);
   });
@@ -640,7 +640,7 @@ describe('brief — everything that governs the work here', () => {
   it('declares a printed decision two machines moved apart, and stays quiet about one it does not print', () => {
     // Each decision was born here and moved on a clone that had pulled it while `proposed`;
     // the clone's tail holds only its own moves, as a clone's does. `dec-apart` was rejected
-    // on the clone before it was accepted here, so the merged order leaves it accepted — in
+    // on the clone before it was accepted here, so the merged order leaves it accepted, in
     // force, printed, and in force only because of that order: the document owes its reader
     // the other move. `dec-out` was rejected on both: moved apart too, and not printed, so it
     // is the audit's answer and not this file's.
@@ -672,7 +672,7 @@ describe('brief — everything that governs the work here', () => {
   it('names the holder that is NOT in force, and stays quiet about a label it does not print', () => {
     // Both halves of the filter, over one record, because they pull opposite ways.
     //
-    // The label is cited OUTSIDE this file — in a commit, in a review — so the other
+    // The label is cited OUTSIDE this file (in a commit, in a review), so the other
     // rule answering to it counts even when it is not printed here: `ADR-1` is held by
     // a call in force and by one that was refused, and the refused id is named.
     //
@@ -693,12 +693,12 @@ describe('brief — everything that governs the work here', () => {
       { adr: 'ADR-1', ids: ['dec-in-force', 'dec-refused-clone'] },
     ]);
     // Non-vacuity: `ADR-2` really is held twice in that chain, and the document is
-    // silent about it — so the filter is doing something rather than finding nothing.
+    // silent about it, so the filter is doing something rather than finding nothing.
     const chain = tree(here, 'public').cache.adrCollisions();
     expect(chain.map((c) => c.adr)).toEqual(['ADR-1', 'ADR-2']);
   });
 
-  it('never compares labels ACROSS chains — two committed records each hold their own ADR-1', () => {
+  it('never compares labels ACROSS chains: two committed records each hold their own ADR-1', () => {
     // The unit is one chain, and this is the case that says so. Two projects' public
     // trees each numbered their first rule `ADR-1`, which is the product working: the
     // number is minted from one chain's own count, and neither citation is ambiguous to
@@ -710,7 +710,7 @@ describe('brief — everything that governs the work here', () => {
     accept(beta, 'dec-beta', 'What beta settled', 'ADR-1');
 
     const composed = brief([tree(alpha, 'public'), tree(beta, 'public')], CHANNELS);
-    // The pooled answer HAS the same label twice — so the silence below is a decision
+    // The pooled answer HAS the same label twice, so the silence below is a decision
     // about what a collision is, not an absence of material to find one in.
     expect(composed.decisions.map((d) => d.adr)).toEqual(['ADR-1', 'ADR-1']);
     expect(composed.collisions).toEqual([]);

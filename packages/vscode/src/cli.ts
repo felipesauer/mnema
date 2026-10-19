@@ -1,6 +1,6 @@
 /**
  * The only door to the record: the `mnema` command line, started directly with an argument
- * array — never through a shell, so nothing a title or a note says can become a command.
+ * array, never through a shell, so nothing a title or a note says can become a command.
  */
 
 import { execFile } from 'node:child_process';

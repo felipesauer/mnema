@@ -1,5 +1,5 @@
 /**
- * presence: which OTHER runs of this machine were charged at a path lately — the one reading
+ * presence: which OTHER runs of this machine were charged at a path lately: the one reading
  * behind "another run consulted this path N min ago".
  *
  * WHAT IT IS MADE OF, and nothing is new. The record already holds two things that, put side by
@@ -43,7 +43,7 @@ export const CLOCKS_MAY_DIFFER_BY_SECONDS = 60;
 
 /** One other run that was charged at the path, as much as the record says of it. */
 export interface RunHere {
-  /** The agent the run declared when it started — a name, never what it was asked to do. */
+  /** The agent the run declared when it started: a name, never what it was asked to do. */
   readonly agent: string;
   /** Whole seconds since the run's newest charge at the path; never negative. */
   readonly secondsAgo: number;
@@ -53,7 +53,7 @@ export interface RunHere {
 export interface PresenceQuery extends AskerContext {
   /** The path, project-relative as a charge records it. */
   readonly path: string;
-  /** The identity whose runs these are — the asker's own anchor. */
+  /** The identity whose runs these are: the asker's own anchor. */
   readonly actor: string;
   /** The channels whose charges count, by name: the ones that ask for a person or refuse. */
   readonly channels: readonly string[];

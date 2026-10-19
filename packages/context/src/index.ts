@@ -1,14 +1,14 @@
 /**
- * @mnema/context — the layer that guides an agent by reading the proof.
+ * @mnema/context: the layer that guides an agent by reading the proof.
  *
  * The core proves what happened; this layer reads that record and composes it
- * into the context an agent needs — where a person left off, what they may do
+ * into the context an agent needs, where a person left off, what they may do
  * next, whether a move is allowed. It is a layer ABOVE the domain: it depends on
  * @mnema/core (its projections and its gate) and never the other way around.
  *
  * The one rule that defines it: the context package only READS and COMPOSES. It never
  * emits an event, never writes state, never decides a fact. Everything here is a
- * derivation — a view of what the chain already proves — so if two clones ever
+ * derivation, a view of what the chain already proves, so if two clones ever
  * disagreed about it, the chain decides. A thing that would need to be recorded
  * to be true is not a derivation; it belongs in the core. That boundary is not a
  * convention here, it is a test (see `boundaries.test.ts`): the package fails its
@@ -21,11 +21,11 @@
 // request and verdict are the gate's own (no new type), and the reference
 // index's vocabulary is the core's.
 //
-// TYPES only. The `REFERENCE_ROLES` tuple was re-exported here too — a VALUE — and
+// TYPES only. The `REFERENCE_ROLES` tuple was re-exported here too, a VALUE, and
 // no consumer ever asked this layer for it, so it is reached where it lives.
 export type {
-  // A label naming two rules is a shape two of this layer's answers carry — the
-  // committed document's, and the audit's — so reading either needs no reach past
+  // A label naming two rules is a shape two of this layer's answers carry (the
+  // committed document's, and the audit's), so reading either needs no reach past
   // this layer.
   AdrCollision,
   GateErr,
@@ -36,7 +36,7 @@ export type {
   ReferenceDirection,
   ReferenceRole,
   ReferringRole,
-  // A skill's adoption — the instant and the agent, straight off the projection —
+  // A skill's adoption (the instant and the agent, straight off the projection)
   // is re-exported for the same reason: it appears in what a provenance report
   // hands back, so reading one needs no reach past this layer.
   SkillAdoption,
@@ -51,7 +51,7 @@ export {
   type BriefChannels,
   brief,
 } from './context/brief.js';
-// The TYPE only, still — and the prediction that used to be written here was wrong.
+// The TYPE only, still, and the prediction that used to be written here was wrong.
 // It said the brief would be the caller that carried `decisionsInForce` out to the
 // surface; the brief composes the two derivations INSIDE this package (see
 // `context/brief.ts`), so what reached the surface is `brief` and the rule for which
@@ -66,8 +66,8 @@ export {
 // THE ACCESSOR IS A VALUE AND IT IS HERE, which is the one thing the paragraph above
 // does not cover: `decisionDisposition` answers what one state MEANS, and a surface
 // that shows a decision's position has to ask rather than restate it. It is the twin
-// of `skillDisposition` below, and both are held on this surface — not merely allowed
-// on it — by `no-classification-table-reaches-the-surface.test.ts`.
+// of `skillDisposition` below, and both are held on this surface, not merely allowed
+// on it, by `no-classification-table-reaches-the-surface.test.ts`.
 // `ruleIdsInForce` is what crosses of the in-force derivation: the ids alone, for the runner that
 // owes a check to each rule in force. It asks `decisionsInForce`, so the rule is still decided once.
 export {
@@ -126,11 +126,11 @@ export {
 // `skillCatalogue` is here as a VALUE for the reason `skillDisposition` is: it
 // answers how much of the record a caller that named nothing is served, and a surface
 // that decided that for itself would be a second budget nobody could see drift from
-// this one. Its union comes with it — the surface has to narrow on the arm to know
-// whether it is framing bodies or names — and the two ARMS do not, being reachable
+// this one. Its union comes with it (the surface has to narrow on the arm to know
+// whether it is framing bodies or names) and the two ARMS do not, being reachable
 // through it (`catalogue.served === 'names'` narrows without either being named).
 // Both halves are values here, and each has a consumer of its own. `channelStates`
-// answers a verb and a document — what a reader is TOLD about where a switch stands;
+// answers a verb and a document: what a reader is TOLD about where a switch stands;
 // `channelIsOn` answers a pushing channel deciding whether to speak. Neither is
 // reachable through the other in the shape its caller needs, and the rule they share
 // (off wins, and an absence is on) has exactly one implementation behind both.
@@ -138,14 +138,14 @@ export { type ChannelState, channelIsOn, channelStates } from './context/switche
 // The TYPE only, and from the module that OWNS the task machine's reads rather than
 // from the composition that serves them: `WorkItem` is what `Bootstrap.work` is made
 // of, so reading the opening context needs it written down. Neither `liveWork` nor
-// `tasksAwaitingJudgement` is exported for the reason `decisionsInForce` is not —
+// `tasksAwaitingJudgement` is exported for the reason `decisionsInForce` is not:
 // they are called by `bootstrap` and by nothing outside this package, and an export
 // with no consumer is the shape `every-public-value-has-a-caller.test.ts` catches.
 export type { WorkItem } from './context/tasks.js';
 // The TYPE only, for `WorkItem`'s reason: `UnreadKind` is what `Bootstrap.unread` is
 // made of, and a surface that renders that field has to be able to write the type of
-// one entry. `unreadKinds` stays in — it is called by `bootstrap` and by nothing
-// outside this package — and the table it reads is held off this surface outright
+// one entry. `unreadKinds` stays in (it is called by `bootstrap` and by nothing
+// outside this package) and the table it reads is held off this surface outright
 // (see `unread.ts`).
 export type { UnreadKind } from './context/unread.js';
 export {
@@ -203,13 +203,13 @@ export {
 // FOUR readings of the same graph, and each is a value here because a different surface
 // consumes it: `governingRules` answers a caller that asked, `rulesInForceAt` answers the
 // channel that pushes text, and `asksForAPersonAt` answers the one that stops somebody.
-// Neither of the last two is reachable through the first — they narrow to what is in
-// force, which is a decision a pushing channel has no right to take for itself — and they
+// Neither of the last two is reachable through the first (they narrow to what is in
+// force, which is a decision a pushing channel has no right to take for itself) and they
 // are two entry points rather than one with a relation argument, because a caller free to
 // name the relation is a caller free to charge for a label nobody defined.
 //
 // `addressReach` is the fourth and it asks the question the other way round: not which
-// rules cover a path, but how much of the tree ONE address covers — the number nothing
+// rules cover a path, but how much of the tree ONE address covers, the number nothing
 // said at the moment somebody recorded it. It takes an injected walk for the reason the
 // other three take an injected probe, and it is in the same module so that it compares an
 // address by the very prefix the gate is decided by.

@@ -2,7 +2,7 @@
  * What an address covers, over a working tree the case DECLARES.
  *
  * The derivation takes the walk as a parameter precisely so a case can state what the
- * tree holds without creating one — which is the same reason the reading beside it
+ * tree holds without creating one, which is the same reason the reading beside it
  * takes its disk probe injected, and it is what lets a ceiling and an unreadable
  * directory be tested at all.
  *
@@ -130,7 +130,7 @@ describe('what an address covers', () => {
     expect(holding(TREE).truncated).toBe(false);
   });
 
-  it('walks ONCE — the two numbers cannot come from two passes', () => {
+  it('walks ONCE: the two numbers cannot come from two passes', () => {
     let walks = 0;
     addressReach({
       address: ADDRESS,

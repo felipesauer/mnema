@@ -774,9 +774,9 @@ function githubLine(author: GithubAuthor): string {
  * recomputed here — the same value the prose path acts on, from the command.
  *
  * IT CARRIES `notAnswered`, AND THAT IS THE POINT OF THE FIELD RATHER THAN A NOTE.
- * The verdict this makes machine-readable is knowingly insufficient — a tail removed
- * with its key is not reported at all, and a removed tail whose key remains is a census
- * note with exit 0 — and a reader who has to find the README to learn that is a reader
+ * The verdict this makes machine-readable is knowingly insufficient (one tail removed
+ * whole while another remains is a census note with exit 0, or nothing with its key
+ * removed too, and the newest events cut with their checkpoint read as honest), and a reader who has to find the README to learn that is a reader
  * who will not. It is {@link NOT_ANSWERED_BY_ANY_REQUIREMENT}, the one site the README
  * says the same thing from, so the two cannot drift.
  *
@@ -1106,7 +1106,12 @@ function headline(result: VerifyResult): readonly [Clause, ...Clause[]] {
  * asking for one is asking the record a question it cannot answer. Those printed as
  * `<tail>#undefined`, which is the shape of a verdict that lost a number, not of one
  * that never had it.
+ *
+ * Nor does every finding have a tail. A record in which no tail holds anything is refused as a
+ * whole, and has no tail to name: it is said to be about `the record`, not about a tail that is
+ * not on the disk.
  */
-function at(tail: string, seq: number | undefined): string {
+function at(tail: string | undefined, seq: number | undefined): string {
+  if (tail === undefined) return 'the record';
   return seq === undefined ? tail : `${tail}#${seq}`;
 }

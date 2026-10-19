@@ -12,7 +12,7 @@ function ago(seconds: number): string {
   return new Date(Date.parse(NOW) - seconds * 1000).toISOString();
 }
 
-describe('runsHere — which other runs were charged at a path lately', () => {
+describe('runsHere, which other runs were charged at a path lately', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });

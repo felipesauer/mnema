@@ -10,7 +10,7 @@
  *
  * So this is the set, and it is defined by the record rather than by the report:
  * every `who` in every tree the caller can see, whatever it authorized. An
- * identity with one fact counts exactly as one with a thousand — presence is the
+ * identity with one fact counts exactly as one with a thousand: presence is the
  * question, not volume, and the alternative would make a form legible today and
  * ambiguous after someone else's first write.
  *

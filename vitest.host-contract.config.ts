@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * THE HOST CONTRACT, run on its own, one host at a time. These cases start a real host — the Claude
- * Code binary, VS Code under a virtual screen, the Codex binary, the Copilot CLI binary, the OpenCode binary or the Gemini CLI binary — in a network namespace that
+ * THE HOST CONTRACT, run on its own, one host at a time. These cases start a real host (the Claude
+ * Code binary, VS Code under a virtual screen, the Codex binary, the Copilot CLI binary, the OpenCode binary or the Gemini CLI binary) in a network namespace that
  * holds only loopback, so they are not part of `pnpm test`: that runs on every machine, and a case
  * that needs a binary and a namespace must not be skipped there and read as held.
  * `.github/workflows/host-contract.yml` runs this file for each host; so does `pnpm

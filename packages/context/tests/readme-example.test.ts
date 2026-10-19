@@ -1,12 +1,12 @@
 /**
- * The README's usage example, RUN — and run as the very bytes the page publishes.
+ * The README's usage example, RUN, and run as the very bytes the page publishes.
  *
  * THIS FILE USED TO PROMISE SOMETHING IT DID NOT DO. It said: *"If this drifts from the
- * README, fix one or the other — the example must run."* That is an intention, not a
+ * README, fix one or the other; the example must run."* That is an intention, not a
  * guard, and the file was a parallel TRANSLATION of the page rather than a reading of it.
  * What falsified it, measured on 11/09/2026 against `a41a9ea8`: renaming `bootstrap` to
- * `bootstrapZZZ` inside the README's own ```ts block — an edit that makes the published
- * example impossible to run — left this case green. The two copies had also already aged
+ * `bootstrapZZZ` inside the README's own ```ts block (an edit that makes the published
+ * example impossible to run) left this case green. The two copies had also already aged
  * four lines apart, in ways nobody introduced on purpose: three comment rewraps, and two
  * places where the page said more than the code that ran.
  *
@@ -22,8 +22,8 @@
  *
  * WHICH MAKES THIS THE ONE PAGE WHOSE BLOCK DOES NOT COMPILE ALONE: it names `cache` and
  * `chainRoot` and declares neither. `code/tests/the-example-is-type-checked.test.ts`
- * supplies them with the two types this setup really produces — `bench.cache()` and
- * `bench.root` — and holds that supply to exactly the names the page needs, so a
+ * supplies them with the two types this setup really produces (`bench.cache()` and
+ * `bench.root`) and holds that supply to exactly the names the page needs, so a
  * declaration cannot quietly grow into one the page never asked for.
  */
 import { rmSync } from 'node:fs';
@@ -66,7 +66,7 @@ describe('README example', () => {
     birthDecision(bench, 'dec-5', 'Hand-rolled arithmetic');
     moveDecision(bench, 'dec-5', 'proposed', 'accepted', 'accept');
     const cache = bench.cache();
-    // The chain root the cache was opened on — the README's `chainRoot`.
+    // The chain root the cache was opened on: the README's `chainRoot`.
     const chainRoot = bench.root;
 
     try {
