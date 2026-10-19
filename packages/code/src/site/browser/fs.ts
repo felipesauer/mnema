@@ -2,7 +2,7 @@
  * The part of `node:fs` the verifier reads with, over the files a page carries instead of a
  * disk.
  *
- * `mount` is handed the record's files — path to bytes — once, before the verifier runs, and
+ * `mount` is handed the record's files, path to bytes, once, before the verifier runs, and
  * every read after it answers from them. Nothing here writes: a write, a rename or a lock is
  * a refusal, because a page that verified by changing the record would be verifying
  * something else.

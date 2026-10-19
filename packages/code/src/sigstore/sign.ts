@@ -1,5 +1,5 @@
 /**
- * Signing a checkpoint with Sigstore — the one part of `mnema witness sigstore` that speaks to
+ * Signing a checkpoint with Sigstore: the one part of `mnema witness sigstore` that speaks to
  * somebody else, written here rather than borrowed so that every byte that leaves goes through
  * one `fetch` a test can hand in.
  *
@@ -8,7 +8,7 @@
  * certificate naming the identity the token carries. Rekor (`rekor.sigstore.dev`) is handed the
  * SHA-256 of a checkpoint's signed message, a signature over that message, and the certificate.
  * The message itself never leaves: a clone recomputes it from `checkpoints.jsonl`. The identity
- * does leave, by design — the e-mail, or the repository, the workflow, the commit and the run, goes into a public
+ * does leave, by design: the e-mail, or the repository, the workflow, the commit and the run, goes into a public
  * log that does not forget. Locally the token comes from `oauth2.sigstore.dev` through the
  * browser; in GitHub Actions it is the job's own, asked for with audience `sigstore`.
  *
@@ -33,7 +33,7 @@ import {
 } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 
-/** The public Sigstore instance — the only one this product signs with. */
+/** The public Sigstore instance: the only one this product signs with. */
 export const SIGSTORE = {
   fulcio: 'https://fulcio.sigstore.dev',
   rekor: 'https://rekor.sigstore.dev',
@@ -61,7 +61,7 @@ export interface HttpAsk {
   readonly signal: AbortSignal;
 }
 
-/** How a request is made — `fetch`, handed in so no test goes to the network. */
+/** How a request is made: `fetch`, handed in so no test goes to the network. */
 export type Fetch = (url: string, init: HttpAsk) => Promise<HttpAnswer>;
 
 /** An ephemeral key pair. */
@@ -73,7 +73,7 @@ export interface KeyPair {
 /** Everything that reaches outside this process, each one replaceable. */
 export interface SigstoreNetwork {
   readonly fetch?: Fetch;
-  /** The ephemeral key — ECDSA P-256 by default. */
+  /** The ephemeral key: ECDSA P-256 by default. */
   readonly generateKey?: () => KeyPair;
   /** The OpenID token; by default the Actions runner's, else a browser sign-in. */
   readonly token?: () => Promise<string>;
@@ -100,7 +100,7 @@ export type SignedCheckpoint =
 export type SigstoreSigning =
   | {
       readonly ok: true;
-      /** The identity the certificate names — the e-mail, or the workflow URI. */
+      /** The identity the certificate names: the e-mail, or the workflow URI. */
       readonly identity: string;
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;
@@ -111,7 +111,7 @@ export type SigstoreSigning =
 /** Why no checkpoint was signed at all. */
 export type SigningRefusal = 'PRIVATE_REPOSITORY' | 'NO_TOKEN' | 'NO_CERTIFICATE';
 
-/** A Sigstore bundle, v0.3, as JSON — the file written beside the `.ots`. */
+/** A Sigstore bundle, v0.3, as JSON: the file written beside the `.ots`. */
 export interface SigstoreBundle {
   readonly mediaType: string;
   readonly verificationMaterial: {
@@ -133,7 +133,7 @@ const ephemeralKey = (): KeyPair => generateKeyPairSync('ec', { namedCurve: 'P-2
 
 const hexToBase64 = (hex: string): string => Buffer.from(hex, 'hex').toString('base64');
 
-/** The claims of an OpenID token, read without checking it — Fulcio checks it. */
+/** The claims of an OpenID token, read without checking it: Fulcio checks it. */
 export function tokenClaims(token: string): Record<string, unknown> {
   try {
     const payload = token.split('.')[1] ?? '';

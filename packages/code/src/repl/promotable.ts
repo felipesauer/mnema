@@ -1,8 +1,8 @@
 /**
  * THE ONE SENTENCE THE CONSOLE SAYS ABOUT A PROMOTION, and what it needs to say it.
  *
- * It says THAT there are candidates and WHICH VERB lists them. It never says where — not a
- * path, not an id of another project — because the console is read by a person and may be
+ * It says THAT there are candidates and WHICH VERB lists them. It never says where (not a
+ * path, not an id of another project), because the console is read by a person and may be
  * recorded, and the folders of the other projects on a machine are not the console's to
  * show. `mnema promote --workspace` is the verb that names them, to the person who typed
  * the names.
@@ -11,7 +11,7 @@
  * of the command line, and the command line has no host to announce a workspace. What it
  * holds is what the person has TYPED: a line that names projects with `--workspace` (today
  * `verify`) has named a set, and that set is the only one this session ever has. It never
- * walks the disk to find more — that was refused for `verify --workspace` and the reason is
+ * walks the disk to find more; that was refused for `verify --workspace` and the reason is
  * the same here (`commands/verify.ts`): the product would be guessing, and would reach a
  * stranger's project in a neighbouring folder. A session that has been told of no projects
  * says nothing, and a set with no candidates says nothing.

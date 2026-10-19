@@ -7,8 +7,8 @@
  * list of tails nobody has asked about, and those are not the same news.
  *
  * PENDING IS A WORD OF ITS OWN and it is spelled in capitals. It is the state a
- * person is in at the moment they are most likely to believe they are finished — the
- * request went through — and a list that showed it the way it shows coverage would be
+ * person is in at the moment they are most likely to believe they are finished, the
+ * request went through, and a list that showed it the way it shows coverage would be
  * the one place this layer could quietly become a promise.
  *
  * THE CHECKPOINT DIGEST IS ON THE LINE, whole, because it is the name the attestation
@@ -16,7 +16,7 @@
  * else's client. Shortening it would leave the reader with a form nothing accepts.
  *
  * ONE LINE PER TAIL, and it is free here: every field is a hash, a word of a closed
- * union or a sentence this package composed — except the detail of a reading, which
+ * union or a sentence this package composed, except the detail of a reading, which
  * can quote a calendar URI read off a file in the tree, and that value goes through
  * the chain's own one-line rule before it ever reaches here (see `witness.ts`).
  */
@@ -31,13 +31,13 @@ import { noTailHoldsEvents } from './tails.js';
 const SCOPE_WIDTH = 7;
 
 /**
- * What each of the three states READS — TOTAL over the union, so a state added to it
+ * What each of the three states READS: TOTAL over the union, so a state added to it
  * does not compile until it has a word.
  *
  * ONE TABLE AND TWO CALLERS. The listing puts it in a column and the two acts put it
  * in a sentence, and they said it differently until this was a function: the verdict
- * shouted `PENDING` while `mnema witness stamp` — the one moment somebody is most
- * likely to think they are finished — printed a lowercase `pending` beside it. Two
+ * shouted `PENDING` while `mnema witness stamp` (the one moment somebody is most
+ * likely to think they are finished) printed a lowercase `pending` beside it. Two
  * readings of one word is the shape that produces exactly that.
  */
 const SAID: Readonly<Record<WitnessReading['status'], string>> = {
@@ -52,11 +52,11 @@ export function witnessWord(status: WitnessReading['status']): string {
 }
 
 /**
- * What each KIND of refusal reads — TOTAL over the union, the same way {@link SAID} is.
+ * What each KIND of refusal reads: TOTAL over the union, the same way {@link SAID} is.
  *
  * TWO FACTS THAT WERE ONE SENTENCE, AND THE SENTENCE WAS THE WRONG ONE FOR THE SECOND.
  * Every refusal on this path used to print `did not answer`, which is true of a calendar
- * that is down and false of an address this machine declined to contact — and the second
+ * that is down and false of an address this machine declined to contact, and the second
  * is the one its owner most needs to read, because it is the only line saying a proof
  * they were handed names somewhere the product will not go. `did not answer` invites
  * "ask again later"; this one invites "look at where that file came from".
@@ -70,7 +70,7 @@ export function witnessWord(status: WitnessReading['status']): string {
  * phrase back to the first left the whole suite green: the address check is witnessed six
  * ways in `chain`, the SHAPE of the line is pinned by `a-line-of-success-is-one-line`,
  * and no case anywhere read the WORDS. That file drives the real program over a planted
- * proof and asserts both directions — this phrase present, `did not answer` absent.
+ * proof and asserts both directions: this phrase present, `did not answer` absent.
  */
 const REFUSED: Readonly<Record<WitnessRefusalKind, string>> = {
   unanswered: 'did not answer',

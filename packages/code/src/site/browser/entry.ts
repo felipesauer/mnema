@@ -2,7 +2,7 @@
  * What a generated page runs: the chain's own verifier, over the record's files the page
  * carries, with no network and no key.
  *
- * `verifyRecord` is `verifyChain` — the function `mnema verify` calls — handed a chain root
+ * `verifyRecord` is `verifyChain`, the function `mnema verify` calls, handed a chain root
  * whose files are the page's. Nothing in the verdict is worded here: the level, the summary,
  * the clauses and every issue are the chain's. The page prints them and adds nothing.
  *

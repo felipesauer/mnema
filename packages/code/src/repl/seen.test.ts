@@ -4,8 +4,8 @@
  * The mechanism, on input this file owns. Every row below is bytes copied out of a real
  * `search` and a real `show` over a real project rather than a shape invented here, which
  * is what keeps the gloss from being asserted against a table nobody prints; the link over
- * the whole surface — the ids of a record, read off a screen and completed back into the
- * row being typed — is `tests/the-record-you-can-see.test.ts`, on a pseudo-terminal.
+ * the whole surface (the ids of a record, read off a screen and completed back into the
+ * row being typed) is `tests/the-record-you-can-see.test.ts`, on a pseudo-terminal.
  *
  * WHAT THE CASES ARE SHAPED AROUND is the one property that makes this affordable: it
  * knows nothing except what it was told, so what it can offer is bounded by what has
@@ -19,7 +19,7 @@ import { whatTheSessionShowed } from './seen.js';
 /**
  * Two rows of one `search`, byte for byte, and the id each of them names.
  *
- * The ids are the record's own — minted by this product, not written here — and the two
+ * The ids are the record's own (minted by this product, not written here) and the two
  * share a long prefix on purpose: an id begins with the millisecond it was minted, so the
  * records of one session are nearly identical at the front. That is the common case this
  * whole affordance is shaped around, not an edge one.
@@ -31,13 +31,13 @@ const SEARCHED = [
   `  ${FIRST}  public  2026-08-08  the first task (DRAFT)`,
 ];
 
-/** The first row of a `show` over the same record — the id, again, saying less about it. */
+/** The first row of a `show` over the same record: the id, again, saying less about it. */
 const SHOWN = `task ${FIRST}  ·  public`;
 
 /**
  * Faint, and what closes it: the escapes the styled renderer wraps a dim part in.
  *
- * Spelled by their code point, like every unusual byte in this repository — a control
+ * Spelled by their code point, like every unusual byte in this repository: a control
  * character typed into a source file is invisible in review and survives an edit made
  * around it.
  */
@@ -66,7 +66,7 @@ describe('it remembers the records a line named, and what the line said about th
 
   it('collapses the padding of the row, because a table is not a description', () => {
     // The row is a table: the columns are padded and the item is indented under a
-    // heading. Kept verbatim, that is a description with holes in it — so the words
+    // heading. Kept verbatim, that is a description with holes in it, so the words
     // survive, in their order, and the spacing does not.
     const [offer] = after(SEARCHED[0] as string).matching('');
     expect(offer?.description).not.toContain('  ');
@@ -113,7 +113,7 @@ describe('it remembers the records a line named, and what the line said about th
 
   it('reads the id a screen shows, not the bytes a stream carried', () => {
     // Inside a terminal the renderer PAINTS, so the row that lands is the row plus
-    // escapes — and the id sits between two of them. What is scanned is what a reader
+    // escapes, and the id sits between two of them. What is scanned is what a reader
     // sees, so the id is found and the gloss holds no escape bytes.
     const painted = `  ${DIM}${SECOND}${NORMAL}  ${DIM}public${NORMAL}  the second task`;
     const [offer] = after(painted).matching('');
@@ -126,7 +126,7 @@ describe('it remembers the records a line named, and what the line said about th
     // is the dead end, and the refusal that names it is not itself a record.
     const seen = after(
       `No record ${SECOND.slice(0, 13)} here.`,
-      // Nor is a timestamp, an alias, or an identity — the three other values this
+      // Nor is a timestamp, an alias, or an identity: the three other values this
       // product writes that hold hex and dashes.
       '  created 2026-08-08T16:30:33.100Z · updated 2026-08-08T16:30:33.100Z',
       '  t-3a9f  ·  mnid:4f2a9c1b',

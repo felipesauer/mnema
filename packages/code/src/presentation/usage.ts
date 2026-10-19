@@ -3,25 +3,25 @@
  * is not part of the proof.
  *
  * THE LAST COLUMN IS A WORD OR IT IS FOUR NUMBERS, never a number standing in for a
- * word. The three answers this reading can give — attributed, ambiguous, absent — are
+ * word. The three answers this reading can give (attributed, ambiguous, absent) are
  * three different pieces of news, and the one that costs a reader most is the one a
  * naive report would erase: a run with no transcript printed as `0` tells a person
  * their agent worked for nothing. So absence is spelled (`no transcript`) and ambiguity
  * is spelled (`not attributed`), for the reason `tails.ts` prints `no waiver` rather
- * than leaving a column empty — a word is a difference the eye can find in a column,
+ * than leaving a column empty: a word is a difference the eye can find in a column,
  * and a blank is a question.
  *
  * TOKENS AND A MODEL ID. NEVER DOLLARS. Three products of the ecosystem study carry a
  * hardcoded price table that ages in silence, and one of them had priced EVERY
  * non-Claude model wrong through a default. Here it is not even a choice worth having:
  * the host writes no price per message, so a dollar figure on this line could only be
- * this product's own arithmetic over a table it would have to keep — a number with a
+ * this product's own arithmetic over a table it would have to keep, a number with a
  * report's authority and nobody's measurement behind it.
  *
  * NOTHING ON THE LINE IS PROSE SOMEBODY WROTE except the agent's name, and that one is
  * collapsed with `oneLine`. Everything else is an id, a count, an instant or a word
- * this file chose. The two fields that come from OUTSIDE the record — the model id and
- * the session id — are collapsed too, and that is the one place this report differs
+ * this file chose. The two fields that come from OUTSIDE the record, the model id and
+ * the session id, are collapsed too, and that is the one place this report differs
  * from every other: the values in a list are usually the record's, screened at the door
  * they came in through, and these arrived in a file the host wrote and nothing here
  * verified. A newline in one of them would forge a row (see `one-line.ts` for
@@ -29,13 +29,13 @@
  *
  * THE CLOSING STATEMENT IS NOT A FOOTER. It says the counts are the host's and not the
  * record's, that no signature stands behind them, and that the join to a run is this
- * command's inference — and it is on the page for the same reason `verify` says which
+ * command's inference, and it is on the page for the same reason `verify` says which
  * level it reached instead of saying "verified". A cost table printed by an audit tool
  * with nothing qualifying it reads as part of the proof, and this one cannot be
  * checked by anybody holding only the chain. Its claim that nothing was written to
  * produce it is held to being true by `the-cost-comes-from-the-host.test.ts`, which
- * hashes the whole sandbox — the record, the caches, the keys and the host's own store
- * — around the invocation.
+ * hashes the whole sandbox (the record, the caches, the keys and the host's own store)
+ * around the invocation.
  */
 
 import type { RunSpend, UsageDone } from '../commands/usage.js';
@@ -106,7 +106,7 @@ function window(spend: RunSpend): string {
 /**
  * The last column: the four counts, or the word saying why there are none.
  *
- * The counts are written out in full — no thousands separator, no `k`, no rounding.
+ * The counts are written out in full: no thousands separator, no `k`, no rounding.
  * This is the column somebody copies into an accounting of what a piece of work cost,
  * and a rounded number is one that cannot be added to another one.
  */

@@ -4,7 +4,7 @@
  * NOTHING IS LOADED FROM ELSEWHERE. The style, the verifier and the record's files are
  * inside the file, and a `Content-Security-Policy` in the page says so to the browser: the
  * one script allowed is the verifier, named by its hash, and no request may leave. A record
- * is text people wrote, and the page is where a stranger reads it — so the text is escaped
+ * is text people wrote, and the page is where a stranger reads it, so the text is escaped
  * where it is written into the page ({@link escapeHtml}) and, behind that, a title that
  * somehow reached the page as markup would meet a policy that runs no script but ours.
  *
@@ -60,7 +60,7 @@ export interface SiteTail {
 export interface SiteModel {
   readonly decisions: readonly SiteDecision[];
   readonly tails: readonly SiteTail[];
-  /** The record's files, path under the chain root to base64 — what the verifier reads. */
+  /** The record's files, path under the chain root to base64: what the verifier reads. */
   readonly files: Readonly<Record<string, string>>;
 }
 

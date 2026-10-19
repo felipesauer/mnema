@@ -1,5 +1,5 @@
 /**
- * WHAT A TURN OF THE CONSOLE MEASURES — the words for how long an answer took and for the hour
+ * WHAT A TURN OF THE CONSOLE MEASURES: the words for how long an answer took and for the hour
  * it was done, and the verb a line names. The line under an answer is built out of these
  * (`presentation/echo.ts`, `doneLine`), and they are here and not there because the one thing
  * `presentation/` may not do is ask a clock anything: a number goes in and a word comes out.
@@ -31,7 +31,7 @@ export function hourWords(at: number): string {
   return `${two(when.getHours())}:${two(when.getMinutes())}`;
 }
 
-/** The first word of what a caller typed — the verb the line under its answer names. */
+/** The first word of what a caller typed: the verb the line under its answer names. */
 export function firstWordOf(line: string): string {
   return line.trim().split(/\s+/)[0] ?? '';
 }
@@ -43,7 +43,7 @@ const ESC = '\u001b';
 const A_DONE_LINE = new RegExp(`^(?:${ESC}\\[[0-9;]*m)*\\u273b `);
 
 /**
- * THE WINDOW WITHOUT THE LINES UNDER ANSWERS — what the page says apart from what the console
+ * THE WINDOW WITHOUT THE LINES UNDER ANSWERS: what the page says apart from what the console
  * measured about saying it.
  *
  * IT IS WHAT *THE PAGE DID NOT MOVE* IS ASKED OF. A read asked again answers with the same words,

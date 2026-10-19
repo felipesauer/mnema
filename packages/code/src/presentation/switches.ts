@@ -4,7 +4,7 @@
  * IT SAYS BOTH POSITIONS ON EVERY LINE, which is `tails.ts`'s rule for the same reason. A
  * list that printed a word only for the switched-off ones would read as a list where
  * nothing is off when the reader is looking at a list where nothing was ever LOOKED at,
- * and those are not the same news — the second is what a fresh project answers.
+ * and those are not the same news: the second is what a fresh project answers.
  *
  * WHAT EACH CHANNEL CARRIES IS ON THE LINE, and it is why this is a list and not a pair of
  * words. The channels are the product's own identifiers and no other reading spells one,
@@ -19,19 +19,19 @@
  * know keeps every character, which is that module's rule and not a fallback.
  *
  * WHOSE SWITCH IT IS, AND WHETHER IT TRAVELS. An off switch is attributed, dated and
- * scoped, so a reader can tell a call the team made from something on this machine — and
+ * scoped, so a reader can tell a call the team made from something on this machine, and
  * the second is the case a committed document cannot report, which makes it the one a
  * person has to read here. It uses the `travels` vocabulary the pushed rules already do
  * rather than the tree's own name: what a reader can act on is whether a clone holds it.
  *
  * ONE LINE PER CHANNEL, and the rule is not free here. The `reason` on an off switch is
- * text somebody wrote, so it goes through {@link oneLine} — a newline in it would end its
+ * text somebody wrote, so it goes through {@link oneLine}: a newline in it would end its
  * own line and put a channel in the list that this product has none of, under a header
  * that counts them. The anchor goes through it for the same reason the other reports
  * collapse a `who`.
  *
  * IT NAMES WHERE IT LOOKED, on every answer rather than only on an empty one. There is no
- * empty answer here — the channels exist whether or not a record does — so the line that
+ * empty answer here (the channels exist whether or not a record does), so the line that
  * `tails.ts` prints instead of a list is a suffix on the header here: everything ON in a
  * directory with no project reads exactly like everything on in a project, and the reader
  * who most needs the difference is the one who typed the verb in the wrong place.
@@ -77,8 +77,8 @@ export function switchReport(
 }
 
 /**
- * One channel's columns: its name, where it stands, what it carries, and — when it is
- * off — who switched it, when, whether that travels, and why.
+ * One channel's columns: its name, where it stands, what it carries, and (when it is
+ * off) who switched it, when, whether that travels, and why.
  *
  * The name is marked as an ID because it is what a reader copies into `mnema switch off`.
  * The attribution fields are read off the state and are only ever present together: a
@@ -88,8 +88,8 @@ export function switchReport(
 function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string | Column)[] {
   const stands: (string | Column)[] = [
     asId(column(row.state.channel, width)),
-    // A PLAIN column and not a marked one. The three markers say what a column IS — an id
-    // to copy, an instant to scan past, the TREE a record lives in — and this is none of
+    // A PLAIN column and not a marked one. The three markers say what a column IS (an id
+    // to copy, an instant to scan past, the TREE a record lives in) and this is none of
     // them: it is the news of the row. Reaching for `asScope` to have it dimmed was the
     // first draft, and it would have made the guard over that marker say this list prints a
     // tree (`the-page-shows-its-seams.test.ts` is what said so).

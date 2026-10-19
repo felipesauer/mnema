@@ -1,9 +1,9 @@
 /**
- * THE HOOKS, ON A PROCESS THIS FILE OWNS — the mechanism, without a process to kill.
+ * THE HOOKS, ON A PROCESS THIS FILE OWNS: the mechanism, without a process to kill.
  *
  * `tests/the-console-on-ink.test.ts` proves the PROPERTY in a real pty: whichever way a
  * session ends, the terminal comes back. This is the other half, and it exists because
- * of what that pty measured. Taking the hooks away does NOT turn those cases red today —
+ * of what that pty measured. Taking the hooks away does NOT turn those cases red today:
  * the layout library registers a teardown of its own, three levels down, on the same
  * exit and the same signals. So the pty says the promise is kept and cannot say by whom.
  *

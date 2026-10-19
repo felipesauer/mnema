@@ -1,5 +1,5 @@
 /**
- * TAB INSIDE THE SESSION — the same command tree three shells render, read by a fourth
+ * TAB INSIDE THE SESSION: the same command tree three shells render, read by a fourth
  * consumer.
  *
  * `completion/tree.ts` walks the program once and answers with a VALUE: every command,
@@ -8,24 +8,24 @@
  * here reads a `Command`, and nothing here knows what a verb is. A completer that
  * walked the program again would be a second answer to "what goes here", and the day
  * one of them learned about a new declaration the other would keep offering the old
- * surface — which is the defect the generated scripts exist to prevent, reappearing
+ * surface, which is the defect the generated scripts exist to prevent, reappearing
  * inside the product.
  *
  * WHAT IT OFFERS IS WHAT THE SESSION RUNS, and that is one list rather than two.
  * {@link verbsOffered} is the gate's own answer, and it is what filters the top level
  * here: a Tab that offered `task` in a session that refuses `task` would be the surface
- * advertising what it will not do. It also refuses to descend — `task <TAB>` offers
+ * advertising what it will not do. It also refuses to descend: `task <TAB>` offers
  * nothing at all, rather than the subcommands of a verb this session cannot reach.
  *
  * IT SAID *WHAT IS NEVER OFFERED IS AN ID*, and it named exactly what would have to
  * change: an id is in no declaration, the only way to know one is to READ the record, and
- * inside a session that would be affordable for the first time — the floor is already
- * paid — and was still refused, because it is a different promise (a menu of the record,
+ * inside a session that would be affordable for the first time (the floor is already
+ * paid) and was still refused, because it is a different promise (a menu of the record,
  * which goes stale between keystrokes) and because it needed a decision nobody had taken.
  * The decision was taken, and it moves the PROMISE rather than the cost: what is offered
  * is the ids THIS SESSION HAS ALREADY SHOWN (`seen.ts`), which is not the record and
  * cannot go stale, because what has been said cannot be unsaid. Nothing here reads
- * anything — the offers come out of a value the page fills as lines land — and the count
+ * anything, the offers come out of a value the page fills as lines land, and the count
  * that says this surface reads once, when it opens, is unchanged and is still the test
  * (`tests/the-name-and-the-hints.test.ts`).
  *
@@ -33,7 +33,7 @@
  * any short form for an entity id, because a short value that looks like the real one
  * becomes a trap the moment it is pasted where the real one goes. Completing invents no
  * form: what ends up on the row is the 36 characters, typed for the caller. So the
- * decision stands and what closes is the dead end it left in a console — where you read an
+ * decision stands and what closes is the dead end it left in a console, where you read an
  * identifier on the screen and cannot type it back.
  *
  * AN ID IS NOT A VERB, so the top level never offers one. A line starts with a word this
@@ -43,8 +43,8 @@
  * still reads as its own menu rather than as a list of ids with a verb lost in it.
  *
  * WHAT IS OFFERED CARRIES WHAT IT IS, and it used to be a bare token. The tree has held a
- * word and its one-line description together since it was built — that is what makes the
- * generated scripts describe a verb — and everything on this path was throwing the second
+ * word and its one-line description together since it was built (that is what makes the
+ * generated scripts describe a verb) and everything on this path was throwing the second
  * half away, so a Tab that could not choose printed a row of names and left a reader to
  * guess. The words are handed on whole now, and the console shows both columns
  * (`palette.ts`). Nothing about WHAT is offered changed: the same candidates, in the same
@@ -52,7 +52,7 @@
  *
  * A WORD WITH NOTHING TO SAY ABOUT IT IS STILL A WORD. A flag, an enumerated value and a
  * verb whose declaration describes it in no words all arrive with an empty description
- * rather than being left out — the offer is what can be TYPED here, and a menu that hid
+ * rather than being left out: the offer is what can be TYPED here, and a menu that hid
  * what it could not annotate would be a completer with an opinion about the declaration.
  */
 
@@ -66,7 +66,7 @@ import { PREFIX } from '../session-words.js';
  */
 export type Completer = (line: string) => [hits: readonly CompletionWord[], word: string];
 
-/** A node with nothing in it — what a level this session will not descend into offers. */
+/** A node with nothing in it: what a level this session will not descend into offers. */
 const NOTHING: CompletionNode = { path: '', commands: [], flags: [], values: [] };
 
 /** Words a declaration enumerates without describing: what can be typed, and nothing more. */
@@ -79,7 +79,7 @@ function unexplained(words: readonly string[]): readonly CompletionWord[] {
  * own commands, and the records it has already named.
  *
  * `offered` and `session` arrive rather than being derived, so this file holds no
- * opinion about what a session accepts — it renders a menu of what it was told. The
+ * opinion about what a session accepts: it renders a menu of what it was told. The
  * one place that decides is `gate.ts`, which is also what decides whether the line is
  * then run.
  *
@@ -105,7 +105,7 @@ export function completerFor(
   //
   // WHAT ORDER THEY COME OUT IN IS NOT THIS LINE'S, however it reads. The two vocabularies
   // arrive as a SET, and where each word of them sorts is decided once, for every level, by
-  // the one comparator ({@link theOrder}) — so this says which words there are and never
+  // the one comparator ({@link theOrder}), so this says which words there are and never
   // which of them a caller reads first. Reading the order off the concatenation as well
   // would be two readings of one rule, and the day they disagreed the answer would depend on
   // whether anything had been typed yet.
@@ -116,7 +116,7 @@ export function completerFor(
   ];
 
   /**
-   * The node a caller is typing inside, walking only where this session may go — and
+   * The node a caller is typing inside, walking only where this session may go, and
    * NOTHING AT ALL when the walk started with a verb this session refuses.
    *
    * IT ANSWERED WITH AN EMPTY NODE, and the two answers are no longer the same. An
@@ -172,11 +172,11 @@ export function completerFor(
     // what follows it: `/t` offers the verbs beginning with `t`, and `/c` offers `/clear`
     // beside them ({@link theStem}). What comes BACK is the whole of what was typed, slash
     // included, because that is the word a caller's Tab or Return replaces
-    // (`editing.ts`, `taking`) — so picking a verb off a slash leaves no slash behind, and
+    // (`editing.ts`, `taking`), so picking a verb off a slash leaves no slash behind, and
     // picking the session's own word puts its own spelling on the row.
     if (node === root) return [matching(top, word, theStem), word];
 
-    // Below it, whatever the declaration says goes there — and then the records this
+    // Below it, whatever the declaration says goes there, and then the records this
     // session has already named, which is where an argument of this product usually
     // wants one. The declaration's words keep their own sorted block and the records
     // keep theirs, in the order the session showed them (`seen.ts`): concatenating two
@@ -199,7 +199,7 @@ export function completerFor(
  * ONE FUNCTION, READ ON BOTH SIDES OF ONE COMPARISON, and that is what makes the slash a key
  * rather than a letter: it is applied to what the caller typed AND to every candidate, so
  * `/c` reaches `/clear` by its own spelling and `completion` by dropping a slash neither of
- * them is being compared with. Two readings — stripping one side only — would be a menu that
+ * them is being compared with. Two readings, stripping one side only, would be a menu that
  * offers a word the next keystroke narrows away.
  */
 function theStem(word: string): string {
@@ -210,14 +210,14 @@ function theStem(word: string): string {
  * The candidates a word could still become, sorted, without repeats.
  *
  * Sorted because the order a Tab shows is the order a reader scans, and the tree's own
- * order is the order the HELP lists — which puts the writes first and is exactly the
+ * order is the order the HELP lists, which puts the writes first and is exactly the
  * wrong shape for a menu that holds none of them. In WHAT order is {@link theOrder}'s and
  * nothing here has a second opinion about it.
  *
  * IT SAID *by the word and by nothing else, in the order a string comparison gives*, and
  * that is the sentence the ceiling falsified: the list draws four offers whatever the
  * screen has (`palette.ts`, `AT_MOST`), and a string comparison puts every word of the
- * session ahead of every verb — so one of the four went to a word that is not a verb, and
+ * session ahead of every verb, so one of the four went to a word that is not a verb, and
  * how many verbs a caller could see moved with the filter they had typed.
  *
  * The first spelling of a repeated word wins, which is what keeps a described one from
@@ -225,7 +225,7 @@ function theStem(word: string): string {
  *
  * HOW A CANDIDATE IS READ IS THE CALLER'S, and it is the whole of what the top level needs
  * of its own ({@link theStem}). It is a function rather than a flag because what it says is
- * *how these two spellings are compared*, and the default — compare them as they are — is
+ * *how these two spellings are compared*, and the default (compare them as they are) is
  * what every level below the first does.
  */
 function matching(
@@ -249,7 +249,7 @@ const A_VERB = 0;
 const A_WORD_OF_THE_SESSION = 1;
 
 /**
- * WHICH OF THE TWO VOCABULARIES A WORD IS OF, read off the PREFIX — the one thing that tells
+ * WHICH OF THE TWO VOCABULARIES A WORD IS OF, read off the PREFIX: the one thing that tells
  * them apart, and the same character {@link theStem} takes off the front (`session-words.ts`).
  *
  * A verb of this product cannot begin with it and a word of the session cannot be without it,
@@ -265,7 +265,7 @@ function whichVocabulary(word: string): number {
  *
  * THE LIST HAS A CEILING AND THAT IS WHY THE ORDER IS A DECISION rather than a convention.
  * Four offers are drawn whatever the screen has room for (`palette.ts`, `AT_MOST`), so the
- * first four words of this order are the four a caller reads — and a slash sorts before every
+ * first four words of this order are the four a caller reads, and a slash sorts before every
  * letter there is, which put the session's own word at the head of the list every time it was
  * in it. A caller who typed a bare slash saw three verbs and a word of the session; a caller
  * who typed a letter that narrows the session's word away saw four verbs. The list changed
@@ -273,7 +273,7 @@ function whichVocabulary(word: string): number {
  *
  * SO THE VERBS GO FIRST AND THE COUNT STOPS MOVING: four verbs under every filter, and the
  * list is the same height under all of them. The two other ways out bought one of those and
- * not the other — reading the session's word by its stem, so it sorts among the letters, still
+ * not the other: reading the session's word by its stem, so it sorts among the letters, still
  * spends one of the four wherever it lands; drawing it outside the four is a row more, so the
  * height moves with what was typed.
  *
@@ -282,7 +282,7 @@ function whichVocabulary(word: string): number {
  * narrows to it puts it on the page with nothing above it. Leaving the first row is not
  * leaving the list.
  *
- * THE ORDER INSIDE EACH GROUP IS THE ONE IT ALWAYS WAS — a string comparison, which is the
+ * THE ORDER INSIDE EACH GROUP IS THE ONE IT ALWAYS WAS: a string comparison, which is the
  * order the bare tokens came out in before they carried a description. What moved is the order
  * BETWEEN the two vocabularies, and nothing else did.
  */

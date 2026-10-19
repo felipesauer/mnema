@@ -1,6 +1,6 @@
 /**
- * The lines `mnema site` prints: what it wrote, and — when the record it wrote from does not
- * verify — the one sentence that tells the person who ran it.
+ * The lines `mnema site` prints: what it wrote, and (when the record it wrote from does not
+ * verify) the one sentence that tells the person who ran it.
  *
  * The path is the caller's own `--out` and the summary is the chain's sentence over names a disk
  * chose, so both go through `oneLine`: a value holding a line break must not become two lines of

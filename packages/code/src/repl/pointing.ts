@@ -1,21 +1,21 @@
 /**
- * THE WHEEL — the one thing this console asks the mouse for, and the smallest set of modes
+ * THE WHEEL: the one thing this console asks the mouse for, and the smallest set of modes
  * that delivers it.
  *
  * A CONSOLE THAT TAKES THE SCREEN HAS TO ROLL ITSELF. The bar down the side of the caller's
  * terminal scrolls the buffer the session is NOT in any more (`scrolling.ts`), so the wheel
  * over this page does nothing at all unless the page asks for it. The caller asked for it in
- * as many words — *the middle region is where the scroll works* — so it is asked for.
+ * as many words (*the middle region is where the scroll works*), so it is asked for.
  *
  * TWO MODES, AND THE COUNT IS THE DECISION. `?1000` reports a button being pressed and
  * released, and THE WHEEL IS A BUTTON: it arrives as button sixty-four upwards and sixty-five
  * downwards, so press-and-release is already the whole of what is needed. `?1006` is not a
- * third kind of event but the ENCODING — the older one saturates at two hundred and
+ * third kind of event but the ENCODING: the older one saturates at two hundred and
  * twenty-three columns, and a terminal wider than that would report a click on the wrong side
  * of the page.
  *
- * AND `?1002`/`?1003` ARE REFUSED. They add MOTION — the pointer moving, with a button
- * held or without one — which is what a program needs for hover and for dragging and which
+ * AND `?1002`/`?1003` ARE REFUSED. They add MOTION (the pointer moving, with a button
+ * held or without one), which is what a program needs for hover and for dragging and which
  * this page has neither of. What they cost is a report per cell the pointer crosses, on a
  * process whose whole job is to answer a keystroke. The console this page was measured from
  * turns them OFF and turns exactly these two on; that is measurement rather than preference.
@@ -24,8 +24,8 @@
  * the mouse to an application stops doing its OWN thing with it, and its own thing is
  * SELECT-AND-COPY. Copying what the console said is an auditor's gesture and auditing is half
  * of what this product is for, so this is a real loss rather than a theoretical one. What
- * every emulator that matters leaves is an escape — hold SHIFT while dragging, and the
- * selection is the terminal's again — and it is the escape the console this page was measured
+ * every emulator that matters leaves is an escape (hold SHIFT while dragging, and the
+ * selection is the terminal's again) and it is the escape the console this page was measured
  * from relies on too. It is written in the session's own tips rather than left to be
  * discovered (`session.ts`).
  *
@@ -34,7 +34,7 @@
  * every case about the wheel be a case with no terminal in it.
  */
 
-/** One escape byte, written as an escape — like every unusual byte in this repository. */
+/** One escape byte, written as an escape: like every unusual byte in this repository. */
 const ESC = '\u001b';
 
 /**
@@ -59,7 +59,7 @@ export const WATCHING_THE_WHEEL = `${ESC}[?1000h${ESC}[?1006h`;
 export const THE_WHEEL_BACK = `${ESC}[?1006l${ESC}[?1000l`;
 
 /**
- * WHAT A REPORT FROM THE MOUSE MEANS TO THIS PAGE — the two notches of the wheel, and
+ * WHAT A REPORT FROM THE MOUSE MEANS TO THIS PAGE: the two notches of the wheel, and
  * *nothing at all* for every other thing a mouse can do.
  *
  * `nothing` IS NOT `undefined`, and the difference is the whole reason this is three answers
@@ -75,16 +75,16 @@ export type FromTheMouse = 'up' | 'down' | 'nothing' | undefined;
  */
 const THE_WHEEL = 64;
 
-/** The low bits, which are the button — nought upwards and one downwards, on the wheel. */
+/** The low bits, which are the button: nought upwards and one downwards, on the wheel. */
 const WHICH_BUTTON = 3;
 
 /**
- * WHAT THE KEYBOARD LIBRARY HANDED OVER, READ AS A MOUSE REPORT — and `undefined` when it is
+ * WHAT THE KEYBOARD LIBRARY HANDED OVER, READ AS A MOUSE REPORT: and `undefined` when it is
  * not one.
  *
  * IT IS READ WITHOUT ITS ESCAPE, and that is not a convenience: the library strips the leading
  * escape from every sequence it could not name before handing it on, and a mouse report is
- * exactly such a sequence — it is a well-formed control sequence with a final byte the library
+ * exactly such a sequence; it is a well-formed control sequence with a final byte the library
  * has no name for. So what arrives is `[<64;10;5M`, and this reads that. Measured against the
  * library's own parser rather than assumed (`tests/the-screen-is-ours.test.ts`).
  *

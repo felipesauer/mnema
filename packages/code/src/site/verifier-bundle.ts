@@ -3,7 +3,7 @@
  *
  * `build/the-site-verifier.mjs` writes `dist/site-verifier.js` after the compiler runs. This
  * module sits two directories below the package root whether it is the source or its compiled
- * copy, so one relative path finds the file from either — and a missing file says what to run
+ * copy, so one relative path finds the file from either, and a missing file says what to run
  * instead of writing a page that cannot verify anything.
  */
 

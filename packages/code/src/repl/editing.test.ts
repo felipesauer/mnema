@@ -1,10 +1,10 @@
 /**
- * THE INPUT ROW, KEY BY KEY — the whole language of what a caller is typing, with no
+ * THE INPUT ROW, KEY BY KEY: the whole language of what a caller is typing, with no
  * device anywhere near it.
  *
  * The console is the one part of this surface that cannot be read to know whether it is
  * right: what a keystroke does is only visible as a redraw. So the answer is a VALUE, and
- * these are the cases over it — the caret that walked past an end, the history browsed
+ * these are the cases over it: the caret that walked past an end, the history browsed
  * and then typed into, the completion that had nothing to add, the paste that arrived as
  * one chunk with a chord inside it.
  *
@@ -41,7 +41,7 @@ function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
     downArrow: false,
     tab: false,
     // THE FOUR KEYS THAT MOVE THE WINDOW rather than the row. They are spelled here because
-    // this stand-in is the WHOLE keystroke — a value built out of some of the fields would let
+    // this stand-in is the WHOLE keystroke: a value built out of some of the fields would let
     // a reducer arm that reads one of them go unasserted (`src/repl/editing.ts`).
     pageUp: false,
     pageDown: false,
@@ -56,7 +56,7 @@ function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
 /**
  * A completer of this file's own: three verbs, and nothing else in the world.
  *
- * Each offer carries what it is, because that is what a completer answers with now — the
+ * Each offer carries what it is, because that is what a completer answers with now: the
  * console draws a column of descriptions beside the words (`palette.ts`). What the Tab
  * DOES with them is untouched, which is what these cases are about.
  */
@@ -71,7 +71,7 @@ const OFFERS: Completer = (line) => {
   ];
 };
 
-/** Nothing to offer, ever — for the cases that are not about completion. */
+/** Nothing to offer, ever: for the cases that are not about completion. */
 const OFFERS_NOTHING: Completer = (line) => [[], line];
 
 /** Presses every key in turn and answers with what the row became. */
@@ -285,7 +285,7 @@ describe('Tab takes what every candidate agrees on, and never chooses', () => {
  * A completer shaped like the session's own: the words a slash lists, and one verb.
  *
  * THE WORDS ARE THE PRODUCT'S rather than three strings invented here, because the cases below
- * are about a list a slash really opens — a fixture with words the completer could not produce
+ * are about a list a slash really opens: a fixture with words the completer could not produce
  * would make every answer here about a console that cannot exist. The verb is what makes the
  * list more than one vocabulary, which is the shape the palette really has (`palette.ts`).
  *
@@ -307,7 +307,7 @@ const THE_SESSIONS_WORDS: Completer = (line) => {
 };
 
 /**
- * A WORD WITHOUT THE PREFIX, read on BOTH sides of the comparison above — which is what makes
+ * A WORD WITHOUT THE PREFIX, read on BOTH sides of the comparison above, which is what makes
  * the slash a key rather than a letter, exactly as the real completer does it (`complete.ts`,
  * `theStem`). A fixture that compared the raw spellings would answer `/s` with nothing, and
  * every case below would be about a console this product cannot produce.
@@ -319,7 +319,7 @@ function stemOf(spelling: string): string {
 /**
  * THE ROW A LIST IS OPEN ON: the prefix and one letter.
  *
- * IT USED TO BE THE BARE PREFIX, and that is the shape this delivery took away — a slash alone
+ * IT USED TO BE THE BARE PREFIX, and that is the shape this delivery took away: a slash alone
  * is *what exists* and opens nothing, a slash with a letter is a word being written and the
  * list under it is what it could still become (`palette.ts`, `offeredBy`). The letter is one
  * three of the fixture's words share, so what these cases are about is a list of several rows
@@ -336,7 +336,7 @@ const OPENED_BY_THE_SLASH = THE_SESSIONS_WORDS(OPEN_ROW)[0].map((offer) => offer
  *
  * IT USED TO BE THE WORDS THAT BEGIN WITH A SLASH inside a longer list, because the row was a
  * bare prefix and the list under it held both vocabularies. The row is a word being written
- * now, so what is offered is what that word can still become — one list, and there is nothing
+ * now, so what is offered is what that word can still become: one list, and there is nothing
  * to filter out of it.
  */
 const LISTED = OPENED_BY_THE_SLASH;
@@ -371,7 +371,7 @@ describe('the arrows move through the list, and Return takes what they landed on
   it('picks nothing until an arrow says so, and Return still hands the row over', () => {
     // THE HALF THAT KEEPS EVERY OTHER KEY WORKING. The list is open the moment a letter
     // follows the slash, so a palette that picked its first row on opening would make Return
-    // fill the row instead of submitting — and a word typed in full would stop being runnable.
+    // fill the row instead of submitting, and a word typed in full would stop being runnable.
     const opened = typing([press(PREFIX), press(A_LETTER)], THE_SESSIONS_WORDS);
     expect(opened.typed).toBe(OPEN_ROW);
     expect(opened.picked).toBe(NOBODY);
@@ -390,7 +390,7 @@ describe('the arrows move through the list, and Return takes what they landed on
     // REASON WAS *the list is CUT to the room a terminal has, so a wrap would jump to a row
     // nobody can see*, and the window falsified it: what is drawn follows the pick now
     // (`palette.ts`, `theWindow`), so a wrapped pick would be drawn like any other. What is left
-    // is about the list — the ends of it are where the vocabulary ends.
+    // is about the list: the ends of it are where the vocabulary ends.
     const first = { ...PICKED_ONE, picked: LISTED[0] as string };
     expect(after(press('', { upArrow: true }), first).picked).toBe(LISTED[0]);
     const last = { ...PICKED_ONE, picked: LISTED.at(-1) as string };
@@ -406,7 +406,7 @@ describe('the arrows move through the list, and Return takes what they landed on
 
   it('opens the whole vocabulary on a bare slash, and the arrows move through THAT', () => {
     // IT SAID *opens nothing on a bare slash, so the arrows are the history\u2019s there*, on the
-    // premise that a slash alone is not a question — so the row was a character like any other
+    // premise that a slash alone is not a question, so the row was a character like any other
     // and the arrows went on browsing what had been typed before. A caller reading the page
     // falsified it: a bar with a slash in it and nothing under it is somebody asking what
     // there IS. The list is open the moment the slash is typed, so the arrows belong to it.
@@ -450,7 +450,7 @@ describe('the arrows move through the list, and Return takes what they landed on
     if (what.does !== 'edit') throw new Error('unreachable');
     expect(what.editing.typed).toBe(LISTED[1]);
     expect(what.editing.at).toBe((LISTED[1] as string).length);
-    // AND THE PICK IS SPENT: the word is still offered — it is the row now — so a pick left
+    // AND THE PICK IS SPENT: the word is still offered (it is the row now), so a pick left
     // standing would make the next Return fill the row with what is already on it, and the
     // caller could never submit a word they had picked.
     expect(what.editing.picked).toBe(NOBODY);
@@ -463,7 +463,7 @@ describe('the arrows move through the list, and Return takes what they landed on
 
   it('leaves no slash behind when what was picked off one is a verb', () => {
     // THE SLASH IS A KEY AND NOT A LETTER OF THE WORD, so the list under it holds the verbs
-    // too — and a verb taken from it has to land as a line that can run. What is replaced is
+    // too, and a verb taken from it has to land as a line that can run. What is replaced is
     // the word the completer was answering about, which on that row is the slash AND the
     // letter behind it.
     const verb = { ...PICKED_ONE, picked: 'search' };
@@ -487,7 +487,7 @@ describe('the arrows move through the list, and Return takes what they landed on
     expect(keeps, 'the two letters do not tell the words apart').not.toBe(excludes);
     expect(narrowed(keeps).picked).toBe(LISTED[1]);
     expect(narrowed(excludes).picked).toBe(NOBODY);
-    // NOT VACUOUS: the excluding letter really does leave a list, with the OTHER word in it — so
+    // NOT VACUOUS: the excluding letter really does leave a list, with the OTHER word in it, so
     // the pick was dropped by the filter rather than by there being nothing to show.
     expect(THE_SESSIONS_WORDS(`${OPEN_ROW}${excludes}`)[0].map((offer) => offer.word)).toContain(
       LISTED.at(-1),
@@ -497,7 +497,7 @@ describe('the arrows move through the list, and Return takes what they landed on
   it('does not bring a pick back to life the next time the list is opened', () => {
     // THE GHOST, and it is what the pick being SETTLED after every key prevents. Kept on the
     // value instead, a word picked before the row was cleared would be marked again the moment
-    // the same list reopened — and Return would fill the row with a choice the caller had not
+    // the same list reopened, and Return would fill the row with a choice the caller had not
     // made in the list they are looking at.
     const cleared = after(press('u', { ctrl: true }));
     expect(cleared.picked).toBe(NOBODY);
@@ -508,7 +508,7 @@ describe('the arrows move through the list, and Return takes what they landed on
 });
 
 /**
- * WHAT EVERY KEY OF THIS LANGUAGE LEAVES BEHIND on a row with a list open and a word picked —
+ * WHAT EVERY KEY OF THIS LANGUAGE LEAVES BEHIND on a row with a list open and a word picked:
  * one entry per FIELD of a keystroke, and the fields are read off a keystroke rather than listed.
  *
  * IT IS THE TOTALITY, AND IT IS WHY IT IS A TABLE. The pick is settled after every key
@@ -527,7 +527,7 @@ const WHAT_EACH_KEY_LEAVES: {
   input: { typed: `${OPEN_ROW}${NARROWS_TO_THE_PICK}`, picked: LISTED[1] as string },
   // The pick is taken: the row becomes the word, and nothing is picked any more.
   return: { typed: LISTED[1] as string, picked: NOBODY },
-  // Backspace takes the letter back, which leaves a bare slash — and a bare slash opens the
+  // Backspace takes the letter back, which leaves a bare slash, and a bare slash opens the
   // WHOLE vocabulary, so the list widens rather than shutting. IT SAID *the list is shut and
   // the pick goes with it*, which was true while the bare slash opened nothing; what did not
   // change is the rule the pick lives by, and this is the case that shows it from the other
@@ -542,7 +542,7 @@ const WHAT_EACH_KEY_LEAVES: {
   // The two that move: one word back, and one word on.
   upArrow: { typed: OPEN_ROW, picked: LISTED[0] as string },
   downArrow: { typed: OPEN_ROW, picked: LISTED[2] as string },
-  // A Tab on this row has nothing to add — what the words agree on is already typed — so it
+  // A Tab on this row has nothing to add (what the words agree on is already typed), so it
   // leaves the row and the pick where they were.
   tab: { typed: OPEN_ROW, picked: LISTED[1] as string },
   // The two that shut it: Escape, and the chord that clears the row.
@@ -550,7 +550,7 @@ const WHAT_EACH_KEY_LEAVES: {
   ctrl: { typed: '', picked: NOBODY },
   // THE FOUR THAT MOVE THE WINDOW AND NOT THE ROW, and this is exactly the answer the count
   // above exists to force somebody to write down. What they move is which part of the roll a
-  // reader is looking at, which is not a question about the line being typed at all — so the row
+  // reader is looking at, which is not a question about the line being typed at all, so the row
   // is what it was and the pick is what the list under it still holds (`repl/console.ts`,
   // `repl/scrolling.ts`). They reach no arm of the reducer, and this table is where that is
   // ASSERTED rather than assumed.
@@ -603,7 +603,7 @@ describe('a chunk of input is the keystrokes it stands for', () => {
 
   it('reads a chord inside a chunk as the chord, which is the case that was measured', () => {
     // THE DEFECT, in a value. Ctrl-C followed by a command arrives as one string from a
-    // real terminal. Read as one key it is unprintable, so the whole thing is dropped —
+    // real terminal. Read as one key it is unprintable, so the whole thing is dropped:
     // the row is not cleared and the Return that follows submits the abandoned line.
     const strokes = keystrokesOf(press('\u0003verify\r'));
     expect(strokes[0]).toMatchObject({ input: 'c', ctrl: true });

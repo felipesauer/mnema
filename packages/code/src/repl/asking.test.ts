@@ -1,12 +1,12 @@
 /**
- * WHAT THE SESSION TYPES FOR THE CALLER — the mechanism, on declarations this file owns.
+ * WHAT THE SESSION TYPES FOR THE CALLER: the mechanism, on declarations this file owns.
  *
  * The guard over the REAL surface is `tests/the-session-knows-who-you-are.test.ts`: it
  * enumerates, off the registered program, every command that REQUIRES the asker's
  * identity and holds each one to this function, so a fifth arrives covered without an
  * edit anywhere. What that file cannot exercise is the shapes the surface does not have
- * yet — a group whose subcommand asks, a sibling that does not, an optional flag by the
- * same name — and those are where a rule about "which declarations" goes wrong. So the
+ * yet (a group whose subcommand asks, a sibling that does not, an optional flag by the
+ * same name) and those are where a rule about "which declarations" goes wrong. So the
  * cases here hand it declarations of their own.
  */
 
@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { type Declared, readsTheRecord } from '../wiring/verb.js';
 import { asTheSession } from './asking.js';
 
-/** What this session knows itself as — shaped like the value the panel is drawn with. */
+/** What this session knows itself as: shaped like the value the panel is drawn with. */
 const ME = 'mnid:7d30343b';
 
 /** A read of this file's own, hung with whatever a case needs to declare. */
@@ -33,7 +33,7 @@ const VERBS: readonly Declared[] = [
  * What the session runs for `line`, knowing {@link ME}.
  *
  * A session that knows NOBODY is asked for by name below, through the function itself: a
- * default parameter here would swallow the very value that case is about — `undefined`
+ * default parameter here would swallow the very value that case is about; `undefined`
  * passed to one is a parameter nobody passed.
  */
 const on = (line: readonly string[]): readonly string[] => asTheSession(line, VERBS, ME);
@@ -45,7 +45,7 @@ describe('a verb that requires the asker gets the session’s own identity', () 
     expect(on(['asks', '--json'])).toEqual(['asks', '--json', '--actor', ME]);
   });
 
-  it('hands the value over verbatim — it is the one the page shows', () => {
+  it('hands the value over verbatim: it is the one the page shows', () => {
     // Not shortened, not lengthened, not prefixed. What goes onto the line is the string
     // the session was opened with, so the line is the one a caller would have written by
     // copying what was in front of them.
@@ -98,7 +98,7 @@ describe('the end of the flags is where the parser stops reading them', () => {
   });
 
   it('does not read an `--actor` after it as the caller naming one', () => {
-    // It is not a flag there — the parser will read it as a word — so the line still
+    // It is not a flag there (the parser will read it as a word), so the line still
     // needs the identity, and it still goes where the parser is reading flags.
     expect(on(['asks', '--', '--actor', 'x'])).toEqual([
       'asks',

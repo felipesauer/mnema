@@ -92,18 +92,14 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
   'packages/code/src/': 4324,
-  // the questions it asks
-  'packages/code/src/choice/': 75,
-  // the shell completion
-  'packages/code/src/completion/': 62,
   // what it prints
-  'packages/code/src/presentation/': 869,
+  'packages/code/src/presentation/': 43,
   // the console
-  'packages/code/src/repl/': 901,
+  'packages/code/src/repl/': 4,
   // the Sigstore reader
-  'packages/code/src/sigstore/': 25,
+  'packages/code/src/sigstore/': 6,
   // the verifier page it builds
-  'packages/code/src/site/': 28,
+  'packages/code/src/site/': 7,
   // the cases beside @mnema/code
   'packages/code/tests/': 5722,
   // @mnema/context

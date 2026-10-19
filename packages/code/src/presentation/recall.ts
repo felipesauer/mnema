@@ -1,23 +1,23 @@
 /**
- * The notes a session opens with — markdown for a reader that never asked for it.
+ * The notes a session opens with: markdown for a reader that never asked for it.
  *
  * It is the second text of that moment, beside the document `mnema brief` prints, and the
  * two answer different questions: the document says what GOVERNS, out of the committed
  * record; this says what was NOTED, out of every tree this machine holds for the project.
- * A note governs nothing, so it is in no line of the document — and until this text
+ * A note governs nothing, so it is in no line of the document, and until this text
  * existed, a memory or an observation an agent recorded here reached no later session at
  * all unless it went looking.
  *
  * IT STATES WHAT IS, AND IT NAMES THE DOOR, AND THAT IS ALL IT DOES. Every line is a fact
- * about the record — what these notes are, whose text they are, where they came from, how a
- * note gets in — because text a hook puts in front of a model is read as context when it is
+ * about the record (what these notes are, whose text they are, where they came from, how a
+ * note gets in), because text a hook puts in front of a model is read as context when it is
  * written as fact, and as a command to be wary of when it is not (the host says so in its
  * own guidance for hook context). The door is named the way the document names its own: the
  * tool and what it does, never that anybody ought to call it.
  *
  * ONE LINE PER NOTE, AND THE LINE IS THE INDEX'S. What stands for a memory is the start of
- * its content and what stands for an observation is its topic — the line `search` already
- * serves for each, cut where it already cuts — so this text is the same economy the rest of
+ * its content and what stands for an observation is its topic (the line `search` already
+ * serves for each, cut where it already cuts), so this text is the same economy the rest of
  * the record's reads run on: the NAME in the pushed text, the body one `read_record` away.
  * Every field goes through {@link oneLine} here, where the line is built, for the reason the
  * document's bullets do: a note is text an actor typed, and one holding a newline would end
@@ -30,17 +30,17 @@
  * the one the index already gives the other kind.
  *
  * A MEMORY'S LINE IS NOT BOLD AND AN OBSERVATION'S IS. The topic is a name somebody chose;
- * the start of a memory is an excerpt nobody chose, and the index says so of it — presenting
+ * the start of a memory is an excerpt nobody chose, and the index says so of it: presenting
  * it in the weight of a name would claim a choice that was never made.
  *
  * A LINE THAT HOLDS A CREDENTIAL IS WITHHELD, AND THIS IS THE ONE PLACE THE PRODUCT DOES IT.
- * Every surface screens what goes IN — a credential in a recognized format is replaced
- * before it is written — and the reads serve the record as it is, because what it held
+ * Every surface screens what goes IN (a credential in a recognized format is replaced
+ * before it is written) and the reads serve the record as it is, because what it held
  * before the door existed is `mnema audit exposure`'s to find, not a read's to hide. A PUSHED
  * channel is different in the one respect that matters: nobody asked, and the text leaves
  * this machine with every session that opens. So a note whose line still carries a
- * credential the door would have recognized — written before the door, or by anything else
- * holding a key — is handed over as the fact that it exists, with its id, and never as the
+ * credential the door would have recognized (written before the door, or by anything else
+ * holding a key) is handed over as the fact that it exists, with its id, and never as the
  * value. It asks {@link detectSecrets}, which answers with CLASSES and never with the value,
  * so nothing here can print what it found; the rewriting half of the door stays on the
  * writing side, where the core keeps it.
@@ -56,7 +56,7 @@
  * document's skeleton. The document is a file compared with `diff`, and a heading that
  * disappeared would make its first entry read as a rewrite; this is not a file, and a
  * session in a project with no notes loses nothing by being handed no text. It is the rule
- * the edit push has — nothing arrives where there is nothing to say — and the server's own
+ * the edit push has (nothing arrives where there is nothing to say) and the server's own
  * instructions are what tell a reader that notes arrive here at all. When only ONE of the
  * two kinds is empty it says so in words, because then there is a text and an absent
  * heading in it would read as a kind this record does not keep.
@@ -72,14 +72,14 @@ import { fitWhole } from './within-a-hook.js';
 /** The heading: what the text IS. */
 const TITLE = '# What was noted here';
 
-/** What the content is and whose text it is — the channel's declaration, from one place. */
+/** What the content is and whose text it is: the channel's declaration, from one place. */
 const WHAT_THIS_IS = recordFraming('recall-document');
 
 /**
  * Where the notes come from, and what a line of one is.
  *
  * It names the three trees because they are the difference from the document the reader
- * was handed beside this one, which carries the committed tree alone — a reader holding
+ * was handed beside this one, which carries the committed tree alone: a reader holding
  * both would otherwise take a note kept on this machine for something the team was told.
  */
 const WHERE_THEY_COME_FROM = [
@@ -89,7 +89,7 @@ const WHERE_THEY_COME_FROM = [
 ];
 
 /**
- * The order the notes are in — ONE line, and it is always there, because a reader handed
+ * The order the notes are in: ONE line, and it is always there, because a reader handed
  * a list is owed what the list is ordered by. With something this session touches, the
  * line names where the words came from, as counts and never as the words: a branch's name
  * or a path is text somebody chose, and this channel prints no text of a note's that it
@@ -115,17 +115,17 @@ function whereTheWordsCameFrom(touched: SessionTouch): string {
   return parts.join(', ').replace(/, (?=[^,]*$)/, ' and ');
 }
 
-/** `n` with its noun, the noun made plural by an `s` — true of the three nouns above. */
+/** `n` with its noun, the noun made plural by an `s`: true of the three nouns above. */
 function counted(n: number, noun: string): string {
   return `${n} ${n === 1 ? noun : `${noun}s`}`;
 }
 
 /**
- * How a note gets in, and what becomes of it — the door, named once, as a fact.
+ * How a note gets in, and what becomes of it: the door, named once, as a fact.
  *
  * The two tools are the two a note is recorded with, and the last clause is what makes the
  * text worth reading: the note comes BACK, to the next session here. "With the mnema plugin"
- * is not a hedge — the plugin is what hands this text over, and a person running the verb
+ * is not a hedge: the plugin is what hands this text over, and a person running the verb
  * by hand is reading a description of what a session gets.
  */
 const HOW_A_NOTE_ENTERS = [
@@ -143,13 +143,13 @@ const NO_OBSERVATION = 'No observation is recorded here.';
  *
  * The number is the index's own `total` and the door is the read that reaches past it, so a
  * reader told "these are the newest" is also told how many there are and how to reach the
- * rest — a list cut without saying so reads as the whole of it.
+ * rest: a list cut without saying so reads as the whole of it.
  *
  * `printed` IS WHAT IS PRINTED, NOT WHAT THE INDEX SERVED, and there are two cuts now. The index
  * serves the newest few of each kind, and a hook's copy of this text may stop earlier still,
  * at a whole note, to stay inside what a hook carries ({@link recallWithin}). Both keep the start
- * of the section's order and drop from its end — the newest with nothing touched, the nearest
- * and then the newest with something — so one sentence is true of either, and a section a hook
+ * of the section's order and drop from its end (the newest with nothing touched, the nearest
+ * and then the newest with something), so one sentence is true of either, and a section a hook
  * cut to nothing says how many there are rather than that there are none.
  */
 function cutAt(
@@ -170,7 +170,7 @@ function cutAt(
 }
 
 /**
- * Where the near part of a section ends — said, because the order line says the near ones
+ * Where the near part of a section ends: said, because the order line says the near ones
  * come first and a reader cannot see where "first" stops. Only when there was something to
  * be near: with no signal every line is there for being recent, and the order line says so.
  */
@@ -218,7 +218,7 @@ function memoryLine(hit: RecordHit): string {
  *
  * THE TOPIC IS CUT BY THE INDEX'S OWN RULE FOR A MEMORY'S LINE ({@link excerptOf}), and it used
  * to go out whole. The index serves a topic raw because it is the record's name for the note,
- * and a name somebody typed has no length — so twenty long ones carried this text past what a
+ * and a name somebody typed has no length, so twenty long ones carried this text past what a
  * hook hands a model, where twenty memories never could, because a memory's line was already
  * an excerpt. The same rule now bounds both lines of this text, from one place; the index and
  * `read_record` still serve the topic whole.
@@ -234,7 +234,7 @@ function observationLine(hit: RecordHit): string {
 /**
  * One section: the heading with how many are PRINTED under it, then the notes or the none.
  *
- * `shown` is how many of the index's hits are printed — all of them, unless a hook's copy
+ * `shown` is how many of the index's hits are printed: all of them, unless a hook's copy
  * stopped earlier. What says "none" is the INDEX being empty, never the list being cut short.
  */
 function section(
@@ -260,7 +260,7 @@ function section(
   ];
 }
 
-/** The notes this text reads from — the index's answer for each kind. */
+/** The notes this text reads from: the index's answer for each kind. */
 interface Notes {
   readonly touched: SessionTouch;
   readonly memories: PertinentSearch;
@@ -268,7 +268,7 @@ interface Notes {
 }
 
 /**
- * The whole text, as lines — or NO lines at all when neither kind holds anything, which is
+ * The whole text, as lines, or NO lines at all when neither kind holds anything, which is
  * what makes the plugin's handler hand a session nothing.
  */
 export function recallDocument(notes: Notes): string[] {
@@ -276,8 +276,8 @@ export function recallDocument(notes: Notes): string[] {
 }
 
 /**
- * The text for a hook: whole notes, in the text's own order — memories, then observations, each
- * in the order the order line names — up to what fits in `room`, by the rule the document's hook
+ * The text for a hook: whole notes, in the text's own order (memories, then observations, each
+ * in the order the order line names) up to what fits in `room`, by the rule the document's hook
  * copy is cut by ({@link fitWhole}).
  *
  * With every line an excerpt, twenty of each kind stay under what a hook carries, so this
@@ -299,7 +299,7 @@ function notesIn(notes: Notes): number {
   return notes.memories.hits.length + notes.observations.hits.length;
 }
 
-/** The text with its first `shown` notes — the one shape both copies print. */
+/** The text with its first `shown` notes: the one shape both copies print. */
 function composed(notes: Notes, shown: number): string[] {
   if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
   const near = notes.touched.words.length > 0;
