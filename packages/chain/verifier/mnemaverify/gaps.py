@@ -151,11 +151,16 @@ GAPS: tuple[Gap, ...] = (
         "unresolved",
         "the word waiver appears once in the whole document, inside a test path. A sequence "
         "gap is reported and located; whether it was authorized cannot be read from here. "
-        "THE CUT THAT TOOK THE END OF A TAIL IS REPORTED TOO, and this used to say it was "
-        "not: the claim was that such a removal leaves nothing discontinuous to report, and "
-        "a record whose segments were emptied in place falsifies it - the checkpoints stay, "
-        "and section 6 forces them to, so each one whose range outruns the entries present "
-        "is named with its location under section 5. What cannot be read is still whether "
+        "A CUT THAT LEAVES THE CHECKPOINTS BEHIND IS REPORTED TOO, and this used to say a "
+        "removal that takes the end of a tail leaves nothing discontinuous to report: a record "
+        "whose segments were emptied in place, with checkpoints.jsonl left alone, falsifies "
+        "that, and each signed range that outruns the entries present is named with its "
+        "location under section 5. Section 6 chains the checkpoints by prev, so one dropped "
+        "from the start or the middle is caught and the last ones are not. By default "
+        "checkpoints.jsonl deleted alone, or the last checkpoints deleted with their events "
+        "kept, is accepted; --require signed refuses both. The last events cut together with "
+        "the checkpoints that covered them pass at every level: only a copy of the record "
+        "from before the cut shows them gone. What cannot be read is still whether "
         "any of it was authorized, which is why this is a reader-limit and not a finding",
         standing="reader-limit",
         not_checked="telling an authorized cut from tampering",

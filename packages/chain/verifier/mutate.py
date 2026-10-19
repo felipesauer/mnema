@@ -597,8 +597,8 @@ def blank_segment_same_size(root: str) -> tuple[bool, str]:
     was missing was any input asking what a verifier SAYS once the cheap signal has waved a
     record like this through.
 
-    Section 6 chains the checkpoints by `prev`, so emptying the events cannot take the
-    checkpoints with them: what is left is a signed range naming events the tail does not
+    Section 6 chains the checkpoints by `prev`, but emptying the events leaves the
+    checkpoints file alone: what is left is a signed range naming events the tail does not
     hold, which section 3 says a reader of the document alone must report and stop at.
     """
     tails = os.path.join(root, "tails")

@@ -11,7 +11,7 @@ python3 mnema_verify.py self-test                      # RFC 8032, section 1, se
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
 python3 mnema_verify.py --json gaps                    # the same registry as data
-python3 mutate.py list                                 # the inputs it has to refuse
+python3 mutate.py list                                 # the named mutations (most are refused; five are not)
 ```
 
 Python 3.9 or later. **No third-party packages** — Ed25519 is RFC 8032 by hand, checked
@@ -110,11 +110,16 @@ and has no id:
   self-test`. (G06)
 - §3 — *telling an authorized cut from tampering*. A sequence gap is reported and located;
   whether it was authorized cannot be read from here, because the document does not say what
-  authorizes one. The cut itself **is** reported: this bullet used to claim that a removal
-  taking a whole tail leaves nothing discontinuous to report, and emptying a record's segments
-  in place falsifies that — §6 makes `prev` the hash of the previous checkpoint's signed
-  message, so a cut cannot take the checkpoints with it, and every range left outrunning the
-  entries present is named under §5. What stays unreadable is the **authorization**. To look: `git log --stat -- <record>/tails`,
+  authorizes one. A cut that leaves the checkpoints behind **is** reported: if the events at
+  the end of a tail go and `checkpoints.jsonl` stays, every signed range that outruns the
+  entries present is named under §5. §6 makes `prev` the hash of the previous checkpoint's
+  signed message, so a checkpoint dropped from the start or the middle is caught; the last
+  ones dropped are not. By default both readers accept the checkpoints file deleted alone, and
+  the last checkpoints deleted with their events kept; with `--require signed` both refuse
+  them. The last events cut together with the checkpoints that covered them pass at every
+  level, in both readers: only a copy of the record from before the cut shows them gone, and
+  that copy is what the product's verify reads with `--since`. What stays unreadable is the
+  **authorization**, and with it whether anything is missing. To look: `git log --stat -- <record>/tails`,
   because a cut is a commit. (G09)
 - §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
   `v > 1` and no upcaster is published, so there is nothing to lift. To look, in a checkout of the repository:
@@ -178,8 +183,9 @@ derived from the findings rather than written beside them.
 
 ## The refusals, and how to earn one
 
-`mutate.py` builds the inputs the format refuses, one named mutation at a time, in a copy
-of a record you give it. It ships here rather than beside a test: a guard and the mutation
+`mutate.py` builds one named mutation at a time, in a copy
+of a record you give it; most are inputs the format refuses, and five are not (see the
+honest guarantee below). It ships here rather than beside a test: a guard and the mutation
 that lights it are one artifact.
 
 ```
@@ -207,10 +213,14 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
 a program that has never seen the implementation. Twenty-seven places where the document was
-not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
-with no exception** — the exception used to be the one that existed to demonstrate an
-acceptance, and there is no acceptance left to demonstrate. **One disagreement with the
-product left, and it is pinned.** This paragraph used to say there was none, and a case in
+not enough for that, each one written down. **A refusal for every mutation in `mutate.py`
+but five, and none of the five is accepted by this reader alone.** Three are accepted by
+both readers, because neither can see them: the newest events cut together with the
+checkpoints that covered them (`aligned-cut`), a record erased and founded again, and a move
+the workflow does not allow, which is named and is not a break. The other two are reported
+INCOMPLETE rather than refused, and they are the two places below. This used to say there
+was a refusal for every mutation, with no acceptance left. **One disagreement with the
+product is pinned.** This paragraph used to say there was none, and a case in
 `packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts` says otherwise: a tail
 cut in the middle with no `tail.pruned`, keys present and checkpoint signatures valid. The
 product reads a signed range that outruns the entries present as the record contradicting
@@ -219,7 +229,11 @@ of the document alone cannot tell an authorized cut from tampering and should re
 and stop. Both readings are faithful to the document. The same file pins one more place the
 two verdicts differ, and it is wording rather than disagreement: with the public keys gone,
 the product says broken over a signature it cannot verify, and this reader, unable to ask,
-says INCOMPLETE. The disagreement that was closed was
+says INCOMPLETE. One more place the two differ is pinned by no test: with every tail deleted
+and the keys left, the product at its default level says verified (T1 only), with a note for
+each key that has no tail, and exits 0 (with `--require signed`, or `--since <rev>` over a
+copy from before, it exits 1), while this reader says BROKEN, "there are no tails", having
+checked nothing, and exits 3 at its default level and with `--require signed`. The disagreement that was closed was
 not an ambiguity of the document — §8 named the rule and the product did not follow it, so
 the product changed and the readers now date the same record from the same block.
 

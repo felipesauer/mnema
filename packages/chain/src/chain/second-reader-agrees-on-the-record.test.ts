@@ -46,8 +46,9 @@
  * the quieter failure of the two: an acceptance is found by building an attack, and an
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *
- * So every input `mutate.py` builds is now refused by BOTH readers, and the case that says
- * so is the count in `leaves exactly FIVE rows out of the refusal loop`.
+ * So no input `mutate.py` builds is accepted by ONE reader alone: the case that says so is
+ * the count in `leaves exactly FIVE rows out of the refusal loop`, which names the five that
+ * are not refusals (three accepted by both readers, two read as incomplete).
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
  * runs is prose again, and a skipped case is a case nobody reads. Python 3 is on the runner
@@ -97,7 +98,7 @@ import { readTailCheckpoints } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { canonicalIdentityForm } from './verify.js';
 
-/** The second reader, and the tool that builds the inputs it has to refuse. */
+/** The second reader, and the tool that builds the mutations it is asked about. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
 const MUTATE = fileURLToPath(new URL('../../verifier/mutate.py', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));
@@ -680,10 +681,10 @@ const MUTATIONS = [
   {
     name: 'blank-segment-same-size',
     // The SECOND row that is not a refusal, and the reason the count below is 2. See the
-    // INCOMPLETE describe: a checkpoint whose range outruns the entries present is the
-    // residue an authorized cut must leave, and section 3 tells a reader of the document
-    // alone to report it and stop. It is in this table so the enumeration from
-    // `mutate.py list` stays total.
+    // INCOMPLETE describe: a checkpoint whose range outruns the entries present is a shape
+    // an authorized cut may leave when it leaves the checkpoints in place, and section 3
+    // tells a reader of the document alone to report it and stop. It is in this table so
+    // the enumeration from `mutate.py list` stays total.
     refusals: 0,
     section: '5',
     says: '',
@@ -715,9 +716,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
    * record whose segments were emptied without a byte count moving — and it leaves signed
    * checkpoints naming events the tail no longer holds. That reads like the record
    * contradicting itself, which is how the product reads it (`broken`). It is admitted here
-   * anyway because section 6 makes `prev` the hash of the previous checkpoint's signed
-   * message, so a cut CANNOT take the checkpoints that covered the events with it: a range
-   * with no entries under it is the shape an authorized cut is obliged to leave, and section
+   * anyway because the cut leaves the checkpoints that covered the events in place
+   * (section 6 chains them by `prev`, which catches an early one dropped and not the last
+   * ones): a range with no entries under it is the shape an authorized cut may leave, and section
    * 3 says of precisely that case that a party reading only the document "cannot tell an
    * authorized cut from tampering, and the honest thing for them to do is report the gap and
    * stop". So this reader reports and stops, under G09.
@@ -1059,8 +1060,8 @@ describe('a check that could not run is reported as neither pass nor refusal', (
     // The product answers `broken`: a signed checkpoint whose range outruns the entries
     // present is the record contradicting its own signature, and it will not call that fine.
     // The second reader answers INCOMPLETE, and section 3 is why: `prev` chains the
-    // checkpoints (section 6), so a cut cannot take the checkpoints that covered the events
-    // with it — a range over no entries is what an AUTHORIZED cut is obliged to leave behind.
+    // checkpoints (section 6), which catches an early one dropped and not the last ones; this
+    // cut left the checkpoints in place — a range over no entries is what an AUTHORIZED cut may leave.
     // The document says of exactly this that a reader of it alone "cannot tell an authorized
     // cut from tampering, and the honest thing for them to do is report the gap and stop".
     // Both readings are faithful. The product is entitled to the stronger one because it
