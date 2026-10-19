@@ -642,9 +642,11 @@ function howMnemaFits(blocks, theme) {
   const cy = box.top + 214;
   const record = cubes(s, rx, cy, a, [undefined, undefined, undefined, 5.0, 11.0], 10);
   body.push(...record.out);
-  for (const t of [5.0, 11.0]) body.push(landing(s, record.at(t === 5.0 ? 3 : 4), cy, a, t, s.paint.lit));
+  for (const t of [5.0, 11.0])
+    body.push(landing(s, record.at(t === 5.0 ? 3 : 4), cy, a, t, s.paint.lit));
   // mnema verify reads the chain, one cube after the other, and says so.
-  for (let i = 0; i < 5; i++) body.push(landing(s, record.at(i), cy, a, 11.6 + i * 0.22, s.paint.lit));
+  for (let i = 0; i < 5; i++)
+    body.push(landing(s, record.at(i), cy, a, 11.6 + i * 0.22, s.paint.lit));
   body.push(
     sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.8) }),
   );
