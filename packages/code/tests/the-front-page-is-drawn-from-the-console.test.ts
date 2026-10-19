@@ -22,6 +22,10 @@
  *   - THE FAMILY: the picture of `@mnema/code` and what stands around it, drawn into
  *     `docs/assets/`, is held to the same rules as a package's: its words are lines of the
  *     product, found in the files the script names, and nothing else.
+ *   - THE BANNER, THE STEPS AND HOW MNEMA FITS: drawn in the family's paint and motion, and held to
+ *     the family's guards of frame, middle, roles, keyframes, exit and arrows. Their words are said
+ *     here by hand, in order, each piece a file says found in it; the banner's light is out in its
+ *     last frame and moves nothing.
  *   - THE FAMILY ON THE FRONT PAGE: `README.md` holds, under "The mnema family", the block the script
  *     writes, byte for byte, at 880, by an absolute address on `main` with no version.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the

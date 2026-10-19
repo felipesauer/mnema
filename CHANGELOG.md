@@ -525,6 +525,11 @@ with its own changelog.
   2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
+- **The front page's banner, steps and "how mnema fits" are drawn in the family's paint and motion.** Each carries its
+  own page and the accent's glow, tonal cards and dots that run their arrows; the banner's light is faint and moves
+  nothing, the steps' numbers light one after the other, and a reader who asks for less motion sees the last frame.
+  Their words, frames and text alternatives do not change; their text takes the family's sizes, and the family's
+  guards hold them too.
 
 ## [0.2.0-beta] - 2026-10-11
 

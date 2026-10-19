@@ -1,6 +1,6 @@
-// Draws the front page's pictures: `docs/assets/banner-{dark,light}.svg`,
-// `docs/assets/how-it-works-{dark,light}.svg`, the animated
-// `docs/assets/how-mnema-fits-{dark,light}.svg` and the animated
+// Draws the front page's pictures, all animated in the family's paint and motion:
+// `docs/assets/banner-{dark,light}.svg`, `docs/assets/how-it-works-{dark,light}.svg`,
+// `docs/assets/how-mnema-fits-{dark,light}.svg` and
 // `docs/assets/the-family-{dark,light}.svg`; and one animated picture per published package but
 // `@mnema/code`, `packages/<p>/assets/<p>-{dark,light}.svg`, in the family's colours, glow and
 // motion, with the block that opens the package's README and points at the file on the
@@ -11,7 +11,8 @@
 // geometry in a cell of the terminal's proportions: a full block as a filled cell, a
 // double-line box glyph as its two strokes. Geometry rather than text, because GitHub serves an
 // SVG as an image and a block font cannot be counted on there. Beside it, a short chain of
-// blocks. The only hue is the accent (`accent.mjs`); everything else is a grey.
+// blocks. The only hue is the accent (`accent.mjs`); everything else is a grey. A faint light
+// passes over the letters and the blocks and moves nothing; out of it, the banner is as drawn.
 //
 // From the root of a built checkout (`pnpm build`):
 //
@@ -459,7 +460,9 @@ function howItWorks(theme) {
 // (it runs no script and the picture needs none). Every element that moves carries, as its own
 // attributes, how it looks in the last frame of the story; a reader who asked for less motion
 // gets that frame, still, and the loop opens and closes on the first one, so it restarts with no
-// jump. What each frame says is what the product does: see the comment on `HERO_STORY`.
+// jump. What each frame says is what the product does: see the comment on `HERO_STORY`. It is
+// drawn with the family's vocabulary (below the family's picture): tonal cards, lanes with their
+// heads where the record goes, a dot for each packet, and the edge it reaches lit as it arrives.
 
 const LOOP = 14;
 
