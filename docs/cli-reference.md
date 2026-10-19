@@ -379,7 +379,7 @@ started from already held. So `--since <rev>` asks git: every file of the commit
 record at `<rev>` must still be on disk, and every segment and `checkpoints.jsonl` must
 still begin with exactly the bytes it held there: a record only ever grows at the end. A
 tail removed in a commit older than the revision `--since` compares with is in neither, so
-`--since` does not find it; every tail removed that way still fails the default `verify`. It
+`--since` does not find it; a record with every tail removed that way still fails the default `verify`. It
 reads git and never the network, and changes nothing when it is not asked for. In CI,
 `BASE` is the commit the change is measured against — the target branch of a pull
 request, fetched (a shallow checkout holds no base, and `--since` says so and fails):

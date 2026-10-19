@@ -66,6 +66,14 @@ describe('the page script', () => {
     expect(by['verdict-summary'].textContent).toMatch(/^The page could not run the verification: /);
   });
 
+  it('names a record that holds no tail as the record, with no number it never had', () => {
+    const verdict = verifyRecord({ 'keys/none.pub': '' });
+    expect(verdict.ok).toBe(false);
+    const issue = verdict.issues.find((line) => line.includes('NO TAIL'));
+    expect(issue, verdict.issues.join('\n')).toMatch(/^the record \[T1\] /);
+    expect(verdict.issues.join('\n')).not.toContain('undefined');
+  });
+
   it("hands back the chain's own words, as plain fields", () => {
     const verdict = verifyRecord({});
     expect(Object.keys(verdict).sort()).toEqual(

@@ -138,25 +138,29 @@ describe('mnema verify over a record in which no tail holds anything', () => {
     expect(said.stderr).not.toContain(NO_TAIL);
   });
 
-  it('exits 1 after an init that failed half way, until a first public write founds the record', () => {
-    // A home this run cannot write to: init makes `.mnema/` and fails making the key.
-    chmodSync(home, 0o555);
-    const failed = mnema('init');
-    chmodSync(home, 0o755);
-    expect(failed.status).toBe(1);
-    expect(existsSync(join(repo, '.mnema'))).toBe(true);
+  // As root a read-only home is writable, so init does not fail half way and there is nothing to prove.
+  it.skipIf(process.getuid?.() === 0)(
+    'exits 1 after an init that failed half way, until a first public write founds the record',
+    () => {
+      // A home this run cannot write to: init makes `.mnema/` and fails making the key.
+      chmodSync(home, 0o555);
+      const failed = mnema('init');
+      chmodSync(home, 0o755);
+      expect(failed.status).toBe(1);
+      expect(existsSync(join(repo, '.mnema'))).toBe(true);
 
-    const refused = mnema('verify');
-    expect(refused.status).toBe(1);
-    expect(refused.stderr).toContain(NO_TAIL);
+      const refused = mnema('verify');
+      expect(refused.status).toBe(1);
+      expect(refused.stderr).toContain(NO_TAIL);
 
-    // A second init says there is nothing to found, and founds nothing.
-    const again = mnema('init');
-    expect(again.stdout).toContain('nothing to found');
-    expect(mnema('verify').status).toBe(1);
+      // A second init says there is nothing to found, and founds nothing.
+      const again = mnema('init');
+      expect(again.stdout).toContain('nothing to found');
+      expect(mnema('verify').status).toBe(1);
 
-    did('decision', 'record', 'The first public fact', 'It founds the record');
-    const founded = mnema('verify');
-    expect(founded.status, founded.stderr).toBe(0);
-  });
+      did('decision', 'record', 'The first public fact', 'It founds the record');
+      const founded = mnema('verify');
+      expect(founded.status, founded.stderr).toBe(0);
+    },
+  );
 });

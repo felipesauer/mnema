@@ -555,7 +555,11 @@ with its own changelog.
   events cut with their checkpoint, a record erased and founded again, and a removal older than the revision --since
   compares with; it no longer says a record whose tails were removed with their keys reads as a fresh one, which it
   never did. The CLI reference, the second reader's README, FORMAT.md, and the pages on what verify proves say the
-  same.
+  same. The Action's comment now quotes what verify said on stderr (the issues) before what it said on stdout (the
+  census), so the refusal by name stays inside the quotation however many keys the record has, and the page the
+  `site` writes says `the record` of an issue that has no tail instead of `#undefined`. `inherit` still decides
+  nothing by this rule, but a commit whose record holds no tail with an event or a checkpoint now fails the verify
+  that reads it, so it is read as unverified and contributes no decision.
 
 ## [0.2.0-beta] - 2026-10-11
 

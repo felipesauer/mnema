@@ -83,7 +83,9 @@ export function worldAt(
       verify(base) {
         const ran = mnema(['verify', '--require=signed', '--since', base]);
         if (ran.error !== undefined) return { passed: false, said: ran.error.message };
-        return { passed: ran.status === 0, said: `${ran.stdout}${ran.stderr}` };
+        // The issues are said on stderr and the census on stdout. The comment quotes the start of
+        // what is said, and the census grows with the keys, so the issue comes first.
+        return { passed: ran.status === 0, said: `${ran.stderr}${ran.stdout}` };
       },
       checkRun(key) {
         // The key is written to a file of its own, readable by this user only, for the length

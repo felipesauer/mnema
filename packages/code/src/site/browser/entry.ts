@@ -30,6 +30,15 @@ export interface RecordVerdict {
 const ROOT = '/record';
 
 /**
+ * Where an issue is: a tail and its event, a tail alone when the line has no seq (it could not be
+ * read), or `the record` when it is about no tail (a record in which no tail holds anything).
+ */
+function placeOf(tail: string | undefined, seq: number | undefined): string {
+  if (tail === undefined) return 'the record';
+  return seq === undefined ? tail : `${tail} #${seq}`;
+}
+
+/**
  * Verifies the record the files make up. `files` maps a path under the chain root
  * (`tails/<tail>/000001.jsonl`, `keys/<fingerprint>.pub`, …) to its bytes in base64.
  */
@@ -47,7 +56,7 @@ export function verifyRecord(files: Readonly<Record<string, string>>): RecordVer
     summary: result.summary,
     clauses: result.clauses.map((clause) => clause.text),
     issues: result.issues.map(
-      (issue) => `${issue.tail ?? 'the record'} #${issue.seq} [${issue.layer}] ${issue.detail}`,
+      (issue) => `${placeOf(issue.tail, issue.seq)} [${issue.layer}] ${issue.detail}`,
     ),
     census: result.census.map((note) => note.detail),
   };
