@@ -98,7 +98,7 @@ const SAYS_WHAT_IT_IS = 'mnema  ·  v';
  * without anybody seeing it happen.
  *
  * \u26a0\ufe0f THREE OF THEM WERE ALL THIS FILE NEEDED, because a frame was drawn and finding it was
- * enough. What is asked now is the opposite \u2014 that there is NONE \u2014 and the difference is why
+ * enough. What is asked now is the opposite (that there is NONE), and the difference is why
  * the corners are all four: absence has to be asked of every character the thing is made of,
  * where presence only ever needed one.
  */
@@ -1180,7 +1180,7 @@ describe('the chrome costs the drawing of the name and nothing more', () => {
   it('spends exactly the mark\u2019s rows whenever the text goes beside it', async () => {
     // WHAT THE FRAME'S DEPARTURE BOUGHT, as a property rather than as a number: with the text
     // beside the mark the panel is as tall as the TALLER of the two, and the mark is the taller
-    // one on the terminal a person opens \u2014 so what the opening costs is the drawing the caller
+    // one on the terminal a person opens, so what the opening costs is the drawing the caller
     // chose and not one row more. Twelve rows to nine, measured at a hundred and twenty by
     // forty; the number is in the report and the property is here.
     // THE NARROWEST IS SEARCHED FOR rather than written down, for the reason the whole of this
@@ -1201,7 +1201,7 @@ describe('the chrome costs the drawing of the name and nothing more', () => {
   it('never spends fewer rows than the mark has, in any arrangement', async () => {
     // THE FLOOR, and it is the honest half of the same claim: nine rows is not a target anybody
     // can beat by rearranging, it is the height of the art. Under the mark the panel costs the
-    // art PLUS the text, which is more \u2014 so the floor holds at every width and the arrangement
+    // art PLUS the text, which is more, so the floor holds at every width and the arrangement
     // is what decides how far above it the panel sits.
     // THE FOUR NARROWEST WIDTHS WENT WITH THE FLOOR, exactly as they did in the sweep for a
     // frame: sixty and under is a window with no page on it (`repl/floor.ts`).

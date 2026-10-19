@@ -86,25 +86,25 @@ const AFTER_THE_PROMPT = `${PROMPT} `;
  * very file, which is the twenty-fourth time on this bench.
  *
  * \u26a0\ufe0f THREE OF THEM WERE THE ISOMETRIC DRAWING'S, and they are gone with it: the two
- * diagonals, and the vertical \u2014 which was the same glyph as the box's own side, one character
+ * diagonals, and the vertical, which was the same glyph as the box's own side, one character
  * in two roles, and four cases of this surface had to be taught to tell a row of the art from a
  * row of the box because of it. What draws the name now holds no frame glyph at all.
  *
  * \u26a0\ufe0f AND THE BOX'S SIDE WAS A CONSTANT OF THIS FILE. The frame is gone, so what it was here for
- * \u2014 telling a row inside the box from a row of it \u2014 has no subject at all; the rows of the
+ * (telling a row inside the box from a row of it) has no subject at all; the rows of the
  * opening are bounded by what is above and below them instead.
  */
 const INK = '\u2588';
 const RUN = '\u2500';
 
 /**
- * EVERY GLYPH THE DRAWINGS MAY BE MADE OF, each named by its code point \u2014 the block, the six
+ * EVERY GLYPH THE DRAWINGS MAY BE MADE OF, each named by its code point: the block, the six
  * pieces of the outline drawn round it, and nothing else.
  *
  * THIS IS THE GUARD THAT REPLACED THE MASK, and it is stronger than the mask was. Every form
  * of the name used to be written as an ASCII mask, on the argument that a reader of the source
  * sees the FORM in characters an editor renders at one width; the biggest drawing is inked
- * with several different glyphs, and at that many marks a mask is unreadable \u2014 measured, by
+ * with several different glyphs, and at that many marks a mask is unreadable: measured, by
  * writing one out (` ###_ _###% ###_    # %#####`). So the drawing is written out and the glyphs
  * are ENUMERATED instead, here and in the module's own doc: one more non-ASCII byte anywhere in
  * that file is accused, which is a stronger statement than "the masks are ASCII" ever made.
@@ -113,7 +113,7 @@ const RUN = '\u2500';
  * written for was nine rows of blocks and shades, whose last three rows were the dust of a drop
  * shadow; what replaced it is one weight of ink with a contour round it. So the four shades and
  * the four half blocks went, the FULL BLOCK stayed, and six pieces of box drawing arrived. The
- * COUNT was never the property \u2014 the property is that this list and the module's own bytes are
+ * COUNT was never the property: the property is that this list and the module's own bytes are
  * the same set, whatever is in it.
  *
  * The names are the Unicode ones, so a reader can check a code point against the standard
