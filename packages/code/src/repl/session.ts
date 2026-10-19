@@ -386,14 +386,14 @@ const ESCAPE_SHUTS = 'Esc shuts the list';
  *
  * THE FIRST TWO ARE FACTS AND THEY ARE IN THE PAST TENSE, which is what lets the row stand until
  * the next key rather than only until the page next moves. A reader who scrolls, a window that is
- * resized, a record another process appends to \u2014 none of them makes *answered* or *its end was
+ * resized, a record another process appends to: none of them makes *answered* or *its end was
  * already on the page* untrue, because both are about the answer and not about the page now.
  *
  * THE THIRD NAMES BOTH KEYS BECAUSE THEY GO TO DIFFERENT PLACES: a page back, and the top of what
  * the session has said. It says *scroll back* rather than *show the rest* because Home goes past
  * the answer to the top of the roll, and a clause saying it showed the rest of the answer would
  * be promising what the key does not do. IT IS THE FIRST PLACE EITHER KEY IS NAMED to a reader of
- * this surface \u2014 the row under the prompt names three keystrokes and neither of these.
+ * this surface: the row under the prompt names three keystrokes and neither of these.
  */
 const IT_WAS_ANSWERED = 'answered';
 const ITS_END_WAS_THERE = 'its end was already on the page';
