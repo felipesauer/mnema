@@ -7,7 +7,7 @@
  * already knows the CLI would refuse.
  */
 
-/** How many the panel asks for — the most `mnema search` returns. */
+/** How many the panel asks for: the most `mnema search` returns. */
 export const PROPOSED_LIMIT = 200;
 
 /** The command that lists what waits for a judgment. */

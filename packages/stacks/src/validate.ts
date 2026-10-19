@@ -47,8 +47,8 @@ export function validateStack(root: string): StackReport {
 }
 
 /**
- * {@link validateStack} over files already read — from a directory by `readStackFiles`, or from
- * an archive by `readStackArchive` — with the problems the reading found.
+ * {@link validateStack} over files already read (from a directory by `readStackFiles`, or from
+ * an archive by `readStackArchive`) with the problems the reading found.
  */
 export function validateStackFiles(
   files: readonly StackFile[],

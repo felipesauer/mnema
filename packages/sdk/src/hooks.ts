@@ -18,8 +18,8 @@
  *     path, `ask` where one asks for a person, `{}` otherwise. The facts it records, it records
  *     before it answers.
  *
- * It does not carry what the plugin's Claude Code door hands beside a write — the rules that only
- * govern the path — for the reason `before-a-write` does not: a hook that runs per write
+ * It does not carry what the plugin's Claude Code door hands beside a write, the rules that only
+ * govern the path, for the reason `before-a-write` does not: a hook that runs per write
  * remembers no run.
  */
 

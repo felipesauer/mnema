@@ -2,7 +2,7 @@
  * The rules in force over one file, read from `mnema rules <path> --json`.
  *
  * Which rules address a path is the CLI's answer. What is kept of it is only the decisions in
- * force — asked of `decisionDisposition`, never restated here — and nothing about paths is
+ * force (asked of `decisionDisposition`, never restated here) and nothing about paths is
  * decided in this module.
  */
 
