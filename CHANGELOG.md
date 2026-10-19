@@ -542,6 +542,11 @@ with its own changelog.
   README, the second reader's README and a test's comment) now say the same five. The lines in the CLI reference
   and the `@mnema/code` README that said verify does not catch a whole tail deleted now say that is the default, and
   what `--require signed` and `--since` do.
+- The repository no longer takes a new em dash (U+2014). A test reads every text file in the workspace and
+  fails at the line and column of one written outside the areas not yet rewritten, which it lists with a ceiling
+  that only goes down; where the character is data, its escape is allowed only in the files it lists, with the
+  reason. The escapes that stood in comments as punctuation are rewritten, and `AGENTS.md` and `CONTRIBUTING.md`
+  state the rule.
 
 ## [0.2.0-beta] - 2026-10-11
 
