@@ -199,7 +199,7 @@ describe('enrollment e2e — prospective revocation', () => {
     // Exactly one enrollment failure: the post-revocation task.
     const failures = r.issues.filter((i) => /not a key enrolled/.test(i.detail));
     expect(failures).toHaveLength(1);
-    expect(failures[0]?.tail.startsWith(b.fingerprint)).toBe(true);
+    expect(failures[0]?.tail?.startsWith(b.fingerprint)).toBe(true);
   });
 });
 
