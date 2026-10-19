@@ -22,7 +22,7 @@ import {
 
 /**
  * One real-shaped value per recognized class: the value that must be gone from the
- * output, and the string written into the sentence to carry it — the same string for
+ * output, and the string written into the sentence to carry it, the same string for
  * every class but `url-password`, whose secret is a slot inside a URL.
  *
  * Keyed BY class, so `SECRET_CLASSES` drives every loop below instead of a list kept
@@ -530,7 +530,7 @@ function pickFrom(roll: () => number, alphabet: string, count: number): string {
   return out;
 }
 
-describe('scrubSecrets — the differential: no key stopped being caught', () => {
+describe('scrubSecrets, the differential: no key stopped being caught', () => {
   for (const [index, format] of KEY_FORMATS.entries()) {
     it(`replaces ${KEY_DRAWS} of ${KEY_DRAWS} draws of ${format.who}`, () => {
       const roll = rolls(0x5eed + index);
@@ -603,7 +603,7 @@ describe('scrubSecrets: the limits, stated as tests', () => {
     // The two below are a MEASURED refusal, not an oversight. A class anchored on
     // the variable NAME (`password=`, `api_key:`, `token=`) was written and run: it
     // flagged nothing on a real archive of 4,277 events, which reads as safe until
-    // you measure the other side — against twelve notes a knowledge base plausibly
+    // you measure the other side, against twelve notes a knowledge base plausibly
     // records ("api_key: environment", "token: 15000000 tokens spent", "password:
     // unchanged since the migration") it obfuscated NINE. And it missed both values
     // that motivated it: `DATABASE_PASSWORD=…` because `\b` does not fire after an

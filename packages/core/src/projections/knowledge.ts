@@ -27,7 +27,7 @@
 import { type CatalogEvent, mayRetract } from '@mnema/chain';
 
 /**
- * A note TAKEN BACK — what a `note.retracted` says about the memory or observation it
+ * A note TAKEN BACK: what a `note.retracted` says about the memory or observation it
  * names: when, by whom, and why. Present on a note's projection only when the record holds
  * a retraction of it; the note itself is unchanged, which is the point.
  */
@@ -66,7 +66,7 @@ export function retractionsOf(events: readonly CatalogEvent[]): Map<string, Note
 
 /**
  * The retraction that takes `note` back: the FIRST, in the stream's order, by an identity that
- * may retract it ({@link mayRetract} — the one that wrote it). A retraction by another identity
+ * may retract it ({@link mayRetract}, the one that wrote it). A retraction by another identity
  * is not applied, so a stranger cannot take somebody's note out of what the record serves;
  * `verify` lists it in its census. The operation refuses a second retraction on one tree, and
  * two clones that each took the same note back offline merge into one note that was taken
@@ -347,7 +347,7 @@ export function linkRetractionOf(event: CatalogEvent): LinkRetraction | undefine
 
 /**
  * Whether `retraction` withdraws `assertion`: the same edge, and an identity that may take
- * that assertion back ({@link mayRetract}) — the one that made it. The one rule the replay
+ * that assertion back ({@link mayRetract}), the one that made it. The one rule the replay
  * and the cache brought forward both apply.
  */
 export function withdraws(retraction: LinkRetraction, assertion: LinkEdge): boolean {

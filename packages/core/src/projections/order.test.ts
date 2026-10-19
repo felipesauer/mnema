@@ -187,7 +187,7 @@ describe('orderedEventsOfRecord: the same tails, ordered two ways, read once', (
       expect(across.filter((e) => chain.includes(e))).toEqual(chain);
     }
     // Non-vacuity: the fixture really has two tails per chain and both orders have
-    // something to get wrong — three events each, six in the union.
+    // something to get wrong; three events each, six in the union.
     expect(chains.map((chain) => chain.length)).toEqual([3, 3]);
     expect(across).toHaveLength(6);
   });

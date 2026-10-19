@@ -18,7 +18,7 @@
  *
  * WHAT IT COST, so nobody softens it back: the trunk went red on 22/08/2026 in
  * `search.test.ts`, on two memories written in one millisecond, and the case was
- * right — the newer one was not first. Before `mintId` carried a counter the pair was
+ * right: the newer one was not first. Before `mintId` carried a counter the pair was
  * genuinely a coin flip (measured: 988 of 1986 same-millisecond pairs out of order),
  * so the site could not be fixed by reordering alone. Both halves had to move.
  *

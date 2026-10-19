@@ -218,14 +218,14 @@ export const ENVELOPE_TEXT = {
  * Three shapes, and the difference between them is where the stored value came
  * from, never what it is named:
  *   - MINTED here (`task.created`, `decision.recorded`, `memory.captured`,
- *     `observation.recorded`, `skill.created`, `run.started`) — an id this package
+ *     `observation.recorded`, `skill.created`, `run.started`): an id this package
  *     generated, so no caller can put anything in it.
- *   - PROVED against the record (every `*.transitioned`, `run.ended`) — a caller's
+ *   - PROVED against the record (every `*.transitioned`, `run.ended`): a caller's
  *     string, but the operation refuses it unless the projection already holds it,
  *     so what is stored is the record's own key.
- *   - DERIVED from a key (the three identity kinds) — the anchor, computed.
+ *   - DERIVED from a key (the three identity kinds): the anchor, computed.
  *   - The caller's REFERENCE, unproved (`handoff.recorded`, `knowledge.linked`,
- *     `skill.consulted`, `channel.switched`) — the subject IS a string a caller sent and
+ *     `skill.consulted`, `channel.switched`): the subject IS a string a caller sent and
  *     nothing here confirms, so it goes through the door, which is what those four
  *     operations already do.
  *
@@ -290,10 +290,10 @@ export const SUBJECT_TEXT = {
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
-  // DERIVED: the anchor of the key that signs it, never handed in — an identity names
+  // DERIVED: the anchor of the key that signs it, never handed in; an identity names
   // only its own account.
   'account.linked': 'identifier',
-  // DERIVED: the anchor of the key that signs it — an identity declares only its own keys.
+  // DERIVED: the anchor of the key that signs it; an identity declares only its own keys.
   'backup.declared': 'identifier',
   // PROVED here against the stack-name form (lower-case ASCII letters, digits and single
   // hyphens, at most 64), a closed form that holds no path separator: the same form a stack's
@@ -301,7 +301,7 @@ export const SUBJECT_TEXT = {
   // stack this tree holds as adopted is removed.
   'stack.adopted': 'identifier',
   'stack.removed': 'identifier',
-  // DERIVED: the anchor of the key that signs it — an identity enrols and retires only its own
+  // DERIVED: the anchor of the key that signs it; an identity enrols and retires only its own
   // agents.
   'agent.enrolled': 'identifier',
   'agent.retired': 'identifier',
@@ -389,13 +389,13 @@ export const PAYLOAD_TEXT = {
   // The `tail` is a caller's string and it is still an IDENTIFIER, by the rule this
   // file states rather than by how it is spelled: the write door refuses the waiver
   // unless the record holds that exact tail, so what gets stored came out of the
-  // record — the same case as a transition's subject. `throughHash` is read off the
+  // record, the same case as a transition's subject. `throughHash` is read off the
   // disk by the operation and is compared byte for byte when the note is later held
   // against a copy of the tail, so a scrubber there would destroy the evidence. Only
   // `reason` is the caller's, and it is a body. (`eventCount` is a number and is no
   // field of this table: there is nothing textual to screen.)
   'tail.pruned': { tail: 'identifier', throughHash: 'identifier', reason: 'body' },
-  // Only `reason` — `on` is a boolean and is no field of this table, by the same rule
+  // Only `reason`: `on` is a boolean and is no field of this table, by the same rule
   // that keeps `eventCount` out of it: there is nothing textual to screen. The channel
   // itself is the SUBJECT, answered above.
   'channel.switched': { reason: 'body' },
@@ -404,7 +404,7 @@ export const PAYLOAD_TEXT = {
   'channel.served': {},
   // The `rule` is an IDENTIFIER by this file's own rule rather than by how it is spelled: it
   // is an id that came OUT of the record, because the only thing that produces this fact is
-  // the derivation of what is in force, and a rule no tree holds never reaches it — the same
+  // the derivation of what is in force, and a rule no tree holds never reaches it, the same
   // case as a supersede's `by`. Screening it would be the sharpest wrong answer in this
   // table: a rule id is a v7, so a scrubber would take it for entropy and destroy the one
   // field the axis requires a charge to carry, leaving a signed accusation that names
@@ -510,7 +510,7 @@ export function fieldNature(kind: EventKind, path: string): FieldNature | undefi
  * RENAMED from `proseFieldsOf` when `prose` stopped being one nature. The rename is
  * not cosmetic: the old name is now a claim this function does not make, and a caller
  * that still wanted "the fields the door redacts" would have gone on getting the
- * names too — silently, since the shape did not change.
+ * names too, silently, since the shape did not change.
  *
  * The two shared envelope fields (`which`, `run`) are NOT here, and their absence is
  * the point: they are the same two on every kind, so a guard that drove them

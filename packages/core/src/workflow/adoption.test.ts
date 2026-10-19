@@ -176,9 +176,9 @@ describe('adoption: a key the record proves a member writes as THAT identity', (
       reverseSig: consentOf(b, anchor),
     });
 
-    // Found B's own anchor by hand and record it — exactly what the code before adoption did
+    // Found B's own anchor by hand and record it, exactly what the code before adoption did
     // for an enrolled key: it never asked the record, so it founded the anchor its key derives.
-    // THIS RECORDED THE ANCHOR ALONE, with no founding behind it — a state no code ever wrote for
+    // THIS RECORDED THE ANCHOR ALONE, with no founding behind it, a state no code ever wrote for
     // an enrolled key, since the old code founded, and one every write refuses now
     // (`STALE_ANCHOR`, `a-stale-anchor-writes-nothing.test.ts`): that is how this case went red.
     const derived = deriveAnchor(b.fingerprint);

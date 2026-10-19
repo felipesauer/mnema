@@ -299,7 +299,7 @@ export function deprecateSkill(
 
 /**
  * The shared transition path: read the current state from the chain, run the
- * gate, and append only if it authorized the move — under the tail's lock, against
+ * gate, and append only if it authorized the move, under the tail's lock, against
  * the state the record is in at that moment ({@link onTheRecordAsItStands}). `to` and `action` both come
  * from the gate's verdict, never from the caller's assertion.
  *

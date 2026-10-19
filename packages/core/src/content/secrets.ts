@@ -13,7 +13,7 @@
  * defined (`AKIA…`, `ghp_…`, a PEM header, a password in a URL). Generic
  * "high-entropy string" detection is deliberately absent, and not as a matter of
  * taste: this product stamps a v7 id and a key fingerprint on EVERY event, so an
- * entropy rule would replace the record's own identity — measured over a real
+ * entropy rule would replace the record's own identity; measured over a real
  * archive of 4,277 events, a prefix rule flagged 0 values and an entropy rule
  * flagged 13,094, of which 8,208 were fingerprints and 3,649 were ids. A defense
  * that eats the identifiers is worse than none, because the record stops being
@@ -108,7 +108,7 @@ export function secretPlaceholder(secret: SecretClass): string {
  *
  * The SIZE of the bound is measured, not guessed. A field of 64 KiB packed with
  * 2,427 unclosed headers is the worst input reachable under the size limit, and the
- * span is what its cost is linear in — this pattern alone over that input, the two
+ * span is what its cost is linear in; this pattern alone over that input, the two
  * spans measured side by side in one process:
  *
  *   span 16384 : 105.3 ms
@@ -140,7 +140,7 @@ const PEM_BODY_SPAN = 8_192;
  * claim that "no two patterns here overlap (`sk-` and `sk_` are different
  * prefixes)". That premise was false, and a real key falsified it: `sk-` is a
  * convention several issuers reuse, so a key of Anthropic's shape (`sk-ant-…`) was
- * matched by the OpenAI shape and reported to a person as `openai-key` — the
+ * matched by the OpenAI shape and reported to a person as `openai-key`: the
  * refusal right, the name wrong. The rule now: within a family that shares a
  * prefix, the class whose prefix is MORE SPECIFIC comes first in
  * {@link SECRET_CLASSES}, and the general one is the fallback label. `sk-` is the
@@ -165,8 +165,8 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
   // It reads a match for a name too, and it HAS to: `ant` is an English word, this
   // class runs FIRST, and a name it swallowed would never reach the fallback below.
   // Measured: behind `sk-ant-` the same 194 names came back 188 destroyed, and with
-  // the second reading on the fallback ALONE, 173 of those 188 were still destroyed
-  // — this shape had already eaten them. Half the fix lives here.
+  // the second reading on the fallback ALONE, 173 of those 188 were still destroyed:
+  // this shape had already eaten them. Half the fix lives here.
   'anthropic-key': /\bsk-ant-[A-Za-z0-9_-]{20,}\b/g,
   // The FALLBACK of the `sk-` family: OpenAI's legacy and project keys, and any
   // other issuer that reuses the convention without a prefix of its own. So the
@@ -275,8 +275,8 @@ const NAME_SEPARATOR = /[-_]/;
  *
  * THE CRITERION. A credential has to be unguessable, so its body is drawn from a
  * dense alphabet at length; a name has to be sayable, so it is WORDS. A value is a
- * name when every piece of it, cut at the separators a slug uses, is a lowercase word
- * — optionally carrying a short number, which is how people version and number
+ * name when every piece of it, cut at the separators a slug uses, is a lowercase word,
+ * optionally carrying a short number, which is how people version and number
  * things. Nothing here looks at the prefix: `sk` is itself a word, so the whole match
  * is asked the one question and no prefix has to be stripped off first.
  *
@@ -285,7 +285,7 @@ const NAME_SEPARATOR = /[-_]/;
  * of the decision, so it was answered with counts. LEFT: the 194 directory and branch
  * names this repository's own work produced, under six spellings (plain, versioned,
  * ADR-numbered, underscored, camelCase, year-suffixed). RIGHT: 20,000 random draws
- * from each of 13 key formats their issuers define — OpenAI legacy at 48 and at 32
+ * from each of 13 key formats their issuers define: OpenAI legacy at 48 and at 32
  * characters and with the `T3BlbkFJ` infix, OpenAI project, service-account and admin
  * keys, both Anthropic product codes, DeepSeek's 32 hex, OpenRouter's `sk-or-v1-`,
  * Moonshot, a generic OpenAI-compatible range, and a UUID-shaped one.

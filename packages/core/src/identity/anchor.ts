@@ -1,7 +1,7 @@
 /**
  * The readable form of an anchor, and the way back from it.
  *
- * An anchor is `mnid:` and sixty-four hex characters — sixty-nine on a line, and
+ * An anchor is `mnid:` and sixty-four hex characters, sixty-nine on a line, and
  * it appears in the reads a person opens to audit the record: who authorized each
  * event, who each account belongs to, whose runs are open. At that width the
  * value is not read, it is skipped, and an audit nobody reads is not an audit.
@@ -33,7 +33,7 @@ import { ANCHOR_PREFIX } from '@mnema/chain';
  *
  * Eight, where an entity's alias takes four ({@link SHORT_ALIAS_HEX}), and the
  * difference is not taste: an alias is only ever SHOWN, so a clash there costs a
- * moment of confusion, while an anchor is shown AND typed back — into a filter over
+ * moment of confusion, while an anchor is shown AND typed back, into a filter over
  * an audit, and into the request that consents to join an identity. The floor is
  * therefore set by what a wrong resolution costs, not by what fits on a line. Eight
  * hex is thirty-two bits, in the same territory as git's short SHA, which is the

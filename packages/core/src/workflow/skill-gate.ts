@@ -11,7 +11,7 @@
  *      the move, so a self-authorized illegal move reports the more fundamental
  *      fault.
  *   2. LEGALITY: the (from, action) pair is a transition the workflow allows.
- *   3. PROOF — every field the action requires is present and non-empty, and every
+ *   3. PROOF: every field the action requires is present and non-empty, and every
  *      prose field given states something: no letter and no digit, or the `<why>` a
  *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
  *

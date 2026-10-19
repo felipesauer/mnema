@@ -11,7 +11,7 @@
  * format's (`WORKFLOWS` in `@mnema/chain`, FORMAT.md §6.7): the gate that writes
  * a move and every reader that judges one read the same table.
  *
- * The proof rule follows the same principle as tasks and decisions — a mandatory
+ * The proof rule follows the same principle as tasks and decisions; a mandatory
  * field is the universal textual WHY of the move: a verdict (`review`, `adopt`,
  * `reject`) requires a `note`, and `deprecate` requires a `reason`.
  *

@@ -365,7 +365,7 @@ describe('a retired key coming back: the one addition the verifier gates', () =>
 
     expect(back).toMatchObject({ ok: true, alreadyMember: false });
     expect(rosterOf({ tree, upcasters }, anchor).has(b.fingerprint)).toBe(true);
-    // The verifier agrees — no residual, no issue: the key writes again as the same
+    // The verifier agrees (no residual, no issue): the key writes again as the same
     // identity, and the whole record still verifies.
     const bMember = open(b.keyRoot);
     expect(captureMemory(bMember.ctx, { content: 'found it again' }).ok).toBe(true);

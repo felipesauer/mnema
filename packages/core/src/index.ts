@@ -7,7 +7,7 @@
  * for a human without that name ever becoming its identity.
  *
  * The projection cache is pure: it is derived from the chain, never committed,
- * and rebuilt by dropping and replaying — there are no data migrations.
+ * and rebuilt by dropping and replaying; there are no data migrations.
  */
 
 // The relation labels a READER has to know by name, and the set of them. It read
@@ -21,7 +21,7 @@
 //
 // The proof a MOVE carried is not among them, and the absence is deliberate:
 // `transitionProse`, `proofFields` and `PROOF_FIELDS` also live in the chain, and their
-// consumers name that package directly — this package's own fold
+// consumers name that package directly: this package's own fold
 // (`projections/proof.ts`) and the command line's presentation layer, neither of which
 // is banned from the specifier. A re-export nobody imported would be a public value
 // with no production caller, which is a defect however harmless it looks.
@@ -40,7 +40,7 @@ export { type BridgeFormat, scanBridge } from './adr/bridges.js';
 //
 // ONLY THE DIRECTORY WALK COMES OUT. The reader of a single document, the status rule
 // and the four label tables stay inside the package: nothing outside it consumes them,
-// and a value exported with no consumer is published surface nobody is holding up —
+// and a value exported with no consumer is published surface nobody is holding up;
 // the shape `every-public-value-has-a-caller.test.ts` exists for. The package's own
 // modules and its own cases import them from `./adr/read.js` directly.
 export type {

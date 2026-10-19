@@ -10,7 +10,7 @@
  * the lock was taken. Measured on the built binary, on a `proposed` decision:
  * `mnema decision move accept` and `… reject` run together both exited 0 in 19 of
  * 20 rounds, the record held two transitions out of `proposed`, `verify` passed,
- * and `show` called the decision accepted while listing both notes — a rejected
+ * and `show` called the decision accepted while listing both notes, a rejected
  * decision the governance would count in force, past a gate that declares
  * `rejected` terminal. Two concurrent `decision record` minted the same `ADR-<n>`
  * in 10 of 10 pairs, for the same reason: the count was read outside the lock.

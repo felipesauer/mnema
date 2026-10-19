@@ -46,7 +46,7 @@ export const IN_MEMORY = ':memory:';
  * Opens the cache database at `path` (or `:memory:`) with the standard pragmas:
  *   - `journal_mode = WAL`: concurrent readers alongside one writer.
  *   - `synchronous = NORMAL`: safe under WAL, faster than FULL. A crash can lose
- *     the last transaction — acceptable, because the cache is rebuilt from the
+ *     the last transaction; acceptable, because the cache is rebuilt from the
  *     chain, which is the durable record.
  *   - `foreign_keys = ON`: enforce referential integrity between cache tables.
  *   - `busy_timeout`: tolerate brief writer contention instead of erroring.

@@ -131,7 +131,7 @@ function compareDivergent(a: DivergentMove, b: DivergentMove): number {
 
 /**
  * The task rule: a task's state as the record has it so far, the move that last left each
- * state, and every move judged on a state the task was no longer in — grouped by the move it
+ * state, and every move judged on a state the task was no longer in, grouped by the move it
  * came after, so two stale moves out of one state the record had already left once are one
  * report with three moves in it.
  */

@@ -1,5 +1,5 @@
 /**
- * `$MNEMA_CACHE_DIR` — the cache of reads kept in a directory somebody chose, and what keeps it a
+ * `$MNEMA_CACHE_DIR`, the cache of reads kept in a directory somebody chose, and what keeps it a
  * cache: never the record, and never another project's.
  *
  * What each case holds, read off the files that land rather than off the functions that make them:

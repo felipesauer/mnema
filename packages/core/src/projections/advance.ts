@@ -30,13 +30,13 @@
  * its tail's citations reach, and this file holds no tail or citation. So an arrival is
  * advanced over only when every move among the arrivals is admitted by the state the stored
  * accumulators give: born, a row of the table, from the state the subject is in. Anything else
- * — a divergence, a move the workflow does not allow — is rare, and {@link advance} answers
+ * (a divergence, a move the workflow does not allow) is rare, and {@link advance} answers
  * false without writing, so the cache reads the record again and the replay judges it. That is
  * also what keeps the divergences this file indexes again the replay's: a move the state admits
  * leaves a subject's divergences as they were.
  *
  * WHAT THE CALLER OWES, and none of it is checkable here: that `arrived` really is what
- * follows the order the cache was built from, at position `from` — the count of events the
+ * follows the order the cache was built from, at position `from`, the count of events the
  * cache covered. `chainArrivals` is what establishes it, and its refusals are the cases where
  * this must not be used. A wrong `from` writes a reference index pointing at the wrong
  * events, quietly (`reference-store.ts`).

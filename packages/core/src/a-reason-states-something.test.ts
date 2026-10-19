@@ -344,7 +344,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
  * A TITLE THAT IS A MARKER IS REFUSED ON THE WAY IN, by the function that refuses one as a reason.
  *
  * What was wrong: `mnema decision record "<title>" "<rationale>"`, pasted from a recipe, recorded
- * a decision named `<title>` — the rule asked the marker question of the why alone.
+ * a decision named `<title>`; the rule asked the marker question of the why alone.
  */
 describe('the title, asked of one value', () => {
   it('refuses a marker and names the field and what goes in its place', () => {

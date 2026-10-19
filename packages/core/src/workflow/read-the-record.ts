@@ -3,8 +3,8 @@
  *
  * A write reads two kinds of thing, and they come from two places.
  *
- * THE SUBJECT A GATE JUDGES — the state a decision, a task or a skill is in, whether a run is still
- * open, whether the subject (or a supersede's successor) exists at all — comes from the CHAIN
+ * THE SUBJECT A GATE JUDGES (the state a decision, a task or a skill is in, whether a run is still
+ * open, whether the subject (or a supersede's successor) exists at all) comes from the CHAIN
  * ({@link standing}, by `subjectEvents`). It used to come from the projection the tree keeps,
  * brought forward to the chain before it was asked, and that is not the chain: the projection is a
  * file beside the record that nothing signs, and it is brought forward from what it already says.

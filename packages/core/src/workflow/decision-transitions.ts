@@ -10,7 +10,7 @@
  * `@mnema/chain`, FORMAT.md §6.7): the gate that writes a move and every reader
  * that judges one read the same table, so changing a row is changing the format.
  *
- * The proof rule follows the same principle as tasks — a mandatory field is the
+ * The proof rule follows the same principle as tasks; a mandatory field is the
  * universal textual WHY of the move, nothing that presumes a tool:
  *   - `accept`/`reject` require a `note` (why this verdict);
  *   - `supersede` requires a `reason` (why it is being replaced) AND, separately

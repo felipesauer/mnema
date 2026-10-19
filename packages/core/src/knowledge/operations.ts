@@ -13,11 +13,11 @@
  *   - every piece of free text is screened before anything else happens ({@link
  *     screenContent}): a field over the size limit refuses the whole write, and a
  *     recognized credential is replaced by a typed placeholder. A fact is the
- *     shape most exposed to this — it is unstructured text with no field that
- *     disciplines what goes in — and it is permanent, so the door is the only
+ *     shape most exposed to this: it is unstructured text with no field that
+ *     disciplines what goes in, and it is permanent, so the door is the only
  *     place the question can still be answered.
  *   - `who` (the authorizing anchor) and `signerFp` (the signing key) come from
- *     the writer's own key, never supplied — a caller cannot forge who captured
+ *     the writer's own key, never supplied: a caller cannot forge who captured
  *     a memory by typing a name.
  *   - the executing agent is never that same identity ({@link
  *     resolveExecutingAgent}). No gate runs here, but this is not a gate rule:
@@ -49,8 +49,8 @@
  *     (the observation is an entity), and names the observed one in the payload.
  *   - {@link recordHandoff}: work on a task passed between agents. Its subject
  *     IS the task, not a fresh id; multiple handoffs on one task are a list.
- *   - {@link linkKnowledge}: the first RELATIONAL fact — one entity relates to
- *     another. Unlike a supersede it does NOT refuse a dangling target: the
+ *   - {@link linkKnowledge}: the first RELATIONAL fact (one entity relates to
+ *     another). Unlike a supersede it does NOT refuse a dangling target: the
  *     relation is legitimately cross-tree and the writer has no global view, so
  *     the link is an asserted fact resolved on read against the union.
  */
@@ -370,7 +370,7 @@ export interface LinkInput {
 export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | FactError {
   // `rel` is an OPEN string, so it is free text by definition. Both endpoints join
   // it: neither is validated (that is the whole point of a cross-tree link), so
-  // each is a field through which an unbounded value could reach the chain — one as
+  // each is a field through which an unbounded value could reach the chain; one as
   // the event's subject, one in its payload.
   const relation = screenContent({
     subject: input.subject,

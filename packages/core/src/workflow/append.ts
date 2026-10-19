@@ -11,8 +11,8 @@
  * because a tail is append-only and nothing can take the line back out.
  *
  * THE RULE IS THE READER'S, NOT A COPY OF IT. {@link unreadableReason} runs the
- * validator {@link parseEvent} runs, so this cannot drift from what reading accepts
- * — there is one rule and both sides ask it. A second "non-empty" check written on
+ * validator {@link parseEvent} runs, so this cannot drift from what reading accepts:
+ * there is one rule and both sides ask it. A second "non-empty" check written on
  * the writing side would have closed the case of the day and re-opened it the first
  * time somebody added a field to one copy; this codebase has caught that class of
  * defect more than once, which is why the fix is a shared function and not a
@@ -33,7 +33,7 @@
  * AND IT IS NOT THE ONLY GUARD. The writer itself refuses the same events before
  * sealing (`refuseUnreadable`), which is what makes "no unreadable entry can be
  * written" a property of the code rather than of this module's adoption: a write
- * path added tomorrow that skips this door still cannot corrupt a tree — it fails
+ * path added tomorrow that skips this door still cannot corrupt a tree; it fails
  * loudly instead. This door is what turns that floor into a refusal somebody can
  * act on.
  */
@@ -219,7 +219,7 @@ export function appendFacts(
 const ASKED_ONLY = new Date(0).toISOString();
 
 /**
- * What the door would say of a fact nothing is appending yet — built as {@link appendFact} builds
+ * What the door would say of a fact nothing is appending yet, built as {@link appendFact} builds
  * it for the asking, with no clock read and no founding: the refusal it earns, or undefined.
  */
 export function askTheDoor(
@@ -253,7 +253,7 @@ function foundedThenBuilt(
  * The message says THE FACT was not recorded, and not "nothing was". THIS SAID that "nothing"
  * would be a shade untrue: an operation founded this installation's anchor on its way in
  * (`ensureFounded`), and on a tree never written to that founding landed before the fact was
- * built, so a refusal here left "a freshly founded and otherwise empty tree behind" — called a
+ * built, so a refusal here left "a freshly founded and otherwise empty tree behind", called a
  * legitimate fact the next write would have needed anyway. Measured on the binary from an empty
  * HOME it was more than that: the refusal also made the machine's key, and the founding sat on a
  * tail with no checkpoint, so `verify --require=signed` failed for the whole project; through the

@@ -4,7 +4,7 @@
  *
  * TWO SERVICES. `github` is the host whose account publishes its SSH keys at an address anybody
  * can ask (`github.com/<name>.keys`). `sigstore` is the identity a Sigstore certificate names: an
- * e-mail address, or the workflow of a repository in GitHub Actions — what a bundle in `witness/`
+ * e-mail address, or the workflow of a repository in GitHub Actions; what a bundle in `witness/`
  * says signed, which speaks for this identity only where this identity named the same one. The
  * format takes any service name; this product writes and reads these two.
  *

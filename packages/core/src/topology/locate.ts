@@ -39,7 +39,7 @@
  *
  * THE RULE IS HERE; HOW A TREE IS ASKED IS THE CALLER'S. Two things decide the
  * answer: which trees are searched and in what order, and what counts as the
- * same id — both are domain rules and both stay in this module. What varies is
+ * same id; both are domain rules and both stay in this module. What varies is
  * only the mechanical question "does the tree rooted HERE hold this birth?",
  * which {@link locateEntityScopeWith} takes as a {@link BirthProbe}. Replaying
  * the chain is one way to answer it and the default one ({@link locateEntityScope});
@@ -300,7 +300,7 @@ export interface HeldTail {
  * carries (`tailWaiversIn`, which the census asks with the same function).
  *
  * AN EMPTY TAIL IS NOT HELD, for the reason `tailStanding` gives: a directory with
- * an ownership proof and no event holds nothing to account for — the residue older
+ * an ownership proof and no event holds nothing to account for, the residue older
  * writers left when they opened, which records committed then still carry. (This
  * called it "the ordinary residue of a session that only read", which it stopped being
  * when opening a writer stopped giving a tail its directory.) So it is absent from the listing

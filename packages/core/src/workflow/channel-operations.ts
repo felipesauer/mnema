@@ -2,7 +2,7 @@
  * Switching a channel: the one write whose subject is this product's own behaviour.
  *
  * WHAT IT IS FOR. The tie behind it reads: every charge mnema makes is switchable, and
- * the switching is recorded — switching off is legitimate, switching off in SILENCE is
+ * the switching is recorded; switching off is legitimate, switching off in SILENCE is
  * not. This is the second half. A configuration file or an environment variable answers
  * the first half and defeats the second: neither is attributed, neither is dated, neither
  * travels, and a reader of the record could never tell "no rule addressed that file" from
@@ -211,7 +211,7 @@ export interface AskedInput extends ServedInput {
 }
 
 /**
- * What the caller records about one refusal: the asking's fields, for the asking's reasons —
+ * What the caller records about one refusal: the asking's fields, for the asking's reasons;
  * the rule is an id the derivation of what is in force produced and is not screened; the path
  * is a caller's string and is.
  */

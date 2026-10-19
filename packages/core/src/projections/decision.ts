@@ -2,7 +2,7 @@
  * The decision projection: fold an ordered event stream into current decision
  * state, and surface any collision of the citable `ADR-<n>` label.
  *
- * Like every projection this is a pure, deterministic replay — no validation of
+ * Like every projection this is a pure, deterministic replay, with no validation of
  * its own: a move the workflow does not allow is already left out of the stream
  * it is handed (`order.ts`, FORMAT.md §6.7). The rule mirrors tasks:
  *   - a decision EXISTS once its `decision.recorded` is seen;
@@ -44,7 +44,7 @@
  * collision has to be given exactly that. The number is minted from the writer's
  * view of ONE chain (`recordDecision`: `ADR-${decisions.size + 1}` over that
  * tree's projection), so two chains numbering their own first decision `ADR-1` is
- * how the product works rather than a defect in it — a project's public tree and
+ * how the product works rather than a defect in it: a project's public tree and
  * its private tree each hold an `ADR-1` the moment both have one decision, which
  * is why the document that carries the label is committed-only. Handing a fold of
  * SEVERAL chains to {@link adrCollisions} would report that arrangement as a
@@ -165,7 +165,7 @@ export const decisionFold: AccumulatorFold<DecisionAccumulator, DecisionProjecti
       entry.rationale = event.payload.rationale;
       // Only when the record has one: assigning `undefined` would be the same
       // value, but reading it conditionally keeps the fold's shape the same as the
-      // projection it builds — absent stays absent all the way through.
+      // projection it builds; absent stays absent all the way through.
       if (event.payload.alternatives !== undefined) {
         entry.alternatives = event.payload.alternatives;
       }

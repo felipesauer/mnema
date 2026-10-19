@@ -10,7 +10,7 @@
  *      agent `which`. Checked first: the identity invariant holds regardless of
  *      the move.
  *   2. LEGALITY: the (from, action) pair is a transition the workflow allows.
- *   3. PROOF — every field the action requires is present and non-empty, and every
+ *   3. PROOF: every field the action requires is present and non-empty, and every
  *      prose field given states something: no letter and no digit, or the `<why>` a
  *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
  *   4. SUPERSEDE SHAPE: a `supersede` must name a `by` (the successor), and

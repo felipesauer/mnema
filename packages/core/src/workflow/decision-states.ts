@@ -10,7 +10,7 @@
  * A decision is proposed, then accepted or rejected, and an accepted (or still
  * proposed) decision may be superseded by a later one. There is no reopening: a
  * superseded decision stays superseded, and the record of what replaced it is
- * the successor, not a mutation of the old one — the chain is append-only, so
+ * the successor, not a mutation of the old one; the chain is append-only, so
  * "changing your mind" is a new decision that supersedes, never an edit.
  */
 

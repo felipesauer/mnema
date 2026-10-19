@@ -75,7 +75,7 @@ export function proofText(proof: readonly TransitionProof[] | undefined): string
  * The proof as one TEXT column, or null when the record holds none.
  *
  * JSON in one column rather than a table of its own, and the reason is what the value
- * IS: it is not queried, joined or filtered by anything — the three reads that want it
+ * IS: it is not queried, joined or filtered by anything; the three reads that want it
  * ask for the record and get it whole, and the index gets the words through
  * {@link proofText}. A table would buy a join for a value nobody selects on. The cache
  * is dropped and replayed rather than migrated, so the shape can change with the fold

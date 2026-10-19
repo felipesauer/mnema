@@ -33,8 +33,8 @@
  * WHAT THE READING LEAVES OUT IS NOT THE MERGE. The order a projection folds is the merge
  * without the moves the workflow does not allow (FORMAT.md §6.7), so every model below is the
  * merge it restates, judged by the readers' own `illegalMoves` ({@link applied}). The judgment is
- * not what these cases hold — that is held where it is written (`chain/src/chain/moves.test.ts`)
- * — and a model of it here would be a second copy of the rule rather than a check of the merge.
+ * not what these cases hold: that is held where it is written (`chain/src/chain/moves.test.ts`),
+ * and a model of it here would be a second copy of the rule rather than a check of the merge.
  *
  * The seed is fixed so the CI is the same run every time; `FC_SEED` explores another. A
  * counterexample is printed by fast-check with the seed and the path that replays it.
@@ -355,7 +355,7 @@ function model(streams: readonly Stream[]): CatalogEvent[] {
 
 /**
  * What a reader folds of an order: the order without the moves the workflow does not allow,
- * judged by the readers' own rule (see the module comment), against the citations `held` — none
+ * judged by the readers' own rule (see the module comment), against the citations `held`, none
  * for the writers of this file that cite nothing.
  */
 function applied(
@@ -1118,7 +1118,7 @@ describe('with citations: every machine cites the heads it read, as the product 
   );
 
   it(
-    'R6: an arrival that a covered event cited, and could not find, is not a suffix — the cache reads again',
+    'R6: an arrival that a covered event cited, and could not find, is not a suffix; the cache reads again',
     () => {
       const elsewhere = freshDir('cited-elsewhere');
       const root = freshDir('cited-arrives');

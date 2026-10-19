@@ -13,7 +13,7 @@
  * stack, because the digest already does. So this door does not look for a path or a
  * credential in free text and hope to find it: it admits only values in which neither fits.
  *   - the stack's name, and the name it is installed under: the stack-name form (lower-case
- *     ASCII letters, digits and single hyphens, at most 64) — no separator, no dot;
+ *     ASCII letters, digits and single hyphens, at most 64), no separator, no dot;
  *   - the digest: 64 lower-case hex characters;
  *   - the scope: one of the three trees, `public`, `private` or `global`. The free folder a
  *     person may install into (`--to`) governs nothing and is no scope here: the record does

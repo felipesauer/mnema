@@ -72,7 +72,7 @@ describe('mintId', () => {
 
     const swapped = inside.filter(([a, b]) => a >= b);
     // Counted rather than listed: the failure this replaces printed a thousand pairs
-    // and the RATE is the whole finding — half of them, not a rare one.
+    // and the RATE is the whole finding; half of them, not a rare one.
     expect(
       swapped.length,
       `${swapped.length} of ${inside.length} pairs minted inside one millisecond came back out of order`,

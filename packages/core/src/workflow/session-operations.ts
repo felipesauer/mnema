@@ -7,7 +7,7 @@
  *
  * Unlike a task or a skill, a run has NO workflow of states. It is not a machine
  * with legal moves to gate: it exists once its `run.started` is seen and is open
- * until its `run.ended` — a fact of presence, not a transition. The projection
+ * until its `run.ended`, a fact of presence, not a transition. The projection
  * ({@link projectRuns}) decides open-vs-closed; these operations never carry a
  * state table. So {@link startRun} runs the authority half of the gate (a human
  * `who`, never the executing agent) but no legality/proof half, and {@link
@@ -17,7 +17,7 @@
  * The disciplines the other write operations rely on still hold, because they
  * defend the proof, not a workflow:
  *   - `who` (the authorizing anchor) and `signerFp` (the signing key) come from
- *     the writer's own key, never supplied — a caller cannot forge who
+ *     the writer's own key, never supplied: a caller cannot forge who
  *     authorized a session by typing a name.
  *   - the run's id is MINTED by {@link startRun} (see {@link mintId}), never
  *     chosen by the caller, so two offline clones never mint the same run id and
@@ -37,7 +37,7 @@
  *
  * THE CLOSE CARRIES ITS EXECUTOR TOO, and through the SAME check. It used to
  * carry none: `run.ended` was the one fact of a session with no `which` at all,
- * so a session opened for an agent was closed, in the record, by the person —
+ * so a session opened for an agent was closed, in the record, by the person;
  * measured, on a run opened `for claude` and read back as the human's. That is
  * not a smaller version of the same field, it is the attribution being wrong: the
  * envelope's `which` is what every read credits a fact to, and a close is a fact.
@@ -154,7 +154,7 @@ export interface EndRunInput {
   /** The id of the run to close (the run.started's minted subject). */
   readonly run: string;
   /**
-   * The agent CLOSING the session — the envelope's `which`, and the only place a
+   * The agent CLOSING the session: the envelope's `which`, and the only place a
    * close records one (see the module doc: the birth's payload answers a different
    * question, and only the birth has one to answer).
    *
@@ -164,7 +164,7 @@ export interface EndRunInput {
    * is for" and "who did this one thing" from reading as one value.
    *
    * REQUIRED, which the other eleven `which` are not: there an omitted agent means
-   * a person acted directly — legitimate, and most of what runs `mnema`. A run is
+   * a person acted directly (legitimate, and most of what runs `mnema`). A run is
    * a delegation at both ends, and the surface that opens one already refuses to do
    * it unnamed, so a close that could be silent about its executor would be the one
    * half of the pair that reads differently. A value naming nobody still resolves
@@ -179,8 +179,8 @@ export interface EndRunInput {
 
 /**
  * Opens a run: mints its id, then appends the single `run.started` fact that is
- * the root of authority for the session. The id is minted here, never supplied
- * — the caller receives it back in {@link StartRunOk.id} and pins every later
+ * the root of authority for the session. The id is minted here, never supplied:
+ * the caller receives it back in {@link StartRunOk.id} and pins every later
  * event to it. `who` is the writer's anchor, derived from its key; the executing
  * `agent` is validated to not be that same identity (canonical form both sides),
  * because a session an agent authorized for itself would let the whole chain

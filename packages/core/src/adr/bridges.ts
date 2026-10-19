@@ -12,7 +12,7 @@
  *     reported as not a decision, and a `rejected` or `superseded` state is reported as
  *     retired (the vault's own state says it is no longer in force). The `trust` field is
  *     not read: everything arrives `proposed` whatever the vault calls it.
- *   - `rulings` — ONE markdown file; every line that starts with `Ruling:` (optionally behind
+ *   - `rulings`: ONE markdown file; every line that starts with `Ruling:` (optionally behind
  *     a list marker) is one entry whose text is both its title (cut at 120 characters) and its
  *     reason. The line number is the provenance.
  *   - `claude-memory`: a directory of `*.md` files with a `---` frontmatter holding `name:`

@@ -279,18 +279,18 @@ export function membershipIn(
  * THE COMMAND IS HANDED OVER WHOLE, and the first version of this sentence did not hand it: it
  * stopped at the fingerprint, while `key revoke` requires `--reason`, so a person who copied the
  * words got the parser's refusal (`mnema key revoke needs --reason <text>`, exit 1) instead of
- * the way out. The words carry `--reason "<why>"` — a marker for what the person writes, quoted
- * because what they write is a sentence — and every other marker says where its value comes
+ * the way out. The words carry `--reason "<why>"` (a marker for what the person writes, quoted
+ * because what they write is a sentence) and every other marker says where its value comes
  * from: `<the line>` is what the other key's request prints, and `"<the key file>"` is what the
  * revocation prints when it retires the key a machine signs with, on that machine
- * (`wiring/key.ts`) — quoted too, because a path can hold a space. Nothing here can print it:
+ * (`wiring/key.ts`), quoted too, because a path can hold a space. Nothing here can print it:
  * which directory holds a machine's key is read where a writer opens (`openChainForWriting`) and
  * nowhere else.
  *
  * WHERE THE OTHER KEY LIVES WAS SAID FOR ONE PLACE, another machine. The other key can be a copy
- * this machine keeps — the backup key an `init` made is one, and its path is what that `init`
- * printed — and a person who asked for it here without `--key` asked for THIS key instead:
- * measured on the binary, the enrollment answered *already in <identity> — nothing recorded* and
+ * this machine keeps (the backup key an `init` made is one, and its path is what that `init`
+ * printed) and a person who asked for it here without `--key` asked for THIS key instead:
+ * measured on the binary, the enrollment answered *already in <identity> \u2014 nothing recorded* and
  * the revocation refused `LAST_KEY`. The words name `--key "<its file>"` for that copy now, and the
  * way out done with the backup is followed to the letter in `the-refusal-names-the-way-out.test.ts`.
  *
@@ -405,13 +405,13 @@ function ambiguityOf(
  *
  * What the record lets it say:
  *   - the key is a member of ONE other identity: `mnema key restore` of this machine's key file
- *     makes the checkout write as it — the restore the way out already ends with, and the file is
+ *     makes the checkout write as it, the restore the way out already ends with, and the file is
  *     printed by the surface, which alone knows the key root ({@link IdentityUnavailableError});
  *   - of NONE: nothing it signs would verify, and the record read is the copy this checkout
- *     holds — a pull may bring the enrollment into the other identity that the restore needs, so
+ *     holds; a pull may bring the enrollment into the other identity that the restore needs, so
  *     the words say that too, as the revocation of this machine's own key does;
  *   - of MORE THAN ONE: the ambiguity, in the words a fresh clone is given;
- *   - of nothing, EVER — no founding by this key and no enrollment of it: the anchor was recorded
+ *   - of nothing, EVER (no founding by this key and no enrollment of it): the anchor was recorded
  *     ahead of a founding that never landed, which the code before the anchor followed the
  *     founding left behind, so there is no identity to leave, and the way out is deleting the
  *     file: the next write decides again, from the record, as a first write does;
@@ -573,7 +573,7 @@ export function rosterIn(
 }
 
 /**
- * The one fold behind the roster: every key valid for `anchor` (agent keys among them — they sign
+ * The one fold behind the roster: every key valid for `anchor` (agent keys among them; they sign
  * for the identity, and a checkout that writes with one is counted), and the names of the agent
  * keys that ever held the role here. Which of those are still members is `valid`'s to say.
  */

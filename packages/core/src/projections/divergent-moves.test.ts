@@ -123,7 +123,7 @@ describe('divergentMoves', () => {
     );
     expect([...(tos ?? [])].sort()).toEqual(['accepted', 'rejected']);
     // The record itself is unchanged by being read: it verifies, and the projection still
-    // keeps one state — the reading says there were two moves, it does not pick one.
+    // keeps one state; the reading says there were two moves, it does not pick one.
     expect(verify(tree, upcasters)).toMatchObject({ ok: true });
     expect(['accepted', 'rejected']).toContain(projectDecisions(eventsOf(tree)).get(id)?.state);
   });

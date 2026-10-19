@@ -339,7 +339,7 @@ describe('rebuild is byte-identical: replaying the events reproduces the project
   });
 });
 
-describe('session — end to end: a clone reconstructs and verifies from events alone', () => {
+describe('session, end to end: a clone reconstructs and verifies from events alone', () => {
   it('the CLONE reconstructs the closed run from the chain, and verifies', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();

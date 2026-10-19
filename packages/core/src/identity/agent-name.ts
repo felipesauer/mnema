@@ -5,7 +5,7 @@
  * and a reader holds a record to no more than that. The doors are narrower on purpose: the name is
  * also the directory the agent's key lives in (`<data directory>/agents/<name>/`), so it is a
  * lower-case word with dots, dashes and underscores inside, at most 64 characters, and starts with a
- * letter or a digit — nothing that reads as a path, a flag, an option, or another identity (`mnid:`
+ * letter or a digit; nothing that reads as a path, a flag, an option, or another identity (`mnid:`
  * has a colon, which the set does not hold).
  */
 

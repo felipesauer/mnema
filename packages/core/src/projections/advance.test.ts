@@ -507,7 +507,7 @@ describe('an arrival brings the cache to exactly where a replay would have put i
 
       // AND AGAIN with THIS KIND'S ROW ALONE, which is what closes the masking the
       // birth pairs would otherwise create. A pair puts two kinds on the chain, so the
-      // union of their rows can carry a table the row under test forgot — measured: a
+      // union of their rows can carry a table the row under test forgot; measured: a
       // mutation that deleted the full-text index from `task.created` left this case
       // green, because `task.transitioned` arrived beside it still naming it. Every
       // arrival a driver here produces holds kinds that SHARE a row, so restricting to
@@ -737,7 +737,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
     // The tie the merge DOES break, and the reason the test cannot simply ignore
     // instants: across tails the order is `(at, tail)`, so an arrival stamped at the
     // same instant as a covered event of a tail that sorts after it would be placed
-    // BEFORE that event — an interleave, not a suffix.
+    // BEFORE that event, an interleave, not a suffix.
     const instant = '2026-08-19T12:00:00.000Z';
     const first = open();
     const firstFrozen: WriteContext = { ...first, clock: () => instant };
@@ -829,7 +829,7 @@ describe('a cache refreshed again and again equals one replayed once', () => {
   it('keeps the frontier moving, so the same arrival is never applied twice', () => {
     // THE CASES ABOVE CALL `advance` DIRECTLY, which is what leaves this uncovered:
     // they hand it the order and the position themselves, so nothing exercises the
-    // bookkeeping `ProjectionCache.refresh` does BETWEEN two arrivals — the frontier it
+    // bookkeeping `ProjectionCache.refresh` does BETWEEN two arrivals: the frontier it
     // carries forward and the order it keeps. Measured: deleting `this.frontier =
     // arrived.frontier` left the whole suite green, and the reference index (the one
     // table that is APPENDED rather than rebuilt) went from one row per appearance to

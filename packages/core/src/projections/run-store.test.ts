@@ -4,7 +4,7 @@
  * This module was at full line coverage with no test naming it. What executes it is
  * `cache.test.ts` through `ProjectionCache`, and that file's subject is the cache: it
  * pins one open run's fields and `listOpenRuns` going empty, and its two-run case
- * compares one rebuild against another — a comparison SYMMETRIC under every mutation in
+ * compares one rebuild against another, a comparison SYMMETRIC under every mutation in
  * here, because both sides go through this same code. `advance.test.ts` is the same
  * shape at larger scale. So the boundary ran, and what it did to the values was never
  * looked at.

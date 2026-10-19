@@ -10,7 +10,7 @@
  * The private tree lives there now ({@link privateTreePlace}).
  *
  * PURE, like the rest of discovery: it reads `.git` (a directory, or a file that names one) and
- * the `commondir` file a linked worktree's git directory carries — the two things git itself
+ * the `commondir` file a linked worktree's git directory carries, the two things git itself
  * reads to answer `git rev-parse --git-common-dir`. Measured against git on a linked worktree, a
  * submodule, `--separate-git-dir`, and a worktree of a bare repository.
  *
@@ -98,7 +98,7 @@ export function privateTreeUnder(gitDir: string, within: string): string {
 
 /**
  * Whether the repository's common git directory is out of reach of `git add` in this working
- * tree: it is the top's own `.git` directory, or it lies outside the top altogether — compared as
+ * tree: it is the top's own `.git` directory, or it lies outside the top altogether, compared as
  * the file system resolves both, so a symbolic link or a `commondir` that leads back into the
  * working tree is not taken for "outside". Anything else (a `gitdir:` naming a directory inside
  * the worktree, a link into it) is a path git may stage, and is asked of git like any other.

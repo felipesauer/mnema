@@ -5,7 +5,7 @@
  * A link is written into one tree by a writer that sees only that tree, yet its
  * target may live in another. So the demanding claims are:
  *   - the PERSON, seeing the union of all three trees, resolves a link whose
- *     subject is in one tree and whose target is in another — the relation is
+ *     subject is in one tree and whose target is in another: the relation is
  *     answerable from both directions;
  *   - the link is written WITHOUT refusing the dangling target (the difference
  *     from a supersede), so a private memory can point at a public task;

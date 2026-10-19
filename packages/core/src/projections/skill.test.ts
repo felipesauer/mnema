@@ -82,7 +82,7 @@ describe('projectSkills: the fold', () => {
   });
 });
 
-describe('projectSkills — provenance: who proposed the pattern and who adopted it', () => {
+describe('projectSkills, provenance: who proposed the pattern and who adopted it', () => {
   it('folds the agent that proposed it and the agent that adopted it', () => {
     const events = [...birth('sk-1', 0, 'agent-A'), adopt('sk-1', 2, 'agent-A')];
     expect(projectSkills(events).get('sk-1')).toMatchObject({

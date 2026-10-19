@@ -103,7 +103,7 @@ describe('recordDecision: the frozen ADR label', () => {
     tick();
     const second = mustRecord(ctx, { title: 'b', rationale: 'r' });
     // Two records are two decisions: the ids differ by construction, so the
-    // old reused-id refusal has nothing to guard — there is no way to name an
+    // old reused-id refusal has nothing to guard; there is no way to name an
     // existing id. Both are present, each with its own frozen label.
     expect(first.id).not.toBe(second.id);
     const d = decisionsOf(root);

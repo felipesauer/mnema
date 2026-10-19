@@ -18,7 +18,7 @@
  *      Checked first: the identity invariant holds regardless of the move, so a
  *      self-authorized illegal move reports the more fundamental fault.
  *   2. LEGALITY: the (from, action) pair is a transition the workflow allows.
- *   3. PROOF — every field the action requires is present and non-empty, and every
+ *   3. PROOF: every field the action requires is present and non-empty, and every
  *      prose field given states something: no letter and no digit, or the `<why>` a
  *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
  *
@@ -124,7 +124,7 @@ export type GateResult = GateOk | GateErr;
 export function gate(request: GateRequest): GateResult {
   // AUTHORITY first for the identity invariant that holds regardless of the
   // move: a fact with no human behind it, or one an agent authorized for
-  // itself, is never valid — checked before legality so the reason is precise.
+  // itself, is never valid, checked before legality so the reason is precise.
   // Identity is taken in canonical form (a real string, trimmed and
   // NFC-normalized): a non-string or whitespace-only `who` is no human, and a
   // `which` that differs from `who` only by whitespace or Unicode composition

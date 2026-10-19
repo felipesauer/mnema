@@ -224,8 +224,8 @@ describe('knowledge facts: the authority invariant refuses at the door', () => {
   /**
    * A fact whose executing agent IS the authorizing anchor has nothing outside
    * the agent behind it. The verifier applies that rule to every kind, so a fact
-   * like this entering the chain would be a permanent break in an append-only log
-   * — there is no later repair. The write must refuse instead, and refuse the
+   * like this entering the chain would be a permanent break in an append-only log:
+   * there is no later repair. The write must refuse instead, and refuse the
    * same way a transition does.
    */
   it('refuses all four facts when the executing agent IS the authorizing anchor', () => {

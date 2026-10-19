@@ -645,7 +645,7 @@ describe('ProjectionCache: skills', () => {
 
   it('tells "a person adopted it" from "nobody has" across the round trip', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    // sk-1: adopted with no agent on the envelope — a person acted directly.
+    // sk-1: adopted with no agent on the envelope, a person acted directly.
     writeSkill(w, 'sk-1', 'adopted', 'adopt');
     // sk-2: never adopted at all.
     writeSkill(w, 'sk-2', 'proposed', 'create');

@@ -69,7 +69,7 @@ export interface PruneOk extends ScreenedWrite {
 /**
  * The refusals authorizing a cut can earn. The two of its own are both about WHICH
  * tail: one that is not in this tree with events in it, and the one tail a waiver
- * may never name — the writer's own, which would be cut along with the waiver.
+ * may never name, the writer's own, which would be cut along with the waiver.
  */
 export type PruneError =
   | SelfAuthorizedErr
@@ -102,7 +102,7 @@ export interface PruneInput {
  * for size: this record costs 884 B per event.
  *
  * The reason is screened FIRST, before the tail is even read: it is the one check
- * that needs no context at all, so an oversize refusal touches nothing — nothing THIS
+ * that needs no context at all, so an oversize refusal touches nothing; nothing THIS
  * does. The writer its caller opened to reach it has already given a key new to the
  * tree its public half and a tail; `workflow/operations.ts` says where that is measured.
  */

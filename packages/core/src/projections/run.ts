@@ -3,12 +3,12 @@
  *
  * A run is the session an agent works inside, and it is a first-class entity:
  * `run.started` names the agent that executes (`which`) and carries, on its
- * envelope, the human who authorized the session (`who`) — the root of
+ * envelope, the human who authorized the session (`who`), the root of
  * authority for everything done in that run. `run.ended` closes it. The domain
  * that gates actions will ask this projection "who authorized this run?", so
  * the authorizer is projected explicitly, not left implicit on events.
  *
- * Like every projection this is a pure, deterministic replay — no validation of
+ * Like every projection this is a pure, deterministic replay, with no validation of
  * its own: a second `run.ended`, or one with no `run.started` before it, is
  * already left out of the stream it is handed (`order.ts`, FORMAT.md §6.7). The
  * rule mirrors tasks:

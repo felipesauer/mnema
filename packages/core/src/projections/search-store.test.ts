@@ -218,7 +218,7 @@ describe('searching the record', () => {
       'archive with it, and repair is a database problem rather than a line problem.';
     // Twenty rows that do NOT carry the term, so bm25's idf is not degenerate: over
     // a handful of documents it collapses to zero and the "score" is floating-point
-    // residue rather than a relevance — an instrument that measures nothing.
+    // residue rather than a relevance, an instrument that measures nothing.
     const filler = Array.from({ length: 20 }, (_, i) =>
       memory(`f${i}`, `an unrelated note number ${i} about the deploy window`, 5),
     );

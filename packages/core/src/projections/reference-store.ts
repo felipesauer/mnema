@@ -10,9 +10,9 @@
  *   - `subject`: the envelope's own subject. Every event has one, so every
  *     event contributes exactly one subject row. This is what makes the index
  *     able to answer a history at all.
- *   - `about` — the entity an `observation.recorded` is about.
- *   - `target` — the entity a `knowledge.linked` points at.
- *   - `by` — the SUCCESSOR a `decision.transitioned {action: "supersede"}`
+ *   - `about`: the entity an `observation.recorded` is about.
+ *   - `target`: the entity a `knowledge.linked` points at.
+ *   - `by`: the SUCCESSOR a `decision.transitioned {action: "supersede"}`
  *     names.
  *
  * The fourth is why this exists. `about` and `target` were already reachable by
@@ -40,8 +40,8 @@
  * subject and named a target.
  *
  * No resolution of the far end, either. A `target` may name an entity that lives
- * in a tree this cache cannot see — that is legitimate by design, not corruption
- * — so the index records the reference as written and a reader reports the far
+ * in a tree this cache cannot see (that is legitimate by design, not corruption),
+ * so the index records the reference as written and a reader reports the far
  * end as unresolved. Refusing or hiding it would turn an honest partial view
  * into a silent one.
  */
@@ -267,7 +267,7 @@ interface RefParams {
  *
  * A WRONG `from` IS NOT CAUGHT HERE. That sentence replaces one claiming the primary
  * key would collide, and the claim is false: the key is (entity, role, ord), so only
- * re-indexing the SAME entity at a position it holds throws — a different event at
+ * re-indexing the SAME entity at a position it holds throws; a different event at
  * that position writes a row claiming it, quietly. So the base is the caller's to
  * establish, and {@link chainArrivals} is what establishes it by proving the slice is
  * a suffix of the order the index was built from. The limit is pinned rather than
@@ -564,8 +564,8 @@ export function walkReferences(
   //
   // CROSS JOIN, and not for a cross product: it is SQLite's one lever for FIXING
   // a join order. The planner cannot estimate how many rows a recursive CTE holds,
-  // so left to itself it drives the outer loop from `refs` and probes the frontier
-  // — a full scan of the index on every call. Driving from the frontier (a handful
+  // so left to itself it drives the outer loop from `refs` and probes the frontier,
+  // a full scan of the index on every call. Driving from the frontier (a handful
   // of rows) and looking each node up is the same answer through two lookups.
   const hop = `CROSS JOIN refs near ON near.entity = w.node ${step.near}
                JOIN refs far ON far.ord = near.ord ${step.far}`;

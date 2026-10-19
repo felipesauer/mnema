@@ -93,7 +93,7 @@ import { adoptStack, removeStack } from './stack-operations.js';
  * a replay of the tree: in process, a later write went from ~0.9 ms to ~6.2 ms at 1,000 events
  * and to ~65 ms at 10,000 (+5.2 to +5.6 ms and +63 to +70 ms). On the command line, one per
  * command over a floor of ~180 ms: +21 ms at 1,036 events, +33 ms at 3,036, +101 ms at 10,036,
- * +264 ms at 30,036 — linear, and paid on the person's side, where a command holds nothing to
+ * +264 ms at 30,036: linear, and paid on the person's side, where a command holds nothing to
  * derive it from. The MCP session holds the record in order already and asks its cache instead
  * (`ProjectionCache.rosterAsOfNow`, the last describe here): a warm session's public write went
  * from ~2.0–2.4 ms to ~2.9–3.9 ms and its private one by +0.2 to +0.9 ms, flat from 100 events to
@@ -648,7 +648,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
     'an anchor recorded with no founding behind it, %s the key’s public half: delete the file',
     (_, withHalf) => {
       // What the code before the anchor followed the founding left when a first write failed: the
-      // anchor file, naming the identity the key would have founded, and nothing on the record —
+      // anchor file, naming the identity the key would have founded, and nothing on the record,
       // written here by the function that code wrote it with.
       const k = keyRoot();
       const scratchTree = mkdtempSync(join(tmpdir(), 'mnema-stale-anchor-scratch-'));
@@ -677,7 +677,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
       );
       expect(refusal.restores).toBeUndefined();
 
-      // Followed: the file goes, and the next write founds — the record then counts the key.
+      // Followed: the file goes, and the next write founds; the record then counts the key.
       rmSync(anchorPath({ root: tree }, fingerprint));
       const founded = contextOf(k);
       expect(captureMemory(founded, { content: 'after the file went' }).ok).toBe(true);

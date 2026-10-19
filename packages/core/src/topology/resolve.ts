@@ -29,7 +29,7 @@
  * then), named exactly what the walk looks for. Measured on the built binary before this
  * changed:
  * after the first `mnema init` anywhere on a machine with no `$XDG_DATA_HOME`, a note
- * taken in `~/Downloads` was answered "Landed in the public tree — committed with the
+ * taken in `~/Downloads` was answered "Landed in the public tree \u2014 committed with the
  * repository" and written into the machine's data directory, and every folder under the
  * home that was no project of its own was served as the project `~`. So the walk now
  * passes over two kinds of `.mnema/`, and there is ONE function that says which
@@ -53,7 +53,7 @@ export const PROJECT_DIR = '.mnema';
  * under the repository's git directory inside one ({@link privateTreePlace}).
  */
 export const PRIVATE_DIR = 'private';
-/** The application's name — dotted, it is the data directory under the home: `~/.mnema`. */
+/** The application's name, dotted, it is the data directory under the home: `~/.mnema`. */
 export const APP_DIR = 'mnema';
 /** The global chain's directory under the app directory. */
 export const GLOBAL_DIR = 'global';
@@ -70,7 +70,7 @@ export interface DiscoveryEnv {
    */
   readonly home: string;
   /**
-   * `$MNEMA_HOME`, if set: the data directory ITSELF, in place of `~/.mnema` — the key root
+   * `$MNEMA_HOME`, if set: the data directory ITSELF, in place of `~/.mnema`; the key root
    * and the global tree then live directly under it. Empty is the same as unset; relative is
    * refused ({@link appDataDir}).
    */
@@ -85,7 +85,7 @@ export interface DiscoveryEnv {
 
 /**
  * An agent this process signs as, where one is configured: the name it is enrolled under, and the
- * key root that holds its key — `<data directory>/agents/<name>`, never the person's.
+ * key root that holds its key, `<data directory>/agents/<name>`, never the person's.
  *
  * It names a CHOICE, not a fact: a tree signs with this key only where the record enrols it there
  * under exactly this name (`keyRootFor`), and signs with the person's key everywhere else.
@@ -395,8 +395,8 @@ function noProjectRootAt(dir: string, homes: ReadonlySet<string>): NoProjectRoot
 
 /**
  * Walks up from `cwd` looking for a directory that contains a `.mnema/` directory
- * and can be a project's root, returning that `.mnema/` path (the public project tree)
- * — or undefined, at the home directory or at the filesystem root — together with every
+ * and can be a project's root, returning that `.mnema/` path (the public project tree),
+ * or undefined, at the home directory or at the filesystem root, together with every
  * `.mnema/` it passed over on the way. A `.mnema` that is a FILE, not a directory,
  * does not count: it is not a tree.
  */
@@ -434,7 +434,7 @@ function walkUp(
  * the whole of what the second question cost. Measured in alternating blocks against the
  * walk as it was before the second question existed (two copies of which agreed within
  * 2%): inside a project three levels down, 33 µs became 92 µs with the throwing check and
- * 41 µs with this one — the rest is resolving the home once per call; seven levels under a
+ * 41 µs with this one (the rest is resolving the home once per call); seven levels under a
  * home with no project, 112 µs became 143 µs, and 61 µs with this one, because the walk now
  * stops at the home instead of climbing to the root. Anything other than "not there" (a
  * path through a file, a directory it may not read) still throws, and is still `false`.

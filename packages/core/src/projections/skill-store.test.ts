@@ -4,7 +4,7 @@
  * This module was at full line coverage with no test naming it. Two files execute it,
  * both one directory over: `cache.test.ts`, whose subject is the cache and which drives
  * four skills through `ProjectionCache.rebuild()`, and `advance.test.ts`, which compares
- * an advanced database against a replayed one — both sides of that comparison running
+ * an advanced database against a replayed one, both sides of that comparison running
  * through this same code, so no mutation in here can move it.
  *
  * WHAT cache.test.ts DOES HOLD, said out loud so this file does not restate it: the
@@ -13,7 +13,7 @@
  * Those four were verified red under mutation and are left where they are.
  *
  * WHAT IT DOES NOT, and what is here for that reason. It writes `sk-1` before `sk-2`,
- * so `ORDER BY id` is invisible — measured: dropping it from BOTH queries leaves 4227
+ * so `ORDER BY id` is invisible; measured: dropping it from BOTH queries leaves 4227
  * tests green. It never asks for an id nothing projected. It never materializes one
  * twice. And it compares the adoption with `toEqual`, which cannot tell `{ at }` from
  * `{ at, by: undefined }`: the very distinction the module's own comment says the two

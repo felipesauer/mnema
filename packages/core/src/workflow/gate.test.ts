@@ -177,7 +177,7 @@ describe('gate: authority (who != which)', () => {
   it('checks authority before legality (a self-authorized illegal move reports the identity fault)', () => {
     // Ordering matters for a precise reason: the identity invariant holds
     // regardless of the move, so it is reported even when the move is also
-    // illegal — the caller fixes the more fundamental fault first.
+    // illegal; the caller fixes the more fundamental fault first.
     const result = gate({ from: 'DONE', action: 'submit', who: 'x', which: 'x' });
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
   });

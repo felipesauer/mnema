@@ -343,7 +343,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
     // spells the comparison through that function.
     const source = readFileSync(new URL('./read.ts', import.meta.url), 'utf8');
     // No `g` on any of these: `test` on a global pattern advances `lastIndex`, so
-    // alternate calls answer `false` over input that never changed — a guard that goes
+    // alternate calls answer `false` over input that never changed; a guard that goes
     // quiet on every other line is worse than none.
     const emptiness = [
       /===\s*''/,
@@ -359,7 +359,7 @@ describe('nothing a document writes as punctuation is read as a field', () => {
       for (const pattern of emptiness) if (pattern.test(line)) found.push(line.trim());
     }
     expect(found).toEqual([]);
-    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — ten
+    // NOT VACUOUS: the file really is the one being read, and the rule really is asked; ten
     // calls (six before the decision section was read: the frontmatter, a section body, the
     // status in two places, the title and the lead; four more for the decision section (two), the
     // chosen option's title and the options section). The function they call is the one the
@@ -436,7 +436,7 @@ describe('a marker left where the words go is not read as a field', () => {
  * document's status. Found first on a real `ROADMAP.md`, which yielded `status: "de cada"`
  * out of *"O **estado** de cada entrega não está declarado"*, and then isolated below: a
  * sentence whose second word happens to be `rejeitado` makes {@link adrIsInForce} false, and
- * the scan drops the file as `RETIRED` — reported to a person as POLICY, *"the document says
+ * the scan drops the file as `RETIRED`, reported to a person as POLICY, *"the document says
  * it is no longer in force"*, about a document that says nothing of the kind.
  */
 describe('a bold word in prose is not a status label', () => {

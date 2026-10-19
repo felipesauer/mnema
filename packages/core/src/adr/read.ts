@@ -19,7 +19,7 @@
  * ONE FORM, AND THE REFUSAL IS LOUD. The conventions in the wild are several and
  * mutually incompatible: a single `DECISIONS.md`, one file per decision, YAML
  * frontmatter, headings in `#`. This reads ONE: **one decision per file, a level-1
- * title, and named `##` sections** — Nygard's original shape and MADR's, which is
+ * title, and named `##` sections**, Nygard's original shape and MADR's, which is
  * what `adr-tools` and `log4brains` generate and what every published template
  * describes. A document this cannot read that way is REFUSED BY NAME: a wrong
  * proposal costs a person's attention, which is the one thing this whole slice
@@ -219,7 +219,7 @@ export const RETIRED_STATUSES: readonly string[] = [
 ];
 
 /*
- * Whether a run of text STATES something — whether one character of it is a letter or
+ * Whether a run of text STATES something, meaning whether one character of it is a letter or
  * a digit in any script: {@link statesSomething}, imported. It was born in this module
  * and lives in `../a-reason-states-something.ts` now, because the write door asks it
  * too: a reason with no word in it was refused here and recorded there, and two
@@ -278,11 +278,11 @@ function normalizeLabel(text: string): string {
 /**
  * The ADR numbering a document carries in its own title, removed.
  *
- * `# ADR-002 — A vaga é opcional`, `# ADR 0001 — SessionDB is multi-writer-safe`
+ * `# ADR-002 \u2014 A vaga é opcional`, `# ADR 0001 \u2014 SessionDB is multi-writer-safe`
  * and `# 1. Record architecture decisions` all name their own number, and that
  * number is the SOURCE's, while this product freezes its OWN `ADR-<n>` into the
  * record at write time. Keeping both would put two numbers on one citation
- * (`ADR-3 — ADR-002 — A vaga é opcional`), which is precisely the failure the
+ * (`ADR-3 \u2014 ADR-002 \u2014 A vaga é opcional`), which is precisely the failure the
  * catalog describes for a label re-derived on read: a citation that silently names
  * a different decision. The source's number is not lost: it is in the file name,
  * and the file name is the provenance the proposal carries.
@@ -420,7 +420,7 @@ function sectionBody(sections: readonly Section[], labels: readonly string[]): s
  * status, including in a sentence. Measured, case and control differing only by the
  * asterisks: *"O **estado** rejeitado do banco antigo nos custou duas migrações"*
  * yielded `status: "rejeitado do banco antigo…"`, which {@link adrIsInForce} reads as
- * retired, so the whole document was dropped as `RETIRED` — a policy refusal, reported
+ * retired, so the whole document was dropped as `RETIRED`, a policy refusal, reported
  * to a person as *"the document says it is no longer in force"* about a document that
  * says nothing of the kind. Without the asterisks the same sentence proposed the
  * decision. **A LABEL ENDS IN A COLON; emphasis does not**, and the two spellings this
@@ -464,7 +464,7 @@ function statusOf(text: string, sections: readonly Section[]): string | undefine
  * of the whole set, and the only one the reader had to catch. A supersession
  * NAMES ITS SUCCESSOR: `Superseded by ADR-NNN` is the stable market convention
  * (it is what `log4brains` writes and what this project's own study of the form
- * recorded), so the status of a retired decision almost never IS the word — it
+ * recorded), so the status of a retired decision almost never IS the word; it
  * BEGINS with it. Reading the first word covers both, and leaves a status whose
  * first word is a live one (`accepted`, `aceito`) in force however it goes on.
  */
@@ -493,7 +493,7 @@ function beforeSubsections(body: string): string {
 }
 
 /**
- * The title of the option a decision section says it CHOSE — MADR's *Chosen option: "{title of
+ * The title of the option a decision section says it CHOSE: MADR's *Chosen option: "{title of
  * option 1}", because {justification}* in the three published versions (2.1.2, 3.0.0 and 4.0.0
  * all use that sentence), the quotes optional because real documents drop them, and the
  * Portuguese `Opção escolhida: …` beside it. Only the title is taken: the sentence as a whole

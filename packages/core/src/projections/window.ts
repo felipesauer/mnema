@@ -16,7 +16,7 @@
  * paragraph's view.
  *
  * WHAT IS ONE HERE AND WHAT CANNOT BE. The BOUNDARY is one: inclusive on both ends,
- * compared on the ISO strings directly — ISO-8601 UTC stamps sort lexically, in the
+ * compared on the ISO strings directly; ISO-8601 UTC stamps sort lexically, in the
  * order the chain merges on, and parsing to a date would be a second notion of order and
  * the one place two readings could disagree about a boundary instant. That rule is
  * {@link withinWindow} and {@link windowConditions}, and neither is a restatement of the

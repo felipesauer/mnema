@@ -66,8 +66,8 @@ describe('the short form collides, and that is the accepted cost', () => {
   });
 
   /*
-   * A second case stood here — "a kind prefix separates what a hash prefix does not"
-   * — and it used the `epic` arm as its INSTRUMENT, not as its subject: it needed two
+   * A second case stood here: "a kind prefix separates what a hash prefix does not",
+   * and it used the `epic` arm as its INSTRUMENT, not as its subject: it needed two
    * kinds to show that the same hash overlap across kinds is not a collision. With one
    * kind the separation it demonstrated cannot be produced, so the case is removed
    * rather than left green over a comparison of `t-` with itself. What replaces it is

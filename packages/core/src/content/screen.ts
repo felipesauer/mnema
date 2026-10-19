@@ -111,8 +111,8 @@ export interface NameHoldsASecretErr {
 
 /**
  * Either way this door says no. One name for the pair, because every caller of
- * {@link screenContent} propagates both identically — it has nothing to add to either
- * — and a union spelled out at each of them is a place to forget the second.
+ * {@link screenContent} propagates both identically (it has nothing to add to either),
+ * and a union spelled out at each of them is a place to forget the second.
  */
 export type ScreenRefusal = ContentTooLargeErr | NameHoldsASecretErr;
 

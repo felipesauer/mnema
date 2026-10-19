@@ -275,8 +275,8 @@ export function rejectDecision(
 
 /**
  * Supersedes a decision with a later one. Beyond the gate's shape check (a `by`
- * that is present and not the subject), this verifies the successor `by` EXISTS
- * — a supersede that named a decision with no record would leave a dangling
+ * that is present and not the subject), this verifies the successor `by` EXISTS:
+ * a supersede that named a decision with no record would leave a dangling
  * link, which the anti-dangling rule forbids. The subject's existence is the
  * usual UNKNOWN_DECISION path.
  */
@@ -290,7 +290,7 @@ export function supersedeDecision(
 /**
  * The shared transition path: read the current state from the chain, run the
  * gate, and for a supersede also verify the successor exists, then append only
- * if everything passed — under the tail's lock, against the state the record is
+ * if everything passed, under the tail's lock, against the state the record is
  * in at that moment ({@link onTheRecordAsItStands}). `to`, `action`, and the recorded `by` all come from the
  * gate's verdict, never from the caller's assertion.
  *

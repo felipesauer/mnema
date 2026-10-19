@@ -17,7 +17,7 @@
  * sprint beside the task, and the premise under those two names was that a kind
  * the vocabulary can spell is a kind something spells. It is false, and it was
  * falsified by asking production: `deriveAlias` is called at four sites and all
- * four pass `'task'`, so the two other arms were a public option nothing fed —
+ * four pass `'task'`, so the two other arms were a public option nothing fed:
  * an option with no production caller, standing here in silence because the guard
  * for it reads whole exported VALUES and an arm of one is not a value. The arms
  * are gone; the guard now reads arms too, and `every-public-value-has-a-caller`

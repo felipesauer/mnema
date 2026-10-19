@@ -110,7 +110,7 @@ const movesOf = (id: string): string[] =>
   );
 
 describe('a gate judges the subject as the chain has it', () => {
-  it('a decision: rejected on the chain, proposed in the projection — accept is refused', () => {
+  it('a decision: rejected on the chain, proposed in the projection; accept is refused', () => {
     const ctx = session();
     const { id } = ok(recordDecision(ctx, { title: 'Use X', rationale: 'because' }));
     ok(rejectDecision(ctx, { id, fields: { note: 'no' } }));
@@ -141,7 +141,7 @@ describe('a gate judges the subject as the chain has it', () => {
     expect(movesOf(id)).toEqual(['null->proposed', 'proposed->accepted']);
   });
 
-  it('a task: cancelled on the chain, READY in the projection — start is refused', () => {
+  it('a task: cancelled on the chain, READY in the projection; start is refused', () => {
     const ctx = session();
     const { id } = ok(createTask(ctx, { title: 'Ship it' }));
     ok(transitionTask(ctx, { id, action: 'submit' }));
@@ -154,7 +154,7 @@ describe('a gate judges the subject as the chain has it', () => {
     expect(movesOf(id).at(-1)).toBe('READY->CANCELED');
   });
 
-  it('a skill: rejected on the chain, reviewed in the projection — adopt is refused', () => {
+  it('a skill: rejected on the chain, reviewed in the projection; adopt is refused', () => {
     const ctx = session();
     const { id } = ok(createSkill(ctx, { name: 'deploy', body: 'Run the deploy.' }));
     ok(rejectSkill(ctx, { id, fields: { note: 'not needed' } }));
@@ -166,7 +166,7 @@ describe('a gate judges the subject as the chain has it', () => {
     expect(movesOf(id).at(-1)).toBe('proposed->rejected');
   });
 
-  it('a run: ended on the chain, open in the projection — a second end is refused', () => {
+  it('a run: ended on the chain, open in the projection; a second end is refused', () => {
     const ctx = session();
     const { id } = ok(startRun(ctx, { agent: 'claude' }));
     ok(endRun(ctx, { run: id, which: 'claude' }));

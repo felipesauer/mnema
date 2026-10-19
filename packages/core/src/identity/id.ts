@@ -12,7 +12,7 @@
  *
  * An id is NOT an identity of a person. Unlike a `who`/`which`, when taken as a
  * reference it is:
- *   - NOT trimmed — the chain does not trim, so trimming here would produce a
+ *   - NOT trimmed: the chain does not trim, so trimming here would produce a
  *     key that no stored subject matches (an id never carries meaningful
  *     whitespace anyway; treating it verbatim keeps the reference and the
  *     stored subject byte-aligned).

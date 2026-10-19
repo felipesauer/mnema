@@ -334,7 +334,7 @@ describe('rebuild is byte-identical: replaying the events reproduces the project
   });
 });
 
-describe('skill — end to end: a clone reconstructs and verifies from events alone', () => {
+describe('skill, end to end: a clone reconstructs and verifies from events alone', () => {
   it('the CLONE reconstructs the adopted skill from the chain, and verifies', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();

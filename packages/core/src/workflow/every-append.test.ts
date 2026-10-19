@@ -384,8 +384,8 @@ describe('every write refuses what no read could accept', () => {
       },
       {
         // The session's agent is the one field that lands in a payload AND on the
-        // envelope. Empty, it names no identity, so the envelope's `which` drops out
-        // — and the payload's `agent` kept the empty string, which is the asymmetry.
+        // envelope. Empty, it names no identity, so the envelope's `which` drops out,
+        // and the payload's `agent` kept the empty string, which is the asymmetry.
         op: 'startRun',
         field: 'agent',
         names: 'payload.agent',
@@ -748,8 +748,8 @@ describe('every write refuses what no read could accept', () => {
    * The half that cannot be driven: every function the writing surface exports is
    * either swept above, or declared here with the reason it is not.
    *
-   * Without this the sweep is a list, and a list is what nobody remembers to extend
-   * — the exact failure mode the content door's own history records. With it, a new
+   * Without this the sweep is a list, and a list is what nobody remembers to extend,
+   * the exact failure mode the content door's own history records. With it, a new
    * export that appends and takes text has to be classified, and classifying it
    * wrongly is a lie somebody has to write down.
    */

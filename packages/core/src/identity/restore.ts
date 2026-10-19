@@ -25,7 +25,7 @@
  * irreversibly to a tree the team shares. Which is why this refuses far more
  * readily than it writes:
  *
- *   - a private key of ANOTHER fingerprint already at the key root — the machine
+ *   - a private key of ANOTHER fingerprint already at the key root: the machine
  *     adopts the first one it finds, so a second would make its identity depend on
  *     directory order (restoring the SAME key again is allowed: it adds no second
  *     key, and adopting the anchor is per-tree work that a second project needs);

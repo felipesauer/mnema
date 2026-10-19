@@ -178,7 +178,7 @@ describe('the anchor follows the founding: a first write that fails leaves no an
 
   /**
    * A CEILING OF ITS OWN, and the line says what it waits on: a lock held by a process that is
-   * alive and stays alive, which the founding's append is SUPPOSED to wait out — one
+   * alive and stays alive, which the founding's append is SUPPOSED to wait out, one
    * `DEFAULT_WAIT_MS` of 2000 ms, by design, before it refuses. The next write finds the lock
    * gone and does not wait. 12000 ms is six times the wait, the margin the lock's own case keeps.
    */

@@ -397,8 +397,8 @@ export function treeWords(scope: Scope): string {
 }
 
 /**
- * Who signs in one tree when an agent is configured: the agent, the person, or nobody — a refusal
- * that says which verb, at a terminal, puts it right.
+ * Who signs in one tree when an agent is configured: the agent, the person, or nobody (a refusal
+ * that says which verb, at a terminal, puts it right).
  */
 export type KeyChoice =
   | { readonly signs: 'agent' | 'person' }
@@ -406,8 +406,8 @@ export type KeyChoice =
 
 /**
  * Who signs in `scope`'s tree when an agent is configured, decided as a write decides it and
- * without writing or minting anything: the agent, the person, or nobody — a refusal that says which
- * verb, at a terminal, puts it right. Undefined where no agent is configured, or the tree is not
+ * without writing or minting anything: the agent, the person, or nobody (a refusal that says which
+ * verb, at a terminal, puts it right). Undefined where no agent is configured, or the tree is not
  * there. It is what a server says of its agent per tree, and what `mnema doctor` says.
  */
 export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | undefined {
@@ -670,7 +670,7 @@ export function signerHeldFor(trees: ResolvedTrees, scope: Scope): ChainSigner |
 
 /**
  * A deferred write as its caller holds it: the context an operation decides and writes through,
- * and the one thing left for the caller once the operation returns — signing what it wrote.
+ * and the one thing left for the caller once the operation returns: signing what it wrote.
  */
 export interface DeferredWrite extends DeferredWriteContext {
   /**

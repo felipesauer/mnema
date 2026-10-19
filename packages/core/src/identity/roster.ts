@@ -246,7 +246,7 @@ export interface RevokeMemberOk extends ScreenedWrite {
   readonly remaining: number;
   /**
    * When the retired key is this machine's own: the one identity the record still proves it a
-   * member of here, read after the revocation by the reading a `key restore` of that key asks —
+   * member of here, read after the revocation by the reading a `key restore` of that key asks,
    * absent when the record proves it a member of none, or of more than one, where a restore here
    * points this checkout nowhere.
    */
@@ -448,7 +448,7 @@ function writingOnce(ctx: DecideThenWrite): RecordAndWriter & { opened(): WriteC
  * its revocation.
  *
  * The checkout that retired its own key goes on recording the identity it left. THIS SAID
- * "nothing rereads a recorded anchor — so anything it writes next is signed by a retired key and
+ * "nothing rereads a recorded anchor, so anything it writes next is signed by a retired key and
  * fails verification for good", which was the trap: every write now asks whether the recorded
  * identity still counts the key, and refuses (`ensureFounded`). Where the record still proves
  * the key in one other identity, `mnema key restore` points the checkout there; this asks the

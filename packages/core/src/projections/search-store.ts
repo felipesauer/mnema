@@ -10,9 +10,9 @@
  *
  * ## What is indexed, and what is only a filter
  *
- * Indexed: the text a PERSON wrote — a memory's content, an observation's topic
+ * Indexed: the text a PERSON wrote (a memory's content, an observation's topic
  * and text, a decision's title, rationale AND alternatives, a task's title, a
- * skill's name and body. Filters: kind, state, the instant, and (above this
+ * skill's name and body). Filters: kind, state, the instant, and (above this
  * module) the tree.
  *
  * Two indexed columns hold all of it, and the mapping is by ROLE rather than by
@@ -508,7 +508,7 @@ export function compareSearchHits(a: SearchHit, b: SearchHit): number {
  * nothing searchable in it.
  *
  * The term is TEXT, never a query language. Raw input reaches FTS5's parser as
- * syntax: `AND`, a stray `"`, a bare `*` — and a search for `"the" quote` would
+ * syntax: `AND`, a stray `"`, a bare `*`, and a search for `"the" quote` would
  * come back as a SQL error rather than an answer. So the input is reduced to its
  * word characters ({@link wordsOf}), each word is quoted as a phrase
  * ({@link phraseOf}), and the phrases are joined by whitespace (FTS5 reads that as

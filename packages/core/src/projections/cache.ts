@@ -118,7 +118,7 @@ export interface CacheOptions {
    *
    * The command line and the server do not set it: `$MNEMA_CACHE_DIR` chooses a DIRECTORY, and
    * the file in it is named for the tree it was built from and is a cache like the one the
-   * tree keeps (`cache-home.ts`) — made again when it does not serve, which is the opposite of
+   * tree keeps (`cache-home.ts`), made again when it does not serve, which is the opposite of
    * what a path named here gets.
    */
   readonly dbPath?: string;
@@ -201,7 +201,7 @@ export class ProjectionCache {
    * then rules on.
    *
    * THAT PARAGRAPH THEN CLAIMED THE REPAIR WAS TOTAL, in the words *"the three shapes it
-   * was measured over — the last entry duplicated, the last two, the last three — all now
+   * was measured over (the last entry duplicated, the last two, the last three) all now
    * agree with a fresh rebuild"*, AND THREE SHAPES WERE NOT THE RULE. All three are a
    * duplicated `seq`, which is one of the three ways `linkBreakAt` says a tail stops
    * chaining, and the refusal was asking a seq test of its own rather than that function.
@@ -218,7 +218,7 @@ export class ProjectionCache {
    * afterwards replays and is told. That is a limit with a measurement, not a silence:
    * `order.test.ts` holds both halves. (A cache kept on disk narrows it: the sealed
    * segments' fingerprints are checked when one is loaded, so a connection that opens
-   * after a rewrite of a sealed segment is still told — `cache-meta.ts`.)
+   * after a rewrite of a sealed segment is still told: `cache-meta.ts`.)
    *
    * AND IT REACHES ONLY THE SURFACE THAT READS: which was true of this field and is no
    * longer true of the class. It said *"a write does not refresh anything, so a connection
@@ -319,7 +319,7 @@ export class ProjectionCache {
    * is told what its last read knew. The obvious repair is to {@link refresh} first, and
    * that was built and MEASURED and is the wrong price: the expensive half of a catch-up
    * is ADVANCING the projections over the arrivals, and a door that pays it per call pays
-   * it where a reader pays it once — `+12.7 ms over a 60-entry record and +21.3 ms over a
+   * it where a reader pays it once: `+12.7 ms over a 60-entry record and +21.3 ms over a
    * 400-entry one` for a session of five writes and a read, growing with the history
    * (`code/src/mcp/tools.ts`, which is the door that asks this).
    *
@@ -341,10 +341,10 @@ export class ProjectionCache {
    * WHAT IT DOES NOT ANSWER, and a caller may not read silence here as soundness:
    *   - It is not a verdict, exactly as {@link linkBreaks} is not. Signatures,
    *     checkpoints and witnesses are `verify`'s.
-   *   - A break BELOW this cache's frontier — bytes a previous reading already took — is
+   *   - A break BELOW this cache's frontier (bytes a previous reading already took) is
    *     outside it, for the same reason it is outside {@link refresh}.
-   *   - A chain that changed in a way no suffix describes — a tail removed, a tail cut, a
-   *     fact arriving stamped before something already covered — is not a break at all and
+   *   - A chain that changed in a way no suffix describes (a tail removed, a tail cut, a
+   *     fact arriving stamped before something already covered) is not a break at all and
    *     answers as this cache already stood.
    *
    * IT NAMES THE BREAK OF EVERY BROKEN TAIL AMONG THE ARRIVALS, one per tail, as a full
@@ -381,7 +381,7 @@ export class ProjectionCache {
    * (`rosterIn`, the one `rosterOf` runs over a replay). The arrivals are taken only as a SUFFIX,
    * which is the merge's own comparison: where they are not one (a tail gone or cut, a fact
    * stamped before something already covered, a link that does not follow), the facts in hand are
-   * no longer a prefix of the record's, and this replays the record whole — without rebuilding the
+   * no longer a prefix of the record's, and this replays the record whole, without rebuilding the
    * cache, which it leaves exactly as it found it.
    *
    * NOT the entity tables. Reading a projection would be reading what the last catch-up knew, and
@@ -407,7 +407,7 @@ export class ProjectionCache {
    * something already covered) cannot be described as a suffix, and this replays the whole
    * thing. So does a file that was built by other code, or whose sealed segments are not the
    * ones it saw ({@link CacheOptions.persist}). And so does an arrival that is a move the state
-   * held here cannot judge alone — a divergence, or a move the workflow does not allow (FORMAT.md
+   * held here cannot judge alone, a divergence, or a move the workflow does not allow (FORMAT.md
    * §6.7): the replay is what judges it against the moves its writer saw (`advance.ts`).
    *
    * It is not a cheaper rebuild, it is the same result by a shorter route: the
@@ -774,7 +774,7 @@ export class ProjectionCache {
   }
 
   /**
-   * Every identity founded in this tree after others already were, in record order — the
+   * Every identity founded in this tree after others already were, in record order: the
    * reading `identitiesFoundedBeside` gives, asked of the membership facts this cache keeps
    * (`membership_facts`: the foundings, enrolments and revocations of the record, in its order).
    *
@@ -782,8 +782,8 @@ export class ProjectionCache {
    * memory at 2.8 µs over 602 events and 16-19 µs over 6,002. The premise was that the cache
    * holds the order, and it does not any more: holding it was 1.0 GB at 100 thousand events and
    * the whole cost of bringing a cache forward (see {@link frontier}). What the reading needs
-   * of the order is the foundings, and the cache keeps those — a handful of rows in any record
-   * — so the answer is the same walk over them. The figures above were of the walk over the
+   * of the order is the foundings, and the cache keeps those (a handful of rows in any record),
+   * so the answer is the same walk over them. The figures above were of the walk over the
    * order and are not claimed of this one.
    *
    * It answers as the cache stands: a reader that wants the chain as it is now brings the
@@ -845,8 +845,8 @@ export class ProjectionCache {
   }
 
   /**
-   * Every event of `kind` in this tree, as its subject and the run it happened in
-   * — one row per event, for a caller counting occurrences across trees.
+   * Every event of `kind` in this tree, as its subject and the run it happened in,
+   * one row per event, for a caller counting occurrences across trees.
    */
   subjectRuns(kind: EventKind): SubjectRun[] {
     return listSubjectRuns(this.db, kind);

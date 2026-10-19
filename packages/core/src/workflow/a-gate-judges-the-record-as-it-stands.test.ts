@@ -87,7 +87,7 @@ function gateCallsIn(file: string, text: string): GateCall[] {
   // cases, a pure reading. Only a file that can append is a site of the rule. `appendFact` and
   // `appendFacts` are how an operation appends since the door asks before the founding: this
   // pattern knew only `appendEvent(s)`, and with the operations moved to the new names it found
-  // no file that appends and passed nothing — red, because the set below is exact.
+  // no file that appends and passed nothing; red, because the set below is exact.
   if (!/\bappend(?:Event|Fact)s?\(|\.append(?:All)?\(/.test(code)) return [];
   const spans = lockedSpans(code);
   const calls: GateCall[] = [];

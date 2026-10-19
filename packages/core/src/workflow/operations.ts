@@ -6,7 +6,7 @@
  * these, which run the gate FIRST and append ONLY if the gate authorized the
  * move. That is the write-time enforcement the whole design rests on: an event
  * reaches the chain only after the gate judged it legal, proven, and
- * authorized — by the same table every reader judges it by when it reads
+ * authorized, by the same table every reader judges it by when it reads
  * (FORMAT.md §6.7), so what the gate writes is what the readers apply.
  *
  * Reading the current state comes from the chain itself (the source of truth),
@@ -109,8 +109,8 @@ export interface WriteContext {
    * (`appendFact`) after the last refusal it makes, and after the door has asked the fact; the
    * caller makes it run once. THIS SAID the door's own refusals (a title, a reason or a reference
    * that is not one, an event no read could open) "come after `ensureFounded`, so those still
-   * follow the founding": they did, and from an empty HOME each one left the key, the founding and
-   * — here — the run behind it. They come before it now, so a refused first fact writes no run
+   * follow the founding": they did, and from an empty HOME each one left the key, the founding and,
+   * here, the run behind it. They come before it now, so a refused first fact writes no run
    * (`code/tests/a-refusal-leaves-nothing.test.ts`, the append door through the server).
    */
   readonly beforeTheFirstFact?: () => void;

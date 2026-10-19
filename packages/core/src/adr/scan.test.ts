@@ -30,8 +30,8 @@ function decision(title: string, extra = ''): string {
 
 describe('reading a directory of decision documents', () => {
   it('reads every markdown file, in file-name order', () => {
-    // The order is the file name so two runs report the same list in the same order
-    // — and an ADR file name carries the sequence its author intended.
+    // The order is the file name so two runs report the same list in the same order,
+    // and an ADR file name carries the sequence its author intended.
     file('0002-second.md', decision('Second'));
     file('0001-first.md', decision('First'));
     file('0003-third.markdown', decision('Third'));
@@ -102,7 +102,7 @@ describe('reading a directory of decision documents', () => {
 
   it('refuses the whole file when a field holds something shaped like a credential', () => {
     // Text from somebody else's file is exactly the untrusted input the content door
-    // exists for, and the door SCRUBS and reports — right for a person typing one
+    // exists for, and the door SCRUBS and reports: right for a person typing one
     // fact, wrong for a bulk read: a placeholder recorded on a person's behalf, in a
     // document they did not write, is a permanent entry nobody chose. So the FILE is
     // refused, by name, with the class named, and the value never travels.

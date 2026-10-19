@@ -1,7 +1,7 @@
 /**
  * The skill projection: fold an ordered event stream into current skill state.
  *
- * Like every projection this is a pure, deterministic replay — no validation of
+ * Like every projection this is a pure, deterministic replay, with no validation of
  * its own: a move the workflow does not allow is already left out of the stream
  * it is handed (`order.ts`, FORMAT.md §6.7). The rule mirrors tasks and decisions:
  *   - a skill EXISTS once its `skill.created` is seen;

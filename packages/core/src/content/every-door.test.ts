@@ -37,7 +37,7 @@ import { detectSecrets } from './secrets.js';
  * and forgets to screen fails here, without anyone having to remember to extend a
  * list". That was false, and measured false: `alternatives` was added to
  * `decision.recorded` with the screen deliberately bypassed, and the whole suite of
- * 2,059 tests stayed green — this file included, ten of ten. Only the READ half is
+ * 2,059 tests stayed green, this file included, ten of ten. Only the READ half is
  * generic (the sweep below walks every string of every event and knows no field
  * names); the WRITE half is a hand-written list of calls with hand-written
  * arguments, so a field no call below passes is a field no assertion can see. That
@@ -331,7 +331,7 @@ describe('the content door runs at every write point', () => {
  * clock, and `subject` from a mint on most of the kinds there are. It is the worst
  * of them for a credential: it is stamped on EVERY event of a session, so one dirty
  * value is as many disclosures as the session has facts, and over MCP it comes from
- * the client's announced name — nobody types it and nobody reads it.
+ * the client's announced name: nobody types it and nobody reads it.
  *
  * The other one is `run`, and the sentence this replaces called it a mint: "`subject`
  * and `run` [come] from a mint". A run id is minted, but not by the write that
@@ -458,8 +458,8 @@ describe('the executing agent goes through the same door', () => {
 
   it('refuses an all-credential agent name, and appends nothing', () => {
     // The degenerate case, and the one whose OLD answer this delivery reversed. It
-    // used to record a `which` that is entirely a credential as the bare placeholder
-    // — "odd to read, but honest", the comment said, "and strictly better than
+    // used to record a `which` that is entirely a credential as the bare placeholder:
+    // "odd to read, but honest", the comment said, "and strictly better than
     // stamping the key itself on every event of a session". The second half of that
     // is still true; the first was not honest, it was unattributable. An event whose
     // agent is `<SECRET:aws-access-key>` names nobody, and it is stamped on every

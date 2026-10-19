@@ -67,7 +67,7 @@ describe('resolveTrees: global tree and key root', () => {
 
   it('keeps them under the account’s home when HOME names no directory, never under the working directory', () => {
     // The case that was measured: an empty `HOME` used to give `join('', '.mnema')`, which is
-    // `.mnema`, relative — one key minted in every folder the process ran from.
+    // `.mnema`, relative; one key minted in every folder the process ran from.
     const account = join(sandbox, 'account');
     for (const h of ['', 'relative/home', '.']) {
       const trees = resolveTrees(sandbox, { home: h, accountHome: account });

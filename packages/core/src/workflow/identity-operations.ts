@@ -103,14 +103,14 @@ export interface IdentityOk extends ScreenedWrite {
  * THIS SAID "that file is the decision, made once", and it was made one step too
  * early: {@link ensureFounded} wrote it BEFORE appending the founding it stood for,
  * so a founding that failed left a decision the record never took, and this
- * answered `recorded` for an identity nobody had founded — the one every later
+ * answered `recorded` for an identity nobody had founded, the one every later
  * write then signed as. The file follows the fact now; why, and what was measured,
  * is {@link ensureFounded}'s comment.
  *
  * Asking the record is what stops the trap this closes: a key that is already a
  * member, writing into a tree where it has not yet recorded an anchor (a fresh
  * clone of the team's repo), would otherwise derive its OWN anchor and found a
- * SECOND identity in a record the team shares — one person appearing as two
+ * SECOND identity in a record the team shares, one person appearing as two
  * strangers, appended, unappendable-back.
  *
  * When the record proves the key belongs to more than one identity, or proves the
@@ -282,7 +282,7 @@ export type RecordedAnchor =
  *
  * TWO PROCESSES OF THIS INSTALLATION MAKING THEIR FIRST WRITE TOGETHER. This said the
  * order above "does not close, and widens" that case: each found no anchor, each decided
- * to found, and the tail got two foundings of one anchor by its own key — measured with
+ * to found, and the tail got two foundings of one anchor by its own key; measured with
  * two processes started on a barrier, from under 1 ms apart before this order to about
  * 3 ms after it, and 8 to 14 of 30 pairs of `mnema memory` on the binary. "Closing it
  * needs the decision taken under the tail's lock, which the writer does not offer." The
@@ -367,8 +367,8 @@ function foundUnderTheLock(ctx: WriteContext): string {
   const at = (ctx.clock ?? systemClock)();
   // Appended straight, with no typed refusal to report, and that is the one place
   // in the core where it is the honest shape: every field of a founding is DERIVED
-  // — the anchor from a key, the fingerprint from that same key, `at` from the
-  // clock — so no input a caller could get wrong reaches it, and there is nobody to
+  // (the anchor from a key, the fingerprint from that same key, `at` from the
+  // clock), so no input a caller could get wrong reaches it, and there is nobody to
   // report a refusal to (this returns the anchor, and it is called on the way to
   // every other write). The writer's own check still stands under it: if a founding
   // ever came out unreadable that is a bug in this function, and it fails loudly
@@ -730,13 +730,13 @@ export interface AccountLinkOk extends ScreenedWrite {
 }
 
 /**
- * Records that THIS machine's identity is an account — a GitHub account by default, or the
+ * Records that THIS machine's identity is an account: a GitHub account by default, or the
  * identity a Sigstore certificate names (`service: "sigstore"`): one `account.linked` whose
  * subject and `who` are the identity itself, so an identity only ever names its own account.
  *
  * It is a claim, and it is checkpointed at once for the reason a revocation is: the reading that
  * uses it (`verify --against-github`) honours only a signature-covered one, because one in the
- * keyless window above the last checkpoint could be appended by somebody holding no key — naming
+ * keyless window above the last checkpoint could be appended by somebody holding no key, naming
  * an account of their own, on which they had published this identity's public key.
  *
  * WHICH NAMES ARE GITHUB'S IS THE SURFACE'S TO REFUSE, as which channels exist is for a switch:

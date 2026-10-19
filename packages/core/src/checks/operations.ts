@@ -4,12 +4,12 @@
  *
  * Three operations, one per fact a person or a machine adds:
  *
- *   - {@link declareCheck} — a person says what program checks a rule (`check.declared`).
- *   - {@link enrollChecker} — a person vouches for a key that will sign check results and
+ *   - {@link declareCheck}: a person says what program checks a rule (`check.declared`).
+ *   - {@link enrollChecker}: a person vouches for a key that will sign check results and
  *     nothing else, from the line that key's machine printed (`checker.enrolled`).
- *   - {@link runRuleChecks} — the checker runs every declared check of a rule in force and
+ *   - {@link runRuleChecks}: the checker runs every declared check of a rule in force and
  *     records each result under its OWN anchor (`check.passed` / `check.failed`).
- *   - {@link retireChecker} — a person takes the role away from a checker key, for good
+ *   - {@link retireChecker}: a person takes the role away from a checker key, for good
  *     (`checker.retired`): the answer to a leaked runner secret.
  *
  * WHAT RUNS A CHECK IS HANDED IN. This module decides which checks run, refuses a key that is

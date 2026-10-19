@@ -342,7 +342,7 @@ export type ChainArrivals =
  *
  * Three ways the answer is no, and each is a real thing that happens rather than a
  * defensive branch:
- *   - `A_TAIL_IS_GONE` — a tail the replay covered is not there any more. The chain
+ *   - `A_TAIL_IS_GONE`: a tail the replay covered is not there any more. The chain
  *     did not grow, it changed.
  *   - `A_TAIL_WAS_CUT`: the tail lost a segment it had, or no longer holds the entry
  *     the replay ended on. A cut is what `mnema tail prune` authorizes and what a

@@ -84,7 +84,7 @@ function machine(treeRoot: string, root: string): { writer: ChainWriter; ctx: Wr
 /**
  * The state the loss scenario starts from: a project established with its cold
  * backup key, the backup's private half copied to a vault OUTSIDE the machine,
- * and the primary private key deleted — the disk is fine, the key is gone.
+ * and the primary private key deleted: the disk is fine, the key is gone.
  */
 function establishThenLoseTheKey(protectedWith?: string): {
   anchorBefore: string;
