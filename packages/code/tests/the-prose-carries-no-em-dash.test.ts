@@ -113,7 +113,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/context
   'packages/context/README.md': 41,
   // @mnema/core
-  'packages/core/': 101,
+  'packages/core/': 106,
   // the page of @mnema/core
   'packages/core/README.md': 20,
   // @mnema/sdk

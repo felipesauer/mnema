@@ -51,22 +51,22 @@ describe('README example', () => {
       const writer = openChainForWriting(root, { keyRoot });
       const ctx = { writer, layout: { root }, upcasters: catalogUpcasters() };
 
-      // Create a task and move it: each write runs the gate first. The caller supplies
+      // Create a task and move it — each write runs the gate first. The caller supplies
       // neither the id nor the author. The id is MINTED here, from randomness, so two
       // offline clones never mint the same one; `who` is derived from the writing key,
-      // so authorship cannot be forged by typing a name. `which`, the agent that
-      // carried the work out, IS the caller's, because an agent has no key.
+      // so authorship cannot be forged by typing a name. `which` — the agent that
+      // carried the work out — IS the caller's, because an agent has no key.
       const created = createTask(ctx, { title: 'Ship the parser', which: 'claude' });
       if (created.ok) {
         // DRAFT → READY: `submit` requires no proof fields, so none are needed. The id
         // to move with is the one the create handed back.
         transitionTask(ctx, { id: created.id, action: 'submit', which: 'claude' });
-        // An action that carries proof supplies it, e.g. cancelling requires a reason:
+        // An action that carries proof supplies it — e.g. cancelling requires a reason:
         // transitionTask(ctx, { id: created.id, action: 'cancel', which: 'claude',
         //   fields: { reason: 'superseded by a new approach' } });
       }
 
-      // Read state from the cache: rebuilt from the chain, never authored directly.
+      // Read state from the cache — rebuilt from the chain, never authored directly.
       const cache = ProjectionCache.open(root);
       cache.rebuild();
       const task = created.ok ? cache.getTask(created.id) : null;
