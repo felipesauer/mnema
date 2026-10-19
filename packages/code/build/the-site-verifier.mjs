@@ -3,7 +3,7 @@
  *
  * The chain reads the record through `node:fs` and hashes and verifies through
  * `node:crypto`; a page has neither, so the bundler is told to link those names to the
- * files under `src/site/browser/` — the same verifier code over the files a page carries, with a
+ * files under `src/site/browser/`: the same verifier code over the files a page carries, with a
  * synchronous SHA-256 and Ed25519. Nothing else is bundled: the output imports nothing and
  * reaches for no network.
  *

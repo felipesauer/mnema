@@ -83,7 +83,7 @@ export function stackDigest(files: readonly StackFile[]): DigestResult {
 }
 
 /**
- * The bytes the digest is the SHA-256 of — one `path NUL sha256(file) LF` per file — or
+ * The bytes the digest is the SHA-256 of, one `path NUL sha256(file) LF` per file, or
  * `undefined` when a path is refused. It is the message an author's `stack.sigstore.json` signs,
  * so the digest a Sigstore bundle names is the stack's digest itself; `digest.sh <dir> --listing`
  * prints the same bytes.

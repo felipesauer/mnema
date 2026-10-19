@@ -3,7 +3,7 @@
  *
  * `activate` is handed the `vscode` module by the bundle's entry (`build/bundle.mjs`), and this file
  * declares the few members of it that it uses. So the whole of it runs, in the tests, against a
- * stand-in — and nothing here imports `vscode`, which would need the editor to exist.
+ * stand-in, and nothing here imports `vscode`, which would need the editor to exist.
  *
  * Every read and every write goes through the `mnema` command line. A decision is judged with the
  * CLI's own verb and the note it requires; nothing about rules, state or proof is decided here.

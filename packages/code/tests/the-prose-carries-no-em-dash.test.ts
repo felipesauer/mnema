@@ -86,8 +86,6 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/chain/': 2074,
   // the page of @mnema/chain
   'packages/chain/README.md': 58,
-  // the build scripts of @mnema/code
-  'packages/code/build/': 1,
   // the manifest of @mnema/code, whose description the registry shows
   'packages/code/package.json': 1,
   // the page of @mnema/code
@@ -116,26 +114,18 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/core/': 2320,
   // the page of @mnema/core
   'packages/core/README.md': 20,
-  // @mnema/sdk
-  'packages/sdk/': 4,
   // the page of @mnema/sdk
   'packages/sdk/README.md': 1,
-  // @mnema/stacks
-  'packages/stacks/': 6,
   // the page of @mnema/stacks
   'packages/stacks/README.md': 1,
   // @mnema/vscode
-  'packages/vscode/': 6,
+  'packages/vscode/': 1,
   // the page of @mnema/vscode
   'packages/vscode/README.md': 1,
   // the plugin for agent hosts
   'plugin/': 169,
   // the recordings and the scripts that make them
   'recordings/': 71,
-  // the configuration of the workspace
-  'tsconfig.rulers.json': 3,
-  // the configuration of the host contract run
-  'vitest.host-contract.config.ts': 2,
 };
 
 /**

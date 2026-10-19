@@ -24,7 +24,7 @@ import type { DiscoveryEnv, Scope } from '@mnema/core';
 
 /** Where the record is read from and who writes to it. */
 export interface RecordOptions {
-  /** The directory the project is found from — the working directory a `mnema` command would run in. */
+  /** The directory the project is found from: the working directory a `mnema` command would run in. */
   readonly cwd: string;
   /**
    * The name every write is attributed to: the agent this program is. A write names it the way
