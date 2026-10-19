@@ -644,11 +644,12 @@ function howMnemaFits(blocks, theme) {
   body.push(...record.out);
   for (const t of [5.0, 11.0])
     body.push(landing(s, record.at(t === 5.0 ? 3 : 4), cy, a, t, s.paint.lit));
-  // mnema verify reads the chain, one cube after the other, and says so.
+  // mnema verify reads the chain, one cube after the other, and says so; the last light is out
+  // before the end holds still, so the last frame is the one a reader who asked for less motion sees.
   for (let i = 0; i < 5; i++)
-    body.push(landing(s, record.at(i), cy, a, 11.6 + i * 0.22, s.paint.lit));
+    body.push(landing(s, record.at(i), cy, a, 11.4 + i * 0.15, s.paint.lit));
   body.push(
-    sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.8) }),
+    sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.3) }),
   );
 
   // The packets, each a dot that runs its lane, and the edge each lights as it arrives.
@@ -670,14 +671,14 @@ function howMnemaFits(blocks, theme) {
     else body.push(ring(s, hub, to));
   }
 
-  // The five steps, the one under way lit by a tab behind it.
-  /** @type {[number, number][]} */
+  // The five steps, the one under way lit by a tab behind it; the last stays lit to the end.
+  /** @type {[number, number | undefined][]} */
   const stepTimes = [
     [0.2, 2.6],
     [2.7, 5.8],
     [5.9, 8.8],
     [8.9, 11.5],
-    [11.6, 13.3],
+    [11.6, undefined],
   ];
   const stepW = W / HERO_STEPS.length;
   const tab = { y: 280, h: 22 };
@@ -687,7 +688,7 @@ function howMnemaFits(blocks, theme) {
     const label = `${i + 1}  ${step}`;
     const tw = 2 * Math.ceil((label.length * TYPE.caption.size * 0.55 + 24) / 2);
     body.push(
-      `<rect ${s.passes(from, to)} x="${n(cx - tw / 2 + 0.5)}" y="${tab.y + 0.5}" width="${tw - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
+      `<rect ${to === undefined ? s.stays(from) : s.passes(from, to)} x="${n(cx - tw / 2 + 0.5)}" y="${tab.y + 0.5}" width="${tw - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
       sans(s, label, cx, inside(tab, 'caption'), 'caption', { anchor: 'middle', preserve: true }),
     );
   });
