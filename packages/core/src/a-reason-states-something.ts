@@ -31,7 +31,7 @@
  * files refuses that one on its own, `NO_TITLE`)"*, and that was the same two-doors defect the
  * paragraph above tells of for the why, one field over: the reader refused `# ***` as `NO_TITLE`
  * while `mnema decision record '***' '…'` recorded a decision named `***`, permanently, and every
- * citation of it (`ADR-3 \u2014 ***`) read as nothing. {@link titleRefusal} asks
+ * citation of it (`ADR-3`, the separator, `***`) read as nothing. {@link titleRefusal} asks
  * {@link statesSomething} of a title now, the function the reader asks, so a title with no letter
  * and no digit is refused at the door the reader refuses it at.
  *

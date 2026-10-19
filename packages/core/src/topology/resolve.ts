@@ -29,8 +29,8 @@
  * then), named exactly what the walk looks for. Measured on the built binary before this
  * changed:
  * after the first `mnema init` anywhere on a machine with no `$XDG_DATA_HOME`, a note
- * taken in `~/Downloads` was answered "Landed in the public tree \u2014 committed with the
- * repository" and written into the machine's data directory, and every folder under the
+ * taken in `~/Downloads` was answered "Landed in the public tree" (committed with the
+ * repository) and written into the machine's data directory, and every folder under the
  * home that was no project of its own was served as the project `~`. So the walk now
  * passes over two kinds of `.mnema/`, and there is ONE function that says which
  * ({@link whyNoProjectRootAt}): asked by the walk here, by `mnema init` before it founds

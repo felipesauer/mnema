@@ -278,11 +278,11 @@ function normalizeLabel(text: string): string {
 /**
  * The ADR numbering a document carries in its own title, removed.
  *
- * `# ADR-002 \u2014 A vaga é opcional`, `# ADR 0001 \u2014 SessionDB is multi-writer-safe`
+ * `# ADR-002 - A vaga é opcional`, `# ADR 0001 - SessionDB is multi-writer-safe`
  * and `# 1. Record architecture decisions` all name their own number, and that
  * number is the SOURCE's, while this product freezes its OWN `ADR-<n>` into the
  * record at write time. Keeping both would put two numbers on one citation
- * (`ADR-3 \u2014 ADR-002 \u2014 A vaga é opcional`), which is precisely the failure the
+ * (`ADR-3 - ADR-002 - A vaga é opcional`), which is precisely the failure the
  * catalog describes for a label re-derived on read: a citation that silently names
  * a different decision. The source's number is not lost: it is in the file name,
  * and the file name is the provenance the proposal carries.

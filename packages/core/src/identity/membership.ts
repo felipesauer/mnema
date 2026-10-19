@@ -290,7 +290,7 @@ export function membershipIn(
  * WHERE THE OTHER KEY LIVES WAS SAID FOR ONE PLACE, another machine. The other key can be a copy
  * this machine keeps (the backup key an `init` made is one, and its path is what that `init`
  * printed) and a person who asked for it here without `--key` asked for THIS key instead:
- * measured on the binary, the enrollment answered *already in <identity> \u2014 nothing recorded* and
+ * measured on the binary, the enrollment answered *already in <identity>* and recorded nothing, and
  * the revocation refused `LAST_KEY`. The words name `--key "<its file>"` for that copy now, and the
  * way out done with the backup is followed to the letter in `the-refusal-names-the-way-out.test.ts`.
  *
