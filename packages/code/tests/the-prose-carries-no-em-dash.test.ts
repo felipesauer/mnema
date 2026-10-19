@@ -8,8 +8,8 @@
  * often marks nothing, and each session copied it from the file it was editing.
  *
  * IT IS BANNED IN STEPS. The tree is swept one area at a time, so {@link NOT_YET_SWEPT} names the
- * areas still holding some and how many each may hold at most. The ceiling only goes down: an
- * area that holds none leaves the list, and a file outside every listed area is accused at its
+ * areas still holding some and how many each holds. The ceiling is the count and only goes down:
+ * an area that holds none leaves the list, and a file outside every listed area is accused at its
  * first dash. When the list is empty, the ban is whole.
  *
  * WHERE THE CHARACTER IS DATA, it is written as an escape (a backslash, the letter u, then the
@@ -353,7 +353,7 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
     ).toEqual([]);
   });
 
-  it('is held by each area still to sweep no more than its ceiling, and by none that holds none', () => {
+  it('is held by each area still to sweep exactly as often as its ceiling says, and by none that holds none', () => {
     const counted = countByArea(CORPUS.read, NOT_YET_SWEPT);
     const now = [...counted].map(([prefix, { count }]) => `  '${prefix}': ${count},`).join('\n');
     if (process.env.RECOUNT_THE_EM_DASH === '1') process.stdout.write(`${now}\n`);
@@ -364,6 +364,14 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
           `${prefix} holds ${count}, at most ${NOT_YET_SWEPT[prefix]} (first at ${first})`,
       );
     expect(over, `an area holds more em dashes than it did; what each holds now:\n${now}`).toEqual(
+      [],
+    );
+    // A ceiling above what the area holds is room to write more, so it is held to the count: a
+    // sweep that removes some lowers its line in the same change, and no line can go up.
+    const loose = [...counted]
+      .filter(([prefix, { count }]) => count > 0 && count < (NOT_YET_SWEPT[prefix] as number))
+      .map(([prefix, { count }]) => `${prefix} holds ${count}, listed ${NOT_YET_SWEPT[prefix]}`);
+    expect(loose, `a ceiling is above what its area holds; what each holds now:\n${now}`).toEqual(
       [],
     );
     const swept = [...counted].filter(([, { count }]) => count === 0).map(([prefix]) => prefix);
