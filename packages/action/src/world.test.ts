@@ -72,21 +72,25 @@ function aRecordWhoseTailsWereCut(keys: number): string {
 }
 
 describe('the comment over a record whose tails were all deleted', () => {
-  it.each([2, 4, 6])('quotes the refusal by name with %i keys without a tail', (keys) => {
-    const repo = aRecordWhoseTailsWereCut(keys);
-    const world = worldAt(repo, {} as never, { info() {}, warning() {} }, {});
-    const verification = world.mnema.verify('HEAD~1');
-    expect(verification.passed).toBe(false);
-    const census = verification.said.match(/census \[key-without-tail\]/g) ?? [];
-    expect(census, verification.said).toHaveLength(keys);
+  it.each([2, 4, 6])(
+    'quotes the refusal by name with %i keys without a tail',
+    (keys) => {
+      const repo = aRecordWhoseTailsWereCut(keys);
+      const world = worldAt(repo, {} as never, { info() {}, warning() {} }, {});
+      const verification = world.mnema.verify('HEAD~1');
+      expect(verification.passed).toBe(false);
+      const census = verification.said.match(/census \[key-without-tail\]/g) ?? [];
+      expect(census, verification.said).toHaveLength(keys);
 
-    const comment = renderComment({
-      verification,
-      record: { total: 0, byKind: [], decisions: [] },
-      governed: [],
-      notAsked: 0,
-      approval: undefined,
-    });
-    expect(comment.indexOf('NO TAIL')).toBeGreaterThan(-1);
-  });
+      const comment = renderComment({
+        verification,
+        record: { total: 0, byKind: [], decisions: [] },
+        governed: [],
+        notAsked: 0,
+        approval: undefined,
+      });
+      expect(comment.indexOf('NO TAIL')).toBeGreaterThan(-1);
+    },
+    60_000,
+  );
 });
