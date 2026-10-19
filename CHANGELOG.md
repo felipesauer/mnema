@@ -508,6 +508,11 @@ with its own changelog.
   2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
+- **The second reader's page no longer says a cut cannot take the checkpoints with it.** It can: events cut from the end
+  of a tail while `checkpoints.jsonl` stays are reported, but the last events cut together with the checkpoints that
+  covered them, or the checkpoints file alone, leave a record both readers accept (`prev` catches an early checkpoint
+  dropped, not the last ones). The page, the reader's own text for that limit and `docs/install.md`'s sentence about
+  other MCP clients now say what was read.
 
 ## [0.2.0-beta] - 2026-10-11
 

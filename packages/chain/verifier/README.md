@@ -110,11 +110,13 @@ and has no id:
   self-test`. (G06)
 - §3 — *telling an authorized cut from tampering*. A sequence gap is reported and located;
   whether it was authorized cannot be read from here, because the document does not say what
-  authorizes one. The cut itself **is** reported: this bullet used to claim that a removal
-  taking a whole tail leaves nothing discontinuous to report, and emptying a record's segments
-  in place falsifies that — §6 makes `prev` the hash of the previous checkpoint's signed
-  message, so a cut cannot take the checkpoints with it, and every range left outrunning the
-  entries present is named under §5. What stays unreadable is the **authorization**. To look: `git log --stat -- <record>/tails`,
+  authorizes one. A cut that leaves the checkpoints behind **is** reported: if the events at
+  the end of a tail go and `checkpoints.jsonl` stays, every signed range that outruns the
+  entries present is named under §5. §6 makes `prev` the hash of the previous checkpoint's
+  signed message, so a checkpoint dropped from the start or the middle is caught; the *last*
+  ones dropped are not. A cut that takes the last events together with the checkpoints that
+  covered them, or the checkpoints file alone, leaves a record both readers accept. What stays
+  unreadable is the **authorization**, and with it whether anything is missing. To look: `git log --stat -- <record>/tails`,
   because a cut is a commit. (G09)
 - §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
   `v > 1` and no upcaster is published, so there is nothing to lift. To look, in a checkout of the repository:

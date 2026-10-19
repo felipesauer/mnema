@@ -715,9 +715,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
    * record whose segments were emptied without a byte count moving — and it leaves signed
    * checkpoints naming events the tail no longer holds. That reads like the record
    * contradicting itself, which is how the product reads it (`broken`). It is admitted here
-   * anyway because section 6 makes `prev` the hash of the previous checkpoint's signed
-   * message, so a cut CANNOT take the checkpoints that covered the events with it: a range
-   * with no entries under it is the shape an authorized cut is obliged to leave, and section
+   * anyway because the cut leaves the checkpoints that covered the events in place
+   * (section 6 chains them by `prev`, which catches an early one dropped and not the last
+   * ones): a range with no entries under it is the shape an authorized cut may leave, and section
    * 3 says of precisely that case that a party reading only the document "cannot tell an
    * authorized cut from tampering, and the honest thing for them to do is report the gap and
    * stop". So this reader reports and stops, under G09.
@@ -1059,8 +1059,8 @@ describe('a check that could not run is reported as neither pass nor refusal', (
     // The product answers `broken`: a signed checkpoint whose range outruns the entries
     // present is the record contradicting its own signature, and it will not call that fine.
     // The second reader answers INCOMPLETE, and section 3 is why: `prev` chains the
-    // checkpoints (section 6), so a cut cannot take the checkpoints that covered the events
-    // with it — a range over no entries is what an AUTHORIZED cut is obliged to leave behind.
+    // checkpoints (section 6), which catches an early one dropped and not the last ones; this
+    // cut left the checkpoints in place — a range over no entries is what an AUTHORIZED cut may leave.
     // The document says of exactly this that a reader of it alone "cannot tell an authorized
     // cut from tampering, and the honest thing for them to do is report the gap and stop".
     // Both readings are faithful. The product is entitled to the stronger one because it
