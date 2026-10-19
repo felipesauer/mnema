@@ -147,14 +147,14 @@
 <rect class="a" style="animation-name:k43" opacity="0" x="354.5" y="78.5" width="171" height="97" rx="19" fill="none" stroke="#997dbf" stroke-width="2"/>
 <g class="a" style="animation-name:k44,k45" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
 <rect class="a" style="animation-name:k46" opacity="0" x="621.5" y="9.5" width="257" height="235" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
-<rect class="a" style="animation-name:k47" opacity="0" x="23.5" y="280.5" width="129" height="21" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
-<text x="88" y="294.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">1  session opens</text>
-<rect class="a" style="animation-name:k48" opacity="0" x="199.5" y="280.5" width="129" height="21" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
-<text x="264" y="294.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">2  write refused</text>
-<rect class="a" style="animation-name:k49" opacity="0" x="381.5" y="280.5" width="117" height="21" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
-<text x="440" y="294.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">3  write lands</text>
-<rect class="a" style="animation-name:k50" opacity="0" x="544.5" y="280.5" width="143" height="21" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
-<text x="616" y="294.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">4  decision signed</text>
-<rect class="a" style="animation-name:k51" x="720.5" y="280.5" width="143" height="21" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
-<text x="792" y="294.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">5  record verified</text>
+<rect class="a" style="animation-name:k47" opacity="0" x="23.5" y="278.5" width="129" height="19" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="88" y="291.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">1  session opens</text>
+<rect class="a" style="animation-name:k48" opacity="0" x="199.5" y="278.5" width="129" height="19" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="264" y="291.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">2  write refused</text>
+<rect class="a" style="animation-name:k49" opacity="0" x="381.5" y="278.5" width="117" height="19" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="440" y="291.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">3  write lands</text>
+<rect class="a" style="animation-name:k50" opacity="0" x="544.5" y="278.5" width="143" height="19" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="616" y="291.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">4  decision signed</text>
+<rect class="a" style="animation-name:k51" x="720.5" y="278.5" width="143" height="19" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="792" y="291.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle" xml:space="preserve">5  record verified</text>
 </svg>

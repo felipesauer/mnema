@@ -688,7 +688,8 @@ function howMnemaFits(blocks, theme) {
     [11.6, undefined],
   ];
   const stepW = W / HERO_STEPS.length;
-  const tab = { y: 280, h: 22 };
+  // The tab stays in from the frame's foot, so no edge of it is cut off at any width.
+  const tab = { y: 278, h: 20 };
   HERO_STEPS.forEach((step, i) => {
     const cx = stepW * i + stepW / 2;
     const [from, to] = stepTimes[i] ?? [0, 0];
