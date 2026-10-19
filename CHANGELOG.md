@@ -560,6 +560,11 @@ with its own changelog.
   README, the second reader's README and a test's comment) now say the same five. The lines in the CLI reference
   and the `@mnema/code` README that said verify does not catch a whole tail deleted now say that is the default, and
   what `--require signed` and `--since` do.
+- **The version the program says is the one that will reach npm, `0.1.0`.** The repository declared `0.2.0-beta`, a
+  withdrawn pre-release that was never published to npm, and the console's recording on the front page showed it. Every
+  manifest, the two version constants, the plugin manifests and the golden of `--version` now say `0.1.0`, and the
+  console's recording was made again from the built binary. The records of the withdrawn pre-releases below stay as
+  they were.
 
 ## [0.2.0-beta] - 2026-10-11
 
