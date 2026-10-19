@@ -54,7 +54,9 @@ try {
     vscodeExecutablePath: executable,
     extensionDevelopmentPath: stub,
     extensionTestsPath: join(pkgDir, 'build', 'in-the-editor.cjs'),
-    launchArgs: [workspace, ...folders, '--disable-workspace-trust'],
+    // `--disable-gpu`: under `xvfb` there is no GPU, and on some runner images the renderer hangs
+    // trying to use one (the window is then reported unresponsive and the run exits with 1).
+    launchArgs: [workspace, ...folders, '--disable-workspace-trust', '--disable-gpu'],
   });
   console.log(`${vsix} installed and active in VS Code (${executable})`);
 } finally {

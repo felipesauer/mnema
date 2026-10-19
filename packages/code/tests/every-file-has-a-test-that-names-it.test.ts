@@ -1165,6 +1165,8 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-floor-is-the-declaration.test.ts': 6,
   'packages/code/tests/the-floor-is-where-the-name-is-drawn.test.ts': 24,
   'packages/code/tests/the-front-page-is-drawn-from-the-console.test.ts': 7,
+  'packages/code/tests/the-front-page-pitch-holds-no-date-and-no-count.test.ts': 4,
+  'packages/code/tests/the-front-page-says-what-it-is-not-and-groups-its-docs.test.ts': 4,
   'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
   'packages/code/tests/the-gate-is-decided-once.test.ts': 5,
   'packages/code/tests/the-gate-throws-on-what-is-not-an-unreadable-line.test.ts': 11,

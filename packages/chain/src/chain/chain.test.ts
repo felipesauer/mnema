@@ -536,11 +536,9 @@ describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, an
   it('reads a cut that took the last checkpoint WITH its events as an honest shorter chain', () => {
     // Two checkpoints: 0..3 and 4..7. An adversary truncates the tail to 0..3
     // and deletes the second checkpoint, trying to pass off the shorter chain
-    // as honest. The first checkpoint alone would verify — but the writer's
-    // NEXT checkpoint linked to it, and here we prove the surviving run is
-    // internally consistent yet the honest full chain differs. The concrete
-    // defense: build the two-checkpoint chain, then drop the second checkpoint
-    // AND its events, and confirm verify does not silently equal a chain that
+    // as honest. Nothing left in the record remembers the second checkpoint, so
+    // the shorter chain verifies: build the two-checkpoint chain, drop the second
+    // checkpoint AND its events, and verify reads what is left as a chain that
     // only ever had 0..3.
     const w = openFounded({ maxUnsignedEvents: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));

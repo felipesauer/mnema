@@ -207,7 +207,7 @@ with its own changelog.
   `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is now exported by `@mnema/chain`.
 - **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
   and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
-  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch
+  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and by default does not catch
   a cut off the end that takes the last checkpoint with it, or a whole tail deleted. The reference's line on cutting
   part of a tail no longer says every such cut stays loud. The page on packages
   and the one on the site said the Action "only reads"; with a `checker-key` it also writes signed rule results to the
@@ -525,6 +525,41 @@ with its own changelog.
   2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
+- **The front page says what mnema is not, and groups the docs by who reads them.** `README.md` carries the four
+  lines of `docs/where-it-fits.md` ("Not a semantic memory", "Not an agent runner", "Not a copy somewhere else", "Not
+  access control") and lists the docs under use, verify, integrate and contribute; a case holds each line to the
+  sentences of the page it comes from, and every page of `docs/` to one group. Two sentences said more than the code
+  holds, and now say less: the front page said "what each one does, line by line, is in Features" of products
+  Features does not describe (the page that verifies itself, the agent in CI), and `docs/where-it-fits.md` said "the most that leaves
+  that machine" is a digest without saying that it leaves only when you run the witness verb, and that Sigstore
+  sends the identity too; `docs/what-it-proves.md` now says Sigstore's leaving is where somebody ran it.
+  "Not a copy somewhere else" no longer says that what you record privately never leaves the machine: the notes
+  of every tree this machine holds, the private one included, reach the agent's host, which sends them to its model,
+  both when a session opens through the plugin and when the agent asks for them (a search, or a record read whole,
+  answers from the private tree too; both were run against the real server for this change), and the line and
+  `docs/where-it-fits.md` now say so. The stamp's page, `docs/what-it-proves.md` and `docs/cli-reference.md` now say
+  what the calendar receives: a hash of the checkpoint's digest joined to a random nonce, and nothing else of the
+  record, not the digest itself (only the Sigstore countersignature, where somebody ran it, sends the digest and the
+  identity); the glossary no longer says the private tree "stays on that machine" but that it is not committed. The
+  guard holds the line to what it contains, not to what it adds, and does not hold what a host does with the text
+  once it has received it.
+- **The second reader's page no longer says a cut cannot take the checkpoints with it.** It can: events cut from the end
+  of a tail while `checkpoints.jsonl` stays are reported, and `prev` catches a checkpoint dropped from the start or
+  the middle, not the last ones. By default both readers accept the checkpoints file deleted alone, and the last
+  checkpoints deleted with their events kept; with --require signed both refuse them. The last events cut together
+  with the checkpoints that covered them pass at every level, in both readers; only a copy of the record from before
+  the cut shows them gone, which is what verify reads with --since. The page, the reader's own text for that limit,
+  `docs/install.md`'s sentence about other MCP clients, `@mnema/chain`'s threat table and the CLI reference's line on
+  cutting part of a tail (which said such a cut reads "up to the last checkpoint"; it reads as fully signed) now say
+  what was read. The second reader's page also no longer says every mutation of its tool is refused: three are
+  accepted by both readers and two read INCOMPLETE, and no mutation is accepted by one reader alone. It now names a
+  third place the two verdicts differ: with every tail deleted and the keys left, the product at its default level
+  says verified with a note per key and exits 0 (it exits 1 with `--require signed`, and with `--since` over a copy
+  from before), and the second reader says BROKEN and exits 3 at its default level and with `--require signed`. The
+  other pages that said every mutation is refused (the page on verifying without installing, `@mnema/chain`'s
+  README, the second reader's README and a test's comment) now say the same five. The lines in the CLI reference
+  and the `@mnema/code` README that said verify does not catch a whole tail deleted now say that is the default, and
+  what `--require signed` and `--since` do.
 - **The front page's banner, steps and "how mnema fits" are drawn in the family's paint and motion.** Each carries its
   own page and the accent's glow, tonal cards and dots that run their arrows; the banner's light is faint and moves
   nothing, the steps' numbers light one after the other, and a reader who asks for less motion sees the last frame.

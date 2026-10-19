@@ -441,14 +441,15 @@ def _check_checkpoints(
         elif checkpoint.to_seq >= len(entries):
             # WHY THIS IS UNCHECKED AND NOT A FAIL, and why it cites G09. A signed
             # checkpoint naming events the tail does not hold looks like the record
-            # contradicting itself, and the product reads it that way (`broken`). But
-            # section 6 makes `prev` the hash of the previous checkpoint's signed message,
-            # so dropping a checkpoint breaks the chain - which means a cut that removed
-            # events HAS to leave the checkpoints that covered them standing over nothing.
-            # A range with no entries under it is therefore the residue an AUTHORIZED cut
-            # must leave, and section 3 says of exactly this that a party reading only the
-            # document "cannot tell an authorized cut from tampering, and the honest thing
-            # for them to do is report the gap and stop". This is that report, and the stop.
+            # contradicting itself, and the product reads it that way (`broken`). But a cut
+            # that removed events and left checkpoints.jsonl alone leaves the checkpoints
+            # that covered them standing over nothing (section 6 chains them by `prev`,
+            # which catches an earlier one dropped and not the last ones, so a cut may also
+            # take the last ones with their events and leave nothing to see). A range with
+            # no entries under it is a shape an AUTHORIZED cut may leave, and section 3
+            # says of exactly this that a party reading only the document "cannot tell an
+            # authorized cut from tampering, and the honest thing for them to do is report
+            # the gap and stop". This is that report, and the stop.
             report.unchecked(
                 "5",
                 f"the range reaches seq {checkpoint.to_seq} and the tail holds "
