@@ -10,14 +10,14 @@
  *
  * WHY THIS IS A FILE OF ITS OWN AND NOT `edit-asks-a-person.mjs`. Cursor's command-line agent
  * reads this same plugin, runs only `type: "command"` hooks, and answers a hook's `deny` by not
- * writing the file and handing the model the reason as the write's error — and it IGNORES `ask`
+ * writing the file and handing the model the reason as the write's error, and it IGNORES `ask`
  * (measured on 2026.09.18). So the verb is asked for Cursor
  * (`--host cursor`), which answers a refusal and nothing else: a write that only asks goes through
  * and records no asking, because a person was not asked.
  *
  * `hooks.json` runs it for Cursor alone, and by the host's own environment rather than by a
- * matcher: Cursor and Claude Code both apply the matcher `Write|Edit|NotebookEdit` — Claude Code
- * runs the per-edit call into the server there — so the shell `hooks.json` generates from the
+ * matcher: Cursor and Claude Code both apply the matcher `Write|Edit|NotebookEdit`, Claude Code
+ * runs the per-edit call into the server there, so the shell `hooks.json` generates from the
  * host table asks for `$CURSOR_VERSION`, which Cursor sets for every hook (measured) and Claude
  * Code does not, before any process starts. It also hands this handler its host and that variable
  * (`--host cursor --where CURSOR_VERSION`), and the handler checks it again before it runs `mnema`
@@ -29,13 +29,13 @@
  * one place every door decides them (`what-a-write-meets.ts`). The rule for running a verb is
  * `hand-over.mjs`'s.
  *
- * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0 — no
- * `mnema` on the PATH, no project, a payload it could not read — and silence is `{}` to the host,
+ * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0 (no
+ * `mnema` on the PATH, no project, a payload it could not read) and silence is `{}` to the host,
  * which lets the write through: a gate that cannot say why it stops somebody does not stop them.
  */
 
 /**
- * WHICH channel of the product's framing this handler carries — the name `record-framing.ts`
+ * WHICH channel of the product's framing this handler carries: the name `record-framing.ts`
  * knows it by. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */

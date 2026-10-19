@@ -16,7 +16,7 @@
  */
 
 /**
- * WHICH channel of the product's framing this handler carries — the name `record-framing.ts`
+ * WHICH channel of the product's framing this handler carries: the name `record-framing.ts`
  * knows it by. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */

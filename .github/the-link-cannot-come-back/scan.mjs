@@ -1,5 +1,5 @@
 /**
- * THE LINK CANNOT COME BACK — the attribution footer, refused before it reaches the trunk.
+ * THE LINK CANNOT COME BACK: the attribution footer, refused before it reaches the trunk.
  *
  * THE RULE IS OLD AND IT WAS BROKEN ANYWAY. This repository does not credit the tool that wrote
  * a change in the change's own record: no `Co-Authored-By:` naming the assistant, no `Generated
@@ -12,17 +12,17 @@
  * WHAT IT COST TO UNDO: 194 commits rewritten, a force-push onto a protected branch with the
  * protection opened and closed around it, and 19 API calls. Nothing in that list is expensive
  * because the footer is expensive. It is expensive because NOTHING WAS LOOKING, and the rule
- * lived in a person's memory rather than in a machine — which is what this file changes.
+ * lived in a person's memory rather than in a machine, which is what this file changes.
  *
  * IT IS TWO SURFACES AND THE SECOND IS THE ONE THAT ESCAPES. The commit message is the half
  * everybody thinks of and the half that is dear to repair. The pull request BODY is not git at
- * all — it is a field of the GitHub API — and it carried 19 of the 33 leaks. A guard over commits
+ * all (it is a field of the GitHub API) and it carried 19 of the 33 leaks. A guard over commits
  * alone leaves the larger half open, so both are read here, by ONE rule (`attributionIn`), and a
  * case below fails if either surface stops being handed to it.
  *
  * THE RULE IS OVER THE FOOTER, NEVER OVER THE WORD. `claude` is a legitimate value of this
- * product — `which: 'claude'` appears in fixtures and examples, and `plugin/` documents a host
- * plugin — so a scan for the word accuses the product it is defending. Worse, the trunk holds 13
+ * product (`which: 'claude'` appears in fixtures and examples, and `plugin/` documents a host
+ * plugin), so a scan for the word accuses the product it is defending. Worse, the trunk holds 13
  * dependabot commits and three of them quote upstream release notes that credit `Claude Opus 4.8`
  * for somebody else's pull request, and six more quote `This PR was generated with [Release
  * Please]`. Both spellings below are anchored so that neither shape is reachable: the co-author
@@ -31,8 +31,8 @@
  *
  * AND THERE IS NO ALLOWLIST, WHICH IS THE POINT. `Co-authored-by: dependabot[bot]` is not
  * exempted here; it is simply not reached, because its value names neither the vendor nor the
- * tool. An exemption is a hole with a name on it — anything that learns to write the exempted
- * shape walks through — and this way the 13 legitimate trailers pass for the same reason a
+ * tool. An exemption is a hole with a name on it, anything that learns to write the exempted
+ * shape walks through, and this way the 13 legitimate trailers pass for the same reason a
  * human co-author's would. `the-link-cannot-come-back.test.ts` pins that in both directions.
  *
  * THE E-MAIL OF A COMMIT IS THE THIRD THING IT READS. A commit made with a work or private
@@ -44,8 +44,8 @@
  *
  * IT REFUSES RATHER THAN GUESSES, in the mould of `.github/why-it-went-red/` and
  * `.github/what-the-suite-left-behind/`: 0 nothing to report, 1 something to report, 2 it could
- * not tell. A scan that examined no commit is the dangerous one — an empty range, a shallow
- * checkout, a base that was never fetched all read as "the trunk is clean" — so zero commits is
+ * not tell. A scan that examined no commit is the dangerous one (an empty range, a shallow
+ * checkout, a base that was never fetched all read as "the trunk is clean"), so zero commits is
  * a REFUSAL with a phrase of its own (`THE_CANARY`), never an exit 0.
  */
 
@@ -63,7 +63,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 
 /**
  * WHERE ONE FOOTER WAS FOUND. `where` names the surface in the words a person would use to go
- * fix it — `commit 2fe28887 (…)`, `the pull request body` — because the two surfaces are
+ * fix it (`commit 2fe28887 (…)`, `the pull request body`), because the two surfaces are
  * repaired by completely different means and a finding that does not say which is half a finding.
  *
  * @typedef {{ footer: string, what: string, where: string, at: number, line: string }} Finding
@@ -81,7 +81,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 
 /**
  * THE PULL REQUEST AS IT WAS WRITTEN. `null` means no pull request was handed over at all, which
- * is a refusal rather than an empty reading — see `judge`.
+ * is a refusal rather than an empty reading: see `judge`.
  *
  * @typedef {{ title: string, body: string }} PullRequest
  */
@@ -113,8 +113,8 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
  * it recognises. A third spelling is a third entry, and `attributionIn` needs no other change.
  *
  * THE CO-AUTHOR RULE READS A TRAILER, NOT A SENTENCE. `holds` requires the line to START with the
- * trailer key — leading whitespace allowed, because a quoted message is indented and a footer
- * smuggled in under two spaces is still a footer — and then requires the VALUE to name the vendor
+ * trailer key (leading whitespace allowed, because a quoted message is indented and a footer
+ * smuggled in under two spaces is still a footer) and then requires the VALUE to name the vendor
  * or the tool. `Co-authored-by: dependabot[bot] <…@users.noreply.github.com>` therefore passes,
  * and so would a human co-author; `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` does
  * not. The three dependabot commits that quote `<strong>Claude Opus 4.8</strong>` out of an
@@ -240,7 +240,7 @@ export const NO_PULL_REQUEST =
   'no pull request was handed to this scan, so the half of the rule that reads the description examined nothing — run it on a `pull_request` event, or pass --commits-only to say out loud that only the commits were read';
 
 /**
- * EVERY FOOTER IN ONE TEXT — THE SINGLE READING OF THE RULE.
+ * EVERY FOOTER IN ONE TEXT: THE SINGLE READING OF THE RULE.
  *
  * Both surfaces come through here and nothing else decides what a footer is. Two readings of one
  * rule is the shape that lets the commit half and the body half drift apart, which is precisely
@@ -277,7 +277,7 @@ export function attributionIn(text, where) {
  * BOTH REFUSALS COME FIRST AND NEITHER IS AN EXIT 0. Zero commits is `THE_CANARY`; no pull
  * request at all is `NO_PULL_REQUEST`. A caller that genuinely has only commits to offer says so
  * by handing `pullRequest: 'not-asked'`, and the reading it gets back says the body was not
- * examined — `main` reaches that only through `--commits-only`, and the case that reads `ci.yml`
+ * examined: `main` reaches that only through `--commits-only`, and the case that reads `ci.yml`
  * fails if the workflow ever passes it.
  *
  * @param {{
@@ -435,7 +435,7 @@ export function commitsIn(range, cwd = process.cwd()) {
  * a stranger wrote; on a public repository, putting it on a command line is how a workflow hands
  * a stranger the runner. It also needs no token and makes no network call.
  *
- * `body` is `null` on a pull request opened with an empty description — that is an examined empty
+ * `body` is `null` on a pull request opened with an empty description, that is an examined empty
  * body, not a missing one, and the two must not read the same.
  *
  * THE PATH IS ASKED FOR AND NEVER DEFAULTED, AND THAT IS A REPAIR. This read
@@ -444,7 +444,7 @@ export function commitsIn(range, cwd = process.cwd()) {
  * a default in JavaScript. So `pullRequestFrom(undefined)` did not mean what it said: on a
  * workstation the variable is unset and it answered `null`, and on a runner the variable is set
  * and it answered with the live pull request. The case asserting the absence branch passed here
- * and read the real description there — skipped by the environment rather than run. The
+ * and read the real description there: skipped by the environment rather than run. The
  * environment is read at one site now, in `main`, so there is no default for `undefined` to
  * activate and the absence branch answers the same under every environment.
  *
@@ -469,7 +469,7 @@ export function pullRequestFrom(eventPath) {
  * On a `pull_request` event the runner has already written both ends into the payload, so this
  * needs no API call and no guess about what the base branch is called. What it DOES need is for
  * the base commit to be in the local history, which a default `actions/checkout` does not
- * guarantee — the workflow asks for `fetch-depth: 0` and a case reads `ci.yml` and fails if that
+ * guarantee: the workflow asks for `fetch-depth: 0` and a case reads `ci.yml` and fails if that
  * line goes away. When the base is missing, `git rev-list` exits non-zero and `main` refuses.
  *
  * THE PATH IS ASKED FOR AND NEVER DEFAULTED, for the reason written over `pullRequestFrom`: a
@@ -513,7 +513,7 @@ export function rangeFrom(argv, eventPath) {
  */
 export function main(argv = process.argv.slice(2), world = {}) {
   // THE ONE PLACE THE ENVIRONMENT IS READ. Both readers take the path as an argument, so this
-  // line is the whole of what `GITHUB_EVENT_PATH` decides — and the note over `pullRequestFrom`
+  // line is the whole of what `GITHUB_EVENT_PATH` decides, and the note over `pullRequestFrom`
   // says what the defaults that used to live on them cost.
   const eventPath = process.env.GITHUB_EVENT_PATH;
   const readCommits = world.commits ?? ((range) => commitsIn(range));
