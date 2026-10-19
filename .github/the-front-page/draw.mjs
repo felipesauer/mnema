@@ -1187,7 +1187,14 @@ function contextStory(s) {
   ];
   chain.forEach(([line, row], i) => {
     out.push(
-      s.sayIn(line, left.x + PAD, left, 'value', { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }, row),
+      s.sayIn(
+        line,
+        left.x + PAD,
+        left,
+        'value',
+        { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) },
+        row,
+      ),
     );
   });
   // The pill around the one in force sits on the panel's middle, and so does its line.
@@ -1287,10 +1294,7 @@ function stacksStory(s) {
       s.sayIn(line, x + PAD, folder, 'value', { attrs: s.stays(0.3 + i * 0.4) }, rows[i] ?? 0),
     );
   });
-  out.push(
-    '</g>',
-    s.sayIn(L.mcp, x + PAD, folder, 'value', { attrs: s.passes(from, to) }, 4),
-  );
+  out.push('</g>', s.sayIn(L.mcp, x + PAD, folder, 'value', { attrs: s.passes(from, to) }, 4));
   // The validator bars the server, and passes the directory once it is gone.
   const gate = { x, y: 186, w: folder.w, h: 40 };
   const verdict = x + 130;
