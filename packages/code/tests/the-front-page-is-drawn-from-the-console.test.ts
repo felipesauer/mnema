@@ -183,6 +183,26 @@ describe('the front page is drawn from the console', () => {
     expect(read(`${ASSETS}/${file}`)).toBe(drawn[file]);
   });
 
+  it.each(Object.keys(drawn).filter((file) => !file.startsWith('the-family-')))(
+    '%s draws every stroke of one unit on the middle of a pixel',
+    (file) => {
+      expect(offTheGrid(drawn[file] ?? '').map((o) => `${file}: ${o}`)).toEqual([]);
+    },
+  );
+
+  it('reads a stroke of one unit on a whole coordinate as off the grid', () => {
+    const rect = (at: string) =>
+      `<svg><defs></defs><rect ${at} fill="none" stroke="#997dbf"/><rect ${at} stroke="#997dbf" stroke-width="2"/></svg>`;
+    expect(offTheGrid(rect('x="630" y="122" width="240" height="24"'))).toHaveLength(1);
+    expect(offTheGrid(rect('x="630.5" y="122.5" width="239" height="23"'))).toEqual([]);
+    expect(
+      offTheGrid('<svg><defs></defs><path d="M0 48H880" stroke="#997dbf"/></svg>'),
+    ).toHaveLength(1);
+    expect(offTheGrid('<svg><defs></defs><path d="M0 48.5H880" stroke="#997dbf"/></svg>')).toEqual(
+      [],
+    );
+  });
+
   it('draws every glyph of the wordmark the console has', () => {
     // A glyph the script skipped would leave the banner short of the console and the case above
     // green, so the counts are asked of the rows themselves: one filled cell per full block, two
@@ -712,6 +732,53 @@ function nodesOf(svg: string): Node[] {
     nodes.push({ tag, at: attributesOf(written), text, groups: [...groups] });
   }
   return nodes;
+}
+
+/**
+ * Each stroke of one unit (a stroke with no width written is one) whose line does not lie on the
+ * middle of a pixel: at a whole coordinate it spreads over two columns of pixels at one pixel per
+ * unit and is half as strong as a border drawn on a half. A rectangle's four edges, and every
+ * horizontal or vertical run of a path, are read; a circle, an ellipse, a diagonal or a curve
+ * that strokes one unit is named as a shape this cannot hold to the grid.
+ */
+function offTheGrid(svg: string): string[] {
+  const half = (v: number) => Math.abs((((v % 1) + 1) % 1) - 0.5) < 0.001;
+  const found: string[] = [];
+  nodesOf(svg).forEach((node, i) => {
+    const { at } = node;
+    if (!['rect', 'path', 'circle', 'ellipse'].includes(node.tag)) return;
+    if (at.stroke === undefined || at.stroke === 'none') return;
+    if (at['stroke-width'] !== undefined && Number(at['stroke-width']) !== 1) return;
+    const name = `${node.tag}#${i}`;
+    if (node.tag === 'rect') {
+      const [x, y, w, h] = ['x', 'y', 'width', 'height'].map((k) => Number(at[k] ?? 0)) as Box;
+      if (![x, y, x + w, y + h].every(half))
+        found.push(`${name} has edges at ${x}, ${y}, ${x + w}, ${y + h}`);
+    } else if (node.tag === 'path') {
+      let cur: [number, number] = [0, 0];
+      for (const seg of (at.d ?? '').match(/[MLHVZ][^MLHVZ]*/g) ?? []) {
+        const [a = 0, b = 0] = (seg.slice(1).match(/-?\d*\.?\d+/g) ?? []).map(Number);
+        const next: [number, number] =
+          seg[0] === 'H'
+            ? [a, cur[1]]
+            : seg[0] === 'V'
+              ? [cur[0], a]
+              : seg[0] === 'Z'
+                ? cur
+                : [a, b];
+        if (seg[0] === 'H' && !half(cur[1])) found.push(`${name} runs along y=${cur[1]}`);
+        else if (seg[0] === 'V' && !half(cur[0])) found.push(`${name} runs along x=${cur[0]}`);
+        else if (seg[0] === 'L' && next[1] === cur[1] && !half(next[1]))
+          found.push(`${name} runs along y=${next[1]}`);
+        else if (seg[0] === 'L' && next[0] === cur[0] && !half(next[0]))
+          found.push(`${name} runs along x=${next[0]}`);
+        else if (seg[0] === 'L' && next[0] !== cur[0] && next[1] !== cur[1])
+          found.push(`${name} is a diagonal`);
+        cur = next;
+      }
+    } else found.push(`${name} is a ${node.tag} that strokes one unit`);
+  });
+  return found;
 }
 
 /** The stops of every keyframes of a picture, by name: each offset with its declarations. */

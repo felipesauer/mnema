@@ -92,7 +92,7 @@
 <text class="a" style="animation-name:k11" x="30" y="226" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">signed · proposed</text>
 <text x="638" y="76" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">src/billing/total.ts</text>
 <text x="650" y="94" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">refuses-a-write · ADR-2</text>
-<rect class="a" style="animation-name:k12" opacity="0" x="630" y="122" width="240" height="24" rx="6" fill="#997dbf" fill-opacity="0.16" stroke="#997dbf"/>
+<rect class="a" style="animation-name:k12" opacity="0" x="630.5" y="122.5" width="239" height="23" rx="6" fill="#997dbf" fill-opacity="0.16" stroke="#997dbf"/>
 <text x="638" y="138" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">src/cart/price.ts</text>
 <text x="638" y="192" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">.mnema/</text>
 <path d="M648.39 210L658.78 216L648.39 222L638 216z" fill="#997dbf" fill-opacity="0.3"/>
