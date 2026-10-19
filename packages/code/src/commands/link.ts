@@ -1,31 +1,31 @@
 /**
- * `mnema link <subject> <target> --rel <label>` — link one entity to another.
+ * `mnema link <subject> <target> --rel <label>`: link one entity to another.
  *
  * The relational sibling of the knowledge verbs, and the last. Like the others
- * it is a point-in-time FACT — no gate, no state, no `move` — and it mints NO id:
+ * it is a point-in-time FACT (no gate, no state, no `move`) and it mints NO id:
  * a link is an edge, not an entity, so the command reports the FACT (subject,
  * relation, target), not an id.
  *
  * The `subject` and `target` are POSITIONAL (short ids), while the relation is a
  * FLAG (`--rel <label>`). The relation is an OPEN string, not a closed set: the
- * catalog's `RECOMMENDED_LINK_RELATIONS` are DOCUMENTATION, not enforcement — a
+ * catalog's `RECOMMENDED_LINK_RELATIONS` are DOCUMENTATION, not enforcement; a
  * relation outside them is as valid as a new action, so the surface makes no enum
  * of it (an enum here would contradict the core). The help suggests the recommended
  * set, read from the catalog rather than repeated here; any string is accepted.
  *
- * Neither `subject` nor `target` is verified to exist: a link is legitimately cross-tree — a
- * private memory may point at a public task — and an address may name a path the tree does not hold
+ * Neither `subject` nor `target` is verified to exist: a link is legitimately cross-tree (a
+ * private memory may point at a public task) and an address may name a path the tree does not hold
  * yet, so the core does not refuse a dangling reference and neither does the surface. What IS
  * refused is an `ADR-<n>` label: one that names exactly one decision is recorded as that decision's
  * id, one several carry is refused with their ids, and one no decision carries is refused outright
- * (`link-target.ts`) — a label is never recorded as it was typed, on either end. So is a path
+ * (`link-target.ts`); a label is never recorded as it was typed, on either end. So is a path
  * outside the project, as the target of an address relation, in the public tree that reaches every
  * clone (`outsideTheProject`); the private and global trees take any path. A path inside, typed
  * absolute, is recorded relative to the root in the public tree (`targetAsRecorded`): an absolute
  * path names one machine's root, and a clone with another would read it as outside.
  *
  * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
- * the KIND decides — a link asserts a relation between records of the project, so
+ * the KIND decides: a link asserts a relation between records of the project, so
  * it belongs to the tree that travels with them. A declared `which` names the agent
  * on the fact and does not move the tree.
  */
@@ -52,7 +52,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the link command needs — injected so it is testable. */
+/** What the link command needs: injected so it is testable. */
 export interface LinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -60,7 +60,7 @@ export interface LinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   readonly env: DiscoveryEnv;
 }
 
-/** A link was recorded — the fact, with its references (there is no id). */
+/** A link was recorded: the fact, with its references (there is no id). */
 export interface LinkRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The entity that ORIGINATES the link (the event subject). */
@@ -70,17 +70,17 @@ export interface LinkRecorded extends Replacement, Landed {
   /** The relation label (an open string). */
   readonly rel: string;
   /**
-   * What the address covers in the working tree, when the relation carries one —
+   * What the address covers in the working tree, when the relation carries one:
    * absent for every other relation, since a target that is an id covers nothing.
    *
    * It rides the SUCCESS path deliberately: the fact is already recorded when this is
    * computed, so it is a report and never a gate. The moment it is useful is the one
    * right after, when the person who typed a wide address can still record a narrower
-   * one — and nothing in the product said this number before.
+   * one, and nothing in the product said this number before.
    */
   readonly reach?: AddressReach;
   /**
-   * WHERE THE SUBJECT RESOLVES — the tree that holds the rule this link names, or
+   * WHERE THE SUBJECT RESOLVES: the tree that holds the rule this link names, or
    * ABSENT when no tree here holds it at all.
    *
    * Resolved at WRITE time, which is the only moment it is worth anything: a link is
@@ -92,7 +92,7 @@ export interface LinkRecorded extends Replacement, Landed {
    * <a-private-decision> <path>` is accepted today: the edge is committed and reaches
    * every clone, and the decision it names never leaves the machine. Over a record with
    * two of those, a clone was told `3 govern this path` where one governed. The counting
-   * is fixed where the reads are; this is the other half of the order the decision set —
+   * is fixed where the reads are; this is the other half of the order the decision set:
    * the WRITE says what it just did, at the moment it can still be undone by writing
    * something else.
    */
@@ -101,7 +101,7 @@ export interface LinkRecorded extends Replacement, Landed {
 
 /** The record was refused. */
 export type LinkRefused =
-  /** There is no project here — a project-scoped link needs one. */
+  /** There is no project here: a project-scoped link needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused (e.g. the authority invariant). */
   | {
@@ -116,9 +116,9 @@ export type LinkRefused =
  * the one every birth follows: an explicit `scope` wins, else the tree the KIND
  * names (public). Both ends are resolved first (a label becomes its decision's id) and a label left
  * raw is refused; what is forwarded to the core is never a raw label. Anything else is forwarded as-is
- * and never validated — a dangling target is honest cross-tree. The
+ * and never validated: a dangling target is honest cross-tree. The
  * `rel` is an open string, forwarded verbatim. On success it echoes the fact back
- * (subject, rel, target) — there is no minted id — plus the tree it landed in. A
+ * (subject, rel, target; there is no minted id) plus the tree it landed in. A
  * declared `which` is recorded on the event and does not move the tree.
  */
 export function runLink(
@@ -145,7 +145,7 @@ export function runLink(
 
   // BOTH ENDS ARE ADDRESSES before they are anything else: a label one decision carries becomes
   // that decision's id, one several carry is refused with their ids, and a label no decision
-  // carries is refused — all before a writer is opened, so a refusal leaves the record as it was.
+  // carries is refused, all before a writer is opened, so a refusal leaves the record as it was.
   const subject = resolveAddress(ctx, input.subject);
   if (!subject.ok) return refusedLink('AMBIGUOUS_LABEL', subject.message);
   const target = resolveAddress(ctx, input.target);
@@ -192,14 +192,14 @@ export function runLink(
   }
 
   // What the address covers, computed AFTER the write and off the relation AS
-  // RECORDED — the label that landed is the one a reader will later compare by, and a
+  // RECORDED: the label that landed is the one a reader will later compare by, and a
   // screened one is not an address relation at all. The root is the project's, so a
   // link recorded outside a project (global) reports no reach: there is no root for an
   // address to be relative to, which is the same reason `mnema rules` refuses there.
   const root = projectRoot(trees.projectPublic);
   // WHERE THE RULE THIS LINK NAMES ACTUALLY LIVES, asked after the write and before the
   // reply. It costs one replay per tree, on the write path of a verb that already opened
-  // a writer and signed a checkpoint — and it buys the only sentence that can be true at
+  // a writer and signed a checkpoint, and it buys the only sentence that can be true at
   // the moment it matters (see `LinkRecorded.subjectScope`).
   const subjectScope = locateEntityScope(trees, ends.subject, catalogUpcasters());
   return {
@@ -207,7 +207,7 @@ export function runLink(
     subject: ends.subject,
     target: ends.target,
     ...(subjectScope !== undefined ? { subjectScope } : {}),
-    // The relation AS RECORDED — screened, so the echo shows what landed.
+    // The relation AS RECORDED: screened, so the echo shows what landed.
     rel: recorded.rel,
     scope,
     ...(root !== undefined ? withReach(reachOfAddress(recorded.rel, ends.target, root)) : {}),
@@ -225,7 +225,7 @@ function projectRoot(projectPublic: string | undefined): string | undefined {
   return projectPublic === undefined ? undefined : dirname(projectPublic);
 }
 
-/** The reach as a property, or nothing — so an absent one never becomes `reach: undefined`. */
+/** The reach as a property, or nothing, so an absent one never becomes `reach: undefined`. */
 function withReach(reach: AddressReach | undefined): { reach?: AddressReach } {
   return reach !== undefined ? { reach } : {};
 }

@@ -1,6 +1,6 @@
 /**
  * A stack's signature, read offline: `stack.sigstore.json` judged by the product's Sigstore reader
- * as a signature over the stack's listing — whose SHA-256 is the stack's digest — against a trust
+ * as a signature over the stack's listing (whose SHA-256 is the stack's digest) against a trust
  * root. The Sigstore here is the test's own (`tests/support/a-sigstore-of-our-own.ts`): no account,
  * no OpenID provider, no network.
  *

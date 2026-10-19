@@ -43,7 +43,7 @@ describe('mnema memory', () => {
     const result = runMemory({ cwd: repo, env }, { content: 'the auth flow uses PKCE' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      // A minted v7 uuid — the canonical id.
+      // A minted v7 uuid: the canonical id.
       expect(result.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
       );
@@ -134,7 +134,7 @@ describe('mnema memory', () => {
   });
 });
 
-describe('mnema memory --which — the agent that executed', () => {
+describe('mnema memory --which: the agent that executed', () => {
   /** Every `memory.captured` in a tree, with the agent each one names. */
   function capturesIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

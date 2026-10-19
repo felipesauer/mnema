@@ -1,41 +1,41 @@
 /**
- * What a verb says after its adapter answers — the two things every one of them
+ * What a verb says after its adapter answers: the two things every one of them
  * has to say, worded once.
  *
  * A REFUSAL is the sharper of the two. Twenty-odd verbs each had the same three
  * branches written out by hand: the project that is not there, the entity that is
  * not there, and the gate's own typed refusal. Written twenty times, the third one
  * is where a verb drops the code or the message and the refusal stops being
- * actionable — and nothing would fail, because a refusal that reads badly still
+ * actionable, and nothing would fail, because a refusal that reads badly still
  * exits non-zero. Here the shape is one function and a verb only supplies what is
  * particular to it.
  *
  * A REPLACEMENT is the other: it rides the SUCCESS path, because a scrub is not a
- * refusal — the fact was recorded, with a placeholder in it. So does WHERE THE WRITE
+ * refusal; the fact was recorded, with a placeholder in it. So does WHERE THE WRITE
  * LANDED, for the same reason and in the same place: nothing in the call said which
  * tree a fact routes to, so the reply is the only moment the author can learn it.
  * Both wordings live in `recorded-content.ts`, shared with the MCP surface; this only
  * puts them on the stream, in one order.
  *
- * AND WHAT IS PAINTED RED IS A NO — every one of them, wherever it came from. The
+ * AND WHAT IS PAINTED RED IS A NO: every one of them, wherever it came from. The
  * severity is decided in the two functions below and nowhere else, so the whole surface
  * acquires it at once instead of two dozen verbs each deciding. The colour repeats the
  * word the line already says; it never replaces it, which is what makes `--color=never`
  * and a monochrome terminal lose nothing (see `presentation/styled.ts`).
  *
  * THE RULE USED TO BE NARROWER, AND HERE IS WHAT FALSIFIED IT. It read: red marks a
- * TYPED refusal — the domain's own no — and a usage error does not paint, because that
+ * TYPED refusal, the domain's own no, and a usage error does not paint, because that
  * one is the parser's channel. Real use at a terminal is what fell over it: a person
  * who typed one argument too few met `error: missing required argument 'rationale'`,
  * unpainted and in a second voice, and a person who typed one word wrong met the same.
  * The distinction was true about where the no CAME FROM and false about what a reader
- * does with it — "the gate said no" and "you typed it wrong" are one piece of news,
+ * does with it: "the gate said no" and "you typed it wrong" are one piece of news,
  * which is that the thing did not happen. So the rule is now: A LINE IS RED WHEN THE
  * COMMAND DID NOT DO WHAT YOU ASKED. `wiring/misuse.ts` is where the parser's no is
  * worded, and `every-refusal-is-red.test.ts` is the guard over both halves.
  *
  * What that rule does NOT reach is an ANSWER that happens to be unwelcome. `verify`
- * naming a broken tree did what it was asked — it ruled — and `antipatterns` counting
+ * naming a broken tree did what it was asked (it ruled) and `antipatterns` counting
  * three reopenings is not bad news, it is a count (see `presentation/verdict.ts`). Two
  * VERDICTS paint, and neither is a no: `guard`'s `REFUSED` paints the word it answers
  * with, and `verify` paints the clause that names how far the proof got. Each decides its
@@ -61,13 +61,13 @@ import { type CliIo, writeLines } from './io.js';
  *
  * Every verb's `Wiring` already holds both, so a caller passes what it was handed. It
  * is stated here rather than imported from `verb.ts` because the two things that write
- * a refusal WITHOUT being a verb — the run pin and the entry's last-resort catch — hold
+ * a refusal WITHOUT being a verb, the run pin and the entry's last-resort catch, hold
  * neither a program nor a session, and a wider parameter would have them making one up.
  */
 export interface Reporter {
   /** Where the refusal goes, and how the non-zero exit is recorded. */
   readonly io: CliIo;
-  /** How the line becomes the bytes `io` receives — plain or painted. */
+  /** How the line becomes the bytes `io` receives: plain or painted. */
   readonly render: Render;
 }
 
@@ -75,7 +75,7 @@ export interface Reporter {
  * What a verb says when there is no project here.
  *
  * One wording, because a person who ran the wrong command in the wrong directory
- * reads this line and nothing else. Three verbs override it — `key restore`,
+ * reads this line and nothing else. Three verbs override it: `key restore`,
  * `key enroll` and `key revoke` name themselves instead of `mnema init`, since a
  * machine recovering an identity is not a machine founding a project.
  */
@@ -87,7 +87,7 @@ export const NO_PROJECT = 'No mnema project here. Run `mnema init` first.';
  * It returns a LINE and not bytes, which is what puts the three places that write one
  * on the same footing: the funnel below, the run pin, and the entry's catch for a
  * machine with no single identity. Each of them renders it, so each of them paints it,
- * and a fourth that forgot would not compile — the type is the guard.
+ * and a fourth that forgot would not compile: the type is the guard.
  *
  * The code leads INSIDE the label, as it always has: it is part of what the verdict IS,
  * so it is what a reader scanning a log sees first, and the message after the colon is
@@ -100,7 +100,7 @@ export function refusalLine(code: string, message: string): Line {
 /**
  * The other shape a no takes: a SENTENCE, with no code in front of it.
  *
- * A worded reason has nowhere to put a code — "No task <id> here." is the whole line —
+ * A worded reason has nowhere to put a code ("No task <id> here." is the whole line)
  * and neither has a usage error, which is a no about the command line rather than about
  * the record. Both are the same news as the shape above and carry the same severity,
  * because what a reader acts on is that the thing did not happen, not which of the two
@@ -142,7 +142,7 @@ export function reportOfferSentence(): Line {
 /**
  * Reports a refusal and records the non-zero exit.
  *
- * `said` gives the verb its own wording for the reasons only it knows about — the
+ * `said` gives the verb its own wording for the reasons only it knows about: the
  * unknown task, the unknown decision, the project a recovery names differently. A
  * reason nobody worded falls through to the gate's own code and message, which is
  * the honest default: the surface never invents a sentence for a refusal it does
@@ -155,7 +155,7 @@ export function reportRefusal(
 ): void {
   const wording =
     said[refusal.reason] ?? (refusal.reason === 'NO_PROJECT' ? NO_PROJECT : undefined);
-  // A worded reason is ONE sentence and takes no detail — "No task <id> here." has no
+  // A worded reason is ONE sentence and takes no detail: "No task <id> here." has no
   // half after a colon to put the evidence in. It is still the same news, so it carries
   // the same severity: what a reader acts on is the redness of the line, not which of
   // the two shapes the surface happened to have a wording for.
@@ -168,9 +168,9 @@ export function reportRefusal(
 }
 
 /**
- * Says the no a write gets where the record names no identity this machine may write as — the
+ * Says the no a write gets where the record names no identity this machine may write as, the
  * refusal thrown below every write (`IdentityUnavailableError`), which the entry's catch hands
- * here — and records the non-zero exit.
+ * here, and records the non-zero exit.
  *
  * It is a refusal like any other and reads like one: the code in the label, the message after it.
  * What only this side can add is WHERE THE KEY FILE IS. A checkout whose recorded identity no
@@ -178,7 +178,7 @@ export function reportRefusal(
  * record proves the key a member, and the file that marker means lives under this machine's key
  * root, which the core never reads outside opening a writer. So `whereTheKeyIs` is the line the
  * entry composed from the key root it resolves (`keyFileLine`, `key-file.ts`), printed on its own
- * line — the words `mnema key revoke` prints for the same file, so a person who follows the
+ * line: the words `mnema key revoke` prints for the same file, so a person who follows the
  * refusal finds it the way the revocation already taught them to. It arrives composed, so this
  * module, which every command loads, does not grow an edge for a refusal.
  */
@@ -193,7 +193,7 @@ export function reportIdentityRefusal(
 }
 
 /**
- * Says a no the SURFACE itself decided — a value no declaration could refuse for it —
+ * Says a no the SURFACE itself decided (a value no declaration could refuse for it)
  * and records the non-zero exit.
  *
  * These are the checks a parser cannot make: `--scope elsewhere` names no tree,
@@ -207,7 +207,7 @@ export function reportIdentityRefusal(
  * the read-only session refuses a write by naming it AND saying to run it outside, and
  * a refusal that only says no is a refusal a caller has to guess their way out of. It
  * is the same second half {@link refusalSentence} already gives the parser's no, so
- * nothing new is being shaped here — the shape simply became reachable from this door.
+ * nothing new is being shaped here: the shape simply became reachable from this door.
  */
 export function reportUsage(to: Reporter, sentence: string, detail?: string): void {
   to.io.err(to.render(refusalSentence(sentence, detail)));
@@ -235,7 +235,7 @@ export function reportReplacement(result: Replacement, io: CliIo): void {
  * with the only instruction either line gives, and an instruction reads worst in the
  * middle.
  *
- * The writes that are NOT routed by kind — a run, an init, a key — use
+ * The writes that are NOT routed by kind (a run, an init, a key) use
  * {@link reportReplacement} alone: they belong to one tree by construction, so there
  * is no choice for the reply to report.
  */
@@ -244,7 +244,7 @@ export function reportRecorded(result: Landed & Replacement, io: CliIo): void {
 }
 
 /**
- * The `<id>` a verb is handed, turned into the id it means — the command line's door onto
+ * The `<id>` a verb is handed, turned into the id it means: the command line's door onto
  * `resolveAddress`. An `ADR-<n>` that names one decision comes back as that decision's id; one that
  * names several is refused here, once, with their ids, and the verb never runs. `undefined` means
  * the refusal is already printed and the exit recorded.

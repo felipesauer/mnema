@@ -51,7 +51,7 @@ function digest(dir: string): string {
   return hash.digest('hex');
 }
 
-describe('mnema audit exposure — the record scanned for credential shapes', () => {
+describe('mnema audit exposure: the record scanned for credential shapes', () => {
   it('finds NOTHING in a record written through the content door', () => {
     // This is the whole point of the door: what an agent writes today cannot land
     // as a recognized credential, so a report over a record written today is empty
@@ -60,7 +60,7 @@ describe('mnema audit exposure — the record scanned for credential shapes', ()
     // It TRIES in both of the door's two ways, because the door has two answers now.
     // A BODY is recorded redacted, so the memory and the proof below land and the
     // report still finds nothing in them. A NAME is refused outright, so the title is
-    // the one write here that leaves no event at all — asserted, because a refusal and
+    // the one write here that leaves no event at all: asserted, because a refusal and
     // a redaction are indistinguishable in an empty report, and the case would pass on
     // a door that had quietly stopped writing anything.
     const { repo, env } = setup();
@@ -79,7 +79,7 @@ describe('mnema audit exposure — the record scanned for credential shapes', ()
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.report.findings).toEqual([]);
-    // And it really did read the record — "0 findings" over 0 events proves nothing.
+    // And it really did read the record: "0 findings" over 0 events proves nothing.
     expect(result.report.scanned).toBeGreaterThan(3);
   });
 
@@ -100,7 +100,7 @@ describe('mnema audit exposure — the record scanned for credential shapes', ()
     expect(finding?.classes).toEqual(['aws-access-key']);
   });
 
-  it('never carries the value — not in the object, not in what --json would print', () => {
+  it('never carries the value, not in the object, not in what --json would print', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     appendUnscreened(repo, env, `the old note held ${SECRET}`);
@@ -119,7 +119,7 @@ describe('mnema audit exposure — the record scanned for credential shapes', ()
     expect(runExposure({ cwd: repo, env })).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     runMemory({ cwd: repo, env }, { content: 'a note', scope: 'public' });
@@ -141,7 +141,7 @@ describe('mnema audit exposure — the record scanned for credential shapes', ()
 function appendUnscreened(repo: string, env: DiscoveryEnv, content: string): string {
   const trees = resolveTrees(repo, env);
   // The tree's OWN writer, the same one every write verb opens, so the entry is
-  // hash-chained and signed by this machine's key — a record the verifier accepts,
+  // hash-chained and signed by this machine's key: a record the verifier accepts,
   // which is the case that matters (a report about entries nothing would verify
   // would be a report about nothing).
   const writer = openTreeForWriting(trees, 'public');

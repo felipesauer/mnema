@@ -1,12 +1,12 @@
 /**
  * The `mnema doctor` wiring: what it declares, and what it prints.
  *
- * `mnema doctor` — what this machine says about how mnema is installed: the binary on the
+ * `mnema doctor`, what this machine says about how mnema is installed: the binary on the
  * `PATH`, the Claude Code plugin, the VS Code agent's plugin setting, the MCP server declared
  * twice, a namesake, a private tree left where it lived before it moved into the repository's
  * git directory. One line to a finding, each ending in what to do. Asked alone it reads and
  * writes nothing; `--fix vscode` writes one setting of VS Code's `settings.json`, and
- * `--fix private-tree` moves those private trees — each only when a person asks
+ * `--fix private-tree` moves those private trees: each only when a person asks
  * (`commands/doctor.ts`).
  */
 

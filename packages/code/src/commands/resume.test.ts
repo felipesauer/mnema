@@ -25,14 +25,14 @@ function setup(): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * A write context onto the private tree with a CONTROLLABLE clock — so two runs get
+ * A write context onto the private tree with a CONTROLLABLE clock, so two runs get
  * distinct `startedAt` values and "latest run" is settled by the field these cases are
  * about rather than by the tie-break behind it.
  *
  * IT USED TO SAY the tie fell to "the random id tail, which is not creation order",
  * and that was true when it was written: `mintId` filled everything past the
  * millisecond with entropy, so two runs opened inside one millisecond came back in
- * either order, half the time each. It is not true any more — the id carries a
+ * either order, half the time each. It is not true any more: the id carries a
  * monotonic counter, and the reads break the tie by id DESCENDING, so a
  * same-millisecond pair now orders newest-first by itself. The clock stays controlled
  * regardless: a case about "the latest run" should fail on the instant, not pass
@@ -76,7 +76,7 @@ describe('mnema resume', () => {
     clock.at = '2026-01-01T00:00:02.000Z';
     const last = startRun(ctx, { agent: 'test-agent', goal: 'last' });
     if (!first.ok || !last.ok) throw new Error('setup');
-    // End the latest run — resume must still report it as the "where was I" anchor.
+    // End the latest run: resume must still report it as the "where was I" anchor.
     endRun(ctx, { run: last.id, which: 'test-agent' });
     ctx.writer.checkpoint();
 
@@ -125,7 +125,7 @@ describe('mnema resume', () => {
       expect(result.resume.focus.openRuns[0]?.goal).toBe('first');
     }
 
-    // The read wrote nothing — the tree is byte-for-byte the same.
+    // The read wrote nothing: the tree is byte-for-byte the same.
     expect(readdirSync(privateRoot).sort()).toEqual(before);
   });
 
@@ -166,8 +166,8 @@ describe('mnema resume', () => {
   });
 
   it('ages every open run, against the clock it is given', () => {
-    // A command-line read has no session of its own — the console's is one the caller
-    // opened, and it never reaches this adapter with anything but an actor — so what
+    // A command-line read has no session of its own (the console's is one the caller
+    // opened, and it never reaches this adapter with anything but an actor), so what
     // makes a list of leftover runs readable here is the age. The clock is injected for the same reason the
     // core injects one: an age is only assertable against a pinned instant.
     const { repo, env, who, ctx } = projectWithRuns();
@@ -186,8 +186,8 @@ describe('mnema resume', () => {
 
   it('reports every run as NOT this command’s own, because a read opens none', () => {
     // True by construction rather than by policy: `runResume` opens no writer. It is
-    // also why the human output stays silent about it — a value that is the same in
-    // every line is noise — while `--json` carries it.
+    // also why the human output stays silent about it (a value that is the same in
+    // every line is noise), while `--json` carries it.
     const { repo, env, who, ctx } = projectWithRuns();
     startRun(ctx, { agent: 'test-agent' });
     ctx.writer.checkpoint();

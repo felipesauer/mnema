@@ -109,7 +109,7 @@ describe('mnema skill move', () => {
   });
 
   it('reports the gate refusal for an illegal move (adopt a proposed skill)', () => {
-    // adopt is legal only from reviewed — from proposed it is illegal.
+    // adopt is legal only from reviewed: from proposed it is illegal.
     const { repo, env, id } = projectWithSkill();
     const result = runSkillTransition(
       { cwd: repo, env },
@@ -120,7 +120,7 @@ describe('mnema skill move', () => {
   });
 
   it('refuses UNKNOWN_ACTION for a verb the workflow does not define (no default op)', () => {
-    // The dispatch must not fall through to some op for an unknown verb — a bad
+    // The dispatch must not fall through to some op for an unknown verb: a bad
     // action is refused before any op is touched, nothing is written.
     const { repo, env, id } = projectWithSkill();
     const result = runSkillTransition({ cwd: repo, env }, { id, action: 'frobnicate' });
@@ -128,7 +128,7 @@ describe('mnema skill move', () => {
     expect(stateOf(repo, env, id)).toBe('proposed');
   });
 
-  it('refuses UNKNOWN_ACTION for `supersede` — a skill is not relational', () => {
+  it('refuses UNKNOWN_ACTION for `supersede`: a skill is not relational', () => {
     // supersede is a decision verb; a skill has no relational move. Typed into
     // the skill move it is UNKNOWN_ACTION, never a silent transition.
     const { repo, env, id } = projectWithSkill();
@@ -168,7 +168,7 @@ describe('mnema skill move', () => {
   });
 });
 
-describe('mnema skill move — the transition follows the entity (coherence)', () => {
+describe('mnema skill move: the transition follows the entity (coherence)', () => {
   it('moves a skill born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     const { repo, env, id } = projectWithSkill();
     const moved = runSkillTransition(
@@ -207,7 +207,7 @@ describe('mnema skill move — the transition follows the entity (coherence)', (
     );
     w.checkpoint();
 
-    // The CLI move — following the entity, it moves it in private.
+    // The CLI move: following the entity, it moves it in private.
     const moved = runSkillTransition(
       { cwd: repo, env },
       { id, action: 'review', proof: { note: 'ok' } },
@@ -229,7 +229,7 @@ describe('mnema skill move — the transition follows the entity (coherence)', (
   });
 });
 
-describe('mnema skill move --which — the agent that executed the move', () => {
+describe('mnema skill move --which: the agent that executed the move', () => {
   /**
    * The agent each `skill.transitioned` on a skill names, in chain order. The
    * FIRST entry is always the birth transition (`skill` propose appends the pair

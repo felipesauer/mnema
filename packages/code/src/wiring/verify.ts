@@ -3,18 +3,18 @@
  *
  * The one verdict the CLI does not word itself. What `runVerify` returns is, per tree
  * of the record, what could and could not be proven, and every word of it goes out as it
- * came — the surface never re-words a guarantee, because a re-wording is where "local
+ * came: the surface never re-words a guarantee, because a re-wording is where "local
  * integrity" quietly becomes "verified". The issues under it are the evidence.
  *
  * IT COMPOSES THE VERDICT NOW, AND THAT IS NOT A RE-WORDING. The chain hands over its
  * one-line verdict as the CLAUSES it is made of, and this file lays them out on a line:
  * one of them is the level, which is the only clause that is good or bad news, and it is
  * the one that carries a colour. The clause a hue lands on is chosen by WHAT THE CLAUSE
- * IS — never by matching its text, which on a verdict would be the surface deciding what
+ * IS, never by matching its text, which on a verdict would be the surface deciding what
  * the chain said. And the composition adds nothing: rendered without style, the line is
  * the tree's name, a colon, and the chain's own `summary`, byte for byte, which is what
  * `the-verdict-is-parts.test.ts` asserts. The clause list was the alternative to a
- * sentence composed HERE beside the chain's own — two sentences about one record, which
+ * sentence composed HERE beside the chain's own: two sentences about one record, which
  * is how a surface ends up promising more than the proof does.
  *
  * WHY THE COLOUR IS NOT ON THE LABEL. Every other verdict on this surface paints its
@@ -22,15 +22,15 @@
  * label is a TREE'S NAME, and a red `private` would say the tree was bad news rather
  * than the verdict over it.
  *
- * EVERY LINE SAYS WHICH TREE IT IS ABOUT. There is more than one — the committed tree
- * and this machine's private one — so an unlabelled sentence would be a verdict whose
+ * EVERY LINE SAYS WHICH TREE IT IS ABOUT. There is more than one, the committed tree
+ * and this machine's private one, so an unlabelled sentence would be a verdict whose
  * subject a reader has to guess, and an unlabelled issue would send them looking for a
  * tail in the wrong tree. The label is the tree's role (`public`, `private`, `global`),
  * never its path: the role is what a reader of someone else's CI log can act on, and
  * the path is one machine's.
  *
  * THE EXIT CODE IS THE SAME VERDICT, said to a script. It is decided by the level the
- * chain derived — the weakest of the trees, folded in the command — and the minimum
+ * chain derived (the weakest of the trees, folded in the command) and the minimum
  * this invocation declared, one comparison asked of the chain, so the code and the
  * sentences cannot disagree. They did: with the signatures deleted, the sentence said
  * `verified` and the exit said success, which made `mnema verify` a no-op as a gate
@@ -40,7 +40,7 @@
  * at the first. A level says how far the proof got over what was READ; it says nothing
  * about whether what was read is what was NAMED, and a set with a mistyped path in it
  * came back green over a project nobody verified. So `reportSet` asks the command for
- * two answers — `requirementMet` and `coverageMet` — and both are the command's, for
+ * two answers, `requirementMet` and `coverageMet`, and both are the command's, for
  * the reason the level is: a criterion decided here would be a second opinion about
  * what the exit means.
  */
@@ -74,20 +74,20 @@ import { type Declared, readsTheRecord, type Wiring } from './verb.js';
  * What each requirement MEANS, in the phrase `--require` prints beside it.
  *
  * Total over the chain's `LevelRequirement`, so a fourth level does not compile until
- * this says what asking for it does — the omission the help used to be able to make
+ * this says what asking for it does: the omission the help used to be able to make
  * silently, since the three were typed out in a sentence nothing compared to anything.
  *
  * `signed` USED TO SAY *expect this to fail while a session is in flight*, AND THAT
  * PREMISE IS DEAD. It was written when a checkpoint was sealed on a cadence, so the
  * events above the last one were a standing residual and asking for a signature failed
- * on any healthy project. Since then, every path that writes SEALS what it wrote — the
+ * on any healthy project. Since then, every path that writes SEALS what it wrote, the
  * rule `every-write-signs-what-it-wrote.test.ts` enumerates over every writing verb and
- * every tool — so the residual is empty whenever nothing is mid-write, and the gate that
+ * every tool, so the residual is empty whenever nothing is mid-write, and the gate that
  * "always fails" was measured failing in no state this product can reach: fresh `init`,
  * a fresh clone, an open run with a fact pinned to it, a whole MCP session including a
  * refused tool, the private and global trees, and a record of twenty thousand events.
  * What it DOES fail on is the forgery the default lets through, which is the sentence
- * that replaced it — `the-strict-gate-catches-the-forgery.test.ts` builds that record
+ * that replaced it: `the-strict-gate-catches-the-forgery.test.ts` builds that record
  * and asserts both exit codes.
  */
 const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
@@ -104,13 +104,13 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
 
 /**
  * The minimum this surface accepts when the caller declares nothing: a break, and
- * nothing more — which is what `mnema verify` has always exited non-zero on.
+ * nothing more, which is what `mnema verify` has always exited non-zero on.
  *
  * Asking for a signature by default is refused deliberately, AND THE REASON WRITTEN HERE
  * BEFORE WAS FALSE. It read: *events above the last checkpoint are the normal state of a
  * session in flight, so `signed` as the default would fail on a healthy project in the
  * middle of its work, every time*. Every write seals a checkpoint now, so `--require
- * signed` was measured passing in every state this product reaches — see the note above
+ * signed` was measured passing in every state this product reaches: see the note above
  * {@link LEVEL_MEANS} for the states and the rule that killed the premise.
  *
  * THE REASON THAT SURVIVES IS A DIFFERENT ONE, and it is about what a stranger is told.
@@ -118,7 +118,7 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
  * the attacker who edits a tail's events, drops that tail's checkpoints, and neither
  * removes the whole tail nor writes a fact afterwards. Made the default, it would hand
  * somebody who cloned a record with a whole person's history deleted `verified
- * (T1/T2/T4); all events are signature-covered`, exit 0 — and the belief that a strict
+ * (T1/T2/T4); all events are signature-covered`, exit 0, and the belief that a strict
  * gate had ruled on it. The permissive default at least says `no signature was checked`
  * over the record it cannot vouch for. Asking is free either way: `--require` is a rank
  * comparison and no extra work, so the caller who wants the strict reading says so.
@@ -133,7 +133,7 @@ export const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
 /**
  * WHAT THIS VERB IS CALLED, and the one place it is spelled.
  *
- * It is registered below and it is also NAMED — by the console, in the badge that sits in
+ * It is registered below and it is also NAMED: by the console, in the badge that sits in
  * the corner of every frame and says what the record proved. That badge is a level and the
  * word that prints the whole verdict behind it, so the word has to be the one commander
  * routes; typed a second time, the day this verb is renamed is the day the console starts
@@ -143,7 +143,7 @@ export const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
 export const VERIFY_VERB = 'verify';
 
 /**
- * WHAT THE CALLER DECLARES TO TOLERATE A NAMED PATH THAT HOLDS NO RECORD — spelled
+ * WHAT THE CALLER DECLARES TO TOLERATE A NAMED PATH THAT HOLDS NO RECORD, spelled
  * once, because three sentences say it: the flag's own help, the closing statement when
  * something was tolerated, and the line that says why the exit is non-zero when nothing
  * was. Typed three times, the day it is renamed is the day two of them send a reader to
@@ -152,7 +152,7 @@ export const VERIFY_VERB = 'verify';
  * THE NAME IS THE PRODUCT'S OWN PHRASE, and `--allow-empty` was the alternative. This
  * surface already prints *"no record here"* for a tree and for a path, and it already
  * distinguishes an EMPTY TREE from an unfounded directory in as many words
- * ({@link NO_PROJECT_THERE}) — a project between its first event and its first
+ * ({@link NO_PROJECT_THERE}): a project between its first event and its first
  * checkpoint has an empty committed tree and is entirely legitimate. So `--allow-empty`
  * would name the wrong nothing, and would read as tolerating the one this verb has
  * never failed on. It reads as what the CALLER tolerates, in the mould of `--require`,
@@ -171,7 +171,7 @@ const INVALID_REQUIREMENT = Symbol('invalid-requirement');
  *
  * THE TUPLE USED TO BE HANDED IN, on the argument that it is the chain's and the caller
  * is the action, which is where the chain is loaded. What falsified it: the flag's HELP
- * now lists the levels, and help is built while commander is being configured — so the
+ * now lists the levels, and help is built while commander is being configured, so the
  * tuple is at module scope either way, and passing it as a parameter only made it
  * possible for the sentence and the check to read two different tuples. They read
  * {@link LEVEL_REQUIREMENTS}, once, and the message it words is unchanged.
@@ -191,8 +191,8 @@ function parseRequirement(
  * verdict on this surface comes in: what it IS, and what qualifies it.
  *
  * It is INFORMATIONAL and it says so by what it does not claim: no level, no layer,
- * no word that reads as a pass. A clone has no private tree — it is gitignored and
- * never travels — so this is the line every fresh clone sees, and a reader has to be
+ * no word that reads as a pass. A clone has no private tree (it is gitignored and
+ * never travels), so this is the line every fresh clone sees, and a reader has to be
  * able to tell it apart from a verdict at a glance.
  *
  * THE SPLIT IS THE CHAIN'S SHAPE, borrowed. A verified tree's sentence arrives as a
@@ -201,7 +201,7 @@ function parseRequirement(
  * in the same two pieces rather than making the short reading impossible for the one
  * tree whose sentence it words itself. {@link NO_RECORD} is the two joined, by the one
  * expression that joins them, so the full reading cannot come to disagree with the short
- * one — and the byte the golden holds is unchanged.
+ * one, and the byte the golden holds is unchanged.
  */
 const NO_RECORD_HEADLINE = 'no record here';
 const NO_RECORD_WHY =
@@ -214,7 +214,7 @@ const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
  * It shares the headline with the tree above deliberately: "there is nothing here to
  * rule on" is one piece of news, and a set that worded it twice would be telling a
  * reader that an empty tree and an unfounded directory are different kinds of nothing.
- * What differs is the WHY, because what to do about it differs — a private tree that is
+ * What differs is the WHY, because what to do about it differs: a private tree that is
  * not there is a clone, and a path that is no project is either a directory nobody has
  * run `mnema init` in or a path the caller mistyped.
  */
@@ -223,23 +223,23 @@ const NO_PROJECT_THERE =
   'nothing to rule on';
 
 /**
- * WHAT THE READING COVERED AND WHAT IT DID NOT, said once, at the end — the closing
+ * WHAT THE READING COVERED AND WHAT IT DID NOT, said once, at the end: the closing
  * statement `usage` established, for the reading that most needs one.
  *
  * A set of projects is the one shape of this verb where a reader cannot count the
  * coverage off the lines: paths collapse (two names of one project are one project),
  * and paths drop out of the LEVEL (one that holds no record was never replayed). Both
- * are silent in the body, and both change what the exit code means — so the counts are
+ * are silent in the body, and both change what the exit code means, so the counts are
  * stated, and the RULE under them is stated with them, because an aggregate with
  * nothing qualifying it reads as a verdict over everything the caller named.
  *
  * THE RULE IT STATES USED TO END ONE CLAUSE EARLIER. It said a path holding no record
  * *"is neither a pass nor a break: nothing was replayed there, so it is outside the
- * verdict"* — which was true of the level and false of the exit, and the exit is what a
+ * verdict"*, which was true of the level and false of the exit, and the exit is what a
  * CI step reads. Measured on the binary: the other two shapes of this verb already
  * refused (a lone unfounded directory, and a set where every path holds none), and only
- * the MIXTURE came back zero. So the sentence now says both halves — outside the level,
- * inside the exit — and names the declaration that gives the old behaviour back.
+ * the MIXTURE came back zero. So the sentence now says both halves (outside the level,
+ * inside the exit) and names the declaration that gives the old behaviour back.
  *
  * `tolerated` IS THE CALLER'S DECLARATION AND NOT THE OUTCOME, and it is worded only
  * where something was actually tolerated: with no path holding a record there is
@@ -269,7 +269,7 @@ function coverage(named: number, covered: number, without: number, tolerated: bo
 }
 
 /**
- * WHY THE EXIT IS NON-ZERO WHEN EVERY VERDICT ON THE SCREEN READS AS A PASS — the
+ * WHY THE EXIT IS NON-ZERO WHEN EVERY VERDICT ON THE SCREEN READS AS A PASS: the
  * sentence for a set that is not the set the caller named.
  *
  * It NAMES the paths and does not only count them, because the count is already in the
@@ -278,7 +278,7 @@ function coverage(named: number, covered: number, without: number, tolerated: bo
  * directory reaches a line, and it goes through {@link Named} like the other three.
  *
  * It is a FACT and not a refusal, which is the same shape {@link requirementNotMet}
- * takes and for the same reason: the verb was asked to rule and it ruled — on the
+ * takes and for the same reason: the verb was asked to rule and it ruled, on the
  * projects that were there. The one refusal this reading has is the case where it could
  * not rule at all (`NOTHING_VERIFIED`), and wording this one as a second refusal would
  * make a reading that answered look like a reading that failed to.
@@ -293,7 +293,7 @@ function noRecordAtNamedPaths(dirs: readonly string[]): string {
 }
 
 /**
- * What a verdict owes about a private tree git would stage — the chain is whole, and the
+ * What a verdict owes about a private tree git would stage: the chain is whole, and the
  * working tree is about to publish it.
  *
  * Said by `verify` and not by a refusal alone because a refusal only meets the person who
@@ -309,7 +309,7 @@ function privateTreeVisible(
 }
 
 /**
- * WHY THE EXIT IS NON-ZERO WHEN NOTHING SAYS SO — one sentence, for the caller's
+ * WHY THE EXIT IS NON-ZERO WHEN NOTHING SAYS SO: one sentence, for the caller's
  * minimum over a record that has no break in it.
  *
  * `subject` is what the level is OF, and it is the only part that differs between the
@@ -332,22 +332,22 @@ function requirementNotMet(
 }
 
 /**
- * HOW A PROJECT'S DIRECTORY IS WRITTEN ON A LINE — `oneLine`, handed in rather than
+ * HOW A PROJECT'S DIRECTORY IS WRITTEN ON A LINE: `oneLine`, handed in rather than
  * imported.
  *
  * WHY IT IS COLLAPSED. This report is the sharpest shape that rule covers. A directory
  * may hold a newline, the set prints one line per tree per project, and the closing
- * statement COUNTS the projects those lines are — so a path named
+ * statement COUNTS the projects those lines are, so a path named
  * `evil\n/other public: local integrity verified (T1/T2/T4)` would print a second line
  * with the whole shape of a verdict about a record nobody verified, and a reader
  * counting projects by lines would count it. It is the defect already measured on the
  * refusal that names a session's project (`one-line.ts`), reached here through
  * the most direct door there is: an argument on the command line.
  *
- * ONE FUNCTION AND EVERY SITE. The sites are FOUR — the tree's label (which carries the
+ * ONE FUNCTION AND EVERY SITE. The sites are FOUR: the tree's label (which carries the
  * census and the issues with it), the line of a path that holds no record, the names
  * beside the level in the requirement line, and the paths named by
- * {@link noRecordAtNamedPaths} — and a fifth that forgot would be the one place a
+ * {@link noRecordAtNamedPaths}; and a fifth that forgot would be the one place a
  * forged line still gets through. This doc said THREE until the fourth arrived with the
  * sentence that names the uncovered paths, which is the shape the rule keeps taking:
  * every new sentence about a set is a new place a directory becomes text. It cannot be
@@ -356,7 +356,7 @@ function requirementNotMet(
  *
  * WHY IT IS A PARAMETER. It was one because it had to be: `oneLine` used to live in
  * `served-patterns.ts`, which reaches `@mnema/context`, and this module is DECLARED
- * eagerly — commander needs every option before it can route a word — so importing it
+ * eagerly (commander needs every option before it can route a word), so importing it
  * here would have put the context package on the floor of every invocation of every verb,
  * including the ones that read nothing. The rule of the line lives in `one-line.ts` now,
  * which imports nothing, so the import above costs what a pure string rule costs. It
@@ -365,7 +365,7 @@ function requirementNotMet(
  *
  * What it does NOT do is make the path copyable back: a directory whose name really
  * holds a newline prints with a space where the newline was. That is the trade this
- * rule always makes, and it makes it in the honest direction — a name that cannot be
+ * rule always makes, and it makes it in the honest direction: a name that cannot be
  * pasted back beats a line that claims a verdict nothing gave.
  */
 type Named = (dir: string) => string;
@@ -510,7 +510,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         }
         // A DECLARATION WITH NO SUBJECT IS REFUSED RATHER THAN IGNORED. There are no
         // named paths in a bare `verify`, so there is nothing here for this to
-        // tolerate — and the caller who wrote it believes they relaxed something. What
+        // tolerate, and the caller who wrote it believes they relaxed something. What
         // a bare `verify` does about a directory holding no record is unchanged and is
         // not this flag's to change: it refuses, as it always has.
         if (allowWithoutRecord) {
@@ -569,12 +569,12 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         if (sigstore !== undefined) reportSigstore(io, render, sigstore);
         if (!grewOnly && result.requirementMet) io.fail();
         if (!result.requirementMet) {
-          // A break already said why the exit is non-zero — the FAILED headline and
+          // A break already said why the exit is non-zero: the FAILED headline and
           // the issues under it. What needs a line of its own is the exit that comes
           // from the CALLER's minimum over a record with no break in it, because
           // there the summaries read as a pass. All of the criterion goes on it: what
-          // was asked for, what the record is, and — since the level is the weakest of
-          // several trees — which tree is the one at it.
+          // was asked for, what the record is, and, since the level is the weakest of
+          // several trees, which tree is the one at it.
           if (result.record.ok) {
             io.err(
               render(
@@ -602,7 +602,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
  *
  * A file that is gone or no longer begins with its old bytes goes to stderr, where the
  * evidence for a failure goes on this surface; the line that says the record only grew
- * goes to stdout, like a census note. A refusal — no git, no such commit — is a failure
+ * goes to stdout, like a census note. A refusal (no git, no such commit) is a failure
  * too: the caller asked for a comparison and none was made, and a gate that passed over
  * that would be the no-op `--workspace` was once.
  */
@@ -641,7 +641,7 @@ const AGAINST_GITHUB = '--against-github';
 const AGAINST_SIGSTORE = '--against-sigstore';
 
 /**
- * WHAT THE SIGSTORE BUNDLES SAY — one line per bundle, then the line that says what a bundle
+ * WHAT THE SIGSTORE BUNDLES SAY: one line per bundle, then the line that says what a bundle
  * proves and what it does not. All of it on stdout: none of it is a failure of the verification.
  */
 function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): void {
@@ -702,7 +702,7 @@ export function sigstoreLine(finding: SigstoreFinding): string {
 }
 
 /**
- * WHAT THE COMPARISON WITH GITHUB FOUND — one line per identity, then the line that says what
+ * WHAT THE COMPARISON WITH GITHUB FOUND: one line per identity, then the line that says what
  * the comparison proves and what it does not.
  *
  * Every line goes to stdout, the covered and the not covered alike: none of them is a failure of
@@ -760,18 +760,18 @@ function githubLine(author: GithubAuthor): string {
 }
 
 /**
- * THE VERDICT AS JSON — the whole reading, plus what it does not answer.
+ * THE VERDICT AS JSON: the whole reading, plus what it does not answer.
  *
  * It is an ADAPTER and it words nothing. `runVerify` already returns the reading as
- * structure — per tree, what could and could not be proven, the aggregate level, the
- * requirement and whether it was met — so this hands that over as it came, for exactly
+ * structure (per tree, what could and could not be proven, the aggregate level, the
+ * requirement and whether it was met), so this hands that over as it came, for exactly
  * the reason the prose reading does not re-word a guarantee: a second composition is
  * where "local integrity" quietly becomes "verified". The two readings are therefore
  * the same facts in two shapes, and neither is derived from the other's words.
  *
  * THE EXIT CODE IS THE SAME VERDICT, unchanged. A caller who adds `--json` has changed
  * the shape of the answer and not the answer, so the criterion is passed in rather than
- * recomputed here — the same value the prose path acts on, from the command.
+ * recomputed here: the same value the prose path acts on, from the command.
  *
  * IT CARRIES `notAnswered`, AND THAT IS THE POINT OF THE FIELD RATHER THAN A NOTE.
  * The verdict this makes machine-readable is knowingly insufficient (one tail removed
@@ -799,7 +799,7 @@ function reportAsJson(
  * A verdict over a NAMED SET: every project's trees under the project that holds them,
  * then what the reading covered, then the exit.
  *
- * EVERY LINE CARRIES THE PROJECT, and that is not a decoration of the tree's label —
+ * EVERY LINE CARRIES THE PROJECT, and that is not a decoration of the tree's label:
  * it is the same rule that put the tree on every line in the first place. stderr is
  * read on its own by whatever redirected it, so an issue that named only `private`
  * would send a reader looking for a tail in the wrong REPOSITORY once there is more
@@ -808,7 +808,7 @@ function reportAsJson(
  * AND A DIRECTORY IS TEXT FROM OUTSIDE THE RECORD, so it goes through {@link named}.
  *
  * TWO CRITERIA CAN FAIL AT ONCE, AND BOTH ARE SAID. A set can hold a project too weak
- * for `--require` AND a path that is no project, and each has its own fix — masking
+ * for `--require` AND a path that is no project, and each has its own fix: masking
  * either behind the other sends a reader to correct half of what is wrong and run the
  * command again. The coverage line comes first because it questions the SET: a reader
  * who mistyped a path does not yet know what the level was over.
@@ -833,7 +833,7 @@ function reportSet(
     for (const tree of project.trees) report(io, render, tree, `${named(project.dir)} `, verbose);
   }
   // The global tree is one tree for the whole set and is reported as one, after the
-  // projects and named by its role alone — it belongs to none of them.
+  // projects and named by its role alone: it belongs to none of them.
   if (result.globalTree !== undefined) report(io, render, result.globalTree, '', verbose);
   io.out('');
   io.out(coverage(result.named, covered, without.length, result.allowWithoutRecord));
@@ -841,7 +841,7 @@ function reportSet(
   if (result.record === undefined) {
     // Nothing was covered, so there is no level to compare and no verdict to report.
     // It exits non-zero because the alternative is `mnema verify` passing a gate over
-    // a set of directories that hold no record — the no-op this verb has been once.
+    // a set of directories that hold no record: the no-op this verb has been once.
     //
     // AND IT IS THE ONLY SENTENCE IN THIS CASE, however the coverage was declared.
     // Every path here holds no record, so the line below would name all of them, one
@@ -881,11 +881,11 @@ function reportSet(
 
 /**
  * One tree of the record: its verdict verbatim under the tree's name, then the issues
- * that are the evidence for it — each also naming the tree, because stderr is read on
+ * that are the evidence for it, each also naming the tree, because stderr is read on
  * its own by whatever redirected it.
  *
  * `where` is what the tree's name is QUALIFIED by, and it is empty for the reading of
- * one project — where it is empty, every byte of every line here is what it has always
+ * one project, where it is empty, every byte of every line here is what it has always
  * been, which is what `the-verdict-covers-what-you-name.test.ts` holds by comparing the
  * two invocations. A set of projects passes the project's directory, so each line says
  * which record it is about on both streams.
@@ -900,19 +900,19 @@ function report(
   const named = `${where}${tree.scope}`;
   if (tree.kind === 'no-record') {
     // A private tree that holds nothing is the state of every fresh clone and of every project
-    // nobody has written a private fact in — informational, so it waits for `--verbose`. The
+    // nobody has written a private fact in: informational, so it waits for `--verbose`. The
     // global tree holding nothing is still said, when it was asked for: that is a different news.
     if (tree.scope === 'private' && !verbose) return;
     io.out(render(statement(named, NO_RECORD)));
     return;
   }
-  // The verdict's own honest clauses, laid out — the CLI never upgrades the guarantee.
+  // The verdict's own honest clauses, laid out: the CLI never upgrades the guarantee.
   io.out(render(clauseStatement(named, said(tree.result))));
   // The census, in the same shape as an issue and on the OTHER stream. Its clause has
   // said "see census" since the day the notes existed and there was nowhere to see
   // them: a reader was told a count and left with no way to learn WHICH key, or what
-  // the record says about it. They go to stdout because a note is not a break — it
-  // does not move the verdict and it does not move the exit — and stderr on this
+  // the record says about it. They go to stdout because a note is not a break (it
+  // does not move the verdict and it does not move the exit) and stderr on this
   // surface is where the evidence for a failure goes.
   for (const note of tree.result.census) {
     // The backup key `init` makes signs nothing until it is restored, and the verdict's own clause
@@ -934,7 +934,7 @@ function report(
     );
   }
   // What the chain cannot know about its own tree: that git would take it. On stderr, with the
-  // evidence, and not a break — the verdict above is about the record, and the exit is not
+  // evidence, and not a break: the verdict above is about the record, and the exit is not
   // moved by a fact about a working tree.
   if (tree.visibleToGit !== undefined) {
     io.err(render(fact(privateTreeVisible(named, tree.visibleToGit))));
@@ -942,20 +942,20 @@ function report(
 }
 
 /**
- * WHERE A CENSUS NOTE POINTS — total over the chain's union by type, so a third kind
+ * WHERE A CENSUS NOTE POINTS: total over the chain's union by type, so a third kind
  * of observation does not compile until somebody says what a reader should go and
  * look at. A note whose locus was guessed from whichever field happened to be there
  * would send a reader to the wrong file, which is worse than not printing it.
  *
  * They are about different things and they name different things: two are about a KEY
- * with no tail — a key the record alone cannot place, and a backup this machine
- * registered — so they name the fingerprint; the third is about a TAIL whose last line
+ * with no tail (a key the record alone cannot place, and a backup this machine
+ * registered), so they name the fingerprint; the third is about a TAIL whose last line
  * was dropped, and another about a TAIL that holds nothing, so they name the tail; the fourth is about a NOTE a stranger's retraction
- * names, so it names the note — the id a person opens to see it is still there; the fifth is
+ * names, so it names the note: the id a person opens to see it is still there; the fifth is
  * about a checker KEY the record retired, so it names the fingerprint; a stranger's
  * retraction of a LINK names the link's subject, the record the edge originates from; and the
- * two notes about citations are about a TAIL — the one whose event cites what the record does
- * not hold, or whose clock ran behind what it had read — so they name the tail.
+ * two notes about citations are about a TAIL (the one whose event cites what the record does
+ * not hold, or whose clock ran behind what it had read), so they name the tail.
  */
 function censusLocus(note: CensusNote): string {
   switch (note.kind) {
@@ -987,7 +987,7 @@ function censusLocus(note: CensusNote): string {
 }
 
 /**
- * WHAT A PROVEN LEVEL IS AS NEWS — the one place this surface decides it.
+ * WHAT A PROVEN LEVEL IS AS NEWS: the one place this surface decides it.
  *
  * TOTAL OVER THE UNION BY TYPE, and that is the whole reason it is a table rather than a
  * branch: the chain's levels are a closed tuple, so the day a rung is added between two
@@ -998,7 +998,7 @@ function censusLocus(note: CensusNote): string {
  * The three, and the argument for each:
  *
  *   - `unreadable` and `broken` are RED. Something is wrong with the record, and the
- *     sentence already says FAILED — the hue is a second copy of the word for an eye
+ *     sentence already says FAILED: the hue is a second copy of the word for an eye
  *     scanning a screen, never the thing that says it.
  *   - `hash-chain-only` is YELLOW, and it is the entry that matters. The hash chain holds
  *     and NO signature was checked, because there was none to check. Green there is
@@ -1010,7 +1010,7 @@ function censusLocus(note: CensusNote): string {
  *     clause beside it says how many events rest on the hash chain alone, and a caller
  *     who cannot live with that says `--require=signed` and gets an exit code. THE
  *     ARGUMENT WRITTEN HERE WAS *its residual is the normal state of a session in
- *     flight*, so yellow would be a caution on nearly every healthy project — and that
+ *     flight*, so yellow would be a caution on nearly every healthy project, and that
  *     premise is dead: every write seals a checkpoint, so this rung is not what a
  *     healthy project reads at all (see the note above {@link LEVEL_MEANS}). Green
  *     survives on the narrower ground the rung actually stands on now: the signatures
@@ -1043,7 +1043,7 @@ export function levelSeverity(level: ProvenLevel): Severity {
  * The level's clause is found by WHAT IT IS and never by where it sits or what it says.
  * By position, a chain that put a clause before the level would silently paint the wrong
  * one; by text, this file would be reading the verdict out of its own rendering of it,
- * and the match would break the day a level was reworded — which is the coupling that
+ * and the match would break the day a level was reworded, which is the coupling that
  * made a pre-joined summary impossible to paint at all.
  */
 function said(result: VerifyResult): readonly [Clause, ...Clause[]] {
@@ -1072,14 +1072,14 @@ function news(result: VerifyResult): (clause: VerdictClause) => Clause {
  * The console's opening panel has room for one line per tree and `verify` has room for
  * the sentence, and this is the whole of the difference between them: the panel drops
  * the clauses that QUALIFY the verdict and drops not a word of the verdict itself. That
- * is a property rather than an intention — what this returns, rendered, is a PREFIX of
+ * is a property rather than an intention: what this returns, rendered, is a PREFIX of
  * what {@link report} writes for the same tree, and `tests/the-panel.test.ts` asserts it
  * over every tree of a real record. A surface that shortened a verdict any other way
  * would be wording one, which is the one thing this file exists not to do.
  *
  * Which clause is the answer is asked of {@link news}, so the panel and the full reading
- * cannot come to disagree about it. A verdict with no level clause — which the chain does
- * not produce and which this cannot rule out by type — keeps every clause it has: saying
+ * cannot come to disagree about it. A verdict with no level clause (which the chain does
+ * not produce and which this cannot rule out by type) keeps every clause it has: saying
  * less than the record does is the failure worth guarding against, and saying all of it
  * is still a prefix.
  */
@@ -1090,7 +1090,7 @@ export function treeHeadline(tree: TreeReport, depth: number): Line {
   return clauseStatement(tree.scope, headline(tree.result), depth);
 }
 
-/** The clause that is the answer, alone — or every clause, when none says it is one. */
+/** The clause that is the answer, alone, or every clause, when none says it is one. */
 function headline(result: VerifyResult): readonly [Clause, ...Clause[]] {
   const paint = news(result);
   const level = result.clauses.find((clause) => clause.of === 'level');
@@ -1102,7 +1102,7 @@ function headline(result: VerifyResult): readonly [Clause, ...Clause[]] {
  * has one.
  *
  * Not every finding does. A checkpoint that names another tail is about the whole
- * file, and a line that will not parse has no seq BECAUSE it could not be read —
+ * file, and a line that will not parse has no seq BECAUSE it could not be read:
  * asking for one is asking the record a question it cannot answer. Those printed as
  * `<tail>#undefined`, which is the shape of a verdict that lost a number, not of one
  * that never had it.

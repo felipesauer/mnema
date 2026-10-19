@@ -1,11 +1,11 @@
 /**
- * `mnema key revoke <fingerprint> --reason <text>` — retire a key from this
+ * `mnema key revoke <fingerprint> --reason <text>`: retire a key from this
  * identity, from this point forward.
  *
  * The third roster verb, and the one that answers a key going missing or leaking:
  * events the key signed while it was a member stay valid (a revocation is
- * prospective — past work does not become unattributable because a key was rotated
- * out), and anything it signs from here on fails verification — which is why a checkout of this
+ * prospective: past work does not become unattributable because a key was rotated
+ * out), and anything it signs from here on fails verification, which is why a checkout of this
  * machine that recorded the identity refuses to sign as it with that key from then on (the
  * core's `ensureFounded`), and why the revocation of this machine's own key says so.
  *
@@ -15,10 +15,10 @@
  * nothing anyone else can tell.
  *
  * A thin adapter. Which keys the identity has, whether this one is among them, and
- * whether it is the last — the core's judgement, worded by the core. It hands the core a
+ * whether it is the last: the core's judgement, worded by the core. It hands the core a
  * DEFERRED write rather than an open writer: opening one touches the tree even when nothing
- * is appended — an installation id, and until a tail came to be born at its first append,
- * the key's public half and an empty tail as well — so the core decides first and opens it
+ * is appended (an installation id, and until a tail came to be born at its first append,
+ * the key's public half and an empty tail as well), so the core decides first and opens it
  * only to write, and a refused revocation leaves the tree as it found it.
  */
 
@@ -46,7 +46,7 @@ import {
 import { oneLine } from '../one-line.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
-/** What the revocation needs — injected so it is testable. */
+/** What the revocation needs: injected so it is testable. */
 export interface KeyRevokeContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -67,7 +67,7 @@ export interface KeyRevoked extends Replacement {
   /** The project tree that recorded it. */
   readonly root: string;
   /**
-   * When the retired key is this machine's own, the file its private half is kept in — the one
+   * When the retired key is this machine's own, the file its private half is kept in: the one
    * `mnema key restore` takes to point this checkout at the identity the key is still in.
    */
   readonly keyFile?: string;
@@ -77,7 +77,7 @@ export interface KeyRevoked extends Replacement {
 
 /** The revocation was refused; nothing was written. */
 export type KeyRevokeRefused =
-  /** There is no project here — a retirement is a fact in a committed record. */
+  /** There is no project here: a retirement is a fact in a committed record. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core refused: an unknown key, the last key, or no right to revoke. */
   | {
@@ -89,8 +89,8 @@ export type KeyRevokeRefused =
 
 /**
  * What a retirement says when the key that signs it is protected and no passphrase is to hand.
- * The chain's own sentence ends in the advice for a host that signs for an agent — a key of its own
- * — which has nothing to do with a person retiring a key: the retirement is signed by THEIR key.
+ * The chain's own sentence ends in the advice for a host that signs for an agent (a key of its own)
+ * which has nothing to do with a person retiring a key: the retirement is signed by THEIR key.
  */
 function protectedKeyMessage(error: KeyIsProtectedError): string {
   return `the private key at ${error.path} is protected by a passphrase and ${KEY_PASSPHRASE_VARIABLE} is not set, and a retirement is signed with it: run the command in a terminal, which asks for the passphrase, or set ${KEY_PASSPHRASE_VARIABLE} for it`;
@@ -150,7 +150,7 @@ export function runKeyRevoke(
 export interface CheckerRetired extends Replacement {
   readonly ok: true;
   readonly fingerprint: string;
-  /** The anchor its results were signed under — its own. */
+  /** The anchor its results were signed under: its own. */
   readonly checker: string;
   /** The identity that retired it. */
   readonly retiredBy: string;
@@ -161,7 +161,7 @@ export interface CheckerRetired extends Replacement {
 }
 
 /**
- * Retires a CHECKER key — a key that signs check results only — signed by the identity this
+ * Retires a CHECKER key, a key that signs check results only, signed by the identity this
  * machine serves in the project's public tree, where the runner and every verifier read it.
  */
 export function runCheckerRetire(
@@ -221,7 +221,7 @@ export interface AgentRetired extends Replacement {
 }
 
 /**
- * Retires an AGENT key — a key that signs for this identity under a name — signed by this
+ * Retires an AGENT key, a key that signs for this identity under a name, signed by this
  * machine's key in every tree this process reaches that enrolled it: the project's committed tree,
  * where every other machine and an anonymous verifier read it, and the private and the global
  * tree, where the agent signs too. A key retired in one tree is retired for this machine's

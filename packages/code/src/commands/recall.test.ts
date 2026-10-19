@@ -1,12 +1,12 @@
 /**
- * `runRecall` — the notes a session opens with, read out of every tree this machine holds.
+ * `runRecall`: the notes a session opens with, read out of every tree this machine holds.
  *
  * The two properties that make it a verb of its own are asserted first: it reads the tree
  * that does NOT travel (where an agent's note lands), which the document may not carry;
  * and its cut and its ranking are the index's, observed here as values rather than
  * restated. This said it *"decides nothing about which notes or in what order"*, and it
  * does decide one thing now: the notes that share a word with what the session touches
- * come first. The last block holds that to a repository built in the sandbox — the theme
+ * come first. The last block holds that to a repository built in the sandbox: the theme
  * the tree touches ahead of the newest, the newest where nothing is touched, the same
  * bytes for the same tree, and a hostile path read as words.
  */
@@ -60,7 +60,7 @@ function minted(result: { ok: boolean; id?: string }): string {
   return result.id;
 }
 
-describe('runRecall — the notes out of every tree this machine holds', () => {
+describe('runRecall: the notes out of every tree this machine holds', () => {
   it('refuses where there is no project', () => {
     expect(runRecall(here())).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
@@ -81,7 +81,7 @@ describe('runRecall — the notes out of every tree this machine holds', () => {
     const recalled = runRecall(here());
     expect(recalled.ok).toBe(true);
     if (!recalled.ok) return;
-    // Every tree, each note once, and the tree each came from on the hit — the private one
+    // Every tree, each note once, and the tree each came from on the hit: the private one
     // being the note the committed document is not allowed to carry.
     expect(recalled.memories.hits.map((hit) => [hit.id, hit.scope]).sort()).toEqual(
       [
@@ -116,7 +116,7 @@ describe('runRecall — the notes out of every tree this machine holds', () => {
     }
     const recalled = runRecall(here());
     if (!recalled.ok) throw new Error(JSON.stringify(recalled));
-    // The index's own limit and the index's own total — nothing here restates either.
+    // The index's own limit and the index's own total: nothing here restates either.
     expect(recalled.memories.hits).toHaveLength(SEARCH_DEFAULT_LIMIT);
     expect(recalled.memories.total).toBe(written);
     expect(recalled.observations).toEqual({ hits: [], total: 0, pertinent: 0 });
@@ -144,10 +144,10 @@ describe('runRecall — the notes out of every tree this machine holds', () => {
   });
 });
 
-describe('mnema recall — the verb', () => {
+describe('mnema recall: the verb', () => {
   it('is a read, and takes the copy a hook carries, and whose ceiling it is cut to', () => {
     // What its wiring says it is, asked of the registration itself: a verb that PRODUCES a
-    // channel a session opens with is still a read — it appends nothing — and it has no
+    // channel a session opens with is still a read (it appends nothing) and it has no
     // `--scope` to leave out the private notes it exists to bring back, and no `--limit` to
     // disagree with the index about where the list is cut. THIS CASE WAS "takes no option at
     // all", and `--hook` is the one it takes now: the plugin's handler asks for the copy that
@@ -164,7 +164,7 @@ describe('mnema recall — the verb', () => {
   });
 });
 
-describe('runRecall — the notes near what the session touches come first', () => {
+describe('runRecall: the notes near what the session touches come first', () => {
   /** `git <args>` in the sandbox's repository, as every git a test writes a repository with runs. */
   function git(...args: string[]): void {
     const ran = spawnSync('git', args, {

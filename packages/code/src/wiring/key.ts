@@ -3,7 +3,7 @@
  *
  * `key` is a group, and the only one whose subject is not the record but the
  * machine's key material: `restore` brings a key back onto a machine, and
- * `request`/`enroll`/`revoke` operate the identity's roster — the three steps of
+ * `request`/`enroll`/`revoke` operate the identity's roster, the three steps of
  * putting a second machine on one identity, and taking a key back out.
  *
  * The split across machines is not cosmetic: `request` runs where the key wants
@@ -25,10 +25,10 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const key = program.command('key').description("manage this machine's signing keys");
 
-  // `mnema key restore <file>` — install a key from a copy of its private half and
+  // `mnema key restore <file>`: install a key from a copy of its private half and
   // adopt, in this project, the identity the record proves it belongs to. The file
   // is a POSITIONAL: it is the whole subject of the command and competes with
-  // nothing. It is READ, never moved or consumed — the output says so, because this
+  // nothing. It is READ, never moved or consumed: the output says so, because this
   // is the moment a person would think the copy has done its job and delete it.
   key
     .command('restore')
@@ -93,7 +93,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         // Two PATHS, and the second one is the positional this verb was handed: it is
         // echoed back to say the copy was not consumed, so it reaches the line exactly
         // as it was typed (see {@link onOneLine}). The fingerprint and the anchor above
-        // are hex and `mnid:` — neither can hold a break.
+        // are hex and `mnid:`: neither can hold a break.
         io.out(render(fact(onOneLine`private half installed at ${result.installedAt}`)));
         io.out(
           render(fact(onOneLine`Your copy at ${file} was read, not moved — keep it where it is.`)),
@@ -108,11 +108,11 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
-  // `mnema key request --anchor <id> [--key <file>]` — on the machine that wants
+  // `mnema key request --anchor <id> [--key <file>]`: on the machine that wants
   // in. The anchor is a REQUIRED flag, not a positional: it is not the subject of
   // the command (the subject is this machine's key), and it is a value the person
   // pastes from elsewhere, so naming it keeps a mis-paste from reading as a path.
-  // `--key` points at a private key to speak for INSTEAD of this machine's own —
+  // `--key` points at a private key to speak for INSTEAD of this machine's own:
   // the way out of a machine that already minted the wrong key.
   key
     .command('request')
@@ -245,7 +245,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       );
     });
 
-  // `mnema key enroll <request>` — on a machine that is already a member. The
+  // `mnema key enroll <request>`: on a machine that is already a member. The
   // request is a POSITIONAL: it is the whole subject of the command. It is long,
   // which is exactly why it is not typed but pasted.
   key
@@ -397,7 +397,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         }
         io.out(`Enrolled key ${result.fingerprint}`);
         io.out(render(fact(`into ${result.anchor}`)));
-        // The project ROOT, discovered from the cwd — the same value `init` prints, and
+        // The project ROOT, discovered from the cwd: the same value `init` prints, and
         // the same reason it is collapsed there (see {@link onOneLine}).
         io.out(render(fact(onOneLine`recorded in ${result.root}`)));
         io.out(render(fact('Commit and share the record: the other machine joins by reading it.')));
@@ -409,7 +409,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
-  // `mnema key github <name>` — this identity names its GitHub account. A signed claim and
+  // `mnema key github <name>`: this identity names its GitHub account. A signed claim and
   // nothing else: no network is asked here; `verify --against-github` asks github.com later.
   key
     .command('github')
@@ -443,7 +443,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
-  // `mnema key sigstore <identity>` — this identity names the identity a Sigstore certificate
+  // `mnema key sigstore <identity>`: this identity names the identity a Sigstore certificate
   // carries. A signed claim and nothing else: no network; `verify --against-sigstore` reads it.
   key
     .command('sigstore')
@@ -504,12 +504,12 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
-  // `mnema key revoke <fingerprint> --reason <text>` — retire a key. The
+  // `mnema key revoke <fingerprint> --reason <text>`: retire a key. The
   // fingerprint is a positional (the subject); the reason is a required flag, as
   // every other verb that demands its evidence does. It is the full fingerprint,
   // and it stays whole even though an ANCHOR may now be named by a prefix: an
   // anchor is an identity the record lists, so a prefix resolves against something
-  // and an ambiguous one is refused by name — a fingerprint names a physical key,
+  // and an ambiguous one is refused by name; a fingerprint names a physical key,
   // and guessing which key a short value means is not a guess to make about key
   // material.
   key
@@ -641,7 +641,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             //
             // AND IT SAID "what it writes here is refused", which is more than the refusal is. The
             // retirement is recorded in the public tree alone (`key-revoke.ts`), and each tree asks
-            // its own roster, so a `--scope private` write from this checkout lands — measured on
+            // its own roster, so a `--scope private` write from this checkout lands: measured on
             // the binary. So the sentence names the public tree, as `init` does where it says the
             // same refusal; `the-refusal-names-the-way-out.test.ts` runs both writes.
             io.out(
@@ -653,7 +653,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               ),
             );
             // Where the record still proves the key in one other identity, a restore points the
-            // checkout there — the way out of an identity whose only key this was, which the
+            // checkout there: the way out of an identity whose only key this was, which the
             // refusal of a fresh clone hands over and `the-refusal-names-the-way-out.test.ts`
             // follows to the letter.
             //
@@ -661,7 +661,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             // again" and "Bring another key in first", and the record it read is the copy this
             // checkout holds: a checkout that had not pulled the other identity's enrollment of the
             // key was told there was nothing, while a pull and the same restore made it write as
-            // that identity — measured on the binary, and followed to the letter in
+            // that identity, measured on the binary, and followed to the letter in
             // `the-checkout-a-key-left.test.ts`. So it says the pull, and the file either way.
             io.out(
               render(
@@ -693,7 +693,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         });
       },
     );
-  // `mnema key protect` / `unprotect` — put a passphrase on this machine's private keys at
+  // `mnema key protect` / `unprotect`: put a passphrase on this machine's private keys at
   // rest, or take it off. The passphrase is `MNEMA_KEY_PASSPHRASE`, read where signing reads
   // it (`commands/key-protect.ts` says why it is not a flag). These touch key files and no
   // record, and sit under the group's `mutatesTheRecord` declaration as `key restore` does.

@@ -1,7 +1,7 @@
 /**
  * The `mnema why` wiring: what it declares, and what it prints.
  *
- * `mnema why <file|commit> [--json]` — for a file, the rules in force that address it and the
+ * `mnema why <file|commit> [--json]`: for a file, the rules in force that address it and the
  * commits with a decision trailer that touched it; for a commit, the decisions its trailers cite
  * and the rules in force on what it changed. Read when asked, never written down.
  */

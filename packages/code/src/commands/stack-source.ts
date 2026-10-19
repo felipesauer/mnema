@@ -1,13 +1,13 @@
 /**
  * Where a stack comes from, read into its files: a folder, a tar archive, or a git repository
- * over HTTPS. Reading is all this does — nothing of the stack is run, and the files it returns
+ * over HTTPS. Reading is all this does: nothing of the stack is run, and the files it returns
  * are bytes in memory.
  *
  * A FOLDER is read by `readStackFiles`, which refuses a symbolic link wherever it sits. The folder
  * itself must not be a link either: a link names a place, and the bytes the plan shows would be
  * whatever that place holds the next time it is read.
  *
- * AN ARCHIVE is read by `readStackArchive`, in memory, and never unpacked onto the disk — an entry
+ * AN ARCHIVE is read by `readStackArchive`, in memory, and never unpacked onto the disk: an entry
  * named `../x` names nothing.
  *
  * A GIT REPOSITORY is the one source that touches the network, and it is the only request this
@@ -157,7 +157,7 @@ async function readGit(
 
 /**
  * Reads the stack `source` names: an `https://` address is a git repository, and anything else is
- * a path, relative to `cwd` — a folder, or a tar archive (gzipped or not).
+ * a path, relative to `cwd` (a folder, or a tar archive, gzipped or not).
  */
 export async function readStackSource(
   source: string,

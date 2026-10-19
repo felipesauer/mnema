@@ -3,10 +3,10 @@
  *
  * `check` is a group of two, one per side of the role:
  *
- *   - `mnema check declare <rule> <program> [args...]` — a person says what program checks a
+ *   - `mnema check declare <rule> <program> [args...]`: a person says what program checks a
  *     rule. The program and its arguments are positionals after the rule; an argument that
  *     starts with a dash goes after `--`, so it is the program's and not this verb's.
- *   - `mnema check run` — the machine whose key is enrolled as a checker runs the check of
+ *   - `mnema check run`: the machine whose key is enrolled as a checker runs the check of
  *     every rule in force and records each result. It exits non-zero when any check failed,
  *     which is what makes it a gate in CI.
  */

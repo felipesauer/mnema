@@ -1,7 +1,7 @@
 /**
  * Two imports of one directory, run together, record each decision once.
  *
- * Both read the record to plan — which files are already derived — before either wrote, so
+ * Both read the record to plan (which files are already derived) before either wrote, so
  * both found every file new and the record came out holding each decision twice, with two
  * `derived-from` edges to one file. Not a race, for the reason
  * `core/src/workflow/the-second-move-sees-the-first.test.ts` gives: the case runs the other

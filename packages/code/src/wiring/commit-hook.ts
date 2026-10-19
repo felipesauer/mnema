@@ -6,7 +6,7 @@
  * help, because there is no state of the record to read.
  *
  * IT WRITES A FILE OF THE PERSON'S, SO IT IS ONLY EVER ASKED FOR: `init` does not install it
- * and nothing else does. It is declared `mutates` although it appends no event — the effect
+ * and nothing else does. It is declared `mutates` although it appends no event: the effect
  * names what an invocation can reach, and a read-only session (`repl`) must not be offered a
  * verb that writes into `.git`.
  *

@@ -1,7 +1,7 @@
 /**
  * The `mnema aging` wiring: what it declares, and what it prints.
  *
- * `mnema aging [--min-commits <n>] [--json]` — accepted decisions whose addressed paths changed in
+ * `mnema aging [--min-commits <n>] [--json]`: accepted decisions whose addressed paths changed in
  * at least n commits since the acceptance. It POINTS, never CONCLUDES: the page counts commits and
  * says nothing of the decision. Read when asked, never written down.
  */

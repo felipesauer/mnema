@@ -1,28 +1,28 @@
 /**
- * `mnema observe <about> --topic "<t>" --text "<obs>"` — record an observation.
+ * `mnema observe <about> --topic "<t>" --text "<obs>"`: record an observation.
  *
  * A sibling of `memory`, differing only in what an observation carries. Like a
- * memory it is a point-in-time FACT — no gate, no state, no `move` — and it mints
+ * memory it is a point-in-time FACT (no gate, no state, no `move`) and it mints
  * its OWN id (an observation is itself an entity, "I noted X about Y"), which the
  * command reports back.
  *
  * The shape splits about-vs-content: `about` is a POSITIONAL (the entity the
  * note is about, a short id/label), while the `topic` and the `text` are FLAGS.
- * The text would compete with about/topic for the tail of the line — where does
- * the topic end and the observation begin? — so it is named, the `gh issue
+ * The text would compete with about/topic for the tail of the line (where does
+ * the topic end and the observation begin?), so it is named, the `gh issue
  * comment <n> --body` convention. Neither `--topic` nor `--text` is declared as
  * commander's `requiredOption`; they are plain options the action checks itself,
  * matching the posture the skill's `--body` established (nothing forces a flag on
  * a sibling verb).
  *
  * The `about` target is NOT verified to exist. The core deliberately does not
- * refuse a dangling `about` — the observed entity may live in another tree the
- * writer cannot see, an honest cross-tree assertion resolved on read — and the
+ * refuse a dangling `about` (the observed entity may live in another tree the
+ * writer cannot see, an honest cross-tree assertion resolved on read) and the
  * surface only forwards it. There is no `UNKNOWN_*` for the reference here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
  * `scope` wins; when omitted, this is the other kind the rule still answers from the
- * AUTHOR — public for a person, private when an agent operating the CLI declares
+ * AUTHOR: public for a person, private when an agent operating the CLI declares
  * itself (`which`), which is also recorded on the fact. The kind cannot answer for
  * these two (see `runMemory`), so the question stays open.
  */
@@ -38,7 +38,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the observe command needs — injected so it is testable. */
+/** What the observe command needs: injected so it is testable. */
 export interface ObserveContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -55,7 +55,7 @@ export interface ObservationRecorded extends Replacement, Landed {
 
 /** The record was refused. */
 export type ObserveRefused =
-  /** There is no project here — a project-scoped observation needs one. */
+  /** There is no project here: a project-scoped observation needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused (e.g. the authority invariant). */
   | {
@@ -70,7 +70,7 @@ export type ObserveRefused =
  * rule is identical to a memory's: an explicit `scope` wins, else the author decides
  * (public for a person, private for an agent). A PROJECT scope needs a project; with
  * none this refuses `NO_PROJECT`. The `about` reference is forwarded to the core as-is
- * and never validated — a dangling reference is honest cross-tree, not a refusal. A
+ * and never validated: a dangling reference is honest cross-tree, not a refusal. A
  * declared `which` shifts the omitted default to private and is recorded on the
  * event; the resolved scope comes back on the result.
  */

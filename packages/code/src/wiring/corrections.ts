@@ -8,7 +8,7 @@
  *
  * A HOST RUNS IT, NOT A PERSON, so it is `before-a-write`'s shape: it exits 0 on every outcome that is
  * not a misuse of the verb itself, and what it could not do goes to the second stream. It is a WRITE,
- * and says so — the one verb a hook runs that appends to the record without anybody typing it — and it
+ * and says so, the one verb a hook runs that appends to the record without anybody typing it, and it
  * does nothing at all until `mnema switch on user-corrections`.
  */
 

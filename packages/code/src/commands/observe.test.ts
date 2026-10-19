@@ -62,7 +62,7 @@ describe('mnema observe', () => {
   it('does NOT validate the `about` reference: a dangling id is accepted, not refused', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
-    // No such entity exists anywhere — the observation is still recorded.
+    // No such entity exists anywhere: the observation is still recorded.
     const result = runObserve(
       { cwd: repo, env },
       { about: '00000000-0000-7000-8000-000000000000', topic: 't', text: 'about a ghost' },
@@ -136,7 +136,7 @@ describe('mnema observe', () => {
   });
 });
 
-describe('mnema observe --which — the agent that executed', () => {
+describe('mnema observe --which: the agent that executed', () => {
   /** Every `observation.recorded` in a tree, with the agent each one names. */
   function observationsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

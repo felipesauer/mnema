@@ -55,8 +55,8 @@ describe('mnema run start', () => {
   });
 
   it('is born in the tree that TRAVELS, so every kind pinned to it can cite it', () => {
-    // One command-line run frames writes of many kinds — a public task, a private
-    // memory — and each stamps this id on its envelope. A run in the private tree
+    // One command-line run frames writes of many kinds (a public task, a private
+    // memory) and each stamps this id on its envelope. A run in the private tree
     // therefore left the PUBLIC facts citing an authority that does not travel with
     // them: a clone reads the task and can resolve nothing. The reverse direction is
     // safe (a private fact is only readable beside the public tree at all), so the run
@@ -74,7 +74,7 @@ describe('mnema run start', () => {
 
   it('records the goal, the authorizing anchor, and the agent on both slots', () => {
     // The agent lives in the payload (the projection reads it) AND on the
-    // envelope's `which` (what every other fact uses) — one declaration, both.
+    // envelope's `which` (what every other fact uses): one declaration, both.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const result = runRunStart({ cwd: repo, env }, { agent: 'codex', goal: 'ship the CLI run' });
@@ -92,7 +92,7 @@ describe('mnema run start', () => {
     }
   });
 
-  it('refuses NO_AGENT for a blank agent — a run with no agent authorizes nothing', () => {
+  it('refuses NO_AGENT for a blank agent: a run with no agent authorizes nothing', () => {
     // The core would read a blank as "no agent" and record a run naming nobody:
     // the correlation-id run the design rejected. It is refused at the door.
     const { repo, env } = setup();
@@ -116,7 +116,7 @@ describe('mnema run start', () => {
   });
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity', () => {
-    // An agent must not open the session that authorizes its own work — the whole
+    // An agent must not open the session that authorizes its own work: the whole
     // session would inherit a `who` the agent chose for itself.
     const { repo, env } = setup();
     const init = found({ cwd: repo, env });
@@ -129,7 +129,7 @@ describe('mnema run start', () => {
 
   it('refuses NO_PROJECT outside a project (a run belongs to a project)', () => {
     // Falling back to the global tree would open a session no project's fact could
-    // honestly cite — and one no CLI read of a project would ever surface.
+    // honestly cite, and one no CLI read of a project would ever surface.
     const { repo, env } = setup();
     const orphan = join(repo, 'nowhere');
     mkdirSync(orphan, { recursive: true });

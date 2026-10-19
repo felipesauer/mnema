@@ -1,5 +1,5 @@
 /**
- * `mnema inherit set | update` — the wiring of the two acts that point a project at another
+ * `mnema inherit set | update`: the wiring of the two acts that point a project at another
  * repository's record. What each does and refuses is in `commands/inherit.ts`; this prints it.
  *
  * The text says what the code guarantees and no more: the record at the commit was verified, the

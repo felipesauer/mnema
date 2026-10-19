@@ -1,5 +1,5 @@
 /**
- * `mnema run start --which <agent>` — open a session on the command line.
+ * `mnema run start --which <agent>`: open a session on the command line.
  *
  * A run is the unit of AUTHORIZATION: it records that a human opened a session
  * for an agent, and every fact written inside it inherits that chain. Over MCP
@@ -8,7 +8,7 @@
  * standing behind them. This is that missing half.
  *
  * The agent is REQUIRED, and that is the whole point rather than a strictness
- * knob: a run with no agent proves no delegation — it is the "run as a
+ * knob: a run with no agent proves no delegation; it is the "run as a
  * correlation id" the design rejected. The surface therefore refuses a blank
  * agent with the core's OWN identity rule ({@link canonicalIdentity}), the same
  * function the operations use to decide whether an agent was named, so the two
@@ -17,12 +17,12 @@
  *
  * It is born in the tree that TRAVELS, with no `--scope` to move it, and that is a
  * property of the reference rather than a preference. One command-line run frames
- * writes of MANY kinds — a public decision, a private memory — and every one of them
+ * writes of MANY kinds (a public decision, a private memory) and every one of them
  * stamps this run's id on its envelope. A fact may cite a run in a tree that travels
  * further than its own (a private memory is only ever read beside the public tree
  * that hides it); it may not cite one that travels less, because that reference is
  * exactly what a clone cannot resolve. So the run goes where every kind can point at
- * it. Outside a project it refuses rather than falling back to the global tree — a
+ * it. Outside a project it refuses rather than falling back to the global tree: a
  * run there would be one no project's fact could honestly cite.
  *
  * (The MCP surface needs no such reasoning: it opens a run PER TREE, at the first
@@ -35,7 +35,7 @@ import { openTreeForWriting, startRun } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the run-start command needs — injected so it is testable. */
+/** What the run-start command needs: injected so it is testable. */
 export interface RunStartContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -46,17 +46,17 @@ export interface RunStartContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
 /** A run was opened. */
 export interface RunStarted extends Replacement {
   readonly ok: true;
-  /** The minted run id — the value callers pin their writes to. */
+  /** The minted run id: the value callers pin their writes to. */
   readonly id: string;
   /** The agent the session is for, in the canonical form recorded. */
   readonly agent: string;
-  /** The goal AS RECORDED — screened, absent when none was stated. */
+  /** The goal AS RECORDED: screened, absent when none was stated. */
   readonly goal?: string;
 }
 
 /** Opening the run was refused. */
 export type RunStartRefused =
-  /** There is no project here — a run belongs to a project's committed tree. */
+  /** There is no project here: a run belongs to a project's committed tree. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused, or no agent was named. */
   | {
@@ -105,7 +105,7 @@ export function runRunStart(
         ...(input.goal !== undefined ? { goal: input.goal } : {}),
       },
     );
-    // Checkpoint so the run is signature-covered at once — the same posture every
+    // Checkpoint so the run is signature-covered at once: the same posture every
     // other writing verb leaves the tree in.
     if (written.ok) writer.checkpoint();
     return written;
@@ -117,7 +117,7 @@ export function runRunStart(
   return {
     ok: true,
     id: started.id,
-    // The label and goal AS RECORDED — screened, so the echo shows what landed.
+    // The label and goal AS RECORDED: screened, so the echo shows what landed.
     agent: started.agent,
     ...(started.goal !== undefined ? { goal: started.goal } : {}),
     ...forwardReplacement(started),

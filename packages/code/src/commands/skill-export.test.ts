@@ -10,7 +10,7 @@
  * this file would have carried the blind spot the guard exists to remove.
  *
  * AND THE PATH IS DERIVED TOO. Reaching `deprecated` takes review, adopt, deprecate, and
- * each action's required proof is in the same table — so nothing here hardcodes either
+ * each action's required proof is in the same table, so nothing here hardcodes either
  * the order or which move needs a `note` and which a `reason`. That is what makes the
  * walk survive a workflow change instead of failing as a fixture.
  *
@@ -38,7 +38,7 @@ import { runSkillTransition } from './skill-transition.js';
 import { runTask } from './task.js';
 
 let sandbox: string;
-/** Where every export in this file writes — inside the sandbox, and never the record. */
+/** Where every export in this file writes: inside the sandbox, and never the record. */
 let out: string;
 
 beforeEach(() => {
@@ -249,7 +249,7 @@ describe('the file the export composes', () => {
 
 /**
  * OUTSIDE A PROJECT, the two reads that also serve the machine-global tree say so when the id is
- * in no tree they could read — and still answer when it is in that one. `show` and `skill export`
+ * in no tree they could read, and still answer when it is in that one. `show` and `skill export`
  * answered "No record <id> here" in a directory with no record at all, which told a person in the
  * wrong folder their record was missing; the other verbs said there is no project.
  */

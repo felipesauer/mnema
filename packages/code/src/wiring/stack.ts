@@ -1,14 +1,14 @@
 /**
  * The `mnema stack` wiring: installing a stack and removing one.
  *
- * `stack add <source>` shows the plan whole — the stack, its digest and who signed it, its
+ * `stack add <source>` shows the plan whole (the stack, its digest and who signed it, its
  * source, every file and the hosts that read it, the hosts that receive nothing, and the hooks it
- * declares, apart and off — and writes it only when `--expect` names the digest the plan showed, so what is written
+ * declares, apart and off) and writes it only when `--expect` names the digest the plan showed, so what is written
  * is what was read even when the source is fetched again. `--dry-run` shows the plan and stops.
  * `stack remove <name>` deletes what is still as it was written and names what is not.
  * `list`, `show`, `diff` and `check` look at what is installed against its receipt and the record;
  * `export` copies the skills and agents back out; `enable` and `disable` (a hook) are the one act a stack
- * cannot do for itself — a hook is never on until a person, at a terminal, has read it.
+ * cannot do for itself: a hook is never on until a person, at a terminal, has read it.
  *
  * IT IS ON THIS SURFACE AND NOT ON THE AGENT'S. Installing writes into the folders a host reads
  * as instruction, which is an act of the person who administers the project; there is no MCP

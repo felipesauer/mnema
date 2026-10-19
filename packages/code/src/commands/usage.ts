@@ -1,16 +1,16 @@
 /**
- * `mnema usage` — what each run of this project cost, read from the host and never
+ * `mnema usage`: what each run of this project cost, read from the host and never
  * from the record.
  *
  * THE RECORD DOES NOT HOLD THIS NUMBER AND WILL NOT, and this file is where that
  * decision is stated. It turns on a measured property of where
  * the number lives: the host's transcripts EXPIRE (`cleanupPeriodDays` has a mandatory
  * retention and `0` is rejected), so a cost recorded in the chain would be a signed
- * claim whose only witness deletes itself in weeks — indistinguishable, by then, from
+ * claim whose only witness deletes itself in weeks, indistinguishable, by then, from
  * somebody having typed a figure. So the chain gets no field, no event and no version,
  * and this verb crosses two readings at the moment somebody asks.
  *
- * THE JOIN IS BY TIME AND DIRECTORY, AND IT IS THIS COMMAND'S INFERENCE — never a fact
+ * THE JOIN IS BY TIME AND DIRECTORY, AND IT IS THIS COMMAND'S INFERENCE: never a fact
  * the record states. Storing the host's session id on an event would have made the join
  * exact, and it would have been the same mistake in smaller print: a signed pointer at
  * a file that deletes itself. What is on both sides already is an instant. The record
@@ -21,20 +21,20 @@
  *
  * AND IT REFUSES TO GUESS, which is the rule that separates this from a token counter:
  *
- *   - ONE host session overlapping the window — attribute, and name the session, so a
+ *   - ONE host session overlapping the window: attribute, and name the session, so a
  *     reader can go and check the same file this read.
- *   - MORE THAN ONE — name them all and attribute NOTHING. There is no tie-break that
+ *   - MORE THAN ONE: name them all and attribute NOTHING. There is no tie-break that
  *     is not invented, and a number produced by an invented one is worse than its
  *     absence: it is an absence a reader cannot see.
- *   - NONE — say so as a WORD. Never `0`. Zero tokens and no transcript are different
+ *   - NONE: say so as a WORD. Never `0`. Zero tokens and no transcript are different
  *     news, and the surface that confused them would be telling a person their agent
  *     worked for free. It is the same reason `tail list` prints `no waiver` instead of
  *     leaving a column empty.
  *
  * Read-only in the strict sense: it opens a projection cache per tree the way every
  * read does, opens the host's transcripts for reading, and appends nothing anywhere.
- * `the-cost-comes-from-the-host.test.ts` hashes the whole sandbox — chain, cache, keys
- * AND the host's own store — around the invocation.
+ * `the-cost-comes-from-the-host.test.ts` hashes the whole sandbox (chain, cache, keys
+ * AND the host's own store) around the invocation.
  */
 
 import { dirname } from 'node:path';
@@ -64,11 +64,11 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the usage read needs — injected so it is testable. */
+/** What the usage read needs: injected so it is testable. */
 export interface UsageContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (`$HOME`, `$MNEMA_HOME`) — the home is where the host's store is. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`): the home is where the host's store is. */
   readonly env: DiscoveryEnv;
   /** The process environment, for the host's own `CLAUDE_CONFIG_DIR` override. */
   readonly processEnv?: NodeJS.ProcessEnv;
@@ -80,7 +80,7 @@ export interface UsageContext {
   readonly clock?: Clock;
 }
 
-/** One run, and what the host says it cost — or the word saying why it says nothing. */
+/** One run, and what the host says it cost, or the word saying why it says nothing. */
 export interface RunSpend {
   /** The run's id, whole. */
   readonly run: string;
@@ -93,7 +93,7 @@ export interface RunSpend {
   /**
    * The host sessions whose span overlaps this run's window, by id.
    *
-   * Empty, one, or several — and the three are three different answers rather than
+   * Empty, one, or several, and the three are three different answers rather than
    * three sizes of the same one. It is stated even when it holds two, because naming
    * the candidates is what lets a person do by hand the attribution this refuses to
    * do for them.
@@ -108,14 +108,14 @@ export interface UsageDone {
   readonly ok: true;
   /** Every run this record holds, most recently started first. */
   readonly runs: readonly RunSpend[];
-  /** The trees the runs were read from — what an empty answer names. */
+  /** The trees the runs were read from: what an empty answer names. */
   readonly trees: readonly Scope[];
   /** The host's store, so an answer of nothing says where nothing was found. */
   readonly store: string;
   /** How many of the host's sessions record work in this project at all. */
   readonly sessionsInStore: number;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -169,7 +169,7 @@ export function runUsage(ctx: UsageContext): UsageDone | UsageRefused {
 }
 
 /**
- * The repository a project tree sits in — `<repo>/.mnema` back to `<repo>`.
+ * The repository a project tree sits in: `<repo>/.mnema` back to `<repo>`.
  *
  * The host records the directory a person was WORKING in, which is the repository, and
  * never the record's own directory inside it. Composed by cutting the one segment the
@@ -181,12 +181,12 @@ function repositoryOf(projectPublic: string): string {
 }
 
 /**
- * Most recently started first — what a person scanning a cost table wants at the top,
+ * Most recently started first: what a person scanning a cost table wants at the top,
  * by the core's {@link newestFirst}.
  *
  * It wrote the comparison out here, and broke the tie with `localeCompare` ASCENDING,
  * which put the OLDER of two runs opened in one millisecond above the newer. Same
- * defect as the four other sites, in a different spelling — which is why the scan that
+ * defect as the four other sites, in a different spelling, which is why the scan that
  * keeps a seventh from being written looks for the shape and not for a phrase.
  */
 function byStartedDesc(a: RunProjection, b: RunProjection): number {
@@ -198,7 +198,7 @@ function byStartedDesc(a: RunProjection, b: RunProjection): number {
  * has not touched since then without opening it.
  *
  * A run whose `startedAt` this machine cannot read contributes nothing to the bound,
- * and the walk falls back to reading everything — the safe direction, since the
+ * and the walk falls back to reading everything: the safe direction, since the
  * alternative is silently pruning away the transcript that would have answered.
  */
 function earliestWindowStart(runs: readonly RunProjection[]): number {
@@ -236,7 +236,7 @@ function attributed(run: RunProjection, sessions: readonly HostSession[], asOf: 
  * OVERLAP and not containment, and the difference decides real cases: a session that
  * was already open when the run started, or that outlived it, did the run's work just
  * as much as one that fits inside it. Containment would report "no transcript" for the
- * ordinary shape — an agent session that opens a run partway through what it is doing.
+ * ordinary shape: an agent session that opens a run partway through what it is doing.
  */
 function overlaps(session: HostSession, from: number, to: number): boolean {
   const began = instant(session.firstAt);

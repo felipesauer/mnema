@@ -1,10 +1,10 @@
 /**
  * The `mnema timeline` wiring: what it declares, and what it prints.
  *
- * `mnema timeline <id> [--json]` — the entity's whole story across the trees:
+ * `mnema timeline <id> [--json]`, the entity's whole story across the trees:
  * every event where it is the subject, plus those that refer to it (an
  * observation `about` it, a link whose `target` is it). An id no event touches
- * yields an empty history — a valid answer, not a refusal.
+ * yields an empty history: a valid answer, not a refusal.
  */
 
 import type { Command } from 'commander';
@@ -36,26 +36,26 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result);
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.entries, null, 2));
         return;
       }
-      // Human summary — one line per event: when, what kind, the role by which the
+      // Human summary, one line per event: when, what kind, the role by which the
       // entity appears, and who authorized it. The typed payload is in --json.
       //
-      // The id is the caller's own word and it is not validated here — an id no event
-      // touches is a valid answer, not a refusal — so it reaches both of these lines as
+      // The id is the caller's own word and it is not validated here (an id no event
+      // touches is a valid answer, not a refusal), so it reaches both of these lines as
       // typed, and the second one HEADS the list (see {@link onOneLine}).
       if (result.entries.length === 0) {
         io.out(onOneLine`No history recorded for ${id}.`);
         return;
       }
       io.out(onOneLine`${id} — ${result.entries.length} event(s):`);
-      // One line per event — when, what kind, the role the queried entity appears
-      // by, and who authorized it — and under it, INDENTED, what that move said when
+      // One line per event (when, what kind, the role the queried entity appears
+      // by, and who authorized it) and under it, INDENTED, what that move said when
       // it said anything. Both lines are composed in `presentation/occurrence.ts`,
       // which is where a value that enters a line is collapsed; this layer hands over
       // the values and prints what comes back.

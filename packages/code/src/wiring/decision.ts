@@ -5,12 +5,12 @@
  * (`mnema decision record "<title>" "<rationale>"`), the others move an existing one
  * or propose the ones already written in files. The group does nothing on its own,
  * for `task`'s reason (see `wiring/task.ts`). A decision needs BOTH a title and a rationale, so both are
- * required positionals — a missing one is the parser's clear error, not a late
+ * required positionals: a missing one is the parser's clear error, not a late
  * gate refusal. What it turned down is `--alternatives`, a flag rather than a
  * third positional: most decisions had no contender, and a positional that is
  * usually absent forces every caller to type an empty argument for it. Record also
  * takes an optional `--scope` (the per-action birth override, defaulting to
- * public); the moves take none (they follow the entity). A decision has no alias —
+ * public); the moves take none (they follow the entity). A decision has no alias:
  * record prints its frozen `ADR-<n>` label.
  */
 
@@ -89,7 +89,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .addHelpText('after', RECORD_CONTRACT_HELP);
   addBodySourceOptions(decision, 'rationale');
 
-  // `decision record <title> <rationale>` — the verb the agent's surface calls
+  // `decision record <title> <rationale>`: the verb the agent's surface calls
   // `record_decision`. The group used to record with the two typed right after its name, and a
   // group that takes a free word cannot refuse a mistyped subcommand: `mnema decision showZZZ
   // why-not` recorded ADR-1. Its flags are its own, so its `--help` lists them; written after
@@ -151,11 +151,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     reportRefusal(wiring, result);
   });
 
-  // `decision move <accept|reject> <id>` — the generic move, the sibling of
+  // `decision move <accept|reject> <id>`: the generic move, the sibling of
   // `task move`. The action is an argument the gate validates; the surface knows
   // no transition table. It takes the group's `--which` and NO `--scope` (a move
   // follows the entity), and it refuses every flag of the group it does not read
-  // (`from-the-group.ts`). Supersede is deliberately NOT routed here — it needs a
+  // (`from-the-group.ts`). Supersede is deliberately NOT routed here: it needs a
   // successor `by` this generic form has nowhere to take; it is its own verb below.
   const decisionMove = decision
     .command('move')
@@ -187,7 +187,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       return;
     }
     // ONE FACT PER ID, signed on its own, in the order typed: a verdict on a hundred imported
-    // proposals is a hundred judgements and the record keeps them as a hundred — the command is
+    // proposals is a hundred judgements and the record keeps them as a hundred; the command is
     // the only thing that is one. Each id is moved or refused on its own account, and a refusal
     // does not stop the ones after it (an append-only record cannot take the ones before it
     // back, so stopping would only leave the rest undone for no reason the person gave).
@@ -214,7 +214,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     }
   });
 
-  // `decision supersede <old-id> <new-id> --reason` — supersede as its own verb.
+  // `decision supersede <old-id> <new-id> --reason`: supersede as its own verb.
   // A supersede replaces one decision with a later one, so it needs the successor
   // id (`by`), taken as a required positional so the parser demands the pair on
   // input rather than the gate refusing it late. Like every move it follows the
@@ -250,14 +250,14 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     });
     await reportDecisionMove(result, oldId, wiring);
   });
-  // `decision import <source>` — propose the decisions this repository already wrote.
+  // `decision import <source>`: propose the decisions this repository already wrote.
   //
   // It is a SUBCOMMAND of `decision` and not a top-level verb because what it
   // produces is decisions, and the group for that kind already exists; a top-level
   // `mnema import` would promise to import anything and deliver one kind.
   //
   // It declares its OWN `--scope` and `--which`, unlike the moves, because it is a
-  // BIRTH — the per-action override the group's default action takes, over one tree
+  // BIRTH: the per-action override the group's default action takes, over one tree
   // fewer (the last paragraph). The group's own copies are refused rather than
   // inherited: `mnema decision --scope private import docs/adr` puts the flag before the
   // verb it belongs to, and silently honouring it would teach two spellings of one
@@ -268,7 +268,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // hands a group every flag it knows wherever the flag is written, so `--which ci`
   // after `import` landed on `decision`. The check here asked whether the GROUP held a
   // value, and therefore refused the flag in the place this help documents as well as
-  // in the place it meant to refuse — no test ran the documented one. What decides now
+  // in the place it meant to refuse: no test ran the documented one. What decides now
   // is where the flag was WRITTEN (`written-before.ts`); the value is read where
   // commander put it, on the group. `the-flags-reach-the-import.test.ts` runs both
   // places on the binary and reads the agent and the tree back off the record.
@@ -347,7 +347,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   });
   decisionImport.action(async (dir: string, opts: { write?: boolean; format?: string }) => {
     // Written after `import`, both flags still land on the GROUP, which declares the same
-    // two — so that is where their values are read. This command's own declarations are
+    // two, so that is where their values are read. This command's own declarations are
     // what its `--help` lists and what `ownFlagsWrittenBefore` knows to look for.
     const given = await fromTheGroup<{ scope?: string; which?: string }>(decisionImport, wiring);
     if (given === REFUSED) return;
@@ -375,8 +375,8 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     });
     if (result.ok) {
       // BEFORE the plan, and on the other stream. An import is the one place a read
-      // of the record decides what gets WRITTEN to it — the set of files already
-      // derived is what stops a duplicate — so a broken proof under it is the worst
+      // of the record decides what gets WRITTEN to it (the set of files already
+      // derived is what stops a duplicate), so a broken proof under it is the worst
       // moment on this surface to be silent about.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, importLines(result));
@@ -396,11 +396,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
 }
 
 /**
- * Prints the verdict of a decision move (accept/reject/supersede) — both verbs
+ * Prints the verdict of a decision move (accept/reject/supersede): both verbs
  * share it. On success the frozen `ADR-<n>` label AND the id, plus the new state; on
  * refusal the surface's own message for a missing project or an unknown decision,
  * else the gate's own code and message. A decision has no alias, so its human name in
- * the output is the ADR, and {@link movedLine} is what composes the pair — the same
+ * the output is the ADR, and {@link movedLine} is what composes the pair: the same
  * line the MCP surface returns.
  *
  * IT USED TO SAY NOTHING WHEN TWO RULES ANSWER TO THAT LABEL, and the argument for
@@ -409,7 +409,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
  * cites a rule out of an acknowledgement. What falsified it is that the LINE is what
  * outlives the invocation. Over a record whose public and private trees each hold an
  * `ADR-1`, two different decisions moved by two different ids produced the same eleven
- * bytes — so the line, read anywhere the command that produced it is not (a
+ * bytes, so the line, read anywhere the command that produced it is not (a
  * scrollback, a pasted transcript, a review comment), named two rules and said which
  * one was neither. It says the id now, which is the half a reader can act on;
  * `moved-record.ts` carries the whole argument, and `the-echo-names-the-record.test.ts`
@@ -435,7 +435,7 @@ async function reportDecisionMove(
 }
 
 /**
- * What one run of `decision import` prints — the plan, or what it recorded.
+ * What one run of `decision import` prints: the plan, or what it recorded.
  *
  * ONE FUNCTION FOR BOTH, because they are the same list read at two moments and a
  * second renderer is how the two come to disagree about what a proposal is. The
@@ -469,7 +469,7 @@ function importLines(
     ];
     lines.push(`      ${notes.join(' · ')}`);
     // In the words every write says it, under the proposal it is about. This was a second
-    // wording — the classes' raw names, no count and no instruction to rotate.
+    // wording: the classes' raw names, no count and no instruction to rotate.
     for (const line of replacementNotice(proposal.replaced)) lines.push(`    ${line}`);
   }
   if (result.already.length > 0) {
@@ -504,7 +504,7 @@ function importLines(
  * Why a file produced no proposal, in a sentence a person can act on.
  *
  * It is a TOTAL record over the refusal codes, so a code added to the scan does not
- * compile until it has a sentence here — the alternative being a file reported with
+ * compile until it has a sentence here: the alternative being a file reported with
  * a bare code, or worse, reported with the wrong neighbour's sentence.
  */
 const IMPORT_REFUSALS: Record<ScanRefusalCode, string> = {

@@ -1,10 +1,10 @@
 /**
- * `mnema commits <decision>` — the commits that cite a decision and the commits that touched
+ * `mnema commits <decision>`: the commits that cite a decision and the commits that touched
  * what it addresses, read from git when asked.
  *
  * TWO LISTS, BECAUSE THEY ARE TWO DIFFERENT FACTS. A commit that carries the decision's
  * `Mnema-Decision` trailer says its author tied the change to the decision; a commit that touched
- * a path the decision addresses says only that the change landed where the decision speaks — the
+ * a path the decision addresses says only that the change landed where the decision speaks: the
  * author may never have heard of it. Merging them would turn the second into the first.
  *
  * NOTHING IS WRITTEN: not a pointer to a commit, not a count, not an event. A commit can vanish
@@ -24,7 +24,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface CommitsContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -36,11 +36,11 @@ export interface CommitPage {
   readonly more: boolean;
 }
 
-/** The reading. `git` is false when there is no git work tree to read — the lists are then empty. */
+/** The reading. `git` is false when there is no git work tree to read: the lists are then empty. */
 export interface CommitsDone {
   readonly ok: true;
   readonly decision: Pick<DecisionFacts, 'id' | 'adr' | 'title' | 'state'>;
-  /** The paths the decision addresses — empty for a decision that is not in force. */
+  /** The paths the decision addresses: empty for a decision that is not in force. */
   readonly addresses: readonly string[];
   readonly git: boolean;
   /** Whether the clone holds only part of the history. */

@@ -1,5 +1,5 @@
 /**
- * The three roster verbs as adapters — `key request`, `key enroll`, `key revoke`.
+ * The three roster verbs as adapters: `key request`, `key enroll`, `key revoke`.
  *
  * What is pinned here is the SEAM, not the mechanism: which of them needs a
  * project and which does not, that a relative path means what the person typed it
@@ -10,7 +10,7 @@
  *
  * The asymmetry across the three is the design, and it is asserted: a request runs
  * where the key wants IN and touches only the key root, while a vouch and a
- * retirement are facts in the committed record — so only the last two refuse
+ * retirement are facts in the committed record, so only the last two refuse
  * without a project.
  */
 
@@ -59,7 +59,7 @@ function repo(): string {
   return dir;
 }
 
-describe('key request — the joining machine, and no project needed', () => {
+describe('key request: the joining machine, and no project needed', () => {
   it('produces a request from an empty machine OUTSIDE any project', () => {
     // Nothing about a request is per-tree: it is a key and a signature over fixed
     // values. Requiring a project would block the case it exists for.
@@ -98,7 +98,7 @@ describe('key request — the joining machine, and no project needed', () => {
   });
 
   it('refuses a value that names no identity, and says what one looks like', () => {
-    // From a machine with no record, a prefix has nothing to resolve against — so
+    // From a machine with no record, a prefix has nothing to resolve against, so
     // the sentence teaches the SHAPE rather than listing an empty set, and nothing
     // is signed. The core keeps the same check at the write boundary (see
     // `requestEnrollment`), which is what guarantees no signature is ever made over
@@ -113,7 +113,7 @@ describe('key request — the joining machine, and no project needed', () => {
   });
 });
 
-describe('key enroll — a member vouches, in the committed record', () => {
+describe('key enroll: a member vouches, in the committed record', () => {
   it("enrolls the requesting key into this machine's identity", () => {
     const a = machine('a');
     const b = machine('b');
@@ -132,7 +132,7 @@ describe('key enroll — a member vouches, in the committed record', () => {
     });
   });
 
-  it('refuses NO_PROJECT outside a project — a vouch is a fact in a record', () => {
+  it('refuses NO_PROJECT outside a project: a vouch is a fact in a record', () => {
     const a = machine('a');
     const orphan = join(sandbox, 'elsewhere');
     mkdirSync(orphan, { recursive: true });
@@ -161,7 +161,7 @@ describe('key enroll — a member vouches, in the committed record', () => {
   });
 });
 
-describe('key revoke — a retirement, in the committed record', () => {
+describe('key revoke: a retirement, in the committed record', () => {
   it('retires an enrolled key and reports what is left', () => {
     const a = machine('a');
     const b = machine('b');
@@ -200,7 +200,7 @@ describe('key revoke — a retirement, in the committed record', () => {
       { fingerprint: own, reason: 'decommissioning this machine' },
     );
 
-    // The backup key is a member too, so this is allowed — and the caller has to be
+    // The backup key is a member too, so this is allowed, and the caller has to be
     // told it just retired the key it writes with.
     expect(revoked).toMatchObject({ ok: true, self: true, remaining: 1 });
   });
@@ -223,7 +223,7 @@ describe('key revoke — a retirement, in the committed record', () => {
   });
 });
 
-describe('the three verbs together — a second machine joins and writes as one identity', () => {
+describe('the three verbs together: a second machine joins and writes as one identity', () => {
   it('request → enroll → the joining machine reads back the identity it joined', () => {
     const a = machine('a');
     const b = machine('b');
@@ -242,7 +242,7 @@ describe('the three verbs together — a second machine joins and writes as one 
       fingerprint: bFp,
       minted: false,
     });
-    // The vouch committed B's public half into the tree — the material the consent
+    // The vouch committed B's public half into the tree: the material the consent
     // is proven against, and what an anonymous verifier reads.
     expect(readFileSync(join(tree, 'keys', `${bFp}.pub`), 'utf-8')).toContain('PUBLIC KEY');
   });

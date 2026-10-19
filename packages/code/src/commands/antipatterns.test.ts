@@ -40,7 +40,7 @@ function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * Records a decision in `scope` and accepts it, handing back what the WRITE reported —
+ * Records a decision in `scope` and accepts it, handing back what the WRITE reported:
  * the id, and the `ADR-<n>` the product minted for it.
  */
 function accepted(
@@ -60,7 +60,7 @@ function accepted(
 }
 
 /**
- * Lands another working copy's committed tail in this one — the offline merge two
+ * Lands another working copy's committed tail in this one: the offline merge two
  * clones of a repository produce. The tails and the public key material are what a
  * clone brings; the signing key lives in the machine's key root, never in a tree.
  *
@@ -163,7 +163,7 @@ describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 
-  it('finds the label two clones both minted — without anyone generating the document', () => {
+  it('finds the label two clones both minted: without anyone generating the document', () => {
     // The audit's reason for existing in this slice. The committed document declares the
     // clash to whoever generates it; this finds the same clash by folding the record, so
     // a reader who never runs `mnema brief` is not the last to know.
@@ -188,7 +188,7 @@ describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
     expect(document.ok && document.brief.collisions).toEqual(result.patterns.labelCollisions);
   });
 
-  it('says nothing about a public ADR-1 beside a private one — one chain each', () => {
+  it('says nothing about a public ADR-1 beside a private one: one chain each', () => {
     // The counts fold the union of the trees; the labels do not, because the number is
     // numbered inside one chain. Pooling them would report this arrangement on nearly
     // every project that ever recorded a rule of its own.
@@ -201,7 +201,7 @@ describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
     const result = runAntipatterns({ cwd: repo, env });
     expect(result.ok && result.patterns.labelCollisions).toEqual([]);
     // Non-vacuity: the union really is what the counts are folded over, and it holds
-    // both decisions — so the silence above is the unit, not an unread tree.
+    // both decisions, so the silence above is the unit, not an unread tree.
     expect(result.ok && result.patterns.supersededDecisions).toEqual([]);
     const both = [team.id, machine.id];
     expect(new Set(both).size).toBe(2);
@@ -216,7 +216,7 @@ describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
     expect(result.ok && result.patterns.labelCollisions).toEqual([]);
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     reopenTaskTimes(repo, env, 2);

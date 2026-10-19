@@ -1,9 +1,9 @@
 /**
- * `mnema promote` — lift a pattern that recurs across projects to this machine's global tree.
+ * `mnema promote`: lift a pattern that recurs across projects to this machine's global tree.
  *
  * Two acts under one word, and the first never writes:
  *
- *   `promote --workspace <path...>` LISTS the candidates — the patterns and decisions in
+ *   `promote --workspace <path...>` LISTS the candidates: the patterns and decisions in
  *   force, with the same words, in the committed record of two or more of the projects the
  *   caller NAMED. It is a reading. The set is named and never discovered, for the reason
  *   `verify --workspace` states: a walk of the disk would be the product guessing which
@@ -43,7 +43,7 @@ import { runDecision } from './decision.js';
 import { runLink } from './link.js';
 import { runSkill } from './skill.js';
 
-/** What promote needs — injected so it is testable. */
+/** What promote needs: injected so it is testable. */
 export interface PromoteContext {
   /** Where relative paths are resolved from, and the project the write is made from. */
   readonly cwd: string;
@@ -56,7 +56,7 @@ export interface PromoteListed {
   readonly ok: true;
   /** How many DISTINCT projects were read (two names of one project count once). */
   readonly projects: number;
-  /** Named paths that hold no record — said, never counted. */
+  /** Named paths that hold no record: said, never counted. */
   readonly withoutRecord: readonly string[];
   readonly candidates: readonly PromotionCandidate[];
 }
@@ -64,7 +64,7 @@ export interface PromoteListed {
 /** A copy was written to the global tree. */
 export interface PromoteDone extends Replacement, Landed {
   readonly ok: true;
-  /** The copy's id in the global tree — what the person adopts. */
+  /** The copy's id in the global tree: what the person adopts. */
   readonly id: string;
   readonly kind: 'skill' | 'decision';
   readonly title: string;
@@ -98,7 +98,7 @@ function identityOf(path: string): string {
 
 /**
  * The trees of the named projects and of the machine-global tree, each once, with the
- * project every one belongs to — EVERY tree of each project, private included. Which of
+ * project every one belongs to: EVERY tree of each project, private included. Which of
  * them count is not decided here: that filter is inside {@link samePattern}, the one place.
  */
 function resolveNamed(
@@ -130,7 +130,7 @@ function resolveNamed(
       trees.push(tree);
     }
   }
-  // The machine's own tree, once — the one place "already global" is read from.
+  // The machine's own tree, once: the one place "already global" is read from.
   const globalRoot = resolveTrees(ctx.cwd, ctx.env).global;
   if (!claimed.has(globalRoot)) trees.push({ scope: 'global', chainRoot: globalRoot });
   return { projects, withoutRecord, trees };
@@ -151,7 +151,7 @@ export function runPromoteList(
   };
 }
 
-/** `<path>:<id>` — the id is what follows the LAST colon, so a path may hold one. */
+/** `<path>:<id>`: the id is what follows the LAST colon, so a path may hold one. */
 function splitEvidence(value: string): { path: string; id: string } | undefined {
   const cut = value.lastIndexOf(':');
   if (cut <= 0 || cut === value.length - 1) return undefined;
@@ -200,7 +200,7 @@ export function runPromote(
   if (set.withoutRecord.length > 0) {
     return refused('NO_RECORD', `${set.withoutRecord.join(', ')} holds no record`);
   }
-  // Each citation under the project its path leads to — the same label the listing gives.
+  // Each citation under the project its path leads to: the same label the listing gives.
   const labelled: PatternInstance[] = cited.map((one) => ({
     project: dirname(resolveTrees(resolve(ctx.cwd, one.path), ctx.env).projectPublic as string),
     id: one.id,

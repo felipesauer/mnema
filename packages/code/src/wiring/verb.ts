@@ -3,14 +3,14 @@
  *
  * One shape for all of them, so the program can register them in a list
  * instead of naming what each one needs: a verb takes the program to hang itself
- * on and the three things every verb may touch — where to write, how a line becomes
+ * on and the three things every verb may touch, where to write, how a line becomes
  * bytes, and the session its writes are pinned to.
  *
  * The reads take the same value and use half of it. That is deliberate: a read
  * that received a narrower context would say "a read cannot ask about the run" as
  * a type, and the day a read needs to report the pinned session it would be a
  * signature change across two dozen files. What a verb may do to the record is
- * said instead by what it ANSWERS with ({@link RecordEffect}) — a declaration a
+ * said instead by what it ANSWERS with ({@link RecordEffect}): a declaration a
  * reader can find without walking the body, and one the wiring's uniform input
  * was never going to carry.
  *
@@ -22,14 +22,14 @@
  * the top and costs what it costs. What it does NOT need is the work: the `runX`
  * behind the action, and the helpers that read the record to compose a line. Those
  * arrive through an `await import()` inside the action, because importing them at
- * the top imports the domain behind them — the chain, the projections, the
- * derivations — on EVERY invocation of EVERY verb, including the ones that read
+ * the top imports the domain behind them (the chain, the projections, the
+ * derivations) on EVERY invocation of EVERY verb, including the ones that read
  * nothing.
  *
  * It was measured before it was changed: the floor of the CLI (`mnema --version`,
  * which reads nothing at all) was 121 ms against 19 ms for an empty node, and the
  * slowest verb in the product was 169 ms. Seventy-two per cent of what a person
- * waited for was modules loading, and the work itself — 3 to 48 ms — was under the
+ * waited for was modules loading, and the work itself, 3 to 48 ms, was under the
  * threshold where anyone notices anything.
  *
  * The floor is guarded as a SHAPE, not as a stopwatch:
@@ -39,7 +39,7 @@
  *
  * Two things to get right when writing one:
  *   - AWAIT IT. An `import()` whose promise nobody waits for makes the action
- *     return before it has written anything, and the process can exit first — a
+ *     return before it has written anything, and the process can exit first: a
  *     verb that silently prints nothing and exits zero. commander awaits an action
  *     that returns a promise (the entry parses with `parseAsync`), so an `async`
  *     action is enough as long as every load inside it is awaited.
@@ -59,18 +59,18 @@ export interface Wiring {
   /** Where the verb writes, and how it signals a non-zero exit. */
   readonly io: CliIo;
   /**
-   * How a line becomes the bytes `io` receives — plain or styled, decided once at
+   * How a line becomes the bytes `io` receives: plain or styled, decided once at
    * the entry from the caller's flag, environment and terminal (see `color.ts`).
    *
    * It travels HERE rather than behind the port, because the port takes a string:
    * by the time a line reaches `io.out` there is nothing left to tell a label from
    * the value beside it. And it travels here rather than being imported, because a
-   * verb that imported a renderer would be a verb that answered the question — which
+   * verb that imported a renderer would be a verb that answered the question, which
    * is how the surface would end up with a hundred answers to it.
    */
   readonly render: Render;
   /**
-   * THE SAME ANSWER, ASKED FOR A WIDTH — how a line becomes bytes on a screen of a given
+   * THE SAME ANSWER, ASKED FOR A WIDTH: how a line becomes bytes on a screen of a given
    * size, rather than on the one this process happens to be on (`color.ts`).
    *
    * ONE VERB TAKES IT AND THE REST ARE HANDED {@link render}, which is the difference
@@ -78,7 +78,7 @@ export interface Wiring {
    * change under it; `repl` opens a session that outlives the window it opened in, and a
    * caller who maximises theirs is a caller whose next line has to fold to the new width.
    * It travels here rather than being built by the verb because the capability behind it is
-   * this INVOCATION'S — the flag, the environment and the stream — read once at the entry
+   * this INVOCATION'S (the flag, the environment and the stream) read once at the entry
    * where the process is, and a session that resolved its own would answer with the defaults
    * of the program it builds per typed line.
    */
@@ -88,14 +88,14 @@ export interface Wiring {
 }
 
 /**
- * WHAT A VERB CAN DO TO THE RECORD is not decided here — it is the same question the MCP
+ * WHAT A VERB CAN DO TO THE RECORD is not decided here: it is the same question the MCP
  * surface's tools answer, and it is asked and worded in ONE place for both of them
  * (`record-effect.ts`). This file re-exports the three names so a verb's wiring imports
  * everything it needs from the module it already imports its own shape from; the rule,
  * the two words and the argument for declaring rather than deriving are over there.
  *
  * The declaration is per TOP-LEVEL verb, which is the unit commander routes. A group is
- * classified by its most powerful member, which is `mutates` — the safe side for anything
+ * classified by its most powerful member, which is `mutates`: the safe side for anything
  * reading only this. A group whose members differ (`task`, `skill`) ALSO carries them, each
  * answering for itself (`groupOf`), and the console's gate decides per member: a member that
  * reads is run, one that writes is refused by its whole path. A group that carries none
@@ -114,7 +114,7 @@ export { groupOf, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
  * What registering a verb answers with: the command that was hung, and what that command
  * can do to the record.
  *
- * It is {@link DeclaredAct} over a `Command` and nothing more — the same shape a tool's
+ * It is {@link DeclaredAct} over a `Command` and nothing more: the same shape a tool's
  * declaration has, so neither surface can drift into a classification of its own.
  */
 export type Declared = DeclaredAct<Command>;
@@ -125,7 +125,7 @@ export type Declared = DeclaredAct<Command>;
  *
  * THE RETURN IS WHAT MAKES THE CLASSIFICATION TOTAL. A registrar that answers with
  * nothing is not a `Verb` and cannot enter {@link Wiring}'s list, so a verb added
- * tomorrow does not COMPILE until it has said which side it is on — the same shape the
+ * tomorrow does not COMPILE until it has said which side it is on: the same shape the
  * core's routing table uses to keep an event kind from being written with no tree
  * (`core/src/topology/routing.ts`), and the same shape the MCP's registrar has for its
  * tools (`mcp/server.ts`). A table of names kept somewhere else would have been the

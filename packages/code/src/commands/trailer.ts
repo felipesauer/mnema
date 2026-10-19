@@ -1,5 +1,5 @@
 /**
- * `mnema trailer <decision>` — the line that ties a commit to a decision, printed and nothing else.
+ * `mnema trailer <decision>`: the line that ties a commit to a decision, printed and nothing else.
  *
  * It writes no commit, runs no git and records nothing: the line goes where the person puts it
  * (`git commit --trailer "$(mnema trailer ADR-4)"`, or the end of a message). The reading side is
@@ -21,7 +21,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface TrailerContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -48,7 +48,7 @@ export type TrailerRefused =
 
 /**
  * The trailer line that cites `decision`: its label, or its id when asked or when a second
- * decision carries the same label — a label two decisions carry cites neither of them.
+ * decision carries the same label; a label two decisions carry cites neither of them.
  */
 export function trailerLine(
   all: readonly DecisionFacts[],

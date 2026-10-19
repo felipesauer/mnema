@@ -1,13 +1,13 @@
 /**
  * The `mnema link` wiring: what it declares, and what it prints.
  *
- * `mnema link <subject> <target> --rel <label>` — link one entity to another.
+ * `mnema link <subject> <target> --rel <label>`: link one entity to another.
  * subject and target are positionals (short ids); the relation is a flag. The
- * relation is an OPEN string — the catalog's recommended set is documentation, not
+ * relation is an OPEN string: the catalog's recommended set is documentation, not
  * enforcement, so no enum, and the help says the set by reading it
  * ({@link RECOMMENDED_RELATIONS}). It mints no id (a link is an edge), so the
- * report echoes the fact. Neither reference is validated — a link is legitimately
- * cross-tree — except that an `ADR-<n>` label is recorded as the id it names, or refused.
+ * report echoes the fact. Neither reference is validated (a link is legitimately
+ * cross-tree) except that an `ADR-<n>` label is recorded as the id it names, or refused.
  */
 
 import type { Command } from 'commander';
@@ -35,12 +35,12 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
     .argument('<subject>', 'the entity that originates the link')
     .argument(
       '<target>',
-      // ANY relation may take a path — `target` is whatever the caller sent — so the help
+      // ANY relation may take a path (`target` is whatever the caller sent), so the help
       // names the ones that carry an ADDRESS rather than implying they are the only ones a
       // path is legal under. It said "a path under --rel governs or asks-for-a-person"
       // while `derived-from` was already recording the file a proposal was read from.
       // Somebody reading this to record a gate still needs to be told which label has the
-      // power, which is why each is named and none is dropped — the third, which refuses a
+      // power, which is why each is named and none is dropped: the third, which refuses a
       // write, included.
       'what it points at: another id, or a path (an address, under --rel governs, asks-for-a-person or refuses-a-write; one outside the project is refused in the public tree, and an absolute one inside it is recorded relative to the root)',
     )
@@ -76,7 +76,7 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           ...(run !== undefined ? { run } : {}),
         });
         if (result.ok) {
-          // No id to report — a link is an edge, not an entity. Echo the fact.
+          // No id to report: a link is an edge, not an entity. Echo the fact.
           //
           // All THREE values are the caller's, and the doc above says why none of them
           // is validated: a link is legitimately cross-tree, and the relation is an
@@ -84,14 +84,14 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // one goes through the collapse (see {@link onOneLine}).
           io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
           // What that address covers, on the relations that carry an ADDRESS, and
-          // nothing at all on every other — a path target alone is not one. A fact, not a warning — see `reachNotice`.
+          // nothing at all on every other: a path target alone is not one. A fact, not a warning: see `reachNotice`.
           // It goes BEFORE the tree notice because it is about what was just recorded
           // and the tree notice is about where; the reader's question in the second
           // after typing a wide address is the first one.
           writeLines(io, reachNotice(result.reach));
           reportRecorded(result, io);
           // AFTER the tree notice, and that order is the argument. `reportRecorded` says
-          // where the edge landed — "it reaches every clone" for the public tree — and
+          // where the edge landed, "it reaches every clone" for the public tree, and
           // this is the qualifier on that very sentence: what reaches the clone is the
           // address, and the rule it names may not. A qualifier printed before the
           // sentence it qualifies is a sentence a reader has to hold and then revise.

@@ -31,7 +31,7 @@ function setup(): { repo: string; env: DiscoveryEnv } {
   return { repo, env: { home: join(sandbox, 'home') } };
 }
 
-/** A content digest of every file under `dir` — proof a read wrote nothing. */
+/** A content digest of every file under `dir`: proof a read wrote nothing. */
 function digest(dir: string): string {
   const hash = createHash('sha256');
   const walk = (current: string): void => {
@@ -222,14 +222,14 @@ describe('mnema search (finding what was recorded)', () => {
 
     const found = runSearch({ cwd: repo, env }, { term: 'zebra' });
 
-    // WHOLE-OBJECT, so a field added to the answer has to be accounted for here —
+    // WHOLE-OBJECT, so a field added to the answer has to be accounted for here,
     // and `linkBreaks` is: a record the product wrote on its own chains, so the read
     // reports nothing about it. An empty index and an intact record are two different
     // answers and this is the case that says both.
     expect(found).toEqual({ ok: true, result: { hits: [], total: 0 }, linkBreaks: [] });
   });
 
-  it('writes nothing — not an event, not a byte', () => {
+  it('writes nothing, not an event, not a byte', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     capture({ cwd: repo, env }, 'a thing worth finding', 'public');
@@ -270,7 +270,7 @@ describe('mnema show (one whole record)', () => {
     ).toBe('private');
   });
 
-  it('serves a skill body — the person on this surface is curating patterns', () => {
+  it('serves a skill body: the person on this surface is curating patterns', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const skill = runSkill(
@@ -282,7 +282,7 @@ describe('mnema show (one whole record)', () => {
     const shown = runShow({ cwd: repo, env }, { id: skill.id });
     if (!shown.ok) throw new Error('show refused');
 
-    // A skill fresh out of `mnema skill` is PROPOSED, not adopted — and the
+    // A skill fresh out of `mnema skill` is PROPOSED, not adopted, and the
     // curator reading it to review it must see the text they are judging.
     expect(shown.record.kind === 'skill' && shown.record.record.body).toBe('the pattern itself');
     expect(shown.record.kind === 'skill' && shown.record.record.state).toBe('proposed');
@@ -298,7 +298,7 @@ describe('mnema show (one whole record)', () => {
     });
   });
 
-  it('writes nothing — not an event, not a byte', () => {
+  it('writes nothing, not an event, not a byte', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const id = capture({ cwd: repo, env }, 'a thing', 'public');

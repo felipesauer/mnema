@@ -1,12 +1,12 @@
 /**
  * The `mnema init` wiring: what it declares, and what it prints.
  *
- * `mnema init` — establish a project in the current directory, or say that one is
+ * `mnema init`: establish a project in the current directory, or say that one is
  * already there. It is the only verb that can CREATE this machine's identity, so it
  * is also the only one with something to report about keys.
  *
- * It used to print two more lines — `registered in the project index` on a founding
- * and `index entry re-asserted` on a second run — about a machine-local index that
+ * It used to print two more lines, `registered in the project index` on a founding
+ * and `index entry re-asserted` on a second run, about a machine-local index that
  * nothing in the product ever read. Reporting an effect nobody consumes is worse
  * than the dead write itself, because the person acts on what they are told; both
  * the write and the two lines are gone. `cli.writes.golden.txt` is what holds every
@@ -28,27 +28,27 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
  *
  * It is read rather than retyped for the reason `REPL_VERB` is (`wiring/repl.ts`): the bare
  * name offers this verb as the first thing to do in a directory with no project, and it
- * names it BY IDENTITY — so the door cannot end up pointing at a word this program no longer
+ * names it BY IDENTITY, so the door cannot end up pointing at a word this program no longer
  * routes.
  */
 export const INIT_VERB = 'init';
 
 /**
  * The code of the one refusal this verb has: the working directory can be no project's
- * root — the home directory, or one whose `.mnema/` is a machine's data directory
+ * root, the home directory, or one whose `.mnema/` is a machine's data directory
  * (`whyNoProjectRootAt`, `@mnema/core`). The sentence after it says which, and where to
  * run the verb instead.
  */
 export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
 
 /**
- * How this project's record reaches an agent — OFFERED to the person who just founded it,
+ * How this project's record reaches an agent: OFFERED to the person who just founded it,
  * and written into nothing.
  *
  * WHY IT IS PRINTED AND NOT WRITTEN, which is the decision this block stands on rather
  * than a shortcut it took. A block spliced into somebody's `AGENTS.md` or `CLAUDE.md`
  * would be text this product pushes at a model unasked, which is a CHANNEL by its own
- * criterion (`record-framing.ts`) — and every channel it pushes can be switched off with
+ * criterion (`record-framing.ts`), and every channel it pushes can be switched off with
  * the switching recorded. Bytes already written to somebody's disk cannot go quiet when a
  * switch does. So the recipe and the line are offered and the person decides: `git status`
  * after `mnema init` holds one new item and it is `.mnema/`, which is this product's own
@@ -57,7 +57,7 @@ export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
  *
  * IT REPEATS `mnema brief --help` ON PURPOSE, including the half that page was corrected
  * to carry: the `>` replaces the whole of the file it names. That clause is not decoration
- * beside a recipe — it is the reason the recipe names `MNEMA.md` and not `AGENTS.md`,
+ * beside a recipe: it is the reason the recipe names `MNEMA.md` and not `AGENTS.md`,
  * measured on a real repository whose `AGENTS.md` held 126 lines of its own method.
  * `the-recipe-says-what-it-overwrites.test.ts` holds every publisher of the recipe to that
  * clause, and this block is a THIRD publisher beside the help page and the generated
@@ -73,7 +73,7 @@ export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
  * ITS FIRST LINE WAS "An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own",
  * and for the host this product ships a plugin for that is two claims and one of them is
  * false in the ordinary case: Claude Code reads an `AGENTS.md` only from 2.1.277, and by
- * default only where no `CLAUDE.md` exists (code.claude.com/docs/en/memory) — 0 of 299
+ * default only where no `CLAUDE.md` exists (code.claude.com/docs/en/memory); 0 of 299
  * sessions on one machine loaded one, in two projects that keep both files. And it never
  * named the route that needs no file at all, which is the plugin: its `SessionStart`
  * handlers hand the document and the notes to every session. So the block now says the
@@ -93,11 +93,11 @@ export const REACHES_AN_AGENT = [
  *
  * It names `MNEMA.md` because the recipe above does, and the two are one offer: a line
  * pointing at a file nobody made reaches a reader and tells it nothing. It is the shape
- * `mnema brief --help` publishes — the line `@MNEMA.md` in a `CLAUDE.md` — said as the
+ * `mnema brief --help` publishes, the line `@MNEMA.md` in a `CLAUDE.md`, said as the
  * literal to paste rather than as a description of one, which is the difference between a
  * recommendation a person can act on and one they have to compose.
  *
- * IT WAS A SENTENCE — "What governs the work here is in `MNEMA.md`." — and a sentence is
+ * IT WAS A SENTENCE, "What governs the work here is in `MNEMA.md`.", and a sentence is
  * the form the host reads only if the agent decides to open the file it names: a
  * `CLAUDE.md` "that tells Claude in words" to read another file is seen "only if it decides
  * to open the file" (code.claude.com/docs/en/memory). An `@` line is an import, expanded
@@ -128,7 +128,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
       // The ROOT is a directory this run discovered from the cwd, and a directory name
       // is the value this whole class was first measured on: a checkout, an archive or
       // a dependency can carry a newline in one and nobody typed it. The anchor beside
-      // it cannot — `mnid:` and 64 hex (see {@link onOneLine}).
+      // it cannot: `mnid:` and 64 hex (see {@link onOneLine}).
       if (result.created) {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
@@ -149,25 +149,25 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
  * Reports what establishing the identity did, on the one occasion it matters:
  * the run that created the tree.
  *
- * The line that earns its place is the backup key's — a key the person cannot
+ * The line that earns its place is the backup key's: a key the person cannot
  * regenerate and cannot recover, because mnema has no central recovery. When
  * this run created it, the person is told WHERE the private half is and that it
  * has to leave the machine: a backup that stays on this disk is lost with the
  * disk, which is the exact loss it exists to survive. That warning is printed
- * only on the run that creates the key — repeated on every init it would become
+ * only on the run that creates the key: repeated on every init it would become
  * noise a person learns to scroll past.
  *
  * A registered key this tree refused is always reported, never swallowed: a
  * person who believes they hold a usable backup and does not is worse off than
  * one who knows. For the same reason every OTHER key the tree enrolled is named
- * too — the backup is not the only key a roster can hold, and enrolling one
+ * too: the backup is not the only key a roster can hold, and enrolling one
  * changes WHO may speak for the identity. That is not something to learn by
  * reading the chain later.
  */
 /**
  * What a person who has just founded a project needs next, which `init` used to leave them to find:
  * that the record is a directory to commit, the first verb, the decision documents the record has
- * never read, and — when the project was founded somewhere other than the repository's root — that
+ * never read, and (when the project was founded somewhere other than the repository's root) that
  * the walk a session climbs from the workspace root will not find it.
  *
  * Each line is conditional on a fact the run READ, and none is about the record: they are advice
@@ -227,15 +227,15 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Ren
 }
 
 /**
- * The line under "nothing to found": the identity this machine writes as here — or, where the
+ * The line under "nothing to found": the identity this machine writes as here, or, where the
  * identity this checkout recorded no longer counts its key, that a write to the public tree is
  * refused.
  *
  * IT WAS THE IDENTITY ALONE, and in a checkout the key had left that was the identity the next
  * write was refused as: measured on the binary, `identity: <the recorded identity>` with exit 0,
  * then `Refused (STALE_ANCHOR)` on the write after it. There the line says the refusal now, in
- * the words the refused write prints — its code, its message, and the file its restore takes, on
- * the line `reportIdentityRefusal` puts it on (`wiring/report.ts`) — so a person who runs `init`
+ * the words the refused write prints: its code, its message, and the file its restore takes, on
+ * the line `reportIdentityRefusal` puts it on (`wiring/report.ts`), so a person who runs `init`
  * to see who they are here is told what the write would have told them.
  *
  * THE PUBLIC TREE, because that is the tree this verb answers for and the one a retirement
