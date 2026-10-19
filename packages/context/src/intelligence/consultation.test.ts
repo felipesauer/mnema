@@ -14,7 +14,7 @@ import { type Bench, birthSkill, consultSkill, makeBench } from '../../tests/sup
 import type { ScopedCache } from '../sources.js';
 import { consultationsByRun } from './consultation.js';
 
-describe('consultationsByRun — how many sessions were served each pattern', () => {
+describe('consultationsByRun: how many sessions were served each pattern', () => {
   let benches: Bench[] = [];
   let open: ScopedCache[] = [];
   afterEach(() => {
@@ -46,7 +46,7 @@ describe('consultationsByRun — how many sessions were served each pattern', ()
     expect(consultationsByRun([source(b)])).toEqual(new Map([['sk-1', 2]]));
   });
 
-  it('counts one session once across TWO trees — two facts, one session', () => {
+  it('counts one session once across TWO trees: two facts, one session', () => {
     // A session that works in two trees records the fact in each; summing the
     // per-tree counts would report one person's session as two.
     const one = bench();
@@ -60,7 +60,7 @@ describe('consultationsByRun — how many sessions were served each pattern', ()
     );
   });
 
-  it('counts a fact with NO run on its own — nothing says two were the same', () => {
+  it('counts a fact with NO run on its own: nothing says two were the same', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Small PRs', 'adopted');
     consultSkill(b, 'sk-1');

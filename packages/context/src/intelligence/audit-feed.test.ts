@@ -61,7 +61,7 @@ function keyPaths(value: unknown, prefix = ''): string[] {
 }
 
 /**
- * EVERY key an audit line may carry — the allowlist the structural guard reconciles
+ * EVERY key an audit line may carry: the allowlist the structural guard reconciles
  * against, both ways.
  *
  * It is a closed list and not a prefix rule, because the failure this catches is a field
@@ -97,7 +97,7 @@ const ALLOWED_PATHS: readonly string[] = [
 ];
 
 describe('the audit feed carries the envelope', () => {
-  it('maps EVERY kind of the catalog — the map is total, and nothing lands Unknown', () => {
+  it('maps EVERY kind of the catalog: the map is total, and nothing lands Unknown', () => {
     // The map's type already forces a row per kind; what this adds is that no row was
     // filled in with the schema's "we did not look" value. `0` (Unknown) is the answer a
     // half-done mapping produces, and it is exactly the one a SIEM cannot act on.
@@ -110,7 +110,7 @@ describe('the audit feed carries the envelope', () => {
 
   it('takes 99 Other for exactly the kinds that have no honest activity', () => {
     // The count the delivery owes an answer to, asserted rather than described. A second
-    // kind arriving here was the signal that the class stopped fitting — and the refusal
+    // kind arriving here was the signal that the class stopped fitting, and the refusal
     // was argued in the map before this line moved: it is the asking's act, one grade up. The
     // two check results joined for the opposite reason: a result is a report a machine made
     // ABOUT a rule, and neither creates, updates nor deletes anything.
@@ -137,7 +137,7 @@ describe('the audit feed carries the envelope', () => {
     }
   });
 
-  it('NEVER carries a body — no payload of any kind reaches a line, for any kind', () => {
+  it('NEVER carries a body: no payload of any kind reaches a line, for any kind', () => {
     // THE GUARD THIS MODULE EXISTS FOR. Every kind, with a payload that is nothing but the
     // marker in four shapes, serialized exactly as the verb serializes it.
     const lines = EVERY_KIND.map((kind, n) =>
@@ -160,9 +160,9 @@ describe('the audit feed carries the envelope', () => {
     expect(fixtures.split(BODY).length - 1).toBe(EVERY_KIND.length * 3);
   });
 
-  it('carries these keys and no others — so a field that ARRIVES is caught', () => {
+  it('carries these keys and no others, so a field that ARRIVES is caught', () => {
     // The structural half. The sweep above catches a payload copied under any name; this
-    // catches a field added that a marker sweep of one fixture might not reach — an
+    // catches a field added that a marker sweep of one fixture might not reach: an
     // `unmapped`, an `entity.data`, a `raw_data`.
     const seen = new Set<string>();
     for (const kind of EVERY_KIND) {

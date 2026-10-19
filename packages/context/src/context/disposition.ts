@@ -2,7 +2,7 @@
  * disposition: what a state MEANS to whoever is reading the record.
  *
  * A workflow state answers "where is this entity"; a disposition answers the
- * question a reader actually asks — does this hold, is somebody expected to move
+ * question a reader actually asks: does this hold, is somebody expected to move
  * it, or is it over. The two are not the same question, and reading one off the
  * other case by case is how a filter comes to disagree with itself: a decision
  * that governs and a pattern that is a live way of working are the same
@@ -11,8 +11,8 @@
  * three (`proposed`, `proposed`, `reviewed`).
  *
  * THE VOCABULARY IS SHARED; THE CLASSIFICATION IS NOT. Each machine's table lives
- * in the module that already owns that machine's reads — decisions in
- * `decisions.ts`, skills in `skills.ts` — because they are distinct domains and a
+ * in the module that already owns that machine's reads (decisions in
+ * `decisions.ts`, skills in `skills.ts`), because they are distinct domains and a
  * module holding both would be a place to change one machine while looking at the
  * other. What is shared is this type and the one-line derivation below, which is
  * the whole of what the two have in common.
@@ -20,7 +20,7 @@
  * THE TASK MACHINE HAS A CLASSIFICATION TOO, and it is neither here nor in this
  * package: it is `core`'s `TASK_DISPOSITION`, in its own five words, beside the
  * transition table it is derived from. `tasks.ts` reads it through
- * `taskDisposition` exactly as the two modules above read their own tables — which
+ * `taskDisposition` exactly as the two modules above read their own tables, which
  * is why {@link statesMeaning} below takes the accessor rather than the table, and
  * why the {@link Disposition} type here does not widen to cover it. Whether three
  * machines should ever speak one vocabulary is an open question and not this
@@ -28,11 +28,11 @@
  *
  * WHY A TABLE AND NOT A PREDICATE: a `Record<State, Disposition>` is TOTAL in the
  * compiler. A state added to either machine's union does not compile until it has
- * been given a meaning here, which is the one guard that cannot be forgotten —
+ * been given a meaning here, which is the one guard that cannot be forgotten:
  * the alternative (an `if` naming the states it cares about) is silent about
  * every state it does not name, and a new state would join no list at all.
- * Asserted in `disposition.test.ts` — "classifies every state of all three
- * machines, and invents none" — and proved by mutation in this slice's report.
+ * Asserted in `disposition.test.ts` ("classifies every state of all three
+ * machines, and invents none") and proved by mutation in this slice's report.
  */
 
 /** What one workflow state means to a reader of the record. */
@@ -41,7 +41,7 @@ export type Disposition =
   | 'in-force'
   /** It waits for a judgement somebody has to make before it can hold or close. */
   | 'awaiting-judgement'
-  /** Nothing is pending and nothing governs — the entity is done being decided. */
+  /** Nothing is pending and nothing governs: the entity is done being decided. */
   | 'closed';
 
 /**
@@ -50,7 +50,7 @@ export type Disposition =
  *
  * The enumeration comes from the workflow's own tuple (`DECISION_STATES`,
  * `SKILL_STATES`, `TASK_STATES`) rather than from a table's keys, so the set being
- * filtered is the product's published vocabulary and not a copy of it — and the
+ * filtered is the product's published vocabulary and not a copy of it, and the
  * classification is what decides. That pairing is why "which states govern", "which
  * states are live work" and "which states wait" are each written exactly once per
  * machine: derived here, never restated beside the table as a second constant that a
@@ -58,7 +58,7 @@ export type Disposition =
  *
  * IT USED TO TAKE THE TABLE ITSELF, and what changed it is the third machine. The
  * task machine's classification is `core`'s (`TASK_DISPOSITION`), and that table is
- * deliberately off the package's surface — a consumer gets `taskDisposition`, the
+ * deliberately off the package's surface: a consumer gets `taskDisposition`, the
  * question, and never the table behind it
  * (`no-classification-table-reaches-the-surface.test.ts`). So the parameter is the
  * ACCESSOR each machine already publishes, which every machine has and only two of

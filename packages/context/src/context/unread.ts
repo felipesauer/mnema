@@ -1,5 +1,5 @@
 /**
- * What the opening read does NOT look at — the fourth declaration of a limit, in a
+ * What the opening read does NOT look at: the fourth declaration of a limit, in a
  * read that already makes three.
  *
  * {@link bootstrap} serves five lists, and every one of them is about a task, a
@@ -20,22 +20,22 @@
  *
  * ## Why a FIELD and not a sentence
  *
- * The rule is not invented here — {@link searchRecords} states it, for the two
+ * The rule is not invented here: {@link searchRecords} states it, for the two
  * limits of a merged ranking, and this is the same question asked one read
  * earlier. A limit that is a CONSTANT property of a read (it is true of every
  * answer, no caller can act on it per call) is prose in the doc and the surface
  * description; a limit that is a fact about THIS answer (it varies, and the caller
  * can act on it) is a field, present only when it happened.
  *
- * What the opening read does not look at is the second sort. It varies — zero over
- * a record with no memories, five over one with five — and the caller can act on
+ * What the opening read does not look at is the second sort. It varies (zero over
+ * a record with no memories, five over one with five) and the caller can act on
  * it, because `search` reaches every kind counted here. So it is a field, and the
  * idiom is `RecordSearch.hidden`'s: absent when there was nothing to declare, which
  * is what keeps an empty record saying it is empty (`unread.test.ts`, "says nothing
  * about a record that holds nothing").
  *
  * The alternative was a sentence in the `bootstrap` tool's description, and the
- * compensation that already existed was exactly that — `search`'s own description
+ * compensation that already existed was exactly that: `search`'s own description
  * says to ask it "BEFORE assuming nothing is recorded". It is advice, in the prose
  * of ANOTHER tool, which the agent may never read; and it cannot distinguish the
  * empty record from the full one, because prose does not count. Both surfaces get
@@ -53,9 +53,9 @@
  *
  * "UNDECIDED" IS NO LONGER TRUE OF THE OPENING A SESSION IS HANDED, and it is still true
  * of this read. The text the plugin pushes as a session opens now carries the knowledge
- * kinds — two lists, one per kind, each the index's own ranking of the notes that share a
+ * kinds (two lists, one per kind, each the index's own ranking of the notes that share a
  * word with what the session touches, then its newest-first listing of the rest, cut where
- * the index cuts (`code/src/commands/recall.ts`) — because a note an agent records
+ * the index cuts (`code/src/commands/recall.ts`)), because a note an agent records
  * reached no later session otherwise. That answer was given for the PUSHED opening, whose
  * reader did not ask; this read is the one an agent asks for, and whether it grows a list
  * as well is the question that stays open here.
@@ -63,7 +63,7 @@
  * ## What it costs, measured
  *
  * **0.142 ms, which is 35% of the whole opening read** (0.402 ms) over the record that
- * module's own budget paragraph is written against — 30 live tasks, 15 decisions, 25
+ * module's own budget paragraph is written against: 30 live tasks, 15 decisions, 25
  * adopted patterns, 20 memories, 10 observations. Both orders, against a control that
  * times the same read twice so no gap under the noise floor is reported as a finding
  * (read once, not held by a file of this tree).
@@ -77,7 +77,7 @@
  *
  * IT IS PAID ANYWAY, and the reason is what this read IS. `bootstrap` runs once when a
  * session opens, not per turn and not per write, so what a session spends on this is
- * under a millisecond at fifty times a modest record — against an answer that was
+ * under a millisecond at fifty times a modest record: against an answer that was
  * telling agents a full record was empty. A cheaper shape exists and is not taken here:
  * one `GROUP BY kind` in place of two counts would halve the scans, and counting the
  * entity tables instead of the index would drop the scan to the rows of the kind asked
@@ -104,11 +104,11 @@ import { type ProjectionCache, SEARCH_KINDS, type SearchKind } from '@mnema/core
 /**
  * How the opening read serves one searchable kind.
  *
- * `listed` — it has a list here. What the list leaves out (a task that is over, a
+ * `listed`: it has a list here. What the list leaves out (a task that is over, a
  * decision that never took force, everything past a cut) is declared by the list
  * itself, in the three declarations {@link Bootstrap} already makes.
  *
- * `unread` — it has no list here, of any kind, in any state. Nothing about it
+ * `unread`: it has no list here, of any kind, in any state. Nothing about it
  * reaches an agent from this read except the count this module produces.
  */
 type OpeningCoverage = 'listed' | 'unread';
@@ -117,7 +117,7 @@ type OpeningCoverage = 'listed' | 'unread';
  * Which searchable kinds the opening read has a list for, and which it does not
  * look at at all.
  *
- * TOTAL BY TYPE, IN `src` — the molds are `core`'s `FED_BY_KIND` and
+ * TOTAL BY TYPE, IN `src`: the molds are `core`'s `FED_BY_KIND` and
  * `UNROUTED_KINDS`. A sixth searchable kind does not compile until it is classified
  * here, which is the whole reason this is a table over `SearchKind` and not a list
  * of the two kinds that happen to be unread today. The failure it is built against
@@ -149,20 +149,20 @@ export const SERVED_BY_THE_OPENING: { readonly [K in SearchKind]: OpeningCoverag
   // and nothing to advance, so no machine holds it and no list here shows it.
   memory: 'unread',
   // No list, for the memory's reason. An observation is about an entity, and the
-  // read that serves it is asked about THAT entity — never about the session.
+  // read that serves it is asked about THAT entity, never about the session.
   observation: 'unread',
 };
 
 /** One kind of record the opening read does not look at, and how much of it there is. */
 export interface UnreadKind {
-  /** The kind — the same word `search` takes as its `kind` filter. */
+  /** The kind: the same word `search` takes as its `kind` filter. */
   readonly kind: SearchKind;
   /** How many the record holds, across every tree the caller can see. */
   readonly held: number;
 }
 
 /**
- * The searchable kinds the opening read does not look at, counted over `caches` —
+ * The searchable kinds the opening read does not look at, counted over `caches`,
  * and only those with something in them.
  *
  * A kind holding nothing is left out rather than reported as zero: the field exists
@@ -176,7 +176,7 @@ export interface UnreadKind {
  * declare them in the same order, and a caller diffing two answers sees a change in
  * the numbers rather than a reshuffle.
  *
- * The count is the index's own `total`, asked with `limit: 0` — the COUNT(*) that
+ * The count is the index's own `total`, asked with `limit: 0`: the COUNT(*) that
  * `searchRecord` computes beside its hits, with the row query cut to nothing. It
  * is not a second way of counting a kind: it is the same number `search` would
  * report to a caller who ran the query this field is telling them to run.
@@ -185,7 +185,7 @@ export interface UnreadKind {
  * union: a memory lands in the machine's own tree and a task in the one that
  * travels, so a count from one tree is a count of one part of what the caller can
  * see. Summing per-tree totals is exact here, and it is exact for the reason it is
- * NOT exact in `searchRecords` — an id is minted once and lives in one tree, so no
+ * NOT exact in `searchRecords`: an id is minted once and lives in one tree, so no
  * record is counted twice; what that function has to be careful about is ordering a
  * merge, and there is no ordering here.
  */

@@ -44,7 +44,7 @@ function tree(b: Bench, scope: Scope, project?: string): ScopedCache {
   return { scope, chainRoot: b.root, ...(project !== undefined ? { project } : {}), cache };
 }
 
-describe('searchRecords — the record across the trees', () => {
+describe('searchRecords: the record across the trees', () => {
   it('marks every hit with the tree it came from', () => {
     const team = bench();
     const mine = bench();
@@ -122,7 +122,7 @@ describe('searchRecords — the record across the trees', () => {
     expect(found.total).toBe(10);
   });
 
-  it('serves an index, never a body — and never the relevance score', () => {
+  it('serves an index, never a body, and never the relevance score', () => {
     const b = bench();
     birthSkill(b, 's-1', 'Small PRs', 'adopted');
     capture(b, 'm-1', 'a memory whose whole content is this sentence and no more');
@@ -171,7 +171,7 @@ describe('searchRecords — the record across the trees', () => {
   it('marks every hit with the PROJECT that holds it, and the global tree with none', () => {
     // The other half of where: the scope says which of a project's trees, this says
     // whose. A personal cross-project note carries no project, because the tree it
-    // lives in belongs to none — and labelling it with whichever project a read
+    // lives in belongs to none, and labelling it with whichever project a read
     // reached it through would say where to go and be wrong.
     const team = bench();
     const personal = bench();
@@ -212,7 +212,7 @@ describe('searchRecords — the record across the trees', () => {
 
   it('cannot hide a single record, however hard the limit cuts', () => {
     // The answer's best hit belongs to some record, so that record is shown. It is why
-    // the command line — one project, one label — never carries the field, and why this
+    // the command line (one project, one label) never carries the field, and why this
     // is a refinement of `total` rather than a second way of saying it.
     const only = bench();
     for (let i = 0; i < 4; i += 1) capture(only, `m-${i}`, 'a shared word');
@@ -240,7 +240,7 @@ describe('searchRecords — the record across the trees', () => {
   });
 });
 
-describe('readRecord — one whole record by id', () => {
+describe('readRecord: one whole record by id', () => {
   it('reads each indexed kind back whole, with the tree it lives in', () => {
     const b = bench();
     capture(b, 'm-1', 'the content in full');
@@ -293,7 +293,7 @@ describe('readRecord — one whole record by id', () => {
     expect(readRecord([tree(b, 'public')], 'nope')).toBeNull();
   });
 
-  it('is null for a run, a handoff or a link — they are not records to read', () => {
+  it('is null for a run, a handoff or a link: they are not records to read', () => {
     const b = bench();
     birthTask(b, 't-1', 'a task');
     startRun(b, 'r-1', { agent: 'claude', goal: 'ship' });
@@ -302,16 +302,16 @@ describe('readRecord — one whole record by id', () => {
     const sources = [tree(b, 'public')];
 
     expect(readRecord(sources, 'r-1')).toBeNull();
-    // The handoff and the link are ON the task, so the task itself still reads —
+    // The handoff and the link are ON the task, so the task itself still reads:
     // what has no record of its own is the fact, not its subject.
     expect(readRecord(sources, 't-1')?.kind).toBe('task');
   });
 });
 
-describe('pertinentFirst — the near records first, then the newest', () => {
+describe('pertinentFirst: the near records first, then the newest', () => {
   /**
-   * Twenty-five notes in the team's tree — three old ones about invoices, then twenty-two
-   * newer about login — and three in this machine's, one of them about invoices.
+   * Twenty-five notes in the team's tree (three old ones about invoices, then twenty-two
+   * newer about login) and three in this machine's, one of them about invoices.
    */
   function notes(): ScopedCache[] {
     const team = bench();

@@ -10,7 +10,7 @@
  *     than sliding both sides of a derived comparison at once.
  *   - THE WHOLE MACHINE, derived. Every state of `TASK_STATES` is REACHED through the
  *     workflow's own moves and the list it lands in is compared against
- *     `taskDisposition` — never against a list typed in this file — so a state added
+ *     `taskDisposition`, never against a list typed in this file, so a state added
  *     tomorrow is covered without this file being edited.
  *   - AND THE SOURCE ITSELF, because the two above pass equally well over a module
  *     that copied the classification into a set of its own and happens to agree with
@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 /**
- * The moves that reach each state from a task's birth — the workflow's own rows, with
+ * The moves that reach each state from a task's birth: the workflow's own rows, with
  * the proof each one demands.
  *
  * Written out per state rather than searched for, so the fixture is readable as the
@@ -88,7 +88,7 @@ function listsHolding(id: string): string[] {
   }
 }
 
-describe('liveWork — the tasks there is still something to do about', () => {
+describe('liveWork: the tasks there is still something to do about', () => {
   it('a DONE task is not live work, though `reopen` stays legal from it forever', () => {
     // THE DEFECT, from the report that opened this slice: a person ran the opening
     // read on a terminal and one of the "actionable" tasks said `(DONE)`. The old
@@ -106,7 +106,7 @@ describe('liveWork — the tasks there is still something to do about', () => {
     expect(listsHolding(going)).toEqual(['work']);
   });
 
-  it('a CANCELED task is not live work either — the other terminal position', () => {
+  it('a CANCELED task is not live work either: the other terminal position', () => {
     bench = makeBench();
     const dropped = taskIn('CANCELED', 'task-canceled');
     const going = taskIn('DRAFT', 'task-live');
@@ -114,10 +114,10 @@ describe('liveWork — the tasks there is still something to do about', () => {
     expect(listsHolding(going)).toEqual(['work']);
   });
 
-  it('a BLOCKED task IS live work — stalled is exactly what somebody has to see', () => {
+  it('a BLOCKED task IS live work: stalled is exactly what somebody has to see', () => {
     // The half a filter written as "what is not finished" would get wrong in the
     // other direction. `BLOCKED` has ONE exit and it undoes the position, so nothing
-    // can be progressed from it — which is the reason it belongs on the list, not a
+    // can be progressed from it, which is the reason it belongs on the list, not a
     // reason to drop it.
     bench = makeBench();
     const stuck = taskIn('BLOCKED', 'task-blocked');
@@ -125,7 +125,7 @@ describe('liveWork — the tasks there is still something to do about', () => {
     expect(listsHolding(stuck)).toEqual(['work']);
   });
 
-  it('names the task and nothing else — the moves are a second read', () => {
+  it('names the task and nothing else: the moves are a second read', () => {
     bench = makeBench();
     const id = taskIn('IN_PROGRESS', 'task-1');
     const cache = bench.cache();
@@ -169,7 +169,7 @@ describe('liveWork — the tasks there is still something to do about', () => {
   });
 });
 
-describe('tasksAwaitingJudgement — the work somebody owes a verdict on', () => {
+describe('tasksAwaitingJudgement: the work somebody owes a verdict on', () => {
   it('a task IN_REVIEW awaits a judgement, and is not live work', () => {
     // The second half of the same defect, from the other side: `core` classified
     // `IN_REVIEW` as `awaiting-judgement` and the waiting list asked two machines out
@@ -202,7 +202,7 @@ describe('tasksAwaitingJudgement — the work somebody owes a verdict on', () =>
 
   it('empties: every way out of IN_REVIEW leaves the waiting side', () => {
     // The trap the waiting list exists to avoid, read off the transition table rather
-    // than from intent — the same property `disposition.test.ts` proves for the other
+    // than from intent: the same property `disposition.test.ts` proves for the other
     // two machines. A state classified as waiting whose every exit was also waiting
     // would grow a list nobody could clear.
     const out = TRANSITIONS.filter((t) => t.from === 'IN_REVIEW');
@@ -214,7 +214,7 @@ describe('tasksAwaitingJudgement — the work somebody owes a verdict on', () =>
 describe('one rule for both lists: the classification decides, and nothing else', () => {
   it('puts every state of the machine where `taskDisposition` says, and on ONE list', () => {
     // The whole machine, over a record that REACHES each of its states through the
-    // workflow's own moves — a fixture that could not produce a state would make the
+    // workflow's own moves: a fixture that could not produce a state would make the
     // measurement of its absence meaningless. What each state is compared against is
     // computed from the classification, never from a list typed here.
     bench = makeBench();
@@ -240,7 +240,7 @@ describe('one rule for both lists: the classification decides, and nothing else'
     );
   });
 
-  it('walks the workflow to reach them — no fixture writes a move the machine lacks', () => {
+  it('walks the workflow to reach them: no fixture writes a move the machine lacks', () => {
     // On the table above: every step of every path is a row of `TRANSITIONS`, so
     // the record under the case is one the product can actually produce. The bench's
     // writer does not gate, which is exactly why this is asserted rather than assumed.
@@ -259,7 +259,7 @@ describe('one rule for both lists: the classification decides, and nothing else'
     }
   });
 
-  it('keeps no set of states of its own — the module names none', () => {
+  it('keeps no set of states of its own: the module names none', () => {
     // The guard the two cases above cannot be: a module that copied the
     // classification into its own set would agree with them exactly, until somebody
     // amended one copy. This bans the copy instead of comparing against it.
@@ -274,7 +274,7 @@ describe('one rule for both lists: the classification decides, and nothing else'
     }
   });
 
-  it('accuses a copied set — the scan above on input of its own', () => {
+  it('accuses a copied set: the scan above on input of its own', () => {
     // The instrument's teeth, and the comment stripper's. With the tree honest the
     // case above says only "nothing was found", which is what a broken scan says too.
     expect(withoutComments("const LIVE = ['DRAFT', 'READY'];")).toContain('DRAFT');

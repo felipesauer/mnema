@@ -14,7 +14,7 @@ import {
 import { bootstrap } from './bootstrap.js';
 import { focus, resume } from './focus.js';
 
-describe('focus — what an actor is touching now', () => {
+describe('focus: what an actor is touching now', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -77,7 +77,7 @@ describe('focus — what an actor is touching now', () => {
 
   it('matches an actor spelled in a different Unicode composition', () => {
     // "José" written decomposed (NFD) must resolve to the same actor the chain
-    // sealed in NFC — focus canonicalizes with the core's identity rule.
+    // sealed in NFC: focus canonicalizes with the core's identity rule.
     bench = makeBench();
     const nfc = 'José'; // José
     const nfd = 'José'; // Jose + combining acute
@@ -112,7 +112,7 @@ describe('focus — what an actor is touching now', () => {
   });
 });
 
-describe('resume — where an actor left off', () => {
+describe('resume, where an actor left off', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -167,7 +167,7 @@ describe('resume — where an actor left off', () => {
 
   it('prefers a run THIS asker opened over a newer one it did not', () => {
     // The measured contra-example. Two sessions alive at once share the machine's
-    // anchor, so "the actor's latest run" was whichever started last — and agent A
+    // anchor, so "the actor's latest run" was whichever started last, and agent A
     // asking "where did I leave off" was handed agent B's open run.
     bench = makeBench();
     startRun(bench, 'run-mine', { agent: 'agent-a' });
@@ -177,7 +177,7 @@ describe('resume — where an actor left off', () => {
       const r = resume([cache], asking(bench.who, { sessionRuns: ['run-mine'] }));
       expect(r.lastRun?.id).toBe('run-mine');
       expect(r.lastRun?.thisSession).toBe(true);
-      // And the other one is still reported — as not this asker's.
+      // And the other one is still reported, as not this asker's.
       expect(r.focus.openRuns.map((x) => [x.id, x.thisSession])).toEqual([
         ['run-theirs', false],
         ['run-mine', true],
@@ -206,7 +206,7 @@ describe('resume — where an actor left off', () => {
     // Two runs opened inside a millisecond is a session restarting its agent.
     //
     // NOTHING COVERED THIS UNTIL A MUTATION SAID SO. Reversing the tie-break in the
-    // core left this file green — every case here gives its runs distinct instants
+    // core left this file green: every case here gives its runs distinct instants
     // through the bench clock, so the fallback was never reached. The instant is
     // pinned by hand for that reason.
     bench = makeBench();
@@ -227,7 +227,7 @@ describe('resume — where an actor left off', () => {
   });
 
   it('falls back to the actor’s latest run when this record holds none of the asker’s', () => {
-    // A session whose runs are all in OTHER trees finds none here — and that is right:
+    // A session whose runs are all in OTHER trees finds none here, and that is right:
     // a session that has written nothing in this record has no run of its own to point
     // at, so the read still answers with the run the work happened in. This is the
     // property the deferred run bought, and the preference must not take it back.
@@ -252,7 +252,7 @@ describe('what a reported run says about its age and its idleness', () => {
 
   it('measures age from the start and idleness from the last fact pinned to the run', () => {
     // The bench clock ticks a second per event from 2026-01-01T00:00:00Z, and the
-    // asker asks an hour in — so both numbers are exact rather than sniffed at.
+    // asker asks an hour in, so both numbers are exact rather than sniffed at.
     bench = makeBench();
     startRun(bench, 'run-1', { agent: 'claude' }); // at :00
     capture(bench, 'mem-1', 'something', 'run-1'); // at :01
@@ -270,7 +270,7 @@ describe('what a reported run says about its age and its idleness', () => {
   it('reports NO idleness for a run nothing was recorded in', () => {
     // Measured: a kill 5 ms after the append leaves exactly this. The age is then the
     // only measure there is, and saying so beats reporting the age under idleness's
-    // name — which would claim a fact was recorded when none was.
+    // name, which would claim a fact was recorded when none was.
     bench = makeBench();
     startRun(bench, 'run-empty', { agent: 'claude' });
     const cache = bench.cache();
@@ -360,7 +360,7 @@ describe('what a reported run says about its age and its idleness', () => {
     // The case the one below cannot make: a run with NOTHING in it has `wrote: []` on
     // both sides, so a comparison over it would hold with the field dropped entirely.
     // Here the run recorded three facts of two kinds, and the reported run has to say
-    // so — the complaint this answers is that a reported run described the container.
+    // so: the complaint this answers is that a reported run described the container.
     bench = makeBench();
     startRun(bench, 'run-1', { agent: 'claude', goal: 'the goal' });
     birthSkill(bench, 'skill-1', 'Small PRs', 'adopted');
@@ -382,7 +382,7 @@ describe('what a reported run says about its age and its idleness', () => {
     }
   });
 
-  it('carries the projection through untouched — the added fields only add, and the actor is not repeated', () => {
+  it('carries the projection through untouched: the added fields only add, and the actor is not repeated', () => {
     bench = makeBench();
     startRun(bench, 'run-1', { agent: 'claude', goal: 'the goal' });
     const cache = bench.cache();
@@ -393,7 +393,7 @@ describe('what a reported run says about its age and its idleness', () => {
       if (reported === undefined) throw new Error('the run is open, so the focus must report it');
       // The run came through the filter `who === actor`, so its `who` is the asker's and the
       // answer says it once, at the top. Put back, the run is the core's projection plus the
-      // asker-relative fields (an open run with nothing recorded has no `idleSeconds`) — the independent source is the projection, not this file.
+      // asker-relative fields (an open run with nothing recorded has no `idleSeconds`): the independent source is the projection, not this file.
       expect(reported).not.toHaveProperty('who');
       expect({ ...reported, who: bench.who }).toEqual({
         ...projected,

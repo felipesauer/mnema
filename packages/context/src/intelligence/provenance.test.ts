@@ -10,7 +10,7 @@ import {
 import type { ScopedCache } from '../sources.js';
 import { patternProvenance } from './provenance.js';
 
-describe('patternProvenance — where a pattern came from', () => {
+describe('patternProvenance, where a pattern came from', () => {
   let benches: Bench[] = [];
   let open: ScopedCache[] = [];
   afterEach(() => {
@@ -111,7 +111,7 @@ describe('patternProvenance — where a pattern came from', () => {
     expect(entry?.selfAdopted).toBe(false);
   });
 
-  it('covers every state — the curation backlog is part of the provenance', () => {
+  it('covers every state: the curation backlog is part of the provenance', () => {
     const b = bench();
     birthSkill(b, 'sk-p', 'Proposed', 'proposed');
     birthSkill(b, 'sk-r', 'Rejected', 'rejected');
@@ -126,7 +126,7 @@ describe('patternProvenance — where a pattern came from', () => {
     ]);
   });
 
-  it('keeps the adoption of a pattern later deprecated — it WAS live, and by whom', () => {
+  it('keeps the adoption of a pattern later deprecated: it WAS live, and by whom', () => {
     const b = bench();
     adoptedBy(b, 'sk-1', 'Retired', 'agent-A', 'agent-A');
     deprecateSkill(b, 'sk-1');
@@ -155,7 +155,7 @@ describe('patternProvenance — where a pattern came from', () => {
     expect(backwards).toEqual(forwards);
   });
 
-  it('is empty — never an error — when the record holds no pattern', () => {
+  it('is empty, never an error, when the record holds no pattern', () => {
     const b = bench();
     expect(patternProvenance([source(b)])).toEqual([]);
     expect(patternProvenance([])).toEqual([]);

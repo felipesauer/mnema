@@ -17,7 +17,7 @@ import {
 import { antipatterns, antipatternsByProject } from './antipatterns.js';
 
 /**
- * One record made of ONE chain — which is what a bench is: a single tree, whose tails
+ * One record made of ONE chain, which is what a bench is: a single tree, whose tails
  * are all the same chain's. The two views are the same stream here, and the cases that
  * need them to differ (a chain the counts must not see, a merged tail) build them.
  */
@@ -37,7 +37,7 @@ function reopenTimes(bench: Bench, id: string, times: number): void {
   }
 }
 
-describe('antipatterns — recurring shapes with their evidence', () => {
+describe('antipatterns: recurring shapes with their evidence', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -90,7 +90,7 @@ describe('antipatterns — recurring shapes with their evidence', () => {
     reopenTimes(bench, 'twice', 2);
     const { skillCandidates } = antipatterns(record(bench));
     expect(skillCandidates.map((f) => f.entityId)).toEqual(['twice']);
-    // It POINTS at the candidate — it never creates a skill (no write here).
+    // It POINTS at the candidate: it never creates a skill (no write here).
     expect(skillCandidates[0]?.count).toBe(2);
   });
 
@@ -115,9 +115,9 @@ describe('antipatterns — recurring shapes with their evidence', () => {
     expect(deprecatedSkills[0]?.evidence[0]?.kind).toBe('skill.transitioned');
   });
 
-  it('emits no verdict — the shape is count + evidence only, never a grade', () => {
+  it('emits no verdict: the shape is count + evidence only, never a grade', () => {
     // The line the layer holds: it POINTS, it does not JUDGE. The finding shape
-    // has exactly three fields (entityId, count, evidence) — no "severity",
+    // has exactly three fields (entityId, count, evidence): no "severity",
     // "problem", "bad", "excessive". This pins that no valued field slips in.
     bench = makeBench();
     reopenTimes(bench, 'task-x', 2);
@@ -139,7 +139,7 @@ describe('antipatterns — recurring shapes with their evidence', () => {
   });
 });
 
-describe('antipatterns — a label that names two rules', () => {
+describe('antipatterns: a label that names two rules', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -154,7 +154,7 @@ describe('antipatterns — a label that names two rules', () => {
   it('finds the clash two tails of ONE chain made, with every id that carries the label', () => {
     // The audit's half of the answer: it is found by folding the record, so nobody has
     // to generate the committed document for it to be known. The fixture is the only
-    // shape that produces it — two clones, each numbering its first decision from the
+    // shape that produces it: two clones, each numbering its first decision from the
     // chain it could see, and the tails meeting afterwards.
     const here = bench();
     const clone = bench();
@@ -173,7 +173,7 @@ describe('antipatterns — a label that names two rules', () => {
     expect(labels).toEqual(['ADR-1', 'ADR-1']);
   });
 
-  it('reports whatever state the holders are in — a label is cited after a rule is refused', () => {
+  it('reports whatever state the holders are in: a label is cited after a rule is refused', () => {
     // Nothing here filters on state, deliberately. A decision that was refused still
     // answers to the number it was given, and a person citing it in a review gets two
     // answers. The document filters to what it PRINTS; the record's audit does not.
@@ -191,7 +191,7 @@ describe('antipatterns — a label that names two rules', () => {
   it('says nothing when the same label comes from two DIFFERENT chains', () => {
     // The unit is one chain, and this is the case that proves the read honours it. A
     // project's public tree and its private tree each number their first rule `ADR-1`,
-    // which is the design working — so the chains go in separately and the pooled
+    // which is the design working, so the chains go in separately and the pooled
     // stream, which HAS the label twice, is not what the labels are read from.
     const team = bench();
     const machine = bench();
@@ -239,7 +239,7 @@ describe('antipatterns — a label that names two rules', () => {
   });
 });
 
-describe('antipatterns — one record at a time, never added together', () => {
+describe('antipatterns: one record at a time, never added together', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
@@ -268,7 +268,7 @@ describe('antipatterns — one record at a time, never added together', () => {
     const here = shapes.byProject[0];
     expect(here?.reopenedTasks.map((f) => f.count)).toEqual([2]);
     expect(here?.skillCandidates.map((f) => f.entityId)).toEqual(['task-here']);
-    // A record with nothing recurring is HERE with four empty lists — absent, it would
+    // A record with nothing recurring is HERE with four empty lists: absent, it would
     // be indistinguishable from a record the read never opened.
     expect(shapes.byProject[1]?.reopenedTasks).toEqual([]);
     expect(shapes.byProject[1]?.skillCandidates).toEqual([]);
@@ -276,7 +276,7 @@ describe('antipatterns — one record at a time, never added together', () => {
     expect('reopenedTasks' in shapes).toBe(false);
   });
 
-  it('counts each record on its own — the same churn twice is two entries, not one sum', () => {
+  it('counts each record on its own: the same churn twice is two entries, not one sum', () => {
     bench = makeBench();
     reopenTimes(bench, 'task-shared', 2);
     const churn = bench.events();
@@ -286,7 +286,7 @@ describe('antipatterns — one record at a time, never added together', () => {
       { project: '/w/beta', events: churn, chains: [churn] },
     ]);
 
-    // Two entries of 2, never one of 4 — the arithmetic each project's own session saw.
+    // Two entries of 2, never one of 4: the arithmetic each project's own session saw.
     expect(shapes.byProject.map((entry) => entry.reopenedTasks[0]?.count)).toEqual([2, 2]);
   });
 
@@ -295,7 +295,7 @@ describe('antipatterns — one record at a time, never added together', () => {
   });
 });
 
-describe('antipatterns — a decision two machines moved out of one state', () => {
+describe('antipatterns: a decision two machines moved out of one state', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -309,7 +309,7 @@ describe('antipatterns — a decision two machines moved out of one state', () =
 
   it('says the decision and both moves, and picks neither', () => {
     // Two machines, each moving the decision from the `proposed` it could see; the tails
-    // meet afterwards. Neither move was refused — nothing could see the other. The clone's
+    // meet afterwards. Neither move was refused: nothing could see the other. The clone's
     // move is stamped after the birth it had pulled: on the same instant, the tie would go
     // by tail id, and a move sorted before its subject's birth is one no reader applies.
     const here = bench();

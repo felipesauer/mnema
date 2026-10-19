@@ -1,5 +1,5 @@
 /**
- * The record as a feed of AUDIT FACTS another system can read — one OCSF event per
+ * The record as a feed of AUDIT FACTS another system can read: one OCSF event per
  * line, and the envelope only.
  *
  * ## What decides this module, and it is not the format
@@ -17,24 +17,24 @@
  * screens free text on the way IN, and it has only existed since a point in this record's
  * life: everything written before it went in with no defense at all, which is the past
  * `exposure` exists FOR. A feed that carried bodies would push exactly what `exposure`
- * refuses — off the machine, into an index, permanently, including the part of the record
+ * refuses: off the machine, into an index, permanently, including the part of the record
  * that never passed a screen.
  *
  * So the feed carries the ENVELOPE: when, which operation, who authorized it, which agent
  * executed it, in which session, over which entity, SIGNED by which key. That is what an
  * audit trail is, and a SIEM asks for nothing else. This line used to read *attested* by
  * which key, and three paragraphs below the same comment says *nothing here is an
- * attestation* — the word claimed a verification that neither this module nor the line it
+ * attestation*: the word claimed a verification that neither this module nor the line it
  * writes performs. `signerFp` names the credential that signed the ORIGINAL fact; whether
  * a signature actually covers that fact is a question for `mnema verify`, which reports
  * events written after the last checkpoint as resting on the hash chain alone. The
  * product's own README says *signed by which key* in both places it describes this feed.
  *
- * The body of a memory, the text of a decision, the prose of an observation — none of it
+ * The body of a memory, the text of a decision, the prose of an observation: none of it
  * is a fact of authorship, and all of it is where a credential lives.
  *
  * THE GUARANTEE IS STRUCTURAL, NOT A HABIT. {@link AuditEnvelope} is the envelope's
- * fields and nothing else, so a payload is not something this module declines to read — it
+ * fields and nothing else, so a payload is not something this module declines to read: it
  * is something it cannot NAME. Widening that parameter to the cataloged event is the one
  * edit that could leak a body, and it is a visible edit to a signature rather than a line
  * lost in a mapping. TWO nets sit under it, over the bytes: `audit-feed.test.ts` next door
@@ -55,13 +55,13 @@
  * whose subject is *a managed entity somebody acted on*, which is what every kind in this
  * catalog is. The mapping is not decoration: `key.enrolled` is OCSF's own word `Enroll`,
  * `key.revoked` is `Unenroll`, and a workflow move is `Update`. ONE kind of twenty has no
- * honest activity and takes `99 Other` — see {@link AUDIT_BY_KIND}.
+ * honest activity and takes `99 Other`: see {@link AUDIT_BY_KIND}.
  *
  * ## Three things it does NOT do
  *
  * IT IS NOT THE PROOF, and the temptation had a name. OCSF has a `record_integrity`
  * profile that attaches cryptographic attestations to an event and speaks of *"a sequence
- * of events forming a tamper-evident hash chain"* — a true description of this record's
+ * of events forming a tamper-evident hash chain"*: a true description of this record's
  * MECHANISM, which is why the temptation had teeth. It is not this product's promise: that
  * one is a signed, append-only record of DECISIONS, and it states the limit the profile's
  * wording leaves out (`packages/code/src/promise.ts`). The profile is deliberately NOT
@@ -69,13 +69,13 @@
  * EVENT; the signature this record holds covers mnema's own canonical bytes,
  * which are a different serialization of a different shape. Emitting the profile would
  * present a signature as attesting a document it never covered. So `signerFp` travels as
- * what it is — the identifier of the credential that signed the original fact — and a line
+ * what it is, the identifier of the credential that signed the original fact, and a line
  * that a SIEM altered in transit is not detectable by the SIEM. The proof stays in the
  * chain, and `mnema verify` is still the only thing that rules on it.
  *
  * IT IS NOT A SOURCE OF TRUTH. Nothing in this product reads a feed back. Every line
- * carries what it takes to find the fact in the record it came from — the subject, the
- * original instant, the tree — so the answer to *"is this line real?"* is a question you
+ * carries what it takes to find the fact in the record it came from (the subject, the
+ * original instant, the tree), so the answer to *"is this line real?"* is a question you
  * ask the record, never the index.
  *
  * IT INVENTS NO PROOF FIELD. The chain-link fields (the entry hash, the tail id) are
@@ -93,7 +93,7 @@ import type { ScopedEvents } from './exposure.js';
  *
  * THE TYPE IS THE GUARD. It is derived from the cataloged event rather than written out,
  * so a field ADDED to the envelope arrives here by itself and a field renamed does not
- * compile — but `payload` is not among the keys, so the mapping below cannot reach a body
+ * compile, but `payload` is not among the keys, so the mapping below cannot reach a body
  * even by accident. A reviewer checking "does the feed carry content?" reads this one line
  * instead of auditing every branch of a mapping.
  */
@@ -118,11 +118,11 @@ export const OCSF_CATEGORY_UID = 3;
  */
 export const OCSF_SCHEMA_VERSION = '1.9.0';
 
-/** OCSF `severity_id` 1 — Informational. A recorded fact is news, never an alarm. */
+/** OCSF `severity_id` 1: Informational. A recorded fact is news, never an alarm. */
 const SEVERITY_INFORMATIONAL = 1;
 
 /**
- * OCSF `status_id` 1 — Success.
+ * OCSF `status_id` 1: Success.
  *
  * Every event in the chain is a fact that HAPPENED: a refused write appends nothing, so
  * there is no failed operation in here to report. The field is constant because the
@@ -154,11 +154,11 @@ const ACTIVITY = {
 /** One activity of the class, as the pair the schema requires it be written as. */
 type Activity = (typeof ACTIVITY)[keyof typeof ACTIVITY];
 
-/** OCSF `managed_entity.type_id` 2 — User. */
+/** OCSF `managed_entity.type_id` 2: User. */
 const ENTITY_USER = 2;
 
 /**
- * OCSF `managed_entity.type_id` 99 — Other, whose `uid` the schema then reads as the
+ * OCSF `managed_entity.type_id` 99: Other, whose `uid` the schema then reads as the
  * source's own identifier, which is exactly what an mnema id is.
  */
 const ENTITY_OTHER = 99;
@@ -167,14 +167,14 @@ const ENTITY_OTHER = 99;
 interface AuditMapping {
   /** The normalized operation. */
   readonly activity: Activity;
-  /** The normalized entity type — `User` where the subject really is an identity. */
+  /** The normalized entity type: `User` where the subject really is an identity. */
   readonly entityTypeId: number;
   /** What the subject IS, in this product's own words. */
   readonly entityType: string;
 }
 
 /**
- * EVERY kind of the catalog, and the audit fact it becomes — the one table, total over
+ * EVERY kind of the catalog, and the audit fact it becomes: the one table, total over
  * {@link EventKind} by construction, so a kind added tomorrow does not COMPILE until
  * somebody has decided how it is audited.
  *
@@ -200,12 +200,12 @@ interface AuditMapping {
  * the source-specific label goes in `activity_name` as the schema requires.
  *
  * `channel.switched` is `Update` and NOT `Enable`/`Disable`, which is the entry a reader
- * will come here to argue with — the schema has both, and the fact really is one of them.
+ * will come here to argue with: the schema has both, and the fact really is one of them.
  * Which one is in the PAYLOAD (`on: boolean`), and reading it would end the property this
  * whole module rests on: the mapping would no longer be blind to bodies, it would be blind
  * to bodies *except where somebody judged a field harmless*, which is a review at every
  * future kind rather than a type. One bit today is a field tomorrow. The direction is in
- * the record, which is where a reader has to go for the reason anyway — and `Update` over
+ * the record, which is where a reader has to go for the reason anyway, and `Update` over
  * the channel is true.
  *
  * `run.started`/`run.ended` are `Activate`/`Deactivate` rather than `Create`/`Delete`. A
@@ -243,7 +243,7 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_OTHER,
     entityType: 'decision',
   },
-  // The subject is the anchor itself — an identity, which OCSF has a normalized type for.
+  // The subject is the anchor itself: an identity, which OCSF has a normalized type for.
   'identity.founded': {
     activity: ACTIVITY.create,
     entityTypeId: ENTITY_USER,
@@ -295,8 +295,8 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_OTHER,
     entityType: 'channel',
   },
-  // `Update` and not `Delete`: a retraction removes nothing — the note's own event stays and
-  // is still served by id — it changes what the note is taken to be, as a supersede does.
+  // `Update` and not `Delete`: a retraction removes nothing (the note's own event stays and
+  // is still served by id) it changes what the note is taken to be, as a supersede does.
   'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
   // `Update`, for the note's reason: the link's own event stays; what it is taken to be changes.
   // The subject originates the edge and may be of any kind, as on the link itself.
@@ -324,7 +324,7 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityType: 'identity',
   },
   // An identity takes a key in as its agent: an enrolment, as a key's is. The subject is the
-  // identity; "attested" is not said here, because this feed checks nothing — the key that
+  // identity; "attested" is not said here, because this feed checks nothing: the key that
   // signed is in the actor's credential, as on every other line.
   'agent.enrolled': {
     activity: ACTIVITY.enroll,
@@ -341,7 +341,7 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   'check.passed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
   'check.failed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
   // An identity naming its account on a code host changes what is said ABOUT the user, and
-  // adds or removes no key — an Update of the identity, not an Enroll.
+  // adds or removes no key: an Update of the identity, not an Enroll.
   'account.linked': {
     activity: ACTIVITY.update,
     entityTypeId: ENTITY_USER,
@@ -361,7 +361,7 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   'stack.removed': { activity: ACTIVITY.delete, entityTypeId: ENTITY_OTHER, entityType: 'stack' },
 };
 
-/** Who is reporting the feed — the producer's own identity, which the record does not hold. */
+/** Who is reporting the feed: the producer's own identity, which the record does not hold. */
 export interface AuditProducer {
   /** The product's name, as `metadata.product.name`. */
   readonly product: string;
@@ -375,7 +375,7 @@ export interface AuditProducer {
  * One line of the feed: an OCSF Entity Management event.
  *
  * Every field here is either a constant of the class, a fact of the envelope, or the
- * producer's own name. There is no member that could hold a body — which is the shape of
+ * producer's own name. There is no member that could hold a body, which is the shape of
  * the promise, said in the type.
  */
 export interface AuditEvent {
@@ -402,7 +402,7 @@ export interface AuditMetadata {
     readonly version: string;
   };
   /**
-   * The mnema kind, VERBATIM — `metadata.event_code` is the schema's field for the
+   * The mnema kind, VERBATIM: `metadata.event_code` is the schema's field for the
    * source's own event identifier, and it is where the exact kind survives a
    * normalization that necessarily loses some of it. `channel.switched` and
    * `task.transitioned` are both `Update`; only this tells them apart.
@@ -411,7 +411,7 @@ export interface AuditMetadata {
   /** The version of that kind's own contract, as the log schema version of the original. */
   readonly log_version: string;
   /**
-   * Which TREE the fact lives in — the log this line was read from.
+   * Which TREE the fact lives in: the log this line was read from.
    *
    * It is on every line because it is the difference between a fact that is committed and
    * clones to every machine and a fact that is on one disk. `exposure` takes the trees
@@ -421,7 +421,7 @@ export interface AuditMetadata {
   readonly log_name: string;
   /** The `at` of the record, in its native ISO-8601 form, unnormalized. */
   readonly original_time: string;
-  /** The run, when the fact belongs to one — what correlates the facts of one session. */
+  /** The run, when the fact belongs to one: what correlates the facts of one session. */
   readonly correlation_uid?: string;
 }
 
@@ -435,7 +435,7 @@ export interface AuditEntity {
 /** Who authorized the fact, signed by which key, executed by which agent. */
 export interface AuditActor {
   readonly user: {
-    /** The authorizing human — the anchor id, derived from a key and unforgeable. */
+    /** The authorizing human: the anchor id, derived from a key and unforgeable. */
     readonly uid: string;
     /**
      * The fingerprint of the key that SIGNED the fact. `credential_uid` is the schema's
@@ -503,12 +503,12 @@ export function auditEvent(
  * IT IS NOT RE-SORTED ACROSS TREES, and that is the reading rather than an omission. Each
  * tree's events arrive in the order that chain PROVES; a cross-tree ordering imposed here
  * would be a second ordering rule, answering with an order the record never stated. A
- * consumer that wants one timeline sorts on `time`, which every line carries — and the
+ * consumer that wants one timeline sorts on `time`, which every line carries, and the
  * `log_name` that would be lost in a merge is what a reader needs to tell a committed fact
  * from one that never left the disk.
  *
  * The filter is {@link matchesAuthorship}, the same declared window `accountability`
- * narrows by — one wording of `--from`/`--to`/`--who`/`--which`, so a feed and a count
+ * narrows by: one wording of `--from`/`--to`/`--who`/`--which`, so a feed and a count
  * over the same record cannot come to disagree about which facts are in scope.
  */
 export function auditFeed(

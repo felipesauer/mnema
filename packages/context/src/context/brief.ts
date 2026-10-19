@@ -2,8 +2,8 @@
  * brief: everything that governs the work here, in one answer.
  *
  * Every other read in this layer is asked for. This one exists to be served
- * WITHOUT being asked: what it composes reaches an agent as a session opens — through
- * the plugin, or through a file the host reads — so the record arrives whether or not
+ * WITHOUT being asked: what it composes reaches an agent as a session opens (through
+ * the plugin, or through a file the host reads), so the record arrives whether or not
  * the agent thought to look for it. (This named `AGENTS.md` and `CLAUDE.md` as files
  * "the host reads on its own"; the host the plugin is for reads an `AGENTS.md` only
  * where no `CLAUDE.md` exists, and which file reaches a session is the host's to say.) The measured weakness it
@@ -11,13 +11,13 @@
  * never opened is indistinguishable from an empty one.
  *
  * IT TAKES THE NAME OF ONE CHANNEL, and that is the only argument here that is not the
- * record. The document explains a silence — nothing arrives when a file is edited — and a
+ * record. The document explains a silence (nothing arrives when a file is edited) and a
  * silence has two causes now: no rule addresses the path, or the push was switched off. The
  * second is a fact of the chain like any other, but WHICH fact it is depends on what the
  * channel is called, and channels are named by the surface that pushes them
  * (`code/src/record-framing.ts`), three packages downstream of here. So the caller names it
  * and this composition reads its state. Nothing else about the channel is known here, and
- * nothing here decides whether it may speak — that is the channel's own reading, over its
+ * nothing here decides whether it may speak, that is the channel's own reading, over its
  * own sources ({@link channelIsOn}).
  *
  * IT COMPOSES, AND DECIDES NOTHING about which rules hold. Which decisions govern is
@@ -33,8 +33,8 @@
  *
  * NAMES, NEVER BODIES, like the reads it is built out of. A decision arrives as its
  * title, its citable `ADR-<n>` label and its id; a pattern as its name and its id.
- * A title IS the rule in short form — the body of a decision is the argument for it
- * and what it turned down, and the body of a pattern is the recipe — and a file that
+ * A title IS the rule in short form (the body of a decision is the argument for it
+ * and what it turned down, and the body of a pattern is the recipe) and a file that
  * is read on every single prompt pays for its length every time. The bodies come
  * from a second read asked about the one item that turned out to bear on the task
  * ({@link readRecord} for a decision's `rationale` and `alternatives`, {@link
@@ -44,17 +44,17 @@
  * opening context cuts its lists and reports the total, because a queue of work is a
  * queue: the freshest end is the useful end and the stale end can wait for a second
  * read. A rule cannot wait. A decision left out of this answer is a decision the
- * agent will not follow, and it would be left out silently — so there is no limit
+ * agent will not follow, and it would be left out silently, so there is no limit
  * here and no total beside the list, because with nothing cut by size a total is the
  * list's own length. What bounds the size instead is that each item is a NAME: the
  * cost is a handful of fields per rule, not an argument per rule.
  *
- * THAT LAST SENTENCE HAD NO NUMBER AND NOW HAS ONE — **99.1 bytes per rule in force**,
+ * THAT LAST SENTENCE HAD NO NUMBER AND NOW HAS ONE: **99.1 bytes per rule in force**,
  * the slope of the document this answer composes, over an envelope of about 359 bytes. It is what makes "no cut by size" affordable
  * rather than merely principled: a record holding a hundred rules in force pays about
  * ten kilobytes, once, where a session opens. The number belongs to the DOCUMENT's shape
- * rather than to this function, and that shape has already moved once — an earlier
- * reading measured 21/63/148 lines where the published one measures 25/68/153 — so it is
+ * rather than to this function, and that shape has already moved once, an earlier
+ * reading measured 21/63/148 lines where the published one measures 25/68/153, so it is
  * cited to its capture instead of being pinned by a case here.
  *
  * ONLY THE TREE THAT TRAVELS, AND THIS USED TO BE THE UNION. The paragraph here read
@@ -65,7 +65,7 @@
  * decisions of which one was recorded `--scope private`:
  *   - the document came back with TWO lines labelled `ADR-1`. The label is numbered
  *     within one chain and frozen at write time, so the union prints one number for
- *     two different rules — and the label exists to be cited. A citable handle that
+ *     two different rules, and the label exists to be cited. A citable handle that
  *     does not identify is the defect, not the breadth;
  *   - and the private decision's TITLE reached a file whose published recipe is a
  *     redirection and a commit. The private tree exists precisely so
@@ -85,26 +85,26 @@
  * committed tree alone fixed the ADR-1 that came from FOLDING two trees, and left the
  * one that comes from inside a single tree: the number is minted from the writer's
  * view of the chain, so two clones deciding offline both mint `ADR-7` legitimately and
- * the labels meet when the tails do. Nothing at write time could have refused either —
- * the machines could not see each other — and nothing may renumber them afterwards,
+ * the labels meet when the tails do. Nothing at write time could have refused either
+ * (the machines could not see each other) and nothing may renumber them afterwards,
  * because the label is frozen into a signed event and a record that edited its past
  * would be worth nothing. So what this composition owes the document is the FACT:
  * which printed label names more than one rule, and which ids those are ({@link
- * Brief.collisions}). Asserted in `brief.test.ts` — "declares a printed label that two
- * decisions of one chain answer to" — over two tails, which is the only way a chain
+ * Brief.collisions}). Asserted in `brief.test.ts`, "declares a printed label that two
+ * decisions of one chain answer to", over two tails, which is the only way a chain
  * gets there.
  *
  * THE FILTER IS HERE, IN THE COMPOSITION, AND NOT IN THE DERIVATIONS. {@link
  * decisionsInForce} and {@link adoptedSkills} still read every cache they are handed,
  * because {@link bootstrap} needs them to: that answer is the agent's own context and
  * the private tree is the agent's. Narrowing either derivation would fix this
- * consumer and break the other one in silence — the opening read would simply stop
+ * consumer and break the other one in silence: the opening read would simply stop
  * mentioning half of what the agent may see, and nothing in its answer would say so.
  * One rule, one function; the consumer that needs less passes less.
  *
  * The order is a property of the CONTENT in both lists (when a decision came into
  * force, then its id; a pattern's name, then its id), so which trees are passed, and
- * in what order, cannot reshuffle the answer — which is what lets a consumer detect a
+ * in what order, cannot reshuffle the answer, which is what lets a consumer detect a
  * stale copy by comparing bytes. Filtering by scope keeps that: it drops sources, and
  * dropping sources cannot reorder what the remaining ones say.
  */
@@ -125,7 +125,7 @@ import { adoptedSkills, type SkillRef, skillsAwaitingJudgement } from './skills.
 import { type ChannelState, channelStates } from './switches.js';
 
 /**
- * A rule of this document with the provenance the record asserts for it — the file it
+ * A rule of this document with the provenance the record asserts for it: the file it
  * was derived from, when it was derived from one.
  *
  * WHY IT IS ON THE RULE AND NOT LEFT TO A SECOND READ. The `ADR-<n>` beside a rule is a
@@ -134,7 +134,7 @@ import { type ChannelState, channelStates } from './switches.js';
  * the one the decision came from, and five of the six this document printed were among
  * them. The label is still the citable handle and it is not re-derived (two clones would
  * then cite different decisions), so what closes the gap is the other fact the record
- * already holds — the `derived-from` edge the import wrote, whose target carries the
+ * already holds: the `derived-from` edge the import wrote, whose target carries the
  * source's own number inside it.
  *
  * ABSENT, NEVER EMPTY, for the reason `readRecord` gives: a rule decided here by hand has
@@ -142,18 +142,18 @@ import { type ChannelState, channelStates } from './switches.js';
  *
  * IT IS A TARGET AND NOT A PATH, as everywhere else this fact is served: `derived-from`
  * takes an id as readily as a file name. Nothing here checks that it resolves, and
- * nothing here touches a disk — this document must be a pure function of the record.
+ * nothing here touches a disk: this document must be a pure function of the record.
  */
 export type WithOrigin<T> = T & { readonly origin?: readonly string[] };
 
 /**
- * The one tree whose record TRAVELS — typed, so a typo fails the build.
+ * The one tree whose record TRAVELS: typed, so a typo fails the build.
  *
  * It is the scope, which is a ROLE and not a tree's name ("the team's record", as
  * against this machine's): a caller holding two projects' public trees is holding two
  * committed records, and this composition would carry both. That is the caller's
- * question to get right — the command line resolves ONE project's trees for this
- * verb — and it is not a case this filter can decide, since "which project is this
+ * question to get right, the command line resolves ONE project's trees for this
+ * verb, and it is not a case this filter can decide, since "which project is this
  * document for" is not something a scope says.
  */
 const TRAVELS: Scope = 'public';
@@ -161,7 +161,7 @@ const TRAVELS: Scope = 'public';
 /** What governs the work here: the calls that hold, and the patterns to work by. */
 export interface Brief {
   /**
-   * The decisions in force in the tree that travels — `accepted`, and nothing else —
+   * The decisions in force in the tree that travels (`accepted`, and nothing else)
    * most recently settled first. Never the body: neither the `rationale` nor the
    * `alternatives` it turned down. Both come from {@link readRecord}, asked about
    * the one decision that bears on the task at hand.
@@ -186,7 +186,7 @@ export interface Brief {
   readonly collisions: readonly AdrCollision[];
   /**
    * The decisions and patterns PRINTED above that left one state more than once, by moves on
-   * machines that had not seen each other — what two machines
+   * machines that had not seen each other: what two machines
    * moving one rule apart leave (`divergentMoves` in
    * @mnema/core). Empty in the ordinary case, which keeps the document's bytes what they were.
    *
@@ -197,16 +197,16 @@ export interface Brief {
    */
   readonly divergent: readonly DivergentMove[];
   /**
-   * How many of the rules above have an ADDRESS — a path they were linked to with
+   * How many of the rules above have an ADDRESS: a path they were linked to with
    * `rel: "governs"` in a tree that travels.
    *
    * WHY A NUMBER IS IN THIS ANSWER AT ALL, since everything else in it is a list. The
    * product pushes a rule at each edit of a file it addresses, beside the result of that
-   * write, and that channel is SILENT when no rule addresses the path — a decision taken
+   * write, and that channel is SILENT when no rule addresses the path: a decision taken
    * with a measurement behind it, because the alternative pays for "nothing governs this"
    * on every edit of every session. Silence only means something to a reader who knows the
    * mechanism is there, and this is where they are told: once, when the session opens.
-   * Zero is a legitimate value and it is the most informative one — it says the record
+   * Zero is a legitimate value and it is the most informative one: it says the record
    * holds rules and none of them has been placed.
    *
    * IT COUNTS RULES, NOT ADDRESSES. A rule addressed at two paths is one rule with an
@@ -222,21 +222,21 @@ export interface Brief {
    */
   readonly addressed: number;
   /**
-   * How many of the rules below ASK FOR A PERSON somewhere — the number that gives the
+   * How many of the rules below ASK FOR A PERSON somewhere: the number that gives the
    * hardest silence on this surface its meaning.
    *
    * WHY IT IS SEPARATE FROM {@link Brief.addressed} rather than folded into it. That number
    * says how many rules can ARRIVE at an edit; this one says how many can STOP one, and the
    * two are different powers over the reader's afternoon. A document that reported only the
    * first would leave somebody whose write was refused with no way to know from this file
-   * that the mechanism exists — and a gate is the one thing in this product a person needs
+   * that the mechanism exists, and a gate is the one thing in this product a person needs
    * to have been told about BEFORE it happens to them.
    *
    * Zero is a legitimate value and it is the ordinary one: it says the record holds rules,
    * some of them may be placed, and none of them gates anything.
    *
    * It counts RULES and not addresses, and it does not count staleness, for the two reasons
-   * {@link Brief.addressed} gives — the reader is deciding what to expect, and this file is
+   * {@link Brief.addressed} gives: the reader is deciding what to expect, and this file is
    * committed and compared with `diff`.
    */
   readonly asking: number;
@@ -255,13 +255,13 @@ export interface Brief {
    * other silence, and the document says so in the same words: a number that is not a
    * list's length, here because it makes a silence readable. The silence is the heading
    * itself. Measured on a real project: the document printed `## Decisions in force (6)`
-   * over a record holding 247 decisions, and every word of it was true — each heading
-   * counts what is printed under it — while the impression it left was that the project
+   * over a record holding 247 decisions, and every word of it was true (each heading
+   * counts what is printed under it), while the impression it left was that the project
    * had decided six things. A reader of this file is a model, and a model reading that
    * heading has nothing at all to tell it that 241 more calls are recorded and waiting.
    *
    * NOTHING WAS CUT BY SIZE AND THAT IS WHY THIS IS NOT THE TOTAL THE DOCUMENT REFUSES.
-   * The doctrine against totals was written about omission by LIMIT — with the whole
+   * The doctrine against totals was written about omission by LIMIT: with the whole
    * list printed, a total is the list's own length and says nothing. These were left
    * out by STATE: they are not in force, so they are correctly absent from a document
    * about what governs, and their number is a fact the list's length cannot carry.
@@ -271,13 +271,13 @@ export interface Brief {
    * exactly what it meant.
    *
    * COUNTED BY {@link decisionsAwaitingJudgement}, the derivation `bootstrap` already
-   * lists from, so "awaiting a judgement" is one rule here and not two — a document
+   * lists from, so "awaiting a judgement" is one rule here and not two: a document
    * that counted a different set from the reading that NAMES them would send a reader
    * to look for rules that are not there. Zero prints too, in words.
    */
   readonly decisionsAwaiting: number;
   /**
-   * How many patterns of the tree that travels are recorded and awaiting a judgement —
+   * How many patterns of the tree that travels are recorded and awaiting a judgement:
    * proposed or reviewed, with the adoption call still to make.
    *
    * It is here for {@link Brief.decisionsAwaiting}'s reason, on the other heading, and
@@ -297,14 +297,14 @@ export interface Brief {
    * carried one step further. That number exists to give a SILENCE a meaning: nothing
    * arrives at an edit, and the reader has been told there are addresses, so the silence
    * reads as "none of them names this file". A switched-off push produces the identical
-   * silence and means something else entirely — "somebody turned it off" — and a document
+   * silence and means something else entirely, "somebody turned it off", and a document
    * that reported the count while omitting the switch would explain the silence WRONGLY,
    * which is worse than not explaining it. So the state is here and the document says it.
    *
    * IT IS READ FROM THE TREE THAT TRAVELS, like everything else in this answer, and that
    * is a real limit rather than a detail. A switch recorded `--scope private` governs this
-   * machine's pushes and is not in this file — the same omission every private rule has,
-   * declared to the reader in the same words — so a document saying the push is on is
+   * machine's pushes and is not in this file (the same omission every private rule has,
+   * declared to the reader in the same words), so a document saying the push is on is
    * saying it of the COMMITTED record. The reading that spans every tree is `mnema
    * switch`, and it is the only place a private switch is ever spelled.
    *
@@ -318,7 +318,7 @@ export interface Brief {
    *
    * It is here for the reason {@link Brief.editPush} is, and the consequence is heavier. A
    * gate that is switched off produces exactly the silence a gate that has nothing to close
-   * on produces; but the direction of the mistake is reversed from the other channel's — a
+   * on produces; but the direction of the mistake is reversed from the other channel's: a
    * reader wrongly told that nothing gates this project loses nothing, while a reader
    * wrongly told that something does will go looking for a refusal that cannot come. Both
    * are fixed by saying which it is.
@@ -342,7 +342,7 @@ export interface Brief {
  * A shape rather than two positional strings, and it is the same rule the vocabulary of
  * channels has had since it existed: the names live with the surface that PUSHES them, so
  * this package takes them and cannot invent one. Two strings in a row would compile with
- * the pair swapped, which would make the document report the gate's state as the push's —
+ * the pair swapped, which would make the document report the gate's state as the push's:
  * one of the few mistakes here that reads as a working document and says the opposite of
  * the truth.
  */
@@ -356,7 +356,7 @@ export interface BriefChannels {
 }
 
 /**
- * Everything that governs the work in the trees of `sources` that TRAVEL — the
+ * Everything that governs the work in the trees of `sources` that TRAVEL: the
  * decisions in force and the adopted patterns, each by name. A source in any other
  * scope is read for nothing: it is handed over so that this one place decides which
  * trees a document carries.
@@ -364,7 +364,7 @@ export interface BriefChannels {
  * It carries NO work list, and that is the sharpest of its properties rather than
  * an omission. A file injected into every prompt is regenerated when someone
  * remembers to; a queue of work changes by the hour, so a copy of it would be wrong
- * between two regenerations — and wrong in silence, which is the defect this product
+ * between two regenerations, and wrong in silence, which is the defect this product
  * exists not to have. A rule does not have that failure mode: a rule that was
  * superseded since the file was written is a rule that governed until then, and the
  * live answer is one read away ({@link bootstrap}).
@@ -373,7 +373,7 @@ export interface BriefChannels {
  * the tree is part of this answer: a rule in the private tree is one this composition
  * must leave out, and a caller that had already dropped the scope could not be asked
  * to. The surface hands over every tree it opened, so the omission happens where it
- * is written down — a second copy of "only the public one" at each surface is the
+ * is written down: a second copy of "only the public one" at each surface is the
  * shape that drifts.
  */
 export function brief(sources: readonly ScopedCache[], channels: BriefChannels): Brief {
@@ -406,14 +406,14 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     refusing: countUnder(travels, [...decisions, ...skills], REFUSES_A_WRITE_RELATION),
     // Asked of the COMMITTED sources alone, like the rest: a document that counted the
     // private tree's proposals would move with that tree, and it is compared with `diff`.
-    // The two derivations are `bootstrap`'s own, called for their LENGTH — the count and
+    // The two derivations are `bootstrap`'s own, called for their LENGTH: the count and
     // the reading that names them cannot come to disagree about what is waiting.
     decisionsAwaiting: decisionsAwaitingJudgement(travels).length,
     skillsAwaiting: skillsAwaitingJudgement(travels).length,
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the
     // machine reading it has turned it off. Both channels in ONE call, so the fold, the
-    // tie-break and the meaning of an absence are the same for the two of them — a document
+    // tie-break and the meaning of an absence are the same for the two of them: a document
     // that read one channel one way and the other another way would be two rules about what
     // "off" means, in one paragraph.
     ...channelPair(committed, channels),
@@ -424,7 +424,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
  * One rule with the provenance the committed record asserts for it, or the rule
  * unchanged when it asserts none.
  *
- * THE TREES THAT TRAVEL, AND ONLY THEM — the same list every other fact of this document
+ * THE TREES THAT TRAVEL, AND ONLY THEM: the same list every other fact of this document
  * is read from. A `derived-from` edge asserted in the private tree names a file of this
  * machine, and putting one here would print on the machine that wrote it and vanish in
  * the clone, inside a file that is committed and compared with `diff`. `mnema refs` is
@@ -506,7 +506,7 @@ function countAddressed(
 }
 
 /**
- * How many of `rules` ask for a person somewhere — the same count under the other relation.
+ * How many of `rules` ask for a person somewhere: the same count under the other relation.
  *
  * It is {@link countUnder} asked a second question and not a second counting rule, which is
  * what keeps the two numbers on the document's first paragraph from being computed two ways.
@@ -543,7 +543,7 @@ function countUnder(
  *
  * PER CACHE, because a cache is one chain and one chain is the unit an `ADR-<n>`
  * is numbered in. Asking the question over the pooled decisions would answer a
- * different one — a workspace holding two projects' committed records holds two
+ * different one: a workspace holding two projects' committed records holds two
  * `ADR-1`s that were never meant to be compared, and neither of their citations is
  * ambiguous to the person reading either repository.
  *
@@ -551,13 +551,13 @@ function countUnder(
  * handles IN IT: a bullet says `ADR-7`, a reader cites `ADR-7`, and the warning
  * says when that citation does not land on one rule. A collision between two rules
  * this file does not carry is a fact about the record, which is the audit's answer
- * and not this file's — putting it here would make a governance document warn about
+ * and not this file's: putting it here would make a governance document warn about
  * governance it does not state. The ids it names are NOT filtered the same way: the
  * other holder of the label is regularly a rule that is no longer in force, and
  * naming only the printed half would describe the ambiguity while hiding what makes
  * it one.
  *
- * The order is total and comes from the content — by label, then by the first id —
+ * The order is total and comes from the content (by label, then by the first id)
  * so the trees' order cannot reach the document's bytes.
  */
 function printedCollisions(
@@ -572,7 +572,7 @@ function printedCollisions(
 }
 
 /**
- * The rules this answer PRINTS that left one state more than once, in the trees that travel —
+ * The rules this answer PRINTS that left one state more than once, in the trees that travel:
  * filtered to what is printed for the reason {@link printedCollisions} gives, and in an order
  * that comes from the content (kind, id, state), so the trees' order cannot reach the bytes.
  */

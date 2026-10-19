@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ASKED_AT, type Bench, makeBench, startRun } from '../../tests/support/chain.js';
 import { guard, guardWithFocus } from './guard.js';
 
-describe('guard — the gate asked as a read-only question', () => {
+describe('guard: the gate asked as a read-only question', () => {
   it('authorizes a legal move, resolving the state from the workflow', () => {
     const verdict = guard({ from: 'READY', action: 'start', who: 'alice', which: 'claude' });
     expect(verdict.ok).toBe(true);
@@ -44,7 +44,7 @@ describe('guard — the gate asked as a read-only question', () => {
   });
 });
 
-describe('guardWithFocus — the verdict plus the asker’s focus', () => {
+describe('guardWithFocus: the verdict plus the asker’s focus', () => {
   let bench: Bench;
   afterEach(() => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });

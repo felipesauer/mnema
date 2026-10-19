@@ -20,10 +20,10 @@ import {
  * Every fixture here reaches its state through the move the workflow defines, from
  * the state a decision is actually born in (`proposed`). Asking the birth for a
  * state no birth writes would test the filter against a record the product cannot
- * produce — which is how the previous version of this bench came to write
+ * produce, which is how the previous version of this bench came to write
  * `ACCEPTED`, a value `isDecisionState` rejects and no state-keyed read can match.
  */
-describe('decisionsInForce — the calls that govern', () => {
+describe('decisionsInForce: the calls that govern', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -37,7 +37,7 @@ describe('decisionsInForce — the calls that govern', () => {
     return b;
   }
 
-  /** Births a decision and accepts it — the two moves that put one in force. */
+  /** Births a decision and accepts it: the two moves that put one in force. */
   function accept(b: Bench, id: string, title: string): string {
     birthDecision(b, id, title);
     moveDecision(b, id, 'proposed', 'accepted', 'accept');
@@ -62,7 +62,7 @@ describe('decisionsInForce — the calls that govern', () => {
     }
   });
 
-  it('serves ONLY the accepted — proposed, rejected and superseded are all absent', () => {
+  it('serves ONLY the accepted: proposed, rejected and superseded are all absent', () => {
     // The four states of the machine, each reached by its own move, and BOTH halves
     // of the criterion in one assertion: who is in, and who is not. Split in two, a
     // filter that let everything through would still pass the half that lists what
@@ -101,7 +101,7 @@ describe('decisionsInForce — the calls that govern', () => {
 
   it('drops a decision the moment a successor supersedes it', () => {
     // The case that gives "in force" its meaning, and it is the TRANSITION that
-    // proves it — not a state written by hand. The same decision is served before
+    // proves it, not a state written by hand. The same decision is served before
     // the supersede and gone after it, so what changed is the record.
     const b = bench();
     accept(b, 'dec-old', 'The first call');
@@ -121,7 +121,7 @@ describe('decisionsInForce — the calls that govern', () => {
     }
   });
 
-  it('never carries the RATIONALE — the key is absent, not empty', () => {
+  it('never carries the RATIONALE: the key is absent, not empty', () => {
     // Absence, not an empty string: a present-but-blank `rationale` would say the
     // decision was argued with nothing, which is the opposite of what is true. The
     // argument is the longest body in the record and it comes from `readRecord`.
@@ -172,7 +172,7 @@ describe('decisionsInForce — the calls that govern', () => {
     // instant, so `updatedAt` settles nothing; and the ids are written in DESCENDING
     // order across two trees, so the fold order disagrees with the id order. On a
     // fixture where the two agree, a sort with no tie-break at all passes
-    // (`Array.sort` is stable) — the assertion that looks like a test and is not one.
+    // (`Array.sort` is stable): the assertion that looks like a test and is not one.
     const one = bench();
     const two = bench();
     const ids = ['dec-d', 'dec-c', 'dec-b', 'dec-a'];
@@ -191,11 +191,11 @@ describe('decisionsInForce — the calls that govern', () => {
     try {
       const forwards = decisionsInForce([a, c]).map((d) => d.id);
       const backwards = decisionsInForce([c, a]).map((d) => d.id);
-      // The freshest leads; the tie behind it is broken by id, DESCENDING — which is
+      // The freshest leads; the tie behind it is broken by id, DESCENDING, which is
       // the newest of the instant, since an id carries the order it was minted in.
       // It read ascending here, and that was the same defect the search index had.
       expect(forwards).toEqual(['dec-z', 'dec-d', 'dec-c', 'dec-b', 'dec-a']);
-      // Same content, same bytes, whatever order the caller passes the trees in —
+      // Same content, same bytes, whatever order the caller passes the trees in:
       // an unstable order invalidates the host's cache of a prompt that did not change.
       expect(backwards).toEqual(forwards);
     } finally {
@@ -204,12 +204,12 @@ describe('decisionsInForce — the calls that govern', () => {
     }
   });
 
-  it('the fixture writes states the PRODUCT can produce — the guard the bench lacked', () => {
+  it('the fixture writes states the PRODUCT can produce: the guard the bench lacked', () => {
     // The point of the rule nothing was checking, and a mutation is what found it:
     // putting the bench back to `PROPOSED`/`ACCEPTED`/`SUPERSEDED` left the whole
     // suite green. Every test keyed on ids, roles and counts, so a decision written in
-    // a case the gate rejects — and that `WHERE state = ?` can never match, SQLite
-    // comparing text bitwise — looked exactly like a decision. The filter this module
+    // a case the gate rejects (and that `WHERE state = ?` can never match, SQLite
+    // comparing text bitwise) looked exactly like a decision. The filter this module
     // IS would have been testable only against a record the product cannot produce.
     const b = bench();
     birthDecision(b, 'dec-born', 'Born');
@@ -233,7 +233,7 @@ describe('decisionsInForce — the calls that govern', () => {
     }
   });
 
-  it('is empty — never an error — when nothing has been settled', () => {
+  it('is empty, never an error, when nothing has been settled', () => {
     const b = bench();
     birthDecision(b, 'dec-1', 'Only proposed');
     const cache = b.cache();
@@ -246,7 +246,7 @@ describe('decisionsInForce — the calls that govern', () => {
   });
 });
 
-describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling on', () => {
+describe('decisionsAwaitingJudgement: the calls somebody still owes a ruling on', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -260,7 +260,7 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     return b;
   }
 
-  /** Births a decision and accepts it — the two moves that put one in force. */
+  /** Births a decision and accepts it: the two moves that put one in force. */
   function accept(b: Bench, id: string, title: string): string {
     birthDecision(b, id, title);
     moveDecision(b, id, 'proposed', 'accepted', 'accept');
@@ -291,11 +291,11 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE. The rule this refers
     // to is "has at least one legal move", which the work list used to select by, and
     // `DECISION_TRANSITIONS` carries `{from: 'accepted', action: 'supersede'}` with
-    // nothing to ever make it happen — so under that rule this decision would be a
+    // nothing to ever make it happen, so under that rule this decision would be a
     // pendency for as long as the project exists, and the list would grow and never
     // empty. The rule here is "somebody owes a ruling", and nobody owes one on a call
-    // already settled. (The work list's rule was wrong on its OWN machine as well —
-    // `reopen` never stops being legal from `DONE` — so it asks the disposition now
+    // already settled. (The work list's rule was wrong on its OWN machine as well,
+    // `reopen` never stops being legal from `DONE`, so it asks the disposition now
     // too; see `tasks.ts`.)
     const b = bench();
     accept(b, 'dec-settled', 'Already agreed');
@@ -310,7 +310,7 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     }
   });
 
-  it('serves ONLY the proposed — accepted, rejected and superseded are all absent', () => {
+  it('serves ONLY the proposed: accepted, rejected and superseded are all absent', () => {
     // The four states of the machine, each reached by its own move, and both halves
     // of the criterion in one assertion: who is in, and who is not.
     const b = bench();
@@ -328,7 +328,7 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     }
   });
 
-  it('a decision that gets accepted LEAVES the list — the waiting clears', () => {
+  it('a decision that gets accepted LEAVES the list: the waiting clears', () => {
     // The transition proves it, not a state written by hand: the same decision is
     // waiting before the move and gone after it.
     const b = bench();
@@ -348,7 +348,7 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     }
   });
 
-  it('never carries the RATIONALE or the alternatives — the keys are absent', () => {
+  it('never carries the RATIONALE or the alternatives: the keys are absent', () => {
     const b = bench();
     birthDecision(b, 'dec-1', 'A call with a long argument behind it');
     const cache = b.cache();
@@ -390,7 +390,7 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     }
   });
 
-  it('is empty — never an error — when every call has been ruled on', () => {
+  it('is empty, never an error, when every call has been ruled on', () => {
     const b = bench();
     accept(b, 'dec-1', 'Settled');
     const cache = b.cache();
@@ -408,9 +408,9 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
  *
  * Every case builds the record with the identities as separate benches and merges the tails, so
  * the projection sees the events the way a clone does: each one stamped with the identity that
- * wrote it. The mark is the record's shape — nothing here judges a decision.
+ * wrote it. The mark is the record's shape: nothing here judges a decision.
  */
-describe('acceptances — who ruled, and whether another identity has looked', () => {
+describe('acceptances, who ruled, and whether another identity has looked', () => {
   let benches: Bench[] = [];
   afterEach(() => {
     for (const b of benches) rmSync(b.root, { recursive: true, force: true });
@@ -497,7 +497,7 @@ describe('acceptances — who ruled, and whether another identity has looked', (
     try {
       const got = acceptances([cache]);
       expect(got.get('theirs')?.unconfirmed).toBe(false);
-      // The recorder of `theirs` is the bench's identity, so it has been ruled with as well —
+      // The recorder of `theirs` is the bench's identity, so it has been ruled with as well:
       // its OWN acceptance of `mine` is no longer the only thing it has done.
       expect(got.get('mine')?.unconfirmed).toBe(false);
     } finally {

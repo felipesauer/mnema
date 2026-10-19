@@ -2,7 +2,7 @@
  * How often a pattern was actually read: the count of `skill.consulted`.
  *
  * The fact exists because whether work was informed by a pattern is not derivable
- * afterwards — the moment of serving is the only moment it can be captured, and the
+ * afterwards: the moment of serving is the only moment it can be captured, and the
  * serving read records one. Until this derivation the record held those facts and
  * NOTHING read them back: a pattern consulted in every session and one nobody has
  * ever opened were indistinguishable on every surface. A captured fact with no
@@ -17,11 +17,11 @@
  * either way; what changes is whether the reading says something true about it.
  *
  * A consultation with NO run counts on its own. Nothing merges it with another,
- * because nothing says it was the same session — and a fact the record holds is not
+ * because nothing says it was the same session, and a fact the record holds is not
  * dropped from a count for being harder to attribute.
  *
  * It COUNTS, it does not judge. A pattern nobody has consulted may be new, narrow,
- * or dead, and only the reader has the context to tell — which is exactly why the
+ * or dead, and only the reader has the context to tell, which is exactly why the
  * number goes to the surface a person uses and no adjective goes with it.
  */
 

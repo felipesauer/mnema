@@ -1,38 +1,38 @@
 /**
- * Whether the run that MOVED a pattern had been served its body, and — where the
- * record cannot say — the fact that it cannot.
+ * Whether the run that MOVED a pattern had been served its body, and, where the
+ * record cannot say, the fact that it cannot.
  *
  * The signal a study promised in place of a gate. The gate would have been "you move
  * what you read", refused because it cannot be enforced evenly: `skill.consulted` is
  * written by the surface that SERVES a body, and only the agent's surface serves one.
  * A person curating patterns opens the file with `mnema show`, which records nothing
- * and structurally cannot — so a rule that fired on a missing consultation would fire
+ * and structurally cannot, so a rule that fired on a missing consultation would fire
  * on the correct human behaviour, which is not a signal at all.
  *
  * WHAT MAKES IT ENUNCIABLE IS THE RUN, and the rule comes out of the data rather than
  * out of a convention written for people. Both facts carry the same envelope field, so
  * for a move of skill S inside run R the record answers one of exactly three ways:
  *
- *   - R holds a `skill.consulted` of S — CONSULTED.
- *   - R holds none of S, but holds one of some OTHER pattern — MOVED WITHOUT CONSULTING.
+ *   - R holds a `skill.consulted` of S (CONSULTED.
+ *   - R holds none of S, but holds one of some OTHER pattern) MOVED WITHOUT CONSULTING.
  *     This is the only case this reading asserts anything in, and what licenses it is R
  *     itself: a run that recorded a consultation has PROVED the witness was operating,
  *     so its silence about S means something.
- *   - R holds no consultation at all, or the move carries no run — NOT OBSERVABLE.
+ *   - R holds no consultation at all, or the move carries no run, NOT OBSERVABLE.
  *     Never "did not consult". The silence says nothing because nothing here was
  *     listening, and that is the state every move a person makes is in.
  *
  * THE THIRD ANSWER IS THE WHOLE READING. Collapsing it into the second is the exact
  * defect that blocked this signal for a fortnight, and it would come back silent: a
  * report naming the people who curate patterns correctly as the ones who skipped the
- * reading. It is also why the exemption is not written for PEOPLE — an exception that
+ * reading. It is also why the exemption is not written for PEOPLE: an exception that
  * said "unless a human did it" would be the same asymmetry wearing a kinder face, and
  * the record cannot tell a human from an agent anyway. What it can tell is whether the
  * run it is looking at ever recorded a reading.
  *
  * TWO ACTIONS, `review` AND `adopt`, and the set is the decision's rather than this
  * file's convenience. Those are the two moves that carry a pattern TOWARD being served
- * as instruction — a review says someone looked, an adopt puts the body into the prompt
+ * as instruction: a review says someone looked, an adopt puts the body into the prompt
  * of every session that reaches the tree. `reject` and `deprecate` take a pattern OUT of
  * that path, and a body nobody will be handed again is not one this reading has an
  * interest in.
@@ -45,13 +45,13 @@
  *
  * IT POINTS AND DOES NOT CONCLUDE, like the shapes beside it, and it is not a gate: no
  * move is refused, no exit code changes, and nothing here is written. `mnema audit antipatterns`
- * is where it surfaces, on the command line only — the agent's surface gets no tool for
+ * is where it surfaces, on the command line only: the agent's surface gets no tool for
  * it, because handing an agent a reading of whether it consulted before it moved inverts
  * the axis the product is built on (the MCP surface is the agent's, the command line is
  * the auditor's).
  *
  * The claims of {@link PatternMoveWitness.note} are held to being true by
- * `packages/code/tests/what-the-record-can-witness.test.ts` — the third answer and the
+ * `packages/code/tests/what-the-record-can-witness.test.ts`: the third answer and the
  * absence of the accusing sentence from it, a person driving the real CLI
  * (`run start` → `show` → `skill move`) and coming back NOT OBSERVABLE, and a digest of
  * the sandbox proving the reading wrote nothing. That suite reaches this module as
@@ -69,7 +69,7 @@ const CONSULTED = 'skill.consulted';
 const MOVED = 'skill.transitioned';
 
 /**
- * The two moves this reading asks about — the ones that carry a pattern toward being
+ * The two moves this reading asks about: the ones that carry a pattern toward being
  * served as instruction. See the module doc for why the retiring moves are not here.
  */
 const ASKED_ABOUT: ReadonlySet<string> = new Set(['review', 'adopt']);
@@ -79,7 +79,7 @@ export type PatternMoveAction = 'review' | 'adopt';
 
 /** One move of a pattern, as the record holds it. */
 export interface PatternMove {
-  /** The pattern that moved — the event's subject. */
+  /** The pattern that moved: the event's subject. */
   readonly skill: string;
   /** Which move it was. */
   readonly action: PatternMoveAction;
@@ -126,7 +126,7 @@ export interface PatternMoveWitness {
 }
 
 /**
- * What this reading can witness, and what it cannot — the words the surface prints and
+ * What this reading can witness, and what it cannot: the words the surface prints and
  * the JSON carries, worded once, here, beside the rule they describe.
  *
  * Four claims, because four of them are load-bearing: WHERE a consultation comes from,
@@ -146,17 +146,17 @@ const WHAT_IT_CAN_WITNESS = [
  * give about it, in the stream's own order within each.
  *
  * The consultations are collected FIRST, over the whole stream, because the question
- * asked of a move is about its RUN and not about what came before it — see the module
+ * asked of a move is about its RUN and not about what came before it: see the module
  * doc on why the order inside a session is not asked.
  *
  * A consultation carrying no run is not collected at all. It witnesses nothing: it names
  * no session, so there is no move it can be the reading for.
  *
  * WHAT THAT GUARD BUYS IS THE TYPE AND NOT AN ANSWER, and the sentence that used to stand
- * here said otherwise — that counting such a consultation would attribute a reading to
+ * here said otherwise: that counting such a consultation would attribute a reading to
  * whichever session happened to move a pattern next. It could not: the collection is
  * keyed by RUN, so a consultation with no run would be filed under a key no move with a
- * run can ask for, and a move with no run asks for nothing. Measured — the nearest
+ * run can ask for, and a move with no run asks for nothing. Measured: the nearest
  * mutation that still compiles (collect it, keyed by the absent run) leaves the whole
  * suite green, which is what says the guard is redundant to the answer rather than that
  * the suite is blind to it.
@@ -164,7 +164,7 @@ const WHAT_IT_CAN_WITNESS = [
  * BOTH ENDS OF THAT GUARD ARE NOW MEASURED, and both are redundant for one reason. On the
  * reading side, collapsing `event.run === undefined ? undefined : …` to the lookup alone
  * also leaves the whole suite green: `Map.get(undefined)` is `undefined`, which is the
- * answer the ternary was written to produce. Two guards, two zeroes, one redundancy — of
+ * answer the ternary was written to produce. Two guards, two zeroes, one redundancy: of
  * TYPE and not of behaviour, which is why neither is removed and why removing either is a
  * change of signature rather than a tidy.
  */

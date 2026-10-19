@@ -1,11 +1,11 @@
 /**
  * next_action: from a task's current state, the moves the workflow allows next.
  *
- * This is the purest derivation in the layer — it reads only the workflow's own
+ * This is the purest derivation in the layer: it reads only the workflow's own
  * transition table and returns the rows that leave the given state. It invents
  * nothing: each suggestion is a real `Transition` the gate would authorize, so
  * "what can I do next" always agrees with "what the gate will accept". A
- * terminal state (one no transition leaves) yields an empty list — there is no
+ * terminal state (one no transition leaves) yields an empty list: there is no
  * phantom action to offer.
  *
  * It is deliberately stateless: it takes a state string, not a chain, because
@@ -35,7 +35,7 @@ export interface NextAction {
 /**
  * The moves available from `state`, read straight from the workflow's transition
  * table. Returns an empty list for a terminal state, and also for a string that
- * is not a workflow state at all — an unknown state has no legal move, which is
+ * is not a workflow state at all: an unknown state has no legal move, which is
  * the honest answer rather than a thrown error (a surface may forward junk).
  */
 export function nextActions(state: string): NextAction[] {
@@ -49,7 +49,7 @@ export function nextActions(state: string): NextAction[] {
 
 /**
  * The moves available for a specific task, looked up in the cache. Returns null
- * when the task is not projected (it does not exist, or its tail is truncated) —
+ * when the task is not projected (it does not exist, or its tail is truncated):
  * distinct from an existing task in a terminal state, which returns an empty
  * list. The lookup is the only read; the derivation itself stays pure.
  */

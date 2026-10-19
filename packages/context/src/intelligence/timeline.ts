@@ -3,15 +3,15 @@
  *
  * "Tell me the story of this task / decision / skill / memory." The story is the
  * events where the entity is the PROTAGONIST (`subject`) plus the events where it
- * is REFERRED to — an observation `about` it, a knowledge link whose `target` is
+ * is REFERRED to: an observation `about` it, a knowledge link whose `target` is
  * it, a supersede whose successor (`by`) is it. A task's narrative is richer than
  * its own transitions: it was created, moved, then someone observed something
  * about it and linked it to a decision. Those referring facts live on OTHER
  * subjects (the observation's own id, the linking entity's id), so a filter on
  * `subject` alone would miss them.
  *
- * Which is exactly what the REFERENCE INDEX holds — one row per (event, entity,
- * role) — so this reads the index rather than scanning the stream. Two things
+ * Which is exactly what the REFERENCE INDEX holds (one row per (event, entity,
+ * role)), so this reads the index rather than scanning the stream. Two things
  * follow from that, and both are the point:
  *
  *   - The fourth role costs nothing. `by` used to be invisible from the
@@ -23,7 +23,7 @@
  *     tails on every call; now it is an indexed lookup per tree, which is what
  *     a warm session makes nearly free.
  *
- * It RELATES, it does not JUDGE. Each entry is the event as written — when, what
+ * It RELATES, it does not JUDGE. Each entry is the event as written, when, what
  * kind, who authorized it, which agent executed it, which tree AND WHICH PROJECT it
  * lives in, and the role by which the entity appears. No entry says a history is
  * "long", "troubled", or "healthy": that reading is the caller's. The line the whole
@@ -37,11 +37,11 @@
  * ## The order
  *
  * Within a tree the index keeps the stream's own position (`ord`), so a tree's
- * entries come back in its proven order — never re-sorted by `at`, which would
+ * entries come back in its proven order, never re-sorted by `at`, which would
  * move a later-sequenced fact earlier whenever a clock stepped back. Across trees
  * they are merged by the SAME rule the chain's own union uses: repeatedly take
  * the tree whose next entry has the smallest `at`, ties broken by the fixed tree
- * order. That is a k-way merge, and a k-way merge is associative — merging each
+ * order. That is a k-way merge, and a k-way merge is associative: merging each
  * tree's already-merged tails and then merging those lists lands exactly where
  * merging every tail at once lands, because every tail of an earlier tree sorts
  * before every tail of a later one. So this reproduces the union order
@@ -77,8 +77,8 @@ export interface TimelineEntry {
   /**
    * The project whose record holds the fact, absent for the machine-global tree.
    *
-   * A history crosses projects — the entity was written in one and normalized into
-   * another — so the scope alone no longer places an entry: two entries marked
+   * A history crosses projects (the entity was written in one and normalized into
+   * another), so the scope alone no longer places an entry: two entries marked
    * `private` can be two different codebases. Absent means the machine-global tree,
    * which belongs to no project.
    */
@@ -159,7 +159,7 @@ interface Stream {
 /**
  * The stream to take the next entry from: the one whose head has the smallest
  * `at`, ties broken by the order the trees were given. Consuming heads this way
- * never reorders a tree against its own proven order — only heads of DIFFERENT
+ * never reorders a tree against its own proven order, only heads of DIFFERENT
  * trees are ever compared, exactly as the chain's own merge does it.
  */
 function earliest(streams: readonly Stream[]): Stream | undefined {

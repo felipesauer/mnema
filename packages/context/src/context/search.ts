@@ -1,8 +1,8 @@
 /**
  * search: finding things in the record the caller can see, and reading one whole.
  *
- * The core searches ONE tree's index. This searches THE RECORD — every tree the
- * caller can see — and marks each hit with the tree it came from. That marking is
+ * The core searches ONE tree's index. This searches THE RECORD (every tree the
+ * caller can see) and marks each hit with the tree it came from. That marking is
  * the reason this layer exists rather than the surfaces concatenating lists: a
  * memory in the global tree is a person's own note, the same words in the public
  * tree are the team's, and a reader who cannot tell them apart will cite one as
@@ -10,13 +10,13 @@
  *
  * Reading across trees is cheap where it matters. A session's caches are already
  * warm, and each tree answers from an inverted index, so asking three costs three
- * indexed lookups — not three replays.
+ * indexed lookups, not three replays.
  *
  * ## What comes back, and what does not
  *
  * An INDEX: an id, a kind, a scope, an instant, and one line to recognize each
  * record by. Never the bodies. {@link readRecord} serves one whole record by id,
- * which is the second half of the same idea — find by index, read what you meant
+ * which is the second half of the same idea: find by index, read what you meant
  * to read, and leave the rest out of the context window.
  *
  * The relevance score the core ranks by does NOT travel out of here. It orders
@@ -28,7 +28,7 @@
  * Each tree ranks its own hits against its own corpus, so the scores merged here
  * were computed from different statistics: a term that is rare in a small tree
  * scores higher there than the same term in a large one. Across trees the order
- * is therefore a good approximation, not a single global ranking — the alternative
+ * is therefore a good approximation, not a single global ranking: the alternative
  * (one index over every tree) would mean rebuilding all three whenever any one of
  * them changed, which is a real cost paid for an ordering nobody can perceive.
  *
@@ -36,21 +36,21 @@
  * corpora, they differ more from each other than a project's own three trees do, and
  * the {@link RecordQuery.limit} cuts the merged list: it can fill the answer from one
  * project's tail and leave a sibling project's matches ENTIRELY out. `total` says the
- * list was cut, and that is not the same statement — a reader who cannot tell the tail
+ * list was cut, and that is not the same statement: a reader who cannot tell the tail
  * of what they are seeing from a whole project they are not concludes "nothing there"
  * about a record that matched.
  *
  * Two limits, and they are declared in two different places on purpose:
  *
  *   The approximate ORDER is a constant property of this read. It is true of every
- *   answer, it never varies, and no caller can act on it per call — so it is stated
+ *   answer, it never varies, and no caller can act on it per call, so it is stated
  *   here and in the surface's own description, and it is NOT a field. Exactly the
  *   reason the bm25 score does not travel out either: a value that is always the
  *   same shape of noise in an agent's context is not honesty, it is weight.
  *
  *   A project SHUT OUT by the limit is a fact about THIS answer. It varies, and the
  *   caller can act on it (ask again with a larger limit, or narrow the query). So it
- *   is {@link RecordSearch.hidden}, present only when it happened — the same idiom as
+ *   is {@link RecordSearch.hidden}, present only when it happened: the same idiom as
  *   a walk that says `truncated` and a verification that says `not-covered`.
  *
  * What is NOT done: a per-project quota on the limit. It would trade an ordering
@@ -79,7 +79,7 @@ import type { ScopedCache } from '../sources.js';
 /** What to look for, plus the one filter that is about trees rather than rows. */
 export interface RecordQuery extends SearchQuery {
   /**
-   * Only search this tree. Absent, every tree the caller can see is searched —
+   * Only search this tree. Absent, every tree the caller can see is searched:
    * the default, because a person looking for something they wrote rarely knows
    * (or should have to know) which tree it landed in.
    */
@@ -88,21 +88,21 @@ export interface RecordQuery extends SearchQuery {
 
 /** One record in the index, named and placed but not spelled out. */
 export interface RecordHit {
-  /** The record's id — the key {@link readRecord} takes. */
+  /** The record's id: the key {@link readRecord} takes. */
   readonly id: string;
   /** Which kind of record it is. */
   readonly kind: SearchKind;
   /** The tree it lives in: the team's, this machine's, or the person's own. */
   readonly scope: Scope;
   /**
-   * The project whose tree holds it — absent when the holder is the machine-global
+   * The project whose tree holds it: absent when the holder is the machine-global
    * tree, which belongs to none. The other half of WHERE, and the half a reader can
    * act on: the scope says which of a project's trees, this says whose.
    */
   readonly project?: string;
   /** When it was recorded. */
   readonly at: string;
-  /** The line to recognize it by — its title, or an excerpt (see {@link derived}). */
+  /** The line to recognize it by: its title, or an excerpt (see {@link derived}). */
   readonly title: string;
   /** True when {@link title} is an excerpt of the content, not a title someone wrote. */
   readonly derived: boolean;
@@ -117,20 +117,20 @@ export interface RecordSearch {
   /**
    * How many matched in all. Greater than `hits.length` means the answer was cut.
    *
-   * A property of the LIST — "was this index complete" — which is why it is one
+   * A property of the LIST ("was this index complete"), which is why it is one
    * number over a merged answer and not a breakdown. It is not a claim about how much
    * any one record holds; the read that makes that claim decomposes instead.
    */
   readonly total: number;
   /**
-   * The records whose matches the limit shut out of {@link hits} ENTIRELY — one entry
+   * The records whose matches the limit shut out of {@link hits} ENTIRELY: one entry
    * per project (and the machine-global tree, unlabelled) that matched and has no hit
    * in the list. Absent when nothing was left out that way.
    *
    * A refinement of the cut `total` already declares, never a second way of saying
    * it: the best hit of an answer is always shown, so this can only be non-empty when
    * more than one record was searched AND the list was cut. It is the honest half of
-   * a merged ranking (see the note above) — what the answer does not guarantee, said
+   * a merged ranking (see the note above): what the answer does not guarantee, said
    * where the reader is, and only when it is true.
    */
   readonly hidden?: readonly HiddenMatches[];
@@ -138,7 +138,7 @@ export interface RecordSearch {
 
 /** What one record matched that the limit left out of the answer. */
 export interface HiddenMatches {
-  /** The project — absent for the machine-global tree, which belongs to none. */
+  /** The project: absent for the machine-global tree, which belongs to none. */
   readonly project?: string;
   /** How many records matched there. All of them are outside `hits`. */
   readonly matched: number;
@@ -211,12 +211,12 @@ export type RecordBody =
  *
  * Merging ITEMS across projects widens the answer and changes nothing in it: a hit is
  * a hit wherever it was written, and the label says where to go read it. The failure
- * this removes is the one that has no shape a reader can see — a search of one project
+ * this removes is the one that has no shape a reader can see: a search of one project
  * answering "nothing matches" about a workspace, in the same words it would use if
  * nothing did.
  *
  * `scope` still filters on the tree's ROLE, and over several projects that selects
- * every project's tree in that role — two `public` trees are two repositories, and
+ * every project's tree in that role: two `public` trees are two repositories, and
  * both are the team's record.
  */
 export function searchRecords(
@@ -230,7 +230,7 @@ export function searchRecords(
 
 /**
  * The records every tree in `sources` holds that share any of `query.words`, merged into
- * one index the way {@link searchRecords} merges a search — the same per-tree ask, the
+ * one index the way {@link searchRecords} merges a search: the same per-tree ask, the
  * same re-order and the same cut, because it is the same merge.
  *
  * The approximation the note above declares holds here too, and a little more: each
@@ -254,7 +254,7 @@ export interface PertinentSearch extends RecordSearch {
 
 /**
  * One kind's records with the ones that share a word with `words` FIRST, closest first,
- * and the rest of the list filled with the newest of the others — cut at the index's own
+ * and the rest of the list filled with the newest of the others: cut at the index's own
  * limit, and with `total` the kind's whole count, as a listing's is.
  *
  * WITH NO WORD THIS IS THE LISTING, record for record: nothing is near, so nothing moves
@@ -293,8 +293,8 @@ function servedAs(hit: RecordHit): string {
 }
 
 /**
- * The merge both reads share — ask every tree, re-order by the core's own rule, cut to the
- * caller's limit, say what the cut shut out — written once, so a pertinence read and a
+ * The merge both reads share (ask every tree, re-order by the core's own rule, cut to the
+ * caller's limit, say what the cut shut out) written once, so a pertinence read and a
  * search cannot come to merge by two rules. Why asking each tree for the limit is enough
  * is on {@link searchRecords}.
  */
@@ -306,7 +306,7 @@ function mergedAcross(
   const found: Array<{ readonly hit: SearchHit; readonly source: ScopedCache }> = [];
   // What each RECORD matched, keyed by the project holding it (`undefined` is the
   // machine-global tree). Kept per record and not only summed, because the sum cannot
-  // say that the limit fell on one whole project — see `hiddenByLimit`.
+  // say that the limit fell on one whole project: see `hiddenByLimit`.
   const matched = new Map<string | undefined, number>();
   let total = 0;
   for (const source of searched) {
@@ -331,7 +331,7 @@ function mergedAcross(
  *
  * It asks rather than repeats, and it carries a name rather than sitting inline at the
  * call, because `one-rule-for-newest-first.test.ts` classifies orderings over an instant
- * by name — an ordering that means *newest first* has to be visible as one.
+ * by name: an ordering that means *newest first* has to be visible as one.
  */
 function byTheRecordsOwnOrder(
   a: { readonly hit: SearchHit },
@@ -341,11 +341,11 @@ function byTheRecordsOwnOrder(
 }
 
 /**
- * The records that matched but have no hit in the answer — the limit's uneven cut,
+ * The records that matched but have no hit in the answer: the limit's uneven cut,
  * reported only when it happened.
  *
  * A record with no match is not hidden (there was nothing to show), and one with a hit
- * in the list is not hidden however much of its tail was cut — `total` covers that. So
+ * in the list is not hidden however much of its tail was cut: `total` covers that. So
  * this fires on exactly the case the totals cannot express: matched, and invisible.
  *
  * It follows that a single record can never be hidden, because the answer's best hit
@@ -372,7 +372,7 @@ function hiddenByLimit(
  *
  * THE ONE READING OF THIS FACT, and that is why it is exported. It answers `readRecord`
  * below, the committed document (`context/brief.ts`) and the two channels that PUSH
- * (`intelligence/governance.ts`), which is four callers in three modules — and a rule
+ * (`intelligence/governance.ts`), which is four callers in three modules, and a rule
  * read four ways is the shape that produces a silent divergence between what one channel
  * cites and what another does, over the same edge.
  *
@@ -384,11 +384,11 @@ function hiddenByLimit(
  *
  * WHY A READ CARRIES THIS AT ALL. `mnema decision import` reads a directory of ADRs and
  * freezes its own `ADR-<n>` into each decision, so a file named `ADR-008` becomes `ADR-2`
- * here — deliberately, because two projects can both hold an ADR-1 and a label
+ * here: deliberately, because two projects can both hold an ADR-1 and a label
  * re-derived on read silently cites a different decision. The source's number is not
  * lost: it is in the file NAME, which the import records as a provenance edge. But the
  * three reads that serve one record whole did not carry that edge, and `brief` sends a
- * reader to exactly one of them for the argument behind a decision — so the door the
+ * reader to exactly one of them for the argument behind a decision, so the door the
  * product NAMES was the door without the fact.
  *
  * "THE THREE READS" WAS THE WHOLE OF IT AND IT IS NOT ANY MORE, and the sentence is kept
@@ -396,15 +396,15 @@ function hiddenByLimit(
  * ASKS for. Measured on a real clone of 247 imported decisions: 241 of the labels name a
  * different file from the one they came from, and five of the six the committed document
  * printed were among them. That document and the two texts pushed at an edit are the
- * channels that arrive UNASKED, and they carried the label without the edge — so the one
+ * channels that arrive UNASKED, and they carried the label without the edge, so the one
  * reader who never chose to read was the one reader with no way to open anything. They
  * are the N+1 site of this rule, and they are callers of this function now.
  *
  * ALL OF THEM, NEVER ONE OF N. A subject may carry several provenance edges (a document
  * that moved, a second source linked by hand), and a read that reduced N to 1 would be
- * choosing by whatever order rows came back in — the defect class this bench has already
+ * choosing by whatever order rows came back in: the defect class this bench has already
  * paid for, where the order of a third party's file decided which of two sentences a
- * verdict printed. So it is a list, ordered by target — a property of the CONTENT rather
+ * verdict printed. So it is a list, ordered by target: a property of the CONTENT rather
  * than of when the edges were written or of where the caller put a tree in its list.
  *
  * THE TREE THAT HOLDS THE RECORD, AND ONLY IT, is what `readRecord` passes. A link is
@@ -414,7 +414,7 @@ function hiddenByLimit(
  * decision and its provenance through ONE writer into ONE tree, so the pair is same-tree
  * by construction; `show` stops at the first tree that answers, because opening the rest
  * costs a full replay each and its doc names the only two kinds worth that; and this is
- * the answer that TRAVELS — a clone holding the public tree prints the same provenance,
+ * the answer that TRAVELS: a clone holding the public tree prints the same provenance,
  * while an origin drawn from the private tree would print on this machine and vanish in
  * the clone, which is a read whose answer depends on who asks. The cross-tree edge is
  * NOT lost: `mnema refs` crosses trees by design and labels each assertion with the tree
@@ -430,8 +430,8 @@ function hiddenByLimit(
  * one. This was drafted as though a provenance always named a FILE, and the command
  * line's own golden falsified it before a line of it shipped: `cli.reads.golden.txt`
  * already held a task derived from another task, so the field now prints an id there.
- * The catalog's rule stands unchanged — `target` is the caller's string, an id or a
- * path, resolved by whoever reads it — and this read passes it through rather than
+ * The catalog's rule stands unchanged (`target` is the caller's string, an id or a
+ * path, resolved by whoever reads it) and this read passes it through rather than
  * deciding which of the two it is. `mnema refs` is still the read that says whether a
  * target RESOLVES.
  */
@@ -444,13 +444,13 @@ export function originOf(caches: readonly ScopedCache['cache'][], id: string): s
 }
 
 /**
- * String order over the targets, as a number — the ONE order this answer has.
+ * String order over the targets, as a number: the ONE order this answer has.
  *
  * `listLinksFrom` already returns a cache's own edges by target, so for the single-tree
  * call this is a re-sort of a sorted list and changes nothing. It is here for the caller
  * that passes SEVERAL caches: concatenation would order by the position of a tree in the
  * caller's list, and one of those callers is the committed document, whose whole claim is
- * that the same record is the same bytes. `localeCompare` is deliberately not used — its
+ * that the same record is the same bytes. `localeCompare` is deliberately not used: its
  * answer depends on the machine's ICU data, which is the class of thing that document
  * must not hold.
  */
@@ -462,7 +462,7 @@ function byTarget(a: string, b: string): number {
  * Reads one whole record by id, from the first tree in `sources` that holds it,
  * or null when none does.
  *
- * The first holder answers because an id is minted once and lives in one tree —
+ * The first holder answers because an id is minted once and lives in one tree:
  * there is no second holder to disagree. That is what makes the list's length a
  * matter of REACH and never of precedence: given every tree of every project a
  * caller can see, the id picks out its own holder, and one more tree can only turn
@@ -475,10 +475,10 @@ export function readRecord(sources: readonly ScopedCache[], id: string): RecordB
     // The holder, named once for whichever kind answers: an id, the two halves of
     // where it lives, and where it CAME FROM when the record says so. Built per source
     // rather than per kind so the five returns below cannot come to disagree about
-    // what "where" means — which is also why the provenance is read here and not in
+    // what "where" means, which is also why the provenance is read here and not in
     // one arm: nothing about a `derived-from` edge is particular to a decision.
     // ABSENT RATHER THAN EMPTY when the record asserts none, so a decision written here
-    // by hand — the ordinary case — carries no field at all and nobody reads `[]` as
+    // by hand, the ordinary case, carries no field at all and nobody reads `[]` as
     // "derived from nothing in particular".
     const origin = originOf([cache], id);
     const held = {

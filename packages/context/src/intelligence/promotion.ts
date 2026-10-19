@@ -18,11 +18,11 @@
  *
  * ## What counts as an instance
  *
- * Only an instance IN FORCE (an accepted decision, an adopted pattern — asked of the two
+ * Only an instance IN FORCE (an accepted decision, an adopted pattern: asked of the two
  * derivations that already decide it, never restated here), and only one in a PUBLIC tree.
  * That filter is in this function and nowhere else, and it is the privacy boundary: a copy
  * lands in the global tree, which every project on the machine reads, so a private tree can
- * neither count as evidence nor be cited. The global tree is read for a single purpose — to
+ * neither count as evidence nor be cited. The global tree is read for a single purpose: to
  * see that the same content is already there.
  */
 
@@ -168,7 +168,7 @@ export function samePattern(sources: readonly ScopedCache[]): PromotionCandidate
 }
 
 /**
- * Whether the ids a person cites are a promotion — the same reading as {@link samePattern},
+ * Whether the ids a person cites are a promotion: the same reading as {@link samePattern},
  * asked about a set. It says WHICH way a set fails, in the order a person would fix it, and
  * accepts only what {@link samePattern} lists: the last step is the list itself, so the two
  * cannot come to disagree.
@@ -222,7 +222,7 @@ export function judgePromotion(
       detail: 'this set is not among the candidates `mnema promote --workspace` lists',
     };
   }
-  // The words that travel are the FIRST CITED instance's — the one a person typed first —
+  // The words that travel are the FIRST CITED instance's, the one a person typed first,
   // and they are equal to the others' after normalizing, which is what was just proved.
   const first = found[0] as Instance;
   return {
