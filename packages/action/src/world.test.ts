@@ -13,6 +13,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GIT_WITHOUT_MAINTENANCE } from '../../code/tests/support/git-without-maintenance.js';
 import { renderComment } from './comment.js';
 import { theMnemaBinary, worldAt } from './world.js';
 
@@ -31,6 +32,7 @@ const git = (cwd: string, ...args: string[]): void => {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd,
     stdio: 'ignore',
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
   });
 };
 
