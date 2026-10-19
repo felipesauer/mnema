@@ -156,9 +156,11 @@ GAPS: tuple[Gap, ...] = (
         "whose segments were emptied in place, with checkpoints.jsonl left alone, falsifies "
         "that, and each signed range that outruns the entries present is named with its "
         "location under section 5. Section 6 chains the checkpoints by prev, so one dropped "
-        "from the start or the middle is caught and the last ones are not: a cut that takes "
-        "the last events together with the checkpoints that covered them, or "
-        "checkpoints.jsonl alone, is accepted. What cannot be read is still whether "
+        "from the start or the middle is caught and the last ones are not. By default "
+        "checkpoints.jsonl deleted alone, or the last checkpoints deleted with their events "
+        "kept, is accepted; --require signed refuses both. The last events cut together with "
+        "the checkpoints that covered them pass at every level: only a copy of the record "
+        "from before the cut shows them gone. What cannot be read is still whether "
         "any of it was authorized, which is why this is a reader-limit and not a finding",
         standing="reader-limit",
         not_checked="telling an authorized cut from tampering",

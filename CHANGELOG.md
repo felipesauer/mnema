@@ -526,10 +526,17 @@ with its own changelog.
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
 - **The second reader's page no longer says a cut cannot take the checkpoints with it.** It can: events cut from the end
-  of a tail while `checkpoints.jsonl` stays are reported, but the last events cut together with the checkpoints that
-  covered them, or the checkpoints file alone, leave a record both readers accept (`prev` catches an early checkpoint
-  dropped, not the last ones). The page, the reader's own text for that limit and `docs/install.md`'s sentence about
-  other MCP clients now say what was read.
+  of a tail while `checkpoints.jsonl` stays are reported, and `prev` catches a checkpoint dropped from the start or
+  the middle, not the last ones. By default both readers accept the checkpoints file deleted alone, and the last
+  checkpoints deleted with their events kept; with --require signed both refuse them. The last events cut together
+  with the checkpoints that covered them pass at every level, in both readers; only a copy of the record from before
+  the cut shows them gone, which is what verify reads with --since. The page, the reader's own text for that limit,
+  `docs/install.md`'s sentence about other MCP clients, `@mnema/chain`'s threat table and the CLI reference's line on
+  cutting part of a tail (which said such a cut reads "up to the last checkpoint"; it reads as fully signed) now say
+  what was read. The second reader's page also no longer says every mutation of its tool is refused: three are
+  accepted by both readers and two read INCOMPLETE, and no mutation is accepted by one reader alone. It now names a
+  third place the two verdicts differ: with every tail deleted and the keys left, the product says verified with a
+  note per key and exits 0, and the second reader says BROKEN and exits 3.
 
 ## [0.2.0-beta] - 2026-10-11
 

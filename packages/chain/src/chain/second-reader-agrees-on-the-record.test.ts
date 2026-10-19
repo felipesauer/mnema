@@ -680,10 +680,10 @@ const MUTATIONS = [
   {
     name: 'blank-segment-same-size',
     // The SECOND row that is not a refusal, and the reason the count below is 2. See the
-    // INCOMPLETE describe: a checkpoint whose range outruns the entries present is the
-    // residue an authorized cut must leave, and section 3 tells a reader of the document
-    // alone to report it and stop. It is in this table so the enumeration from
-    // `mutate.py list` stays total.
+    // INCOMPLETE describe: a checkpoint whose range outruns the entries present is a shape
+    // an authorized cut may leave when it leaves the checkpoints in place, and section 3
+    // tells a reader of the document alone to report it and stop. It is in this table so
+    // the enumeration from `mutate.py list` stays total.
     refusals: 0,
     section: '5',
     says: '',
