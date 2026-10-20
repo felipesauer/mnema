@@ -189,7 +189,7 @@ beforeAll(async () => {
   mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
   writeFileSync(
     join(repo, 'docs', 'adr', '0001-keep-the-runbook.md'),
-    '# ADR-001 — Keep the runbook where the work is\n\n' +
+    '# ADR-001: Keep the runbook where the work is\n\n' +
       '- **Status:** Accepted\n\n' +
       '## Context\n\na wiki page nobody owns goes stale\n\n' +
       '## Decision Outcome\n\nChosen option: "the runbook next to the code".\n',

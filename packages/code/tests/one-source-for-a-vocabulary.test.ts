@@ -518,7 +518,7 @@ function handTypedLists(source: string): readonly string[] {
   for (const literal of code.match(LITERAL) ?? []) {
     if (literal.includes('…')) continue;
     for (const shape of HAND_TYPED) {
-      if (shape.pattern.test(literal)) found.push(`${shape.says} — ${literal}`);
+      if (shape.pattern.test(literal)) found.push(`${shape.says}: ${literal}`);
     }
   }
   for (const array of code.match(LITERAL_ARRAY) ?? []) {
@@ -527,7 +527,7 @@ function handTypedLists(source: string): readonly string[] {
     if (members.length < 2) continue;
     for (const [vocabulary, values] of Object.entries(VOCABULARIES)) {
       if (members.every((member) => values.includes(member))) {
-        found.push(`[${vocabulary}] re-tupled — ${array.replace(/\s+/g, ' ')}`);
+        found.push(`[${vocabulary}] re-tupled: ${array.replace(/\s+/g, ' ')}`);
       }
     }
   }
@@ -575,7 +575,7 @@ describe('no declaration writes a vocabulary out by hand', () => {
     expect(handTypedLists("z.enum(['public', 'private', 'global'])")).not.toEqual([]);
     expect(handTypedLists("z.enum(['both', 'out', 'in'])")).not.toEqual([]);
     expect(
-      handTypedLists("'lands in — public (team-visible), private (this machine, this project), '"),
+      handTypedLists("'lands in: public (team-visible), private (this machine, this project), '"),
     ).not.toEqual([]);
     // And what it must NOT call a list: a comment, a sentence of examples, two members of
     // a set that are simply words of a sentence, an array of a DIFFERENT vocabulary, and

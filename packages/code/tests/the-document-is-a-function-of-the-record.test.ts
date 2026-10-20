@@ -584,7 +584,7 @@ function reachedThroughAnImport(): { accused: string[]; read: number; unread: st
     const path = net.reaches(file, spec, name);
     if (path !== undefined) {
       accused.push(
-        `${layer}: ${file.slice(PACKAGES.length + 1)} imports ${name} from ${spec} — ${path}`,
+        `${layer}: ${file.slice(PACKAGES.length + 1)} imports ${name} from ${spec}: ${path}`,
       );
     }
   }

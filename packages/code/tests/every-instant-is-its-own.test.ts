@@ -142,12 +142,12 @@ describe('every instant a ranked transcript holds is its own', () => {
     // switched off by a rename nobody noticed.
     expect(
       RANKING_GOLDENS.map((file) => file.slice(ROOT.length)),
-      'no committed golden ranks an instant — the scan found nothing to be a rule about',
+      'no committed golden ranks an instant: the scan found nothing to be a rule about',
     ).toContain('packages/code/src/cli.reads.golden.txt');
     for (const golden of RANKING_GOLDENS) {
       expect(
         fixturesFor(golden).map((file) => file.slice(ROOT.length)),
-        `nothing names ${golden.slice(ROOT.length)} — its fixture was not found`,
+        `nothing names ${golden.slice(ROOT.length)}: its fixture was not found`,
       ).not.toEqual([]);
     }
   });

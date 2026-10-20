@@ -90,7 +90,7 @@ const WORKBENCH_VOCABULARY: readonly {
   {
     name: 'elo',
     pattern: /\belos?\b/i,
-    why: 'Portuguese for "link" — the workbench’s name for the case that proves an option reaches what it feeds',
+    why: 'Portuguese for "link", the workbench’s name for the case that proves an option reaches what it feeds',
   },
   { name: 'achado', pattern: /\bachados?\b/i, why: 'Portuguese for "finding"' },
   {
@@ -207,7 +207,7 @@ describe('the repository leans on no label and no word that only the workbench d
   it('holds no label and no word whose definition only the workbench has', () => {
     expect(CORPUS.length, RULER_BROKEN).toBeGreaterThan(0);
     const accused = CORPUS.flatMap(({ where, text }) =>
-      labelsIn(text).map(({ line, name }) => `${where}:${line} — ${name}`),
+      labelsIn(text).map(({ line, name }) => `${where}:${line}: ${name}`),
     );
     expect(accused).toEqual([]);
   });
@@ -230,7 +230,7 @@ describe('the repository leans on no label and no word that only the workbench d
         line: ' * that accuses is the other half of A5 and this is what it looks like.)',
       },
       { name: 'A<n>', line: '// A5/A10: the observable that this case used to assert is GONE' },
-      { name: 'A<n>', line: ' * OFF say so with the switch that decided it (A13 — nothing here' },
+      { name: 'A<n>', line: ' * OFF say so with the switch that decided it (A13: nothing here' },
       {
         name: 'A<n>',
         line: "  it('A1: enumerates every site that decides whether there is room to draw'",
@@ -266,7 +266,7 @@ describe('the repository leans on no label and no word that only the workbench d
    */
   it('says nothing about the labels the repository defines, or about words that only contain a forbidden one', () => {
     const LEGITIMATE: readonly string[] = [
-      'G06 · G11 · G23 — the gaps the format names',
+      'G06 · G11 · G23: the gaps the format names',
       '#> public: local integrity verified (T1/T2/T4); 1 tail(s)',
       '## 8. The external witness (T3)',
       ' * Whether a code unit may not appear raw inside a double-quoted YAML scalar: a C0',

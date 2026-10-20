@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 485,
+  'packages/code/tests/': 417,
   // @mnema/core
   'packages/core/': 5,
   // the plugin for agent hosts

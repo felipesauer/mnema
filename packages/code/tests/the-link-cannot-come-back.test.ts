@@ -128,7 +128,7 @@ const AN_ORDINARY_MESSAGE = [
   'longer takes, and one called `which` with a value the parser rejects.',
   '',
   'The host this product is written against is Claude Code, and `which` answers with the',
-  "handle of the agent that wrote a thing — `which: 'claude'` is a value the product produces,",
+  "handle of the agent that wrote a thing: `which: 'claude'` is a value the product produces,",
   'so a scan for the word would accuse this paragraph. Anthropic publishes the plugin format',
   '`plugin/` documents; that is named here for the same reason.',
   '',
