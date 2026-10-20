@@ -310,7 +310,7 @@ describe('an anchor recorded with no founding behind it', () => {
     ['with', true],
     ['without', false],
   ])(
-    '%s the key’s public half in the tree: refused with the file to delete, and deleted, the next write founds, and verifies',
+    '%s the key’s public half in the tree: refused with the file to delete; and deleted, the next write founds, and verifies',
     (_, withHalf) => {
       const [o, k] = [home('o'), home('k')];
       const remote = join(sandbox, 'origin.git');
