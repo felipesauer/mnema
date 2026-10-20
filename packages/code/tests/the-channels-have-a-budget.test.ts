@@ -2,7 +2,7 @@
  * THE CHANNELS BELOW HAVE A BUDGET, in bytes and in tokens, and a text that grows one shows in
  * the diff of the golden beside this file.
  *
- * WHAT IS HELD: each channel, namely what a session opens with (the brief a hook hands over,
+ * WHAT IS HELD: each channel, what a session opens with (the brief a hook hands over,
  * and the notes), the edge of an edit (what is pushed, what asks for a person, what refuses),
  * the server's `instructions`, what each tool answers and what each tool's definition weighs,
  * is captured from the real program over one fixture record, and its size is written to
