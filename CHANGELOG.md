@@ -647,6 +647,27 @@ with its own changelog.
   nothing, the steps' numbers light one after the other, and a reader who asks for less motion sees the last frame.
   Their words, frames and text alternatives do not change; their text takes the family's sizes, and the family's
   guards hold them too.
+- **The banner, the steps and "how mnema fits" stand on the middle of their frame, with room around them, and are
+  fainter under the accent on a light page.** Each leaves 8 units between what it draws and every side of its frame,
+  centred from top to foot as well as across; the frames grow by up to 16 units, so the drawings show a little
+  smaller at the same width. On a light page the glow, the tints and the faces under the accent are fainter, the
+  newest cube of the banner is the accent itself with its faces parted by the page, and the chips of the steps are
+  edged at 1.5; the dark pictures keep their paint, and the words and text alternatives do not change. The test that
+  holds a one-unit stroke to the middle of a pixel now reads every run of a path (absolute and relative), a
+  rectangle, a line, a polyline and a polygon, with the stroke and width a shape takes from its groups, under the
+  translates and uniform scales of `transform` attributes and of the keyframes a shape's style names; it names a
+  curve, a circle or an ellipse, any other transform and a width it does not read. It refuses whole, by name, a
+  picture with what it does not read: a `<use>`, a `<symbol>`, an `<svg>` inside the picture or any element it does
+  not know; a stroke, a stroke width, a transform or an `animation-name` on the outer `<svg>`, or a `viewBox` that
+  does not start at 0 0; `vector-effect`, `transform-origin` or `transform-box`; a transform, a translate, a rotate, a
+  scale or the `animation` shorthand in a `style` attribute, the outer `<svg>`'s included; a stylesheet that sets a
+  stroke, moves a shape or gives it an animation outside a keyframes, or a keyframes it cannot parse; no `</defs>`, a
+  count of `<defs>` that differs from that of `</defs>`, or a shape before the `<defs>`; and an attribute not written
+  as `name="value"`. Its CSS is read by a list: in a `style` attribute and in every rule and keyframe of a stylesheet
+  it refuses any property but those the script writes (`animation` and four of its longhands, `opacity`,
+  `transform` and `stroke-dashoffset`) and, in a `style`, a stroke and its width, so a `d`, an `offset-path` or an
+  `inset` is named. It does not read the selectors of a stylesheet, the condition of an `@media`, or what a
+  stylesheet writes outside braces.
 
 ## [0.2.0-beta] - 2026-10-11
 

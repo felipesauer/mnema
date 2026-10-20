@@ -137,49 +137,71 @@ function wordmark(blocks, accent, x0, y0) {
   ];
 }
 
+/**
+ * How far down the wordmark's ink reaches: a last row of shadow only ends at the lower stroke of
+ * a double line on the middle of its cell, not at the cell's foot.
+ * @param {readonly string[]} blocks
+ */
+function inkFoot(blocks) {
+  const shadowOnly = [...(blocks.at(-1) ?? '')].every((g) => ' ╚═╝'.includes(g));
+  const height = blocks.length * CELL.h;
+  return shadowOnly ? height - CELL.h / 2 + DOUBLE.half + DOUBLE.width / 2 : height;
+}
+
 // ---------------------------------------------------------------------------------------------
 // The chain of blocks
 
 const COS30 = Math.cos(Math.PI / 6);
 
 /**
- * An isometric cube of edge `a` whose middle vertex is (x, y), its three faces shaded.
+ * An isometric cube of edge `a` whose middle vertex is (x, y), its three faces shaded and its
+ * edges stroked in the accent. A solid one has faces in the accent itself and no stroke: each face
+ * is drawn in from its edges by the half of an edge's width, so the page parts them, on a cube
+ * grown by as much, so its outline reaches as far as a stroked one's.
  * @param {number} x
  * @param {number} y
  * @param {number} a
  * @param {string} accent
  * @param {readonly number[]} shade
+ * @param {boolean} [solid]
  */
-function cube(x, y, a, accent, shade) {
-  const dx = a * COS30;
+function cube(x, y, a, accent, shade, solid = false) {
+  const half = 1.75 / 2;
+  const e = solid ? a + (2 * half) / COS30 : a;
+  const dx = e * COS30;
   const top = [
-    [x, y - a],
-    [x + dx, y - a / 2],
+    [x, y - e],
+    [x + dx, y - e / 2],
     [x, y],
-    [x - dx, y - a / 2],
+    [x - dx, y - e / 2],
   ];
   const left = [
-    [x - dx, y - a / 2],
+    [x - dx, y - e / 2],
     [x, y],
-    [x, y + a],
-    [x - dx, y + a / 2],
+    [x, y + e],
+    [x - dx, y + e / 2],
   ];
   const right = [
     [x, y],
-    [x + dx, y - a / 2],
-    [x + dx, y + a / 2],
-    [x, y + a],
+    [x + dx, y - e / 2],
+    [x + dx, y + e / 2],
+    [x, y + e],
   ];
+  // A face is a rhombus whose middle is dx / 2 from each of its sides.
+  const k = solid ? 1 - half / (dx / 2) : 1;
   /**
    * @param {number[][]} points
    * @param {number | undefined} opacity
    */
-  const face = (points, opacity) =>
-    `<path d="M${points.map(([px, py]) => `${n(px ?? 0)} ${n(py ?? 0)}`).join('L')}z" fill="${accent}" fill-opacity="${opacity}"/>`;
+  const face = (points, opacity) => {
+    const [mx = 0, my = 0] = [0, 1].map((j) => points.reduce((sum, p) => sum + (p[j] ?? 0), 0) / 4);
+    const drawn = points.map(([px = 0, py = 0]) => [mx + (px - mx) * k, my + (py - my) * k]);
+    return `<path d="M${drawn.map(([px, py]) => `${n(px ?? 0)} ${n(py ?? 0)}`).join('L')}z" fill="${accent}" fill-opacity="${opacity}"/>`;
+  };
+  const faces = [face(top, shade[0]), face(left, shade[1]), face(right, shade[2])];
+  if (solid) return faces;
   return [
-    face(top, shade[0]),
-    face(left, shade[1]),
-    face(right, shade[2]),
+    ...faces,
     `<path d="M${n(x)} ${n(y - a)}L${n(x + dx)} ${n(y - a / 2)}L${n(x + dx)} ${n(y + a / 2)}L${n(x)} ${n(y + a)}L${n(x - dx)} ${n(y + a / 2)}L${n(x - dx)} ${n(y - a / 2)}zM${n(x - dx)} ${n(y - a / 2)}L${n(x)} ${n(y)}L${n(x + dx)} ${n(y - a / 2)}M${n(x)} ${n(y)}V${n(y + a)}" fill="none" stroke="${accent}" stroke-width="1.75" stroke-linejoin="round"/>`,
   ];
 }
@@ -190,18 +212,14 @@ function cube(x, y, a, accent, shade) {
  * @param {string} muted
  * @param {number} x0
  * @param {number} cy
+ * @param {{ chain: readonly number[], newest: readonly number[], solid: boolean }} paint
  */
-function chain(accent, muted, x0, cy) {
+function chain(accent, muted, x0, cy, paint) {
   const a = 30;
   const dx = a * COS30;
   const link = 18;
   const step = 2 * dx + link;
-  const shades = [
-    [0.16, 0.08, 0.03],
-    [0.16, 0.08, 0.03],
-    [0.16, 0.08, 0.03],
-    [0.85, 0.55, 0.3],
-  ];
+  const shades = [paint.chain, paint.chain, paint.chain, paint.newest];
   /** @type {string[]} */
   const parts = [];
   for (let i = 0; i < shades.length; i++) {
@@ -215,10 +233,13 @@ function chain(accent, muted, x0, cy) {
         `<circle cx="${n(to)}" cy="${n(cy)}" r="2.5" fill="${muted}"/>`,
       );
     }
-    parts.push(...cube(x, cy, a, accent, shades[i] ?? []));
+    parts.push(...cube(x, cy, a, accent, shades[i] ?? [], i === 3 && paint.solid));
   }
   return { parts, width: shades.length * 2 * dx + (shades.length - 1) * link };
 }
+
+/** The room between what the banner, the steps and how mnema fits draw and each side of their frame. */
+const FRONT_MARGIN = 8;
 
 /** The banner's loop, in seconds: long, for a light that is barely there. */
 const BANNER_LOOP = 12;
@@ -235,23 +256,25 @@ const BAND_COLUMNS = 4;
  * @param {'dark' | 'light'} theme
  */
 function banner(blocks, theme) {
-  const s = scene(BANNER_LOOP, theme);
+  const s = { ...scene(BANNER_LOOP, theme), paint: frontPalette(theme) };
   const accent = ACCENT[theme];
   const { muted, text } = NEUTRAL[theme];
   const columns = Math.max(...blocks.map((row) => [...row].length));
   const markWidth = columns * CELL.w;
-  const markHeight = blocks.length * CELL.h;
   const gap = 56;
-  const pad = 4;
-  // The drawing on the middle of the frame: the cubes' outer stroke reaches past their row by half
-  // its width, so the wordmark starts in from the left edge by half of what is left.
-  const x0 = (pad - 1.75 / 2) / 2;
-  // The chain sits on the middle of the letters' faces: the last row is shadow only.
-  const middle = ((blocks.length - 1) * CELL.h) / 2;
-  const { parts, width } = chain(accent, muted, x0 + markWidth + gap, middle);
-  const w = markWidth + gap + width + pad;
-  const h = markHeight;
-  const [blockPath, linePath] = wordmark(blocks, accent, x0, 0);
+  // The drawing on the middle of the frame, the margin in from each side: the cubes' outer stroke
+  // reaches past their row by half its width, and the last row of the wordmark is shadow only,
+  // whose lowest stroke is the lower one of a double line on the middle of its cell.
+  const x0 = FRONT_MARGIN;
+  const y0 = FRONT_MARGIN;
+  const foot = inkFoot(blocks);
+  // The chain sits on the middle of the letters' faces.
+  const middle = y0 + ((blocks.length - 1) * CELL.h) / 2;
+  const { parts, width } = chain(accent, muted, x0 + markWidth + gap, middle, s.paint);
+  // Written to a hundredth, up, so the margin on the right is never under the one on the left.
+  const w = Math.ceil((x0 + markWidth + gap + width + 1.75 / 2 + FRONT_MARGIN) * 100) / 100;
+  const h = y0 + foot + FRONT_MARGIN;
+  const [blockPath, linePath] = wordmark(blocks, accent, x0, y0);
   const letters = /\bd="([^"]*)"/.exec(blockPath ?? '')?.[1] ?? '';
   /** @type {string[]} */
   const light = [];
@@ -270,7 +293,7 @@ function banner(blocks, theme) {
           [s.loop, '0'],
         ],
         '0',
-      )} x="${n(x0 + k * BAND_COLUMNS * CELL.w)}" y="0" width="${BAND_COLUMNS * CELL.w}" height="${h}" fill="${text}" fill-opacity="0.16" clip-path="url(#letters)"/>`,
+      )} x="${n(x0 + k * BAND_COLUMNS * CELL.w)}" y="${y0}" width="${BAND_COLUMNS * CELL.w}" height="${foot}" fill="${text}" fill-opacity="0.16" clip-path="url(#letters)"/>`,
     );
   }
   // The cubes light one after the other, faintly, and go dark together.
@@ -289,7 +312,7 @@ function banner(blocks, theme) {
           [s.loop, '0'],
         ],
         '0',
-      )} d="${hexagon(x0 + markWidth + gap + a * COS30 + i * step, middle, a)}" fill="${accent}" fill-opacity="0.3"/>`,
+      )} d="${hexagon(x0 + markWidth + gap + a * COS30 + i * step, middle, a)}" fill="${accent}" fill-opacity="${s.paint.glows}"/>`,
     );
   }
   return [
@@ -390,12 +413,12 @@ const STEPS_LOOP = 9;
  * @param {'dark' | 'light'} theme
  */
 function howItWorks(theme) {
-  const s = scene(STEPS_LOOP, theme);
+  const s = { ...scene(STEPS_LOOP, theme), paint: frontPalette(theme) };
   const size = { w: 196, h: 196 };
   const gap = 32;
-  const w = STEPS.length * size.w + (STEPS.length - 1) * gap;
-  const h = size.h + 2;
-  const top = 1;
+  const w = STEPS.length * size.w + (STEPS.length - 1) * gap + 2 * FRONT_MARGIN;
+  const h = size.h + 2 * FRONT_MARGIN;
+  const top = FRONT_MARGIN;
   const mid = top + size.h / 2;
   // What a card holds sits on its middle: the number and the title on the row six half rows above
   // it, the three lines on the rows around it, the chip under them.
@@ -405,7 +428,7 @@ function howItWorks(theme) {
   /** @type {string[]} */
   const out = [];
   STEPS.forEach((step, i) => {
-    const x = i * (size.w + gap);
+    const x = FRONT_MARGIN + i * (size.w + gap);
     const box = { x, y: top, w: size.w, h: size.h };
     const badge = { x: x + 20, y: head - 14, w: 28, h: 28 };
     const lit = lights[i] ?? 0;
@@ -420,7 +443,7 @@ function howItWorks(theme) {
       pulse(s, box, lit),
       `<rect ${flash(s, lit, 0.6)} x="${badge.x - 4}" y="${badge.y - 4}" width="${badge.w + 8}" height="${badge.h + 8}" rx="${(badge.w + 8) / 2}" fill="none" stroke="${s.accent}" stroke-width="2"/>`,
       `<rect x="${badge.x}" y="${badge.y}" width="${badge.w}" height="${badge.h}" rx="${badge.w / 2}" fill="none" stroke="${s.accent}" stroke-width="2"/>`,
-      `<rect ${s.stays(lit)} x="${badge.x}" y="${badge.y}" width="${badge.w}" height="${badge.h}" rx="${badge.w / 2}" fill="${s.accent}" fill-opacity="0.22" stroke="${s.accent}" stroke-width="2"/>`,
+      `<rect ${s.stays(lit)} x="${badge.x}" y="${badge.y}" width="${badge.w}" height="${badge.h}" rx="${badge.w / 2}" fill="${s.accent}" fill-opacity="${s.paint.badge}" stroke="${s.accent}" stroke-width="2"/>`,
       sans(s, String(i + 1), badge.x + badge.w / 2, inside(badge, 'label'), 'label', {
         anchor: 'middle',
       }),
@@ -428,7 +451,7 @@ function howItWorks(theme) {
       ...step.lines.map((line, j) =>
         sans(s, line, x + 20, mid + TYPE.caption.centre + (j - 1) * 2 * HALF_ROW, 'caption'),
       ),
-      `<rect x="${chip.x + 0.5}" y="${chip.y + 0.5}" width="${chip.w - 1}" height="${chip.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
+      `<rect x="${chip.x + 0.5}" y="${chip.y + 0.5}" width="${chip.w - 1}" height="${chip.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"${s.paint.chip ? ` stroke-width="${s.paint.chip}"` : ''}/>`,
       s.sayIn([step.chip], chip.x + PAD, chip, 'code'),
     );
     if (i < STEPS.length - 1) {
@@ -447,7 +470,7 @@ function howItWorks(theme) {
       'How mnema works',
       // Half the family's glow: the grey lines of each card lie over it, and keep four and a half
       // to one on a dark page.
-      `<ellipse cx="${w / 2}" cy="${mid}" rx="${w / 2 - 20}" ry="${mid - top}" fill="url(#glow)" opacity="0.5"/>`,
+      `<ellipse cx="${w / 2}" cy="${mid}" rx="${w / 2 - FRONT_MARGIN - 20}" ry="${mid - top}" fill="url(#glow)" opacity="0.5"/>`,
     ),
     ...out,
     '</svg>',
@@ -554,7 +577,7 @@ function packet(s, from, to, a, b) {
     [to + 0.05, '0'],
     [s.loop, '0'],
   ]);
-  return `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`;
+  return `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="${s.paint.halo}"/><circle r="4" fill="${s.accent}"/></g>`;
 }
 
 /**
@@ -562,15 +585,17 @@ function packet(s, from, to, a, b) {
  * @param {'dark' | 'light'} theme
  */
 function howMnemaFits(blocks, theme) {
-  const s = scene(LOOP, theme);
+  const s = { ...scene(LOOP, theme), paint: frontPalette(theme) };
+  // What it draws is W wide, the margin in from each side; its foot is the steps' tabs, at 298.
   const W = 880;
-  const H = 302;
-  const box = { top: 8, h: 238, w: 260 };
+  const M = FRONT_MARGIN;
+  const H = 298 + M;
+  const box = { top: M, h: 238, w: 260 };
   const lane = box.top + box.h / 2;
-  const agentRight = box.w;
-  const repoLeft = W - box.w;
-  const hub = { x: 360, w: 160, y: 84, h: 86 };
-  const session = { x: 0, y: box.top, w: box.w, h: box.h };
+  const agentRight = M + box.w;
+  const repoLeft = M + W - box.w;
+  const hub = { x: M + 360, w: 160, y: 84, h: 86 };
+  const session = { x: M, y: box.top, w: box.w, h: box.h };
   const repository = { x: repoLeft, y: box.top, w: box.w, h: box.h };
   /** @type {string[]} */
   const body = [];
@@ -584,16 +609,18 @@ function howMnemaFits(blocks, theme) {
   ];
   body.push(...panel(session, 'agent session'), ...panel(repository, 'repository'));
   body.push(
-    sans(s, 'Claude Code · VS Code · Cursor CLI', box.w / 2, box.top + box.h + 24, 'caption', {
+    sans(s, 'Claude Code · VS Code · Cursor CLI', M + box.w / 2, box.top + box.h + 24, 'caption', {
       anchor: 'middle',
     }),
     hubFrame(s, hub, ''),
   );
   const scale = 0.25;
   const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
-  const markH = blocks.length * CELL.h * scale;
+  // The wordmark's ink, not its last cell, on the hub's middle, which is the lanes' line, at the
+  // whole unit nearest it: a fractional place blurs the letters' edges and pales them.
+  const markH = inkFoot(blocks) * scale;
   body.push(
-    `<g transform="translate(${n(hub.x + (hub.w - markW) / 2)} ${n(hub.y + (hub.h - markH) / 2)}) scale(${scale})">`,
+    `<g transform="translate(${n(Math.round(hub.x + (hub.w - markW) / 2))} ${n(Math.round(hub.y + (hub.h - markH) / 2))}) scale(${scale})">`,
     ...wordmark(blocks, s.accent, 0, 0),
     '</g>',
   );
@@ -624,11 +651,11 @@ function howMnemaFits(blocks, theme) {
     const [first, second] = entryTimes[i] ?? [0, 0];
     const [verb = '', ...rest] = entry.title.split('  ');
     body.push(
-      s.say([verb], 18, y, 'code', { fill: s.muted, attrs: s.stays(first) }),
-      s.say([rest.join(' ')], 18 + (verb.length + 1) * TYPE.code.size * ADVANCE, y, 'code', {
+      s.say([verb], M + 18, y, 'code', { fill: s.muted, attrs: s.stays(first) }),
+      s.say([rest.join(' ')], M + 18 + (verb.length + 1) * TYPE.code.size * ADVANCE, y, 'code', {
         attrs: s.stays(first),
       }),
-      s.say([entry.detail], 30, y + 18, 'code', {
+      s.say([entry.detail], M + 30, y + 18, 'code', {
         fill: entry.tone === 'accent' ? s.text : s.muted,
         attrs: s.stays(second),
       }),
@@ -643,13 +670,21 @@ function howMnemaFits(blocks, theme) {
   body.push(
     s.say(['src/billing/total.ts'], rx, box.top + 68, 'code'),
     s.say(['refuses-a-write · ADR-2'], rx + 12, box.top + 86, 'code', { fill: s.muted }),
-    `<rect ${s.passes(7.8, 8.8)} x="${n(rx - 8 + 0.5)}" y="${n(price - 16 + 0.5)}" width="${n(box.w - 20 - 1)}" height="23" rx="6" fill="${s.accent}" fill-opacity="0.16" stroke="${s.accent}"/>`,
+    `<rect ${s.passes(7.8, 8.8)} x="${n(rx - 8 + 0.5)}" y="${n(price - 16 + 0.5)}" width="${n(box.w - 20 - 1)}" height="23" rx="6" fill="${s.accent}" fill-opacity="${s.paint.highlight}" stroke="${s.accent}"/>`,
     s.say(['src/cart/price.ts'], rx, price, 'code'),
     s.say(['.mnema/'], rx, box.top + 184, 'code', { fill: s.muted }),
   );
   const a = 12;
   const cy = box.top + 214;
-  const record = cubes(s, rx, cy, a, [undefined, undefined, undefined, 5.0, 11.0], 10);
+  const record = cubes(
+    s,
+    rx,
+    cy,
+    a,
+    [undefined, undefined, undefined, 5.0, 11.0],
+    10,
+    s.paint.shade,
+  );
   body.push(...record.out);
   for (const t of [5.0, 11.0])
     body.push(landing(s, record.at(t === 5.0 ? 3 : 4), cy, a, t, s.paint.lit));
@@ -693,7 +728,7 @@ function howMnemaFits(blocks, theme) {
   // The tab stays in from the frame's foot, so no edge of it is cut off at any width.
   const tab = { y: 278, h: 20 };
   HERO_STEPS.forEach((step, i) => {
-    const cx = stepW * i + stepW / 2;
+    const cx = M + stepW * i + stepW / 2;
     const [from, to] = stepTimes[i] ?? [0, 0];
     const label = `${i + 1}  ${step}`;
     const tw = 2 * Math.ceil((label.length * TYPE.caption.size * 0.55 + 24) / 2);
@@ -706,11 +741,11 @@ function howMnemaFits(blocks, theme) {
   return [
     ...opening(
       s,
-      W,
+      W + 2 * M,
       H,
       'How mnema fits: a session opens with the decisions in force, a write under a refusing rule is denied, a write elsewhere lands, a recorded decision is signed into the chain, and mnema verify checks it',
       'How mnema fits between an agent session and the repository',
-      `<ellipse cx="${W / 2}" cy="${lane}" rx="${W / 2 - 60}" ry="${lane - box.top}" fill="url(#glow)"/>`,
+      `<ellipse cx="${M + W / 2}" cy="${lane}" rx="${W / 2 - 60}" ry="${lane - box.top}" fill="url(#glow)"/>`,
     ),
     ...body,
     '</svg>',
@@ -1763,6 +1798,55 @@ function palette(theme) {
     lit: theme === 'light' ? '1' : '0.85',
     // A tab's edge keeps three to one against its own inside: on a light page, a fainter inside.
     tab: theme === 'light' ? '0.05' : '0.12',
+    // The halo around a dot that runs a line.
+    halo: '0.22',
+  };
+}
+
+/**
+ * The paint of the banner, the steps and how mnema fits. On a dark page it is the family's. On a
+ * light page the accent itself is under three and a half to one on the page, so every surface a
+ * line, a dot or an edge in the accent lies on is fainter than the family's: the glow, a card's
+ * tint, the inside of a number, a tab, a halo and the faces of a cube, laid one over the other,
+ * stay at about a tenth of the accent or under, where the accent keeps three to one. What is
+ * solid is the accent itself, its faces parted by the page.
+ * @param {'dark' | 'light'} theme
+ */
+function frontPalette(theme) {
+  const family = palette(theme);
+  if (theme === 'dark')
+    return {
+      ...family,
+      badge: '0.22',
+      highlight: '0.16',
+      shade: SHADE,
+      chain: [0.16, 0.08, 0.03],
+      newest: [0.85, 0.55, 0.3],
+      solid: false,
+      chip: '',
+      glows: '0.3',
+    };
+  const accent = ACCENT.light;
+  return {
+    ...family,
+    defs: [
+      '<defs>',
+      `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${accent}" stop-opacity="0.02"/><stop offset="0.6" stop-color="${accent}" stop-opacity="0.01"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient>`,
+      `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${accent}" stop-opacity="0.04"/><stop offset="1" stop-color="${accent}" stop-opacity="0.01"/></linearGradient>`,
+      '</defs>',
+    ],
+    tab: '0.03',
+    // A chip's edge, a hair heavier: one unit round its small corners is under three to one.
+    chip: '1.5',
+    halo: '0.06',
+    badge: '0.04',
+    highlight: '0.04',
+    shade: [0.05, 0.025, 0],
+    chain: [0.04, 0.02, 0],
+    // The newest cube is the accent itself, its faces parted by the page.
+    newest: [1, 1, 1],
+    solid: true,
+    glows: '0.04',
   };
 }
 
@@ -1949,7 +2033,7 @@ function dot(s, ends, flow, T) {
   ]);
   return {
     last,
-    out: `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`,
+    out: `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="${s.paint.halo}"/><circle r="4" fill="${s.accent}"/></g>`,
   };
 }
 
