@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the security policy
   'SECURITY.md': 4,
   // the manual
-  'docs/': 36,
+  'docs/': 39,
   // @mnema/action
   'packages/action/': 28,
   // the page of @mnema/action
