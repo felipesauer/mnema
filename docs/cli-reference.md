@@ -651,13 +651,13 @@ mnema usage --tools
 #> This counts only the calls the MCP server on this machine answered for this project: …
 ```
 
-**It is a file on this machine, and nothing else.** For each call the server answers it appends one line to
+**It is a file on this machine, and nothing else.** For each call the server answers and counts it appends one line to
 `<data directory>/tool-calls/<digest of the project>.jsonl` (`~/.mnema`, or `$MNEMA_HOME`): the instant, the
 tool's name, whether the tool writes (`mutates`) or only reads, and `ok` or the code the refusal carried. Never an
 argument, never a word an agent wrote, never a record's id. It is not an event, it is not signed, `mnema verify` does
 not read it, it is in no tree of the record and never in the repository, and no format changed.
 
-**It counts only what this server on this machine answered.** A call another host or another machine answered is not
+**It counts only what this server on this machine answered.** A call the server refuses while validating its arguments (they do not match the tool's input schema) is not counted: it never reaches the tool. A call another host or another machine answered is not
 in it, nor is any use of mnema outside the MCP, nor a call made before the machine had a key of its own (the count
 makes no directory of its own on a machine where nothing has signed yet). The output says so on its last lines.
 

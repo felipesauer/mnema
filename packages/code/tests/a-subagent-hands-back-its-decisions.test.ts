@@ -12,7 +12,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -337,6 +345,12 @@ describe('the plugin command a host runs when a subagent stops', () => {
       ['#!/bin/sh', `exec "${process.execPath}" "${CLI}" "$@"`, ''].join('\n'),
     );
     chmodSync(join(bin, 'mnema'), 0o755);
+    // The rest of the PATH is a directory that holds `node` and nothing else: a `mnema` installed
+    // anywhere on this machine (`/usr/bin`, the directory of the node that runs the tests) must not
+    // be found by the case that says there is none.
+    const only = join(sandbox, 'node-only');
+    mkdirSync(only, { recursive: true });
+    if (!existsSync(join(only, 'node'))) symlinkSync(process.execPath, join(only, 'node'));
     return spawnSync(process.execPath, [join(PLUGIN, 'hooks', 'subagent-stop.mjs')], {
       cwd: repo,
       input,
@@ -344,7 +358,7 @@ describe('the plugin command a host runs when a subagent stops', () => {
       timeout: 20_000,
       env: {
         HOME: join(sandbox, 'home'),
-        PATH: `${withMnema ? `${bin}:` : ''}${dirname(process.execPath)}:/usr/bin:/bin`,
+        PATH: `${withMnema ? `${bin}:` : ''}${only}`,
         CLAUDE_PROJECT_DIR: repo,
       },
     });

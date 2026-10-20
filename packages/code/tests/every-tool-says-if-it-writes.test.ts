@@ -91,13 +91,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
-import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
+import { type DiscoveryEnv, PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema, type ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import type { RecordEffect } from '../src/record-effect.js';
+import { toolCallsFile } from '../src/tool-calls.js';
 import { sourceFiles } from './support/reading-source.js';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 import { held } from './support/the-record-held.js';
@@ -226,6 +227,7 @@ function asItStands(dir: string): Map<string, Standing> {
 function whatTheCallDid(
   before: ReadonlyMap<string, Standing>,
   after: ReadonlyMap<string, Standing>,
+  counted: string | undefined,
 ): { changed: string[]; destroyed: string[] } {
   const changed: string[] = [];
   const destroyed: string[] = [];
@@ -252,16 +254,19 @@ function whatTheCallDid(
   // line to it: one file per project in the machine's data directory, outside every tree, unsigned
   // and never read by `verify` (`src/tool-calls.ts`). The hints are about the record and about what a
   // client can lose by calling a tool: a line added to a counter loses nothing and changes no
-  // fact. It is excused by its place and no other file is, in `changed` as it is in `destroyed`.
+  // fact. It is excused by its place and no other file is, in `changed` as it is in `destroyed`:
+  // the one file of the project under test, whose path the code computes (`toolCallsFile`), not
+  // any file of the same shape.
   return {
-    changed: changed.filter((at) => !isTheToolCallCount(at)).sort(),
-    destroyed: destroyed.filter((at) => !isTheDerivedCache(at) && !isTheToolCallCount(at)).sort(),
+    changed: changed.filter((at) => at !== counted).sort(),
+    destroyed: destroyed.filter((at) => !isTheDerivedCache(at) && at !== counted).sort(),
   };
 }
 
-/** Whether a sandbox path is the local count of tool calls: `<data>/tool-calls/<file>`. */
-function isTheToolCallCount(at: string): boolean {
-  return /(^|\/)\.mnema\/tool-calls\/[0-9a-f]{16}\.jsonl$/.test(at);
+/** The path, relative to the sandbox, of the count the code keeps for a project. */
+function theCountOf(project: string): string | undefined {
+  const file = toolCallsFile(resolveTrees(project, env));
+  return file === undefined ? undefined : relative(sandbox, file);
 }
 
 /** The four hints the protocol serves, each of which this file holds to the calls. */
@@ -470,7 +475,7 @@ describe('every tool says if it writes', () => {
       const reachedBefore = reached();
       const result = await client.callTool({ name: tool, arguments: args });
       const ended = held(sandbox);
-      const did = whatTheCallDid(before, asItStands(sandbox));
+      const did = whatTheCallDid(before, asItStands(sandbox), theCountOf(project));
       return {
         said: textOf(result),
         refused: result.isError === true,
@@ -763,10 +768,21 @@ describe('every tool says if it writes', () => {
       ['dir', bytes('now a file\n')],
       ['born', 'directory'],
     ]);
-    expect(whatTheCallDid(before, after)).toEqual({
+    expect(whatTheCallDid(before, after, undefined)).toEqual({
       changed: ['born', 'cut', 'dir', 'grown', 'removed', 'rewritten'],
       destroyed: ['cut', 'dir', 'removed', 'rewritten'],
     });
+  });
+
+  it('excuses the count of the project under test and no other file of its shape', () => {
+    const ours = 'home/.mnema/tool-calls/00000000000000aa.jsonl';
+    const another = 'home/.mnema/tool-calls/0123456789abcdef.jsonl';
+    const before = new Map<string, Standing>([[ours, Buffer.from('a\n')]]);
+    const after = new Map<string, Standing>([
+      [ours, Buffer.from('a\nb\n')],
+      [another, Buffer.from('x\n')],
+    ]);
+    expect(whatTheCallDid(before, after, ours)).toEqual({ changed: [another], destroyed: [] });
   });
 
   it('counts a reach for the network by either way out, and lets it reach nothing', async () => {
