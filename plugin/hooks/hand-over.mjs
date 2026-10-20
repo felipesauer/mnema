@@ -142,8 +142,8 @@ const QUOTED = 120;
  * Which program the `mnema` on the PATH is: this product, this product from before the
  * question existed, no program at all, or another program of the same name.
  *
- * ONE QUESTION, AND THE ANSWER IS A NAME AND A VERSION. A version alone tells nothing apart,
- * any program prints a number, so the answer starts with the package name, which one publisher
+ * ONE QUESTION, AND THE ANSWER IS A NAME AND A VERSION. A version alone tells nothing apart
+ * (any program prints a number), so the answer starts with the package name, which one publisher
  * holds on the registry. A build from before the question refuses it in this product's own words
  * for an option it does not take (`mnema does not take "--identify".`), and that is an answer
  * too: the verb is then run as before, and the flag fallback below still serves it.
