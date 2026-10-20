@@ -9,8 +9,8 @@ name: Release
 # WHEN. On a push to `main`, and by hand with `mode`:
 #   publish   publish what the root version names, if npm does not have it yet (the default);
 #   tag-only  publish nothing: check that the five packages on npm carry the root version, then
-#             create the tag and the release. It exists for the first publication, which is made
-#             by hand (a package that is not on npm yet has no trusted publisher to be trusted by).
+#             create the tag and the release. It exists for a version published by hand, as the
+#             first one was (a package that was not on npm yet had no trusted publisher to be trusted by).
 # A push whose root version is the one npm already serves does nothing. A push while `@mnema/code`
 # is not on npm at all does not publish either: it says the first publication is by hand, and ends
 # green.
@@ -27,7 +27,7 @@ name: Release
 # on. A package already at the version is skipped, so a run that stopped halfway runs again.
 # The tag and the release come after the publish, and only if the five are on npm at the version.
 #
-# WHAT IT DOES NOT PROVE. It has not run: nothing here was ever published. It needs no npm token and
+# WHAT IT DOES NOT PROVE. Its publish has not run: the first version on npm was published by hand. It needs no npm token and
 # no secret of the repository; the release is created with the job's own `github.token`.
 
 on:

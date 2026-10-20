@@ -209,11 +209,8 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 
 ## Install
 
-**Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, it is built from the source: [the install page](install.md)
-has the steps.
-
-Once the packages are published, this is the install:
+`@mnema/code` is on npm, and this is the install ([the install page](install.md) has the steps for a Node
+installed by the system, and [Building it from source](build-from-source.md) runs the `main` branch):
 
 ```sh
 npm i -g @mnema/code
@@ -222,8 +219,8 @@ pnpm add -g @mnema/code
 ```
 
 Either puts the `mnema` binary on your `PATH`. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
-ESM-only, and it brings the other three with it. `npm view @mnema/code version` says
-whether the publication has happened: a 404 means it has not.
+ESM-only, and it brings the other four with it. `npm view @mnema/code version` says which version the
+registry serves.
 
 ## Usage
 

@@ -129,9 +129,8 @@ const WHICH_PROGRAM = '--identify';
 const THIS_PRODUCT = '@mnema/code';
 
 /**
- * Where the install is written, until the packages are on npm: the page spells the steps, and
- * `the-install-line-is-one.test.ts` holds this line to it. Move it to `npm install -g @mnema/code`
- * when the packages are published.
+ * Where the install is written: the page spells the steps, and `the-install-line-is-one.test.ts`
+ * holds this line, and the install line it carries, to it.
  */
 const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
@@ -201,7 +200,7 @@ export function aStranger(stranger) {
     `The mnema plugin did not run the program named mnema first on this session's PATH: it is not ${THIS_PRODUCT}.`,
     `Asked \`mnema --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
     "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
-    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one: nothing is on npm yet, so it is built from the source (${INSTALL_PAGE}).`,
+    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one: \`npm i -g @mnema/code\` (${INSTALL_PAGE}).`,
   ].join('\n');
 }
 

@@ -1002,7 +1002,7 @@ that carries one, because the envelope is closed (§4.1): the consequence a new 
 
 ### 7.1 What one version promises another
 
-From the first version of this product published to the npm registry, every version keeps two
+From the first version of this product published to the npm registry, 0.1.0, every version keeps two
 promises about the records the others wrote, and one rule that makes the second possible. They
 are this product's, and the test named below holds both readers beside this document to them.
 
