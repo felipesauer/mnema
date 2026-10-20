@@ -8,7 +8,7 @@
 <h3>mnema is the decision record for AI coding agents.</h3>
 
 <p>
-Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.
+Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.
 </p>
 
 <p>
@@ -44,7 +44,7 @@ installing this.
 </p>
 
 <p align="center">
-<a href="#why">Why</a> · <a href="#status">Status</a> · <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#the-mnema-family">Family</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
+<a href="#why">Why</a> · <a href="#status">Status</a> · <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#the-mnema-family">Family</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves-and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
 </p>
 
 ## Why
@@ -82,7 +82,7 @@ The whole install, the other hosts and the first record, line by line, are in
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-it-works-dark.svg">
-  <img src="docs/assets/how-it-works-light.svg" alt="Record, rule, hand over, verify — over a signed, append-only record committed with the code" width="880">
+  <img src="docs/assets/how-it-works-light.svg" alt="Record, rule, hand over, verify, over a signed, append-only record committed with the code" width="880">
 </picture>
 
 </div>
@@ -120,8 +120,8 @@ of a session, (c) a refusal before a write, (d) a pause for a person.
 
 <!-- End of the generated host summary. -->
 
-Each cell of the full table, how each one is known — held by a test, read once on a real host, or
-documented and not measured — and the notes on each host are in
+Each cell of the full table, how each one is known (held by a test, read once on a real host, or
+documented and not measured), and the notes on each host are in
 [How each claim is held](docs/evidence.md#each-hosts-rung).
 
 ## The mnema family
@@ -174,10 +174,10 @@ Each of these is a choice with a reason, and the reasons are in [Where it fits](
 - **Not a copy somewhere else.** The committed record travels with the repository, and what you record privately stays on this machine, apart from the notes your agent's host receives, when a session opens through the plugin and when the agent asks for them, which the host sends to its model; the witness verbs send a digest out, and with Sigstore the identity too, only when you run them.
 - **Not access control.** The gate refuses an illegal move; it does not decide who may write.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
-`mnema verify` reads the events and the committed public keys of a project's trees — no private
-key, no network — and prints each verdict verbatim, naming the level it reached.
+`mnema verify` reads the events and the committed public keys of a project's trees (no private
+key, no network) and prints each verdict verbatim, naming the level it reached.
 
 - **What holds.** A changed or reordered event breaks the hash chain, and an edit made without the signing key fails the signed checkpoints.
 - **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, a key is not proven to be the person a name says, and the agent named on a fact is the name its client announced, unless an agent key signed it (then the name the record enrolled the key under). A refusal of a write covers a host's editing tools, not its shell: `sed -i` on a protected file goes round it.

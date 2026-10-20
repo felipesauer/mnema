@@ -39,7 +39,7 @@
  * Verbatim on every door. A door with room for one line carries this one.
  */
 export const PRODUCT_PROMISE =
-  "Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.";
+  "Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.";
 
 /**
  * The promise, second line: the limit, stated in the promise rather than under it.

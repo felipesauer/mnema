@@ -1047,7 +1047,7 @@ describe('the record arrives unasked', () => {
     }
   });
 
-  it('hands this machine’s notes to its session — the private tree too, one line each', () => {
+  it('hands this machine’s notes to its session, the private tree too, one line each', () => {
     // WHAT THE SECOND HANDLER IS FOR: the note an agent records lands in the tree that
     // does not travel, and the document may not carry it. Here it arrives, the private
     // memory beside the committed one, and the observation arrives as the line the index

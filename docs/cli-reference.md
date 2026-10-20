@@ -156,7 +156,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   tool for it, so an agent cannot switch off what governs its own work through the door
   built for agents. Asserted in `tests/the-switch-is-a-fact.test.ts`.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
 `mnema verify` shows when what is in the record has changed since it was

@@ -41,7 +41,7 @@ have to trust for tamper-evidence is auditable on its own.
 - **A verifier** — reads every tail, checks the hash chain and the signatures,
   and reports honestly what is proven and what is not.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 Being precise about which threats are covered is the whole job of an honest
 proof engine. Two categories, kept apart because the guarantees differ.

@@ -43,7 +43,7 @@ verdict names the **level** it reached rather than saying yes or no.
 The pattern underneath all of it: **local cryptography covers alteration; the
 history a git remote keeps covers omission and gives the signing key a history
 someone else can check; `mnema witness` dates the record.**
-[The reference](cli-reference.md#what-it-proves--and-what-it-does-not) carries the long form of this
+[The reference](cli-reference.md#what-it-proves-and-what-it-does-not) carries the long form of this
 table, claim by claim.
 
 ## An agent key, in full

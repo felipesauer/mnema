@@ -107,7 +107,7 @@ folders. A stack listed from somewhere else is held to nothing here: the link ma
 proposer wrote, so compare it with the digest the install plan shows. `mnema stack index <folder>` prints the
 entries of an index folder, and `--json` gives them to a program; it reads the file and installs nothing.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 - The digest proves that two directories hold the same bytes. It does not prove who wrote them, and a digest with
   no signature says only "exactly this".

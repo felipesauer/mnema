@@ -7,7 +7,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   agent, Codex, Copilot CLI, Gemini CLI and OpenCode. Which of that a test holds against the real
   host, and which was read once, is [the table of each host's rung](evidence.md#each-hosts-rung). It binds an agent that goes through the plugin, not a person with an
   editor, and `mnema switch off edit-refuses-a-write` is the way out — recorded, as a signed
-  fact. [The plugin's page](../plugin/README.md#what-it-does--and-what-it-does-not). The refusal
+  fact. [The plugin's page](../plugin/README.md#what-it-does-and-what-it-does-not). The refusal
   is a gate, and a gate that cannot answer lets the write through: with no `mnema` on the PATH
   ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)).
   A record the gate cannot read is not that case: it refuses. Where a line of the record is one
