@@ -346,23 +346,23 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   mcp: 'not exercised: it serves a connection for its lifetime and would not return',
   inherit:
-    'not exercised here: it reads another git repository, which the fixture is not — and what it ' +
+    'not exercised here: it reads another git repository, which the fixture is not, and what it ' +
     'writes is one file, `.mnema/inherit.json`, neither an event nor a key; through the binary, over ' +
     'a real origin, the project’s own record is held unchanged',
   'commit-hook':
-    'not exercised here: it writes one hook file into a git repository, which the fixture is not ' +
-    '— neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
+    'not exercised here: it writes one hook file into a git repository, which the fixture is not: ' +
+    'neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
     'repository',
   promote:
     'the exercise is its listing act, which reads: the copy is what makes it a write and needs a ' +
-    'second project holding the same pattern in force, which the fixture is not — through the ' +
+    'second project holding the same pattern in force, which the fixture is not: through the ' +
     'binary, over two projects, it appends the copy and its links and refuses what the listing ' +
     'does not show with the global tree untouched',
   'before-a-write':
-    'answers a payload a host hands it on the standard input, and in process there is none — ' +
+    'answers a payload a host hands it on the standard input, and in process there is none: ' +
     'its asking is exercised with a payload through the binary',
   corrections:
-    'answers a payload a host hands it on the standard input, and in process there is none — ' +
+    'answers a payload a host hands it on the standard input, and in process there is none: ' +
     'what it records is exercised with a transcript through the binary, and only once the channel ' +
     'that starts off is switched on',
   // AND THE ONE THAT WRITES SOMETHING THIS INSTRUMENT CANNOT SEE. `witness` appends no
@@ -371,7 +371,7 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   // That is why it is declared a write (see `wiring/verb.ts`, where the wording had to
   // widen for it) and why the count below stays honest about not having measured it.
   witness:
-    'writes an attestation file beside the checkpoints — neither an event nor key ' +
+    'writes an attestation file beside the checkpoints: neither an event nor key ' +
     'material, so nothing this instrument counts moves',
 };
 
