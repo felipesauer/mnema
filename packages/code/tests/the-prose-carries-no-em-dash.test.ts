@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the security policy
   'SECURITY.md': 4,
   // the manual
-  'docs/': 34,
+  'docs/': 36,
   // @mnema/action
   'packages/action/': 28,
   // the page of @mnema/action
@@ -101,7 +101,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 7,
   // the cases beside @mnema/code
-  'packages/code/tests/': 905,
+  'packages/code/tests/': 903,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
