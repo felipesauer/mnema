@@ -278,6 +278,165 @@ describe('the front page is drawn from the console', () => {
     expect(offTheGrid(copy)).toEqual([]);
   });
 
+  // Each change below hides a stroke of one unit off the grid, or is a construction the guard does
+  // not read, in a copy of a picture the script draws; the guard refuses the picture and names the
+  // construction, where it once passed it.
+  const OFF = 'stroke="#997dbf"';
+  it.each([
+    [
+      'a <use> of a shape kept in the <defs>',
+      (s: string) =>
+        s
+          .replace('</defs>', `<path id="p" d="M0 48H880" ${OFF}/></defs>`)
+          .replace('</svg>', '<use href="#p"/></svg>'),
+      /^the <use> at character \d+ is an element this does not read$/,
+    ],
+    [
+      'a <symbol>',
+      (s: string) =>
+        s.replace('</defs>', `<symbol id="s"><path d="M0 48H880" ${OFF}/></symbol></defs>`),
+      /^the <symbol> at character \d+ is an element this does not read$/,
+    ],
+    [
+      'an <svg> inside the picture that moves its shapes by half a unit',
+      (s: string) =>
+        s.replace('</svg>', `<svg x="0.5" y="0.5"><path d="M0 48.5H880" ${OFF}/></svg></svg>`),
+      /^the <svg> at character \d+ is an element this does not read$/,
+    ],
+    [
+      'a transform in the style of a shape',
+      (s: string) =>
+        s.replace(
+          '</svg>',
+          `<path d="M0 48.5H880" ${OFF} style="transform:translate(0px,0.5px)"/></svg>`,
+        ),
+      /^the <path> at character \d+ sets in its style what this does not read: transform:/,
+    ],
+    [
+      'a translate in the style of a shape',
+      (s: string) =>
+        s.replace('</svg>', `<path d="M0 48.5H880" ${OFF} style="translate:0 0.5px"/></svg>`),
+      /^the <path> at character \d+ sets in its style what this does not read: translate:/,
+    ],
+    [
+      'a transform the stylesheet gives a class',
+      (s: string) =>
+        s
+          .replace('</style>', '.m{transform:translate(0px,0.5px)}</style>')
+          .replace('</svg>', `<path class="m" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the stylesheet moves a shape outside a keyframes, which this does not read$/,
+    ],
+    [
+      'an animation the stylesheet gives a class',
+      (s: string) =>
+        s
+          .replace(
+            '</style>',
+            '@keyframes mv{0%{transform:translate(0px,0.5px)}}.m{animation-name:mv}</style>',
+          )
+          .replace('</svg>', `<path class="m" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the stylesheet gives a shape an animation, which this does not read$/,
+    ],
+    [
+      'the animation shorthand in the style of a shape',
+      (s: string) =>
+        s
+          .replace('</style>', '@keyframes mv{0%{transform:translate(0px,0.5px)}}</style>')
+          .replace('</svg>', `<path style="animation:mv 1s" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <path> at character \d+ sets in its style what this does not read: animation:/,
+    ],
+    [
+      'a keyframe that moves a shape after another declaration',
+      (s: string) =>
+        s
+          .replace(
+            '</style>',
+            '@keyframes mv{0%{opacity:1;transform:translate(0px,0.5px)}}</style>',
+          )
+          .replace('</svg>', `<path style="animation-name:mv" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^path#\d+ is under a transform this does not read$/,
+    ],
+    [
+      'a keyframes written with from and to',
+      (s: string) =>
+        s
+          .replace('</style>', '@keyframes mv{from{transform:translate(0px,0.5px)}}</style>')
+          .replace('</svg>', `<path style="animation-name:mv" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the stylesheet has a keyframes this does not read$/,
+    ],
+    [
+      'a second stylesheet that sets a stroke',
+      (s: string) => s.replace('</svg>', '<style>.w{stroke-width:1}</style></svg>'),
+      /^the stylesheet sets a stroke, which this does not read$/,
+    ],
+    [
+      'a stroke on the outer <svg>',
+      (s: string) =>
+        s.replace('<svg ', `<svg ${OFF} `).replace('</svg>', '<path d="M0 48H880"/></svg>'),
+      /^the <svg> at character 0 sets stroke, which this does not read$/,
+    ],
+    [
+      'a stroke width on the outer <svg> a group scales to one unit',
+      (s: string) =>
+        s
+          .replace('<svg ', '<svg stroke-width="0.5" ')
+          .replace(
+            '</svg>',
+            `<g transform="scale(2)"><path d="M0 24H440" ${OFF} stroke-width="inherit"/></g></svg>`,
+          ),
+      /^the <svg> at character 0 sets stroke-width, which this does not read$/,
+    ],
+    [
+      'a stroke that does not scale with its group',
+      (s: string) =>
+        s.replace(
+          '</svg>',
+          `<g transform="scale(2)"><path d="M0 24H440" ${OFF} vector-effect="non-scaling-stroke"/></g></svg>`,
+        ),
+      /^the <path> at character \d+ sets vector-effect, which this does not read$/,
+    ],
+    [
+      'a picture without a </defs>',
+      (s: string) =>
+        s
+          .replace(/<defs>[\s\S]*?<\/defs>/, '')
+          .replace('</svg>', `<path d="M0 48H880" ${OFF}/></svg>`),
+      /^the picture has no <\/defs>, after which this reads$/,
+    ],
+    [
+      'a shape before the <defs>',
+      (s: string) => s.replace('<defs>', `<path d="M0 48H880" ${OFF}/><defs>`),
+      /^the <path> at character \d+ comes before the <defs>, where this does not read$/,
+    ],
+    [
+      'an attribute in single quotes',
+      (s: string) => s.replace('</svg>', `<path d='M0 48H880' stroke='#997dbf'/></svg>`),
+      /^the <path> at character \d+ writes an attribute this does not read/,
+    ],
+    [
+      'a > inside an attribute',
+      (s: string) => s.replace('</svg>', `<path data-x="a>b" d="M0 48H880" ${OFF}/></svg>`),
+      /^the <path> at character \d+ writes an attribute this does not read/,
+    ],
+    [
+      'a viewBox that moves the picture by half a unit',
+      (s: string) =>
+        s
+          .replace(/viewBox="0 0 /, 'viewBox="0.5 0.5 ')
+          .replace('</svg>', `<path d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <svg> at character 0 has a viewBox that does not start at 0 0: 0\.5 0\.5 /,
+    ],
+    [
+      'a group the guard does not know',
+      (s: string) => s.replace('</svg>', `<a ${OFF}><path d="M0 48H880"/></a></svg>`),
+      /^the <a> at character \d+ is an element this does not read$/,
+    ],
+  ])('refuses a picture with %s, and names it', (_, change, named) => {
+    const found = offTheGrid(change(drawn['how-it-works-light.svg'] ?? ''));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(named);
+  });
+
   it('draws every glyph of the wordmark the console has', () => {
     // A glyph the script skipped would leave the banner short of the console and the case above
     // green, so the counts are asked of the rows themselves: one filled cell per full block, two
@@ -920,27 +1079,118 @@ function runsOf(node: Node): [number, number, number, number][] | string {
   return runs;
 }
 
+/** The elements `offTheGrid` reads after the first `</defs>`: shapes, groups, text and paint. */
+const READ_ELEMENTS = new Set([
+  'g',
+  'rect',
+  'path',
+  'ellipse',
+  'circle',
+  'line',
+  'polyline',
+  'polygon',
+  'text',
+  'defs',
+  'clipPath',
+  'linearGradient',
+  'radialGradient',
+  'stop',
+  'title',
+  'desc',
+  'style',
+]);
+
+/** A CSS declaration that moves a shape: a transform (or its origin or box), a translate, a rotate or a scale. */
+const MOVES = /(?:^|[^-\w])(?:transform(?:-\w+)?|translate|rotate|scale)\s*:/;
+
+/**
+ * What in a picture `offTheGrid` does not read, each named; empty when it reads all of it. The
+ * picture must have a `</defs>`; every opening tag must write its attributes as `name="value"`, with
+ * no `<` or `>` in a value; nothing but a title, a description and a stylesheet may come before the
+ * first `<defs>`; every element but the outer `<svg>` must be one of `READ_ELEMENTS` (so a `<use>`,
+ * a `<symbol>` and an `<svg>` inside the picture are refused); the outer `<svg>` must not set a
+ * stroke, a stroke width, a transform or `vector-effect`, by attribute or in its style, and its
+ * `viewBox`, when it has one, must start at 0 0; no element may set `vector-effect`,
+ * `transform-origin` or `transform-box` as an attribute, nor in its style a transform, a translate,
+ * a rotate, a scale, `vector-effect` or the `animation` shorthand; and the stylesheets (every
+ * `<style>`) must not set a stroke, a stroke width or `vector-effect`, nor move a shape or name an
+ * animation outside a keyframes, and each of their keyframes must be one this reads.
+ */
+function unreadIn(svg: string): string[] {
+  if (!svg.includes('</defs>')) return ['the picture has no </defs>, after which this reads'];
+  const out: string[] = [];
+  const firstDefs = svg.indexOf('<defs');
+  const rootAt = svg.indexOf('<svg');
+  const tag = /<[A-Za-z][\w:-]*(?:\s+[\w:-]+="[^"<>]*")*\s*\/?>/y;
+  for (const m of svg.matchAll(/<([A-Za-z][\w:-]*)/g)) {
+    const name = m[1] as string;
+    const where = `the <${name}> at character ${m.index}`;
+    tag.lastIndex = m.index;
+    const written = tag.exec(svg)?.[0];
+    if (written === undefined) {
+      out.push(`${where} writes an attribute this does not read: only name="value" is read`);
+      continue;
+    }
+    const at = attributesOf(written);
+    const style = at.style ?? '';
+    if (m.index === rootAt) {
+      for (const k of ['stroke', 'stroke-width', 'transform', 'vector-effect'])
+        if (k in at || new RegExp(`(?:^|;)\\s*${k}\\s*:`).test(style))
+          out.push(`${where} sets ${k}, which this does not read`);
+      const box = at.viewBox
+        ?.trim()
+        .split(/[\s,]+/)
+        .map(Number);
+      if (box && (box.length !== 4 || box[0] !== 0 || box[1] !== 0))
+        out.push(`${where} has a viewBox that does not start at 0 0: ${at.viewBox}`);
+      continue;
+    }
+    if (!READ_ELEMENTS.has(name)) {
+      out.push(`${where} is an element this does not read`);
+      continue;
+    }
+    if (m.index < firstDefs && !['title', 'desc', 'style', 'defs'].includes(name))
+      out.push(`${where} comes before the <defs>, where this does not read`);
+    for (const k of ['vector-effect', 'transform-origin', 'transform-box'])
+      if (k in at) out.push(`${where} sets ${k}, which this does not read`);
+    if (MOVES.test(style) || /(?:^|;)\s*(?:vector-effect|animation)\s*:/.test(style))
+      out.push(`${where} sets in its style what this does not read: ${style}`);
+  }
+  const sheet = [...svg.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((s) => s[1]).join('\n');
+  if (/(?:^|[^-\w])(?:stroke(?:-width)?|vector-effect)\s*:/.test(sheet))
+    out.push('the stylesheet sets a stroke, which this does not read');
+  const outside = sheet.replace(/@keyframes\s*[\w-]+\s*\{(?:[^{}]*\{[^}]*\})*[^{}]*\}/g, '');
+  if (MOVES.test(outside))
+    out.push('the stylesheet moves a shape outside a keyframes, which this does not read');
+  if (/(?:^|[^-\w])(?:animation-name\s*:|animation\s*:\s*(?!none\b))/.test(outside))
+    out.push('the stylesheet gives a shape an animation, which this does not read');
+  if ((sheet.match(/@keyframes\b/g) ?? []).length !== keyframesOf(svg).size)
+    out.push('the stylesheet has a keyframes this does not read');
+  return out;
+}
+
 /**
  * Each shape whose stroke, as drawn, is one unit wide and does not lie on the middle of a pixel:
  * at a whole coordinate such a line spreads over two columns of pixels at one pixel per unit and
  * is half as strong as a border drawn on a half.
  *
- * A shape's stroke and its width are its own or those of the nearest group that sets them, a
- * `style` before an attribute, and the width is one unit when nothing sets it. The translates and
- * uniform scales of the shape and of its groups are applied to its points and to its width, once
- * for each place its groups' keyframes move it to. A rectangle's four edges, and every run of a
- * path (absolute or relative, the run that closes it included), a line, a polyline and a polygon
- * are read: a run across or down must lie on a half, and a diagonal is named. What this cannot
- * hold to the grid is named, never passed: a curve or an arc, a circle or an ellipse, any other
- * transform, a width, a number or a command this does not read, and a stylesheet that sets a
- * stroke. Each shape is named once, by its first fault, as its tag and its place among the shapes.
+ * A picture with anything `unreadIn` names is refused whole, by those names, and nothing else of it
+ * is read. Otherwise the shapes after the first `</defs>` are read (text is not): a shape's stroke
+ * and its width are its own or those of the nearest group that sets them, a `style` before an
+ * attribute, and the width is one unit when nothing sets it. The translates and uniform scales of
+ * the `transform` attributes of the shape and of its groups are applied to its points and to its
+ * width, once for each place the keyframes its and its groups' `animation-name` styles name move it
+ * to. A rectangle's four edges, and every run of a path (absolute or relative, the run that closes
+ * it included), a line, a polyline and a polygon are read: a run across or down must lie on a half,
+ * and a diagonal is named. Named too, not passed: a curve or an arc, a circle or an ellipse, any
+ * other transform (a keyframe that moves a shape by anything but one `transform:` included), and a
+ * width, a number or a command this does not read. Each shape is named once, by its first fault, as
+ * its tag and its place among the shapes.
  */
 function offTheGrid(svg: string): string[] {
   const half = (v: number) => Math.abs((((v % 1) + 1) % 1) - 0.5) < 0.001;
-  const found: string[] = [];
-  const sheet = /<style>([\s\S]*?)<\/style>/.exec(svg)?.[1] ?? '';
-  if (/(?:^|[^-\w])stroke(?:-width)?\s*:/.test(sheet))
-    found.push('the stylesheet sets a stroke, which this does not read');
+  const found = unreadIn(svg);
+  if (found.length > 0) return found;
   const frames = keyframesOf(svg);
   const inherited = (node: Node, key: string): string | undefined => {
     for (const at of [node.at, ...[...node.groups].reverse()]) {
@@ -971,8 +1221,12 @@ function offTheGrid(svg: string): string[] {
     const moves = [node.at, ...node.groups]
       .flatMap((g) => /animation-name:([^";]+)/.exec(g.style ?? '')?.[1]?.split(',') ?? [])
       .flatMap((k) => frames.get(k) ?? [])
-      .filter((stop) => stop.value.startsWith('transform:'))
-      .map((stop) => placementOf(stop.value.slice('transform:'.length)));
+      .filter((stop) => MOVES.test(stop.value))
+      .map((stop) =>
+        /^transform:[^;]*$/.test(stop.value)
+          ? placementOf(stop.value.slice('transform:'.length))
+          : undefined,
+      );
     const places = (moves.length === 0 ? [{ k: 1, dx: 0, dy: 0 }] : moves).map(
       (m) =>
         m &&
