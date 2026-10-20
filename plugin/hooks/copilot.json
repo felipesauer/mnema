@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
   "hooks": {
     "SessionStart": [
       {

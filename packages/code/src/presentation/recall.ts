@@ -97,7 +97,7 @@ const WHERE_THEY_COME_FROM = [
  */
 function orderLine(touched: SessionTouch): string {
   if (touched.words.length === 0) {
-    return 'Newest first: nothing this session touches could be read here: no changed file, no task in progress, no branch name and no commit.';
+    return 'Newest first: nothing this session touches could be read here (no changed file, no task in progress, no branch name and no commit).';
   }
   return `Nearest first: the ones that share a word with what this session touches (${whereTheWordsCameFrom(touched)}), closest first, then the newest.`;
 }

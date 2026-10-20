@@ -1536,12 +1536,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the revocation this function composed from the fingerprint: a site of its own',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one. There is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchorPath(layout, fingerprint)) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one. There is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchorPath(layout, fingerprint)) #1':
     {
       verdict: 'collapsed',
       why: 'the path of that anchor file, under the tree this checkout holds',
@@ -1556,7 +1556,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the one identity the record proves the key in, out of stored events',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys, nor among the keys of any other identity here: it was retired: a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys, nor among the keys of any other identity here: it was retired. A write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',

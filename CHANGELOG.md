@@ -187,6 +187,13 @@ with its own changelog.
 
 ### Changed
 
+- **The text the program prints reads better where the sweep of the em dash left a chain of colons or an ambiguous
+  comma.** Only the punctuation changed, and no word: the `--global` line of `--help` (the parenthesis
+  "(left out by default)"), the line `mnema completion --help` prints about where the script goes, the lines of
+  `mnema doctor` and `mnema key protect` about the agent key and the private tree, the note an MCP session logs for an
+  agent key not in force, the sentence for a tree passed over, the two refusals about a checkout whose key left the
+  record, the line `mnema recall` prints when nothing could be read, the `bootstrap` description of the MCP server
+  and the description of the hooks.
 - **The rest of what the program prints no longer carries an em dash.** The lines of `mnema doctor` (what it found
   and what to do about it), of the key commands (the lines for an agent's or a checker's key, enrolling and retiring
   one), of `mnema verify` (what each tree says, the notes about `--against-github` and `--against-sigstore`, and

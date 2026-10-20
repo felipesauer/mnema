@@ -1371,7 +1371,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'task’s moves, `skills` for a pattern (asking records the consultation), ' +
         '`read_record` for a decision’s argument and its label. Only a decision IN FORCE ' +
         'is listed: proposed, rejected or superseded is left out. `awaitingJudgement` is ' +
-        'one list of all three: `kind` says which, `state` what is owed: `proposed` the ' +
+        'one list of all three; `kind` says which, `state` what is owed: `proposed` the ' +
         'first ruling, `reviewed` the adoption call, `IN_REVIEW` the approve-or-send-back. ' +
         'A DONE or CANCELED task is on NEITHER list; ask `search` (kind `task`). Three ' +
         'lists are CUT to the freshest; `workTotal`, `decisionsTotal` and ' +

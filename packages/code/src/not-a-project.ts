@@ -106,7 +106,7 @@ export function passedOverSentence(passed: PassedOverTree, held: HeldThere): str
       : `${held.events} event(s) in ${held.tails} tail(s), and ${held.unreadable} tail(s) that could not be read`;
   return oneLine(
     `${passed.tree} is not taken for a project: ${WHY_NO_PROJECT_ROOT[passed.why]}. ` +
-      `It holds ${count}, recorded there as a project’s: left as they are: ` +
+      `It holds ${count}, recorded there as a project’s, left as they are: ` +
       'nothing here reads them into an answer, and nothing is written beside them.',
   );
 }

@@ -148,7 +148,7 @@ describe('the feed covers this project, and says which trees that was', () => {
     // (`witness` shared one string across three subcommands, `verify` had a longer one
     // of its own) and a third spelling was one verb away. The shared half is asserted
     // here; the clause that varies is each verb's own consequence.
-    const shared = "also cover this machine's global tree: left out by default";
+    const shared = "also cover this machine's global tree (left out by default)";
     expect(globalTreeGloss('and this is the only read that leaves the machine')).toContain(shared);
     expect(globalTreeGloss('x')).toContain('belongs to no project and is present in every one');
     // The consequence really varies, or the parameter buys nothing.

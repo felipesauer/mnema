@@ -775,7 +775,7 @@ function sayWhereTheAgentIsNotInForce(
     log(
       choice.signs === 'nobody'
         ? oneLine(`agent key "${agentKey}" is not in force in ${where}: ${choice.refusal.message}`)
-        : `agent key "${agentKey}" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "${agentKey}": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
+        : `agent key "${agentKey}" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "${agentKey}"; a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
     );
   }
 }

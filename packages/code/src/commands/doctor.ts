@@ -638,7 +638,7 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
   return found.left.map((left) => ({
     topic: 'private-tree' as const,
     state: 'attention' as const,
-    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them: run ${FIX_PRIVATE} to move them.`,
+    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them; run ${FIX_PRIVATE} to move them.`,
   }));
 }
 
@@ -757,7 +757,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. \`mnema key enroll --agent ${quoted}\` enrols it in every tree this reaches.`,
+          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine). \`mnema key enroll --agent ${quoted}\` enrols it in every tree this reaches.`,
         ),
       );
     }
@@ -769,7 +769,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'fine',
-          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
+          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine); \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
         ),
       );
     }
@@ -785,7 +785,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
     out.push(
       finding(
         'attention',
-        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: this process, and a command run with it, signs as you, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
+        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: this process, and a command run with it, signs as you, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine); \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
       ),
     );
   }
