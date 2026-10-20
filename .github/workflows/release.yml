@@ -237,15 +237,28 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Check that the five are on npm at the version
+      - name: Wait until npm serves the five at the version
         env:
           VERSION: ${{ needs.plan.outputs.version }}
         run: |
           set -euo pipefail
-          for p in chain core context stacks code; do
-            served="$(npm view "@mnema/$p@$VERSION" version 2>/dev/null || true)"
-            [ "$served" = "$VERSION" ] || { echo "::error::@mnema/$p@$VERSION is not on npm"; exit 1; }
+          tries=20
+          pause=30
+          for attempt in $(seq 1 "$tries"); do
+            missing=""
+            for p in chain core context stacks code; do
+              served="$(npm view "@mnema/$p@$VERSION" version 2>/dev/null || true)"
+              [ "$served" = "$VERSION" ] || missing="$missing @mnema/$p"
+            done
+            if [ -z "$missing" ]; then
+              echo "All five are on npm at $VERSION."
+              exit 0
+            fi
+            echo "Attempt $attempt of $tries: npm does not serve$missing at $VERSION yet."
+            [ "$attempt" -lt "$tries" ] && sleep "$pause"
           done
+          echo "::error::$missing at $VERSION is not on npm after $((tries * pause / 60)) minutes"
+          exit 1
 
       - name: Create the tag and the release
         env:
