@@ -32,8 +32,8 @@ export function siteNotice(done: SiteDone): Line[] {
   if (done.verdict.ok) return [];
   return [
     fact(
-      `this record does not verify: ${oneLine(done.verdict.summary)} — the page says so to ` +
-        'its readers, and `mnema verify` says more',
+      `this record does not verify: ${oneLine(done.verdict.summary)} (the page says so to ` +
+        'its readers, and `mnema verify` says more)',
       0,
     ),
   ];

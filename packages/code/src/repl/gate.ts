@@ -153,7 +153,7 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
     return {
       does: 'refuse',
       sentence: 'This line has a quote that is never closed',
-      detail: 'Close it, or drop it — the session groups words with quotes and nothing else.',
+      detail: 'Close it, or drop it: the session groups words with quotes and nothing else.',
     };
   }
 
@@ -206,7 +206,7 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   return {
     does: 'refuse',
     sentence: `This session does not run \`${first}\``,
-    detail: `It runs the reads of the record — \`${PREFIX}\` and a letter list them.`,
+    detail: `It runs the reads of the record: \`${PREFIX}\` and a letter list them.`,
   };
 }
 

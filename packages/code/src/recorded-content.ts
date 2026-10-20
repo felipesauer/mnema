@@ -82,7 +82,7 @@ export function reachNotice(reach: AddressReach | undefined): string[] {
   const left = reach.skipped.length === 0 ? '' : `; not counted: ${[...reach.skipped].join(', ')}`;
   return [
     `  ${reach.address} covers ${counted} counted in the working tree${floor}${left}.`,
-    '  Files on disk, not edits — a directory nobody touches counts the same as a busy one.',
+    '  Files on disk, not edits: a directory nobody touches counts the same as a busy one.',
   ];
 }
 
@@ -122,7 +122,7 @@ export function subjectReachNotice(landedIn: Scope, subjectScope: Scope | undefi
     ];
   }
   return [
-    `  The rule it names is in the ${subjectScope} tree, which does not travel — so this`,
+    `  The rule it names is in the ${subjectScope} tree, which does not travel, so this`,
     '  address reaches every clone and the rule it names does not. A reader of one gets',
     '  the address and no rule; record the rule where the address is, or address it from',
     '  the tree it lives in.',
@@ -189,11 +189,11 @@ function placeholderOf(replaced: ReplacedClass): string {
 export function landedNotice(scope: Scope): string {
   switch (scope) {
     case 'public':
-      return '  Landed in the public tree — committed with the repository, so it reaches every clone.';
+      return '  Landed in the public tree: committed with the repository, so it reaches every clone.';
     case 'private':
-      return "  Landed in the private tree — this machine's own; it is not committed and does not travel.";
+      return "  Landed in the private tree: this machine's own; it is not committed and does not travel.";
     case 'global':
-      return '  Landed in the global tree — personal and cross-project, outside any repository.';
+      return '  Landed in the global tree: personal and cross-project, outside any repository.';
   }
 }
 
@@ -298,7 +298,7 @@ export const RECORD_CONTRACT =
 export const RECORD_CONTRACT_HELP = [
   '',
   'What recording means here:',
-  '  Permanent — mnema is append-only and nothing deletes a fact. A public record',
+  '  Permanent: mnema is append-only and nothing deletes a fact. A public record',
   '  is committed and reaches every machine that clones the repository.',
   '  Do not record credentials: a recognized format is replaced with a placeholder',
   '  and reported back, but what mnema does not recognize is written verbatim.',

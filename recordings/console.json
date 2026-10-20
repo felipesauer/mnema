@@ -1,8 +1,8 @@
 {
   "what": [
     "THE CONSOLE, REACHED THE WAY A PERSON REACHES IT: `mnema` typed at a shell, the first door, and three reads.",
-    "It opens over a record of its own: two accepted decisions, one adopted pattern, a task and a note, each written by the built binary in `record` below — where `<the id above>` stands for the id the previous command printed.",
-    "Each step is a key, or a line typed one character at a time and then Enter, and it ends when what it asked for is on the page: `waitsFor` is the text the step's own frame brings onto it. `hold` is how many seconds the recording keeps that page before the next key — the recording's pace, and nothing the console does.",
+    "It opens over a record of its own: two accepted decisions, one adopted pattern, a task and a note, each written by the built binary in `record` below, where `<the id above>` stands for the id the previous command printed.",
+    "Each step is a key, or a line typed one character at a time and then Enter, and it ends when what it asked for is on the page: `waitsFor` is the text the step's own frame brings onto it. `hold` is how many seconds the recording keeps that page before the next key: the recording's pace, and nothing the console does.",
     "The recording is made and checked by packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts, whose header says how."
   ],
   "size": { "columns": 96, "rows": 44 },

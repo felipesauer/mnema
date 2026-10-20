@@ -24,7 +24,7 @@ mnema init
 #> …
 mnema decision record "Use SQLite for the cache" "Embedded, and fast enough at our sizes."
 #> Recorded decision ADR-1 (01a14265-a017-7000-a83b-c9516d78ff90)
-#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   Landed in the public tree: committed with the repository, so it reaches every clone.
 git add .mnema
 git commit -m "Record ADR-1"
 
@@ -67,7 +67,7 @@ ahead of the record:
 mnema show ADR-1
 #> this decision left proposed more than once: to rejected, then accepted — by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.
 #> decision 01a14265-a017-7000-a83b-c9516d78ff90  ·  public
-#>   ADR-1 — Use SQLite for the cache (accepted)
+#>   ADR-1: Use SQLite for the cache (accepted)
 #>   recorded by mnid:8072d8bf (a person)
 #>   accepted by mnid:79aa1e6b (a person)
 #>
@@ -95,7 +95,7 @@ mnema brief
 #>
 #> - `01a14265-a017-7000-a83b-c9516d78ff90` left proposed to rejected, then accepted
 #> …
-#> - **ADR-1 — Use SQLite for the cache** · `01a14265-a017-7000-a83b-c9516d78ff90` · accepted by mnid:79aa1e6b (a person)
+#> - **ADR-1: Use SQLite for the cache** · `01a14265-a017-7000-a83b-c9516d78ff90` · accepted by mnid:79aa1e6b (a person)
 #> …
 ```
 

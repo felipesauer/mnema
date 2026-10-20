@@ -116,7 +116,7 @@ describe('status without --actor', () => {
     await mnema('init');
     const said = await mnema('status');
     expect(said.out).toContain('Never imported:');
-    expect(said.out).toContain('docs/adr (1) — mnema decision import docs/adr');
+    expect(said.out).toContain('docs/adr (1): mnema decision import docs/adr');
   });
 
   it('names a machine with no key as having no identity, and writes nothing to it', async () => {

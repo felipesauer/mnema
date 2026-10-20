@@ -173,7 +173,7 @@ describe('recallDocument: the notes a session opens with', () => {
       observations: all([observation(1, 'x')], 0),
     });
     expect(lines).toContain(
-      'Nearest first: the ones that share a word with what this session touches — 1 file changed in the working tree, the name of the branch and the files of the last 3 commits — closest first, then the newest.',
+      'Nearest first: the ones that share a word with what this session touches (1 file changed in the working tree, the name of the branch and the files of the last 3 commits), closest first, then the newest.',
     );
     expect(lines.some((line) => line.startsWith('Newest first: '))).toBe(false);
     // Under each heading, where the near part ends.

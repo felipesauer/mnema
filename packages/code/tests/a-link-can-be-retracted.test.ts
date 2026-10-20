@@ -131,7 +131,7 @@ describe('mnema unlink', () => {
       '--reason',
       WHY,
     );
-    expect(said.out.join('\n')).toContain(`Retracted link ${rule} —refuses-a-write→ src/billing`);
+    expect(said.out.join('\n')).toContain(`Retracted link ${rule} -refuses-a-write→ src/billing`);
     expect(beforeAWrite('src/billing/total.ts')).toEqual({});
     // Nothing was erased: the link is still on the record, beside the fact that took it back.
     expect(kinds('knowledge.linked')).toBe(1);

@@ -301,7 +301,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     // how many there are. The ids are what a reader copies into the next command, so
     // they are what the lines are found by.
     const printed = await mnema('status', '--actor', fixture.anchor);
-    expect(printed[0]).toMatch(/ — where things stand\.$/);
+    expect(printed[0]).toMatch(/: where things stand\.$/);
     const text = printed.join('\n');
     expect(text).toContain('1 decision(s) in force:');
     expect(text).toContain('1 adopted pattern(s):');
@@ -394,7 +394,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     expect(text).toContain('wrote 3 memory.captured');
     // What the screen says now.
     expect(text).toContain('Not looked at here:');
-    expect(text).toContain('memory (3) — mnema search --kind memory');
+    expect(text).toContain('memory (3): mnema search --kind memory');
     // A kind and a count, and the command that reaches them. Never the memories.
     expect(text).not.toContain('the deploy needs the token');
     expect(text).not.toContain('staging mirrors prod');
@@ -431,7 +431,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     writeFileSync(join(base, '0003-retries.md'), adr('Retry three times', 'the budget is three'));
     const printed = (await mnema('status', '--actor', anchor)).join('\n');
     expect(printed).toContain('Not in the record:');
-    expect(printed).toContain('docs/decisions (1) — mnema decision import docs/decisions');
+    expect(printed).toContain('docs/decisions (1): mnema decision import docs/decisions');
     // The COUNT is of what is outside and not of what the base holds: three files are
     // there and two of them are in the record.
     expect(printed).not.toContain('docs/decisions (3)');
@@ -441,7 +441,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     // And the number moves with the disk: a second document outside makes it two.
     writeFileSync(join(base, '0004-zones.md'), adr('Store zones as IANA names', 'offsets lie'));
     expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
-      'docs/decisions (2) — mnema decision import docs/decisions',
+      'docs/decisions (2): mnema decision import docs/decisions',
     );
   }, 30_000);
 
@@ -462,7 +462,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     // NOT VACUOUS: the screen really is reporting it, so the absence below is about the
     // serialization and not about a record with nothing outside it.
     expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
-      'docs/decisions (1) — mnema decision import docs/decisions',
+      'docs/decisions (1): mnema decision import docs/decisions',
     );
     const served = JSON.parse((await mnema('status', '--actor', anchor, '--json')).join('\n'));
     expect(Object.keys(served as object)).not.toContain('outside');
@@ -495,7 +495,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     expect(never).not.toContain('Not in the record:');
     // And the arrival section speaks, with the count and the verb that reaches it.
     expect(never).toContain('Never imported:');
-    expect(never).toContain('docs/decisions (2) — mnema decision import docs/decisions');
+    expect(never).toContain('docs/decisions (2): mnema decision import docs/decisions');
 
     // ONCE THE GESTURE IS MADE THE TWO SWAP, and neither reports the directory twice:
     // arrival is over, drift begins.
@@ -503,7 +503,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     writeFileSync(join(base, '0003-retries.md'), adr('Retry three times', 'the budget is three'));
     const after = (await mnema('status', '--actor', anchor)).join('\n');
     expect(after).not.toContain('Never imported:');
-    expect(after).toContain('docs/decisions (1) — mnema decision import docs/decisions');
+    expect(after).toContain('docs/decisions (1): mnema decision import docs/decisions');
   }, 30_000);
 
   it('says nothing at all where no conventional base exists: the other half', async () => {
@@ -530,7 +530,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
       adr('Use UTC everywhere', 'the zone drifts'),
     );
     expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
-      'docs/adr (1) — mnema decision import docs/adr',
+      'docs/adr (1): mnema decision import docs/adr',
     );
   }, 30_000);
 

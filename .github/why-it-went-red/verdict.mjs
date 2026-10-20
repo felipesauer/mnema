@@ -8,14 +8,14 @@
  * WHERE THIS COMES FROM. `the-ceiling-belongs-to-the-case` bans lifting the shared ceiling and
  * names, in its own words, what the ban does not cover: whether a case that waits actually HAS a
  * ceiling of its own "needs a DURATION, and a scan over source has none". Two deliveries then
- * discounted reds by hand as machine contention. The discount was honest and it was allowed —
+ * discounted reds by hand as machine contention. The discount was honest and it was allowed,
  * and it is still a human judgement dropped into the middle of the only evidence a mutation
  * battery produces, because that battery is worth something exactly when red means "the guard
  * caught". Every discount is one occasion on which the instrument admitted it could not tell.
  *
  * WHY RUNNING IT AGAIN, AND NOT A LOAD THRESHOLD. The alternatives were priced and they are not
  * equivalent. Limiting how much of the suite runs at once lowers the FREQUENCY of contention and
- * answers nothing: on the day the machine is busy with something else — the day this bites — the
+ * answers nothing: on the day the machine is busy with something else, the day this bites, the
  * case bursts again and the human discount comes back. Reading a load figure and concluding
  * "flake" is worse than useless, because a real defect that lands on a busy minute would be
  * filed as noise and the finding would be gone for good. Running the case alone is the only one
@@ -27,16 +27,16 @@
  * Nothing below branches on them, and `the-red-says-why-it-went-red` pins that: a load figure
  * cannot move any verdict this file publishes.
  *
- * AND THE SECOND HALF IS THE SAME MECHANISM. The hole the ban declares — a case that waits
- * without declaring a ceiling of its own — is closed here rather than by a scan, because it
+ * AND THE SECOND HALF IS THE SAME MECHANISM. The hole the ban declares, a case that waits
+ * without declaring a ceiling of its own, is closed here rather than by a scan, because it
  * needs a duration and the ledger has one. A case that spent more of the SHARED ceiling than the
  * budget below, while carrying no ceiling of its own, is re-timed ALONE by the same function
  * that re-runs the reds; it is accused only if it is still over the budget with the machine to
- * itself. One rule, one function, two callers — so a slow case cannot be accused for the same
+ * itself. One rule, one function, two callers, so a slow case cannot be accused for the same
  * reason a red cannot be dismissed.
  *
  * WHAT IT REFUSES. `RULER BROKEN`, exit 2, no verdict at all, on every condition where the
- * instrument cannot tell rather than has nothing to say — a ledger it cannot read, a run that
+ * instrument cannot tell rather than has nothing to say: a ledger it cannot read, a run that
  * collected nothing, a re-run that selected no case, a budget that sank to the ledger's own
  * recording floor, or more candidates for accusation than it will re-time. A counter that
  * returns zero when it in fact read nothing is the vacuous ruler this bench has been bitten by
@@ -45,7 +45,7 @@
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered:
  *
  *   - "did not reproduce alone" is NOT "the machine was busy". It is the absence of a property
- *     of this commit, and contention is only one of the things that live there — an order
+ *     of this commit, and contention is only one of the things that live there: an order
  *     dependence between files and a race in the product live there too. The load figures beside
  *     the row are what a reader uses to tell them apart, and they are evidence, not a verdict;
  *   - a case that fails ONLY when other files run alongside it reproduces here as "did not
@@ -86,7 +86,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
- * A VITEST JSON REPORT AS IT ARRIVES — every field optional, because `whatRan` is what checks
+ * A VITEST JSON REPORT AS IT ARRIVES: every field optional, because `whatRan` is what checks
  * them. THIS TYPE STATES WHAT IS READ, NOT WHAT IS VERIFIED: the two guards at the top of that
  * function check that `testResults` is an array and `numTotalTests` a number, and NOTHING checks
  * the fields under them. A report whose `assertionResults` is not an array satisfies this type's
@@ -133,7 +133,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
- * WHAT ONE READING SAYS — TWO SHAPES, NOT ONE WITH FOUR OPTIONAL FIELDS. A broken reading
+ * WHAT ONE READING SAYS: TWO SHAPES, NOT ONE WITH FOUR OPTIONAL FIELDS. A broken reading
  * carries no budget, no re-timed count and no tally of reds, because a partial table beside the
  * word "broken" is exactly the thing somebody quotes later without the word. Written as a union
  * on the verdict, the page's own early return is what proves it: past
@@ -234,7 +234,7 @@ export function asPattern(name) {
 }
 
 /**
- * ONE CASE, ALONE, IN A PROCESS OF ITS OWN — the whole mechanism, in one function, so that the
+ * ONE CASE, ALONE, IN A PROCESS OF ITS OWN: the whole mechanism, in one function, so that the
  * two halves of this file cannot drift into two ideas of what "alone" means.
  *
  * It answers `ran` first and everything else second: a re-run that selected NO case writes a
@@ -265,7 +265,7 @@ export function runAlone({ root, file, titles }) {
       );
     } catch {
       // A red exit is the thing being measured. The verdict is read off the report, never off
-      // the exit code — and a run that wrote no report is `ran: false` two lines down.
+      // the exit code, and a run that wrote no report is `ran: false` two lines down.
     }
 
     let parsed;
@@ -281,12 +281,12 @@ export function runAlone({ root, file, titles }) {
 }
 
 /**
- * WHAT A RE-RUN'S REPORT SAYS ABOUT ONE CASE — separated from the spawning above so it can be
+ * WHAT A RE-RUN'S REPORT SAYS ABOUT ONE CASE: separated from the spawning above so it can be
  * put over a report captured from a real run rather than only over one this file just produced.
  *
  * NOT `numTotalTests`, AND THAT IS THE WHOLE POINT. Vitest counts what it COLLECTED. A `-t` that
  * selects nothing still collects the entire file, writes the report, reports every case in it as
- * `skipped`, and exits ZERO with `success: true` — 31 total, none run. The first draft of this
+ * `skipped`, and exits ZERO with `success: true`: 31 total, none run. The first draft of this
  * read that as "it ran and it passed" for a case that never ran, which is the vacuous-ruler shape
  * this bench has been bitten by twice. What counts is how many cases carrying this name actually
  * RAN, and `all-skipped.json` beside the test is a real capture of the report that lies.
@@ -444,7 +444,7 @@ export function exitCodeOf(result) {
 }
 
 /**
- * How a case's window looked, in words, for a reader — and never for a branch above.
+ * How a case's window looked, in words, for a reader, and never for a branch above.
  *
  * @param {Load | null | undefined} load
  * @param {number} cores

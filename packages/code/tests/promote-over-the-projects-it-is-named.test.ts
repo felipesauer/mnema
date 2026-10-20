@@ -79,7 +79,7 @@ describe('the listing', () => {
     expect(listed.candidates[0]?.instances.map((i) => i.id).sort()).toEqual([idA, idB].sort());
 
     const said = promotionCandidates(renderPlain, listed).join('\n');
-    expect(said).toContain('skill "Run the suite" — in force in 2 projects');
+    expect(said).toContain('skill "Run the suite": in force in 2 projects');
     expect(said).toContain(`${a}  ${idA}`);
     expect(said).toContain(`${loose} holds no record; it was left out.`);
   });

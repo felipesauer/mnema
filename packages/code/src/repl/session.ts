@@ -516,7 +516,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
     reportUsage(
       { io, render: renderingAt() },
       `\`mnema ${self}\` is an interactive session and this is not a terminal`,
-      'Run the verb itself — `mnema <verb>` — when input or output is a pipe, a file or a log.',
+      'Run the verb itself (`mnema <verb>`) when input or output is a pipe, a file or a log.',
     );
     return;
   }

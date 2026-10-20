@@ -56,7 +56,7 @@ compile until it has one.
 To check an implementation: canonicalize each `event` by the rules in §1, SHA-256
 the bytes, and compare with the row's `sha256`.
 
-The vectors are **exemplars, not a schema** — one event per kind, plus the cases that
+The vectors are **exemplars, not a schema**: one event per kind, plus the cases that
 carry a rule of their own: a second `task.created` whose title is written in NFD, three
 `task.transitioned` (a birth, a move that carries proof fields, a move the task workflow
 allows), and a second `memory.captured` that carries the citation `after` (§4.1), from
@@ -66,7 +66,7 @@ schema is the other artifact, `event-schema.json`, described in §4.1.
 ## 1. Canonicalization: an event becomes bytes
 
 Everything the chain proves is proven over these bytes. The requirement is that
-**any** party — the writer now, a verifier in ten years, a clone with no secret —
+**any** party (the writer now, a verifier in ten years, a clone with no secret)
 derives the same bytes from the same event.
 
 The form is JSON, serialized under these rules
@@ -75,16 +75,16 @@ The form is JSON, serialized under these rules
 1. **Object keys are sorted**, recursively, by UTF-16 code unit, after step 3.
    Insertion order never affects the output.
 2. **Array order is preserved.** Order in an array is semantic.
-3. **Every string — value AND key — is normalized to NFC** before it is
+3. **Every string (value AND key) is normalized to NFC** before it is
    serialized or sorted.
 4. **Strings are escaped by JSON semantics.** Escaped, and **only**: `"` as `\"`,
-   `\` as `\\`, and the code points `U+0000` to `U+001F` — using `\b` `\t` `\n`
+   `\` as `\\`, and the code points `U+0000` to `U+001F`, using `\b` `\t` `\n`
    `\f` `\r` where a two-character form exists and `\u00xx` in **lower-case** hex
    otherwise. Everything else travels literally in UTF-8: `/` is **not** escaped,
    `U+2028` and `U+2029` are **not** escaped, `U+007F` is **not** escaped, and
    `<`, `>` and `&` are **not** escaped. (It is what `JSON.stringify` produces.
    This used to say only that, and only that is not a rule an implementer outside
-   JavaScript can check — they have no `JSON.stringify` to consult. It is also not
+   JavaScript can check: they have no `JSON.stringify` to consult. It is also not
    a safe default to assume: Go's `encoding/json` escapes `<`, `>` and `&` unless
    told otherwise, so an implementation obeying every other rule here produces
    different bytes for any title containing them.
@@ -106,20 +106,20 @@ The form is JSON, serialized under these rules
    the first 10,000 lines of the generator its authors publish a SHA-256 for exactly
    as those do (`packages/chain/src/chain/outside-vectors.test.ts`).
 
-And these values are **refused**, rather than coerced — a value that cannot
+And these values are **refused**, rather than coerced: a value that cannot
 round-trip losslessly would let two different facts produce identical bytes:
 
 - `NaN` and `±Infinity` (`JSON.stringify` turns them into `null`), and the JSON
   literals `NaN`, `Infinity` and `-Infinity` on a stored line, which are not JSON
   but which several parsers accept;
 - a string containing a **lone surrogate** (not valid Unicode text). Note that
-  `JSON.stringify` *does* produce bytes for one — `"\ud800"` — so rule 4 read on
+  `JSON.stringify` *does* produce bytes for one (`"\ud800"`) so rule 4 read on
   its own says to emit it and this line says not to. This line wins;
 - an **explicit `undefined`** property (drop-or-keep would be an arbitrary
   choice). JSON has no `undefined`, so no stored line can carry one: this refusal
   is reachable only by a party canonicalizing from memory, which is the writer;
-- **two keys that normalize to the same string** (the object would be ambiguous)
-  — and that reaches the **literal duplicate** `{"a":1,"a":2}` as well as the
+- **two keys that normalize to the same string** (the object would be ambiguous),
+  and that reaches the **literal duplicate** `{"a":1,"a":2}` as well as the
   NFC collision. It has to be said, because every library JSON parser, including
   Python's `json` and JavaScript's `JSON.parse`, silently keeps the last of two
   identical keys: a reader that lets its parser do that accepts a line this
@@ -155,7 +155,7 @@ Binds one event to its position in a tail and to its predecessor. Domain:
 | 5 | a literal | UTF-8 of `genesis` when there is no predecessor, `linked` otherwise |
 
 A genesis entry and an entry whose predecessor is the empty string produce
-different digests — that is what fields 4 and 5 together are for
+different digests: that is what fields 4 and 5 together are for
 (`packages/chain/src/chain/hash.test.ts`).
 
 A tail id is `<signing-key-fingerprint>-<installation-id>`, and the fingerprint
@@ -163,7 +163,7 @@ being **a public key the record actually carries** is a requirement rather than 
 description of the shape. Without it, the per-entry `link.tail == <directory>`
 check only proves that a tail is consistent with a directory name whoever wrote
 the repository chose: a tail copied into `tails/<fabricated>/`, relabelled, and
-re-chained — which needs no key at all, since the entry hash is keyless — would
+re-chained (which needs no key at all, since the entry hash is keyless) would
 have its events counted a second time with everything verifying. A verifier
 refuses a tail whose fingerprint prefix is not a committed key
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), and the
@@ -179,8 +179,8 @@ citation there could be swapped by whoever can write the repository.
 Sequence numbers start at 0 and are contiguous within a tail; a verifier that
 meets a gap reports it and names where
 (`packages/chain/src/chain/waiver.test.ts`). **What authorizes a gap is not
-specified here.** There is a mechanism — the catalog has a `tail.pruned` kind, and
-the test named above is about waivers — and this document does not describe what a
+specified here.** There is a mechanism: the catalog has a `tail.pruned` kind, and
+the test named above is about waivers, and this document does not describe what a
 waiver is, where it lives, or what it signs. So a party reading only this document
 cannot tell an authorized cut from tampering, and the honest thing for them to do
 is report the gap and stop. That is a hole in this document, not in the format.
@@ -196,7 +196,7 @@ if they were events. The layout, which only ever appeared here incidentally in �
 <record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (§6)
-<record>/tails/<tailId>/NNNNNN.jsonl            the segments — six digits, in name order
+<record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order
 <record>/tails/<tailId>/checkpoints.jsonl       the signed checkpoints (§6)
 <record>/tails/<tailId>/tailproof.json          the tail proof (§6.1)
 <record>/tails/<tailId>/witness/<hash>.ots      an external attestation (§8)
@@ -204,14 +204,14 @@ if they were events. The layout, which only ever appeared here incidentally in �
 ```
 
 The tail is the concatenation of its segments in name order, and sequence numbers
-are contiguous across that concatenation — **which segment a given sequence number
+are contiguous across that concatenation: **which segment a given sequence number
 falls in is not specified**, and a verifier should not depend on it. Nothing else
 in the tail directory is a segment.
 
 **A tail that holds no event is not counted as a tail.** A tail directory whose
-segments hold no line and that holds no checkpoint line — in practice one holding
+segments hold no line and that holds no checkpoint line (in practice one holding
 only its `tailproof.json`, which is what an older writer left when a new key's
-first write was refused — asserts nothing. A reader:
+first write was refused) asserts nothing. A reader:
 
 - does not count it among the record's tails, and folds nothing from it into what
   it says of the record: not the level, not the external witness (§8), so a record
@@ -222,13 +222,13 @@ first write was refused — asserts nothing. A reader:
 - says it once, as information, and removes nothing. Its directory still names its
   key's tail, so that key is not one "with no tail" (§6.5).
 
-Only a line of no length is no line — the piece after a file's final newline, and,
+Only a line of no length is no line, the piece after a file's final newline, and,
 wherever it falls, the nothing between two newlines in a row: both readers pass over
 it. It holds no bytes and moves none that a hash covers, and a writer never leaves
 one. A line of whitespace is not canonical (§1.6), so a segment holding one is not
 empty; it is read, and refused. The cost, said: a tail
 whose segments and checkpoints were deleted with its tail proof kept reads as one
-that never held anything. That is no new blindness — the same tail deleted whole,
+that never held anything. That is no new blindness: the same tail deleted whole,
 with its key, beside another tail, already leaves nothing for a reader to cross, and
 only a copy of the record from before can testify to either. Where it was the only tail
 holding anything, the record is refused, by the rule below.
@@ -258,9 +258,9 @@ The line carries the event **as it was written**, so the bytes on disk are the
 bytes the entry hash was taken over; re-serializing an entry read back from a line
 reproduces that line byte for byte
 (`packages/chain/src/chain/format-on-disk.test.ts`). A line that is NOT that
-serialization of the value it holds — a space after a colon, the keys in another
+serialization of the value it holds (a space after a colon, the keys in another
 order, its text in another Unicode composition, a letter written as an escape, a
-carriage return left by a checkout that rewrote line endings — is refused, even though
+carriage return left by a checkout that rewrote line endings) is refused, even though
 its value recomputes every hash and signature: the bytes on disk are then not the
 bytes the proof was taken over. The same holds for a checkpoint line and the tail
 proof, and both readers refuse each of them
@@ -276,11 +276,11 @@ checked is not counted; the product drops that one line and the second reader th
 whole sidecar, which is a difference in what is left uncheckable, not in what is
 accepted. A genesis link is a `null`
 `prev`, never an empty string, and the top-level keys are `event` and `link` with
-no insignificant whitespace between them — the same file holds both.
+no insignificant whitespace between them: the same file holds both.
 
 **A stored line is UTF-8, and a line that is not is refused** (§1.6). A reader decodes
-the bytes strictly: a sequence that is not well-formed UTF-8 — a lone continuation byte,
-an overlong form, a surrogate, a code point past U+10FFFF, a sequence cut short — is not
+the bytes strictly: a sequence that is not well-formed UTF-8 (a lone continuation byte,
+an overlong form, a surrogate, a code point past U+10FFFF, a sequence cut short) is not
 replaced with U+FFFD and read on, which would hand the parser canonical text the bytes on
 disk are not. Both readers refuse the line and name the offset, within the line, of the
 first byte that does not begin a character (`not UTF-8 at byte N`); a byte-order mark is
@@ -296,7 +296,7 @@ the stream: the end of the tail's LAST segment, or the end of the checkpoints. W
 does not read, both readers drop it and say so as a note (`partial-final-line`), and the
 verdict is the one the record without it earns. That holds when the crash cut the piece
 inside a multi-byte character: those bytes are a torn write, not a line that is not UTF-8.
-The same bytes anywhere else — ended by a newline, or at the end of an earlier segment —
+The same bytes anywhere else (ended by a newline, or at the end of an earlier segment)
 are a line, and are refused (same test).
 
 A reader **rebuilds** the event from the fields its kind declares and rejects any
@@ -312,7 +312,7 @@ written, because the stored entry hash stops matching. It cannot catch a NEWLY
 APPENDED event carrying one: the entry hash takes no key, so whoever can write
 the repository computes it; above the last checkpoint no signature covers it; and
 the envelope keys are all present. What refuses that is the declaration, and the
-declarations were published nowhere — measured, on an independent verifier built
+declarations were published nowhere: measured, on an independent verifier built
 from this document, which read such an event as verified while this product read
 it as unreadable. The next section is that hole, closed.
 
@@ -320,7 +320,7 @@ it as unreadable. The next section is that hole, closed.
 
 `event-schema.json`, beside this file, is the **second machine-readable half**:
 what every kind declares, in the same closed vocabulary the reader applies. It is
-not a description of the reader — it is the reader's own table, serialized, and a
+not a description of the reader: it is the reader's own table, serialized, and a
 guard holds the two byte for byte
 (`packages/chain/src/events/event-schema.test.ts`). The vectors are one exemplar
 per kind, from which required and optional cannot be told apart; this file is the
@@ -337,20 +337,20 @@ admits a reader applies, and §6.7 is its normative statement.
 
 - **A contract is selected by `kind` and `v` together**, which is the pair every
   event already carries (§7). A reader looks up the row whose `kind` and `v` both
-  match the line, and **refuses a line whose pair no row declares** — a version
+  match the line, and **refuses a line whose pair no row declares**: a version
   ahead of the table is a contract the reader does not have, not one it may guess
   at. The refusal names the pair and what the reader holds of that kind (§7.1).
   A kind that gains a second version gains a second row; the file's shape does
   not change, which is what makes such a change one visible row in a diff.
 - **The top-level keys of an event are the keys of `envelope`, plus `payload`.**
-  Six envelope fields are required and three — `which`, `run` and `after` — are
+  Six envelope fields are required and three (`which`, `run` and `after`) are
   optional, and an event carrying one of those is an ordinary event rather than an
   anomaly.
 - **Every object here is CLOSED.** A key that the matching declaration does not
   name is refused, in the envelope, in the payload, and inside `transitionFields`.
   The reader rebuilds each object from exactly the declared keys and never returns
   the parsed one.
-- **A declared field that is optional and absent stays absent** in the rebuild — it
+- **A declared field that is optional and absent stays absent** in the rebuild: it
   is never filled in with a default, an empty string or a `null`, because the
   rebuild has to canonicalize to the bytes that were signed.
 
@@ -362,15 +362,15 @@ vocabulary:
 |---|---|
 | `string` | present, and a non-empty string |
 | `string?` | absent, or a non-empty string. Absent is not `null` and not `""` |
-| `string\|null` | present, and either a non-empty string or an explicit `null` — a VALUED absence (the state a birth transition left behind), which is why it is a spelling of its own and not an optional |
+| `string\|null` | present, and either a non-empty string or an explicit `null`: a VALUED absence (the state a birth transition left behind), which is why it is a spelling of its own and not an optional |
 | `boolean` | present, and exactly `true` or `false`. **Nothing is coerced**: `"false"`, `0` and `null` are all falsy in JavaScript and none of them is the position of a switch |
 | `count` | present, and a whole number of at least 1 (a safe integer). A float, a `-0` or a `1e3` is refused |
-| `fields?` | absent, or the object `transitionFields` declares — closed the same way, and **never empty**: an empty `fields` carries no proof, and admitting it would make `{}` a second, byte-distinct spelling of "no fields" |
+| `fields?` | absent, or the object `transitionFields` declares, closed the same way, and **never empty**: an empty `fields` carries no proof, and admitting it would make `{}` a second, byte-distinct spelling of "no fields" |
 | `string[]?` | absent, or a non-empty array of non-empty strings |
 | `version` | (envelope only) present, and a whole number of at least 1; with `kind` it selects the contract |
 | `kind` | (envelope only) present, and the non-empty string naming the contract |
-| `hashes?` | (envelope only) absent, or a non-empty array of entry hashes (§3) — 64 lower-case hex characters each — in strictly ascending order. Strictly, because an array's order is part of its canonical bytes (§1): any other order, or a repetition, would be a second spelling of the same set. `after` is the one field under it |
-| `instant` | (envelope only) present, and the exact spelling `Date.prototype.toISOString` produces — UTC, millisecond precision, trailing `Z` — of a real date. Every producer stamps `at` through the clock, which IS `toISOString`, so a timezone offset or a missing sub-second digit is a corrupt or forged line rather than a differently-spelled one |
+| `hashes?` | (envelope only) absent, or a non-empty array of entry hashes (§3), 64 lower-case hex characters each, in strictly ascending order. Strictly, because an array's order is part of its canonical bytes (§1): any other order, or a repetition, would be a second spelling of the same set. `after` is the one field under it |
+| `instant` | (envelope only) present, and the exact spelling `Date.prototype.toISOString` produces (UTC, millisecond precision, trailing `Z`) of a real date. Every producer stamps `at` through the clock, which IS `toISOString`, so a timezone offset or a missing sub-second digit is a corrupt or forged line rather than a differently-spelled one |
 
 An implementation that applies this table refuses what this product refuses: the
 same appended event that used to read as verified from outside now reads as
@@ -408,7 +408,7 @@ repaired (`packages/chain/src/chain/invariants.test.ts`).
 ## 6. The signed checkpoint
 
 A checkpoint covers a contiguous range `[fromSeq..toSeq]` of one tail. The signed
-message is the canonical bytes (§1) of this object — **the signature field is not
+message is the canonical bytes (§1) of this object, **the signature field is not
 part of it**:
 
 ```json
@@ -422,8 +422,8 @@ part of it**:
 - `prev` is lower-case hex, like every digest here.
 - `signerFp` is the full fingerprint of the signing key, bound into the signed
   bytes so a signature cannot be re-pointed at another key. **The fingerprint is
-  the SHA-256 of the key's `SubjectPublicKeyInfo`** — the DER `spki` encoding,
-  including the twelve-byte RFC 8410 prefix for `id-Ed25519` — in lower-case hex.
+  the SHA-256 of the key's `SubjectPublicKeyInfo`** (the DER `spki` encoding,
+  including the twelve-byte RFC 8410 prefix for `id-Ed25519`) in lower-case hex.
   That sentence is what makes the clause before it *checkable*: a verifier that
   cannot recompute a fingerprint from key material has to trust the filename the
   key arrived under, and then a signature is re-pointed at another key by renaming
@@ -432,8 +432,8 @@ part of it**:
   (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
 - The signature is **Ed25519** over those bytes (RFC 8032), hex-encoded, stored as
   `sig` alongside the fields. The checkpoints of a tail live in
-  `checkpoints.jsonl`, one canonical line each — the eight keys, `sig` included,
-  sorted by §1 — in chain order.
+  `checkpoints.jsonl`, one canonical line each (the eight keys, `sig` included,
+  sorted by §1) in chain order.
 - **The Ed25519 rule is the strict one**, and it is the same for every signature
   this document names (a checkpoint's, a tail proof's, an enrolment's). With A the
   public key's 32 bytes, R the first 32 bytes of the signature and S the last 32 as a
@@ -453,9 +453,9 @@ part of it**:
   Ed25519 vectors of Wycheproof, CCTV and ed25519-speccheck, Node 22 and Node 24 up
   to 24.18 accepted 301 and Node 24.19 and later accepted 132 (nodejs/node#64026),
   so a record forged with a small-order key verified under one Node and failed
-  under the other. Under this rule all three verifiers of a record — the product,
+  under the other. Under this rule all three verifiers of a record (the product,
   which checks rules 1 to 3 itself before `node:crypto`; the second reader in
-  `verifier/`; and the page's verifier — give the publishers' verdict on every one
+  `verifier/`; and the page's verifier) give the publishers' verdict on every one
   of those vectors and the five of RFC 8032 §7.1, on every Node the CI runs
   (`packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`). Of
   CCTV's 914, the rule accepts these 43 and refuses the other 871: 7, 29, 50, 117,
@@ -478,12 +478,12 @@ part of it**:
   signature verifies over a range holding an event that breaks either, and does not
   count that range as signature-covered. The checkpoint is the one thing that proves
   which key signed the range; an event's own `signerFp` is a claim inside the bytes it
-  signed, and §6.2 folds that claim. Without this sentence the holder of a role key —
-  a checker's — writes an event naming the person's key, signs the checkpoint with its
+  signed, and §6.2 folds that claim. Without this sentence the holder of a role key,
+  a checker's, writes an event naming the person's key, signs the checkpoint with its
   own, and §6.2 sees the person. `which` and `who` are compared in one canonical form:
-  NFC, then with every leading and trailing character of this set removed — U+0009 to
+  NFC, then with every leading and trailing character of this set removed: U+0009 to
   U+000D, U+0020, U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F,
-  U+3000 and U+FEFF — so `which` = `who` followed by U+00A0 is refused. The set is
+  U+3000 and U+FEFF, so `which` = `who` followed by U+00A0 is refused. The set is
   written out because "trimmed" is not one rule across languages: it is what
   JavaScript's `trim` removes, and Python's `strip()` also removes U+001C to U+001F and
   U+0085. The product applied both halves before this document said them, and the
@@ -505,14 +505,14 @@ mentioned, and had to try five candidate messages to learn what it signs.
 {"scheme":"mnema-tail/1","sig":"…","signerFp":"…","tail":"…"}
 ```
 
-The signed message is the same shape as §6 — the canonical bytes (§1) of the object
+The signed message is the same shape as §6: the canonical bytes (§1) of the object
 with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else. The
 signature is Ed25519 under the key `signerFp` names, which is the fingerprint the
 tail id begins with.
 
 What it is for is the other half of §3's requirement. The fingerprint prefix of a
 tail id is a committed key, but the installation-id suffix is chosen locally and
-binds to nothing on its own — so a party holding no key could copy a tail whose
+binds to nothing on its own, so a party holding no key could copy a tail whose
 events are not yet checkpointed into `tails/<real-fingerprint>-<forged>/` and have
 them counted twice. Only the key holder can sign a statement naming a new tail id,
 and a genuine proof does not transfer to a different one, because the id **is** the
@@ -523,8 +523,8 @@ message (`packages/chain/src/chain/format-on-disk.test.ts`).
 A signature that verifies proves **which key** made it. It does not prove that the
 key was allowed to. Those are different claims and the second is the one that
 matters, so this section says how a reader gets it from the record and nothing
-else. It went unwritten while the kinds that carry it — `key.enrolled` and
-`key.revoked` — sat in the published vectors: the bytes of the facts that carry
+else. It went unwritten while the kinds that carry it (`key.enrolled` and
+`key.revoked`) sat in the published vectors: the bytes of the facts that carry
 the authorization were published, and the rule that reads them was not.
 
 **An identity is one ANCHOR with a set of keys**, and the set changes over the
@@ -534,14 +534,14 @@ length of the chain. The anchor id is derived from a fingerprint:
 anchor(fp) = "mnid:" ‖ SHA-256( UTF-8 of the 64-character lower-case fingerprint )   (hex, lower-case)
 ```
 
-The hash is over the fingerprint's **hex text**, not over the 32 bytes it spells —
+The hash is over the fingerprint's **hex text**, not over the 32 bytes it spells,
 the same distinction §5 makes for the accumulator, and the same coin-flip if it is
 left unsaid. An anchor is a value distinct from any fingerprint, which is what
 leaves room for several keys under one anchor without the anchor ever being one of
 them.
 
-**The order the facts are folded in.** Enrolment spans tails — a key enrolled on
-one machine authorizes events on another — so the fold runs over **every tail
+**The order the facts are folded in.** Enrolment spans tails (a key enrolled on
+one machine authorizes events on another) so the fold runs over **every tail
 merged into one order**: within a tail, `seq` order, which the hash chain proves
 and which nothing may override; across tails, among the heads whose citations
 (`after`) have all been taken, the one with the smallest `at` goes next, a tie going to
@@ -550,7 +550,7 @@ uses for anything else that has to be deterministic across tails ("Reading many 
 where the whole tie-break is written out).
 
 So a key's first event follows its enrolment whatever the two machines' clocks said, as
-long as it cites the head of the enroller's tail it had read — which is at or after the
+long as it cites the head of the enroller's tail it had read, which is at or after the
 enrolment, since it was read after it. This product's writer always cites. An event that
 cites nothing is placed by its `at` alone, as every event was before citations existed:
 then a second machine whose clock is behind the enroller's stamps its first event before
@@ -565,8 +565,8 @@ which is a writer's clock measured from the record alone. Neither is a break (sa
 "a citation of an entry the record does not hold: ignored in the order, said by both";
 "the clock that ran behind what it cites is measured and said, informational, by both").
 
-**Three facts change the set**, and each is refused as an operation — not merely
-recorded — when its own conditions do not hold. `subject` is always the anchor.
+**Three facts change the set**, and each is refused as an operation, not merely
+recorded, when its own conditions do not hold. `subject` is always the anchor.
 
 | kind | what it must satisfy | what it does |
 |---|---|---|
@@ -586,20 +586,20 @@ kinds are judged by the role instead of by the sets above:
 |---|---|---|
 | `checker.enrolled` | `subject == anchor(payload.checkerFp)`; `signerFp` is in the set of `who` at this point; and `payload.reverseSig` is a valid Ed25519 signature, by the key `checkerFp` names (fingerprint recomputed, as above), over the UTF-8 of `check-enroll:<who>:<checkerFp>` | makes `checkerFp` a CHECKER key |
 | `checker.retired` | `subject == anchor(payload.checkerFp)`; and `signerFp` is in the set of `who` at this point | when SIGNATURE-COVERED: `checkerFp` is a checker no longer, and is RETIRED |
-| `check.passed`, `check.failed` | `signerFp` is a checker key at this point, and `who == anchor(signerFp)` | — |
+| `check.passed`, `check.failed` | `signerFp` is a checker key at this point, and `who == anchor(signerFp)` | none |
 
 A checker key signs check results and **nothing else**: an event of any other kind
 whose `signerFp` is a checker key at its point in the fold is refused, whatever its
-kind — its own `identity.founded` included. A checker joins no identity; it speaks under
+kind, its own `identity.founded` included. A checker joins no identity; it speaks under
 the anchor its own key derives, so a reader can tell a machine's result from a person's
 act. The consent message is not §6.2's `enroll:` message, so a consent given to join an
 identity cannot enrol a checker, nor the reverse.
 
 **A retired key signs nothing.** From its retirement on, an event of any kind whose
-`signerFp` is a retired key is refused — a result, and any other kind, its own
-`identity.founded` included — and so is a `checker.enrolled` naming it: a retired key does
-not come back, a new key is enrolled instead. Who may retire is who may enrol — any
-identity, by a key in its set at that point — and the checker key's consent is not asked,
+`signerFp` is a retired key is refused (a result, and any other kind, its own
+`identity.founded` included) and so is a `checker.enrolled` naming it: a retired key does
+not come back, a new key is enrolled instead. Who may retire is who may enrol (any
+identity, by a key in its set at that point) and the checker key's consent is not asked,
 because a leaked key is the case the fact is for. Like a `key.revoked`, a `checker.retired`
 takes effect only when it is itself signature-covered: it refuses the key's LATER results,
 which are other, possibly checkpointed, events, so honouring one in the window above the
@@ -607,7 +607,7 @@ last checkpoint would let a party with no key fail an honest runner's results.
 
 A result the key signed BEFORE its retirement stays authentic: the key held the role when
 it signed, and the fold judges every event at its own point. What "before" means is the
-merged order above, and across tails that order is the `at` each tail's writer stamped — so
+merged order above, and across tails that order is the `at` each tail's writer stamped, so
 a leaked key can place a result before its own retirement. A reader of this format
 therefore learns from the record that the key was retired, and which results it signed
 before; this product's `verify` names those in its census, informational, and does not
@@ -615,8 +615,8 @@ call them breaks
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`).
 
 **A sixth fact grants a key the role of an identity's AGENT, and a seventh withdraws it.** An
-agent key is a member of the identity that enrolled it — its facts speak for that identity,
-`who` — with a role that narrows what it signs. It is how a person lets a program sign for them
+agent key is a member of the identity that enrolled it (its facts speak for that identity,
+`who`) with a role that narrows what it signs. It is how a person lets a program sign for them
 without handing it the key that enrols, revokes and declares.
 
 | kind | what it must satisfy | what it does |
@@ -625,7 +625,7 @@ without handing it the key that enrols, revokes and declares.
 | `agent.retired` | `who == subject`; `signerFp` is in the anchor's set at this point and is not an agent key; and `payload.agentFp` is an agent key of this anchor at this point | when SIGNATURE-COVERED: removes `agentFp` from the set; it is RETIRED |
 
 The set is U+0009 to U+000D, U+0020, U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F,
-U+205F, U+3000 and U+FEFF — the one §6 compares `which` and `who` in. It is written out because
+U+205F, U+3000 and U+FEFF, the one §6 compares `which` and `who` in. It is written out because
 "trimmed" is not one rule across languages. `anchor` is `mnid:` and 64 hex characters and
 `agentFp` is 64, so `name` is the last field of the consent message and is taken whole, a colon
 in it included; and no consent message is a prefix of another, so a consent given for one role,
@@ -641,8 +641,8 @@ holds**, whatever else it satisfies:
    `agent.enrolled`, `agent.retired`, `account.linked`. (A `check.passed` or `check.failed`
    already needs a checker key.)
 
-This is judged at the event's point in the merged order, after the two tests above — a retired
-key, a checker key — and before the conditions of the event's own kind, against the agent keys as
+This is judged at the event's point in the merged order, after the two tests above (a retired
+key, a checker key) and before the conditions of the event's own kind, against the agent keys as
 every earlier event in that order left them. A key is an agent key from its `agent.enrolled` on,
 and stays one: a `key.revoked` naming it takes it out of the set like any key, and the role stays
 with it, so no later fact turns it into a key without the role. An `agent.enrolled` that would
@@ -652,7 +652,7 @@ restore a key some covered `key.revoked` removed is gated as any such addition i
 an event of any kind it signs is refused, and so is an `agent.enrolled` or a `checker.enrolled`
 naming it. Like a revocation, an `agent.retired` takes effect only when signature-covered, so a
 party with no key cannot retire an honest agent. Only the identity that enrolled the key retires
-it, by a key of its own that is not an agent key — so a leaked agent key cannot retire its
+it, by a key of its own that is not an agent key, so a leaked agent key cannot retire its
 siblings, nor be used to retire itself out of the record's sight.
 
 What the key signed BEFORE its retirement stays authentic, for the reason a checker's results do,
@@ -664,8 +664,8 @@ census, as it names a retired checker's, informational, and the second reader sa
 **What a reader learns from it.** An event signed by an agent key that the fold accepts names, in
 `which`, the name its identity enrolled that key under: its agent is ATTESTED by an agent key
 enrolled as that name. Any other `which` is DECLARED: the key that signed stated it. Which process
-held the agent key, and which model drove it, is a property of the machine — its sandbox, its
-users — that the record does not carry. This product's `verify` counts both in its census,
+held the agent key, and which model drove it, is a property of the machine (its sandbox, its
+users) that the record does not carry. This product's `verify` counts both in its census,
 informational, and the second reader says the same counts
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`, "an agent").
 
@@ -677,19 +677,19 @@ key is a one-member set.
 **Two of the three take effect only when they are themselves SIGNATURE-COVERED**,
 and this is the part a reader gets wrong by omission rather than by error. An
 event above the last checkpoint of its tail rests on the hash chain alone, and the
-entry hash takes no key — so a party with no key at all can append there.
+entry hash takes no key, so a party with no key at all can append there.
 
 - A `key.revoked` in that window is **ignored**. A revocation removes a key that
   judges OTHER, already-checkpointed events, so honouring an uncovered one would
   let a keyless party fabricate a tail, revoke a member from it, and flip an
-  honest fully-signed chain to failing — a denial of authenticity with no key. A
+  honest fully-signed chain to failing, a denial of authenticity with no key. A
   legitimate revoker checkpoints the revocation; a keyless party cannot, because a
   checkpoint needs the tail's private key.
 - An `identity.founded` or `key.enrolled` that would **restore a key some covered
   `key.revoked` removed** is ignored in that window too, and for the mirror
   reason: it would undo a signed removal and re-authorize that key's later,
   checkpointed work. A first enrolment, or any addition that restores nothing
-  covered, is not gated — it only ever empowers events naming the added key, and
+  covered, is not gated: it only ever empowers events naming the added key, and
   those sit in the same untrusted window anyway.
 
 "Covered" means: the event's own `seq` is at or below the highest `seq` reached by
@@ -697,7 +697,7 @@ a checkpoint of its tail whose signature verified.
 
 **What this does NOT decide**, said here because it looks like it should: whether
 the tail an event sits in is genuine. A keyless party who fabricates a tail under
-a real enrolled fingerprint names a valid signer and passes this fold — and is
+a real enrolled fingerprint names a valid signer and passes this fold, and is
 refused earlier, by §3's requirement on the tail id and by §6.1's tail proof. The
 fold only ever runs over tails whose key owns them
 (`packages/chain/src/chain/enrollment.test.ts`,
@@ -706,18 +706,18 @@ fold only ever runs over tails whose key owns them
 ### 6.3 An account an identity names
 
 `account.linked` (`payload.service`, `payload.account`) is an identity saying which account
-it holds — this product writes two services: `github`, an account on the code host, and
+it holds; this product writes two services: `github`, an account on the code host, and
 `sigstore`, the identity a Sigstore certificate names (an e-mail address, or a GitHub Actions
 workflow as `https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>`). A `sigstore`
 link to an e-mail address carries **`sha256:` and the lower-case hex SHA-256 of the address**,
-trimmed and in lower case, never the address — the record is append-only and cloned, and the
+trimmed and in lower case, never the address: the record is append-only and cloned, and the
 address is a person's; a workflow is carried as it is. A reader compares a certificate's address
 by computing the same value (`sigstoreAccountOf`, `packages/core/src/identity/account.ts`). The
 value is a string like any other: neither the canonical form, the chaining nor the signature of
 the event treats it differently. It is **not part of
 the fold above**: it adds and removes no key, so a reader authenticates it by the rule every
 other event is authenticated by, and by nothing else. Its `subject` is the anchor and its `who`
-is the same anchor — an identity names only its own account.
+is the same anchor: an identity names only its own account.
 
 A verification of the format does not read it. It is read by two readings that have to be
 asked for: `mnema verify --against-github` (a `github` link) and `mnema verify
@@ -737,11 +737,11 @@ or its signature differs from any other kind; what this section adds is who it s
 
 **Only the identity that wrote a note takes it back: a retraction applies when its `who` is the
 `who` of the note it names.** The comparison is on the anchor, not the key, so any key in that
-anchor's set — a second machine enrolled into the identity, a cold backup restored — retracts,
+anchor's set (a second machine enrolled into the identity, a cold backup restored) retracts,
 and a key of another identity does not. Of the retractions of one note that apply, the first in
 the merged order of §6.2 holds. A retraction whose `who` is not the note's is not applied: a
-reader keeps serving the note. It is **not a break** — the event is intact and its key speaks
-for its own `who`; what it lacks is authority over somebody else's note — so this product's
+reader keeps serving the note. It is **not a break**: the event is intact and its key speaks
+for its own `who`; what it lacks is authority over somebody else's note, so this product's
 `verify` names it in its census, informational, and the exit is unchanged. A retraction of a
 note the tree does not hold has no author to compare with, and is neither applied nor named
 (`packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts`).
@@ -754,7 +754,7 @@ the retraction names it as the link did: its `subject` is the link's subject, an
 A reader folds the links in the merged order of §6.2 into the set of ASSERTIONS that stand, one
 per (subject, target, rel, `who`). A `knowledge.linked` makes its `who`'s assertion of the edge
 stand; a `link.retracted` withdraws, at its point in that order, the standing assertion of the
-edge it names whose `who` is its own `who` — the same comparison as a note's, on the anchor, so
+edge it names whose `who` is its own `who`: the same comparison as a note's, on the anchor, so
 any key of the identity that linked takes the link back. An edge is served while any assertion
 of it stands, and its origin is the first that does; an edge whose only asserter took it back is
 applied by nothing, so a rule it addressed at a path stops acting there (a reading of the
@@ -765,8 +765,8 @@ break**, and is named in this product's census for the reason a stranger's note 
 A retraction of an edge the tree does not hold at all is neither applied nor named
 (`packages/core/src/knowledge/only-the-identity-that-linked-retracts-it.test.ts`).
 
-A verification of the format does not need either rule — they decide what a reader SERVES, not
-what verifies — and neither moves a verdict in either reader. The second reader beside this file
+A verification of the format does not need either rule (they decide what a reader SERVES, not
+what verifies) and neither moves a verdict in either reader. The second reader beside this file
 names a retraction neither rule applies, as this product's `verify` does, and accepts the record
 (`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "by another
 identity, names both"). A binary from before the note rule
@@ -777,7 +777,7 @@ it as a (kind, v) its table does not hold (§4.1), so a record holding one does 
 
 A key's fingerprint is the id of the tail it writes (§3), so `keys/` is a roster of the tails
 that should exist, and a reader can cross the two. A committed key with no tail has innocent
-readings — a machine that never wrote, a merge that dropped a tail — and a guilty one: a tail
+readings (a machine that never wrote, a merge that dropped a tail) and a guilty one: a tail
 removed to hide its events. One key has no tail by design: the cold backup an identity keeps
 off the machine, which signs nothing until it is restored. Without a fact saying which key that
 is, every honest record warned about it on every clone, and a warning that is always on is one a
@@ -785,7 +785,7 @@ reader learns to skip.
 
 `backup.declared` (`payload.backupFp`) is that fact. It is **not part of the fold of §6.2**: it
 adds and removes no key and makes no event authentic or not. It is judged at its point in the
-merged order of §6.2, and refused — as a `key.enrolled` would be — when any condition fails:
+merged order of §6.2, and refused (as a `key.enrolled` would be) when any condition fails:
 
 | kind | what it must satisfy | what it does |
 |---|---|---|
@@ -892,12 +892,12 @@ applies it only when it is legal:
   is never reached; every field the row `requires` is present in `fields`; the row with `"by":
   true` names in `by` a decision whose birth the record holds and that is not its own subject,
   and no other row carries a `by`; and **`from` is the state the subject is in at that point, or
-  the state its writer saw** — or, when what its writer saw holds nothing of the subject, a state
+  the state its writer saw**, or, when what its writer saw holds nothing of the subject, a state
   the subject had been in before that point.
 - **`run.ended`** is legal when the run has a `run.started` before it and no `run.ended` applied
   before it, or when the run was open in what its writer saw.
 
-**The state at a point** is the `to` of the last move applied before it, in the merged order —
+**The state at a point** is the `to` of the last move applied before it, in the merged order,
 so a move that is not applied moves nothing after it either. **The state its writer saw** is
 the same fold over only the moves its writer had read: the entries of its own tail before it,
 and, on every other tail, the entries up to the last one its own tail cites in `after` at or
@@ -907,7 +907,7 @@ was written; the second is what keeps two machines that moved one subject withou
 other a divergence and not an illegal move ("What is detected", in "Reading many tails"). A
 writer whose own tail holds nothing of the subject before the move, and that cites nothing of it,
 did not say what it read, and the bytes cannot say it for it: it is held to a state the subject
-had been in before that point — the `to` of a move applied before it, the birth's among them —
+had been in before that point (the `to` of a move applied before it, the birth's among them)
 so two such machines that moved one subject out of one state are a divergence too, and a move
 out of a state the subject never reached is still not applied.
 
@@ -923,7 +923,7 @@ none where it takes one, the move's own subject, or a decision the record holds 
 nothing and is not named: the first start stays, and the ends are judged against it.
 
 **A move that is not legal is not applied, and it is not a break.** A reader reads the subject
-as if the move had not been written — its state, the moves it says it made, the divergences —
+as if the move had not been written (its state, the moves it says it made, the divergences)
 and this product's `verify` names the move in its census, with the rule it broke, informational,
 the exit unchanged: the precedent of a stranger's retraction (§6.4). The event is intact,
 hashed, chained and signed by a key of its own `who`; what it lacks is a place in the workflow,
@@ -935,8 +935,8 @@ which is a reading of the record rather than a fact about its bytes
 **A record this section reads differently from before it.** The product's writer judges a move
 by the same table before it appends, so a record it wrote holds no move this section refuses,
 with two exceptions it could write before it judged the chain and cited what it read. Two moves
-out of one state on one tail — two writes that raced before the tail had a lock, or a projection
-edited on the disk — are one move and a second one its writer had seen leave that state: the
+out of one state on one tail (two writes that raced before the tail had a lock, or a projection
+edited on the disk) are one move and a second one its writer had seen leave that state: the
 second is not applied, and is named. And a machine that cited nothing (every record before
 citations) and moved a subject its own tail had moved before is judged by the state the subject
 is in at its point of the merged order, or by its own tail's: a clock behind what it had read, or
@@ -955,7 +955,7 @@ census, the verdict unchanged
 (`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, over one record
 per rule, two machines with and without citations, and drawn records on two tails).
 
-**A binary from before this section** — this product's, or the second reader's — applies every
+**A binary from before this section** (this product's, or the second reader's) applies every
 move, whatever its `from`, `action` and `to`, and names none: a record holding a move this section
 does not apply verifies there as it verifies here, and is read there as if the move were legal.
 That binary does not refuse it, and nothing in the record can make it: the move is a kind and a
@@ -971,7 +971,7 @@ a consumer holds is the event re-expressed under **today's** contract.
 
 **A proof is never recomputed over that.** Both digests are taken over the form
 that was WRITTEN. Hand a lifted event to a digest and the first kind that ever
-gains a `v2` makes every chain written before it report as tampered — entry hashes
+gains a `v2` makes every chain written before it report as tampered; entry hashes
 stop matching, and checkpoint signatures stop verifying: a keyless-editor alarm
 raised by an honest read
 (`packages/chain/src/chain/upcast-vs-proof.test.ts`).
@@ -984,13 +984,13 @@ codebase it is about. The first kind to gain a `v2` should gain a published vect
 for the old `v` alongside it.
 
 The top-level keys of an event are the keys `event-schema.json` declares under
-`envelope`, plus `payload` — **nine envelope names, of which three are optional**. This
+`envelope`, plus `payload`: **nine envelope names, of which three are optional**. This
 paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
 by sixteen and three of the vectors published then (how many carry them now is
 `canonical-vectors.json`'s to say, not this paragraph's). What falsified it is that
-an independent verifier believed it — it took the intersection, as the sentence
+an independent verifier believed it: it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look
 identical in an exemplar, which is the whole reason the declarations are now
@@ -1007,8 +1007,8 @@ promises about the records the others wrote, and one rule that makes the second 
 are this product's, and the test named below holds both readers beside this document to them.
 
 - **Backward: a version reads every record an earlier one wrote.** Every line a published
-  version wrote is read by every later one under the contract its `kind` and `v` selected —
-  lifted through the registered upcasters when that kind has gained a later `v` — and the proof
+  version wrote is read by every later one under the contract its `kind` and `v` selected,
+  lifted through the registered upcasters when that kind has gained a later `v`, and the proof
   is taken over the line as written (§7, above). A later version does not refuse such a line for
   its shape. This is a promise about reading the lines, not about the verdict over them (below).
 - **Forward: a version refuses by name what it cannot read.** A line whose `kind` and `v` no row
@@ -1033,7 +1033,7 @@ are this product's, and the test named below holds both readers beside this docu
 
 `packages/chain/src/chain/the-promise-between-versions.test.ts` holds a record to each promise.
 Backward, `__fixtures__/written-by-an-earlier-binary`, a record this product's command line wrote
-on 15 October 2026 and that is never written again — an identity with its backup key, a note
+on 15 October 2026 and that is never written again: an identity with its backup key, a note
 taken back, three decisions accepted, superseded and rejected, a task blocked, sent back from
 review, approved, reopened and completed, a link that governs a path: both readers verify it,
 every move applied, nothing refused. Forward, a signed, chained and checkpointed record whose
@@ -1045,7 +1045,7 @@ both readers refuse it with the words above.
 - **What came before the first publication.** The versions released before it changed rules
   inside kinds and versions that already existed. §6.4 made a retraction its author's and §6.7
   put the workflows in the format: a binary from before them reads a later record under its own
-  rules — it applies the retraction or the move a later one does not, and refuses no line for it.
+  rules: it applies the retraction or the move a later one does not, and refuses no line for it.
   `after` entered the envelope with no new `v`: a binary from before it refuses a line that
   carries one by naming the field, not the version (§7, above). And those binaries' refusals of a
   pair they do not hold name the kind, and for a version ahead the two versions, but not the
@@ -1056,8 +1056,8 @@ both readers refuse it with the words above.
   earlier one applied, as §6.7 did, or to fail a record an earlier one verified, on a rule other
   than a line's shape; then the two read the same bytes two ways: the earlier one applies the
   line as its rule allows and refuses nothing, because the line is a pair it reads. What bounds
-  such a change is the backward promise — the later version still reads every line an earlier one
-  wrote — and that it is a change to this document and to the changelog, visible in a diff. It is
+  such a change is the backward promise (the later version still reads every line an earlier one
+  wrote) and that it is a change to this document and to the changelog, visible in a diff. It is
   not a refusal a version from before it can give.
 - **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
   skipped the line and read the rest would say a record verifies with facts in it that it cannot
@@ -1072,8 +1072,8 @@ hole the two layers above cannot: a party who holds the signing key can rebuild 
 whole chain and re-sign it, and everything in sections 1–7 will verify. What they
 cannot produce is an attestation dated before they started.
 
-What is attested is **the SHA-256 of a checkpoint's signed message** (§6) — the same
-digest `prev` links to — and nothing else. No id, no title, no body, no count leaves
+What is attested is **the SHA-256 of a checkpoint's signed message** (§6), the same
+digest `prev` links to, and nothing else. No id, no title, no body, no count leaves
 the machine. And because checkpoints chain, attesting **one** dates every checkpoint
 below it: this is not an attestation per event, nor even per checkpoint.
 
@@ -1084,8 +1084,8 @@ tails/<tailId>/witness/<checkpointHash>.ots      an OpenTimestamps detached proo
 tails/<tailId>/witness/<checkpointHash>.blocks   the 80-byte Bitcoin block headers
 ```
 
-- The `.ots` is **[OpenTimestamps](https://opentimestamps.org)' own format, unaltered**
-  — a Merkle path from the digest to a Bitcoin block's merkle root. A stranger runs
+- The `.ots` is **[OpenTimestamps](https://opentimestamps.org)' own format, unaltered**:
+  a Merkle path from the digest to a Bitcoin block's merkle root. A stranger runs
   the `ots` client on it, against any Bitcoin node, and gets the same answer without
   this product installed. The file is named by the digest it commits to, so a reader
   knows which checkpoint it is about before opening it.
@@ -1097,31 +1097,31 @@ tails/<tailId>/witness/<checkpointHash>.blocks   the 80-byte Bitcoin block heade
 A verifier reading them offline asks three things, and all three are arithmetic:
 the proof's subject equals the checkpoint's digest; the path folds to the merkle root
 the stored header carries (bytes 36–68, internal order); and the header's own hash
-meets the target it declares, which must be at least `0x1800ffff` — 2**40 times the
+meets the target it declares, which must be at least `0x1800ffff`, 2**40 times the
 genesis difficulty. A header mined at an easier target is refused, because one is
 found in milliseconds (`packages/chain/src/chain/bitcoin.test.ts`).
 
 The arithmetic of the third one, spelled out because only the second one's byte order
 was: the header's own hash is the **double** SHA-256 of its 80 bytes, compared as a
 **little-endian** integer against the target that `bits` (bytes 72–76, little-endian)
-declares in Bitcoin's compact form — `(bits & 0x007fffff) << 8·((bits >> 24) − 3)`.
+declares in Bitcoin's compact form: `(bits & 0x007fffff) << 8·((bits >> 24) − 3)`.
 Under that expansion `0x1800ffff` is `0xffff · 2^168` and the genesis `0x1d00ffff` is
 `0xffff · 2^208`, and `208 − 168 = 40`, which is where the sentence above comes from.
 
 **The sidecar and the proof's attestations do not match up one to one, in either
 direction.** A `.blocks` file may carry headers the proof beside it does not use, and a
-proof may attest a block the sidecar has no header for — the frozen `witnessed-record`
+proof may attest a block the sidecar has no header for: the frozen `witnessed-record`
 does both at once, attesting blocks 963688, 963689 and 963690 while shipping two headers.
 The pairing is by the height the attestation declares. A bitcoin attestation whose header
 is absent is simply one that cannot be folded offline; it is neither coverage nor a break.
 
 **Nothing confirmed, and more than one thing reached.** A proof can reach a block whose
 header is absent *and* a calendar that has not answered. Both are the same non-coverage,
-so neither moves a level — but a reader that reduces them to ONE statement must not let
+so neither moves a level, but a reader that reduces them to ONE statement must not let
 the order the branches of a third-party file were serialized in decide which. That is the
 paragraph below's rule, on this side of it: a semantically identical `.ots` can reorder,
 so an order-picked report is one two faithful readers disagree about over the same bytes.
-Where a **height** breaks the tie, take the **lowest** — the same tie-break as below, so
+Where a **height** breaks the tie, take the **lowest**: the same tie-break as below, so
 this document holds one rule over that set and not two. This document does **not** require
 one statement: publishing the whole set is order-independent by construction, and the
 reference reader in `verifier/` does exactly that. The rule was missing, and the product
@@ -1129,21 +1129,21 @@ was measured reporting either of two sentences for one set of facts, chosen by w
 attestation the file happened to list first (`packages/chain/src/chain/witness.test.ts`).
 
 **Which attestation dates the record, when a checkpoint has several.** It usually has
-several — three calendars, three attestations, and they land in different blocks. Take
+several: three calendars, three attestations, and they land in different blocks. Take
 the **earliest confirmed block** among them, which is the one of **lowest height**: an
-attestation in an earlier block is the stronger claim, and the alternative — the first
-one a walk of the proof happens to reach — makes the reported date depend on the order
+attestation in an earlier block is the stronger claim, and the alternative (the first
+one a walk of the proof happens to reach) makes the reported date depend on the order
 the branches of a third-party file were serialized in.
 
 **By HEIGHT, and the instant is the block's own declared `nTime`.** This paragraph used
-to argue from time — *existing at that instant implies existing at every later one* —
+to argue from time (*existing at that instant implies existing at every later one*)
 and Bitcoin's consensus does not guarantee that ordering. A block's `nTime` is declared
 by whoever mined it and is only BOUNDED: above the median of the preceding eleven blocks,
 below the receiving node's clock plus two hours. So a block of lower height may carry a
 later instant, and an election by instant would rest on a miner's field. Height is the
 chain's own order, it is what the reference OpenTimestamps client elects by (it orders
 attestations by ascending height and stops at the first valid one), and the instant a
-reader prints is then that block's declared `nTime` — which the consensus bounds rather
+reader prints is then that block's declared `nTime`, which the consensus bounds rather
 than fixes. No published vector has a height and an instant in opposite orders, so
 nothing in this document's own corpus exercises the distinction; it is written down
 because a reader who inferred monotonicity from the old sentence would have inferred it
@@ -1155,7 +1155,7 @@ walk reached that had a header and dated the frozen `witnessed-record` twenty mi
 later than the reference reader did
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, which now pins
 the agreement and the reason it was ever a disagreement). **What the rule does not buy,
-measured:** the published date still depends on which headers the writer kept — deleting
+measured:** the published date still depends on which headers the writer kept: deleting
 one line of the `.blocks` sidecar moves it under either rule. The election makes two
 readers agree over the bytes as shipped, and makes the answer independent of an `.ots`
 file's serialization order. It does not make it independent of the sidecar.
@@ -1164,12 +1164,12 @@ file's serialization order. It does not make it independent of the sidecar.
 whatever the last person to write the repository put there. Three limits are declared
 rather than left to a stack: a path deeper than **1000 steps**, a proof past **1 MiB**,
 and a message a path has folded past **4 KiB** are each refused by name. **A step is one
-OpenTimestamps operation** — one `append`, `prepend` or hash — which is the unit the limit
+OpenTimestamps operation** (one `append`, `prepend` or hash) which is the unit the limit
 counts and which used to be left to the reader to guess. Measured over the three frozen
 proofs: 8 to 14 operations from the digest down to a calendar's own `pending` leaf, and
 **77 to 83** down to a bitcoin leaf, in files of 3,586 to 3,761 bytes folding messages of
 about a hundred. So the depth limit has a little over one order of magnitude of room, the
-size limit nearly three, and the fold limit nearly two — each is a refusal, which can only
+size limit nearly three, and the fold limit nearly two: each is a refusal, which can only
 ever reject an exotic proof and never accept a hostile one. (This paragraph used to justify
 the depth limit with "eight or nine steps per calendar", which is the distance to a
 `pending` leaf and not the distance the limit guards; the number it implied was an order of
@@ -1177,39 +1177,39 @@ magnitude off the one the counter sees.) (Measured on the reader before they exi
 the parse past V8's stack; a 979 KiB file of `append` steps walked in 238 ms and ended
 holding a megabyte.)
 
-**A request that has not confirmed is not coverage — and it is never silence.** A
-proof is born incomplete — the calendars promise to aggregate it, and a Bitcoin block
-carries it minutes to hours later — so between asking and holding there is a third
+**A request that has not confirmed is not coverage, and it is never silence.** A
+proof is born incomplete (the calendars promise to aggregate it, and a Bitcoin block
+carries it minutes to hours later) so between asking and holding there is a third
 state, reported as `pending` and counted as nothing
 (`packages/chain/src/chain/witness.test.ts`,
 `packages/chain/src/chain/witnessed-record.test.ts`). Counting for nothing is not the
 same as being dropped, and the reader used to do both: a record whose only proof was
 still in flight answered `nothing outside this machine attests this record`, which is
 the sentence a record nobody ever stamped earns, and the act that follows from it is
-to stamp again. A request is now reported wherever it is found — with the calendar it
-is with, when the proof names one — and it still raises no level and satisfies no
+to stamp again. A request is now reported wherever it is found (with the calendar it
+is with, when the proof names one) and it still raises no level and satisfies no
 `--require` (`packages/chain/src/chain/witness.test.ts`,
 `packages/chain/src/chain/witnessed-then-written.test.ts`,
 `packages/code/src/commands/witness.test.ts`).
 
 **The URI a `pending` leaf carries is an address, and the format does not vouch for
-it.** It is `varbytes` written by whoever answered the original request, so a `.ots` — a
-file that travels, and that any client will hand you — names who a return visit talks to
+it.** It is `varbytes` written by whoever answered the original request, so a `.ots` (a
+file that travels, and that any client will hand you) names who a return visit talks to
 next. Reading it is this format's business; going there is not, and the act that does go
 holds it to an https host at a public timestamp operator, refusing a redirect that leaves
 that host (`packages/chain/src/chain/witness-request.ts`,
 `packages/chain/src/chain/witness-request.test.ts`). Measured on the built product before
 that check existed: a forged proof aimed the act at a chosen host and port over cleartext,
 its redirect was followed to a second host, and the act reported no refusal either time.
-Nothing about the bytes changed — the value on the path is still a hash of a hash — so
+Nothing about the bytes changed (the value on the path is still a hash of a hash) so
 what this closes is contact and not disclosure.
 
 **The attestations accumulate, and a reader asks all of them.** Nothing in this format
 removes a witness file: stamp today, write tomorrow, and yesterday's `.ots` stays under
 yesterday's digest, still proving that that checkpoint existed at that instant. So a
-reader takes the **newest** checkpoint it holds a confirmed attestation for — and the
-newest request still open, for when there is no confirmed one — and reports
-three things together — the instant, the block, and **how many events were written after
+reader takes the **newest** checkpoint it holds a confirmed attestation for (and the
+newest request still open, for when there is no confirmed one) and reports
+three things together: the instant, the block, and **how many events were written after
 the checkpoint that instant dates**. The ACT that completes a request walks the same way,
 newest first, stopping at the first attestation that confirms
 (`packages/code/src/commands/witness.test.ts`); it asked only about the last checkpoint
@@ -1219,14 +1219,14 @@ event reads `covered`; one dated to an earlier point reads `not covered` and say
 date and the remainder in one sentence, because a date without a boundary claims more
 than it holds. (Before this, a reader asked only about the last checkpoint, so a record
 holding a valid attestation answered `nothing outside this machine attests this record`
-the moment one more event was written — an understatement of what its own files prove.
+the moment one more event was written, an understatement of what its own files prove.
 `packages/chain/src/chain/witness.test.ts`,
 `packages/chain/src/chain/witnessed-record.test.ts`.)
 
 What this layer does **not** prove, said here rather than in a footnote: the stored
 header is checked for its work, not for its place in the chain. A reader who needs
-that follows the block id into any explorer, or runs the `ots` client against a node
-— which the unaltered `.ots` is there for.
+that follows the block id into any explorer, or runs the `ots` client against a node,
+which the unaltered `.ots` is there for.
 
 ### 8.1 A Sigstore countersignature
 
@@ -1252,12 +1252,12 @@ carries and answers in notes. A reader that only knows `.ots` passes it by, and 
 reader in `verifier/` names each one as not checked (gap G26).
 
 **What it says, and what it does not.** The certificate names an e-mail address, or a GitHub
-Actions workflow of a repository — not a person, not a GitHub login, and not a mnema
+Actions workflow of a repository, not a person, not a GitHub login, and not a mnema
 identity. Anybody can countersign the digest of any checkpoint they can read, so a bundle on
 its own dates the checkpoint, on Rekor's clock and Rekor's key, and says nothing about who
 wrote it. It speaks for an identity of the record only where that identity named the same
 e-mail or workflow in a signature-covered `account.linked` with `service: "sigstore"` (§6.3)
-(`packages/code/src/sigstore/sigstore.test.ts`) — for an e-mail, the hash of the one the
+(`packages/code/src/sigstore/sigstore.test.ts`): for an e-mail, the hash of the one the
 certificate names. The identity it names is public by construction: it is in Rekor's log and in
 the committed file, in clear; the hash §6.3 records protects the event, not the bundle.
 
@@ -1266,8 +1266,8 @@ the committed file, in clear; the hash §6.3 records protects the event, not the
 A record holds one tail per machine (§4), and each tail is proved in its own `seq` order by its own
 hash chain (§3). Across tails, the bytes carry one kind of order and only one: a CITATION. The
 envelope's optional `after` (§4.1) names the entry hashes of the heads of other tails that the
-writer had read when it wrote. A reader that wants ONE sequence of events — to replay them into a
-state — has to choose the rest. This section says which choice the product's reader makes, and what
+writer had read when it wrote. A reader that wants ONE sequence of events, to replay them into a
+state, has to choose the rest. This section says which choice the product's reader makes, and what
 it leaves undecided. Apart from §6.2, which folds enrolment in this same order, and §6.7, which
 judges every move in it (and §6.4, which names it for the retraction that holds), it describes what
 the code does and is not part of what a verifier checks: another reader may order the tails
@@ -1286,11 +1286,11 @@ earlier. A tail's events appear in the merged sequence in `seq` order whatever t
 clocks that disagree, the merge is the causal model, and every tail is read in seq order").
 
 **The order across tails is a selection of heads.** Each tail is a queue, read from `seq` 0. At
-every step the reader looks at the first unread event of each tail that still has one — its head —
+every step the reader looks at the first unread event of each tail that still has one, its head,
 and keeps the heads that are READY: every entry the head cites has already been taken. Among those
 it takes the head with the smallest `at`. A tie goes to the head whose tree comes first in the list
 the reader was given, compared as a NUMBER, and then to the head of the tail with the smaller tail
-id, compared as text by UTF-16 code unit — the product's reader and the second reader beside this
+id, compared as text by UTF-16 code unit: the product's reader and the second reader beside this
 file compare tail ids that way. A reader of one record has one tree, so for it the tie goes to the
 tail id; several trees are taken up in "Several trees are merged by the same selection",
 below. The tail whose head was taken advances by one, and the step repeats until every tail is read. `at` is the text of the field,
@@ -1310,16 +1310,16 @@ citation to an event moves that event, the events after it in its tail, and what
 and leaves the order of everything else as it was (R3: "a citation added to an entry moves nothing
 that does not depend on that entry"). The writer controls its own `at` already, which moves its
 events either way, so a citation gives no capability a writer did not have. A citation of a hash
-the record does not hold — a clone that lacks a tail, a tail that was cut — is ignored: the order is
+the record does not hold (a clone that lacks a tail, a tail that was cut) is ignored: the order is
 the one the event would have without it (R4: "a citation of a hash the tree does not hold changes
 nothing, and is returned"), and this product's `verify` names it in its census, informational (§6.2).
-If no head is ready, which takes a cycle of citations and so a SHA-256 collision — a cited hash
-existed before the entry citing it was written — the head with the smallest `at` is taken anyway,
+If no head is ready, which takes a cycle of citations and so a SHA-256 collision (a cited hash
+existed before the entry citing it was written), the head with the smallest `at` is taken anyway,
 so the order is total whatever the bytes say; that case is not held by a test, because an honest
 writer cannot produce it.
 
 **What this product's writer cites.** At every append, the head of each other tail of the same
-record that its own tail has not cited yet, read off the disk as it writes — what existed when it
+record that its own tail has not cited yet, read off the disk as it writes: what existed when it
 wrote, and so nothing it cannot back. Nothing new to cite, no field
 (`packages/chain/src/chain/cited-heads.test.ts`, "cites the head of another tail the first time,
 and not again until that tail moves"). A writer cites the tails of its own record only.
@@ -1359,10 +1359,10 @@ forward arrival by arrival, or deleted at any point and built again, answers wha
 whole record answers (P2: "after any arrivals, with the cache deleted at a drawn point, it
 answers what a replay answers"; and with every machine citing, R6: "a cache brought forward is a
 replay, with citations and clocks that disagree"). When an arrival would sort before something the
-cache already holds — a tail from a colleague that carries older facts — the cache is built again
+cache already holds (a tail from a colleague that carries older facts), the cache is built again
 rather than extended. So it is when an arrival is an entry a covered event cited and could not find,
 since that event now waits for it (R6: "an arrival that a covered event cited, and could not find,
-is not a suffix — the cache reads again"), and when an arrival cites an entry the cache cannot
+is not a suffix; the cache reads again"), and when an arrival cites an entry the cache cannot
 place without reading the record again (R6: "an ARRIVAL citing what the record does not hold yet
 still waits for it when it comes, read incrementally").
 
@@ -1390,13 +1390,13 @@ the second had seen the first are not that: the second is a move the workflow do
 (`packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts`,
 "takes a second move out of one state, on the tail that saw the first, for no divergence"). A task has a state machine with cycles, so the
 same fact cannot be read from its `from` alone: tasks are read by their position in the sequence
-(`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one — a reopened
-task leaves a state again — so tasks are read by their order"). Two decisions of one record that
+(`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one, a reopened
+task leaves a state again, so tasks are read by their order"). Two decisions of one record that
 carry the same `ADR-<n>` label are reported as a collision, and neither label is changed
-(`packages/core/src/projections/decision.test.ts`, "adrCollisions — the label collision
+(`packages/core/src/projections/decision.test.ts`, "adrCollisions: the label collision
 detector").
 
-**What is not resolved.** The sequence does not decide which of two concurrent moves wins — two
+**What is not resolved.** The sequence does not decide which of two concurrent moves wins: two
 moves neither of which cites the other. The state a projection shows is the one the last move in
 the sequence leaves, so it is whichever move the selection puts last, and the divergence is named
 beside it (MR4: "what is read of X is what the model reads of X"). Nothing here corrects a clock:
@@ -1409,7 +1409,7 @@ what it had read, sorted before it, is one no reader applies (clocks that disagr
 cited: "uncited, a clock that runs behind sorts an honest task sequence out of its order, and the
 move is not applied").
 What does not change under any clock is the order inside a tail, and that two moves out of one
-state of a decision are named — as a divergence, or as a move not applied (the same: "uncited, a
+state of a decision are named, as a divergence, or as a move not applied (the same: "uncited, a
 machine with a skewed clock keeps its own order, and two moves out of one state are always
 named"). A move of a task out of a state the task had already left at that point is applied
 only when its writer had not seen it leave (§6.7), so the moves the task reading names are, by
@@ -1428,15 +1428,15 @@ Stated plainly, because a published format invites all three readings:
   [`verifier/`](./verifier/) is what falsified it: a verifier in Python, written
   from this document, importing nothing of the product, reproducing the published
   vectors and reaching the product's verdict over real records, save the two pinned
-  cases at the top of this document —
+  cases at the top of this document,
   **including on every input the format refuses**, which is the half that took a
   second delivery: it accepted two things the product refused (a field no kind
   declares, on an appended event; a signer no enrolment authorized) and refused one
   thing the product accepts (an honest event carrying `which`). §4.1 and §6.2 are
-  those three, closed. A fourth acceptance was found later — an event naming a
-  signer other than the checkpoint over it — and §6 closes it. What that buys is
-  technical independence — another language, another author-session, no shared
-  code — and it is what surfaced the twenty-seven points where this document was
+  those three, closed. A fourth acceptance was found later (an event naming a
+  signer other than the checkpoint over it) and §6 closes it. What that buys is
+  technical independence (another language, another author-session, no shared
+  code) and it is what surfaced the twenty-seven points where this document was
   not enough; the ones `gaps` still lists as unresolved are not fixed above.
   What it does **not** buy is social independence: same author, same repository,
   same interest in it working. A format with three implementations maintained by
@@ -1456,7 +1456,7 @@ Stated plainly, because a published format invites all three readings:
   changing it.** This entry used to say that the per-kind field declarations were
   not published, and that in consequence an implementation built from this
   document could not refuse a newly APPENDED event carrying a field no kind
-  declares — the door a party with **no key** could walk through. `event-schema.json`
+  declares: the door a party with **no key** could walk through. `event-schema.json`
   and §4.1 closed it, and the same measurement now runs the other way: the second
   reader refuses that event
   (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`). What
@@ -1465,14 +1465,14 @@ Stated plainly, because a published format invites all three readings:
   published digest and a change to a contract moves a row of a published file, and
   both are visible; and, from the first publication, what one version promises
   another (§7.1).
-- **Publishing the format adds no witness — and §8 is not the format's doing
+- **Publishing the format adds no witness, and §8 is not the format's doing
   either.** The threat sections 1–7 do not cover is an edit made *with* the signing
   key: a key holder can rewrite and re-sign, and everything there will verify.
   Detecting that needs somebody OUTSIDE, and this used to say that was outside this
-  document and outside this package. §8 brought it inside — but by taking a
+  document and outside this package. §8 brought it inside, but by taking a
   dependency on Bitcoin and on a public calendar answering, not by anything
   publishing these bytes achieved. A record nobody stamped is exactly where it
-  always was. See the "What it proves — and what it does not" table in `README.md`.
+  always was. See the "What it proves, and what it does not" table in `README.md`.
 - **This document specifies the bytes and the rules that read them, not the
   product's reading of them.** Which moves of a workflow a reader applies is here
   (§6.7), as are the enrolment fold (§6.2) and who may take a note back (§6.4). Which
@@ -1486,8 +1486,8 @@ The vectors travel with **this repository**, and so does the second implementati
 **THIS SECTION SAID THEY TRAVELLED BY NO OTHER CHANNEL, and that is no longer true.** It
 read: *"They are not in any npm tarball: `@mnema/chain` is an internal package that is
 never published"*. What falsified it is that `@mnema/chain` is now released in its own
-right, and that its `files` was decided rather than defaulted — `dist/`, this document,
-both artifacts and `verifier/` — precisely so that the tarball is a second address for
+right, and that its `files` was decided rather than defaulted: `dist/`, this document,
+both artifacts and `verifier/`, precisely so that the tarball is a second address for
 everything this section is about. A reader who installs the package and never clones has
 the document, the vectors, the declarations and a verifier that runs against them.
 

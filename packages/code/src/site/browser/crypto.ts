@@ -376,7 +376,7 @@ export function ed25519Verify(message: Bytes, signature: Bytes, publicKey: Bytes
 // --- the names `node:crypto` is imported by ------------------------------------------------
 
 const NOT_HERE = (name: string) => (): never => {
-  throw new Error(`${name} is not available in the browser verifier — it only reads.`);
+  throw new Error(`${name} is not available in the browser verifier: it only reads.`);
 };
 
 class Hash {

@@ -237,7 +237,7 @@ whether the publication has happened: a 404 means it has not.
 mnema init
 #> Initialized mnema project at /path/to/repo/.mnema
 #>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…
-#>   backup key: created and enrolled — private half at …/identity/backup/….key
+#>   backup key: created and enrolled, private half at …/identity/backup/….key
 #>   Move that file off this machine: a backup left on this disk is lost with it.
 #> …
 

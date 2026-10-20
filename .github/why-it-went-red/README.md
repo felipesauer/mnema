@@ -3,8 +3,8 @@
 A red of this suite means one of two things, and until this existed nobody could tell them apart
 without deciding by hand:
 
-- **the guard caught something** — the case would fail on an idle machine too;
-- **the machine was busy** — the case waited, lost its slice, and would have passed alone.
+- **the guard caught something**: the case would fail on an idle machine too;
+- **the machine was busy**: the case waited, lost its slice, and would have passed alone.
 
 Two deliveries had to discount reds as the second. Both discounts were honest. Both were also a
 human judgement dropped into the middle of the only evidence a mutation battery produces, because
@@ -38,7 +38,7 @@ Exit codes: `0` nothing to read, `1` something to read, `2` the ruler broke.
 Three repairs were on the table and they are not equivalent.
 
 Limiting how much of the suite runs at once lowers the **frequency** of contention and answers
-nothing — on the day the machine is busy with something else, which is the day this bites, the
+nothing: on the day the machine is busy with something else, which is the day this bites, the
 case bursts again and the hand-discount comes back. Reading a load figure and concluding *flake*
 is worse: a real defect landing on a busy minute would be filed as noise and the finding would be
 gone for good. Running the case alone is the only one that answers the **question** rather than
@@ -54,7 +54,7 @@ a case pins that: the same capture, read once as it came off a machine with 80 r
 reach: whether a case that waits actually *has* a ceiling of its own needs a duration, and a scan
 over source has none. The ledger has one. A case over the budget is re-timed **alone** by the same
 function that re-runs the reds, and is accused only if it is still over it with the machine to
-itself — so contention cannot manufacture an accusation, and one rule cannot grow two meanings.
+itself, so contention cannot manufacture an accusation, and one rule cannot grow two meanings.
 
 ## What it does not cover
 
