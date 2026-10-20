@@ -10,7 +10,7 @@
  * promise had just been rewritten to refuse.
  *
  * THE DISCRIMINANT IS THE AFFIRMATION, NOT AN IDENTIFIER. There is no function to grep.
- * Sweeping for the heading's own tail (`, and what it does not`) over every tracked file
+ * Sweeping for the heading's own tail (` and what it does not`) over every tracked file
  * found SEVEN places, where a list made by reading the four package READMEs had two: the
  * format specification cites the section by name, and so does the doc-comment that holds
  * the product's promise. Neither is a README, and a rename that missed them would have
@@ -64,11 +64,12 @@ const read = (relative: string): string => readFileSync(join(ROOT, relative), 'u
 const HONEST_GUARANTEE = 'What it proves, and what it does not';
 
 /**
- * The tail every wording of the heading shares: the discriminant the sweep runs on. With a
- * comma in front it is also ordinary prose ("What a table tolerates, and what it does
+ * The tail every wording of the heading shares: the discriminant the sweep runs on. It has
+ * no comma in front on purpose: the old wording put an em dash there, and a tail that
+ * required the comma let that heading through. It is also ordinary prose ("What a table tolerates, and what it does
  * not"), so a line is only accused when it is a HEADING that opens with {@link THE_LEAD}.
  */
-const THE_TAIL = ', and what it does not';
+const THE_TAIL = ' and what it does not';
 
 /** How a heading of the standard opens, so that a heading about something else is not accused. */
 const THE_LEAD = /^#+ What it /;
@@ -231,11 +232,21 @@ describe('nowhere names the section by another wording', () => {
     expect(otherWordings(corpus)).toEqual([`control.md :: ## What it guarantees${THE_TAIL}`]);
   });
 
+  it('the sweep FIRES on the old wording with an em dash, and on one with no comma or a full stop', () => {
+    const corpus = [
+      { file: 'dash.md', text: `# What it proves ${String.fromCharCode(0x2014)}${THE_TAIL}\n` },
+      { file: 'bare.md', text: `# What it proves${THE_TAIL}\n` },
+      { file: 'stop.md', text: `# What it proves.${THE_TAIL}\n` },
+    ];
+    expect(otherWordings(corpus)).toHaveLength(3);
+  });
+
   it('the sweep is not fooled by prose or by a heading about something else', () => {
     const corpus = [
       { file: 'prose.md', text: `What a table tolerates${THE_TAIL}.\n` },
       { file: 'other.md', text: `## 5. What a capture changes${THE_TAIL}\n` },
       { file: 'tail.md', text: '## What it proves, and what it cannot\n' },
+      { file: 'canonical.md', text: `## ${HONEST_GUARANTEE}\n` },
     ];
     expect(otherWordings(corpus)).toEqual([]);
   });

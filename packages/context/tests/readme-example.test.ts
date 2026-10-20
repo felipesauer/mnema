@@ -128,7 +128,7 @@ describe('README example', () => {
       expect(openFor).toBeTypeOf('number');
       expect(didWrite).toEqual([{ kind: 'skill.consulted', count: 2 }]);
       expect(firstJob?.id).toBe('task-7');
-      // One task in the record, so nothing was cut, the example's own claim.
+      // One task in the record, so nothing was cut: the example's own claim.
       expect(more).toBe(false);
       expect(moves).toContain('complete');
       expect(patterns).toEqual(['Small PRs']);

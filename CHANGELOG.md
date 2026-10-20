@@ -612,7 +612,7 @@ with its own changelog.
   bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
   a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
-  holds one row per host and one cell per rung: (a) the MCP server and a rules file, (b) the opening
+  holds one row per host and one cell per rung; (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person, each saying how it is known:
   held by a test, read once on the real host, or documented and not measured. The plugin's hooks
   files and manifests, a summary on the README and the whole table on `docs/evidence.md` are
@@ -708,7 +708,7 @@ with its own changelog.
   checkpoint digest leaves; the e-mail, or the repository, the workflow, the commit and the run, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
-  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record:
+  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record,
   an e-mail as `sha256:` and the SHA-256 of the address, never the address; a workflow as it is;
   and
   `mnema verify --against-sigstore` reads every bundle offline against the trust root the binary

@@ -45,9 +45,9 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   `awaitingJudgementTotal`; each item carries the
   `kind` that says which sort of item the line is and the `state` that says which
   ruling is missing. Each has a read that serves the rest of it by the same id: a
-  decision's argument from `readRecord`, a pattern's body from `lookupServedSkill`,
-  which serves it labelled with its state, because a pattern cannot be ruled on
-  without being read, and a task's moves from `nextActions`.
+  decision's argument from `readRecord`, a task's moves from `nextActions`, and
+  a pattern's body from `lookupServedSkill`, which serves it labelled with its state,
+  because a pattern cannot be ruled on without being read.
 
   **Both lists ask the DISPOSITION**, which is what a state means to a reader,
   classified once per machine from that machine's transition table. Neither asks
@@ -55,8 +55,8 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   `deprecate` on an adopted pattern, and `reopen` on a completed task, so that rule
   would make a pendency of every call the project ever settled, and it did exactly
   that to every task ever finished until the lists were derived this way.
-- **`brief`**: everything that governs the work in the tree that TRAVELS, whole:
-  every decision in force and every adopted pattern of the public tree, each by name.
+- **`brief`**: everything that governs the work in the tree that TRAVELS, whole.
+  Every decision in force and every adopted pattern of the public tree, each by name.
   It composes the same two derivations `bootstrap` does, so a file generated from it
   and the session's opening read cannot disagree about what "in force" means. Where
   they differ is the trees: this one takes the SCOPED sources and keeps the public
@@ -101,7 +101,7 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   how long it has been open, and how long since anything was recorded in it.
 - **`nextActions`**: from a task's state, the moves the workflow allows next,
   read straight from the transition table (a terminal state yields none).
-- **`guard`**: the workflow gate asked as a question: "may I do this move, and
+- **`guard`**: the workflow gate asked as a question, "may I do this move, and
   if not, why?" (the gate's own typed verdict, returned without writing anything).
 
 ## What it proves, and what it does not
@@ -257,7 +257,7 @@ and the one document it feeds is committed.
   `focus`/`resume` (an actor's current and last work), `next-action`
   (the moves a state allows), `search` (finding what was recorded), and `skills`
   (the patterns: the adopted ones, and the ones awaiting a ruling).
-- **`intelligence/`**: the auditor's reads over every visible tree: `timeline`
+- **`intelligence/`**: the auditor's reads over every visible tree, `timeline`
   (an entity's history), `references` (what it connects to), `accountability`
   (who authorized what), `antipatterns` (recurring shapes), `exposure`
   (records holding a credential format), `provenance` (who proposed and who

@@ -1,4 +1,4 @@
-# What it proves — and what it does not
+# What it proves, and what it does not
 
 Being exact about this is what the product is for, so it is the section worth
 reading twice. `mnema verify` reads the events and the committed public keys of

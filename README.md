@@ -82,7 +82,7 @@ The whole install, the other hosts and the first record, line by line, are in
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-it-works-dark.svg">
-  <img src="docs/assets/how-it-works-light.svg" alt="Record, rule, hand over, verify, over a signed, append-only record committed with the code" width="880">
+  <img src="docs/assets/how-it-works-light.svg" alt="Record, rule, hand over, verify: over a signed, append-only record committed with the code" width="880">
 </picture>
 
 </div>

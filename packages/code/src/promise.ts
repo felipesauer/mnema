@@ -17,7 +17,7 @@
  * or that nothing was removed: a record forged whole, with `.mnema` deleted and refounded
  * under another key, verifies clean and word for word like an honest one, and so does a
  * tail deleted together with its key. `docs/cli-reference.md` carries that argument in
- * full under "What it proves <em dash> and what it does not", and this sentence is the short form
+ * full under "What it proves, and what it does not", and this sentence is the short form
  * of it rather than a stronger claim placed on top of it.
  *
  * THE CAVEAT IS HALF THE PROMISE, NOT A FOOTNOTE, which is why it is a constant here and
