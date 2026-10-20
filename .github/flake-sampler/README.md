@@ -11,7 +11,7 @@ green, and it repairs no flake it finds. It produces a **rate**.
 ## What runs
 
 [`../workflows/flake-sampler.yml`](../workflows/flake-sampler.yml) runs the suite ten times in
-each of nine jobs — three runtimes times three shards — for **N=30 per runtime**, and hands every
+each of nine jobs (three runtimes times three shards) for **N=30 per runtime**, and hands every
 report to [`summarize.mjs`](summarize.mjs), which publishes one row per case: how many of those
 runs it failed in.
 
@@ -52,7 +52,7 @@ a night asked for by hand opens an issue, and an issue is still not a gate: it b
 
 A counter that returns zero when it in fact read nothing is worse than no counter. So the
 summariser refuses, by name, on a short count, on a label that carries the wrong number of runs,
-on a report it cannot name or parse, and on a report whose `numTotalTests` is zero — which is what
+on a report it cannot name or parse, and on a report whose `numTotalTests` is zero, which is what
 vitest writes when it matches no test file at all, report file and everything.
 
 It prints **no rate table** when it refuses, and it exits `2` rather than the `1` a flake gets.
@@ -63,7 +63,7 @@ It prints **no rate table** when it refuses, and it exits `2` rather than the `1
 gh workflow run flake-sampler.yml --ref <branch>
 ```
 
-Works from any branch that carries the file — probed, not assumed: run `32556614503` was
+Works from any branch that carries the file (probed, not assumed): run `32556614503` was
 dispatched against a branch that is not the default one. The nightly `schedule` is the half that
 does **not** work from a branch: scheduled workflows fire from the default branch only, which is
 `main`. Until this file reaches `main`, every night has to be asked for, or arrives because a
