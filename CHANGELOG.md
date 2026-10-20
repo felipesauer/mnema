@@ -10,6 +10,8 @@ with its own changelog.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-20
+
 ### Changed
 
 - **The install is `npm i -g @mnema/code`.** The README, the install page, the package pages, `mnema doctor` and the
@@ -1241,6 +1243,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.1.1]: https://github.com/felipesauer/mnema/releases/tag/v0.1.1
 [0.1.0]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0
 [0.2.0-beta]: https://github.com/felipesauer/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46
 [0.1.0-beta]: https://github.com/felipesauer/mnema/tree/1c17287fa389b2ef75f1d2ea71d4c7fbca54889d
