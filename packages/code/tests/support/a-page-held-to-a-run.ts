@@ -49,8 +49,8 @@ const AN_ALIAS = new RegExp(
 const A_DATE = /\b\d{4}-\d{2}-\d{2}(?=T|\b)/g;
 
 /**
- * What the line under a console's answer says that the machine measured — how long it took and
- * the hour it was done: `✻ status · 56ms · done 20:28`. Both are a clock's, so they are minted
+ * What the line under a console's answer says that the machine measured (how long it took and
+ * the hour it was done): `✻ status · 56ms · done 20:28`. Both are a clock's, so they are minted
  * like an id and read as what they are. Matched on the whole of the line's shape, never on a
  * duration or an hour alone, so a `30s` or a `12:00` somewhere in a record's own words is left as
  * the record wrote it.
@@ -130,7 +130,7 @@ export type Step =
  * command printed.
  *
  * A command may run over several lines with a trailing `\`, as a shell reads it. Everything else
- * — a comment, `cd` into the reader's own repository — is the reader's and not the binary's, and
+ * (a comment, `cd` into the reader's own repository) is the reader's and not the binary's, and
  * is not a step. Throws when the section or its block is gone, because a guard that silently read
  * nothing would be a guard reporting that output it never compared agrees.
  */

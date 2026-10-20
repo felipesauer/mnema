@@ -26,7 +26,7 @@ export const ESC = '\u001b';
  * session.
  *
  * Spelled by its code point, like every other control byte here. IT WAS A WORD AT MOST OF THE
- * SITES THAT NOW READ THIS — `/exit`, typed and submitted, and the word is gone: what a caller
+ * SITES THAT NOW READ THIS: `/exit`, typed and submitted, and the word is gone; what a caller
  * types is the reads of the record, and the way out is the keystroke every console has answered
  * to since before this one existed (`src/session-words.ts`, `THE_KEY_THAT_LEAVES`).
  *
@@ -149,7 +149,7 @@ export const hooksNothing = {
  *
  * MEASURED, ON THE SAME RENDERER: a console opened and left immediately and the same console
  * opened and left three hundred milliseconds later produced pages that differ in exactly one
- * row — the row where the screen erase glues the last row of one frame to the first row of the
+ * row, the row where the screen erase glues the last row of one frame to the first row of the
  * next. With the erase taken out the two agree, and so do the painted and the plain. That is
  * the whole of the trunk's first red (`the panel … says exactly what the unpainted one says`),
  * and it was NOT the two renderers disagreeing: it was one renderer disagreeing with itself.
@@ -166,7 +166,7 @@ export const hooksNothing = {
  * SPELLED HERE RATHER THAN IMPORTED, like the rest of this function and for the reason the
  * product's own ban gives: exactly one module under `src/repl` may name an erase
  * (`repl/erasing.ts`, and `the-console-on-ink.test.ts` asserts it is the only one), and a test
- * naming the bytes it strips is outside that corpus on purpose — two other files driving a
+ * naming the bytes it strips is outside that corpus on purpose; two other files driving a
  * device already spell this one.
  */
 export function withoutLayout(bytes: string): string {

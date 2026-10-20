@@ -105,7 +105,7 @@ const ERASES_THE_HISTORY = `${ESC}[3J`;
 const REDRAWS_EVERYTHING = `${ESC}[2J`;
 /**
  * THE WHOLE OF WHAT THE LIBRARY WRITES TO START THE PAGE OVER: erase the screen, erase the
- * history above it, and back to the top — one contiguous sequence, assembled by the library's
+ * history above it, and back to the top, one contiguous sequence, assembled by the library's
  * own escape module and written in one call (`ansi-escapes`, `clearTerminal`).
  */
 const CLEARS_THE_TERMINAL = `${REDRAWS_EVERYTHING}${ERASES_THE_HISTORY}${ESC}[H`;
@@ -132,8 +132,8 @@ const CTRL_D = ENDS_THE_INPUT;
  * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
- * was twenty-four rows. The floor is forty-two now — the height the name is drawn whole at,
- * worked out from the drawing rather than written down (`src/repl/floor.ts`) — so forty is under
+ * was twenty-four rows. The floor is forty-two now: the height the name is drawn whole at,
+ * worked out from the drawing rather than written down (`src/repl/floor.ts`). So forty is under
  * it, and a case that opened there would be driving
  * the screen that says the window is too small. Read off the product rather than retyped, so
  * the day the floor moves again these cases move with it.
@@ -283,7 +283,7 @@ async function inPty(options: {
     await until(() => arriving.text().includes(PROMPT) || over, 'opened its console');
     // WHERE WHAT THE CALLER DOES BEGINS, and the whole reason it is taken: what this driver
     // is asked to wait for is *"local integrity verified"* in four cases, and THE PANEL SAYS
-    // THAT — it is the record's own verdict, on every page there is. So the wait below was
+    // THAT. It is the record's own verdict, on every page there is. So the wait below was
     // answered by the opening, and the keys after it were sent to a session that had not
     // finished the verb. The rule and why it is one function: `support/pty.ts`,
     // {@link arrivedSince}.
@@ -393,8 +393,8 @@ describe('the console gives the terminal back, whichever way the session ends', 
     // THERE WERE TWO CASES HERE AND THERE IS ONE. The first left by the WORD `/exit` and the
     // second by Ctrl-D, which were two ways out and are now one: the word is gone from the
     // vocabulary, and the key that always did the same thing is the way out
-    // (`src/session-words.ts`). What the two asserted was identical — the terminal comes back
-    // — so what is left is the case, not both of them under two names.
+    // (`src/session-words.ts`). What the two asserted was identical (the terminal comes back),
+    // so what is left is the case, not both of them under two names.
     const ran = await inPty({
       entry: [CLI, REPL_VERB],
       types: ['verify\r'],
@@ -535,8 +535,8 @@ function saidAbout(all: string, line: string): string[] {
   rows.pop();
   // AND THE ECHO IS FOUND WITH ITS ESCAPES OFF, which is what the echo becoming a composed
   // LINE cost this locator. It used to be the one row of the page a renderer never touched, so
-  // its bytes were the prompt and the words, contiguous; it is parts now — the prompt in the
-  // accent, what the caller typed in bold (`presentation/echo.ts`) — so a search of the raw row
+  // its bytes were the prompt and the words, contiguous; it is parts now: the prompt in the
+  // accent, what the caller typed in bold (`presentation/echo.ts`). So a search of the raw row
   // finds nothing at all whenever the console is painting. What is SLICED is still the rows
   // themselves, escapes and all, because the comparison this feeds is about those bytes.
   // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.

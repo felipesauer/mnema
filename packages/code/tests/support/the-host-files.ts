@@ -111,7 +111,7 @@ const signsAs = (host: HostName): readonly string[] => ['--agent-key', host];
 
 /**
  * The environment a manifest that names its host starts the server with: the agent it signs as,
- * read by `mnema mcp` from `MNEMA_AGENT_KEY` — an environment variable and not an argument,
+ * read by `mnema mcp` from `MNEMA_AGENT_KEY`, an environment variable and not an argument,
  * because a `mnema` older than the option ignores a variable and refuses an argument, and a server
  * that does not start over a plugin update is worse than one that signs as the person.
  */
@@ -257,7 +257,7 @@ const CODEX_HOOKS_DESCRIPTION =
   "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Each can be switched off with `mnema switch`, which records that it was.";
 
 /**
- * Codex's hooks file: the opening, and the gate before a patch — no end-of-response count and no
+ * Codex's hooks file: the opening, and the gate before a patch, no end-of-response count and no
  * corrections, which read a transcript in Claude Code's format, and Codex writes its own.
  *
  * NO SHELL IN FRONT. Codex applies the matcher (`apply_patch`, the one name it hands a hook for a
@@ -294,7 +294,7 @@ const COPILOT_HOOKS_DESCRIPTION =
   "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.";
 
 /**
- * Copilot CLI's hooks file: the opening, and the gate before a write — no end-of-response count
+ * Copilot CLI's hooks file: the opening, and the gate before a write, no end-of-response count
  * and no corrections, which read a transcript in Claude Code's format.
  *
  * THE EVENTS ARE NAMED IN PASCAL CASE, which is what makes the host hand a hook the payload in
@@ -340,8 +340,8 @@ export function copilotHooksJson(): string {
 
 /**
  * The module OpenCode loads from `.opencode/plugins/`: its hook is code, not a command in a file,
- * so the plugin is a JavaScript module that runs `mnema` as a process, with no sibling to import
- * — a person copies this one file.
+ * so the plugin is a JavaScript module that runs `mnema` as a process, with no sibling to import;
+ * a person copies this one file.
  *
  * WHAT IT HOLDS IS THE ROW'S, NOT A SECOND READING: the tools it writes through are the reader's
  * (`writeToolsOf`), the host it names to the verb is the row's, and how long it waits is the
@@ -706,7 +706,7 @@ export function codexPluginJson(): string {
 }
 
 /**
- * The server-only plugin's manifest as Codex reads it: the same server, and no hooks file — the
+ * The server-only plugin's manifest as Codex reads it: the same server, and no hooks file; the
  * directory has none, so Codex's default (`hooks/hooks.json`) finds nothing either. Without it,
  * Codex read the Claude Code manifest and started the server with `${CLAUDE_PLUGIN_ROOT}` left
  * as it was written.
@@ -892,8 +892,8 @@ const RAW = 'https://raw.githubusercontent.com';
 
 /**
  * How each host is shown in the summary: the name a reader knows it by, who makes it and what kind
- * of tool it is, and its own logo — one file for a light page and one for a dark one, where the
- * logo has two. The logos are their owners' marks, linked and not copied into this repository. A
+ * of tool it is, and its own logo (one file for a light page and one for a dark one, where the
+ * logo has two). The logos are their owners' marks, linked and not copied into this repository. A
  * host added to the table without a row here does not compile.
  */
 const SHOWN: {

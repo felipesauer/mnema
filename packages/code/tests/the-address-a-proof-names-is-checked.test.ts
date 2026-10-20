@@ -5,7 +5,7 @@
  * IT EXISTS BECAUSE A MUTATION FOUND NOTHING. `mnema witness upgrade` reads the calendar
  * address off the proof file, and a proof is a file a project can receive; the act now
  * refuses one that names no public timestamp operator, and says so in a phrase of its own
- * — `was not asked by this machine` — because "the calendar is down, ask again later" and
+ * (`was not asked by this machine`) because "the calendar is down, ask again later" and
  * "your proof names somewhere I will not go" call for opposite responses. Collapsing that
  * phrase back onto `did not answer` left **the whole suite green**: the check itself is
  * witnessed six ways in `chain`, the SHAPE of the line is pinned by

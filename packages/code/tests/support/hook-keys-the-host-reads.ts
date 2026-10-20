@@ -10,7 +10,7 @@
  * It is a list copied from a page that moves. A name the host adds after that date and this
  * plugin uses makes the test that calls {@link whatTheHostDoesNotRead} red until the list is
  * read again and the date above changes with it: a red that names its own cause, and the cheaper
- * mistake of the two — the other is a hook that never runs.
+ * mistake of the two (the other is a hook that never runs).
  */
 
 /** Every event in the host's lifecycle table. */

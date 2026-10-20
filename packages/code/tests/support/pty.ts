@@ -19,7 +19,7 @@
  * IT IS ONE FILE BECAUSE IT IS ONE INSTRUMENT. Two deliveries needed it and the second
  * copied the first, which is how two ideas of "wait until the session settled" come to
  * exist and how one of them quietly stops waiting. Everything about a particular fixture
- * — where the project is, what the binary is called, what environment it runs in —
+ * (where the project is, what the binary is called, what environment it runs in)
  * arrives as an argument, so nothing here knows about any one case.
  */
 
@@ -58,8 +58,8 @@ const WHAT_THE_DEVICE_SAID = 'size';
  *
  * AND IT IS RENAMED INTO PLACE RATHER THAN WRITTEN INTO IT, because the first version of
  * this accused a session that was fine. A redirection CREATES the file and fills it after,
- * so a reader waiting for the file to exist reads an EMPTY one — measured in a run of the
- * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*. A rename
+ * so a reader waiting for the file to exist reads an EMPTY one (measured in a run of the
+ * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*). A rename
  * within a directory is atomic, so the name appearing at all means the content is there.
  */
 export function sizedTo(rows: number, columns: number, here: string): readonly string[] {
@@ -205,8 +205,8 @@ function theSizeIsTheOneAskedFor(
  * wrapped the whole frame in.
  *
  * IT WAS THE CURSOR, SHOWN AGAIN, and a one-row terminal falsified that inside this
- * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`
- * — the caret is hidden and never shown, because there is nowhere to put it. The end of the
+ * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`;
+ * the caret is hidden and never shown, because there is nowhere to put it. The end of the
  * synchronized update is written on every path there is, which is what makes it the frame's
  * boundary rather than a symptom of one. Spelled by its code point, like every unusual byte
  * in this repository.
@@ -340,7 +340,7 @@ export function aFrameAfter(prompt: string): (bytes: string) => boolean {
   // boundary with another frame already in flight behind it, and a screen replayed from
   // half of one is the defect this exists to stop. Measured: with the boundary alone, the
   // two rules of the input area were on the screen about half the time at a hundred
-  // columns — the rows are written after the prompt, in the same frame.
+  // columns; the rows are written after the prompt, in the same frame.
   return (bytes) =>
     bytes.endsWith(FRAME_IS_DRAWN) && bytes.lastIndexOf(prompt) < bytes.lastIndexOf(FRAME_IS_DRAWN);
 }
@@ -354,7 +354,7 @@ export function opensAConsole(prompt: string): Step {
  * The step every driven session ends with.
  *
  * IT WAITS FOR NOTHING, and that is honest rather than lazy: what it is waiting for is the
- * process to END, which is what the driver waits out after the last step — a predicate over
+ * process to END, which is what the driver waits out after the last step; a predicate over
  * the bytes would be waiting for a frame the session may never draw on its way out.
  */
 export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true, what: 'left' };
@@ -368,7 +368,7 @@ export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true
  * page there is, so a step that typed `verify` and waited for *"local integrity verified"*
  * was over before the caller's line had been echoed. Measured: red once in two runs of the
  * suite, green three times out of three on its own, and the case it broke was the one
- * asserting the echo — *"the caller never typed a verb"*, over a screen of blank rows. The
+ * asserting the echo, *"the caller never typed a verb"*, over a screen of blank rows. The
  * fourth waited for a SLASH, which the opening writes three ways over: the project's path,
  * the record's `T1/T2/T4`, and the hint that names that very key.
  *
@@ -392,9 +392,9 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
  * THE SAME QUESTION WITH THE PAINT TAKEN OUT: what a step waits for when what it is waiting
  * for is a line the product COMPOSED.
  *
- * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now — the prompt in
+ * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now: the prompt in
  * the accent this product is marked by, their own words in a weight of their own
- * (`src/presentation/echo.ts`) — so `mnema> x` is not a run of bytes on the wire any more, and a
+ * (`src/presentation/echo.ts`). So `mnema> x` is not a run of bytes on the wire any more, and a
  * step waiting for one waits for ever.
  *
  * AND IT IS NOW BOTH ROWS. This said *the row being TYPED is still plain, so a step about the
@@ -430,7 +430,7 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  * nothing of `x` in it, while the first half is still approving the frame that arrived BEFORE the
  * key. So the step ended before the keystroke had been drawn at all, and the case then read a
  * screen with the thing still on it. Measured in whole-suite runs, under load: *cycle 10: the list
- * was open* at a hundred by thirty, and *the list is still open* on the Escape that shuts it —
+ * was open* at a hundred by thirty, and *the list is still open* on the Escape that shuts it,
  * both green on their own, because on an idle machine the next frame beats the settling wait.
  *
  * SO AN ABSENCE IS WAITED FOR IN TWO PARTS, and the first is a PRESENCE: the row being typed is
@@ -449,7 +449,7 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  * line drawn once early in the step is in that window forever, however far the roll has since
  * pushed it off the page. For "it has gone from the TEXT the caller is typing into" that is the
  * right question and it is why that function stays. For "it has scrolled off the PAGE" it is the
- * wrong one, and it is wrong in the direction that cannot be waited out — measured: widening
+ * wrong one, and it is wrong in the direction that cannot be waited out; measured: widening
  * `aFrameWithout` to cover the oldest line turned an intermittent assertion into a 31 s timeout
  * in 7 of 10 runs, because the line keeps being redrawn and so keeps arriving.
  *

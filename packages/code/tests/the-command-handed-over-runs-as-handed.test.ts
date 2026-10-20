@@ -17,7 +17,7 @@
  * backtick followed by `mnema `, over every literal of the source and every tracked page, tests
  * included in the sweep. `run end` requires `--which <agent>` and was handed without it in four
  * places: the sentence `run start` prints, the runs contract four tool descriptions carry to the
- * agent, a sentence on the page, and a BLOCK on the page — the one a reader copies to close the
+ * agent, a sentence on the page, and a BLOCK on the page, the one a reader copies to close the
  * session the block opened. And the discriminant has a blind spot of its own: the product also
  * hands commands over WITHOUT backticks. `key request` prints `mnema key enroll <the line>` alone
  * on a line, the `--help` pages print examples, and `status` prints `— mnema decision import
@@ -149,7 +149,7 @@ const AFTER_A_DASH = /— (mnema ([a-z][a-z-]*)[^`\n]*)/;
  * (`literalsOnly`), never off its comments, which are handed to nobody.
  *
  * A literal is one piece of text: a span has to open and close inside one, and a span that runs
- * into the edge of its literal is reported as unreadable rather than guessed at — the words on
+ * into the edge of its literal is reported as unreadable rather than guessed at; the words on
  * the other side of a `+` are the program's to choose, and a reading that joined them would be
  * reading a line nobody can see in the source.
  *
@@ -193,7 +193,7 @@ export function handedInSource(
 
 /**
  * A command as a failure prints it: whitespace collapsed, and what the program interpolates shown
- * as `{}` — the spelling `the-phrase-the-domain-words-is-one-line.test.ts` already gives a hole.
+ * as `{}` (the spelling `the-phrase-the-domain-words-is-one-line.test.ts` already gives a hole).
  */
 function shown(text: string): string {
   return text.replaceAll(INTERPOLATED, '{}').replace(/\s+/g, ' ').trim();
@@ -310,8 +310,8 @@ function spelled(argument: Argument): string {
 
 /**
  * The program as its declarations describe it, and no more: every command, argument and option,
- * whether an option is mandatory and what it defaults to, the version, and whether a command acts
- * — with an empty body where it does, no hook anywhere, and no parser on any value.
+ * whether an option is mandatory and what it defaults to, the version, and whether a command acts,
+ * with an empty body where it does, no hook anywhere, and no parser on any value.
  */
 export function mirrorOf(real: Command): Command {
   const copy = new Command(real.name());
@@ -639,7 +639,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT, and the plugin's page says what that
  * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
- * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
+ * `--hook`, and the session is handed what `mnema brief` prints, two names in one span, looked
  * at (63 → 65 names).
  *
  * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose, the
@@ -883,8 +883,8 @@ describe('the readings know what they read', () => {
 
   it('the program uses no parse setting the mirror cannot copy', () => {
     // THE MIRROR'S PREMISE, READ OFF THE SOURCE. A setting commander keeps with no getter cannot
-    // be carried over, so a verb that began using one would be parsed here by commander's default
-    // — and a stricter real parse would be a line this guard passes. `aliases()` with nothing in
+    // be carried over, so a verb that began using one would be parsed here by commander's default,
+    // and a stricter real parse would be a line this guard passes. `aliases()` with nothing in
     // it READS the aliases, and is left alone.
     const setters =
       /\.(?:allowExcessArguments|allowUnknownOption|passThroughOptions|enablePositionalOptions|conflicts|implies|env|preset|alias)\(|\.aliases\(\s*[^)\s]/;

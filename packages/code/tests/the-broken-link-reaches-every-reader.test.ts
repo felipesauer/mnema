@@ -229,8 +229,8 @@ const doors = [...opens, ...reads];
 
 describe('every read that opens the record either asks for the breaks or says why not', () => {
   // THE NON-VACUITY GUARD, and it runs first. A sweep whose pattern has stopped matching
-  // finds nothing and reports success — this repository has been bitten by exactly that
-  // — so the count is pinned above the number of doors the delivery covered.
+  // finds nothing and reports success (this repository has been bitten by exactly that),
+  // so the count is pinned above the number of doors the delivery covered.
   it('finds the doors at all', () => {
     expect(opens.length).toBeGreaterThanOrEqual(18);
   });
@@ -239,7 +239,7 @@ describe('every read that opens the record either asks for the breaks or says wh
     const asks = text(path).includes(ASKS_THE_READING);
     const excused = SERVES_NO_RECORD_CONTENT[path];
     // Asserted as the PAIR rather than as two conditions, so a red says which of the two
-    // it is: a file that does both is as wrong as one that does neither — an excuse
+    // it is: a file that does both is as wrong as one that does neither; an excuse
     // beside a call is an excuse nobody reads.
     expect({ path, asks, excused: excused !== undefined }).toStrictEqual({
       path,

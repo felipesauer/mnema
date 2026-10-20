@@ -17,14 +17,14 @@
  *
  * WHY A FILE, AND NOT `-c`. Git clears `GIT_CONFIG_PARAMETERS` and `GIT_CONFIG_COUNT` from the
  * environment of the receiving side of a local push, so a `-c gc.auto=0` on the command that
- * pushes never reaches the remote that repacks — measured: the remote repacked behind `-c
+ * pushes never reaches the remote that repacks; measured: the remote repacked behind `-c
  * gc.auto=0`, behind `-c maintenance.auto=false`, and behind `GIT_CONFIG_COUNT`. The file named
  * by `GIT_CONFIG_GLOBAL` is read by every git the case starts, `receive-pack` included.
  *
  * WHY BOTH LINES. Each alone stopped the repack, measured. `maintenance.auto = false` is the one
  * that says what is off: no command starts automatic maintenance. `gc.auto = 0` is the switch the
  * repack task reads too, and it is kept for a git that runs `gc --auto` itself, which reads
- * nothing else — an intention, not a measurement: git 2.55 is the only version this was run on.
+ * nothing else (an intention, not a measurement: git 2.55 is the only version this was run on).
  *
  * What holds every such test to it is `every-git-that-writes-runs-without-maintenance.test.ts`,
  * which also asks the file itself: behind it, a push that puts two loose objects in `objects/17`

@@ -122,7 +122,7 @@ describe('a clean verify says the verdict and stops', () => {
     // true only where the thing pointed at is printed: the short answer names the flag, and
     // the flag prints the note. (The second reader never says this clause: it reads a backup
     // from the record and words it as a note of its own, so there is no second line to keep
-    // in step — the two differ by construction, and only the product's carries a pointer.)
+    // in step; the two differ by construction, and only the product's carries a pointer.)
     await found();
     await record('write the runbook');
 

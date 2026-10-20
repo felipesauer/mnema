@@ -1,5 +1,5 @@
 /**
- * P4 — THE BRIEF IS A FUNCTION OF THE RECORD, held over generated records: the same decisions
+ * P4 (THE BRIEF IS A FUNCTION OF THE RECORD), held over generated records: the same decisions
  * read in any order the trees and their tails can be listed in print the same bytes.
  *
  * `the-document-is-a-function-of-the-record.test.ts` holds the half that asks what the printer

@@ -276,7 +276,7 @@ describe('the agent is told the same thing', () => {
   it('puts the line in the TEXT the agent reads, over the real transport', async () => {
     // The field on the tool result is not what an agent sees; the text block is. A case
     // that stopped at the field left the server free to compute the reach and print
-    // none of it — measured: that mutation turned 123 existing MCP cases green.
+    // none of it; measured: that mutation turned 123 existing MCP cases green.
     file('src/collate/fold.ts');
     file('src/billing/charge.ts');
     const client = await connectClient();

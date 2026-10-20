@@ -57,7 +57,7 @@ const A_REGEX_CAN_FOLLOW_THESE_WORDS =
  * THE REGEX MODE IS NOT DECORATION, and the premise it replaces was that a regex holds
  * nothing this scanner has to know about. It holds quotes. `/"at":"([^"]+)"/` carries five
  * of them, so the reader took the fifth for the start of a string and swallowed everything
- * up to the next quote ANYWHERE in the file — a hundred and nineteen lines of
+ * up to the next quote ANYWHERE in the file, a hundred and nineteen lines of
  * `what-the-agent-just-did.test.ts`, assertions included. Measured over the whole
  * workspace by appending a sentinel and asking whether it survived: nine of five hundred
  * and seventy-eight files ended outside code mode before this mode existed, and none do
@@ -65,9 +65,9 @@ const A_REGEX_CAN_FOLLOW_THESE_WORDS =
  * that the guard was wrong about `repl/following.ts`; this is what it was wrong about.
  *
  * Telling a regex from a division is the one judgement here: after an identifier, a digit,
- * a `)` or a `]` a slash divides, and after anything else it opens a pattern — with the
+ * a `)` or a `]` a slash divides, and after anything else it opens a pattern (with the
  * keywords that end in a letter and still want an operand named above, because `return
- * /x/` is not a division.
+ * /x/` is not a division).
  */
 export function codeOnly(source: string): string {
   return scan(source).code;

@@ -87,7 +87,7 @@ export interface Witnessing {
    *
    * So the fact leaves here and the verdict is the caller's, the same split the module
    * comment draws: some of these are legitimate and must be declared with a reason,
-   * because this resolver only ever looks for TypeScript under a package — a `.mjs`
+   * because this resolver only ever looks for TypeScript under a package; a `.mjs`
    * beside the workflow files cannot resolve however right the path is.
    */
   readonly unresolved: readonly Unresolved[];
@@ -143,7 +143,7 @@ export function resolveImport(
  * THOSE LENGTHS ARE DATED, and this paragraph used to write one as though it were not. It
  * said "the largest 466 lines long, out of `every-file-has-a-test-that-names-it.test.ts`",
  * which was two claims and both fell: the largest anywhere is `mcp/server.ts`, and 466 was
- * the guard's own clause when it was measured at `60d4df0f` — a file of 994 lines then.
+ * the guard's own clause when it was measured at `60d4df0f` (a file of 994 lines then).
  * An invented clause runs from a declaration to somebody else's `from`, so its length is a
  * property of how long the file has since become, and every edit moves it. A number for it
  * belongs beside the commit it was taken at, which is why the ledger this module feeds
@@ -168,7 +168,7 @@ export function resolveImport(
  * read as being about comments in clauses, and about those it is false. What falsified it
  * is `context/src/index.ts:26`, an `export type {` carrying three LINE comments among the
  * names, with slashes, apostrophes and em-dashes on their way to `} from '@mnema/core'`.
- * The grammar above admits none of that, so the statement is not matched wrong — it is not
+ * The grammar above admits none of that, so the statement is not matched wrong; it is not
  * matched at all: handed that file this returns twenty-four clauses and `@mnema/core` is
  * not among them, where `[\s\S]*?` returned twenty-five and it was. Measured over
  * `packages/`, that clause is the ONLY one holding a character outside the set, and the
@@ -210,7 +210,7 @@ export function importClauses(text: string): { clause: string; specifier: string
  * have been observed, and calling it an import overstates what happened by the widest
  * margin this scanner is capable of. Measured on this repository: seventy-three clauses
  * are shaped this way, and six product files were called witnessed on the strength of
- * them alone — the GUARD's header names which, at its point 5, and says what falsified
+ * them alone; the GUARD's header names which, at its point 5, and says what falsified
  * the earlier reading. This sentence used to send the reader to the module comment above,
  * which names none of them; the list has only ever been in the guard.
  *
@@ -313,8 +313,8 @@ function endOfAngled(code: string, from: number): number {
  * outlives its instrument is given exactly.
  *
  * The rule for the annotation is one line long: a `{` inside a group belongs to a type, and
- * a `{` at the top belongs to the body UNLESS what precedes it still WANTS a type — after
- * `:`, `|`, `&`, `,`, or an arrow. That is the entire difference between `: { a } {`, where
+ * a `{` at the top belongs to the body UNLESS what precedes it still WANTS a type (after
+ * `:`, `|`, `&`, `,`, or an arrow). That is the entire difference between `: { a } {`, where
  * the first brace is a type, and `: Promise<{ a }> {`, where it is not.
  */
 function bodyBrace(code: string, afterName: number): number {
@@ -477,8 +477,8 @@ export function flowsIn(code: string): Flows {
  *
  * It is reached the ordinary way, by the third rule below: a test that hands `expect` to
  * something tainted taints it. Measured over this repository by taking the guard out and
- * driving the walk exactly as `witnessing` drives it — once per (test, product) pair, from
- * that pair's own seeds — EIGHTEEN test files reach it, sixteen of them through a tainted
+ * driving the walk exactly as `witnessing` drives it, once per (test, product) pair, from
+ * that pair's own seeds: EIGHTEEN test files reach it, sixteen of them through a tainted
  * call's arguments and the other two through a binding or a function body. This comment
  * said seven; that number came from seeding a file's imports all at once instead of pair by
  * pair, which is a different question and answers 4, and neither is what the scanner does.

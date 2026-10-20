@@ -5,7 +5,7 @@
  * WHAT WAS WRONG. The chain refuses an append whose tail stays locked past its budget by
  * THROWING (`TailBusyError`, `chain/src/chain/tail-lock.ts`), and no tool caught it, so the SDK
  * answered with the message alone: no `Refused (TAIL_BUSY)` for an agent to read the code off,
- * and none of what the session owed — a write founds, and opens its run, only once the operation
+ * and none of what the session owed. A write founds, and opens its run, only once the operation
  * has decided, and that founding is itself an append, so a call that meets a busy tail may have
  * founded an identity on its way to the fact the lock then refused, and the sentence that says so
  * waited for a next reply. `answeringThrownRefusals` in `mcp/server.ts`

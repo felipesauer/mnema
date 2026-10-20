@@ -69,7 +69,7 @@ export function mergeAForeignTail(into: string, machine: string): string {
 }
 
 /**
- * An AGENT KEY the project's person enrolled, which signed `signed` facts and was then retired —
+ * An AGENT KEY the project's person enrolled, which signed `signed` facts and was then retired,
  * the one record the CLI cannot write yet (no verb enrols an agent), written the way the chain's
  * own tests write one: the person's writer appends the enrolment and the retirement, a writer
  * holding the agent's key appends its tasks in a tail of its own, and every tail is checkpointed.

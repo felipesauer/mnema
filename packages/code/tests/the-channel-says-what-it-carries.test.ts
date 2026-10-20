@@ -518,7 +518,7 @@ describe('every handler that pushes declares the channel it carries', () => {
   it('classifies no tool the plugin does not push through', () => {
     // The other direction of the table, and the reason it is a table: an entry here is a
     // claim that a hook pushes through that tool, so an entry with no hook is a claim
-    // about nothing — the same dead-surface shape `every-public-value-has-a-caller`
+    // about nothing, the same dead-surface shape `every-public-value-has-a-caller`
     // catches for exports.
     const pushed = new Set(
       declaredHooks()

@@ -4,8 +4,8 @@
  *
  * The console is the surface a person reaches by typing `mnema` and it only reads the record: a verb
  * that can change it is refused there and named for the shell. The stack verbs ride that rule and
- * nothing else — the readers (`list`, `show`, `diff`, `check`, `index`) run, and `add`, `remove`,
- * `export`, `enable` and `disable` are refused — so a person in the console sees what is adopted,
+ * nothing else: the readers (`list`, `show`, `diff`, `check`, `index`) run, and `add`, `remove`,
+ * `export`, `enable` and `disable` are refused, so a person in the console sees what is adopted,
  * the hooks a stack declares with their state, and the index, and is sent to the shell for any act.
  *
  * The case that matters is the hook. A pseudo-terminal IS a terminal, so the console is the one

@@ -12,7 +12,7 @@
  *
  * AND NOTHING GUARDED IT. Measured by mutation, in the delivery that added this file: the
  * composition was made to call `existsSync` on a path of this machine, and the whole suite
- * came back GREEN — 4692 of 4692. The same mutation with the read's value reaching the
+ * came back GREEN (4692 of 4692). The same mutation with the read's value reaching the
  * ANSWER went red in eight places. So the value was guarded and the path was not, and the
  * gap between those two is exactly where the defect lives: a read whose result is the same
  * on every machine the fixtures run on (`existsSync('AGENTS.md')`, a `cwd`, an env var)

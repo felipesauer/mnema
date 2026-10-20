@@ -160,7 +160,7 @@ function segment(at: string): string {
 }
 
 /**
- * THE PLANT: the tail's last entry, appended again — same seq, same prev.
+ * THE PLANT: the tail's last entry, appended again (same seq, same prev).
  *
  * Every byte of it is a byte this product wrote. A fixture that hand-wrote an entry would
  * be a case about a record no writer can produce.

@@ -10,8 +10,8 @@
  * only a screen has one.
  *
  * SO THIS IS A SCREEN, and it is deliberately the smallest one that can answer: a grid,
- * a cursor, and the sequences this product and its layout library actually write —
- * moving, erasing a row, erasing the display, and the newline at the bottom that scrolls.
+ * a cursor, and the sequences this product and its layout library actually write
+ * (moving, erasing a row, erasing the display, and the newline at the bottom that scrolls).
  *
  * AND A ROW THAT SCROLLED OFF THE TOP USED TO BE GONE FROM IT, written here in those words:
  * *it went into the scrollback, which is not the screen and is not this model's business*. WHAT
@@ -135,7 +135,7 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
  * *a frame arrived since this step began* is answered by somebody else's frame; the step then
  * ends, the next size is set, and the size in between is never drawn at all. Measured on a loaded
  * machine, in the full suite: the locator refused the read with *no frame in this stream was
- * drawn 80 columns wide*, and it was right — the console never drew at eighty, because by the
+ * drawn 80 columns wide*, and it was right; the console never drew at eighty, because by the
  * time it ran the terminal was already something else.
  *
  * AND THE CONSOLE IS RIGHT TO SKIP IT. The geometry is read at the moment of the drawing, so
@@ -162,7 +162,7 @@ export function drewAt(columns: number): (bytes: string, since: number) => boole
  * they are in the stream.
  *
  * THIS IS THE INSTRUMENT A WHOLE CLASS OF CASES WAS MISSING, and the class is precise: a step
- * WAITS for the frame it caused, and then the case READS by index — `ran.at[3]`. The wait is
+ * WAITS for the frame it caused, and then the case READS by index (`ran.at[3]`). The wait is
  * right; the index is not what the wait guarantees. A resize produces more than one frame, the
  * boundary a step ends on is wherever the stream happened to be quiet, and a machine under load
  * puts that boundary between two frames instead of after both. What the case then replays is the
@@ -462,8 +462,8 @@ export interface Screen {
    */
   readonly beneath: string;
   /**
-   * WHAT IS ABOVE THE SCREEN: every row that left the top, in the order it left — the caller's
-   * scrollback, which is the thing this product's whole page design is about.
+   * WHAT IS ABOVE THE SCREEN: every row that left the top, in the order it left (the caller's
+   * scrollback, which is the thing this product's whole page design is about).
    *
    * IT IS ONLY EVER FED BY A SCROLL, and that is the fact it exists to make observable. A
    * terminal puts a row into the scrollback when it is pushed off the top and at no other time
@@ -971,7 +971,7 @@ function privateMode(body: string, final: string, grid: Grid, columns: number, r
 }
 
 /**
- * INTO THE ALTERNATE SCREEN AND BACK OUT — what `?1049` means, in the words of the
+ * INTO THE ALTERNATE SCREEN AND BACK OUT, what `?1049` means, in the words of the
  * specification: *save the cursor, then switch to the alternate screen buffer, CLEARING IT
  * FIRST*; and on the way out, switch back and restore the cursor.
  *

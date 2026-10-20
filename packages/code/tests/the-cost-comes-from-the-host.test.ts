@@ -182,7 +182,7 @@ async function aRunWithATranscript(): Promise<void> {
   const opened = await mnema('run', 'start', '--which', 'agent-alpha');
   expect(opened.failed, opened.err.join(' / ')).toBe(false);
   // Inside the window on both sides, and it has to be: the run opened a moment ago and
-  // is still open, so the window is `[then, the instant the read happens]` — a fixture
+  // is still open, so the window is `[then, the instant the read happens]`; a fixture
   // dated in the future would sit past the end of it and come back unattributed, which
   // is a real answer for the wrong reason.
   const now = new Date();
