@@ -69,7 +69,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
   '.github/': 26,
   // the manual
-  'docs/': 17,
+  'docs/': 15,
   // the source of @mnema/code outside the areas below
   'packages/code/src/': 5,
   // what it prints

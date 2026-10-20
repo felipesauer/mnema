@@ -1743,8 +1743,8 @@ quote it:
 
 ```sh
 mnema witness upgrade
-#> 8f21ab…-3c9d0e… (public): completed — the attestation over checkpoint f84396… has confirmed
-#>   external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
+#> 8f21ab…-3c9d0e… (public): completed: the attestation over checkpoint f84396… has confirmed
+#>   external witness (T3): covered: Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 
 mnema verify --require=witnessed
 #> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
