@@ -31,6 +31,12 @@
  * for the reason the other instruments in `.github/` refuse: an instrument that checked nothing
  * reads exactly like one that found nothing.
  *
+ * THE NPM PAGES ARE ASKED OF THE REGISTRY. `https://www.npmjs.com/package/<name>` (with or
+ * without `/v/<version>`) answers 403 to every automated client, whether or not the package
+ * exists, so it says nothing about the page. The registry (`registry.npmjs.org`) answers 200 for
+ * a package that exists and 404 for one that does not, so that is what is asked; the report still
+ * names the address the page carries.
+ *
  * THERE IS NO ADDRESS WRITTEN IN THIS FILE. The pages are read, so a README that changes its
  * title, its anchors or its images changes what is asked and nothing here.
  *
@@ -184,6 +190,23 @@ export function addressesOf(pages) {
 }
 
 /**
+ * The address to ask for one the page carries: the registry's for a page of a package on npm
+ * (the site refuses automated clients), the address itself for any other.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+export function addressToAsk(url) {
+  const page =
+    /^https:\/\/(?:www\.)?npmjs\.com\/package\/((?:@[^/]+\/)?[^/]+)(?:\/v\/([^/]+))?\/?$/i.exec(
+      url,
+    );
+  if (page === null) return url;
+  const name = (page[1] ?? '').replace('/', '%2f');
+  return `https://registry.npmjs.org/${name}${page[2] === undefined ? '' : `/${page[2]}`}`;
+}
+
+/**
  * ONE ADDRESS, asked up to `attempts` times. `status` is the last HTTP status, or `null` when the
  * last attempt got no answer at all or a rate limit: the two things that say nothing about the
  * page.
@@ -199,7 +222,7 @@ async function askOne(url, { fetch: ask, wait, attempts }) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (attempt > 0) await wait(WAITS_IN_MS[attempt - 1] ?? WAITS_IN_MS.at(-1) ?? 0);
     try {
-      const response = await ask(url, { method: 'GET', redirect: 'follow' });
+      const response = await ask(addressToAsk(url), { method: 'GET', redirect: 'follow' });
       await response.body?.cancel();
       if (response.status < 400) return response.status;
       last = response.status === 429 ? null : response.status;

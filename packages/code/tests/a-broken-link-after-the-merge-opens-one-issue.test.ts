@@ -201,6 +201,44 @@ describe('a broken link after the merge opens one issue', () => {
   });
 });
 
+describe('a page of a package on npm is asked of the registry', () => {
+  const PACKAGE_PAGE = 'https://www.npmjs.com/package/@mnema/code';
+  const VERSION_PAGE = 'https://www.npmjs.com/package/@mnema/code/v/2.3.4';
+  const THE_PAGES = [{ path: 'README.md', text: `[a](${PACKAGE_PAGE}) [b](${VERSION_PAGE})\n` }];
+
+  /** The npm site refuses every automated client; the registry answers for what exists. */
+  function npm(exists: boolean) {
+    const calls: string[] = [];
+    const ask = (async (url: string) => {
+      calls.push(url);
+      if (url.startsWith('https://www.npmjs.com/')) return new Response(null, { status: 403 });
+      return new Response(null, { status: exists ? 200 : 404 });
+    }) as unknown as typeof fetch;
+    return { ask, calls };
+  }
+
+  it('counts the page of a package that exists as alive, through the registry', async () => {
+    const { ask, calls } = npm(true);
+    const reading = await scanPages({ pages: THE_PAGES, fetch: ask, wait: noWait });
+    expect(reading.verdict).toBe('clean');
+    expect(reading.broken).toEqual([]);
+    expect(calls.sort()).toEqual([
+      'https://registry.npmjs.org/@mnema%2fcode',
+      'https://registry.npmjs.org/@mnema%2fcode/2.3.4',
+    ]);
+  });
+
+  it('still counts the page of a package that does not exist as broken, under the address of the page', async () => {
+    const { ask } = npm(false);
+    const reading = await scanPages({ pages: THE_PAGES, fetch: ask, wait: noWait });
+    expect(reading.verdict).toBe('broken');
+    expect(reading.broken.map((one) => [one.url, one.status])).toEqual([
+      [PACKAGE_PAGE, 404],
+      [VERSION_PAGE, 404],
+    ]);
+  });
+});
+
 describe('the workflow that runs it', () => {
   const workflow = readFileSync(join(ROOT, '.github/workflows/after-merge-links.yml'), 'utf-8');
 
