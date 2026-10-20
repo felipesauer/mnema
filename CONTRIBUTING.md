@@ -163,7 +163,8 @@ workflow for it.
    tested and no install script runs while the job can ask for the OIDC token. It checks each tarball against
    the SHA-256 that the packing job exposed as its own outputs, not against a file that travels with the
    tarballs.
-4. The tag and the release (whose notes are the CHANGELOG section) come only after the five are on npm, and
+4. The tag and the release (whose notes are the CHANGELOG section) come only after the five are on npm (the job
+   asks npm every 30 seconds for up to about ten minutes, since npm can take that long to serve a new version), and
    they ask for your approval in the `npm` environment once more.
 
 If a publish stops halfway, run the workflow again (Actions, Run workflow, `mode: publish`): the packages
