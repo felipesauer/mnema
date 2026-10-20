@@ -187,6 +187,11 @@ with its own changelog.
 
 ### Changed
 
+- **The five published packages carry no source maps and say where in the repository they live.** `files` of each now
+  leaves out `dist/**/*.map` (a map pointed at sources the package never shipped), and `repository.directory` names the
+  package's folder. The packed install check runs on Node 24.15.0, 24 and 26, its script stops at nothing but still
+  fails at the end, and it fails if a tarball carries a `.map`.
+
 - **The text the program prints reads better where the sweep of the em dash left a chain of colons or an ambiguous
   comma.** Only the punctuation changed, and no word: the `--global` line of `--help` (the parenthesis
   "(left out by default)"), the line `mnema completion --help` prints about where the script goes, the lines of

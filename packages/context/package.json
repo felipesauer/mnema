@@ -21,12 +21,14 @@
   "files": [
     "dist/",
     "!dist/.tsbuildinfo",
+    "!dist/**/*.map",
     "NOTICE"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git"
+    "url": "git+https://github.com/felipesauer/mnema.git",
+    "directory": "packages/context"
   },
   "bugs": {
     "url": "https://github.com/felipesauer/mnema/issues"

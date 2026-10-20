@@ -21,6 +21,7 @@
   "files": [
     "dist/",
     "!dist/.tsbuildinfo",
+    "!dist/**/*.map",
     "stack.schema.json",
     "digest.sh",
     "NOTICE"
@@ -28,7 +29,8 @@
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git"
+    "url": "git+https://github.com/felipesauer/mnema.git",
+    "directory": "packages/stacks"
   },
   "bugs": {
     "url": "https://github.com/felipesauer/mnema/issues"
