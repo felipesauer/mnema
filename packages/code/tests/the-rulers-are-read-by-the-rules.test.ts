@@ -8,7 +8,7 @@
  * suite lied (`flake-sampler/`) and what it left in `/tmp` (`what-the-suite-left-behind/`);
  * the fifth is shipped, and is the first thing a Claude Code user receives from this
  * product. Measured on the trunk: `biome check` over `.github/` reported `Checked 0 files`
- * — not an error, ZEROS, which is the vacuous shape this bench has been bitten by twice —
+ * (not an error, ZEROS, which is the vacuous shape this bench has been bitten by twice)
  * and `tsc` with `checkJs` over the five reported 88 errors, two of which were a field
  * whose declared type could not hold what its own second line assigned to it.
  *
@@ -16,7 +16,7 @@
  * the sixth instrument, and the first one that judges what goes INTO the trunk rather than
  * what came out of a run. The sentence above is left in the past tense rather than edited to
  * six, because the 88 errors were counted over the five that existed then. The count that is
- * about today is asserted, not narrated — `holds every one of them` reads the disk.
+ * about today is asserted, not narrated: `holds every one of them` reads the disk.
  *
  * THE UNIVERSE IS TWO DIRECTORIES, AND THAT IS A JUDGEMENT WRITTEN DOWN. `plugin/` is
  * what this repository SHIPS and `.github/` is what it RUNS itself with; both are read
@@ -25,7 +25,7 @@
  * round to today's options would edit evidence; it has left the tree.
  *
  * WHAT IS RECONCILED, IN BOTH DIRECTIONS. A file on disk that neither config's globs
- * reach is accused, and a glob that reaches nothing is accused too — a config whose
+ * reach is accused, and a glob that reaches nothing is accused too: a config whose
  * patterns stopped matching reads exactly like a clean one, which is the failure this
  * whole family of files exists to refuse.
  *
@@ -212,7 +212,7 @@ describe('the lint reaches a ruler, and it is the includes that carry it there',
 
   it('says nothing at all about the same violation once the tree leaves the includes', () => {
     // THE MUTATION THAT PROVES WHICH LINE CARRIES THIS. Drop `.github/**/*.mjs` and the
-    // identical file with the identical violation comes back as ZEROS — not a refusal, a
+    // identical file with the identical violation comes back as ZEROS, not a refusal, a
     // clean-looking nothing. That is the state this repository was in, and it is why the
     // case above is worth something.
     const config = readConfig<{ files: { includes: string[] } }>(join(REPO, 'biome.json'));
@@ -228,7 +228,7 @@ describe('the lint reaches a ruler, and it is the includes that carry it there',
 
 describe('the type-check reaches a ruler, and it is checkJs that carries it there', () => {
   /**
-   * A copy of a real ruler, under a copy of the REAL rulers project — same `strict`, same
+   * A copy of a real ruler, under a copy of the REAL rulers project: same `strict`, same
    * `noUncheckedIndexedAccess`, same everything, because the options are what is on trial.
    *
    * `extends` is rewritten to an absolute path and `node_modules` is borrowed by symlink,
@@ -280,7 +280,7 @@ describe('the type-check reaches a ruler, and it is checkJs that carries it ther
 
   it('says nothing about the same mutation once checkJs is off', () => {
     // THE OTHER SIDE. Without `checkJs` the project still COMPILES the file and reports a
-    // clean run — the reach is the option, not the include.
+    // clean run: the reach is the option, not the include.
     const { here, file } = staged((options) => {
       options.checkJs = false;
     });

@@ -1,17 +1,17 @@
 /**
- * WHERE THE CHOICE IS DRAWN, drawn — the ink adapter, at streams that are not a terminal.
+ * WHERE THE CHOICE IS DRAWN, drawn: the ink adapter, at streams that are not a terminal.
  *
  * `choice/screen.ts` is the smallest thing this product asks a layout library for: it draws
  * rows and it reads keys, it decides nothing, and it gives the terminal back on every way
  * this process can stop. Until now nothing in this repository observed a value it produced.
- * What named it read its SOURCE — `one-authority-over-colour.test.ts` proves ink is loaded
- * dynamically by parsing the import declarations — and what exercised it was a pseudo-
+ * What named it read its SOURCE (`one-authority-over-colour.test.ts` proves ink is loaded
+ * dynamically by parsing the import declarations) and what exercised it was a pseudo-
  * terminal running the built binary, which instruments no line of it.
  *
  * A PREMISE THIS SLICE OPENED UNDER WAS FALSE, and saying which is the point of writing it
  * down. The premise was that no test here renders ink in process, so a case like this one
  * would be the first and would be risking a worker that hangs on a mount nobody unmounted.
- * Measured, it is the third: `openConsole` — the same library, a bigger page — is rendered
+ * Measured, it is the third: `openConsole` (the same library, a bigger page) is rendered
  * in process over {@link fakeTerminal} by `a-floor-under-the-window.test.ts` and
  * `one-width-per-frame.test.ts`, and `the-bare-name-asks.test.ts` already drives the whole
  * question, this adapter included, through `start()` at a pair of fake streams. What the
@@ -20,8 +20,8 @@
  * them proves closing is what stops the keys arriving.
  *
  * WHAT IS ASKED HERE, and it is only what this file can see: the two things a caller can do
- * to a drawn choice ({@link Screen}), the state machine `close` is — idempotent, and
- * synchronous, because an `exit` listener is the last code that runs — and that closing
+ * to a drawn choice ({@link Screen}), the state machine `close` is (idempotent, and
+ * synchronous, because an `exit` listener is the last code that runs) and that closing
  * unhooks the listeners it armed. WHAT IT IS NOT: whether the terminal came back. Nothing
  * here has a line discipline or a cursor, so raw mode and the caret are asked of a real
  * device, where they always were (`the-console-on-ink.test.ts`).
@@ -42,11 +42,11 @@ const CTRL_C = '\u0003';
 const AFTER = ['what would you like to do here?', '', 'the first door', 'a third door'];
 
 /**
- * A process whose hooks are counted — the port `armLeaving` is handed, with a memory.
+ * A process whose hooks are counted: the port `armLeaving` is handed, with a memory.
  *
  * It is not {@link hooksNothing}: what is asked below is that closing UNHOOKS, and a port
  * that forgets what it was told cannot answer it. Every listener is kept in the order it
- * arrived, and taking one off removes THAT listener, exactly as the real process does — a
+ * arrived, and taking one off removes THAT listener, exactly as the real process does: a
  * stand-in that emptied the list on any `off` would call a screen that unhooked one of five
  * fully unhooked.
  */
@@ -77,7 +77,7 @@ function countingLeaving(): Leaving & { hooked: () => readonly string[]; raised:
  * after it are both in it and a reader of the bytes finds both. What is on the page is a
  * question only a screen has an answer to, so the redraw below is read off the model this
  * surface already keeps for it (`support/screen.ts`), replayed at the size the streams
- * reported — a replay at any other number is a page whose rows are off by whatever folded.
+ * reported: a replay at any other number is a page whose rows are off by whatever folded.
  */
 const WIDE = 100;
 const TALL = 40;
@@ -91,7 +91,7 @@ interface Drawn {
   readonly pressed: () => readonly Keystroke[];
   /** What a terminal this size would be SHOWING, worked out from the bytes it received. */
   readonly showing: () => string;
-  /** Whether the alternate screen is up — whether this question took the caller's page. */
+  /** Whether the alternate screen is up: whether this question took the caller's page. */
   readonly tookTheScreen: () => boolean;
 }
 
@@ -100,7 +100,7 @@ const opened: Screen[] = [];
 
 afterEach(() => {
   // A MOUNT THAT OUTLIVES ITS CASE IS THE ONE FAILURE THIS FILE COULD CAUSE ELSEWHERE, and
-  // it would not look like a red case — it would look like a worker that never finishes.
+  // it would not look like a red case: it would look like a worker that never finishes.
   // `close` is idempotent, which is what lets this run after a case that already closed.
   for (const screen of opened.splice(0)) screen.close();
 });
@@ -155,7 +155,7 @@ describe('the choice is drawn where the cursor already was', () => {
     expect(pressed()[0]?.ctrl).toBe(false);
   });
 
-  it('does not answer Ctrl-C itself — it hands it on like any other key', async () => {
+  it('does not answer Ctrl-C itself: it hands it on like any other key', async () => {
     // THE LIBRARY WOULD HAVE EXITED THE PROCESS. Leaving is this product's decision, taken
     // where the pick is, so the chord has to arrive as a keystroke rather than as an exit.
     const { terminal, pressed } = await drawn();
@@ -173,7 +173,7 @@ describe('showing draws the rows it was given instead of the ones on the page', 
     await until(() => showing().includes('a third door'), 'drew the page it was shown');
     // THE OLD ROW IS OFF THE PAGE. The library takes its own rows back when it redraws, so
     // a `show` that appended rather than replaced would leave both doors on the screen at
-    // once — which is a question with three doors and two of them stale.
+    // once, which is a question with three doors and two of them stale.
     expect(showing(), 'the row it replaced is still on the page').not.toContain('the second door');
     // AND THE ROWS IT DID NOT CHANGE ARE STILL THERE: a redraw is a page, not a diff.
     expect(showing()).toContain('the first door');
@@ -183,11 +183,11 @@ describe('showing draws the rows it was given instead of the ones on the page', 
     // THIS CASE WAS WRITTEN UNDER A PREMISE ITS OWN MUTATION FALSIFIED, and the premise was
     // that the library REFUSES a rerender after an unmount, so `show`'s `if (closed) return`
     // is what stands between a caller and a throw out of a menu that is already gone. Taking
-    // that guard away reddens NOTHING — measured, on ink 7.1.1: a rerender after an unmount
+    // that guard away reddens NOTHING (measured, on ink 7.1.1): a rerender after an unmount
     // neither throws nor writes a byte. The guard is the third statement of an invariant two
     // collaborators already keep, which is a note for whoever next reads `screen.ts` and not
     // a reason to stop asserting the property: what is pinned here is that a closed screen
-    // draws nothing, whoever delivers it. It is not vacuous either — taking the guard away
+    // draws nothing, whoever delivers it. It is not vacuous either: taking the guard away
     // AND leaving the page mounted reddens this case and only this case.
     const { screen, terminal, showing } = await drawn();
     screen.close();
@@ -206,7 +206,7 @@ describe('closing takes the page down, once, and gives every hook back', () => {
   it('arms one listener for `exit` and one for each signal that ends this program', async () => {
     const { leaving } = await drawn();
     // THE SET IS THE POINT. It is not "give the terminal back when the question ends", it is
-    // "give it back on EVERY way this process ends" — so the hooks are counted against the
+    // "give it back on EVERY way this process ends", so the hooks are counted against the
     // product's own enumeration rather than against a list retyped here.
     expect(leaving.hooked()).toEqual(['exit', ...EXIT_SIGNALS]);
   });
@@ -225,13 +225,13 @@ describe('closing takes the page down, once, and gives every hook back', () => {
     const { screen, leaving } = await drawn();
     screen.close();
     const afterTheFirst = leaving.hooked();
-    // TWO OF THESE CAN FIRE ON ONE DEATH — a signal arriving while the normal path unwinds —
+    // TWO OF THESE CAN FIRE ON ONE DEATH (a signal arriving while the normal path unwinds),
     // so closing twice has to be closing once, and `armLeaving` requires it in writing.
     // AND THE GUARD IS NOT WHAT DELIVERS IT TODAY, which was this case's first premise and
     // is measured false: taking `restore`'s `if (closed) return` away reddens nothing,
     // because a second unmount does not throw and a disarm over an emptied list is a loop
-    // with no turns. What is asserted is therefore the CONTRACT `Screen.close` states —
-    // idempotent — rather than the line that happens to state it a third time.
+    // with no turns. What is asserted is therefore the CONTRACT `Screen.close` states,
+    // idempotent, rather than the line that happens to state it a third time.
     expect(() => {
       screen.close();
       screen.close();

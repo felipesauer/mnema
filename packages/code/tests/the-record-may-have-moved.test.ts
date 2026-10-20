@@ -3,8 +3,8 @@
  *
  * A warm projection cache used to be invalidated by ONE thing: a write this
  * process made. That was exact and it was not enough. Three writers on one
- * project is ordinary — a live MCP session, a headless run, a `mnema` command in
- * a terminal — and the rule that came out of measuring a session against the CLI
+ * project is ordinary (a live MCP session, a headless run, a `mnema` command in
+ * a terminal) and the rule that came out of measuring a session against the CLI
  * was: reading never healed, and writing healed only the tree it wrote to. An
  * agent that captures memories and observations writes PRIVATE, so nothing it
  * did ever refreshed the PUBLIC tree that answers "what has this team decided".
@@ -12,8 +12,8 @@
  *
  * The centre of this file is that measurement, as a test: seven steps, and the
  * count the session reports at each one. Every write from outside comes from a
- * REAL other process — the built CLI, or a second Node process opening the
- * chain — because a same-process write would prove nothing about the defect,
+ * REAL other process (the built CLI, or a second Node process opening the
+ * chain), because a same-process write would prove nothing about the defect,
  * which is precisely about the appends this connection cannot observe.
  *
  * The rest pins the signal itself: it costs one replay and not two when nothing
@@ -46,7 +46,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeSession, openSession, type Session } from '../src/mcp/session.js';
 import { runCaptureMemory, runCreateTask, runSearchTool } from '../src/mcp/tools.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** `packages/code`, so a spawned script resolves `@mnema/*` the way this test does. */
 const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url));
@@ -59,7 +59,7 @@ let project: string;
  * Runs a real `mnema` command in its own process, against the sandbox.
  *
  * This is the other writer the defect is about. It shares the session's home and
- * data directory, so it signs with the same key and appends to the same TAIL —
+ * data directory, so it signs with the same key and appends to the same TAIL:
  * the ordinary case of a person running a command while an agent is connected.
  */
 function cli(...args: string[]): string {
@@ -89,7 +89,7 @@ function processEnv(discovery: DiscoveryEnv): NodeJS.ProcessEnv {
  * The cap is the only reason this exists rather than another `cli` call: a
  * rotation happens at four megabytes, and a test that wrote four megabytes to
  * watch a file name change would be measuring the disk. Everything else is the
- * real path — `resolveTrees`, `openTreeForWriting`, `captureMemory`.
+ * real path: `resolveTrees`, `openTreeForWriting`, `captureMemory`.
  */
 function writeFromAnotherProcess(scope: Scope, content: string, maxSegmentBytes?: number): void {
   const options = maxSegmentBytes === undefined ? '{}' : `{ maxSegmentBytes: ${maxSegmentBytes} }`;
@@ -114,7 +114,7 @@ function writeFromAnotherProcess(scope: Scope, content: string, maxSegmentBytes?
   });
 }
 
-/** Runs a `mnema` command as a SECOND INSTALLATION — its own key, its own tail. */
+/** Runs a `mnema` command as a SECOND INSTALLATION: its own key, its own tail. */
 function cliFromAnotherMachine(...args: string[]): string {
   const elsewhere: DiscoveryEnv = {
     home: join(sandbox, 'other-home'),
@@ -136,7 +136,7 @@ function openHere(): Session {
   });
 }
 
-/** What the session's index reports right now — the read that says "what has been going on". */
+/** What the session's index reports right now: the read that says "what has been going on". */
 function seen(session: Session): number {
   const found = runSearchTool(session, {});
   if (!found.ok) throw new Error(`search refused: ${found.code}`);
@@ -150,13 +150,13 @@ function rootOf(session: Session, scope: Scope): string {
 
 /**
  * Counts the work any cache does against the chain while `body` runs, split by
- * WHICH work — and the split is the point, not bookkeeping.
+ * WHICH work, and the split is the point, not bookkeeping.
  *
  * It used to count `rebuild` alone, on the premise that a read which has to catch
  * up replays the chain. That premise is gone: a chain that only GREW is brought
  * forward from what arrived (`ProjectionCache.refresh`), and only a chain that
- * changed some other way — pruned, a tail gone, a fact stamped before something
- * already covered — is replayed whole. Counting one name would now read zero for a
+ * changed some other way (pruned, a tail gone, a fact stamped before something
+ * already covered) is replayed whole. Counting one name would now read zero for a
  * read that did catch up, which is an assertion going quietly vacuous.
  *
  * Both are counted RAW, and a refresh that falls back therefore shows as one of
@@ -199,14 +199,14 @@ afterEach(() => {
 
 describe('the seven steps that were measured', () => {
   it('the session reports what is on disk at every step, not what it wrote itself', () => {
-    // The ladder, exactly as it was measured against a live session — and every
+    // The ladder, exactly as it was measured against a live session, and every
     // number is now the disk's. What it used to report is in the comment beside
     // each step: five of the seven were wrong, and the two that happened to be
     // right were right by accident, because the session had just written to the
     // tree that held the missing fact.
     const session = openHere();
 
-    expect(seen(session)).toBe(0); // 0. the session opens — was 0
+    expect(seen(session)).toBe(0); // 0. the session opens: was 0
 
     cli(
       'decision',
@@ -214,30 +214,30 @@ describe('the seven steps that were measured', () => {
       'Keep the runbook in the record',
       'a wiki page nobody owns goes stale',
     );
-    expect(seen(session)).toBe(1); // 1. the CLI writes a PUBLIC decision — was 0
+    expect(seen(session)).toBe(1); // 1. the CLI writes a PUBLIC decision: was 0
 
-    expect(seen(session)).toBe(1); // 2. it reads again, writing nothing — was 0
+    expect(seen(session)).toBe(1); // 2. it reads again, writing nothing: was 0
 
     if (!runCaptureMemory(session, { content: 'the runbook moved' }).ok) {
       throw new Error('setup: capture refused');
     }
-    expect(seen(session)).toBe(2); // 3. the reader writes PRIVATE — was 1, its own only
+    expect(seen(session)).toBe(2); // 3. the reader writes PRIVATE: was 1, its own only
 
     if (!runCreateTask(session, { title: 'write the rollback section' }).ok) {
       throw new Error('setup: create refused');
     }
-    expect(seen(session)).toBe(3); // 4. the reader writes PUBLIC — was 3, by accident
+    expect(seen(session)).toBe(3); // 4. the reader writes PUBLIC: was 3, by accident
 
     cli('decision', 'record', 'Cut the release on Thursdays', 'Friday deploys page the on-call');
-    expect(seen(session)).toBe(4); // 5. the CLI writes another PUBLIC decision — was 3
+    expect(seen(session)).toBe(4); // 5. the CLI writes another PUBLIC decision: was 3
 
     if (!runCaptureMemory(session, { content: 'Thursday it is' }).ok) {
       throw new Error('setup: capture refused');
     }
-    expect(seen(session)).toBe(5); // 6. the reader writes PRIVATE again — was 4
+    expect(seen(session)).toBe(5); // 6. the reader writes PRIVATE again: was 4
 
     // And the witness the measurement used: the CLI is a fresh process, so it
-    // always reads the chain. The session and the disk now agree — they used to
+    // always reads the chain. The session and the disk now agree: they used to
     // end four against five.
     expect(cli('search')).toContain('5 record(s)');
 
@@ -245,7 +245,7 @@ describe('the seven steps that were measured', () => {
     // SEVEN STEPS, AND FOUR OF THEM ARE A WHOLE PROCESS: the ladder is only a ladder
     // because the writes come from outside the session, so each `cli(…)` pays node's start
     // over again. 443 ms on a quiet machine and 2018 ms with the suite running at a load of
-    // seventeen — the highest any case here reaches without a ceiling of its own, and the
+    // seventeen: the highest any case here reaches without a ceiling of its own, and the
     // ceiling is here to say WHICH case that is when a busier machine crosses five seconds.
   }, 60_000);
 });
@@ -280,7 +280,7 @@ describe('the warm cache is still warm', () => {
     const { rebuilds, refreshes } = countingReplays(() => {
       for (let i = 0; i < 10; i += 1) session.caches.get(rootOf(session, 'public'));
     });
-    // The first open replays — there is no retained order to bring forward — and
+    // The first open replays (there is no retained order to bring forward) and
     // the nine after it do nothing at all.
     expect({ rebuilds, refreshes }).toEqual({ rebuilds: 1, refreshes: 0 });
     closeSession(session);
@@ -288,7 +288,7 @@ describe('the warm cache is still warm', () => {
 });
 
 describe('every way a chain can move is seen', () => {
-  it('a tail that did not exist before — another installation writing into the same tree', () => {
+  it('a tail that did not exist before: another installation writing into the same tree', () => {
     // Not growth of a tail the session knows: a second machine's first write
     // creates a directory that was not there, under its own key. A probe that
     // watched only the tails it had already seen would miss the whole of it.
@@ -300,12 +300,12 @@ describe('every way a chain can move is seen', () => {
 
     expect(seen(session)).toBe(2);
     closeSession(session);
-    // TWO PROCESSES, and the second one founds a whole second installation before it writes
-    // — which is the case: a tail nobody had seen. 257 ms quiet, 1135 ms at a load of
+    // TWO PROCESSES, and the second one founds a whole second installation before it writes,
+    // which is the case: a tail nobody had seen. 257 ms quiet, 1135 ms at a load of
     // seventeen.
   }, 60_000);
 
-  it('a rotation — the same tail, a segment file that did not exist before', () => {
+  it('a rotation: the same tail, a segment file that did not exist before', () => {
     // The one move that does not make a file bigger: the writer seals the
     // segment it was filling and starts the next one. The tail is known, its
     // last segment stopped growing, and the record still moved.
@@ -320,7 +320,7 @@ describe('every way a chain can move is seen', () => {
     closeSession(session);
   });
 
-  it('a first event in a tree that had none — the empty tree is not a frozen answer', () => {
+  it('a first event in a tree that had none: the empty tree is not a frozen answer', () => {
     // A session opens on a project nobody has written to yet. Its projection of
     // that tree is empty and CORRECT, and the mark it holds has to keep moving
     // when the tree stops being empty.
@@ -339,7 +339,7 @@ describe('a tree that goes away, or stops being readable, between two reads', ()
     // The expensive error, in the direction nobody thinks about: a projection
     // retained past its chain hands the agent a record that no longer exists.
     // The extent of an emptied tree is the extent of an empty one, so the read
-    // replays and reports what is there — nothing.
+    // replays and reports what is there: nothing.
     const session = openHere();
     cli('decision', 'record', 'Written and then withdrawn', 'a record that will be removed');
     expect(seen(session)).toBe(1);
@@ -354,7 +354,7 @@ describe('a tree that goes away, or stops being readable, between two reads', ()
     // The other end of the same rule. Serving a projection of a chain nobody can
     // read is the same false answer as serving one of a chain that is gone; it
     // just looks better. So the replay is attempted, the replay is what reports
-    // the fault, and it reports it by failing — the same answer a fresh process
+    // the fault, and it reports it by failing: the same answer a fresh process
     // gives. The entry keeps its older extent through the failure, so the read
     // after the fault clears replays rather than trusting what it held.
     const session = openHere();
@@ -418,14 +418,14 @@ describe('no MCP read gets a cache without passing the probe', () => {
   it('only the registry opens a projection cache on this surface', () => {
     // The structural half of the fix, and the counterpart of the ban that pins
     // every write to the invalidation door. A tool that opened a cache of its own
-    // would answer from a replay nobody checks against the tree — the exact
+    // would answer from a replay nobody checks against the tree: the exact
     // staleness this delivery removed, back through a second door, and looking
     // correct until the second read. So the ban is on the SYMBOL, over the whole
     // MCP surface: a read added later inherits the probe or fails here.
     expect(mcpFilesNaming(DOOR, 'cache-registry.ts')).toEqual([]);
   });
 
-  it('and the registry names it — the ban is not vacuous', () => {
+  it('and the registry names it: the ban is not vacuous', () => {
     // The half that keeps the assertion above honest: a rename that emptied the
     // surface of the symbol would leave it passing over a ban on nothing.
     expect(registrySource()).toContain(DOOR);

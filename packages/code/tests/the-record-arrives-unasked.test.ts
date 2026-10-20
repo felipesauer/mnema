@@ -2,19 +2,19 @@
  * The plugin: what the host runs when a session opens, and what it hands over.
  *
  * WHY THERE IS A TEST HERE AT ALL, when the plugin is three JSON files, two handlers
- * and the module they share. The measured finding this answers is not "the record does not help" — it
+ * and the module they share. The measured finding this answers is not "the record does not help": it
  * is that the agent never reached for it. Over the first P1 round, `mcp_asked` came
  * back `false` in 20 of 20 instrumented cells of the arm that HAD the record, while
  * the arm carrying the same decision in a file the host injects unasked conformed 8/8
  * on the two tasks where the arm carrying nothing conformed 0/8. The knowledge was
  * usable; the reaching was missing. This plugin is the mechanism that removes the
- * reaching, so what has to be true of it is exactly two things — that it says the
+ * reaching, so what has to be true of it is exactly two things (that it says the
  * record's own words and nothing of its own, and that it cannot make somebody else's
- * session worse — and neither is provable by reading the JSON.
+ * session worse) and neither is provable by reading the JSON.
  *
  * IT DRIVES THE DECLARED COMMAND, NOT A COMMAND OF ITS OWN. Every case below reads
  * `hooks/hooks.json` and runs what it finds there, through `sh -c`, with
- * `${CLAUDE_PLUGIN_ROOT}` in the environment — which is how the host runs it. A test
+ * `${CLAUDE_PLUGIN_ROOT}` in the environment, which is how the host runs it. A test
  * that invoked the handler directly would be green on a plugin whose manifest points
  * at a file that does not exist, and the host's own validator (`claude plugin
  * validate --strict`, 2.1.228) is green on exactly that: measured, a `command`
@@ -25,7 +25,7 @@
  * `mnema` COMES OFF THE PATH, and the PATH is a shim that records its argv before
  * exec'ing the built CLI. It is the only way to ask "and nothing else" of a handler
  * that runs a subprocess, and it makes "the hook said nothing" separable from "the
- * hook did nothing" — which is the difference between the muteness working and the
+ * hook did nothing", which is the difference between the muteness working and the
  * muteness having never been tried.
  *
  * TWO HANDLERS ANSWER THE SAME EVENT NOW, and every case says which one it drives. One hands
@@ -67,13 +67,13 @@ import { held } from './support/the-record-held.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
-/** The plugin's root — what the host sets `${CLAUDE_PLUGIN_ROOT}` to. */
+/** The plugin's root: what the host sets `${CLAUDE_PLUGIN_ROOT}` to. */
 const PLUGIN = join(REPO, 'plugin');
 const MANIFEST = join(PLUGIN, '.claude-plugin', 'plugin.json');
 const HOOKS = join(PLUGIN, 'hooks', 'hooks.json');
-/** The marketplace at the repository root — how the plugin is installed from here. */
+/** The marketplace at the repository root: how the plugin is installed from here. */
 const MARKETPLACE = join(REPO, '.claude-plugin', 'marketplace.json');
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /**
@@ -90,7 +90,7 @@ interface HookHandler {
   readonly type?: string;
   readonly command?: string;
   readonly timeout?: number;
-  /** The MCP server a `mcp_tool` hook calls into — the name the HOST answers to. */
+  /** The MCP server a `mcp_tool` hook calls into: the name the HOST answers to. */
   readonly server?: string;
   /** The tool on that server. */
   readonly tool?: string;
@@ -153,7 +153,7 @@ const DOCUMENT_HOOK = 'session-start.mjs';
 /** The handler that hands a session the notes `mnema recall` prints. */
 const NOTES_HOOK = 'session-recall.mjs';
 /**
- * The handler of the gate in a host whose hooks are processes — VS Code's — which runs `mnema
+ * The handler of the gate in a host whose hooks are processes, VS Code's, which runs `mnema
  * before-a-write --host vscode` on the payload of a write. It is driven here like the other two,
  * so these cases are not blind to it; what it asks, and what it records when it does, is
  * `a-host-that-runs-commands-asks-for-a-person.test.ts`.
@@ -187,7 +187,7 @@ const CORRECTIONS_HOOK = 'session-corrections.mjs';
 const HANDBACK_HOOK = 'subagent-stop.mjs';
 
 /**
- * The command line each declared handler runs — what the recording shim must see it try.
+ * The command line each declared handler runs: what the recording shim must see it try.
  *
  * A table in the test, and reconciled rather than trusted: "runs only verbs that read"
  * asserts the set of verbs the handlers REACH, off the shim, against these values, so a
@@ -195,7 +195,7 @@ const HANDBACK_HOOK = 'subagent-stop.mjs';
  *
  * THE FLAG IS PART OF THE LINE, and it is what this table exists to hold now. Both handlers ask
  * for the copy a hook can carry (`--hook`), and a handler that dropped it would hand a session
- * the file's copy — whole, and over the host's ceiling replaced by a file path in silence. The
+ * the file's copy: whole, and over the host's ceiling replaced by a file path in silence. The
  * shim records the argv, so a missing flag is red here by the line it ran.
  */
 const VERB_OF: Readonly<Record<string, string>> = {
@@ -214,7 +214,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
  */
 const ASKED_FIRST = '--identify';
 
-/** Every command line a handler runs, in order — the question first, where it asks one. */
+/** Every command line a handler runs, in order: the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
   return GATES.includes(handler) ||
@@ -227,7 +227,7 @@ function callsOf(handler: string): string[] {
 
 /**
  * What the host hands each handler on stdin. The opening handlers read nothing; the gate reads
- * the write it is about to allow or hold, and without one it is never TRIED — its filter passes
+ * the write it is about to allow or hold, and without one it is never TRIED: its filter passes
  * no payload that does not name a tool that writes. The path is one no rule of these projects
  * asks about, so the gate is tried, derives nothing, and writes nothing.
  */
@@ -275,7 +275,7 @@ function handlerOf(command: string): string {
 }
 
 /**
- * The declared command that runs `file` — read off `hooks.json`, so a case names the
+ * The declared command that runs `file`: read off `hooks.json`, so a case names the
  * handler it drives and still runs it the way the host does.
  */
 function hookRunning(file: string): string {
@@ -287,7 +287,7 @@ function hookRunning(file: string): string {
 let sandbox: string;
 let home: string;
 let data: string;
-/** A directory with no record in it at all — the machine of somebody else. */
+/** A directory with no record in it at all: the machine of somebody else. */
 let elsewhere: string;
 /** A project with a committed decision, a committed pattern, and a private decision. */
 let project: string;
@@ -297,7 +297,7 @@ let unnoted: string;
 let crowded: string;
 
 /**
- * The titles of the crowded project's rules — long enough that four of them cross the host's
+ * The titles of the crowded project's rules: long enough that four of them cross the host's
  * ceiling and two do not. A title is text a person types and the product takes up to its field
  * limit, so this is a record the product can hold, not one only a fixture can.
  */
@@ -306,7 +306,7 @@ const CROWDED_TITLES = [1, 2, 3, 4].map(
     `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`,
 );
 
-/** An observation topic longer than any line the notes print — the kind the index serves raw. */
+/** An observation topic longer than any line the notes print: the kind the index serves raw. */
 const LONG_TOPIC = `month-end volume ${'and the batch that follows it '.repeat(20).trimEnd()}`;
 /** The directory the recording `mnema` shim lives in, put first on the PATH. */
 let shimDir: string;
@@ -320,7 +320,7 @@ const PRIVATE_TITLE = 'Keep the staging credentials on this machine only';
 /** The adopted pattern's name, and the body that stays in the record. */
 const PATTERN_NAME = 'Never retry a charge automatically';
 const PATTERN_BODY = 'A failed charge is reported to the operator, never retried.';
-/** A note that travels, and one kept on this machine — the one the document may not carry. */
+/** A note that travels, and one kept on this machine: the one the document may not carry. */
 const COMMITTED_NOTE = 'The invoice job runs at 02:00 in the operator timezone';
 const PRIVATE_NOTE = 'The staging database on this laptop resets every night';
 /** An observation's topic, which is its line, and its text, which is not. */
@@ -379,7 +379,7 @@ function cli(...args: string[]): string {
   return cliAt(project, ...args);
 }
 
-/** Runs the real CLI in `at` — for the project that holds no notes. */
+/** Runs the real CLI in `at`: for the project that holds no notes. */
 function cliAt(at: string, ...args: string[]): string {
   return execFileSync(process.execPath, [CLI, ...args], {
     cwd: at,
@@ -389,7 +389,7 @@ function cliAt(at: string, ...args: string[]): string {
 }
 
 /**
- * The committed tail's one segment file — the bytes a plant is made in.
+ * The committed tail's one segment file: the bytes a plant is made in.
  *
  * The tail is read off the DIRECTORY rather than named here: which tail this machine
  * writes is a function of its key, so a name written down would be a fixture about
@@ -402,13 +402,13 @@ function lastSegment(at: string): string {
 }
 
 /**
- * BOTH STREAMS of `mnema brief` in a project — the second one being what the handler
+ * BOTH STREAMS of `mnema brief` in a project: the second one being what the handler
  * used to drop at the spawn.
  *
  * It runs the verb directly rather than through the shim, because what is wanted is the
  * streams and not the argv, and it tolerates a non-zero exit for the same reason: a
  * caller that asked this outside a project wants the refusal, not a throw. `err` is
- * trimmed because that is what the handler appends — the comparison has to be against
+ * trimmed because that is what the handler appends: the comparison has to be against
  * the same bytes the handler would have composed.
  */
 function brief(at: string): { readonly out: string; readonly err: string } {
@@ -420,7 +420,7 @@ function brief(at: string): { readonly out: string; readonly err: string } {
   return { out: ran.stdout ?? '', err: (ran.stderr ?? '').trim() };
 }
 
-/** The id out of a line that names one — it is the value in the parentheses. */
+/** The id out of a line that names one: it is the value in the parentheses. */
 function idIn(said: string): string {
   const found = /\(([0-9a-f-]{36})\)/.exec(said);
   if (found === null) throw new Error(`no id in: ${said}`);
@@ -501,7 +501,7 @@ afterAll(() => {
 describe('the record arrives unasked', () => {
   it('says nothing at all where there is no project', () => {
     // The assertion that protects the machine of whoever installs this. `mnema brief`
-    // outside a project refuses on stderr and exits 1 — measured on the binary — so a
+    // outside a project refuses on stderr and exits 1, measured on the binary, so a
     // hook wired straight to the verb would put that sentence, or an error, into every
     // session of every project on the disk. What is asserted is the HOOK's path, not
     // the verb's: the verb still refuses, and should.
@@ -516,7 +516,7 @@ describe('the record arrives unasked', () => {
       // nothing at all, which is the shape a broken command path has.
       expect(ran.mnema, command).toEqual(callsOf(handlerOf(command)));
     }
-    // Every handler, which is what "every command" has to mean now — the gate included, whose
+    // Every handler, which is what "every command" has to mean now: the gate included, whose
     // verb answers `{}` outside a project and whose handler writes no byte for it.
     expect(commands.map(handlerOf)).toEqual([
       DOCUMENT_HOOK,
@@ -533,14 +533,14 @@ describe('the record arrives unasked', () => {
   it('says nothing at all when the document channel is switched OFF', () => {
     // The behavioural half of the switch, on the harness that actually runs the handler the
     // way the host runs it. Switching the document off has to make a session open with
-    // nothing added — and the mechanism is the one the handler already had: the verb refuses
+    // nothing added, and the mechanism is the one the handler already had: the verb refuses
     // on stderr with a non-zero exit, and every non-zero outcome is silence here. So this
     // slice added no branch to the plugin at all, which is why the case belongs to this file
     // rather than to the switch's own.
     //
     // THE FIXTURE IS SHARED AND IS PUT BACK. Every other case in this file reads the same
     // seeded project, so a switch left off would make the rest of them measure a product
-    // that says nothing — green for the wrong reason in one case and red for the wrong
+    // that says nothing: green for the wrong reason in one case and red for the wrong
     // reason in the others.
     const command = hookRunning(DOCUMENT_HOOK);
     try {
@@ -555,7 +555,7 @@ describe('the record arrives unasked', () => {
     } finally {
       cli('switch', 'on', 'brief-document');
     }
-    // Put back, and it speaks again — the non-vacuity of the silence above, over the same
+    // Put back, and it speaks again: the non-vacuity of the silence above, over the same
     // handler and the same project.
     const again = runHook(command, project);
     expect(again.out).not.toBe('');
@@ -565,7 +565,7 @@ describe('the record arrives unasked', () => {
   it('says nothing at all when the notes channel is switched OFF', () => {
     // The same mechanism for the second text a session opens with, and its own switch: the
     // verb refuses on stderr with a non-zero exit, the shared rule reads that as silence,
-    // and the DOCUMENT keeps arriving — which is why the two are two switches.
+    // and the DOCUMENT keeps arriving, which is why the two are two switches.
     const notes = hookRunning(NOTES_HOOK);
     const document = hookRunning(DOCUMENT_HOOK);
     try {
@@ -603,7 +603,7 @@ describe('the record arrives unasked', () => {
     expect(document).toBe(cli('brief').replace(recipe, ''));
     expect(notes).toBe(cli('recall'));
 
-    // Each handler, and the text of the verb IT runs — the two are one rule over two verbs.
+    // Each handler, and the text of the verb IT runs: the two are one rule over two verbs.
     for (const [hook, printed] of [
       [DOCUMENT_HOOK, document],
       [NOTES_HOOK, notes],
@@ -628,12 +628,12 @@ describe('the record arrives unasked', () => {
 
   it('says that the record does not chain, when it does not', () => {
     // WHAT THE DOCUMENT USED TO DO OVER A BROKEN RECORD. The verb writes the notice on
-    // stderr and exits 0 — measured on the binary, and the three outcomes are in the
-    // handler's own doc — and the handler dropped that stream at the spawn. So the
+    // stderr and exits 0 (measured on the binary, and the three outcomes are in the
+    // handler's own doc) and the handler dropped that stream at the spawn. So the
     // agent was handed what governs the work, in the one channel it receives without
     // asking, with no word that the proof behind it had failed.
     //
-    // THE PLANT IS THE PRODUCT'S OWN LAST ENTRY, APPENDED AGAIN — same seq, same prev,
+    // THE PLANT IS THE PRODUCT'S OWN LAST ENTRY, APPENDED AGAIN: same seq, same prev,
     // which is what two writers appending at once used to leave. Nothing here writes a
     // value the product cannot produce: the bytes are bytes it wrote.
     //
@@ -654,7 +654,7 @@ describe('the record arrives unasked', () => {
     try {
       const lines = held.trimEnd().split('\n');
       appendFileSync(file, `${lines[lines.length - 1] as string}\n`, 'utf-8');
-      // WHAT THE VERB ITSELF SAYS OVER THESE BYTES, on both streams — the yardstick the
+      // WHAT THE VERB ITSELF SAYS OVER THESE BYTES, on both streams: the yardstick the
       // handler's reply is compared with below, taken over the same plant.
       broken = brief(project);
       // The plant really did break it: without this the case is green over a record
@@ -674,13 +674,13 @@ describe('the record arrives unasked', () => {
     expect(context).toMatch(/issue \[T1\] public \S+#\d+: seq gap: expected \d+, found \d+/);
     expect(context).toContain('still on the tail');
     expect(context.indexOf(COMMITTED_TITLE)).toBeLessThan(context.indexOf('issue [T1]'));
-    // AND NOT A WORD OF THE HANDLER'S OWN — asserted as the WHOLE string and not as
+    // AND NOT A WORD OF THE HANDLER'S OWN, asserted as the WHOLE string and not as
     // what is in it: the context is the verb's two streams, in that order, joined by a
     // blank line. A preamble, a cut or a re-wording anywhere in the handler reddens
     // here, which is what the `toContain`s above cannot say.
     expect(context).toBe(`${broken.out}\n\n${broken.err}`);
 
-    // PUT BACK, AND IT GOES QUIET AGAIN — the non-vacuity of the silence, over the same
+    // PUT BACK, AND IT GOES QUIET AGAIN: the non-vacuity of the silence, over the same
     // handler and the same project, and the proof that the plant was undone.
     const after = runHook(command, project);
     const quiet = (JSON.parse(after.out) as { hookSpecificOutput: { additionalContext: string } })
@@ -692,7 +692,7 @@ describe('the record arrives unasked', () => {
   it('stops at a whole rule where a hook’s text would be replaced, and says so', () => {
     // WHAT THE HOST DOES PAST ITS CEILING, and why this case exists. A hook's text is handed to
     // the model whole up to a ceiling, and past it ALL of it is replaced by a file path and a
-    // preview the model is not asked to open — measured on the binary. The file's copy of the document has no such reader, so it
+    // preview the model is not asked to open: measured on the binary. The file's copy of the document has no such reader, so it
     // keeps every rule; the hook's copy stops at a whole one and says how many it left out.
     const file = cliAt(crowded, 'brief');
     expect(file.length).toBeGreaterThan(HOOK_TEXT_CEILING);
@@ -707,14 +707,14 @@ describe('the record arrives unasked', () => {
     expect(context).toBe(cliAt(crowded, 'brief', '--hook'));
 
     // WHOLE RULES, A PREFIX OF THE FILE'S, IN ITS ORDER: every bullet handed over is a bullet
-    // of the file, and they are the file's first ones — nothing cut in half, nothing promoted.
+    // of the file, and they are the file's first ones; nothing cut in half, nothing promoted.
     const bulletsOf = (text: string) => text.split('\n').filter((line) => line.startsWith('- **'));
     const handed = bulletsOf(context);
     expect(handed.length).toBeGreaterThan(0);
     expect(handed.length).toBeLessThan(CROWDED_TITLES.length);
     expect(handed).toEqual(bulletsOf(file).slice(0, handed.length));
     expect(CROWDED_TITLES.filter((title) => context.includes(title))).toHaveLength(handed.length);
-    // THE HEADING COUNTS WHAT IS UNDER IT, AND THE END SAYS WHAT IS NOT — the number, and the
+    // THE HEADING COUNTS WHAT IS UNDER IT, AND THE END SAYS WHAT IS NOT: the number, and the
     // read that serves them.
     const left = CROWDED_TITLES.length - handed.length;
     expect(context).toContain(`## Decisions in force (${handed.length})`);
@@ -725,7 +725,7 @@ describe('the record arrives unasked', () => {
 
     // AND WHAT THE SAME RUN SAYS ABOUT THE RECORD IS PART OF WHAT FITS. The handler appends the
     // second stream to the document and the host measures the two as one string, so over a
-    // record that stops chaining — the day that notice matters — the two together still fit.
+    // record that stops chaining, the day that notice matters, the two together still fit.
     const segment = lastSegment(crowded);
     const before = readFileSync(segment);
     let broken: { readonly out: string; readonly err: string };
@@ -763,15 +763,15 @@ describe('the record arrives unasked', () => {
   it('says nothing when the verb refuses, whatever it printed first', () => {
     // THE EXIT CODE IS THE GATE, AND NOTHING WITNESSED IT. Measured: removing
     // `ran.status !== 0` from the handler left every case in this file green, because the
-    // two refusals the product can produce today — no project here, and the document
-    // channel switched off — both print NOTHING on stdout, and the empty-document check
+    // two refusals the product can produce today (no project here, and the document
+    // channel switched off) both print NOTHING on stdout, and the empty-document check
     // catches them on the way past. So the gate was guarding a state the product cannot
     // currently reach, which is a guard with no witness.
     //
     // IT MATTERS MORE THAN IT DID, which is why the state is planted rather than declared.
     // The handler used to drop the second stream at the spawn; it now hands it over when
     // the verb SUCCEEDED. A verb that printed something and then refused would, with the
-    // gate gone, put its refusal into the session — the exact thing the muteness exists to
+    // gate gone, put its refusal into the session: the exact thing the muteness exists to
     // prevent, on the machine of everybody who installed this.
     //
     // THE PLANT IS A `mnema` ON THE PATH, because that is what the handler runs. It is not
@@ -836,7 +836,7 @@ describe('the record arrives unasked', () => {
       JSON.parse(spoke.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
     ).hookSpecificOutput.additionalContext;
     // The document keeps the newline it printed, and the second stream arrives under it
-    // with one blank row between them — the whole composition, byte for byte.
+    // with one blank row between them: the whole composition, byte for byte.
     expect(said).toBe('a document of sorts\n\n\nand something to say');
   });
 
@@ -845,7 +845,7 @@ describe('the record arrives unasked', () => {
     // PATH that predates `--hook`. That binary refuses the flag with exit 1, and exit 1 is
     // silence: the session would open with no document and no notes, and no word about why.
     // The plant is that binary: it refuses the flag in the words a `mnema` has used for an
-    // option it does not take — this binary's own, and commander's before them — and is the
+    // option it does not take (this binary's own, and commander's before them) and is the
     // real CLI otherwise, so what reaches the session is what an old binary would print.
     const older = join(sandbox, 'older');
     mkdirSync(older, { recursive: true });
@@ -887,7 +887,7 @@ describe('the record arrives unasked', () => {
           JSON.parse(ran.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
         ).hookSpecificOutput.additionalContext;
         // What an old binary prints without the flag, byte for byte, and asked for TWICE: once
-        // with the flag and once without — the second only because the first named it.
+        // with the flag and once without; the second only because the first named it.
         expect(said).toBe(cliAt(project, verb));
         expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
           ASKED_FIRST,
@@ -902,7 +902,7 @@ describe('the record arrives unasked', () => {
     // MEASURED BEFORE IT WAS WRITTEN, with Claude Code 2.1.281: a program called `mnema` placed
     // before the real one on the PATH was run at all three points the plugin declares, and the
     // session opened without the record and without a word. The plant is that program: it
-    // records what it was asked and answers nothing — the probe's own stand-in — and then one
+    // records what it was asked and answers nothing, the probe's own stand-in, and then one
     // that answers the question with something else, the way another tool's version would.
     const stranger = join(sandbox, 'stranger');
     mkdirSync(stranger, { recursive: true });
@@ -963,7 +963,7 @@ describe('the record arrives unasked', () => {
 
   it('runs a build older than the question as it ran before', () => {
     // A `mnema` of this product built before `--identify` refuses it in the product's own words
-    // for an option it does not take — measured on a v1 build of 16/09 — and is not a stranger:
+    // for an option it does not take, measured on a v1 build of 16/09, and is not a stranger:
     // the verb is run, and the flag fallback above still serves a build that is older than both.
     const older = join(sandbox, 'older-than-the-question');
     mkdirSync(older, { recursive: true });
@@ -999,7 +999,7 @@ describe('the record arrives unasked', () => {
     ]);
   });
 
-  it('carries the committed record by name — not the private tree, and not the bodies', () => {
+  it('carries the committed record by name, not the private tree, and not the bodies', () => {
     // The two absences the plugin's README states out loud, asserted where the README
     // states them: about what reaches the SESSION, not about what the verb composes.
     const ran = runHook(hookRunning(DOCUMENT_HOOK), project);
@@ -1008,7 +1008,7 @@ describe('the record arrives unasked', () => {
 
     expect(context).toContain(COMMITTED_TITLE);
     expect(context).toContain(PATTERN_NAME);
-    // Committed, and accepted, and still not here — because it is this machine's.
+    // Committed, and accepted, and still not here, because it is this machine's.
     expect(context).not.toContain(PRIVATE_TITLE);
     // And no note of any tree: a note governs nothing, and the private one is exactly what a
     // committed document may not carry. The notes have their own handler, below.
@@ -1026,7 +1026,7 @@ describe('the record arrives unasked', () => {
     // every handler that writes to a model to name a channel; what it cannot see from
     // the source is whether the bytes that actually reach the session carry that
     // channel's declaration. This is that, end to end: the real binary, the real
-    // handler, the reply the host would read — for EACH handler, with the channel it
+    // handler, the reply the host would read; for EACH handler, with the channel it
     // names read off its own source.
     for (const hook of [DOCUMENT_HOOK, NOTES_HOOK]) {
       const declared = DECLARES_MODEL_CHANNEL.exec(
@@ -1049,8 +1049,8 @@ describe('the record arrives unasked', () => {
 
   it('hands this machine’s notes to its session — the private tree too, one line each', () => {
     // WHAT THE SECOND HANDLER IS FOR: the note an agent records lands in the tree that
-    // does not travel, and the document may not carry it. Here it arrives — the private
-    // memory beside the committed one — and the observation arrives as the line the index
+    // does not travel, and the document may not carry it. Here it arrives, the private
+    // memory beside the committed one, and the observation arrives as the line the index
     // knows it by, its topic, with its body one read away.
     const ran = runHook(hookRunning(NOTES_HOOK), project);
     expect(ran.status).toBe(0);
@@ -1068,7 +1068,7 @@ describe('the record arrives unasked', () => {
 
   it('says nothing where nothing is noted', () => {
     // A project with a record and no note: the verb prints nothing and exits 0, and the
-    // handler hands the session nothing — the channel is silent where it has nothing to
+    // handler hands the session nothing; the channel is silent where it has nothing to
     // say, which is the rule the per-edit push keeps. And it was TRIED.
     const ran = runHook(hookRunning(NOTES_HOOK), unnoted);
     expect(ran.out).toBe('');
@@ -1077,14 +1077,14 @@ describe('the record arrives unasked', () => {
     expect(ran.mnema).toEqual(callsOf(NOTES_HOOK));
     // Non-vacuity: the DOCUMENT of the same project does arrive, so the silence above is
     // the notes channel's and not a project the handlers cannot read. (Its one decision is
-    // proposed, so the document counts it rather than naming it — it is the document's
+    // proposed, so the document counts it rather than naming it: it is the document's
     // heading that says the text arrived.)
     const document = runHook(hookRunning(DOCUMENT_HOOK), unnoted).out;
     expect(document).toContain('What governs the work here');
     expect(document).toContain('1 more decision is recorded here and awaiting a judgement');
   });
 
-  it('writes nothing at all — no event, no key, no run', () => {
+  it('writes nothing at all: no event, no key, no run', () => {
     // The other half of "it is a read", and the half a reader of `hooks.json` cannot
     // check: the events of every tail and the key material of the whole sandbox,
     // counted by reading the files rather than by asking the product to replay them.
@@ -1105,7 +1105,7 @@ describe('the record arrives unasked', () => {
     expect(held(sandbox)).toEqual(before);
   });
 
-  it('runs the verbs it names — two that read, and the gate, which writes only when it asks', () => {
+  it('runs the verbs it names: two that read, and the gate, which writes only when it asks', () => {
     // The guard that keeps the write half out. The read half was delivered alone on
     // purpose: `ensureRun` already opens a run on the FIRST WRITE with the `who` off
     // the key, so a hook that opened one would move the moment and open an empty run
@@ -1118,15 +1118,15 @@ describe('the record arrives unasked', () => {
     // named here so that a third one is a line somebody has to write. `PreToolUse` is the
     // one that can refuse on this host and this plugin does not: the hook it declares
     // there is a `mcp_tool` call that returns context, `{}`, or the one decision its type
-    // can carry, `ask` — held by `the-rule-reaches-the-writing.test.ts` and
+    // can carry, `ask`, held by `the-rule-reaches-the-writing.test.ts` and
     // `the-record-asks-for-a-person.test.ts`, which also digest the record around the call.
     //
     // THIS CASE WAS "runs `mnema brief`, and nothing else", and a second verb is what
     // renamed it: the event that opens a session now runs two handlers, and each runs one
-    // verb. What it guards is unchanged — every verb a handler reaches is a READ — and the
+    // verb. What it guards is unchanged (every verb a handler reaches is a READ) and the
     // list says which two, so a third is a line somebody has to write.
     //
-    // A THIRD VERB ARRIVED, AND IT WRITES — so the sentence "every verb a handler reaches is a
+    // A THIRD VERB ARRIVED, AND IT WRITES, so the sentence "every verb a handler reaches is a
     // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
     // reader who knew the old name finds a different claim. VS Code runs only command hooks and
     // holds a write for a person when a command answers `ask` (measured on 30 Sep 2026), so the gate reaches it as a process: `mnema before-a-write
@@ -1214,14 +1214,14 @@ describe('the record arrives unasked', () => {
     // plugin rather than a rule: a `mcp_tool` hook is a call into the server this same
     // manifest declares, has no command line and no file, and its own failure mode is a
     // NAME that does not resolve. Both are validated, and a type neither arm knows fails
-    // rather than passing through — the shape a third one has to be classified in.
+    // rather than passing through: the shape a third one has to be classified in.
     const validated: string[] = [];
     for (const group of Object.values(hooks.hooks ?? {}).flat()) {
       expect(group.hooks?.length).toBeGreaterThan(0);
       for (const handler of group.hooks ?? []) {
         if (handler.type === 'command') {
           const command = handler.command ?? '';
-          // Portable by the host's rule — the path is written against
+          // Portable by the host's rule: the path is written against
           // `${CLAUDE_PLUGIN_ROOT}`, which is what the pattern below requires, and
           // never against a home directory or an absolute path.
           expect(command).not.toMatch(/(^|\s)[~/]/);

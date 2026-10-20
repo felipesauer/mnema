@@ -7,14 +7,14 @@
  * file", "the rules before each edit". The host says otherwise, measured against the real
  * binary on 2.1.228 and again on 2.1.281: the hook fires
  * before the write, and the text it hands over reaches the conversation after the result of
- * that write — in time for every edit after it and for a correction of that one, and not for
+ * that write, in time for every edit after it and for a correction of that one, and not for
  * the bytes of the edit that fired it. Only the pause a rule asks for holds a write. Nothing
  * was red: no case read the manifest or the pages, and the two cases that read the document
  * asserted the false sentence.
  *
  * WHAT IS HELD, from both sides:
  *   - every text that tells a reader what the per-edit push hands over says WHEN, in the words
- *     of the front page — "beside the result of that write". The product's texts are read where
+ *     of the front page: "beside the result of that write". The product's texts are read where
  *     the product composes them (the document, the switch listing, the tool the host calls);
  *     the manifest and the pages are read as files. A new sentence that says "before" in other
  *     words fails here, because it does not say this;
@@ -44,7 +44,7 @@ import { WHAT_STOPS } from '../src/record-framing.js';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
-/** The front page's words for when the rules arrive — the one phrasing, not a third. */
+/** The front page's words for when the rules arrive: the one phrasing, not a third. */
 const WHEN = 'beside the result of that write';
 
 /**
@@ -86,7 +86,7 @@ function flat(text: string): string {
 
 /**
  * The passage of a page that holds `anchor`: the paragraph, list item or table row it sits
- * in. An anchor the page no longer holds is a red that names it — never a passage of
+ * in. An anchor the page no longer holds is a red that names it, never a passage of
  * nothing that trivially passes.
  */
 function passageAt(page: string, anchor: string): string {
@@ -178,7 +178,7 @@ function saysBefore(text: string): readonly string[] {
 describe('every text that says what the per-edit push hands over says when', () => {
   it('in the document a session opens with, while the push is on', () => {
     // The sentence the count explains. With the push off the document says nothing arrives,
-    // which needs no "when" — so that half is not asked for it.
+    // which needs no "when", so that half is not asked for it.
     expect(flat(documentWith(ON('edit-rules-push'), ON('edit-asks-a-person')))).toContain(WHEN);
     expect(flat(documentWith(OFF('edit-rules-push'), ON('edit-asks-a-person')))).not.toContain(
       WHEN,
@@ -242,7 +242,7 @@ describe('no text a reader is handed says the rules arrive before the write', ()
     expect(saysBefore(read(page))).toEqual([]);
   });
 
-  it('and the list reads what it names — a page carrying one is found', () => {
+  it('and the list reads what it names: a page carrying one is found', () => {
     // The instrument's own case: a list that matched nothing it names would pass every page.
     // Each sentence, wrapped as a page would wrap it and with its case changed, is found.
     for (const sentence of SAID_BEFORE) {

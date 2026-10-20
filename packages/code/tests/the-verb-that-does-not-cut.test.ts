@@ -1,5 +1,5 @@
 /**
- * `mnema tail prune` — the verb that authorizes a cut and cuts nothing.
+ * `mnema tail prune`: the verb that authorizes a cut and cuts nothing.
  *
  * The fact existed before the verb did: a `tail.pruned` written while the tail is
  * still on disk, with its head hash, its event count and the anchor it served all
@@ -9,15 +9,15 @@
  * halves of what it promises.
  *
  * THE FIRST HALF IS THAT IT PRODUCES WHAT THE VERIFIER READS. A waiver written here,
- * then the files removed by the person who authorized it, and `mnema verify` — the
- * same binary, untouched by this delivery — stops listing the three readings of an
+ * then the files removed by the person who authorized it, and `mnema verify` (the
+ * same binary, untouched by this delivery) stops listing the three readings of an
  * orphaned key and NAMES the account instead. Proving it against the surface this
  * delivery did not write is the point: repeating my own numbers back would prove that
  * two functions in this repository agree.
  *
  * THE SECOND HALF IS THAT IT REMOVES NOTHING, and it is asserted byte for byte. It
  * is not a shortcut to be finished later. On a real project with the chain committed
- * — which is how a record travels — deleting a tail's directory left `git status`
+ * (which is how a record travels), deleting a tail's directory left `git status`
  * reporting the deletions and `git show HEAD:<the segment>` printing all twenty-two
  * lines back. A command that ran `rm` would give a sense of completion over work that
  * had barely begun, and the output says so in the same breath as the record.
@@ -86,7 +86,7 @@ function tailDirectory(tail: string): string {
  * offline copy is: its files, and the public half of the key that signed them.
  *
  * It is the shape the verb exists for. A waiver may never name the tail it is written
- * to, so the only tail this machine can authorize a cut of is somebody else's — which
+ * to, so the only tail this machine can authorize a cut of is somebody else's, which
  * is also the case the fact was designed around: one person asking to be taken out of
  * a record, another authorizing it.
  */
@@ -124,7 +124,7 @@ function bytesUnder(directory: string): Map<string, string> {
   return held;
 }
 
-/** This machine's own tail in the committed tree — the one a waiver may never name. */
+/** This machine's own tail in the committed tree: the one a waiver may never name. */
 function ownTail(): string {
   const tails = readdirSync(join(publicRoot(), 'tails'));
   expect(tails.length, `expected exactly one tail before the merge: ${tails.join(', ')}`).toBe(1);
@@ -174,12 +174,12 @@ describe('the record names the cut, and the verb is what writes it', () => {
     expect(authorized.out[0]).toBe(`Authorized the cut of tail ${foreign.tail}`);
     // Everything the waiver claims came off the disk: the count is the foreign tail's
     // own (a founding, a task's two events, and its checkpoint is not an event), and
-    // the anchor is the one that tail served — not this machine's.
+    // the anchor is the one that tail served, not this machine's.
     expect(authorized.text).toContain(`3 event(s) through `);
     expect(authorized.text).toContain(`the tail of ${foreign.anchor}`);
     expect(authorized.text).not.toContain(`authorized by ${foreign.anchor}`);
 
-    // THE CUT, by the person who authorized it — this verb never does it.
+    // THE CUT, by the person who authorized it: this verb never does it.
     rmSync(tailDirectory(foreign.tail), { recursive: true, force: true });
 
     // And the surface this delivery did not touch: the note that used to list three
@@ -197,7 +197,7 @@ describe('the record names the cut, and the verb is what writes it', () => {
     expect(after.text).toContain('local integrity verified (T1/T2/T4)');
   });
 
-  it('leaves every byte of the tail where it was — it authorizes, it does not cut', async () => {
+  it('leaves every byte of the tail where it was: it authorizes, it does not cut', async () => {
     const foreign = mergeAForeignTail();
     const held = bytesUnder(tailDirectory(foreign.tail));
     expect(held.size, 'the fixture merged no files').toBeGreaterThan(0);
@@ -211,14 +211,14 @@ describe('the record names the cut, and the verb is what writes it', () => {
     );
     expect(authorized.failed, authorized.text).toBe(false);
 
-    // THE ASSERTION THIS SLICE IS ABOUT. Not "the directory exists" — every file, with
+    // THE ASSERTION THIS SLICE IS ABOUT. Not "the directory exists": every file, with
     // the bytes it had. A verb that truncated, resealed or rewrote a segment would pass
     // an existence check and fail this one.
     expect(existsSync(tailDirectory(foreign.tail))).toBe(true);
     expect(bytesUnder(tailDirectory(foreign.tail))).toEqual(held);
 
     // And the output says where they are, so whoever authorized the cut can carry it
-    // out — the path is the one thing the record itself never carries.
+    // out: the path is the one thing the record itself never carries.
     expect(authorized.text).toContain(`still on disk at ${tailDirectory(foreign.tail)}`);
     expect(authorized.text).toContain('nothing was removed');
   });
@@ -281,7 +281,7 @@ describe('what it refuses, in words a person reads', () => {
     const refused = await mnema('tail', 'prune', foreign.tail);
 
     // A cut with no recorded reason is the one an audit cannot read later, so the
-    // parser demands it — the same shape `key revoke` uses, reported in the product's
+    // parser demands it: the same shape `key revoke` uses, reported in the product's
     // own voice rather than commander's.
     expect(refused.failed).toBe(true);
     expect(refused.err.join('\n')).toContain('--reason');

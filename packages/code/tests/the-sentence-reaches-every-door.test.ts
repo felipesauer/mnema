@@ -1,15 +1,15 @@
 /**
- * THE SENTENCE REACHES EVERY DOOR — and nine-of-ten is what this file exists to redden.
+ * THE SENTENCE REACHES EVERY DOOR, and nine-of-ten is what this file exists to redden.
  *
  * The promise this product makes lived in NINE places at once and nothing held them
  * together: the npm manifest of the published package, the `--help` of the binary, the
  * golden that pins that help, a second manifest, the opening of four READMEs, and a
- * doc-comment. It is TEN since 17/09/2026, when this repository — public, and until then
- * without a root page at all — grew the one a clone lands on, which is the door a stranger
+ * doc-comment. It is TEN since 17/09/2026, when this repository (public, and until then
+ * without a root page at all) grew the one a clone lands on, which is the door a stranger
  * opens before any of the others. That line said eight-of-nine until the tenth arrived.
  * Measured before this guard existed, the golden covered TWO of them and
  * nothing at all looked at a `package.json`. So the claim on the npm page and the claim in
- * the README could drift apart in silence — and had: the manifest sold *"a tamper-evident,
+ * the README could drift apart in silence, and had: the manifest sold *"a tamper-evident,
  * local-first audit chain… that records every action behind workflow gates in a
  * cryptographically verifiable log"* while, forty lines into the same package's README,
  * the product refuted every clause of it in a table.
@@ -22,19 +22,19 @@
  *      actually happened here.
  *   2. NOTHING SAYS THE OLD ONE. Every tracked text file is swept for the clauses the
  *      study falsified, each with the measurement that killed it written beside it. This
- *      is the half that catches the sentence surviving somewhere nobody thought to look —
+ *      is the half that catches the sentence surviving somewhere nobody thought to look,
  *      and prose is where it survives, not code, so the sweep reads AFFIRMATIONS and not
  *      identifiers.
  *
  * WHY IT IS NOT VACUOUS, stated rather than assumed, because a sweep that finds nothing is
  * indistinguishable from a sweep that cannot find anything. The retired clauses are, by
- * design, absent from the repository the day this lands — so the scanner is fed a corpus
+ * design, absent from the repository the day this lands, so the scanner is fed a corpus
  * that DOES contain each one and must name every file it is in. A sweep whose instrument
  * is never shown to fire is a sweep that reports zero when it is broken.
  *
  * TWO THINGS IT DOES NOT DO, and both are the reason the allowlist exists rather than an
- * exemption from it. A clause can appear for a legitimate reason — quoted in order to be
- * refuted, or named as the thing a hook must not claim — and each such place is an entry
+ * exemption from it. A clause can appear for a legitimate reason (quoted in order to be
+ * refuted, or named as the thing a hook must not claim) and each such place is an entry
  * below carrying WHY. The list is reconciled in both directions: an entry whose file no
  * longer holds its clause is accused just as loudly as a file that holds one and is not
  * listed, so it cannot silently become a blanket. And this file is excluded from its own
@@ -85,12 +85,12 @@ const unprefixed = (transcript: string): string =>
 const opening = (markdown: string): string => markdown.split('\n## ')[0] as string;
 
 describe('the sentence reaches every door', () => {
-  it('the published manifest carries it — the npm page is the first door', () => {
+  it('the published manifest carries it: the npm page is the first door', () => {
     const manifest = JSON.parse(read('packages/code/package.json')) as { description: string };
     expect(manifest.description).toBe(PRODUCT_PROMISE);
   });
 
-  it('the program carries it — what `mnema --help` prints to everyone', () => {
+  it('the program carries it: what `mnema --help` prints to everyone', () => {
     const { program } = buildProgram();
     expect(program.description()).toBe(PRODUCT_PROMISE);
   });
@@ -122,7 +122,7 @@ describe('the sentence reaches every door', () => {
     // no root page at all until 17/09/2026: a clone saw twelve configuration files, a
     // licence and a security policy, and nothing that said what this is. The page that
     // fixed that makes the product's claim to a stranger in fewer words than any other
-    // door, which is exactly the shape a sentence drifts in — so it is read here rather
+    // door, which is exactly the shape a sentence drifts in, so it is read here rather
     // than trusted to stay quoted.
     const head = flat(opening(read('README.md')));
     expect(head).toContain(flat(PRODUCT_PROMISE));
@@ -140,7 +140,7 @@ describe('the sentence reaches every door', () => {
 
 /**
  * The clauses the study falsified, each with what killed it. These are AFFIRMATIONS, not
- * identifiers: the sentence survives in prose — a README, a manifest, a doc-comment — and
+ * identifiers: the sentence survives in prose (a README, a manifest, a doc-comment) and
  * not one of those places mentions a function a symbol search would find.
  */
 const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
@@ -184,7 +184,7 @@ const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
 
 /**
  * Where a retired clause appears for a reason, and what the reason is. Reconciled in BOTH
- * directions — an entry whose file no longer holds its phrase fails as loudly as an
+ * directions: an entry whose file no longer holds its phrase fails as loudly as an
  * unlisted file that does.
  */
 const QUOTED_ON_PURPOSE: readonly { file: string; phrase: string; why: string }[] = [
@@ -224,7 +224,7 @@ function trackedText(): { file: string; text: string }[] {
 
 /**
  * The text as prose reads it: lowercased, and every line break joined back into the sentence
- * it broke — with the leader a doc-comment, a line comment, a shell comment or a quote puts
+ * it broke, with the leader a doc-comment, a line comment, a shell comment or a quote puts
  * at the start of the next line. A clause wrapped at column 80 is the same clause, and the
  * sweep USED TO MISS IT: it compared raw text, so a retired sentence that happened to wrap
  * between two of its words escaped (measured: `cannot hide the signed history` sat across two
@@ -250,7 +250,7 @@ function sweep(corpus: readonly { file: string; text: string }[]): string[] {
 }
 
 describe('no door still says the retired sentence', () => {
-  it('the sweep FIRES — every clause is found, in every file that holds it', () => {
+  it('the sweep FIRES: every clause is found, in every file that holds it', () => {
     // Without this the whole guard below reports zero when it is broken, and zero is what
     // a healthy repository looks like. The corpus is written here, not read off the disk.
     const corpus = RETIRED_CLAIMS.map(({ phrase }, at) => ({
@@ -301,7 +301,7 @@ describe('no door still says the retired sentence', () => {
  * and the clause sweep above cannot be it.
  *
  * *Workflow gates* is this product's own vocabulary and it is used correctly in fourteen
- * places — a guard that banned the words would ban the product's language and be switched
+ * places: a guard that banned the words would ban the product's language and be switched
  * off within a week. What made the words a claim was WHERE they stood: a `description` is
  * one line, read by somebody who will read nothing else, and *workflow gates* alone in one
  * reads as access control. The package's own README spends a table row saying it is not:
@@ -312,8 +312,8 @@ describe('no door still says the retired sentence', () => {
  * to qualify is left alone, and the sweep above is what watches prose.
  *
  * MEASURED: this case did not exist when the rest of this file did, and the mutation that
- * found the hole is the one that put `workflow gates` back into `packages/core/package.json`
- * — it reddened NOTHING. A guard whose reversion is green is a site with no guard.
+ * found the hole is the one that put `workflow gates` back into `packages/core/package.json`;
+ * it reddened NOTHING. A guard whose reversion is green is a site with no guard.
  */
 describe('no manifest sells the gate as more than it is', () => {
   /** Every tracked `package.json` and `plugin.json` that carries a description. */
@@ -332,7 +332,7 @@ describe('no manifest sells the gate as more than it is', () => {
           : [];
       });
 
-  it('finds the manifests that describe themselves — fifteen of them', () => {
+  it('finds the manifests that describe themselves: fifteen of them', () => {
     // The non-vacuity of the case below, which is otherwise true of an empty list.
     expect(
       described()
@@ -369,7 +369,7 @@ describe('no manifest sells the gate as more than it is', () => {
 /**
  * A KEYWORD IS A PROMISE WITH NO SENTENCE AROUND IT, and it is the same hole the rule
  * above closes, one field over. A marketplace and an npm search match on these words and
- * show nothing else, so each one has to stand on its own — and `provenance` did not. It
+ * show nothing else, so each one has to stand on its own, and `provenance` did not. It
  * says the record ties a fact to where it came from; a record forged whole, `.mnema`
  * deleted and refounded under another key with the opposite decision written in it,
  * verifies clean and word for word like an honest one, and the second reader written from
@@ -377,8 +377,8 @@ describe('no manifest sells the gate as more than it is', () => {
  * in `verify`: what would distinguish them is not in the record for any reader to find.
  *
  * So the words are declared, each with the half of the promise that buys it. A word that
- * is not listed is refused, which makes adding one a line in a diff saying WHY it is true
- * — and the list is reconciled the other way too, so a word that leaves every manifest
+ * is not listed is refused, which makes adding one a line in a diff saying WHY it is true;
+ * and the list is reconciled the other way too, so a word that leaves every manifest
  * cannot sit here pretending to guard something.
  *
  * MEASURED: putting `provenance` back into the plugin's keywords reddened NOTHING before
@@ -449,7 +449,7 @@ describe('no keyword promises what the sentence does not', () => {
     expect(unbought).toEqual([]);
   });
 
-  it('every word declared here is on a manifest — the list cannot outlive what it guards', () => {
+  it('every word declared here is on a manifest: the list cannot outlive what it guards', () => {
     const carried = new Set(keywords().map(({ keyword }) => keyword));
     const stale = Object.keys(KEYWORDS_THE_PROMISE_BUYS).filter((word) => !carried.has(word));
     expect(stale).toEqual([]);
@@ -458,7 +458,7 @@ describe('no keyword promises what the sentence does not', () => {
 
 /**
  * WHERE THIS REPOSITORY SAYS ITS HOME IS. The site three manifests pointed at was switched
- * off on 10 Sep 2026 and answers 404 — and one of the three is the link the npm page shows,
+ * off on 10 Sep 2026 and answers 404, and one of the three is the link the npm page shows,
  * so a dead link was the first thing a reader of the published package could click. A dead
  * link is not a claim about the record, so it is asserted apart from the sentence.
  *
@@ -487,8 +487,8 @@ describe('every manifest points home at the same place', () => {
     // The non-vacuity of the case below: a reader that parsed nothing would leave it true.
     //
     // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
-    // predicted exactly this — "a list typed here is a list that stays at three while a
-    // fourth manifest is added with a home of its own" — and it came true three at once when
+    // predicted exactly this ("a list typed here is a list that stays at three while a
+    // fourth manifest is added with a home of its own") and it came true three at once when
     // `@mnema/chain`, `@mnema/core` and `@mnema/context` stopped being private. A package on
     // the registry whose page has no link home is the first thing a reader cannot click, so
     // the three took a `homepage` when they took a `publishConfig`, and this is the case that

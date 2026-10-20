@@ -3,13 +3,13 @@
  * that id, the answer names where it looked, and nothing on disk moves.
  *
  * THE ID IS THE WHOLE POINT OF THE READING. `tail prune` takes a tail id and until
- * this verb existed nothing in the product printed one — its own help said *"as
+ * this verb existed nothing in the product printed one: its own help said *"as
  * `verify` spells it"*, and `verify` spells a COUNT (`1 tail(s)`). So the case here
  * takes the id OFF THE PRINTED LINE and hands it to `prune`, which has to accept it.
  * A case comparing the line to a string the test composed would pass over an id
  * truncated for the column and prove nothing about the only use the list has.
  *
- * AND IT IS A READ, PROVED BY BYTES. The whole sandbox — chain, cache, keys — is
+ * AND IT IS A READ, PROVED BY BYTES. The whole sandbox (chain, cache, keys) is
  * hashed before and after, the mould `guard.test.ts` uses for the other verb that
  * must write nothing. It is worth the strongest form here because the tempting
  * column (which of these tails is THIS machine's) is one only a writer knows, and a
@@ -66,7 +66,7 @@ async function mnema(...argv: string[]): Promise<Said> {
 
 /**
  * A content digest of every file under `dir`, so a read that must write nothing can
- * be proven byte-identical — the shape `guard.test.ts` established.
+ * be proven byte-identical: the shape `guard.test.ts` established.
  */
 function digest(dir: string): string {
   const hash = createHash('sha256');
@@ -100,8 +100,8 @@ function publicRoot(): string {
  * A second machine's tail, merged into the committed tree the way an offline copy
  * is: its files, and the public half of the key that signed them.
  *
- * The tail a waiver names is always somebody else's — the door refuses one naming
- * the tail it is written to — so this is the only fixture a successful `prune` can
+ * The tail a waiver names is always somebody else's (the door refuses one naming
+ * the tail it is written to), so this is the only fixture a successful `prune` can
  * be driven over.
  */
 function mergeAForeignTail(): string {
@@ -129,7 +129,7 @@ function listedRows(said: Said): string[] {
   return said.out.filter((line) => line.startsWith('  '));
 }
 
-/** The id a listed row leads with — read off the line, never composed. */
+/** The id a listed row leads with: read off the line, never composed. */
 function idOn(row: string): string {
   return row.trim().split(/\s+/)[0] as string;
 }
@@ -170,7 +170,7 @@ describe('mnema tail list', () => {
     expect(row, `no row for ${foreign} in ${listed.out.join(' / ')}`).toBeDefined();
 
     // THE LINK: the id as it was PRINTED, into the verb the help sends a reader to.
-    // A truncated id would be refused here, and only here — every other case in this
+    // A truncated id would be refused here, and only here: every other case in this
     // file would go on passing.
     const authorized = await mnema(
       'tail',
@@ -206,7 +206,7 @@ describe('mnema tail list', () => {
   });
 
   it('names every tree it looked in when it finds no tail at all', async () => {
-    // A project directory with no record in it — the shape a partial clone leaves,
+    // A project directory with no record in it: the shape a partial clone leaves,
     // and the one `verify` already words as "no record here". The answer may not be
     // silence: a reader who ran this in the wrong directory needs to be told WHERE
     // empty was measured.
@@ -245,7 +245,7 @@ describe('mnema tail list', () => {
 
   it('is the verb `tail prune` sends a reader to for the id it takes', async () => {
     // The help asserts where the id is read, and this is what holds the sentence
-    // to being true. It USED TO name `verify`, which prints a count and no id — a
+    // to being true. It USED TO name `verify`, which prints a count and no id: a
     // doc-comment for a behaviour nothing in the product had.
     const help = await mnema('tail', 'prune', '--help');
     const text = help.out.join('\n');

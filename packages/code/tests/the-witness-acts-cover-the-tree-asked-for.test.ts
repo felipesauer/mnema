@@ -1,24 +1,24 @@
 /**
- * THE WITNESS ACTS COVER THE TREE THEY WERE ASKED FOR — `--global` on `stamp` and `upgrade`, on the
+ * THE WITNESS ACTS COVER THE TREE THEY WERE ASKED FOR: `--global` on `stamp` and `upgrade`, on the
  * binary.
  *
  * WHAT WAS WRONG. `witness` declares `--global` for its reading, and each act declared its own. The
  * group received every `--global` on the line, wherever it was written, and each act read its own
- * copy, which was never filled — so neither act ever covered the machine-global tree. Measured
+ * copy, which was never filled, so neither act ever covered the machine-global tree. Measured
  * outside a project, with a tail in that tree: `mnema witness --global` listed it, `mnema witness
  * stamp --global` answered that there was no tail here to witness, and `mnema witness upgrade
- * --global` said no tail held events in any tree — "looked in ." Inside a project, `upgrade
+ * --global` said no tail held events in any tree, "looked in ." Inside a project, `upgrade
  * --global` went back for the public tail alone.
  *
  * WHAT IS ASSERTED. Written after the act, the flag reaches it: the stamp goes out for the global
- * tail — to ONE calendar that cannot resolve, named back in the refusal, which is how it is known
- * that a calendar was asked and that nothing else was — and the return visit reports the global
+ * tail (to ONE calendar that cannot resolve, named back in the refusal, which is how it is known
+ * that a calendar was asked and that nothing else was) and the return visit reports the global
  * tail beside the public one. Written before the act, it is refused and pointed after it, the rule
  * `decision import` had first, and nothing is asked of anybody. And the reading's `--json` is not
  * an act's: refused, with the reading named.
  *
  * NO REAL CALENDAR IS EVER CONTACTED. `stamp` is only run against a host under `.invalid` (RFC
- * 2606), one per case — two of them once took more than five seconds to fail on a CI runner.
+ * 2606), one per case: two of them once took more than five seconds to fail on a CI runner.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -29,7 +29,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;
@@ -67,7 +67,7 @@ function mnema(cwd: string, ...argv: string[]): { status: number | null; said: s
   return { status: ran.status, said: `${ran.stdout}${ran.stderr}` };
 }
 
-/** Every file under the sandbox, with its digest — what a refused line must leave as it was. */
+/** Every file under the sandbox, with its digest: what a refused line must leave as it was. */
 function everything(): string {
   const found: string[] = [];
   const walk = (directory: string): void => {
@@ -82,7 +82,7 @@ function everything(): string {
 }
 
 describe('outside a project, where only the machine-global tree resolves', () => {
-  it('`witness --global` lists the one tail there — the reading this was measured against', () => {
+  it('`witness --global` lists the one tail there: the reading this was measured against', () => {
     const { status, said } = mnema(outside, 'witness', '--global');
     expect(status).toBe(0);
     expect(said).toContain('1 tail(s)');

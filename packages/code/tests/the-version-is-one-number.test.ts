@@ -5,26 +5,26 @@
  * exactly one package, and the number lived in twelve places nothing reconciled: five
  * `package.json` files, the plugin's manifest, `src/version.ts`, the golden transcript of
  * `--version`, and four literals typed into test files. `version.ts` said so in as many
- * words — that the constant agreeing with the manifest was "an INTENTION of this module, not
- * a promise it can point a test at" — and it was right. Nothing compared them.
+ * words (that the constant agreeing with the manifest was "an INTENTION of this module, not
+ * a promise it can point a test at") and it was right. Nothing compared them.
  *
  * WHAT MADE IT COST SOMETHING. One package can survive a constant that disagrees with its
  * manifest: `--version` prints a wrong line and the npm page is the only other witness. Four
  * packages published from one workspace cannot, because the disagreement stops being between
- * a binary and its page and starts being between PACKAGES — `@mnema/code@0.1.0` resolving
+ * a binary and its page and starts being between PACKAGES: `@mnema/code@0.1.0` resolving
  * `@mnema/chain@0.0.0`, which is a tree that does not install. `pnpm publish` rewrites each
  * `workspace:*` to the concrete version of the package it points at, so the versions are not
  * four independent numbers a human may choose to keep in step: they are one number the
  * resolver will read four times.
  *
  * THE LIST IS GIT'S, NEVER TYPED HERE. A list typed here stays at six while a seventh
- * manifest arrives, and goes on passing over the six it knows — the failure this workspace
+ * manifest arrives, and goes on passing over the six it knows: the failure this workspace
  * has already measured twice, in `the-runtime-floor-is-declared-once.test.ts` (a second
  * workflow with a node matrix of its own) and in `the-sentence-reaches-every-door.test.ts`
  * (a manifest added with a home of its own). So every tracked `package.json` and
  * `plugin.json` is found, and the reconciliation runs in both directions.
  *
- * WHAT IT DOES NOT COVER, said out loud. Whether the number is the RIGHT one — that a
+ * WHAT IT DOES NOT COVER, said out loud. Whether the number is the RIGHT one: that a
  * release is minor rather than major is a judgement, not a fact on disk, and no test can hold
  * it. Nor the `0.0.0` of a dependency inside `node_modules`: these are the workspace's own
  * manifests, found by git, and a vendored tree is nobody's promise here. And the literal in
@@ -41,7 +41,7 @@ import { READER_VERSION } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { VERSION } from '../src/version.js';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -119,8 +119,8 @@ describe('the manifests this workspace ships agree on one version', () => {
 
   it('is the number the program answers with when it is asked', () => {
     // THE LINK, and the half a manifest sweep can never reach. `version.ts` is a constant
-    // and not a read of the manifest — deliberately, so that `mnema --version` costs no
-    // filesystem call — which is exactly what makes the two able to drift.
+    // and not a read of the manifest (deliberately, so that `mnema --version` costs no
+    // filesystem call), which is exactly what makes the two able to drift.
     const disagree = DECLARING.filter(({ version }) => version !== VERSION).map(
       ({ where, version }) => `${where} says ${version}, the program says ${VERSION}`,
     );
@@ -149,7 +149,7 @@ describe('the number is spelled out in exactly one place', () => {
   /**
    * A VERSION-SHAPED LITERAL, WITH ITS NEIGHBOURS READ. The number sits inside a longer one
    * (`10.1.0` contains `0.1.0`), inside a longer fraction (`0.1.01`) and inside a prerelease
-   * that is a DIFFERENT version (`0.1.0-rc1`), so the boundaries are part of the reading — an
+   * that is a DIFFERENT version (`0.1.0-rc1`), so the boundaries are part of the reading: an
    * instrument that accused a line for containing the digits is an instrument nobody keeps.
    * Written as a pure function of the text so the case below can hand it a corpus.
    */
@@ -166,7 +166,7 @@ describe('the number is spelled out in exactly one place', () => {
   it('no test of this workspace types the number as a literal', () => {
     // WHAT THIS ENDS: A FIXTURE HOLDING A VALUE THE PRODUCT CANNOT PRODUCE. Four test files
     // carried `0.0.0`: one assertion on the CLI's own output, which would at least have gone
-    // red on a bump, and THREE FIXTURES — a session title and two screen measurements — which
+    // red on a bump, and THREE FIXTURES, a session title and two screen measurements, which
     // would not. A fixture holding `mnema 0.0.0` after the product says `0.1.0` is a green
     // suite over a title the product cannot produce, and no other case in this suite would
     // have said so. They read the constant now, and this is what stops the fifth appearing.
@@ -185,7 +185,7 @@ describe('the number is spelled out in exactly one place', () => {
     // would satisfy the case above and measure no file at all.
     //
     // NOT ONE NUMBER HERE IS TYPED. The first draft of this case wrote `0.1.0` into its own
-    // corpus and the case above then accused THIS FILE — an instrument that fires on itself,
+    // corpus and the case above then accused THIS FILE: an instrument that fires on itself,
     // which this workspace has already had once. The alternative was an exception naming this
     // file, which is a list pretending to be a rule; so the corpus is built from the constant
     // instead, and `OTHER` is derived to be a version this product cannot be at.

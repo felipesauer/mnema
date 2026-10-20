@@ -4,7 +4,7 @@
  * WHERE THIS COMES FROM. `.github/flake-sampler/summarize.mjs` runs the suite N times against one
  * commit and publishes, per case, how many of those N runs it failed in. The number it produces
  * has one failure mode that matters more than every other: reading nothing and printing zero.
- * This bench has been bitten by that shape twice, in two different instruments — a mutation
+ * This bench has been bitten by that shape twice, in two different instruments: a mutation
  * matrix whose runner died on a flag it did not have and reported no survivors, and a parser that
  * read "0 failures" off a report that had never been written. Both were only caught because a
  * mutation that HAD to redden came back green.
@@ -16,16 +16,16 @@
  * this file, produced by running this workspace's own vitest with the same reporter flags the
  * sampler's workflow uses:
  *
- *   - `all-passed.json` — five cases of `packages/chain/src/one-line.test.ts`, green;
- *   - `one-failed.json` — the same file with `116` mutated to expect the wrong export path, so
+ *   - `all-passed.json`: five cases of `packages/chain/src/one-line.test.ts`, green;
+ *   - `one-failed.json`: the same file with `116` mutated to expect the wrong export path, so
  *     one assertion fails, `numFailedTests` is 1 and the FILE's own status is `failed` too;
- *   - `no-test-files.json` — a run whose filter matched nothing. This is the dangerous one and it
+ *   - `no-test-files.json`: a run whose filter matched nothing. This is the dangerous one and it
  *     is a genuine capture: vitest writes the report file anyway, with `numTotalTests: 0`,
  *     `testResults: []` and `success: false`. Nothing about a suite that never ran is visible to
  *     a parser checking only that the file is there.
  *
  * The one thing edited in the captures is the absolute path prefix, rewritten from the machine
- * that produced them to `/home/runner/work/mnema/mnema` — which is the prefix the runner
+ * that produced them to `/home/runner/work/mnema/mnema`, which is the prefix the runner
  * genuinely writes, and which keeps a workstation path out of a public repository.
  *
  * WHAT THIS DOES NOT COVER, said out loud rather than left to be discovered. It does not run the
@@ -33,7 +33,7 @@
  * is answered by the workflow running, and the first night is what answered it. It does not cover
  * the rendering of a page GitHub will accept as markdown, only that the two pages differ in the
  * one way that matters. And it says nothing about whether a rate the sampler prints is the rate
- * of a flake rather than of a case broken at that commit — that reading belongs to whoever opens
+ * of a flake rather than of a case broken at that commit: that reading belongs to whoever opens
  * the page, and the sampler's own header says so.
  */
 
@@ -54,7 +54,7 @@ import {
   tally,
 } from '../../../.github/flake-sampler/summarize.mjs';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** The prefix the captures carry, which is what a runner writes. */
@@ -414,7 +414,7 @@ describe('the page a broken ruler prints is not the page a clean night prints', 
  * THE NAME OF A REPORT IS A RULE WRITTEN IN TWO PLACES, and the two are in different languages.
  * The workflow's shell composes `reports/run--$LABEL--$SEQ.json`; the summariser recognises it
  * with a regular expression. Nothing makes them agree, and the day they stop agreeing every
- * report becomes a file the counter cannot name — a loud refusal rather than a wrong rate, which
+ * report becomes a file the counter cannot name: a loud refusal rather than a wrong rate, which
  * is the good failure, but a night lost to it is a night lost.
  *
  * The same holds for the number of labels: the summarise job passes `LABELS: '6'` because a job
@@ -451,7 +451,7 @@ describe('the sampler reads exactly the names its workflow writes', () => {
       for (const shard of SHARDS) {
         // The matrix references are matched as patterns rather than written as literals: a
         // literal `${{ … }}` inside a plain string is what `noTemplateCurlyInString` exists to
-        // catch, and it is right to — that is the shape of a template that forgot its backtick.
+        // catch, and it is right to, that is the shape of a template that forgot its backtick.
         const cell = (what: string) => new RegExp(`\\$\\{\\{\\s*matrix\\.${what}\\s*\\}\\}`, 'g');
         const filled = path
           .replace('$LABEL', label.replace(cell('node'), node).replace(cell('shard'), shard))

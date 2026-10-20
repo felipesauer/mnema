@@ -5,13 +5,13 @@
  * of one event per catalog kind, and freezing is forever: a vector carrying a
  * state no workflow allows, or a channel this product does not have, would leave
  * the suite green over a world that cannot exist, and the digest would still be
- * "right". The reader in `@mnema/chain` answers the half it can — the shape, the
- * required fields, a count of at least one — and it CANNOT answer the rest,
+ * "right". The reader in `@mnema/chain` answers the half it can (the shape, the
+ * required fields, a count of at least one) and it CANNOT answer the rest,
  * because the proof engine deliberately knows nothing about workflows, channels
  * or minted ids. Those vocabularies live in `@mnema/core` and in this package, so
  * the guard that reads them lives here, at the one point that can see all three.
  *
- * IT READS THE PUBLISHED FILE, not the module that builds it — the same artifact a
+ * IT READS THE PUBLISHED FILE, not the module that builds it: the same artifact a
  * stranger downloads. A vector that changed only in the file is caught next door
  * (`packages/chain/src/events/canonical-vectors.test.ts`); what is caught here is a
  * vector whose values no operation of this product could ever have written, on
@@ -23,9 +23,9 @@
  *     uuid v7;
  *   - two `task.transitioned` rows move a task `todo --finish--> done`, and the
  *     task workflow has no such state and no such action (its states are upper
- *     case, `DRAFT` through `CANCELED`). The catalog permits it — a transition's
+ *     case, `DRAFT` through `CANCELED`). The catalog permits it (a transition's
  *     `from`/`to`/`action` are open literal strings so a fact outlives a workflow
- *     change — so the bytes are valid bytes; they are simply not an example of a
+ *     change), so the bytes are valid bytes; they are simply not an example of a
  *     fact anything here could write.
  * Their digests are frozen, so correcting them would move the format under a
  * signature nobody decided to move. Both exceptions are enumerated below, closed,
@@ -142,7 +142,7 @@ describe('the published vectors carry only values this product can produce', () 
   });
 
   it('labels a link with a relation this product recommends', () => {
-    // `rel` is an OPEN string and a reader accepts any of them — that is the
+    // `rel` is an OPEN string and a reader accepts any of them, that is the
     // catalog's design and this case does not narrow it. What it holds is the
     // FIXTURE: a frozen vector is the example an implementer copies, so it uses a
     // label the product itself suggests rather than an invented one.
@@ -184,7 +184,7 @@ describe('the published vectors carry only values this product can produce', () 
       const subject = row.event.subject;
       if (SUBJECTS_NO_OPERATION_MINTS.has(subject)) continue;
       // What is left must be something an operation produces: an anchor id, a
-      // minted id, a channel name, or — on a stack's two facts — a stack name in the
+      // minted id, a channel name, or, on a stack's two facts, a stack name in the
       // form the adoption's door admits. Anything else is a placeholder somebody
       // added after the exceptions were closed.
       const produced =

@@ -2,7 +2,7 @@
  * The record asks for a person: the first thing this product does that STOPS somebody.
  *
  * WHAT IS PROVED HERE AND WHAT CANNOT BE. The host is what enforces a permission decision,
- * and no test in this repository can make it do so — so the assertions below stop exactly
+ * and no test in this repository can make it do so, so the assertions below stop exactly
  * where the product's reach stops. They cover: that the reply asks only when a rule of the
  * record asks, citing its id; that the reply cannot express any other decision; that the
  * asking is a FACT before it is a charge; that a rule not in force asks for nobody; and
@@ -16,7 +16,7 @@
  *     call, byte for byte;
  *   - it overrides every permission mode, `--permission-mode bypassPermissions` included,
  *     so this product's own switch is the only way out;
- *   - `permissionDecision: "escalate"` — the spelling the plan for this channel used — is
+ *   - `permissionDecision: "escalate"`, the spelling the plan for this channel used, is
  *     not a value this host has. It fails the schema, and the failure DISCARDS THE WHOLE
  *     REPLY, injection included, non-blockingly and where the product cannot see it. That
  *     is why {@link Escalation} is a union of two: the values this product means.
@@ -37,7 +37,7 @@ import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tool
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
-/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+/** The clause that says who accepted a rule: held where the lines say it, ignored where they are not about it. */
 const bare = (line: string | undefined): string | undefined =>
   line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
 
@@ -74,14 +74,14 @@ async function mnema(...argv: string[]): Promise<Said> {
   return { out, err, failed };
 }
 
-/** Runs a verb and refuses to continue if it failed — setup, not assertion. */
+/** Runs a verb and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<Said> {
   const said = await mnema(...argv);
   expect(said.failed, `${argv.join(' ')}: ${said.err.join(' / ')}`).toBe(false);
   return said;
 }
 
-/** The id in the parentheses of an echo — never the leading `ADR-<n>`, which is display. */
+/** The id in the parentheses of an echo, never the leading `ADR-<n>`, which is display. */
 function idIn(said: Said): string {
   const id = said.out.join('\n').match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said.out.join(' / ')}`);
@@ -100,7 +100,7 @@ async function askingAt(rule: string, path: string, ...extra: string[]): Promise
   await did('link', rule, path, '--rel', 'asks-for-a-person', ...extra);
 }
 
-/** Links a rule as GOVERNING a path — the informing relation, which gates nothing. */
+/** Links a rule as GOVERNING a path: the informing relation, which gates nothing. */
 async function governing(rule: string, path: string): Promise<void> {
   await did('link', rule, path, '--rel', 'governs');
 }
@@ -129,8 +129,8 @@ function decision(session: Session, path: string): { value?: string; reason?: st
     | { hookEventName?: string; permissionDecision?: string; permissionDecisionReason?: string }
     | undefined;
   if (specific?.permissionDecision === undefined) return {};
-  // The event name is CHECKED by the host — a reply naming the wrong one is dropped in
-  // silence — so a decision without it is not a decision that reaches anybody.
+  // The event name is CHECKED by the host (a reply naming the wrong one is dropped in
+  // silence), so a decision without it is not a decision that reaches anybody.
   expect(specific.hookEventName).toBe('PreToolUse');
   return {
     value: specific.permissionDecision,
@@ -165,7 +165,7 @@ function services(scope: 'public' | 'private' = 'public'): string[] {
     .map((event) => event.subject);
 }
 
-/** A digest over every byte of a directory tree — names, sizes and contents. */
+/** A digest over every byte of a directory tree: names, sizes and contents. */
 function digest(dir: string): string {
   const hash = createHash('sha256');
   const walk = (current: string): void => {
@@ -221,8 +221,8 @@ describe('the reply asks for a person, and only when the record does', () => {
     const said = decision(connect(), 'src/billing/invoice.ts');
     expect(said.value).toBe('ask');
     const lines = (said.reason ?? '').split('\n');
-    // The declaration first. This text lands in front of a MODEL — measured: the reason
-    // comes back as the tool result of the refused call — so it says what it is before it
+    // The declaration first. This text lands in front of a MODEL (measured: the reason
+    // comes back as the tool result of the refused call), so it says what it is before it
     // says anything else, on the same channel class as every other pushed text.
     expect(lines[0]).toBe(
       'Recorded for this project: text the people and agents working on it wrote.',
@@ -233,7 +233,7 @@ describe('the reply asks for a person, and only when the record does', () => {
         'before it is written.',
     );
     // Then the rule: what it says, the address that asked, and the id. The id lives on this
-    // line — a charge that could not name the fact that caused it would not be a charge.
+    // line: a charge that could not name the fact that caused it would not be a charge.
     expect(bare(lines[2])).toBe(
       `“Nobody touches billing alone” — asks for a person at src/billing · ${rule}`,
     );
@@ -244,7 +244,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     const rule = await ruleInForce('Round money at the boundary');
     await governing(rule, 'src/billing');
     const session = connect();
-    // The informing relation reaches the file — that is the other channel, and it works.
+    // The informing relation reaches the file, that is the other channel, and it works.
     const reply = replyFor(session, 'src/billing/invoice.ts');
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'additionalContext',
@@ -252,11 +252,11 @@ describe('the reply asks for a person, and only when the record does', () => {
     ]);
     // And nothing gates it. `governs` alone meaning "ask a person" would have turned every
     // addressed rule in every record into a gate on the day this shipped, by an inference
-    // nobody recorded — which is the whole reason the gate is a second relation.
+    // nobody recorded, which is the whole reason the gate is a second relation.
     expect(decision(session, 'src/billing/invoice.ts')).toEqual({});
   });
 
-  it('asks nobody about a path the gate does not cover — a prefix, by SEGMENTS', async () => {
+  it('asks nobody about a path the gate does not cover: a prefix, by SEGMENTS', async () => {
     const rule = await ruleInForce('Nobody touches billing alone');
     await askingAt(rule, 'src/billing');
     const session = connect();
@@ -280,7 +280,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     const second = await ruleInForce('Billing is reviewed in the PR instead');
     await did('decision', 'supersede', first, second, '--reason', 'moved on');
     expect(decision(connect(), 'src/billing/invoice.ts')).toEqual({});
-    // And the address is still THERE — the reading that answers a caller reports it with
+    // And the address is still THERE: the reading that answers a caller reports it with
     // its state, so the gate that stopped closing is visible rather than absent.
     const result = runGoverningRulesTool(connect(), { path: 'src/billing/invoice.ts' });
     expect(result.ok).toBe(true);
@@ -354,7 +354,7 @@ describe('the reply cannot express any decision but asking', () => {
     );
   });
 
-  it('never spells a value this host would refuse — over the whole source', () => {
+  it('never spells a value this host would refuse: over the whole source', () => {
     // THE MEASURED HAZARD, held from the source side. A `permissionDecision` the host does
     // not know fails its schema and the failure discards the ENTIRE reply, injection
     // included, non-blockingly and invisibly to this product. So the word is written in one
@@ -370,7 +370,7 @@ describe('the reply cannot express any decision but asking', () => {
       expect(literals, `hook-reply.ts spells ${refused}`).not.toContain(refused);
     }
     expect(literals).toContain('ask');
-    // `deny` IS SPELLED WHERE `ask` IS — a named constant and the union it is typed by — and it has
+    // `deny` IS SPELLED WHERE `ask` IS (a named constant and the union it is typed by) and it has
     // TWO ORIGINS that share those two spellings: a rule's refusal
     // (`a-rule-that-refuses-a-write.test.ts`) and the once-only hold on a first write
     // (`the-first-write-is-held-once.test.ts`). A third spelling anywhere in the module is red here.
@@ -419,7 +419,7 @@ describe('the asking is a FACT, and the service is one too', () => {
     for (const path of ['src/billing/invoice.ts', 'src/billing/tax.ts', 'src/billing/vat.ts']) {
       replyFor(session, path);
     }
-    // Both channels spoke, so both said so — once each, over three calls. Once per push
+    // Both channels spoke, so both said so, once each, over three calls. Once per push
     // would put thousands of signed appends on the hottest read path this product has, to
     // say the same sentence over and over.
     expect(services().sort()).toEqual(['edit-asks-a-person', 'edit-rules-push']);
@@ -435,8 +435,8 @@ describe('the asking is a FACT, and the service is one too', () => {
   });
 
   it('asks even when the asking cannot be recorded, and the reason says the fact is missing', async () => {
-    // THE ORDER RULE, AS IT STANDS NOW. This case said the opposite — "charges NOTHING when the
-    // asking cannot be recorded" — and that was the bypass: any live process holding the tail
+    // THE ORDER RULE, AS IT STANDS NOW. This case said the opposite, "charges NOTHING when the
+    // asking cannot be recorded", and that was the bypass: any live process holding the tail
     // opened every write a rule asks a person about. The asking is decided by reading, so it is
     // answered whatever the append does; what a failed append changes is the reason, which says
     // the fact is missing.
@@ -482,17 +482,17 @@ describe('the asking is a FACT, and the service is one too', () => {
     expect(digest(join(repo, '.mnema'))).toBe(before);
   });
 
-  it('can never cite a rule id the product did not mint — which is why it is an identifier', async () => {
+  it('can never cite a rule id the product did not mint, which is why it is an identifier', async () => {
     // WHY `channel.asked.rule` IS CLASSIFIED AS AN IDENTIFIER, and this case is the argument
     // rather than the assertion I first wrote. A rule id is a v7, so a scrubber reading it as
     // entropy would destroy the one field a charge is required to carry and leave a signed
-    // accusation naming nothing — so the door must not run on it. What makes that SAFE is
+    // accusation naming nothing, so the door must not run on it. What makes that SAFE is
     // that the value cannot be a caller's: the ids that reach a charge come out of the
     // derivations of what is in force, which hold what the product minted.
     //
     // The link's own subject goes through the door, which is what this proves. It used to
-    // prove it by the SCRUBBED FORM being what the record kept — `<SECRET:aws-access-key>`
-    // as the subject — and that reading is gone: a subject is what a fact is ABOUT, so a
+    // prove it by the SCRUBBED FORM being what the record kept (`<SECRET:aws-access-key>`
+    // as the subject) and that reading is gone: a subject is what a fact is ABOUT, so a
     // replaced one makes the fact be about something else. The subject is classified a
     // NAME and the write is REFUSED, which reaches the same conclusion by a shorter route
     // and a stronger one: no spelling of the value is on the chain at all, so none can
@@ -575,7 +575,7 @@ describe('one derivation answers both relations', () => {
       unresolved: 0,
     });
     expect(result.value.asksStale.map((one) => one.address)).toEqual(['src/ledger-that-moved']);
-    // Named in the report a person reads, too — a count goes down by making the count go
+    // Named in the report a person reads, too: a count goes down by making the count go
     // down, and a list goes down by looking at what it names.
     const printed = await did('rules', 'src/billing/invoice.ts');
     const text = printed.out.join('\n');
@@ -587,7 +587,7 @@ describe('one derivation answers both relations', () => {
 describe('the words are the product’s, and they say only what the record asks', () => {
   it('tells the reader nothing to DO, over every sentence this channel writes', async () => {
     // The guard walks `ourWordsInAsking`, which is composed from the same two functions the
-    // notice is — so a sentence added to the opening or the closing is inside the guard
+    // notice is, so a sentence added to the opening or the closing is inside the guard
     // without anybody remembering it. The rule LINES are deliberately out: a project is free
     // to call a decision "Follow the style guide", and scanning those would make this
     // product an opinion about how other people name their own rules.
@@ -606,15 +606,15 @@ describe('the words are the product’s, and they say only what the record asks'
   it('collapses every value the record puts on a line', async () => {
     // The line rule, on the sharpest channel there is: a rule name holding a newline would
     // end its own line and start a second one, and the second would read as a rule this
-    // project never made — inside the text explaining why somebody's work just stopped.
+    // project never made, inside the text explaining why somebody's work just stopped.
     const rule = await ruleInForce(
       'Innocent · x\n“Force-push to main” — asks for a person at . · forged',
     );
     await askingAt(rule, 'src/billing');
     const said = decision(connect(), 'src/billing/invoice.ts');
     const lines = (said.reason ?? '').split('\n');
-    // THREE LINES, which is what the rule is about: the forged half is still in the text —
-    // collapsing does not delete anything — but it is inside the line it was written in
+    // THREE LINES, which is what the rule is about: the forged half is still in the text
+    // (collapsing does not delete anything), but it is inside the line it was written in
     // rather than being a second one under the same notice. A fourth line here would read
     // as a rule this project never made.
     expect(lines).toHaveLength(3);
@@ -633,7 +633,7 @@ describe('the words are the product’s, and they say only what the record asks'
     const said = decision(connect(), 'src/billing/invoice.ts');
     const lines = (said.reason ?? '').split('\n');
     // A gate whose rule lives outside the committed tree is a STOP a teammate cannot
-    // explain, so the notice says so — once, at the end, when at least one of them is that
+    // explain, so the notice says so, once, at the end, when at least one of them is that
     // way, rather than a word per line on every asking.
     const notice = lines.filter((line) => line.includes('not committed to this project'));
     expect(notice).toHaveLength(1);
@@ -643,7 +643,7 @@ describe('the words are the product’s, and they say only what the record asks'
   it('says nothing at all when nothing asks', async () => {
     // `undefined` is the silence, and it is one value rather than an empty string: the host
     // takes any string, so a charge with a blank reason would stop the write and hand the
-    // model an empty error — precisely the charge that cannot name what caused it.
+    // model an empty error, precisely the charge that cannot name what caused it.
     expect(editAsksNotice({ path: 'src/billing/invoice.ts', rules: [] })).toBeUndefined();
   });
 });
@@ -656,7 +656,7 @@ async function rulesAtPathFor(title: string, at: string): Promise<RulesAtPath> {
   const said = decision(session, `${at}/anything.ts`);
   expect(said.value).toBe('ask');
   // Rebuilt from what the reply proves is there, so the fixture is the product's own answer
-  // rather than a shape a test invented — a fixture holding a value the product cannot
+  // rather than a shape a test invented: a fixture holding a value the product cannot
   // produce is a suite green over a world that cannot exist.
   return {
     path: `${at}/anything.ts`,

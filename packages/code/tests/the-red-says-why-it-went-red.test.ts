@@ -5,7 +5,7 @@
  * declares, about itself, the one thing the ban does not reach: whether a case that WAITS has a
  * ceiling of its own needs a duration, and a scan over source has none. Two deliveries then went
  * red under load and discounted the reds by hand as machine contention. Both discounts were
- * honest and both were allowed — and each one is an occasion on which the only evidence a
+ * honest and both were allowed, and each one is an occasion on which the only evidence a
  * mutation battery produces was settled by a human in a hurry, because that battery is worth
  * something exactly when red means "the guard caught".
  *
@@ -13,17 +13,17 @@
  * file a real defect as noise on the day it landed on a busy minute, and not a limit on how much
  * of the suite runs at once, which lowers the FREQUENCY of contention and answers nothing. The
  * verdict rests on a second observation, and the cases below are what pin that it rests on
- * nothing else — the load figures are printed and never read, and there is a case for that.
+ * nothing else: the load figures are printed and never read, and there is a case for that.
  *
  * THE LEDGERS ARE REAL, not shapes invented from the documentation. Three captures sit beside
  * this file, produced by this workspace's own suite under load generated on purpose:
  *
- *   - `contended.json` — the suite under 32 spinners on 16 cores. Two cases of
+ *   - `contended.json`: the suite under 32 spinners on 16 cores. Two cases of
  *     `the-record-arrives-unasked.test.ts` burst the shared five seconds. Both pass alone;
- *   - `broke.json` — the SAME suite under the SAME load, with one line of the product mutated
+ *   - `broke.json`: the SAME suite under the SAME load, with one line of the product mutated
  *     (`brief.ts`, the branch that refuses when the document channel is off). Three cases go
  *     red, and one of them is the SAME CASE that contention burst in the capture above;
- *   - `waits-undeclared.json` — a file of two cases that both sleep 2800 ms, one inheriting the
+ *   - `waits-undeclared.json`: a file of two cases that both sleep 2800 ms, one inheriting the
  *     shared ceiling and one declaring 30000 at its own `it`.
  *
  * The captures are trimmed to their reds, their over-budget cases and three more each, so the
@@ -36,7 +36,7 @@
  * that spawns the suite from inside the suite is the thing the ban is about. That `runAlone`
  * really does select one case and really does tell "it ran and passed" from "nothing by that
  * name ran" is answered by the two cases that call it for real, on this file's own neighbours,
- * and by nothing else here. It does not run CI. And it says nothing about the RATE of a flake —
+ * and by nothing else here. It does not run CI. And it says nothing about the RATE of a flake,
  * that is the sampler's question, and a red that did not fire in a run is invisible to this.
  */
 
@@ -74,7 +74,7 @@ import {
   whatRan,
 } from '../../../.github/why-it-went-red/verdict.mjs';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** One of the three captures, by its suffix. */
@@ -108,7 +108,7 @@ function alwaysAnswers(answer: Alone): {
 
 describe('the ledger reads the run, because the source cannot carry a duration', () => {
   it('derives the shared ceiling from what the run actually ran under', () => {
-    // The MODE, not a number read out of a configuration — naming that key here would put this
+    // The MODE, not a number read out of a configuration: naming that key here would put this
     // file in the list `the-ceiling-belongs-to-the-case` scans, and it scans `.github/` too.
     expect(sharedCeilingOf([5000, 5000, 5000, 30_000, 60_000])).toEqual({
       shared: 5000,
@@ -127,7 +127,7 @@ describe('the ledger reads the run, because the source cannot carry a duration',
     expect(contended.sharedCeiling).toBe(5000);
     // 3989 of 4190 inherit it, so 201 cases of this suite declare a ceiling at their own `it`.
     // That is the enumeration the plan for this slice put at FOUR and a scan of the source put
-    // at 217 — the scan counts a positional argument that closes a `beforeAll` too.
+    // at 217: the scan counts a positional argument that closes a `beforeAll` too.
     expect(contended.atSharedCeiling).toBe(3989);
     expect(contended.ran - contended.atSharedCeiling).toBe(201);
   });
@@ -171,7 +171,7 @@ describe('the ledger reads the run, because the source cannot carry a duration',
     expect(shapeOf('Error: never came back')).toBe('it threw');
     // THE SHAPE IS NOT THE DISCRIMINANT, and the captures are what say so. The red this bench
     // discounted at 35 s threw "never came back" from the case's own helper while carrying a
-    // 240-second ceiling — no ceiling ended it — and the two reds that contention burst in
+    // 240-second ceiling, no ceiling ended it, and the two reds that contention burst in
     // `contended.json` died at the shared five seconds. Both were contention; the shapes differ.
     const broke = capture('broke');
     const shapes = broke.cases
@@ -195,7 +195,7 @@ describe('the two names one case has, because the two surfaces join them differe
     expect(namesOf(titles).selects).toBe('the outer the case');
     // THIS IS THE DEFECT THIS FILE EXISTS TO KEEP CLOSED. A reporter's `fullName` joins with
     // " > "; vitest's own `-t` matches against the titles joined with a single space. A pattern
-    // built from the first selects NOTHING, silently — and because vitest reports the whole
+    // built from the first selects NOTHING, silently, and because vitest reports the whole
     // file as collected-and-skipped, `numTotalTests` stays 23 and `success` stays true. The
     // first draft of `runAlone` read that as "it ran and it passed" for a case that never ran.
     expect(namesOf(titles).shown).not.toBe(namesOf(titles).selects);
@@ -234,8 +234,8 @@ describe('a red is settled by running it alone', () => {
 
   it('and the two verdicts are DIFFERENT WORDS', () => {
     // An `expect` that only ever sees the good side is vacuous. These are the two sentences a
-    // reader acts on differently — one is a defect to fix, the other is not a property of this
-    // commit — so the file states that they cannot collapse into each other.
+    // reader acts on differently (one is a defect to fix, the other is not a property of this
+    // commit), so the file states that they cannot collapse into each other.
     expect(CAUGHT).not.toBe(NOT_ALONE);
     expect(CAUGHT).not.toBe(UNDECLARED);
   });
@@ -244,7 +244,7 @@ describe('a red is settled by running it alone', () => {
     // `says nothing at all when the document channel is switched OFF` is red in both real
     // captures, under the same generated load. In `contended.json` it burst the shared ceiling
     // at 5078 ms; in `broke.json` it failed an assertion at 3326 ms with one line of the product
-    // mutated. Same case, same machine, same load, opposite verdicts — and nothing but the
+    // mutated. Same case, same machine, same load, opposite verdicts, and nothing but the
     // second run decided which.
     const NAME =
       'the record arrives unasked > says nothing at all when the document channel is switched OFF';
@@ -264,9 +264,9 @@ describe('a red is settled by running it alone', () => {
 
   it('and no load figure can move a verdict', () => {
     // THE PROMISE OF THE WHOLE FILE, and a guard on "does not change" needs TWO values or the
-    // mutation walks straight through it. The same capture is read twice — once as it came off
+    // mutation walks straight through it. The same capture is read twice (once as it came off
     // a machine with up to 80 runnable threads on 16 cores, once with every load field rewritten
-    // to an idle machine — and the verdicts have to be identical. An instrument that read the
+    // to an idle machine) and the verdicts have to be identical. An instrument that read the
     // load would flip here, and an instrument that flips here files real defects as noise.
     const loud = capture('broke');
     const calm: Book = JSON.parse(JSON.stringify(loud));
@@ -300,7 +300,7 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
   it('and spares the case beside it that waits exactly as long and SAYS so', () => {
     // The capture holds two cases that both sleep 2800 ms. One inherits the shared five seconds
     // and one declares 30000 at its own `it`. Only the ceiling differs, so only the ceiling can
-    // be what the accusation is about — a budget that read duration alone would take both.
+    // be what the accusation is about: a budget that read duration alone would take both.
     const ledger = capture('waits-undeclared');
     const declared = ledger.cases.find((one) => one.ceiling !== ledger.sharedCeiling);
     const inherited = ledger.cases.find((one) => one.ceiling === ledger.sharedCeiling);
@@ -342,7 +342,7 @@ describe('one mechanism, and both halves are the same call', () => {
     expect(asked).toHaveLength(9);
     const files = new Set(asked.map((one) => one.file));
     expect(files.size).toBeGreaterThan(1);
-    // And every call was given titles it could rebuild a name from — never a joined string.
+    // And every call was given titles it could rebuild a name from, never a joined string.
     expect(asked.every((one) => Array.isArray(one.titles) && one.titles.length > 0)).toBe(true);
   });
 });
@@ -424,7 +424,7 @@ describe('it refuses rather than publishes a verdict it cannot stand behind', ()
 
   it('and a page that accused nobody says how many it looked at', () => {
     // Or the page reads the same whether nothing was over the budget or six were and every one
-    // came back fast — the second is a reading and the first is the absence of one.
+    // came back fast: the second is a reading and the first is the absence of one.
     const page = render(
       decide({
         ledger: capture('broke'),
@@ -490,7 +490,7 @@ describe('a report where the case is PRESENT and was never run', () => {
 
   it('and a case that really ran is read as having run', () => {
     // The other direction, over a report shaped exactly like the capture above but with the
-    // status a real run writes — or every case here would pass on a reader that refuses
+    // status a real run writes, or every case here would pass on a reader that refuses
     // everything.
     const ran = {
       numTotalTests: 1,
@@ -564,7 +564,7 @@ describe('the instrument is wired to the thing that starts the suite', () => {
 
   it('rides the script the suite is started from, and that script names a file that exists', () => {
     // Four defects of this series were an option plumbed to the end with nothing feeding it,
-    // so what is asserted is that the reporter is REACHED — a rename of the file below leaves
+    // so what is asserted is that the reporter is REACHED: a rename of the file below leaves
     // the manifest pointing at nothing and vitest saying so only at run time.
     const reporter = '.github/why-it-went-red/ledger.mjs';
     expect(manifest.scripts.test).toContain(reporter);

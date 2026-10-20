@@ -102,7 +102,7 @@ function commit(file: string, message: string, dated?: string): string {
   return git(['rev-parse', 'HEAD']);
 }
 
-/** An hour from now — a commit dated so the acceptance of a decision just made is before it. */
+/** An hour from now: a commit dated so the acceptance of a decision just made is before it. */
 function later(): string {
   return new Date(Date.now() + 3_600_000).toISOString();
 }

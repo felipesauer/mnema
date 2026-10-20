@@ -3,8 +3,8 @@
  *
  * THE DEFECT THIS WAS WRITTEN FOR, measured on a real repository. The first example on
  * `mnema brief --help` was `mnema brief > AGENTS.md`, and on the project it was measured
- * against that file held 126 lines of the repository's own method — its skills, its
- * plugins, its local prohibitions — and not one mention of mnema. Running the line the
+ * against that file held 126 lines of the repository's own method (its skills, its
+ * plugins, its local prohibitions) and not one mention of mnema. Running the line the
  * product taught would have replaced all of it. `AGENTS.md` is an open convention with
  * tens of thousands of repositories behind it, so a file with content in it is the
  * ORDINARY case and not the exceptional one, and the recipe was published as though the
@@ -13,14 +13,14 @@
  * WHY IT IS A TEXT GUARD AND NOT A REFUSAL, which is the whole shape of the fix. This
  * verb writes nothing: the `>` is the shell's, not the product's, and `brief` never
  * learns the name of the file or that there was one. So there is no moment at which
- * anything could check, refuse, back up or merge — the only place the truncation can be
+ * anything could check, refuse, back up or merge: the only place the truncation can be
  * named is the text that teaches the redirection, BEFORE somebody types it. Making the
  * verb write would answer this differently and is a different product.
  *
- * ONE SENTENCE, READ IN N PLACES. The recipe is published three times — the help page a
+ * ONE SENTENCE, READ IN N PLACES. The recipe is published three times (the help page a
  * person reads before typing, {@link HOW_TO_REGENERATE} inside the generated document,
  * read by whoever finds a stale copy, and the block `mnema init` prints to the person who
- * has just founded a project — and they used to be able to drift because nothing compared
+ * has just founded a project) and they used to be able to drift because nothing compared
  * them. {@link SAYS_WHAT_IT_DOES} is the one reading: every publisher carries the same
  * clause, so a wording changed in one of them and not the others is red here rather than a
  * divergence nobody sees.
@@ -29,18 +29,18 @@
  * says the `>` of this recipe on a page is ruled on HERE, and until the case that reads them this
  * file read no Markdown at all: `packages/code/README.md` published `mnema brief > MNEMA.md` and
  * nothing compared it. Every tracked page is swept now, passage by passage, and a publication
- * has to say what it does in its own passage — or, for a fenced block, in the one introducing it.
+ * has to say what it does in its own passage, or, for a fenced block, in the one introducing it.
  *
  * AND THE PUBLISHERS COME OFF THE PROGRAM. The pages are walked with `everyCommandOf`,
  * the same walk the parser's refusals and the completion tree use, so a page that copies
- * the recipe tomorrow — a `brief` subcommand, a verb that suggests the redirection in its
- * own help — is caught by carrying the recipe, not by being on a list in this file. That
+ * the recipe tomorrow (a `brief` subcommand, a verb that suggests the redirection in its
+ * own help) is caught by carrying the recipe, not by being on a list in this file. That
  * is the N+1 this guard exists for; a list here would be the defect it was written to
  * catch.
  *
  * TWO PUBLISHERS ARE NOT ON A HELP PAGE, AND THEY ARE READ BY IMPORT. The generated
  * document and `init`'s block are printed at RUN time, so the walk cannot reach them and
- * naming them here is the only way they are read at all — which is exactly the list this
+ * naming them here is the only way they are read at all, which is exactly the list this
  * file says would be the defect, so it is worth saying what keeps it honest: each is
  * imported from the module that OWNS the text, not transcribed, so a publisher whose
  * wording moves is compared with the others on the next run. What a list of imports cannot
@@ -65,7 +65,7 @@ const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
  *
  * The destination is deliberately not in the pattern. What the guard is about is the
  * `>`, and a recipe that redirected somewhere else entirely would carry exactly the same
- * hazard — so matching a file name here would let the next publication out by renaming
+ * hazard, so matching a file name here would let the next publication out by renaming
  * its example.
  */
 const PUBLISHES_THE_RECIPE = /mnema brief >/;
@@ -73,12 +73,12 @@ const PUBLISHES_THE_RECIPE = /mnema brief >/;
 /**
  * The clause that has to be beside it. It is a fragment rather than the whole sentence
  * so the two publishers can word the rest for their own reader, and it carries BOTH
- * facts: that the file is replaced, and that it is replaced whole — "replaces the file"
+ * facts: that the file is replaced, and that it is replaced whole; "replaces the file"
  * alone reads, to somebody with a file they care about, as an update of it.
  */
 const SAYS_WHAT_IT_DOES = /replaces the whole of the file it names/i;
 
-/** A record with nothing in it — the document prints its recipe in every state. */
+/** A record with nothing in it: the document prints its recipe in every state. */
 const EMPTY_BRIEF: Brief = {
   decisions: [],
   skills: [],
@@ -98,7 +98,7 @@ const EMPTY_BRIEF: Brief = {
  * Every text this product puts in front of a reader, by the name of the surface.
  *
  * THE PAGE IS CAPTURED AND NOT ASKED FOR, and the difference is the whole guard.
- * `helpInformation()` returns the usage, the description and the options — and NOT the
+ * `helpInformation()` returns the usage, the description and the options, and NOT the
  * block a verb registers with `addHelpText`, which is exactly where every recipe in this
  * program lives. A first version of this file read that method, and its scan came back
  * with the page missing the only lines it was written to rule on. So the text is what
@@ -131,7 +131,7 @@ function everyPublishedText(): ReadonlyMap<string, string> {
 
 /**
  * A page as its PASSAGES: a fenced block is one, and outside a fence a run of lines with no
- * blank line between them is one — a paragraph, a list item, a table. Read through `linesOf`,
+ * blank line between them is one (a paragraph, a list item, a table). Read through `linesOf`,
  * the one reading of what is fenced that every guard over the pages shares.
  */
 function passagesOf(
@@ -164,7 +164,7 @@ function passagesOf(
 
 /**
  * Every place a tracked Markdown page publishes the recipe, with the text that has to say what
- * it does: the passage itself, and — for a fenced block — the passage that introduces it, which
+ * it does: the passage itself, and, for a fenced block, the passage that introduces it, which
  * is where a page says what a block is about to do. Keyed `<page>:<line>`.
  *
  * THE PAGES ARE SWEPT, NOT LISTED, in the shape of the shell guard's sweep: `git ls-files '*.md'`
@@ -232,7 +232,7 @@ describe('every place that publishes the recipe says what the redirection does',
     // The other half of the fix, and it is what the truncation warning is FOR. Saying
     // that `>` replaces a file leaves a reader who has an `AGENTS.md` with nowhere to
     // go; the help answers that in the same place, with a name that collides with no
-    // convention, and says what it costs — the host reads the file it reads, and this
+    // convention, and says what it costs: the host reads the file it reads, and this
     // one only when that file imports it. (This sentence said "an agent host reads
     // `AGENTS.md` on its own", and the host the plugin is for reads one only where no
     // `CLAUDE.md` exists.)
@@ -246,7 +246,7 @@ describe('every place that publishes the recipe says what the redirection does',
     expect(document).toContain('<this file>');
     expect(document).not.toContain('AGENTS.md');
     // `init` offers the same destination and the same alternative, and it offers the line
-    // to put in the other file as a LITERAL rather than as a description of one — which is
+    // to put in the other file as a LITERAL rather than as a description of one, which is
     // the half the help page cannot give, because it is read by somebody who already knows
     // what they wanted. A recommendation the reader has to compose is one they do not make.
     // THE LITERAL IS AN IMPORT NOW, `@MNEMA.md`, where it was a sentence naming the file:

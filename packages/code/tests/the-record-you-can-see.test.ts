@@ -1,5 +1,5 @@
 /**
- * NAMING A RECORD THAT IS ON THE SCREEN — the dead end, closed on a real terminal.
+ * NAMING A RECORD THAT IS ON THE SCREEN: the dead end, closed on a real terminal.
  *
  * IT CAME OUT OF USE, AND IT WAS MEASURED AT THE PROMPT. `search` prints
  * `019fdf20-c630-7fa1-b418-5a0750d396e0`; `show 019fdf20-c630` answers *No record here*,
@@ -10,16 +10,16 @@
  *
  * THE FLOW IS THE CASE, and it is one run rather than four assertions about pieces:
  * `search`, a prefix of an id that came back, Tab, and then `show` over what the row
- * became. Anything less proves the parts and not the affordance — the completer answering
+ * became. Anything less proves the parts and not the affordance: the completer answering
  * correctly to a memory a console never filled would pass every unit case in this delivery
  * and leave the dead end exactly where it was.
  *
  * AND WHAT IT MAY NOT BECOME is asserted in the same file, because that is the objection
  * the completer wrote against itself before this existed: a menu of the RECORD, which goes
  * stale between keystrokes. What is offered is what THIS SESSION HAS SHOWN, so a record
- * that exists and has not been named on the page is one the Tab cannot reach — asserted
+ * that exists and has not been named on the page is one the Tab cannot reach: asserted
  * against a record in the same project, with a search that deliberately does not name it.
- * The other half of that promise — that none of this reads anything — is a COUNT, and it
+ * The other half of that promise, that none of this reads anything, is a COUNT, and it
  * is in the file that owns the counter (`the-name-and-the-hints.test.ts`).
  */
 
@@ -55,7 +55,7 @@ import {
   theSettledScreen,
 } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
@@ -132,7 +132,7 @@ function thePagesOf(
 const NAMED = 'names';
 
 /**
- * THE RECORDS THE FIXTURE HOLDS — enough of them that a window at the floor cannot show them all.
+ * THE RECORDS THE FIXTURE HOLDS: enough of them that a window at the floor cannot show them all.
  *
  * The names are ordinals and nothing depends on them; what the number has to be is larger than
  * the rows a list gets on the shortest window a console is drawn on, which is what puts the CUT
@@ -180,14 +180,14 @@ interface Record {
 }
 
 /**
- * WHAT AN ID OF THIS PRODUCT LOOKS LIKE — the SHAPE of one, and nothing about the digits it
+ * WHAT AN ID OF THIS PRODUCT LOOKS LIKE: the SHAPE of one, and nothing about the digits it
  * begins with.
  *
  * IT WAS THE THREE CHARACTERS `019`, AT FOUR SITES, AND THE CLOCK RETIRED THEM. A row of the
  * list was told from every other row by `row.trimStart().startsWith('019')`, and those three
  * characters are the top of the MILLISECOND an id begins with: they are true only while the clock
  * is inside `0x019000000000 … 0x019fffffffffff`, which it left on 2026-08-14 at 11:19:55 UTC. An
- * hour after that this file had two red cases and two VACUOUS ones — the two that count the rows
+ * hour after that this file had two red cases and two VACUOUS ones: the two that count the rows
  * of the list found none, and the two that assert no row is a record passed without looking at
  * anything at all. Nothing in the commit had moved.
  *
@@ -208,7 +208,7 @@ const AN_ID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 /** The id the surface prints for a record it has just made: in parentheses, after the name. */
 const THE_ID_PRINTED = new RegExp(`\\((${AN_ID})\\)`);
 
-/** A row of a list whose first column is a record — the id, and the row it was named on. */
+/** A row of a list whose first column is a record: the id, and the row it was named on. */
 const BEGINS_WITH_A_RECORD = new RegExp(`^${AN_ID}`);
 
 /** `mnema <argv>` at the shell, in this process, with what it printed. */
@@ -243,7 +243,7 @@ beforeAll(async () => {
   const made: Record[] = [];
   // THERE WERE SIX OF THEM AND THERE ARE SIXTEEN, and the floor under the window is what
   // decided the number. The case that measures the list saying how many it had NO ROOM for used
-  // to reach that regime by driving a short terminal — a hundred columns by eight — and no
+  // to reach that regime by driving a short terminal, a hundred columns by eight, and no
   // console is drawn there any more (`src/repl/floor.ts`). Above the floor the shortest window is
   // twenty-four rows, which leaves the list about fifteen: with six records nothing can ever be
   // cut, so the regime is reached by having MORE RECORDS THAN A WINDOW HAS ROWS instead of by a
@@ -291,7 +291,7 @@ function tellsApart(id: string, others: readonly string[]): string {
   throw new Error(`no prefix tells ${id} apart`);
 }
 
-/** The longest start every one of `ids` has — the prefix that names all of them at once. */
+/** The longest start every one of `ids` has: the prefix that names all of them at once. */
 function sharedBy(ids: readonly string[]): string {
   const first = ids[0] ?? '';
   let length = first.length;
@@ -343,7 +343,7 @@ const leaves: Step = {
  * IT WAITED FOR EVERY ID TO BE IN THE BYTES, and a window is what falsified that. What the
  * session says goes on a roll and the middle region shows the TAIL of it (`repl/scrolling.ts`),
  * so on a terminal with a few rows to spare the ids at the top of the answer are on the roll and
- * never on the screen — and a step waiting for all of them waits for ever. It waits for the
+ * never on the screen, and a step waiting for all of them waits for ever. It waits for the
  * frame it caused and for the answer to have STARTED arriving instead; whether every record was
  * shown is then the assertion's question rather than the step's, and a record that never landed
  * fails the count it is asserted by rather than hanging the driver.
@@ -368,7 +368,7 @@ function searches(): Step {
  * IT IS THE INSTRUMENT AND IT IS ALSO A CASE. A row of the palette holding an id and the
  * row of `search` it was read off are the same characters in a different spacing, so a
  * scan of the screen cannot tell them apart while both are on it. A clean page leaves
- * exactly one of the two — which is only true because what a session has SAID cannot be
+ * exactly one of the two, which is only true because what a session has SAID cannot be
  * unsaid by the completer: the roll is emptied and the records stay completable. A memory
  * that were cleared with the page would take every case below to zero rows and be seen at
  * once.
@@ -404,14 +404,14 @@ function aPageTyping(
   };
 }
 
-/** What the row being typed is, on a screen — the last row that carries the prompt. */
+/** What the row being typed is, on a screen: the last row that carries the prompt. */
 function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
   const typed = screen.rows.filter((row) => row.includes(PROMPT));
   return (typed.at(-1) ?? '').trim();
 }
 
 /**
- * WHICH ROWS OF A PAGE ARE ROWS OF A RECORD — the rows of the list whose first column is an id.
+ * WHICH ROWS OF A PAGE ARE ROWS OF A RECORD: the rows of the list whose first column is an id.
  *
  * ONE READING AND FOUR SITES, and it is one because the four are the same question asked in two
  * directions: two cases count the rows the list drew, and two assert there are none of them. Two
@@ -439,7 +439,7 @@ describe('a record on the screen can be typed back, whole', () => {
   it('finishes a prefix into the id, and the read over it answers the record', async () => {
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
@@ -483,7 +483,7 @@ describe('a record on the screen can be typed back, whole', () => {
     // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
     // right and the index after it is not what the wait guarantees: a step ends wherever the
     // stream happened to be quiet, so on a loaded machine this read lands on the page from
-    // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
+    // BEFORE the key took effect, and the red is then *expected 'mnema>' to be 'mnema> show …'*,
     // which accuses the completer for something the instrument did
     // (`support/screen.ts`, {@link theFirstScreenWith}).
     const completed = theFirstScreenWith(ran.bytes, `show ${chosen.id}`, columns, rows);
@@ -506,7 +506,7 @@ describe('a prefix that names several lists them, each beside the line it came f
   it('shows every one of them with what the read said about it', async () => {
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
@@ -540,20 +540,20 @@ describe('a prefix that names several lists them, each beside the line it came f
 
     // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the subject is the
     // page WITH THE LIST OF RECORDS ON IT, so the frame to read is the first one that has the
-    // typed prefix on the row — which is the frame the completion produced. A step ends wherever
+    // typed prefix on the row, which is the frame the completion produced. A step ends wherever
     // the stream happened to be quiet, and on a loaded machine that is before the list arrived;
     // the red was then an empty list, which accuses the completer for something the instrument
     // did (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, `${PROMPT} show ${shared}`, columns, rows);
-    // EVERY ROW OF THE PALETTE IS ONE OF THEM, under the row being typed — the id, and
+    // EVERY ROW OF THE PALETTE IS ONE OF THEM, under the row being typed: the id, and
     // beside it the rest of the line the record was named on. A list of bare ids that all
     // begin alike would be a list nobody can choose from, which is why the gloss is the
     // rest of the row rather than a decoration.
     //
     // IT SAID *EVERY ONE OF THEM* AND ASSERTED THE COUNT, which is what the ceiling took: the
     // list draws four and says how many it left out (`src/repl/palette.ts`, `AT_MOST`), so
-    // sixteen records are four rows and a number. What the case is about is untouched — a row
-    // is an id AND what it was named on — and it is now asked of every row there is, with the
+    // sixteen records are four rows and a number. What the case is about is untouched (a row
+    // is an id AND what it was named on) and it is now asked of every row there is, with the
     // count of the rest asserted against the total below.
     const listed = theRecordsListedOn(screen);
     expect(listed.length, screen.text).toBeGreaterThan(0);
@@ -583,13 +583,13 @@ describe('a prefix that names several lists them, each beside the line it came f
     // list was cut to the leftover under the flow; fourteen once the leftover was measured under
     // the fixed region at the top; eight again once that region was held to a third of the screen.
     // What moved it this time is the FLOOR under the window (`src/repl/floor.ts`): eight rows is
-    // not a console at all any more. So the regime is reached from the other side — the shortest
+    // not a console at all any more. So the regime is reached from the other side: the shortest
     // window there is, with more records in the fixture than the list has rows on it
-    // ({@link THE_RECORDS}) — and what it measures is unchanged. Measured on a real terminal
+    // ({@link THE_RECORDS}), and what it measures is unchanged. Measured on a real terminal
     // rather than derived: at the floor the list shows some of them and names the rest.
     const columns = 80;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
@@ -610,7 +610,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
     const listed = theRecordsListedOn(screen);
@@ -632,13 +632,13 @@ describe('what it offers is what the session showed, and never the record', () =
   it('will not finish a record this session has not named', async () => {
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     // A PREFIX THAT NAMES ONE RECORD IN THE PROJECT AND NONE ON THE PAGE. The search
     // above answers with six of the seven, so this one exists, is readable, and was not
-    // said — which is exactly the case that separates "what the session showed" from "a
+    // said, which is exactly the case that separates "what the session showed" from "a
     // menu of the record".
     const missing = tellsApart(hidden.id, [...shown.map((record) => record.id), hidden.id]);
     const present = shown[0] as Record;
@@ -671,18 +671,18 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const refused = theFirstScreenWith(ran.bytes, `${PROMPT} show ${missing}`, columns, rows);
     expect(rowBeingTyped(refused), refused.text).toBe(`${PROMPT} show ${missing}`);
-    // Neither the id nor the title of that record is anywhere on the screen — a menu that
+    // Neither the id nor the title of that record is anywhere on the screen: a menu that
     // had gone and looked would have put one of the two there.
     expect(refused.text).not.toContain(hidden.id);
     expect(refused.text).not.toContain(UNNAMED);
     // AND NOTHING AT ALL WAS LISTED, which is the half the first draft of this case
     // missed. A memory that answered without narrowing to what was typed would leave the
     // row exactly as it is above and open a palette of six records the caller did not ask
-    // about — every assertion so far passes on that. The page was cleared, so a row that
+    // about: every assertion so far passes on that. The page was cleared, so a row that
     // begins with a record here can only be one the palette drew.
     expect(
       theRecordsListedOn(refused),
@@ -692,7 +692,7 @@ describe('what it offers is what the session showed, and never the record', () =
     // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
     // right and the index after it is not what the wait guarantees: a step ends wherever the
     // stream happened to be quiet, so on a loaded machine this read lands on the page from
-    // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
+    // BEFORE the key took effect, and the red is then *expected 'mnema>' to be 'mnema> show …'*,
     // which accuses the completer for something the instrument did
     // (`support/screen.ts`, {@link theFirstScreenWith}).
     const completed = theFirstScreenWith(ran.bytes, `show ${present.id}`, columns, rows);
@@ -703,11 +703,11 @@ describe('what it offers is what the session showed, and never the record', () =
     // FROM THE OUTSIDE: everything a reader sees comes through ONE door, and this is
     // the case that would go red if a second one appeared. The record above is refused
     // until a read NAMES it, and the read that names it here is a different verb writing
-    // a different shape of line — so a `show` whose output reached the page past the
+    // a different shape of line, so a `show` whose output reached the page past the
     // memory would leave this Tab with nothing, exactly as the search-only session had.
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
@@ -745,7 +745,7 @@ describe('what it offers is what the session showed, and never the record', () =
     // `lastIndexOf(CLEAR)`: the list of records beside a shared prefix, which is the same
     // comparison and has not been seen red, and the refusal of an unnamed record, which holds
     // only once `show <missing>` is typed, because that prefix is on no earlier row. The
-    // obvious repair — the first frame whose bytes hold `mnema> show <id>` — is AMBIGUOUS here,
+    // obvious repair, the first frame whose bytes hold `mnema> show <id>`, is AMBIGUOUS here,
     // because the session ran that very line earlier and the roll kept its echo. The two are
     // the same characters in two places, and only a PAGE can say which is the row being typed
     // (`support/screen.ts`, {@link theFirstScreenWhere}).
@@ -762,7 +762,7 @@ describe('what it offers is what the session showed, and never the record', () =
   it('offers no record where a verb goes, however many it has named', async () => {
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
-    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // never the subject (it was *a window with room*) and what *with room* means moved when the
     // shortest window this console draws a page on became the height the name is drawn whole at
     // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
@@ -804,15 +804,15 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
-    // The palette is open — the words a line can start with are listed — and no row of it is
+    // The palette is open (the words a line can start with are listed) and no row of it is
     // a record.
     //
     // WHICH FOUR WORDS ARE DRAWN IS NOT THIS CASE'S BUSINESS, and it used to be: the witness
     // was the word the session answers to itself, on the argument that it *sorts first*, and
-    // the order stopped putting it there (`src/repl/complete.ts`, `theOrder` — the verbs go
+    // the order stopped putting it there (`src/repl/complete.ts`, `theOrder`: the verbs go
     // ahead of it, so a list of the whole vocabulary draws four verbs and counts the rest).
     // What says the palette is open at every order is the palette's OWN row: the keys that
     // move it, which nothing else on this page draws.
