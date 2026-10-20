@@ -91,7 +91,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 755,
+  'packages/code/src/': 624,
   // what it prints
   'packages/code/src/presentation/': 43,
   // the console
@@ -101,7 +101,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 7,
   // the cases beside @mnema/code
-  'packages/code/tests/': 905,
+  'packages/code/tests/': 871,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
@@ -119,7 +119,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/vscode
   'packages/vscode/README.md': 1,
   // the plugin for agent hosts
-  'plugin/': 169,
+  'plugin/': 163,
   // the recordings and the scripts that make them
   'recordings/': 71,
 };
