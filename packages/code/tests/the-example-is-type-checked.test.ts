@@ -56,13 +56,13 @@
  * A COMPILER THAT NEVER RAN LOOKS EXACTLY LIKE A CLEAN COMPILE, so one file in the sandbox
  * is written to be WRONG. `CANARY` below is a type error a stranger could not argue with,
  * and a case requires the compiler to have said so. Without it, a `tsc` that fails to start
- * — a missing binary, a sandbox that could not be written — hands back an empty report, and
+ * (a missing binary, a sandbox that could not be written) hands back an empty report, and
  * every case above reads "no diagnostics about my file" as success. This bench has twice
  * shipped a mutation matrix whose runner died before running anything and whose parser read
  * that silence as zero failures; this is the same hole in a different instrument.
  *
  * THE ROSTER IS SWEPT, NOT LISTED. The rule is "a published TypeScript block is checked",
- * so the discriminant is a ```ts fence in a tracked file — not a README under `packages/`.
+ * so the discriminant is a ```ts fence in a tracked file, not a README under `packages/`.
  * The comparison guard reconciles the README of each directory under `packages` and nothing
  * else: it is blind to `packages/chain/verifier/README.md` and `plugin/README.md`, to the
  * READMEs under `.github`, and to every other page. The case at the bottom sweeps every

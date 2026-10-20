@@ -330,7 +330,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
 // ---------------------------------------------------------------------------
 
 /**
- * HOW WIDE THAT ROW IS, measured off the row the session really composes — for the reason the
+ * HOW WIDE THAT ROW IS, measured off the row the session really composes, for the reason the
  * other two widths above are: a number written down here would be ruling on a row nobody draws.
  */
 const UNMOVED_IS = widthOf(alreadyOnThePage());
@@ -634,8 +634,8 @@ describe('the badge says what the record proved, and the verb that says the rest
 
   it('and stops carrying good news once its level has stopped covering the record', () => {
     // THE HUE OF THE OTHER FORM, AND IT IS A CASE BECAUSE A MUTATION FOUND NOTHING. Taking
-    // the caution out of `badgeLine` — leaving the degraded row painted by its level alone
-    // — left 57 cases green across the three files that read this row. A corner that says
+    // the caution out of `badgeLine` (leaving the degraded row painted by its level alone)
+    // left 57 cases green across the three files that read this row. A corner that says
     // `fully-signed as this opened` in the green a reader takes for *nothing to look at* is
     // the failure the whole delivery is named after, wearing one extra clause.
     //

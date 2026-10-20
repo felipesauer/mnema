@@ -6,15 +6,15 @@
  * the other — the example must run."* That sentence is an intention, and the file was a
  * parallel TRANSLATION of the page rather than a reading of it. Measured on 11/09/2026
  * against `a41a9ea8`: renaming `bootstrap` to `bootstrapZZZ` INSIDE the README's ```ts
- * block — an edit that makes the published example impossible to run — left the suite
+ * block (an edit that makes the published example impossible to run) left the suite
  * green. The other three packages had no such case at all, so copying that shape three
  * more times would have multiplied a guard that does not catch the defect it exists for.
  *
  * AND THE DRIFT WAS ALREADY THERE. Extracting the page's block and the case's body on
  * that same commit, the two disagreed on five lines: three comment rewraps, and two places
- * where the page said more than the code that ran — `// { kind: 'decision', record: … }`
+ * where the page said more than the code that ran (`// { kind: 'decision', record: … }`
  * against `// { kind: 'decision', … }`, and `// names only — one line each` against
- * `// names only`. Nobody had changed anything wrongly; the two copies simply aged apart,
+ * `// names only`). Nobody had changed anything wrongly; the two copies simply aged apart,
  * which is what two copies do.
  *
  * WHAT IT FOUND THE DAY IT LANDED, which is the measurement that says the shape is right.
@@ -22,7 +22,7 @@
  * errors, and every one of them was in a package that had no guard:
  *   - `@mnema/chain` called `openChainForWriting` with one argument where the signature
  *     takes two, and built an envelope with no `signerFp`. It also said the key pair "is
- *     loaded from the chain root" — contradicted by that function's own doc-comment — and
+ *     loaded from the chain root", contradicted by that function's own doc-comment, and
  *     presented `who: 'alice'` as "the human who authorized the work", where `who` is an
  *     anchor derived from the key and never a typed-in name.
  *   - `@mnema/core` imported `createTask` and `transitionTask` from `@mnema/core`, which
@@ -36,7 +36,7 @@
  * THE REASON GIVEN HERE WAS "because nothing type-checks a fenced code block", AND IT IS
  * NO LONGER TRUE: `the-example-is-type-checked.test.ts` extracts each page's block into a
  * sandbox and compiles it against the built declarations, every run. What falsified the
- * sentence was measuring what this file alone protects — putting one of those ten errors
+ * sentence was measuring what this file alone protects: putting one of those ten errors
  * back on the PAGE and in the CASE together left this guard, and the whole suite, green.
  * Two identical copies agree whether they compile or not, which is the half a comparison
  * can never cover.
@@ -48,18 +48,18 @@
  * second needs a TypeScript transform at test time and executes text nobody reviewed as
  * code. The third inverts authorship: the page would become output, and prose written to
  * be read would be written to be generated. What the comparison gives up is that the
- * bytes are checked rather than re-executed — and that is given up only in appearance,
+ * bytes are checked rather than re-executed, and that is given up only in appearance,
  * because the bytes checked are the bytes the case runs.
  *
  * ONE FORMATTER, ONE DIRECTION. Only the test file is formatted (`biome` does not read
  * Markdown), so the page carries the case's body dedented, and the comparison is exact
  * afterwards. If a line the formatter would rewrap is edited on the page first, this case
- * goes red and the fix is to edit the case and dedent again — which is the workflow, not
+ * goes red and the fix is to edit the case and dedent again, which is the workflow, not
  * a defect.
  *
  * WHERE THE ROSTER LIVES. The list of pages is not in this file: a second rule now stands
- * over the same roster — the example a package publishes TYPE-CHECKS, in
- * `the-example-is-type-checked.test.ts` — and two copies of a list is the shape that ends
+ * over the same roster (the example a package publishes TYPE-CHECKS, in
+ * `the-example-is-type-checked.test.ts`) and two copies of a list is the shape that ends
  * with one guard covering a page the other does not. Both read
  * `support/published-examples.ts`.
  *

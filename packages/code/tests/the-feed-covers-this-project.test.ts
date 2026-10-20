@@ -29,7 +29,7 @@
  * covered on stderr, because stdout carries records and nothing else.
  *
  * WHAT THIS DOES NOT FIX, and it is measured rather than assumed: the same global tree
- * reaches an agent through the MCP with BODIES — `read_record` returns a global memory's
+ * reaches an agent through the MCP with BODIES; `read_record` returns a global memory's
  * whole content, `search` with no term lists the titles of all three trees, and
  * `bootstrap` carried a global skill written in another project into `awaitingJudgement`.
  * So the claim that this lock "closes the only real leak" is FALSE. What it closes is the

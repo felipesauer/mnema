@@ -164,8 +164,8 @@ describe('the defect, through the binary', () => {
     const recalled = mnema({ cwd: plain, home }, 'recall');
     expect(recalled.stdout).not.toContain('recorded for this project');
 
-    // Non-vacuity: a note meant for no project still has a place, and it is the global tree
-    // — inside the data directory, never as a project's tails beside it.
+    // Non-vacuity: a note meant for no project still has a place, and it is the global tree,
+    // inside the data directory, never as a project's tails beside it.
     const global = mnema(
       { cwd: plain, home },
       'memory',
@@ -250,7 +250,7 @@ describe('a home tree written before this: passed over, named, and left as it is
     const after = filesIn(tree);
     for (const [path, digest] of before) expect(after.get(path), path).toBe(digest);
     const added = [...after.keys()].filter((path) => !before.has(path));
-    // Non-vacuity: the data directory did land here — it is the case.
+    // Non-vacuity: the data directory did land here; it is the case.
     expect(added.some((path) => path.startsWith('identity/'))).toBe(true);
     expect(added.some((path) => path.startsWith('global/'))).toBe(true);
     expect(added.filter((path) => !/^(identity|global)\//.test(path))).toEqual([]);

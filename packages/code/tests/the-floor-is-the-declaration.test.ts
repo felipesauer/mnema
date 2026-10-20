@@ -55,7 +55,7 @@
  *   - no COMMAND ADAPTER, no MCP SERVER, no COMPLETION GENERATOR and no INTERACTIVE
  *     SESSION is in the closure. That is the rule with no exceptions, and the one a
  *     careless import breaks. The third family reads the command tree rather than the
- *     record, so it looks free — it is not: a verb that walked the tree at module scope
+ *     record, so it looks free; it is not: a verb that walked the tree at module scope
  *     would put that walk on `mnema --version`, and `wiring/completion.ts` keeps
  *     `SHELLS` next to the flag that accepts them precisely so nothing under
  *     `completion/` has a reason to be reached before the verb runs. The fourth is the
@@ -401,7 +401,7 @@ const FLOOR_MODULES: readonly string[] = [
   'presentation/verdict.ts',
   'presentation/width.ts',
   // I PUT THIS ON THE FLOOR: the sentence this product promises, which commander needs
-  // before it can print a word of help — `.description()` is read as the program is
+  // before it can print a word of help; `.description()` is read as the program is
   // built, so there is no later moment to defer it to. It is here rather than typed into
   // `program.ts` because it was typed into NINE places and nothing held them together, and a
   // tenth spelling in the entry is the shape the module exists to have ended
@@ -756,8 +756,8 @@ function cli(...args: string[]): { status: number | null; stdout: string; stderr
 
 describe('a verb that loads its work still answers', () => {
   // The defect this pair exists for is silent: an `import()` nobody awaits makes the
-  // action return before it has written anything, and the process exits — code zero,
-  // no output, nothing to see. Both halves are asserted TOGETHER, because each alone
+  // action return before it has written anything, and the process exits (code zero,
+  // no output, nothing to see). Both halves are asserted TOGETHER, because each alone
   // is satisfied by the defect: a missing line still exits, and an exit code still
   // arrives with nothing printed. And they are two verbs because the two paths are
   // different code: one ends at `io.fail()`, the other at a write and a report.

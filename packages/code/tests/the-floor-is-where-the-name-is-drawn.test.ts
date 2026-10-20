@@ -39,7 +39,7 @@
  *   - THE MARGIN: at the floor the widest thing the page draws is on it whole. A margin is
  *     columns of the PAGE, never a character of a line.
  *   - AND THE SITES, BY THE DISCRIMINANT: the floor, the margin, what decides whether the list
- *     opens, and what composes the line of an offer — each found by what it IS in the source
+ *     opens, and what composes the line of an offer, each found by what it IS in the source
  *     rather than by a list kept here.
  */
 
@@ -336,8 +336,8 @@ describe('a bare slash shows what there is, and the letter narrows THAT list', (
       steps: [
         opens,
         // WHAT THIS KEYSTROKE PUT ON THE PAGE, and not the character anywhere in the stream: the
-        // opening writes a slash three ways over — the project's path, the record's `T1/T2/T4`
-        // and the hint that names this very key.
+        // opening writes a slash three ways over (the project's path, the record's `T1/T2/T4`
+        // and the hint that names this very key).
         { types: PREFIX, until: arrivedSince(CUT), what: 'opened the preview' },
         { types: MOVES_DOWN, until: arrivedSince(PICK), what: 'marked a row' },
         { types: 'v', until: arrivedUnpainted(`${PROMPT} ${PREFIX}v`), what: 'typed a letter' },
@@ -559,7 +559,7 @@ describe('the four rules this delivery touched hold at every site, found by the 
     // whether there is a list is the defect the palette exists to make impossible.
     expect(callers.length, 'nothing asks the rule at all').toBeGreaterThan(1);
     // AND NOBODY ANSWERS IT THEMSELVES. The discriminant is the comparison the rule is MADE of
-    // — what was typed, against the prefix — and the one other place in this package that
+    // (what was typed, against the prefix), and the one other place in this package that
     // strips a prefix is the completer, which does it to a CANDIDATE and not to the row. A
     // second module asking whether the row begins with a slash would be a second answer to
     // *is there a list open*, arrived at without calling the function that decides.

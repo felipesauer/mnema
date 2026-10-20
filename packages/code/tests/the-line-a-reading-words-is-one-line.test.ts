@@ -174,13 +174,13 @@ interface Site {
 /**
  * Every value this layer puts on a line, in the two forms it can be written in.
  *
- * A TEMPLATE'S INTERPOLATION — `` `topic: ${x}` `` — is one site per `${…}`, keyed by
+ * A TEMPLATE'S INTERPOLATION (`` `topic: ${x}` ``) is one site per `${…}`, keyed by
  * the shape of the template it is in and by the expression itself. A nested template
  * inside an interpolation is part of ITS value rather than a site of its own, exactly as
- * the sibling has it: `${a ? ` — ${b}` : ''}` is one value, and asking a verdict about
+ * the sibling has it: `${a ? ` - ${b}` : ''}` is one value, and asking a verdict about
  * half of it would be asking about half a decision.
  *
- * A BUILDER'S ARGUMENT — `itemLine([asId(x), oneLine(y)])`, `fact(z)` — is the other,
+ * A BUILDER'S ARGUMENT (`itemLine([asId(x), oneLine(y)])`, `fact(z)`) is the other,
  * and it is the form no tag could ever have covered: the columns of a list are an
  * ARRAY, not a sentence. The builders are the functions of this layer that return a
  * `Line`, a `Column` or a `Part`, read off the source rather than listed, so one added
@@ -398,12 +398,12 @@ const FOUND = sitesInSource();
  *     built out of this machine's environment, so it goes through `oneLine` HERE. The
  *     table does not decide this: the expression really does hold the call, and a value
  *     that stops going through it goes red.
- *   - `minted` — it is the product's own: a uuid, an alias, an `ADR-<n>`, an anchor, a
+ *   - `minted`: it is the product's own (a uuid, an alias, an `ADR-<n>`, an anchor, a
  *     content hash, an ISO-8601 instant, a count, one of the three trees, a word of a
- *     closed transition table, or a constant written in the module that prints it. None
+ *     closed transition table, or a constant written in the module that prints it). None
  *     can hold a newline, and it must NOT be collapsed, so a value that quietly stops
  *     being the product's own cannot keep this verdict.
- *   - `composed` — it is not text from anywhere yet: another function of this layer words
+ *   - `composed`: it is not text from anywhere yet; another function of this layer words
  *     it, and every value THAT function puts in it is a site of its own. The reason names
  *     which function, so the chain can be followed rather than trusted.
  */

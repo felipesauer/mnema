@@ -800,7 +800,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     //     annotation, because a name is a use wherever it stands as an identifier. So is a
     //     local that shadows a top-level name. All three ACCUSE; none clears.
     //   - A VALUE THAT ARRIVES AT RUNTIME is not followed: a callback, or a handle a caller
-    //     opened — `context` answers over caches somebody else opened, by design, and a method
+    //     opened; `context` answers over caches somebody else opened, by design, and a method
     //     called on one is invisible here.
     //   - `import()` at runtime, `require` (the second net's), `export default` and a
     //     destructured declaration are not read. The last two cannot slip through: a name that
@@ -808,8 +808,8 @@ describe('the bytes of the document move when the record moves, and at no other 
     //   - A module of the runtime off the first net's list reaches nothing to this net either;
     //     one list, read by both. And a module ON the list counts whole, as it does to the first
     //     net: `join` from `node:path` or `createHash` from `node:crypto` reaches the machine
-    //     here, so a helper that only joins strings or hashes them ACCUSES — `resolveTrees` is
-    //     found through a `join` before any read of the disk.
+    //     here, so a helper that only joins strings or hashes them ACCUSES (`resolveTrees` is
+    //     found through a `join` before any read of the disk).
     //   - A package from outside the workspace is read as far as it can be: the entry its
     //     `exports` map or `main` names, as ESM, on this disk. One it cannot find, or cannot
     //     read, CommonJS declares nothing it sees, is a door, and ACCUSES.

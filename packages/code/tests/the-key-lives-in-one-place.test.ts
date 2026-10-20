@@ -76,8 +76,8 @@ function privateKeysAt(keyRoot: string): string[] {
 describe('one person, two launchers, one author', () => {
   it('signs with the key under the home whatever $XDG_DATA_HOME each launcher set', () => {
     // An editor's process and a terminal: the same person, the same HOME, two opinions about
-    // `$XDG_DATA_HOME` — the shape the snap and Flatpak produce, and the one the product made
-    // by itself when one of them simply had no value.
+    // `$XDG_DATA_HOME` (the shape the snap and Flatpak produce, and the one the product made
+    // by itself when one of them simply had no value).
     const editor = { HOME: home, XDG_DATA_HOME: join(sandbox, 'revision-263', '.local', 'share') };
     const terminal = { HOME: home, XDG_DATA_HOME: join(home, '.local', 'share') };
 
