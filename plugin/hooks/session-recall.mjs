@@ -15,16 +15,16 @@
  * the cap the host swaps the whole text for a file path and a 2,000-character preview it
  * never asks the model to open (code.claude.com/docs/en/hooks, *JSON output*). Two texts in
  * one reply would share one cap, and a long document would take the notes down with it, or
- * the notes the document. Two handlers are two replies, each measured on its own — and the
+ * the notes the document. Two handlers are two replies, each measured on its own, and the
  * host runs every matching hook in parallel, so the second one costs no wait.
  *
  * IT IS SILENT IN EVERY CASE THE FIRST ONE IS, AND IN ONE MORE. The rule is the shared one
  * (`hand-over.mjs`): outside a project, with no `mnema` on the PATH, over a record that will
  * not read, or with this channel switched off, nothing is added. And where nothing is noted
  * the verb prints nothing, so a session in a project with no notes is handed no text at all
- * — the rule the per-edit push keeps: nothing arrives where there is nothing to say.
+ * (the rule the per-edit push keeps: nothing arrives where there is nothing to say).
  *
- * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED — {@link MODEL_CHANNEL}, framed in the words
+ * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED: {@link MODEL_CHANNEL}, framed in the words
  * `packages/code/src/record-framing.ts` gives every channel that puts record text in front
  * of a model, and switchable on its own (`mnema switch off recall-document`), because
  * somebody who wants the rules and not the notes must be able to keep the half they want.
@@ -34,7 +34,7 @@
 const HOOK_EVENT = 'SessionStart';
 
 /**
- * WHICH channel of the product's framing this handler carries — the name
+ * WHICH channel of the product's framing this handler carries: the name
  * `record-framing.ts` knows it by.
  *
  * A plain string, exported and read from the source by the guard, for the reasons the

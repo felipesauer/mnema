@@ -6,7 +6,7 @@ name: Flake sampler
 #
 # WHAT IT IS NOT. It is not a gate. It is not a required check. It re-runs nothing until green, it
 # repairs no flake it finds, and it must never be added to branch protection. A red here is a
-# SIGNAL — and when the flake it names is fixed, it goes back to green by itself, which is what
+# SIGNAL, and when the flake it names is fixed, it goes back to green by itself, which is what
 # makes it an instrument rather than an alarm.
 #
 # WHY IT EXISTS. Two merges onto this trunk went red on a runner within twenty-four hours,
@@ -17,7 +17,7 @@ name: Flake sampler
 # once". Twice in two days, that turned out not to be the same question as "does it pass".
 #
 # AND IT IS A CONTINUOUS INSTRUMENT, NOT A ONE-OFF TEST. With p the rate of a flake, N runs find it
-# with probability 1-(1-p)^N. N=30 is 96% for one in ten and 79% for one in twenty — but only 26%
+# with probability 1-(1-p)^N. N=30 is 96% for one in ten and 79% for one in twenty, but only 26%
 # for one in a hundred. Seven nights are 210 runs, and one in a hundred is 88% there. NOBODY MAY
 # READ ONE GREEN NIGHT AS "THERE IS NO FLAKE". The page the summary prints says so on its face.
 #
@@ -62,7 +62,7 @@ permissions:
 
 concurrency:
   # NOT `cancel-in-progress`. A night is twenty-odd minutes of sampling, and cancelling it to start
-  # another leaves neither — and the sampler refuses on a short count rather than publishing one,
+  # another leaves neither, and the sampler refuses on a short count rather than publishing one,
   # so a cancelled night costs a night AND prints RULER BROKEN.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -74,7 +74,7 @@ jobs:
     # is measured rather than guessed. Thirty repetitions in one job sample ONE virtual machine,
     # which covers what both known flakes were (timing between files running in parallel) and
     # cannot see variation between machines at all. Three jobs sample three. The cost of the split
-    # is the setup paid twice more — and on the run this was sized from (`32553298605`) checkout,
+    # is the setup paid twice more, and on the run this was sized from (`32553298605`) checkout,
     # pnpm, node, install and build together took 21 s on node 22 and 15 s on node 24, because the
     # pnpm cache hits and install lands in 2-5 s. So the extra machines cost about forty seconds of
     # runner time in total, not the minutes it looks like they should, and they cost nothing at all
@@ -114,7 +114,7 @@ jobs:
       # `|| true` IS LOAD-BEARING AND IS NOT SWALLOWING THE RESULT. A red run is the thing being
       # counted; letting it end the loop would sample until the first failure and then stop, which
       # is the one shape that cannot produce a rate. The verdict is read off the reports, and a run
-      # that never wrote a report is not counted as a pass — the summariser refuses on the short
+      # that never wrote a report is not counted as a pass: the summariser refuses on the short
       # count.
       #
       # THE REPETITION COUNT ARRIVES IN THE ENVIRONMENT, NOT INTERPOLATED INTO THE SCRIPT. It is a
@@ -126,6 +126,12 @@ jobs:
         env:
           REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
           LABEL: node${{ matrix.node }}-shard${{ matrix.shard }}
+          # OUTSIDE THE WORKSPACE, ON PURPOSE. The reports carry case titles, and a report left in
+          # the checkout is an untracked file that is not ignored, which is exactly what the guards
+          # that list the tree with `ls-files --others --exclude-standard` read: the second run of
+          # this loop found the first run's report and failed them. The runner's temp directory is
+          # not the tree, so the loop leaves the tree as it found it.
+          REPORTS_DIR: ${{ runner.temp }}/flake-reports
         run: |
           set -euo pipefail
           N="$REPETITIONS"
@@ -133,24 +139,24 @@ jobs:
             ''|*[!0-9]*) echo "REPETITIONS must be a whole number, and it was '$N'"; exit 1 ;;
           esac
           if [ "$N" -lt 1 ]; then echo "REPETITIONS must be at least 1, and it was $N"; exit 1; fi
-          mkdir -p reports
+          mkdir -p "$REPORTS_DIR"
           for i in $(seq 1 "$N"); do
             SEQ=$(printf '%02d' "$i")
             echo "::group::$LABEL run $SEQ of $N"
             pnpm test \
               --reporter=default \
               --reporter=json \
-              --outputFile.json="reports/run--$LABEL--$SEQ.json" || true
+              --outputFile.json="$REPORTS_DIR/run--$LABEL--$SEQ.json" || true
             echo "::endgroup::"
           done
-          ls -la reports
+          ls -la "$REPORTS_DIR"
 
       - name: Upload this shard's reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flake-reports-node${{ matrix.node }}-shard${{ matrix.shard }}
-          path: reports/
+          path: ${{ runner.temp }}/flake-reports/
           retention-days: 14
           if-no-files-found: warn
 

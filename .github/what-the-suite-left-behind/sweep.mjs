@@ -1,10 +1,10 @@
 /**
- * WHAT THE SUITE LEFT BEHIND — the real `/tmp`, swept with the suite stopped at both ends.
+ * WHAT THE SUITE LEFT BEHIND: the real `/tmp`, swept with the suite stopped at both ends.
  *
  * WHY IT IS NOT A TEST. `packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts`
  * reads source and follows the created name to its removal; that answers what one file says, and
  * it cannot answer what the machine holds afterwards. The one case that does ask the filesystem
- * — `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` — covers ONE prefix of the
+ * (`packages/context/tests/the-bench-leaves-nothing-behind.test.ts`) covers ONE prefix of the
  * 187 this workspace builds under, and it covers that one only because `makeBench` hands back a
  * root it can derive the sandbox from. There is no root to derive for the other 186.
  *
@@ -18,12 +18,12 @@
  * for reasons that are nobody's defect. Two listings taken while NO worker is alive cannot: what
  * appeared between them is what the run left, because nothing else was writing. So this takes the
  * before with the suite stopped, the after with the suite stopped, and refuses to speak at all
- * when it cannot prove that — which is the one thing it must never guess about, because a sweep
+ * when it cannot prove that, which is the one thing it must never guess about, because a sweep
  * that guesses turns another worker's live sandbox into an accusation.
  *
  * IT REFUSES RATHER THAN GUESSES, in the mould of `.github/why-it-went-red/`: a ruler that cannot
  * say it broke is worse than no ruler. No baseline, no readable process list, no readable temp
- * directory — each is exit 2 and a named reason, never a clean sweep.
+ * directory: each is exit 2 and a named reason, never a clean sweep.
  */
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -39,14 +39,14 @@ import { join } from 'node:path';
 /**
  * WHAT A SWEEP CAN SAY. `left-behind` and `nothing-left-behind` are readings; `ruler-broken` is
  * the refusal, and it is a THIRD value rather than an empty reading for the reason this whole
- * family of files exists — an instrument that cannot say it broke reads the same as a clean one.
+ * family of files exists: an instrument that cannot say it broke reads the same as a clean one.
  *
  * @typedef {'left-behind' | 'nothing-left-behind' | 'ruler-broken'} Verdict
  */
 
 /**
- * A SWEEP'S READING. `code` follows `.github/why-it-went-red/` — 0 nothing to read, 1 something
- * to read, 2 it could not tell — and it is pinned to the verdict beside it by
+ * A SWEEP'S READING. `code` follows `.github/why-it-went-red/` (0 nothing to read, 1 something
+ * to read, 2 it could not tell) and it is pinned to the verdict beside it by
  * `what-the-suite-left-behind.test.ts` ("keeps the three verdicts on three exit codes").
  *
  * @typedef {{
@@ -69,7 +69,7 @@ export const THE_BASELINE = 'what-the-suite-left-behind.json';
  * disk, not the word.
  *
  * `/\bvitest\b/` was written first and refused on the very first real sweep, because the probe
- * reading the process list had the word on its own command line — and so does a `grep`, an
+ * reading the process list had the word on its own command line, and so does a `grep`, an
  * editor, or a shell whose history line mentions it. An instrument that only ever says RULER
  * BROKEN is no instrument. Measured against a live run of this suite, the processes that exist
  * are `sh -c vitest run …`, `node …/node_modules/.bin/../vitest/vitest.mjs run …`, and one worker
@@ -95,7 +95,7 @@ export function sandboxesUnder(where, prefix = THE_FAMILY) {
 
 /**
  * The command lines of every process on this machine, from `/proc`. Linux only, and a process
- * that exits between the listing and the read is skipped rather than thrown over — it is not
+ * that exits between the listing and the read is skipped rather than thrown over: it is not
  * running, which is the only thing being asked.
  *
  * @param {string} [procfs]
@@ -125,8 +125,8 @@ export function commandLinesFromProc(procfs = '/proc') {
  *
  * ONLY THIS PROCESS IS EXCLUDED, AND BY PID. Excluding by NAME was written first and was wrong
  * the way `pkill -f` is wrong: this file's own name appears on the command line of any vitest
- * run that names its test file, so `npx vitest run what-the-suite-left-behind.test.ts` — a real,
- * live run of the suite — was filtered out as "that is just me". Measured: the case that asks
+ * run that names its test file, so `npx vitest run what-the-suite-left-behind.test.ts` (a real,
+ * live run of the suite) was filtered out as "that is just me". Measured: the case that asks
  * the real machine found zero suites while it was itself running inside one. A pid cannot be
  * mistaken for another process, and the sweep's own command line says `sweep.mjs`, never
  * `vitest`, so nothing else needs excluding.
@@ -143,10 +143,10 @@ export function liveSuites(commandLines, self = process.pid) {
 
 /**
  * The verdict, given a world. `now` is what the temp directory holds, `alive` the suite runs it
- * can see, and `baseline` what was there before the suite ran — `null` when nothing recorded one.
+ * can see, and `baseline` what was there before the suite ran: `null` when nothing recorded one.
  *
  * `verdict` is one of `left-behind`, `nothing-left-behind`, or `ruler-broken`; the exit codes
- * follow `.github/why-it-went-red/` — 0 nothing to read, 1 something to read, 2 it could not tell.
+ * follow `.github/why-it-went-red/`: 0 nothing to read, 1 something to read, 2 it could not tell.
  *
  * @param {{
  *   now: readonly string[],
@@ -231,7 +231,7 @@ function optionOf(argv, name, fallback) {
 /**
  * The whole instrument from the command line. `aliveNow` is a seam and only a seam: the real
  * one reads this machine, and a caller that wants to exercise the reporting has to supply its
- * own — because the real one is right, and refuses, for as long as the suite is running.
+ * own, because the real one is right, and refuses, for as long as the suite is running.
  */
 export function main(
   argv = process.argv.slice(2),

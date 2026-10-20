@@ -1,0 +1,87 @@
+name: Links after the merge
+
+# WHAT THIS IS. A READMEs-on-main check: once a change is on `main`, every image and every absolute
+# link of the root README and of the README of each package is asked of the network, and one issue
+# says which ones answer with an HTTP error. The pages of the packages name their images and
+# links by the address on `main`, which answers only after the merge, so no check on a pull
+# request can ask it. `.github/the-links-after-the-merge/check.mjs` owns the rule and its comment
+# says what it does and does not look at.
+#
+# IT IS NOT A GATE. It runs on `push` to `main` and by hand, never on a pull request, so it is
+# not one of the checks a pull request carries and it must never be added to branch protection.
+# An issue blocks nothing: that is the point of putting the signal there.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A push does not trample the one before it: the one that is reading finishes, and only the
+# latest waiting one is kept.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  read-the-pages:
+    name: read the pages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      broken: ${{ steps.read.outputs.broken }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Ask every address of the READMEs
+        id: read
+        run: |
+          set -euo pipefail
+          node .github/the-links-after-the-merge/check.mjs scan --out reading.json | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "broken=$(node -e 'console.log(JSON.parse(require("node:fs").readFileSync("reading.json", "utf-8")).broken.length)')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: links-reading
+          path: reading.json
+          if-no-files-found: error
+
+  # THE ONLY JOB THAT MAY WRITE, and only when a page has an address that answers with an error.
+  # It opens ONE issue under a title that never changes, or comments on the one that is open.
+  tell-somebody:
+    name: open an issue about the links
+    needs: read-the-pages
+    if: ${{ needs.read-the-pages.outputs.broken != '0' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: links-reading
+          path: reading
+
+      - name: Open the issue, or add to the one that is open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/the-links-after-the-merge/check.mjs tell reading/reading.json
