@@ -344,21 +344,21 @@ const FRONT = [
     id: 'banner',
     dark: `${ASSETS}/banner-dark.svg`,
     light: `${ASSETS}/banner-light.svg`,
-    frame: { w: 897.85, h: 144, band: 0, shapes: 20, margin: 0 },
+    frame: { w: 910.73, h: 151.5, band: 0, shapes: 20, margin: 8 },
     words: false,
   },
   {
     id: 'how-it-works',
     dark: `${ASSETS}/how-it-works-dark.svg`,
     light: `${ASSETS}/how-it-works-light.svg`,
-    frame: { w: 880, h: 198, band: 0, shapes: 30, margin: 0 },
+    frame: { w: 896, h: 212, band: 0, shapes: 30, margin: 8 },
     words: true,
   },
   {
     id: 'how-mnema-fits',
     dark: `${ASSETS}/how-mnema-fits-dark.svg`,
     light: `${ASSETS}/how-mnema-fits-light.svg`,
-    frame: { w: 880, h: 302, band: 0, shapes: 40, margin: 0 },
+    frame: { w: 896, h: 306, band: 0, shapes: 40, margin: 8 },
     words: true,
   },
 ] as const;
@@ -1422,14 +1422,15 @@ describe('every package, and the family, is drawn inside its frame, on its middl
   // Each package and the family, and the front page's other pictures: whether it writes words, and
   // whether it holds them in cards.
   const pictures = [
-    ...LINED.map((p) => ({ ...p, words: true, cards: p.id !== 'family' })),
-    ...FRONT.map((p) => ({ ...p, cards: p.words })),
+    ...LINED.map((p) => ({ ...p, words: true, cards: p.id !== 'family', front: false })),
+    ...FRONT.map((p) => ({ ...p, cards: p.words, front: true })),
   ].flatMap((p) =>
     (['dark', 'light'] as const).map((theme) => ({
       path: p[theme],
       frame: p.frame,
       words: p.words,
       cards: p.cards,
+      front: p.front,
       svg: drawn[p[theme]] ?? '',
     })),
   );
@@ -1457,7 +1458,10 @@ describe('every package, and the family, is drawn inside its frame, on its middl
    * shapes and the ink of each text. The glow behind it is not counted: it is centred by itself,
    * and as wide as it is it would hide a drawing set off the middle.
    */
-  const reach = (svg: string, frame: { band: number }): { left: number; right: number } => {
+  const reach = (
+    svg: string,
+    frame: { band: number },
+  ): { left: number; right: number; top: number; foot: number } => {
     const d = drawing(svg);
     const frames = keyframesOf(svg);
     const still = d.nodes.filter(
@@ -1474,6 +1478,8 @@ describe('every package, and the family, is drawn inside its frame, on its middl
     return {
       left: Math.min(...boxes.map((b) => b[0])),
       right: Math.max(...boxes.map((b) => b[2])),
+      top: Math.min(...boxes.map((b) => b[1])),
+      foot: Math.max(...boxes.map((b) => b[3])),
     };
   };
 
@@ -1490,6 +1496,18 @@ describe('every package, and the family, is drawn inside its frame, on its middl
       expect(
         Math.min(left, frame.w - right),
         `${left}..${right} in 0..${frame.w}`,
+      ).toBeGreaterThanOrEqual(frame.margin);
+    },
+  );
+
+  it.each(pictures.filter((p) => p.front))(
+    '$path sets what it draws on the middle of its frame from top to foot, the margin in from each',
+    ({ svg, frame }) => {
+      const { left, right, top, foot } = reach(svg, frame);
+      expect(Math.abs(top + foot - frame.h) / 2, `${top}..${foot}`).toBeLessThanOrEqual(0.5);
+      expect(
+        Math.min(left, top, frame.w - right, frame.h - foot),
+        `${left}..${right} x ${top}..${foot} in ${frame.w} x ${frame.h}`,
       ).toBeGreaterThanOrEqual(frame.margin);
     },
   );
