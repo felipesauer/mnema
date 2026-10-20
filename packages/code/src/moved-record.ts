@@ -1,5 +1,5 @@
 /**
- * How the echo of a MOVE names the record it moved — one line, one place, both
+ * How the echo of a MOVE names the record it moved: one line, one place, both
  * surfaces.
  *
  * A move's confirmation is the acknowledgement of a signed write, which makes it the
@@ -11,33 +11,33 @@
  * and none of the three displays is an identity. An `ADR-<n>` label is minted within
  * ONE chain, so a record built from several trees carries a public `ADR-1` beside a
  * private one and that line names two rules. A pattern's name has no uniqueness
- * constraint of any kind — two patterns may share one, and nothing refuses it. A
+ * constraint of any kind: two patterns may share one, and nothing refuses it. A
  * task's alias is a four-hex hash of the id, display by construction, and two ids can
- * share it. So the line above, read on its own — in a scrollback, in a transcript, in
- * a review comment — could be the acknowledgement of either of two writes, and
+ * share it. So the line above, read on its own (in a scrollback, in a transcript, in
+ * a review comment) could be the acknowledgement of either of two writes, and
  * nothing in it says which.
  *
  * THE LINE CARRIES THE DISPLAY *AND* THE ID. Not one or the other: the display is
- * what a person recognizes, and the id is what they can act on — `mnema show`,
- * `search`, `read_record`, a citation someone else can follow. Both fit, so trading
+ * what a person recognizes, and the id is what they can act on (`mnema show`,
+ * `search`, `read_record`, a citation someone else can follow). Both fit, so trading
  * legibility for precision would be a trade nobody had to make. It is the same pair
  * every BIRTH echo has always printed (`Created task t-4f2a (0198…)`), which is why
  * the id is written WHOLE here: the product has one short form, it is the anchor's
  * (see `anchors.ts`), and it is a PREFIX of a value whose characters are already a
  * hash. An entity id is a v7 UUID whose leading characters are a timestamp, so a
  * prefix of one is not spread and would clash on sight between ids minted close
- * together — which is the whole reason `deriveAlias` HASHES instead. Shortening an id
+ * together, which is the whole reason `deriveAlias` HASHES instead. Shortening an id
  * by prefix would be a second convention that the input side could not honor.
  *
  * ONE PLACE BUILDS IT, for the two surfaces and the three kinds. It was six template
- * literals — three verbs times two surfaces — which is the shape that drifts the day
+ * literals, three verbs times two surfaces, which is the shape that drifts the day
  * somebody amends one copy. {@link MOVED_FORM} is TOTAL over {@link MovedKind}, so a
  * fourth entity with a workflow cannot reach a surface without saying how its move
  * reads.
  *
  * EVERY FIELD THE RECORD PUT ON THE LINE IS COLLAPSED TO ONE LINE. The rule is the
  * LINE's, not one field's (see `oneLine` in `one-line.ts`): a move echo is a
- * one-item list — one per reply — so a break in it gives the second half the whole
+ * one-item list, one per reply, so a break in it gives the second half the whole
  * shape to imitate, and the second half of a pattern's name would read as the
  * acknowledgement of a move nobody made. The destination is the one field that needs
  * none: it is the gate's own closed vocabulary, resolved by the workflow rather than
@@ -55,7 +55,7 @@ export type MovedKind = 'task' | 'decision' | 'skill';
 
 /** How one kind's move reads: the word it opens with, and how its display is written. */
 interface MovedForm {
-  /** The word the line opens with — the kind, as a reader names it. */
+  /** The word the line opens with: the kind, as a reader names it. */
   readonly label: string;
   /**
    * Whether the display is DELIMITED by quotes.
@@ -70,7 +70,7 @@ interface MovedForm {
 }
 
 /**
- * Every kind's form, TOTAL — a fourth workflow entity does not compile until its move
+ * Every kind's form, TOTAL: a fourth workflow entity does not compile until its move
  * has a line.
  */
 const MOVED_FORM: Readonly<Record<MovedKind, MovedForm>> = {
@@ -95,7 +95,7 @@ export function movedLine(kind: MovedKind, display: string, id: string, to: stri
 /**
  * The kinds whose display is READ OUT OF THE RECORD rather than derived from the id.
  *
- * A task's alias is `deriveAlias(id)` — pure, no chain, and it cannot be absent. The
+ * A task's alias is `deriveAlias(id)`: pure, no chain, and it cannot be absent. The
  * other two have a display the record holds (the frozen `ADR-<n>`, the pattern's
  * name), which is a lookup that can come back empty, and that is what
  * {@link movedDisplay} answers for. Written as an exclusion so the two sets cannot
@@ -104,7 +104,7 @@ export function movedLine(kind: MovedKind, display: string, id: string, to: stri
  */
 export type ProjectedDisplayKind = Exclude<MovedKind, 'task'>;
 
-/** Where each projected display is read from, keyed by kind — TOTAL over the set. */
+/** Where each projected display is read from, keyed by kind: TOTAL over the set. */
 const PROJECTED_DISPLAY: Readonly<
   Record<ProjectedDisplayKind, (root: string, id: string, upcasters: UpcasterRegistry) => string>
 > = {
@@ -126,7 +126,7 @@ const PROJECTED_DISPLAY: Readonly<
  * `root` is the chain the entity was LOCATED in, which is not necessarily one of the
  * asking session's own trees: an entity in a sibling project of the workspace is
  * moved where it lives, and deriving the root from the session instead would read this
- * project's tree for a record that is in another one — answering with a stranger's
+ * project's tree for a record that is in another one, answering with a stranger's
  * label, or with the raw id, for a move that succeeded.
  *
  * It is read AFTER the append, so the display reflects the move that just landed.
@@ -152,7 +152,7 @@ export function movedDisplay(
  *
  * THE SILENCE. `decision supersede <old> <new>` retires the old decision at once and the new one
  * governs only after a person accepts it. A project whose single rule was replaced by a proposal
- * is left with NOTHING in force on that subject — and the move answered `→ superseded`, exit 0,
+ * is left with NOTHING in force on that subject, and the move answered `→ superseded`, exit 0,
  * as it does for a clean replacement. Measured on the built binary: the next `brief` opened with
  * `Decisions in force (0)`, and the agent read it as "nothing was decided".
  *

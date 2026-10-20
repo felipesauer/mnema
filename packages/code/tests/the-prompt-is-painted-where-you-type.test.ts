@@ -1,5 +1,5 @@
 /**
- * THE PROMPT IS PAINTED WHERE YOU TYPE — the same `mnema>` under the caller's fingers as in
+ * THE PROMPT IS PAINTED WHERE YOU TYPE: the same `mnema>` under the caller's fingers as in
  * the transcript above them.
  *
  * IT CAME OUT OF THE BYTES. A caller asked for colour on `mnema> verb` and got half of it:
@@ -7,7 +7,7 @@
  * TYPED came out `mnema> ` with no byte of colour in it. The half that was missing is the one
  * that is under their eyes while they write.
  *
- * WHAT MADE THAT LOOK NECESSARY was a premise written into two docs in as many words — *the
+ * WHAT MADE THAT LOOK NECESSARY was a premise written into two docs in as many words: *the
  * caret is an offset in COLUMNS into that row, so escapes a terminal does not print would be
  * arithmetic the console has to do*. It was false of the console's own arithmetic: the column
  * is counted over the prompt and over what was typed (`src/repl/console.ts`, `Shown.column`),
@@ -15,8 +15,8 @@
  * never in the sum.
  *
  * WHAT IS REALLY AT RISK IS THE FOLD, and it is what these cases are built around. The row
- * being typed is the one line of this page nobody folds — the TERMINAL breaks it, at the
- * margin — so a renderer that folded it would put a break and a hanging indent inside the row
+ * being typed is the one line of this page nobody folds (the TERMINAL breaks it, at the
+ * margin), so a renderer that folded it would put a break and a hanging indent inside the row
  * the caret is a column into. It is rendered for no width at all (`src/repl/console.ts`,
  * `renderTyped`), and the two cases long enough to wrap are the proof: same column, same row,
  * at two widths.
@@ -52,16 +52,16 @@ import {
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { screenOf } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
-/** The mark a command that was SENT carries on the roll — the row being typed carries the prompt. */
+/** The mark a command that was SENT carries on the roll: the row being typed carries the prompt. */
 const SENT = '\u276f';
 /** `packages/code/src`, for the guard that reads the surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
 /**
- * What a caller types in front of, with the space it ends in — the product's own string
+ * What a caller types in front of, with the space it ends in: the product's own string
  * (`src/repl/session.ts`, `PROMPT`), which is what a line of this page is composed out of.
  *
  * It is spelled here rather than exported because what these cases are about is the BYTES a
@@ -78,7 +78,7 @@ const ON_THE_PAGE = PROMPT.trimEnd();
  * run on the wire at every width these cases use.
  *
  * The two longest rows are broken by the LAYOUT at the margin, so the whole of what was typed is
- * never one run for those two — and a step that waited for it would wait for ever.
+ * never one run for those two, and a step that waited for it would wait for ever.
  */
 const A_RUN_THAT_FITS = 40;
 
@@ -89,13 +89,13 @@ const LEFT = `${ESC}[D`;
 const SENDS_THE_LINE = '\r';
 
 /**
- * Ctrl-C, which abandons the row being typed — spelled as an escape rather than typed.
+ * Ctrl-C, which abandons the row being typed: spelled as an escape rather than typed.
  *
  * IT IS WHAT LETS THE SESSION LEAVE. The key that ends the input only ends it on a row with
  * nothing on it; on a row with something on it the same key deletes forward, which is what
  * every line editor does (`src/repl/editing.ts`). So a case that types a word has to give the
- * row back before it can ask the session to close, and one that does not hangs on the way out
- * — which is how the first draft of this file spent thirty seconds a case.
+ * row back before it can ask the session to close, and one that does not hangs on the way out,
+ * which is how the first draft of this file spent thirty seconds a case.
  */
 const CLEARS_THE_LINE = '\u0003';
 
@@ -190,7 +190,7 @@ describe('the prompt under the caller’s fingers carries the accent the transcr
   it('paints the row being typed, in the very escapes the echo of it is painted in', async () => {
     // THE TWO PLACES THE SAME STRING APPEARS, on one real terminal: the row being TYPED,
     // before anything has been sent, and the ECHO of it on the roll after it has. They are
-    // compared with EACH OTHER rather than against escapes typed here — a case that spelled
+    // compared with EACH OTHER rather than against escapes typed here: a case that spelled
     // the accent out would go green on a product that had two of them, as long as the one it
     // spelled was on the page.
     const columns = 100;
@@ -227,8 +227,8 @@ describe('the prompt under the caller’s fingers carries the accent the transcr
     expect(underTheFingers, 'the row being typed reached the terminal unpainted').toContain(accent);
 
     // AND THE ROLL DOES NOT CARRY IT. The line that was sent is kept under a mark of its own and
-    // in greys: the accent belongs to the places that say *this is mnema* — the top, the rules and
-    // the row being typed — and a command a caller has already sent is not one of them. What
+    // in greys: the accent belongs to the places that say *this is mnema* (the top, the rules and
+    // the row being typed) and a command a caller has already sent is not one of them. What
     // arrived since the line was sent holds that row, and the input row, now empty and painted as
     // it was, so the set of spellings of the prompt is still the one.
     const sinceTheLineWasSent = ran.bytes.slice(ran.at[1] as number, ran.at[2] as number);
@@ -268,7 +268,7 @@ interface WhereTheCaretGoes {
   readonly name: string;
   /** What is typed on the row. */
   readonly text: string;
-  /** What is pressed after it — arrows, which move the caret without changing the row. */
+  /** What is pressed after it: arrows, which move the caret without changing the row. */
   readonly after: readonly string[];
   /** How wide the terminal is. */
   readonly columns: number;
@@ -276,14 +276,14 @@ interface WhereTheCaretGoes {
    * WHICH COLUMN THE CARET IS IN, measured on this branch before the row was painted.
    *
    * A function of the width rather than a number, because the two cases that FOLD are pinned to
-   * the last column of whatever screen they are on — the terminal put the caret there, not this
+   * the last column of whatever screen they are on: the terminal put the caret there, not this
    * product's arithmetic.
    */
   readonly column: (columns: number) => number;
   /** How many rows under the one the prompt is on. Measured, like the column. */
   readonly row: number;
   /**
-   * WHETHER THE COLUMN IS THE ONE THE FINGERS ASK FOR — the characters to the left of the caret,
+   * WHETHER THE COLUMN IS THE ONE THE FINGERS ASK FOR: the characters to the left of the caret,
    * counted.
    *
    * False for the two rows the TERMINAL folded, where the column the fingers ask for is off the
@@ -293,7 +293,7 @@ interface WhereTheCaretGoes {
   /**
    * WHETHER THE CARET IS ON THE ROW THE PROMPT IS ON, which is where a row that fits puts it.
    *
-   * False for the two folded rows, which are two rows of the screen — and false after an arrow,
+   * False for the two folded rows, which are two rows of the screen, and false after an arrow,
    * which is a divergence this delivery neither causes nor closes (see the header of
    * {@link WHERE_THE_FINGERS_ARE}).
    */
@@ -304,8 +304,8 @@ interface WhereTheCaretGoes {
    * Declared per case rather than computed, and deliberately not asked of the product: what the
    * instrument is for is to say independently where the caller's fingers are, and an instrument
    * that borrowed the product's own measurement would agree with it by construction. It is a
-   * fact about the characters — `e` and COMBINING ACUTE ACCENT are one cell together in every
-   * terminal there is — so it is written down like the numbers beside it.
+   * fact about the characters (`e` and COMBINING ACUTE ACCENT are one cell together in every
+   * terminal there is), so it is written down like the numbers beside it.
    */
   readonly cells?: number;
 }
@@ -314,7 +314,7 @@ interface WhereTheCaretGoes {
  * THE CASES, AND EVERY NUMBER IN THEM WAS MEASURED BEFORE THE ROW WAS PAINTED.
  *
  * TWO OF THEM ARE THE ONES THIS DELIVERY EXISTS NOT TO BREAK. A row long enough to wrap is
- * folded by the TERMINAL, and where it breaks is a function of what the terminal counts — so a
+ * folded by the TERMINAL, and where it breaks is a function of what the terminal counts, so a
  * renderer that folded the row, or a column counted over the painted string, moves those two and
  * nothing else on this list.
  *
@@ -325,7 +325,7 @@ interface WhereTheCaretGoes {
  * was never taken.* The first of them was taken:
  *
  *   - `cafe` WITH A COMBINING ACUTE is five code points and FOUR CELLS, and the column used to be
- *     counted in code points (`src/repl/console.ts`) — so on a terminal the caret sat one column
+ *     counted in code points (`src/repl/console.ts`), so on a terminal the caret sat one column
  *     right of the accent, and this case pinned 12. The surface has one authority over columns
  *     now (`src/presentation/width.ts`) and the caret is counted by it, so the number is 11 and
  *     the case RULES rather than pins. The instrument still counts independently: what a case
@@ -435,7 +435,7 @@ const WHERE_THE_FINGERS_ARE: readonly WhereTheCaretGoes[] = [
  *
  * It was in characters, which is the count the product itself used to make and this delivery
  * replaced. What a case declares about its own text is used where the two differ
- * ({@link WhereTheCaretGoes.cells}) — a fact about the characters, written down, so this stays an
+ * ({@link WhereTheCaretGoes.cells}): a fact about the characters, written down, so this stays an
  * independent reading rather than the product's own answer handed back to it.
  */
 function theFingersAt(one: WhereTheCaretGoes): number {
@@ -594,7 +594,7 @@ describe('everything that puts the row being typed together, and everything that
     // IT WAS `.length` ALONE, and the delivery that gave this surface one authority over columns
     // renamed the operation (`presentation/width.ts`, `widthOfText`). Both spellings are the
     // discriminant now: the new one because that is what the site says today, and the OLD one
-    // because a caret counted in code points again is exactly the regression — the accent case
+    // because a caret counted in code points again is exactly the regression; the accent case
     // above is the number it moves, and this would name the file that moved it.
     const MEASURES_A_PROMPT = /\bprompt\b[^\n]*(?:\.length|widthOfText\()/;
     const counting = sources().filter((file) => MEASURES_A_PROMPT.test(file.code));

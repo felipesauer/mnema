@@ -1,9 +1,9 @@
 /**
- * `whatTheSessionTouches` — the words a session's notes are chosen by, read off a real
+ * `whatTheSessionTouches`: the words a session's notes are chosen by, read off a real
  * repository in a sandbox.
  *
  * Every case builds the repository with git itself, because what is being read is what git
- * answers — a hand-written `status` output would test the parser against the author's idea
+ * answers: a hand-written `status` output would test the parser against the author's idea
  * of git. The two parsers get their own cases too, for the entry shapes a sandbox cannot
  * cheaply produce (a rename, a conflict, a detached head).
  */
@@ -85,7 +85,7 @@ function touched(): SessionTouch {
   return withScopedCaches(trees, (sources) => whatTheSessionTouches(repo, sources));
 }
 
-describe('whatTheSessionTouches — read off a real repository', () => {
+describe('whatTheSessionTouches: read off a real repository', () => {
   it('reads nothing outside git, and that is no signal rather than an error', () => {
     runInit({ cwd: repo, env });
     expect(touched()).toEqual({ words: [], changed: 0, tasks: 0, branch: false, commits: 0 });
@@ -102,7 +102,7 @@ describe('whatTheSessionTouches — read off a real repository', () => {
     expect(read.words).toEqual(['src', 'invoice', 'rounding']);
   });
 
-  it('leaves the record’s own files out — they change with every write', () => {
+  it('leaves the record’s own files out: they change with every write', () => {
     git('init', '-q', '-b', 'main');
     runInit({ cwd: repo, env });
     // The record is all there is: `.mnema/` untracked, and nothing else.
@@ -196,7 +196,7 @@ describe('whatTheSessionTouches — read off a real repository', () => {
   it('runs no program the repository’s configuration names', () => {
     git('init', '-q', '-b', 'main');
     runInit({ cwd: repo, env });
-    // `core.fsmonitor` naming a program is run by every `git status` that honours it — a
+    // `core.fsmonitor` naming a program is run by every `git status` that honours it: a
     // repository somebody cloned can name anything there.
     const marker = join(sandbox, 'the-monitor-ran');
     const monitor = join(sandbox, 'monitor.sh');
@@ -219,7 +219,7 @@ describe('whatTheSessionTouches — read off a real repository', () => {
   });
 });
 
-describe('parseStatus — every entry shape git documents', () => {
+describe('parseStatus: every entry shape git documents', () => {
   it('reads an ordinary change, a rename, a conflict and an untracked file', () => {
     const out = [
       '# branch.oid 0123',
@@ -242,7 +242,7 @@ describe('parseStatus — every entry shape git documents', () => {
   });
 });
 
-describe('parseLog — a mark per commit, then its paths', () => {
+describe('parseLog: a mark per commit, then its paths', () => {
   it('counts the commits and keeps every path', () => {
     expect(parseLog('\u0001\0\na.ts\0b.ts\0\u0001\0\nc.ts\0')).toEqual({
       paths: ['a.ts', 'b.ts', 'c.ts'],
@@ -261,7 +261,7 @@ describe('the pages say how far back the reading reaches', () => {
 
   it('in the verb’s own help, and on the two pages that describe the opening', () => {
     // The help is written out rather than read off the constant, because the declaration of
-    // a verb may not load what the verb runs (`the-floor-is-the-declaration.test.ts`) — so
+    // a verb may not load what the verb runs (`the-floor-is-the-declaration.test.ts`), so
     // this is the place a changed constant turns the help red.
     expect(page('packages/code/src/wiring/recall.ts')).toContain(`the last ${COMMITS} commits`);
     for (const path of ['docs/cli-reference.md', 'plugin/README.md']) {

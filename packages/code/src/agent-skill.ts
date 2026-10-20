@@ -1,5 +1,5 @@
 /**
- * The Agent Skills format — the one module in this product that speaks somebody
+ * The Agent Skills format: the one module in this product that speaks somebody
  * else's shape, and the only direction it speaks in is OUT.
  *
  * A `SKILL.md` is `<name>/SKILL.md`: a YAML frontmatter with two required fields and
@@ -7,11 +7,11 @@
  * fields are the specification's (`agentskills.io/specification`, read 2026-08-13
  * and written down in the ecosystem study), and only three of them appear here:
  *
- *   - `name` — 1–64 characters, `[a-z0-9-]`, no hyphen at either end, no `--`, and
+ *   - `name`: 1–64 characters, `[a-z0-9-]`, no hyphen at either end, no `--`, and
  *     EQUAL TO THE DIRECTORY NAME. {@link specName} is that rule, whole.
- *   - `description` — 1–1024 characters, and the field the host CHOOSES by, with
+ *   - `description`: 1–1024 characters, and the field the host CHOOSES by, with
  *     nobody calling anything. {@link specDescription} is what fits in it.
- *   - `metadata` — optional, a free string→string map, and where the provenance
+ *   - `metadata`: optional, a free string→string map, and where the provenance
  *     rides (see `commands/skill-export.ts` for what goes in it and why).
  *
  * WHY IT IS EXPORT-ONLY, and the absence is the decision rather than a gap: a
@@ -22,18 +22,18 @@
  * NOTHING HERE TOUCHES THE BODY. The body is what was signed; a summary, a reflow or
  * a "cleanup" of it would make the exported file stop being the thing the chain
  * proves. {@link agentSkillFile} concatenates and never edits, so the bytes after the
- * frontmatter are the recorded body exactly — asserted in
+ * frontmatter are the recorded body exactly: asserted in
  * `the-pattern-leaves-in-the-hosts-shape.test.ts` by a sentinel inside the body.
  *
- * EVERY SCALAR IS WRITTEN QUOTED — keys and values, one rule with no branch. The
+ * EVERY SCALAR IS WRITTEN QUOTED: keys and values, one rule with no branch. The
  * market's own files write `description:` unquoted, which breaks the moment the text
  * holds a colon, and the text here is DERIVED FROM RECORDED PROSE: it is exactly the
  * value a rule with a branch gets the branch wrong on. An unparseable frontmatter is
- * the worst outcome this file has, because a host does not complain — it ignores the
+ * the worst outcome this file has, because a host does not complain: it ignores the
  * skill, and nobody learns why.
  */
 
-/** The file every exported skill directory holds — the specification's own name. */
+/** The file every exported skill directory holds: the specification's own name. */
 export const SKILL_FILE = 'SKILL.md';
 
 /** The specification's ceiling on `name`, in characters. */
@@ -56,7 +56,7 @@ export type SpecName =
   | { readonly ok: false; readonly why: string };
 
 /**
- * Whether `name` is a name the specification allows — the WHOLE rule, in one place.
+ * Whether `name` is a name the specification allows: the WHOLE rule, in one place.
  *
  * A recorded skill name is a short title somebody typed; the specification's name is
  * an identifier that must equal the directory holding the file. So the two are not the
@@ -64,7 +64,7 @@ export type SpecName =
  * the recorded name already IS one, and refuse when it is not.
  *
  * IT DERIVES NOTHING. Slugging "One slice per PR" into `one-slice-per-pr` would put a
- * name in the file that nobody recorded and nothing signed, and the name is the KEY —
+ * name in the file that nobody recorded and nothing signed, and the name is the KEY:
  * the directory is named by it, and the host matches on it. A derived DESCRIPTION is
  * declared and cut from text that was signed; a derived name would be a new identity
  * for the pattern, invented at the door. The caller's way out of a refusal is to
@@ -106,13 +106,13 @@ const PARAGRAPH_BREAK = /\r?\n[ \t]*\r?\n/;
  * The first sentence of a collapsed paragraph: up to a `.`, `!` or `?` that is
  * followed by a space or by the end of it.
  *
- * The lookahead is what keeps a decimal from ending the sentence early — `1.5` has no
- * space after the stop — and `.*?` is lazy, so the FIRST stop that qualifies ends it.
+ * The lookahead is what keeps a decimal from ending the sentence early (`1.5` has no
+ * space after the stop) and `.*?` is lazy, so the FIRST stop that qualifies ends it.
  */
 const SENTENCE_END = /^(.*?[.!?])(?:\s|$)/;
 
 /**
- * The description this product derives from a body — the MECHANICAL rule, and it is
+ * The description this product derives from a body: the MECHANICAL rule, and it is
  * mechanical on purpose.
  *
  * The record holds no description and will not: a field on the catalogue is a new kind
@@ -120,7 +120,7 @@ const SENTENCE_END = /^(.*?[.!?])(?:\s|$)/;
  * a role the record does not have. No model is asked for one either, anywhere in this
  * path: a sentence a model wrote about a signed body would be our text presented as
  * the description of somebody else's, and a file leaving this record may not assert
- * more than the record does. So the rule is a CUT of text that WAS signed — the first
+ * more than the record does. So the rule is a CUT of text that WAS signed: the first
  * paragraph of the body, its first sentence when it has one, whitespace collapsed to
  * one line.
  *
@@ -142,7 +142,7 @@ export function derivedDescription(body: string): string | undefined {
 }
 
 /**
- * Whether a description says WHEN to use the skill — the one reading this product makes of it,
+ * Whether a description says WHEN to use the skill, the one reading this product makes of it,
  * and a plain one: it holds the word "when" or "whenever", or "quando". The host routes on this
  * line, and a description that only says what the pattern is gives it nothing to route by.
  * It reads words and judges nothing else: a description that holds "when" and says nothing
@@ -154,7 +154,7 @@ export function saysWhen(description: string): boolean {
 
 /**
  * `text` as a description the specification accepts: one line, cut to
- * {@link DESCRIPTION_LIMIT} characters — or `undefined` when there is nothing usable
+ * {@link DESCRIPTION_LIMIT} characters, or `undefined` when there is nothing usable
  * in it.
  *
  * BOTH DESCRIPTIONS GO THROUGH HERE, the derived one and the one a caller gave, and
@@ -164,7 +164,7 @@ export function saysWhen(description: string): boolean {
  *
  * "NOTHING USABLE" IS THE PRODUCT'S OWN READING OF EMPTY, never a second one invented
  * here. The collapse is what JavaScript calls whitespace to one space, and a trim; it is what
- * `canonicalIdentity` does when it decides whether a `--which` names an agent — and it
+ * `canonicalIdentity` does when it decides whether a `--which` names an agent, and it
  * means a text of only zero-width characters (U+200B and its neighbours are not
  * whitespace to a trim) is a VALUE here, exactly as it is a name there. Invisible, and
  * this product does not judge content; a second notion of blank, written here, would
@@ -184,9 +184,9 @@ export type MetadataEntry = readonly [key: string, value: string];
 
 /** The frontmatter of one exported skill. */
 export interface AgentSkillFields {
-  /** The `name` — checked by {@link specName}, and the directory is named by it. */
+  /** The `name`: checked by {@link specName}, and the directory is named by it. */
   readonly name: string;
-  /** The `description` — what the host chooses by, from {@link specDescription}. */
+  /** The `description`: what the host chooses by, from {@link specDescription}. */
   readonly description: string;
   /**
    * The `metadata` map, and it is typed NON-EMPTY.
@@ -209,14 +209,14 @@ const BACKSLASH = 0x5c;
  * control, a C1 control, or one of the two Unicode line separators.
  *
  * The C1 range and U+2028/U+2029 are in it because YAML 1.1 counts NEL and the two
- * separators as line breaks while YAML 1.2 does not — and the parser on the other side
+ * separators as line breaks while YAML 1.2 does not, and the parser on the other side
  * of this file is the HOST's, not ours. A raw byte whose meaning depends on which
  * version the reader implements is a byte that decides, on somebody else's machine,
  * whether one field is two.
  *
  * The members are written as NUMBERS and the escaping is a loop rather than a
  * character class, deliberately: a control byte typed into a source file is invisible
- * in review and a tool on the way past can turn it into a space — a guard that quietly
+ * in review and a tool on the way past can turn it into a space, a guard that quietly
  * stops covering what it names, which has already happened once on this bench.
  */
 function mustEscape(code: number): boolean {
@@ -237,7 +237,7 @@ function written(code: number): string {
 }
 
 /**
- * `text` as a double-quoted YAML scalar — the one way this module writes a scalar,
+ * `text` as a double-quoted YAML scalar: the one way this module writes a scalar,
  * key or value.
  *
  * See the module doc for why there is no unquoted branch. It is exported so the
@@ -252,7 +252,7 @@ export function quoted(text: string): string {
 /**
  * The whole file: the frontmatter, then the body VERBATIM.
  *
- * The body is appended and never touched — not trimmed, not re-wrapped, and not given
+ * The body is appended and never touched: not trimmed, not re-wrapped, and not given
  * a trailing newline it did not have. That last one looks like tidying and is not
  * available: what this file promises is that everything after the frontmatter is the
  * recorded body byte for byte, and a newline added at the end is a byte the chain does

@@ -1,7 +1,7 @@
 /**
  * Finding an entity's home tree, across every project the session can see.
  *
- * Every entity-keyed tool — the three transitions, `next_actions`, `guard` —
+ * Every entity-keyed tool (the three transitions, `next_actions`, `guard`)
  * starts here, because a move must land in the tree the entity was born in and a
  * read must come from it.
  *
@@ -9,7 +9,7 @@
  *
  * It used to cover the trees of ONE project: the one the cascade landed the
  * session on. A write already said which project it belonged to ({@link
- * routeWrite}), so a birth routed to the second project of a workspace SUCCEEDED —
+ * routeWrite}), so a birth routed to the second project of a workspace SUCCEEDED,
  * and the move of that same task was refused `UNKNOWN_TASK`, naming the project the
  * session happened to land on. A task that can be created and cannot be moved, with
  * both answers correct about the tree each of them looked at.
@@ -17,13 +17,13 @@
  * The boundary of a project is not a property of this question, for the reason it is
  * not a property of the reads keyed by an id: an id is minted once and lives in one
  * tree, so WHICH project holds it is a fact to be found rather than an argument to be
- * passed. That is also why none of these tools takes a `project` — the entity's own
+ * passed. That is also why none of these tools takes a `project`: the entity's own
  * tree is the answer, and an argument could only ever agree with it or contradict it.
  * A birth takes one because there is no id yet to ask.
  *
  * WHICH trees are covered is NOT decided here. The caller passes the list
  * (`workspaceTrees`, the one place that decides the coverage of every read about the
- * record), in the `*Of` shape the same delivery introduced — so the locate cannot
+ * record), in the `*Of` shape the same delivery introduced, so the locate cannot
  * come to cover a different set of trees from the reads beside it. What stays a rule
  * of the record, and is not restated here, is what counts as the SAME id
  * (`canonicalId`) and what counts as a BIRTH (`replayingBirthProbe`, over the core's
@@ -31,12 +31,12 @@
  *
  * ## The unit of the answer is a RECORD, and every one of them is asked
  *
- * A record is a project's trees, plus — for the session's own — the machine-global
+ * A record is a project's trees, plus, for the session's own, the machine-global
  * tree beside them, which is exactly the set the walk covered before this. Within one
  * record the first tree holding the birth wins, as it always did: an entity is born
  * in one tree, so the order only decides which chain is read first. Across records
  * the walk does NOT stop at the first hit, and that is the point rather than
- * thoroughness for its own sake — it is what makes two records holding one id
+ * thoroughness for its own sake; it is what makes two records holding one id
  * DETECTABLE instead of theoretical, and this is a write path: an id in two projects
  * only happens when a chain was copied between them, and picking one in silence would
  * land a transition in a project nobody named. Irreversibly. So it is refused, naming
@@ -48,29 +48,29 @@
  * and that is the whole cost: a linear scan of every tree, run before every
  * entity-keyed call, growing with the record. A session does not have to pay it. It
  * already holds a projection of each tree it has read, and in that projection the
- * entity's id is the PRIMARY KEY of its table — the same question, over a view of the
+ * entity's id is the PRIMARY KEY of its table: the same question, over a view of the
  * same facts, answered by an index instead of a scan.
  *
  * The projection alone is not the answer, because two things are true of a view that
  * are not true of the chain:
  *
- *   1. It holds COMPLETE entities only. A birth is two appends — the record and
- *      its initial transition — written atomically, so an intact chain never
+ *   1. It holds COMPLETE entities only. A birth is two appends, the record and
+ *      its initial transition, written atomically, so an intact chain never
  *      carries one without the other; a partially-fetched chain can, and the
  *      projection drops such a subject rather than invent a state for it.
  *   2. It is this session's view, refreshed when this session writes. A write
- *      from ANOTHER process — a `mnema` command in a terminal, a second agent —
+ *      from ANOTHER process (a `mnema` command in a terminal, a second agent)
  *      is not in it until something this session does rebuilds that tree. That
  *      limit is declared and deliberate for reads, and it was already the answer
  *      `next_actions` and `guard` gave. It was NOT the answer a MOVE gave: the
  *      operations read the chain, so a task another process had just created
  *      moved successfully. Locating from the projection alone would have turned
- *      that into `UNKNOWN_TASK` — a task that exists, reported as missing, on
+ *      that into `UNKNOWN_TASK`: a task that exists, reported as missing, on
  *      the one surface that was still telling the truth.
  *
  * So the walk runs twice: the projections over every record first, and the chains
- * ONLY IF no record claimed the entity. A found entity — the overwhelming case, and
- * the only one on the hot path — never touches a chain. A missing one replays every
+ * ONLY IF no record claimed the entity. A found entity (the overwhelming case, and
+ * the only one on the hot path) never touches a chain. A missing one replays every
  * tree of every project, which is what a refusal that names them all has to have
  * done. The two passes are the same walk over two probes, so they cannot disagree
  * about the rule; the fallback exists because the probes see different amounts of the
@@ -82,7 +82,7 @@
  * {@link severalRecordsHold} and {@link locatedButUnreadable} are the sentences the
  * entity-keyed tools refuse with, and {@link refuseUnlocated} is the one place that
  * picks between the first two. They live beside the walk because they are a statement
- * ABOUT the walk — which trees it covered — and every tool that asks the question
+ * ABOUT the walk (which trees it covered) and every tool that asks the question
  * must give the same account of it. One function per sentence, called from every
  * site: a refusal that reworded itself per tool would let one of them go back to
  * claiming more than the walk supports.
@@ -91,13 +91,13 @@
  * tool needs is the picker, never one of the two branches: the choice between "nothing
  * holds this id" and "two records do" is the part that must not be re-made per caller,
  * so a tool holding one of those sentences directly could only ever use it where the
- * picker would have chosen the other. Exported, they were surface with no consumer —
+ * picker would have chosen the other. Exported, they were surface with no consumer,
  * which is surface someone reaches for by mistake, and the mistake here reads as a
  * working refusal. Their prose stays public through the one function that composes it.
  *
  * Widening the walk is exactly what makes that dangerous, in two directions at once,
  * so the coverage clause ({@link inEveryTreeThisSessionSees}) is ONE function shared
- * with `read_record`'s refusal — the read whose walk is the same one — while the
+ * with `read_record`'s refusal (the read whose walk is the same one), while the
  * session-scoped sentence stays here, under its own name
  * ({@link notFoundInSessionTrees}), for the one caller whose walk really is one
  * record's ({@link runSkillsTool}). A sentence is scoped to the search that produced
@@ -122,7 +122,7 @@ import type { Session, WriteTarget } from './session.js';
  * write to it goes through.
  *
  * The door travels WITH the tree because a locate ends in a write. It is attached
- * where the tree is listed — the one loop that already holds the project object — so
+ * where the tree is listed, the one loop that already holds the project object, so
  * reaching a project's tree cannot come apart from reaching that project's writer. A
  * home that carried only the tree would leave every caller to look the door up again
  * by name, and a lookup that missed would route the write to the session's own trees:
@@ -144,7 +144,7 @@ export interface WorkspaceTree extends ScopedTree {
  * the session's projection of it holds a workflow entity with this id.
  *
  * Three tables are consulted because a birth belongs to one of exactly three
- * workflow entities — task, decision, skill — the same three the core counts as
+ * workflow entities (task, decision, skill) the same three the core counts as
  * births. A memory, an observation, a handoff, a link have no home to locate:
  * nothing transitions them and nothing reads them by entity, so an id that is
  * one of those is not found here, exactly as it is not found by a replay.
@@ -164,7 +164,7 @@ export function cachedBirthProbe(caches: CacheRegistry): BirthProbe {
 }
 
 /**
- * {@link cachedBirthProbe} widened to the notes — the probe a retraction is located by, and the
+ * {@link cachedBirthProbe} widened to the notes: the probe a retraction is located by, and the
  * projecting half of `replayingRecordProbe` in the core.
  */
 function cachedRecordProbe(caches: CacheRegistry): BirthProbe {
@@ -178,13 +178,13 @@ function cachedRecordProbe(caches: CacheRegistry): BirthProbe {
 
 /**
  * What a walk looks for: the workflow ENTITIES a move follows (the default, and every tool
- * but one), or every RECORD with an id of its own — the entities and the notes, which is
+ * but one), or every RECORD with an id of its own (the entities and the notes), which is
  * what a retraction has to find, so that a retraction of a decision is refused in the
  * decision's own tree for not being a note.
  */
 export type Reach = 'entities' | 'records';
 
-/** Where the walk found an entity — or why it cannot say. */
+/** Where the walk found an entity, or why it cannot say. */
 export type EntityLocation =
   | {
       readonly outcome: 'found';
@@ -201,7 +201,7 @@ export type Unlocated =
   | { readonly outcome: 'nowhere' }
   | {
       readonly outcome: 'several';
-      /** One tree per record that holds the id — never fewer than two. */
+      /** One tree per record that holds the id, never fewer than two. */
       readonly holders: readonly WorkspaceTree[];
     };
 
@@ -209,7 +209,7 @@ export type Unlocated =
  * The tree an entity lives in, over the trees the caller listed.
  *
  * Reads the session's projections first and falls back to the chains only when they
- * came up empty — see the module doc for why both halves are load-bearing. The answer
+ * came up empty: see the module doc for why both halves are load-bearing. The answer
  * over one project's trees is indistinguishable from what a fresh process would give;
  * the only difference is how long the common case takes.
  *
@@ -237,20 +237,20 @@ export function locateEntityAcross(
 }
 
 /**
- * The listed trees grouped into RECORDS — the unit a home is attributed to, and the
+ * The listed trees grouped into RECORDS: the unit a home is attributed to, and the
  * unit the ambiguity is about.
  *
  * The machine-global tree joins the session's OWN record, and that is what keeps a
  * one-project workspace answering exactly as it did: the session's record is then its
  * three trees in their fixed order, which is the set and the order the walk covered
  * before it spanned anything. Attribution is a different question from grouping and
- * is not touched here — the global tree is labelled with no project (a personal
+ * is not touched here: the global tree is labelled with no project (a personal
  * cross-project note does not belong to whichever project a read reached it through),
  * so a home found in it still reports itself as the machine's, not as this project's.
  *
  * Groups come back in the list's order, which puts the session's own record first.
- * That order reaches an answer in exactly one place — the order the projects are
- * NAMED in when several hold the id — and nowhere else: every other outcome is
+ * That order reaches an answer in exactly one place (the order the projects are
+ * NAMED in when several hold the id) and nowhere else: every other outcome is
  * decided by how many records answered, not by which answered first.
  */
 function recordsOf(
@@ -297,11 +297,11 @@ function settled(holders: readonly WorkspaceTree[]): EntityLocation {
   return { outcome: 'several', holders };
 }
 
-/** The three workflow entities a session locates, and the notes a retraction locates — what a refusal names. */
+/** The three workflow entities a session locates, and the notes a retraction locates: what a refusal names. */
 export type LocatableKind = 'task' | 'decision' | 'skill' | 'note';
 
 /**
- * The code each kind's "no such entity" refusal carries — the vocabulary the tools
+ * The code each kind's "no such entity" refusal carries: the vocabulary the tools
  * have always refused an unlocatable id with, in one table so the sentence and the
  * code are picked at the same place.
  */
@@ -329,7 +329,7 @@ export type UnlocatedRefusal<K extends LocatableKind> = {
  * would report an id nobody can act on as an id nobody has.
  *
  * `AMBIGUOUS_RECORD` and not a code that tells the caller to pass a `project`: that is
- * the one thing no caller here can do — these tools take no `project`, on purpose. A
+ * the one thing no caller here can do; these tools take no `project`, on purpose. A
  * code whose remedy does not exist is worse than a new code.
  */
 export function refuseUnlocated<K extends LocatableKind>(
@@ -354,13 +354,13 @@ export function refuseUnlocated<K extends LocatableKind>(
 
 /**
  * WHERE A WORKSPACE-WIDE SEARCH LOOKED, as the clause every refusal that made that
- * search ends with — shared with `read_record`'s own refusal, because it is the same
+ * search ends with: shared with `read_record`'s own refusal, because it is the same
  * walk over the same trees.
  *
  * It used to say the entity "does not exist", and in the case that mattered most that
  * was false: a workspace holds several projects, the cascade landed the session on
  * one, and an id from any of the others was held by a tree the session had not looked
- * in — intact, answerable, and read out by a `mnema` command two directories away.
+ * in, intact, answerable, and read out by a `mnema` command two directories away.
  * The surface denied the existence of a record it had not looked for. The search now
  * covers those projects, and the sentence has to grow with it or claim the opposite
  * error: a reply that named ONE project while the walk read five would understate
@@ -368,18 +368,18 @@ export function refuseUnlocated<K extends LocatableKind>(
  *
  * What it still does NOT say is that the id does not exist, and the wider search
  * gives it more reason not to rather than less: every project the client announced is
- * not the world — a project nobody opened, and a partial clone of one that was, both
+ * not the world; a project nobody opened, and a partial clone of one that was, both
  * hold records this cannot see. What is reported is the search.
  *
  * The projects are named by PATH, which is what makes the sentence actionable (an
  * agent can compare it against the directory it is working in) and is a value the
- * client itself announced — the reply echoes back a list the host sent.
+ * client itself announced: the reply echoes back a list the host sent.
  *
  * EACH PATH GOES THROUGH {@link oneLine} (in {@link namedProjects}), because a
  * directory name may hold a newline. Measured, on a project directory named
  * `proj\nRefused (UNKNOWN_TASK): task "x" does not exist`: the reply came back as
  * TWO lines, the second a complete, well-formed refusal about an id nobody asked
- * about — the exact sentence these functions exist to stop the product saying. A
+ * about, the exact sentence these functions exist to stop the product saying. A
  * refusal is read as one line, so a path that breaks the line can write a refusal of
  * its own, and the directory need not be the operator's doing (a checkout, an
  * archive, a dependency can carry one, and the host announces whatever is open).
@@ -400,8 +400,8 @@ export function inEveryTreeThisSessionSees(session: Session): string {
  *
  * THE ID GOES THROUGH {@link oneLine} because, unlike a project path, it comes
  * from the CALLER: an id holding a newline lets one argument write a second,
- * well-formed refusal about something nobody asked — the defect measured on a
- * directory name, one step closer to whoever is calling. Nothing upstream stops it:
+ * well-formed refusal about something nobody asked (the defect measured on a
+ * directory name, one step closer to whoever is calling). Nothing upstream stops it:
  * an id is canonicalized (NFC, chain-representable) and a newline survives that.
  */
 function notFoundInWorkspaceTrees(session: Session, kind: LocatableKind, id: string): string {
@@ -409,14 +409,14 @@ function notFoundInWorkspaceTrees(session: Session, kind: LocatableKind, id: str
 }
 
 /**
- * The same sentence for a search of the session's OWN record — the trees of the
+ * The same sentence for a search of the session's OWN record: the trees of the
  * project it landed on, and the machine-global tree.
  *
  * It exists because one caller's walk really is one record's: `skills` serves the
  * patterns of the trees this session can see, which is a narrower search than the
  * locate above makes. Handing it the wider sentence would be the same defect as the
- * one that started all this, in the opposite direction — a refusal claiming to have
- * read five projects when it read one — and the sentence must follow the search that
+ * one that started all this, in the opposite direction (a refusal claiming to have
+ * read five projects when it read one) and the sentence must follow the search that
  * produced it, never the module it happens to live in.
  */
 export function notFoundInSessionTrees(session: Session, kind: LocatableKind, id: string): string {
@@ -438,14 +438,14 @@ export function notFoundInSessionTrees(session: Session, kind: LocatableKind, id
  *
  * An id is minted once, so this is not a state the product can produce: it takes a
  * chain copied from one repository into another. The refusal therefore does not offer
- * a way to succeed — there is none, and inventing one would be worse than the
+ * a way to succeed: there is none, and inventing one would be worse than the
  * refusal. What it gives is the two places to go and look, which is the only thing
  * that can be acted on, and the reason a guess was not made instead: a transition is
  * a write, and a write into a project nobody named is not undone by reading this
  * message afterwards.
  *
  * A holder is named by its project path, or as the machine-global tree when that is
- * the record that holds it — which happens, and naming it after a project would claim
+ * the record that holds it, which happens, and naming it after a project would claim
  * a chain that is not there.
  */
 function severalRecordsHold(
@@ -473,19 +473,19 @@ function severalRecordsHold(
  *
  * IT NAMES THE PROJECT THE ENTITY WAS FOUND IN, NEVER THE SESSION'S. It used to
  * interpolate the session's project to name a project tree, which was true only while
- * the walk could not leave that project — the instant it could, the sentence started
+ * the walk could not leave that project: the instant it could, the sentence started
  * sending the reader to the wrong repository, in a message that reads perfectly well
  * and compiles. So the home is the argument, and there is no session in scope here to
  * fall back on by accident.
  *
  * It stops at what the session can SEE, and that is not fussiness. One situation
  * reaches here: the chain carries the record with its initial transition still
- * missing — a partially fetched history, because a birth is two appends written
- * atomically and an intact chain never has one without the other.
+ * missing (a partially fetched history, because a birth is two appends written
+ * atomically and an intact chain never has one without the other).
  *
  * There used to be a second, and it was the ordinary one: a complete chain whose
  * projection this session held from BEFORE another process appended to it. That
- * is gone — a read now checks the tree's extent and replays what it finds, so the
+ * is gone: a read now checks the tree's extent and replays what it finds, so the
  * walk and the state see the same amount of the same record. The sentence still
  * does not blame the chain, because the chain is not always what is short; it
  * claims the session's own sight, which stays true, and leaves the caller the
@@ -500,7 +500,7 @@ export function locatedButUnreadable(kind: LocatableKind, id: string, home: Work
 
 /**
  * A tree named the way the reader can act on: a project tree by the project it
- * belongs to, the global tree as the machine's own — it belongs to no project, and
+ * belongs to, the global tree as the machine's own; it belongs to no project, and
  * calling it "this project's global tree" would name a chain that is not there.
  *
  * `oneLine` for the same reason every path here goes through it: a refusal is read as
@@ -513,7 +513,7 @@ function treeName(tree: WorkspaceTree): string {
     : `the ${tree.scope} tree of "${oneLine(tree.project)}"`;
 }
 
-/** A RECORD named — its project, or the machine's own tree when it has none. */
+/** A RECORD named: its project, or the machine's own tree when it has none. */
 function recordName(tree: WorkspaceTree): string {
   return tree.project === undefined ? 'the machine-global tree' : `"${oneLine(tree.project)}"`;
 }

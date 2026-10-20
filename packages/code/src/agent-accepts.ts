@@ -1,5 +1,5 @@
 /**
- * An agent ruling a decision in force — free, always on the record, always said, and with a
+ * An agent ruling a decision in force: free, always on the record, always said, and with a
  * switch for whoever wants it shut.
  *
  * THE DECISION THIS FILE CARRIES, as the person who owns the product made it: *"the agent may
@@ -7,7 +7,7 @@
  * setting."* So an agent's `accept` is NOT refused by default and is NOT held for a person.
  * What the product owes instead is the three things the sentence names:
  *   - the trail: the accepting event's envelope already says which agent executed it, and the
- *     readings (`show`, `brief`, the console) say it from there — nothing is added to the
+ *     readings (`show`, `brief`, the console) say it from there; nothing is added to the
  *     record;
  *   - the notice: the tool's reply says the acceptance was recorded as an agent's (the CLI says
  *     it too, when an agent drives it with `--which`), and the document the next session opens
@@ -35,7 +35,7 @@ export const AGENT_ACCEPTS_IS_OFF = 'AGENT_ACCEPTS_IS_OFF';
 
 /**
  * Whether `agent` may accept: `undefined` when it may, and the refusal's code and words when
- * the switch is off. A person (no agent) and every action other than `accept` are not asked —
+ * the switch is off. A person (no agent) and every action other than `accept` are not asked:
  * the switch is about an agent ruling a decision in force and about nothing else it does.
  */
 export function agentMayAccept(
@@ -56,7 +56,7 @@ export function agentMayAccept(
 }
 
 /**
- * What an acceptance by an agent says about itself, in the reply to the agent that made it —
+ * What an acceptance by an agent says about itself, in the reply to the agent that made it:
  * a statement of what is now true, which is also what a person reading the transcript needs.
  */
 export function acceptedByAnAgent(agent: string): string {

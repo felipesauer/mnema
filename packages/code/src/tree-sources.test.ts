@@ -4,7 +4,7 @@
  * That file asserts that every door of this package goes through {@link withCache} and
  * {@link withOpenedCaches}. It says nothing about whether those two close, and a
  * centralisation onto a function that leaks is a leak with one site instead of three. What
- * is asserted here is the close itself, OBSERVED — not by counting handles, which nothing
+ * is asserted here is the close itself, OBSERVED, not by counting handles, which nothing
  * here can do, but by the one thing a closed SQLite connection does differently from an
  * open one: it refuses to answer.
  */
@@ -20,7 +20,7 @@ import { withCache, withOpenedCaches } from './tree-sources.js';
 let sandbox: string;
 let chainRoot: string;
 /**
- * A context holding a public tree and no private one — written as the type rather than
+ * A context holding a public tree and no private one: written as the type rather than
  * cast into it, because nothing type-checks a `.test.ts` in this workspace and a cast
  * here would be a fixture asserting a shape it never had.
  */
@@ -41,7 +41,7 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** Whether a cache still answers — the only observable difference a close makes. */
+/** Whether a cache still answers: the only observable difference a close makes. */
 function stillAnswers(cache: ProjectionCache): boolean {
   try {
     cache.listRuns();
@@ -54,7 +54,7 @@ function stillAnswers(cache: ProjectionCache): boolean {
 describe('withCache closes what it opened', () => {
   it('answers while the read runs and refuses afterwards', () => {
     const escaped = withCache(chainRoot, catalogUpcasters(), (cache) => {
-      // The cache is alive HERE — asserted inside, so a `close` moved before the read
+      // The cache is alive HERE: asserted inside, so a `close` moved before the read
       // would be red rather than silently serving nothing.
       expect(stillAnswers(cache)).toBe(true);
       return cache;

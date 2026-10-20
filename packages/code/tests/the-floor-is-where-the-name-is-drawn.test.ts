@@ -1,5 +1,5 @@
 /**
- * THE FLOOR IS WHERE THE NAME IS DRAWN — four things a caller asked for on a page they
+ * THE FLOOR IS WHERE THE NAME IS DRAWN: four things a caller asked for on a page they
  * annotated, and the frontier one of them moved.
  *
  * WHERE THE REQUIREMENT CAME FROM: a print of the console with four marks on it. *The bar
@@ -8,8 +8,8 @@
  * verbs should appear.* *The verbs in the search should have colour.*
  *
  * THE SECOND ONE IS A DEFINITION AND NOT A PREFERENCE, and it is what this file is named
- * after. The shortest window this console draws a page on used to be the CANONICAL TERMINAL —
- * eighty by twenty-four, what a terminal has been since the VT100 — which is a true sentence
+ * after. The shortest window this console draws a page on used to be the CANONICAL TERMINAL
+ * (eighty by twenty-four, what a terminal has been since the VT100), which is a true sentence
  * about terminals and was never a statement about this product. What replaces it is the
  * caller's own line: the smallest window is the one where the name still appears whole. The
  * height was MEASURED rather than chosen, by driving the built binary on a real
@@ -20,7 +20,7 @@
  * once you start typing* and delivered a bare bar with no list; the premise under it was that
  * *what exists* is not a question. The page falsified it: a bar with a slash in it and nothing
  * under it is a reader asking what there is, and nothing is the wrong answer. It is not a
- * regression — the premise is named where it was written, in `src/repl/palette.ts` and in the
+ * regression: the premise is named where it was written, in `src/repl/palette.ts` and in the
  * cases that held it.
  *
  * WHAT THIS FILE HOLDS, and what each part needs its instrument for:
@@ -39,7 +39,7 @@
  *   - THE MARGIN: at the floor the widest thing the page draws is on it whole. A margin is
  *     columns of the PAGE, never a character of a line.
  *   - AND THE SITES, BY THE DISCRIMINANT: the floor, the margin, what decides whether the list
- *     opens, and what composes the line of an offer — each found by what it IS in the source
+ *     opens, and what composes the line of an offer, each found by what it IS in the source
  *     rather than by a list kept here.
  */
 
@@ -77,7 +77,7 @@ import {
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { type Screen, screenOf } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** `packages/code/src`, for the guards that read this surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -89,7 +89,7 @@ const OPENED = 'a session over this project';
 /** The first words of the screen a window under the floor is shown. */
 const TOO_SMALL = 'The window is too small for the console';
 /**
- * THE GUIDE DOWN THE MARGIN — BOX DRAWINGS LIGHT VERTICAL, U+2502.
+ * THE GUIDE DOWN THE MARGIN: BOX DRAWINGS LIGHT VERTICAL, U+2502.
  *
  * Spelled by its code point rather than typed, like every unusual byte in this repository: a
  * glyph a reader cannot tell from a pipe is a glyph an edit destroys without anybody seeing it
@@ -100,11 +100,11 @@ const THE_GUIDE = '\u2502';
 /** The key a caller sends to walk down a list. */
 const MOVES_DOWN = `${ESC}[B`;
 /**
- * WHAT ABANDONS THE ROW BEING TYPED — Ctrl-C, and every case here that types something needs
+ * WHAT ABANDONS THE ROW BEING TYPED: Ctrl-C, and every case here that types something needs
  * it before it leaves.
  *
  * The key that ends the input is answered on an EMPTY row, exactly as a shell answers it, so a
- * session left with a slash still on the row never comes back — measured, as a whole run timing
+ * session left with a slash still on the row never comes back: measured, as a whole run timing
  * out rather than as a step failing.
  */
 const CLEARS_THE_LINE = '\u0003';
@@ -172,7 +172,7 @@ const opens: Step = opensAConsole(PROMPT);
 const leaves: Step = leavesTheSession;
 
 /**
- * A PAGE THAT COSTS NOTHING, so the drawing that comes back is the one the WIDTH allows —
+ * A PAGE THAT COSTS NOTHING, so the drawing that comes back is the one the WIDTH allows,
  * which is how the biggest form is named without a copy of the art in this file.
  */
 const drawnAcross = (columns: number): readonly string[] =>
@@ -182,7 +182,7 @@ const drawnAcross = (columns: number): readonly string[] =>
 const THE_WHOLE_NAME = drawnAcross(200);
 
 /**
- * ONE ROW OF THE DRAWING, and the widest one — which is what the two promises below need of
+ * ONE ROW OF THE DRAWING, and the widest one, which is what the two promises below need of
  * it. It is a LINE of the art rather than a count of rows, because a count is answered by any
  * nine rows of anything.
  */
@@ -199,7 +199,7 @@ const AN_UNMISTAKABLE_ROW = [...THE_WHOLE_NAME].reduce((widest, row) =>
 function everythingOffered(): readonly CompletionWord[] {
   const built = buildProgram(quiet, [], renderPlain);
   // IT IS A SET HERE, AND IT USED TO BE SORTED. The cases below ask HOW MANY words there are and
-  // whether a row on a screen names one of them, never which comes first — and the sort was a
+  // whether a row on a screen names one of them, never which comes first, and the sort was a
   // reading of the product's order kept in this file, which is a thing to keep in step with a
   // decision that lives somewhere else (`src/repl/complete.ts`, `theOrder`: the verbs first, the
   // words the session answers to itself after them). What is asserted about the order is
@@ -222,8 +222,8 @@ async function openedAt(columns: number, rows: number): Promise<Screen> {
 
 describe('the floor is the height the whole name is drawn at', () => {
   it('draws the whole name at the exact floor, and no page one row under it', async () => {
-    // THE PROMISE, ON THE PAGE. It is asserted by a ROW OF THE ART — the widest one, read off
-    // the module — rather than by counting rows of chrome: a count is satisfied by nine rows of
+    // THE PROMISE, ON THE PAGE. It is asserted by a ROW OF THE ART (the widest one, read off
+    // the module) rather than by counting rows of chrome: a count is satisfied by nine rows of
     // anything, and what a caller asked for is that the name is there.
     const atTheFloor = await openedAt(THE_FLOOR.columns, THE_FLOOR.rows);
     expect(atTheFloor.text, 'the floor never opened a console').toContain(PROMPT);
@@ -238,7 +238,7 @@ describe('the floor is the height the whole name is drawn at', () => {
       );
     }
 
-    // AND ONE ROW UNDER IT THERE IS NO PAGE AT ALL — which is what the floor being a floor
+    // AND ONE ROW UNDER IT THERE IS NO PAGE AT ALL, which is what the floor being a floor
     // means, and it is the declared cost of the decision rather than a degradation.
     const under = await openedAt(THE_FLOOR.columns, THE_FLOOR.rows - 1);
     expect(under.text, 'one row under the floor still drew a console').not.toContain(OPENED);
@@ -253,8 +253,8 @@ describe('the floor is the height the whole name is drawn at', () => {
   it('is three times what the arrangement costs on that page, which is the rule that chose it', async () => {
     // THE LINK BETWEEN THE NUMBER AND THE RULE THAT PRODUCED IT, and it is the case that catches
     // the floor drifting away from the drawing without anybody noticing. What refuses a drawing
-    // is the SHARE a fixed region may hold — one part in three (`src/repl/panel.ts`,
-    // `theShortestScreenFor`) — and the floor is the height at which the whole name stops being
+    // is the SHARE a fixed region may hold, one part in three (`src/repl/panel.ts`,
+    // `theShortestScreenFor`), and the floor is the height at which the whole name stops being
     // refused. So three times what the arrangement really costs on the page at the floor has to
     // BE the floor, and the cost is measured on the page rather than worked out here.
     const columns = THE_FLOOR.columns;
@@ -274,7 +274,7 @@ describe('the floor is the height the whole name is drawn at', () => {
     // WHAT THE REGION COSTS IS READ OFF THE SEAM, which is the row the region closes with: a
     // rule across the page and one row of breath under it (`src/repl/region.ts`, `theTop`). IT
     // WAS THE ROWS TWO PAGES OF ONE SESSION SHARE AT THE TOP, and that is a measurement of
-    // something else on a page whose roll has not yet overflowed — the first lines of the roll
+    // something else on a page whose roll has not yet overflowed: the first lines of the roll
     // do not move either, so the count came back two rows long and would have gone on agreeing
     // with itself.
     const isRule = (row: string): boolean => /^\u2500+$/.test(row.replace(/\s+$/, ''));
@@ -285,8 +285,8 @@ describe('the floor is the height the whole name is drawn at', () => {
       THE_FLOOR.rows,
     );
     // AND ONE ROW MORE OF ARRANGEMENT WOULD WANT A TALLER SCREEN THAN THE FLOOR, which is what
-    // says the mechanism is live rather than retired: a page heavier than this one — a project
-    // with one more tree in its record, say — is still given a smaller drawing above this floor.
+    // says the mechanism is live rather than retired: a page heavier than this one (a project
+    // with one more tree in its record, say) is still given a smaller drawing above this floor.
     expect(
       theShortestScreenFor(fixed + 1),
       'an arrangement one row taller would still fit the floor',
@@ -322,7 +322,7 @@ function pickedOn(screen: Screen): string {
 describe('a bare slash shows what there is, and the letter narrows THAT list', () => {
   it('shows four navigable words and says how many it could not, and a letter keeps the ceiling', async () => {
     // WHAT THE CALLER ASKED FOR: *when a slash is given, the preview of the navigable verbs
-    // should appear*. Three claims in one run, because they are one behaviour — the list is
+    // should appear*. Three claims in one run, because they are one behaviour: the list is
     // there, the arrows move through it, and a letter narrows the SAME list rather than opening
     // a second one.
     const columns = 120;
@@ -336,8 +336,8 @@ describe('a bare slash shows what there is, and the letter narrows THAT list', (
       steps: [
         opens,
         // WHAT THIS KEYSTROKE PUT ON THE PAGE, and not the character anywhere in the stream: the
-        // opening writes a slash three ways over — the project's path, the record's `T1/T2/T4`
-        // and the hint that names this very key.
+        // opening writes a slash three ways over (the project's path, the record's `T1/T2/T4`
+        // and the hint that names this very key).
         { types: PREFIX, until: arrivedSince(CUT), what: 'opened the preview' },
         { types: MOVES_DOWN, until: arrivedSince(PICK), what: 'marked a row' },
         { types: 'v', until: arrivedUnpainted(`${PROMPT} ${PREFIX}v`), what: 'typed a letter' },
@@ -419,8 +419,8 @@ describe('the word in the list carries the accent, and the description does not'
     }
 
     // AND THE ACCENT IS ON THE WORD IN ONE AND NOWHERE IN THE OTHER. What is looked for is the
-    // accent IMMEDIATELY BEFORE a word — the word painted, rather than paint anywhere on a page
-    // that is full of it — and the escapes are read off a line the product composes rather than
+    // accent IMMEDIATELY BEFORE a word (the word painted, rather than paint anywhere on a page
+    // that is full of it) and the escapes are read off a line the product composes rather than
     // typed here (`src/presentation/styled.ts`).
     const painted = renderStyled({ indent: 0, parts: [asWord('search')] });
     const accent = painted.slice(0, painted.indexOf('search'));
@@ -455,13 +455,13 @@ describe('the word in the list carries the accent, and the description does not'
 describe('the margin is none, and it eats nothing', () => {
   it('puts the widest thing the page draws on it whole, at the floor', async () => {
     // WHAT THE CALLER ASKED FOR: *the bar should pull back a little into the side margin*. What
-    // a margin may never do is cost a line a character — a value a reader cannot check is the
-    // one thing this surface refuses to print — so the promise is asked where the page is
+    // a margin may never do is cost a line a character (a value a reader cannot check is the
+    // one thing this surface refuses to print), so the promise is asked where the page is
     // tightest, which is the floor.
     const screen = await openedAt(THE_FLOOR.columns, THE_FLOOR.rows);
     expect(screen.text, 'the floor never opened a console').toContain(PROMPT);
     // THE WIDEST THING DRAWN INSIDE THE MARGIN IS THE ART, and every row of it is on the page
-    // whole — asserted above as well, and here it is the WIDTH that is the subject.
+    // whole: asserted above as well, and here it is the WIDTH that is the subject.
     const widest = [...AN_UNMISTAKABLE_ROW.trimEnd()].length;
     expect(widest, 'the drawing has no width at all').toBeGreaterThan(0);
     expect(
@@ -472,7 +472,7 @@ describe('the margin is none, and it eats nothing', () => {
       AN_UNMISTAKABLE_ROW.trimEnd(),
     );
     // AND NOTHING ON THE PAGE IS CUT. The one mark this surface cuts with is the palette's, and
-    // no list is open on a page that has just opened — so the mark's absence is the statement
+    // no list is open on a page that has just opened, so the mark's absence is the statement
     // that nothing was truncated to make room for the margin.
     expect(screen.text, 'something on the page was cut to fit the margin').not.toContain(CUT);
     // AND NO ROW RAN PAST THE EDGE, which is the other way a margin can cost a line: a row wider
@@ -523,7 +523,7 @@ function everySource(): readonly { readonly path: string; readonly code: string 
 
 describe('the four rules this delivery touched hold at every site, found by the discriminant', () => {
   it('indents the page from ONE statement of the margin, wherever it is drawn', () => {
-    // THE DISCRIMINANT IS THE LAYOUT'S OWN WORD FOR IT — `paddingLeft` — and not a list of
+    // THE DISCRIMINANT IS THE LAYOUT'S OWN WORD FOR IT (`paddingLeft`), and not a list of
     // files. Wherever a component of this console pushes something right, the number has to be
     // the margin's (`src/repl/inset.ts`); a literal there is a second statement of where the
     // page begins, and the two would disagree the first time one of them moved.
@@ -544,7 +544,7 @@ describe('the four rules this delivery touched hold at every site, found by the 
   it('decides whether the list opens in ONE place, asked by everything that draws one', () => {
     // WHAT DECIDES IF THE LIST OPENS is `offeredBy`, and the rule this delivery changed lives
     // inside it. A second reading of *is there a list on this row* is how a console comes to
-    // have two menus — which is the defect the palette was written to end.
+    // have two menus, which is the defect the palette was written to end.
     const declared = everySource().filter(({ code }) => /export function offeredBy\b/.test(code));
     expect(
       declared.map(({ path }) => path),
@@ -559,7 +559,7 @@ describe('the four rules this delivery touched hold at every site, found by the 
     // whether there is a list is the defect the palette exists to make impossible.
     expect(callers.length, 'nothing asks the rule at all').toBeGreaterThan(1);
     // AND NOBODY ANSWERS IT THEMSELVES. The discriminant is the comparison the rule is MADE of
-    // — what was typed, against the prefix — and the one other place in this package that
+    // (what was typed, against the prefix), and the one other place in this package that
     // strips a prefix is the completer, which does it to a CANDIDATE and not to the row. A
     // second module asking whether the row begins with a slash would be a second answer to
     // *is there a list open*, arrived at without calling the function that decides.
@@ -572,8 +572,8 @@ describe('the four rules this delivery touched hold at every site, found by the 
 
   it('gives every role a way to be drawn, so an offer’s line cannot acquire an emphasis nobody chose', () => {
     // THE SITES OF *WHAT COMPOSES THE LINE OF AN OFFER* ARE THE ROLE TABLES, and they are
-    // enumerated from the union rather than from a list here. Totality is enforced by the TYPE —
-    // the three tables are mapped over `Role`, so a role added without an entry does not build —
+    // enumerated from the union rather than from a list here. Totality is enforced by the TYPE
+    // (the three tables are mapped over `Role`, so a role added without an entry does not build)
     // and this is the reading of that guard which says what the N is: every role the union
     // declares is answered by each of the three, and the union is walked rather than retyped.
     const tables = ['PRECEDED_BY', 'OPENED_BY', 'TINTED_BY'];

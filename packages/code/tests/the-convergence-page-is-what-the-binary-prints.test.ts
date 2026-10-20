@@ -1,5 +1,5 @@
 /**
- * THE TWO MACHINES THE CONVERGENCE PAGE SHOWS ARE TWO MACHINES THE BINARY RUNS — every command of
+ * THE TWO MACHINES THE CONVERGENCE PAGE SHOWS ARE TWO MACHINES THE BINARY RUNS: every command of
  * the example, in order, and every line it printed.
  *
  * WHAT WOULD GO UNREAD WITHOUT IT. The page says what `show`, `brief` and `verify` print when two
@@ -13,7 +13,7 @@
  * shell reads them: `mkdir`, `cd`, `git` and `export MNEMA_HOME="$PWD/…"` are carried out, and each
  * `mnema` command runs through the built binary with its own `HOME` and the `MNEMA_HOME` the page
  * last exported. The `#>` lines under a command are held to what it printed, standard output and
- * standard error together, in the order a terminal shows them — the divergence line `show` writes
+ * standard error together, in the order a terminal shows them: the divergence line `show` writes
  * ahead of the record is on the error stream. A mark of a cut and what a run mints are read by the
  * one reading every such case shares (`support/a-page-held-to-a-run.ts`). And after the page's last
  * line, the second machine is asked the three questions the first was, and its answers are held
@@ -36,7 +36,7 @@ import { accountsFor, asMinted } from './support/a-page-held-to-a-run.js';
 import { read } from './support/published-examples.js';
 import { argvOf } from './support/reading-a-shell-line.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 const PAGE = 'docs/convergence.md';

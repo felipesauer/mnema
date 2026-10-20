@@ -1,10 +1,10 @@
 /**
- * WHAT THE AGENT JUST DID — the record moving under an open session, and the caller
+ * WHAT THE AGENT JUST DID: the record moving under an open session, and the caller
  * seeing it.
  *
  * The console runs no verb that writes, by default-deny over each verb's own declaration
  * (`repl/gate.ts`). So nothing a caller types can move the record, and every occurrence
- * this surface shows is somebody ELSE's append — which is what makes the case shape
+ * this surface shows is somebody ELSE's append, which is what makes the case shape
  * itself: the writing is done by ANOTHER PROCESS, on a real pseudo-terminal, while the
  * session is up. A case that appended in-process would be proving a callback, not the
  * feature.
@@ -15,22 +15,22 @@
  *   - THE OCCURRENCE LANDS IN THE SCROLLBACK, like every line the session says. Never in
  *     the region the layout redraws: that region has a budget, and a list growing inside
  *     it walks the console into the height at which the library stops redrawing PART of
- *     the screen and starts redrawing all of it — the whole page rewritten over the
+ *     the screen and starts redrawing all of it, the whole page rewritten over the
  *     caller's, with the erase this product refuses inside the sequence it does it with
  *     (`a-page-that-opens-clean.test.ts` measures that boundary in both directions). It is
  *     asserted twice, and only the second one has teeth: the arrangement from the badge
  *     down is compared before and after, which a region that grew UPWARDS would survive
- *     (measured — a mutation that put the occurrences in the palette left that case green);
+ *     (measured: a mutation that put the occurrences in the palette left that case green);
  *     and the session is then run ON the boundary, where one more row of region IS that
  *     path, with the height bracketed rather than assumed. THE BOUNDARY USED TO BE
- *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now — it is
- *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`) — so what brackets
+ *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now; it is
+ *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`), so what brackets
  *     it is the library's own replay of what it keeps.
  *   - WHAT WAS ALREADY SAID IS NOT UNSAID. An occurrence about a record named ABOVE on the
  *     page lands UNDER it, because a surface whose whole argument is that the scrollback
  *     is the feature may not rewrite it.
  *   - THE LINE COMES FROM `presentation/`, so an occurrence reads exactly like the same
- *     event read back by `timeline` — asserted against the composer rather than against a
+ *     event read back by `timeline`: asserted against the composer rather than against a
  *     retyped string.
  *   - AND THE CADENCE IS THE ONE THAT ALREADY EXISTED. A settled resize and a question to
  *     the record wait the same tenth of a second, out of one constant, because they are
@@ -67,7 +67,7 @@ import { screenOf } from './support/screen.js';
 /** `packages/code/src`, for the guards that read this surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
-/** The built CLI — the same file the `mnema` bin points at, and what the other process runs. */
+/** The built CLI: the same file the `mnema` bin points at, and what the other process runs. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
@@ -76,16 +76,16 @@ const PROMPT = 'mnema>';
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, never typed. */
 const CLEARS_THE_LINE = '\u0003';
 
-/** The agent the other process writes as — the name that has to reach the page. */
+/** The agent the other process writes as: the name that has to reach the page. */
 const THE_AGENT = 'the-agent-that-wrote-it';
 
 /**
- * WHAT THE VERDICT OF A GOOD TREE SAYS — one spelling, read by the step that waits for the
+ * WHAT THE VERDICT OF A GOOD TREE SAYS: one spelling, read by the step that waits for the
  * verb's answer and by the case that counts what was said.
  *
  * THE TWO USED TO SPELL IT DIFFERENTLY, and that is what made this run flaky: the step
  * waited for `integrity`, and the OPENING PANEL already says it. So the step could end on the
- * opening frame — before the verb had answered — and the case under it then read one occurrence
+ * opening frame (before the verb had answered) and the case under it then read one occurrence
  * where the finished page has two. It went red once in a full-suite run and passed on its own
  * twice, which is the signature of a wait satisfied by the frame before the one it means.
  * The condition is the SECOND occurrence now: the panel says the sentence once, so the verb
@@ -97,8 +97,8 @@ const THE_VERDICT = 'local integrity verified';
  * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
- * was twenty-four rows. The floor is forty-two now — the height the name is drawn whole at,
- * worked out from the drawing rather than written down (`src/repl/floor.ts`) — so forty is under
+ * was twenty-four rows. The floor is forty-two now: the height the name is drawn whole at,
+ * worked out from the drawing rather than written down (`src/repl/floor.ts`), so forty is under
  * it, and a case that opened there would be driving
  * the screen that says the window is too small. Read off the product rather than retyped, so
  * the day the floor moves again these cases move with it.
@@ -123,7 +123,7 @@ async function shell(...argv: string[]): Promise<string> {
   return said.join('\n');
 }
 
-/** The id in what a write printed — the handle the record was minted under. */
+/** The id in what a write printed: the handle the record was minted under. */
 function mintedIn(said: string): string {
   const id = /\(([0-9a-f-]{36})\)/.exec(said)?.[1];
   if (id === undefined) throw new Error(`fixture: nothing printed an id: ${said}`);
@@ -187,7 +187,7 @@ const fixture = (): Fixture => ({
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
 /**
- * EVERYTHING THE SESSION SAID, ONCE EACH AND IN ORDER — the bytes written after the console
+ * EVERYTHING THE SESSION SAID, ONCE EACH AND IN ORDER: the bytes written after the console
  * gave the caller's screen back.
  *
  * THE STREAM STOPPED BEING A PAGE, which is what every count in this file had to move for.
@@ -294,12 +294,12 @@ describe('a session shows what another process wrote while it was open', () => {
     // IT COUNTED THE OCCURRENCES OF THE SENTENCE AND EXPECTED ONE, and that was wrong
     // about the page rather than about the product: the opening panel states the same
     // verdict, so the session says it twice before anything moves. What the case is really
-    // about is the DIFFERENCE — as many times after the occurrences as before them.
+    // about is the DIFFERENCE, as many times after the occurrences as before them.
     // AND IT IS READ OFF THE TRANSCRIPT, which is where "said once" is a question with an
     // answer. In the stream every line is redrawn on every frame; on the caller's own buffer
     // each one appears exactly as often as the session said it ({@link transcript}).
     const said = THE_VERDICT;
-    // ONCE — the verb's answer. IT WAS TWICE, the panel's and the verb's, because the panel
+    // ONCE: the verb's answer. IT WAS TWICE, the panel's and the verb's, because the panel
     // was landed like a line; the arrangement is a REGION now and never goes on the roll
     // (`repl/panel.ts`, `Opening.above`), so the transcript holds only what was said.
     expect(times(transcript(ran.bytes), said), said).toBe(1);
@@ -307,7 +307,7 @@ describe('a session shows what another process wrote while it was open', () => {
     // the discriminant this suite already uses for "nothing was said twice".
     expect(times(transcript(ran.bytes), 'It runs the')).toBe(1);
     // NOR THE ERASE. The one sequence this product refuses to write is the one that takes
-    // the caller's own history with it, in any buffer — and a region that grew past the
+    // the caller's own history with it, in any buffer, and a region that grew past the
     // viewport is how it would arrive without anybody asking for it.
     expect(ran.bytes).not.toContain('\u001b[3J');
   });
@@ -315,18 +315,18 @@ describe('a session shows what another process wrote while it was open', () => {
   it('leaves the badge, the rules and the hint exactly where they were', () => {
     // ONE READING OF THE REGION, taken from the SCREEN rather than from the stream: what
     // the input area costs is rows on a terminal, and only a screen has any. What it covers
-    // is the arrangement from the badge DOWN — the two rules, the row being typed, the hint
-    // — which is what would move if an occurrence had landed among them.
+    // is the arrangement from the badge DOWN (the two rules, the row being typed, the hint),
+    // which is what would move if an occurrence had landed among them.
     //
     // IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
     // than left implied: the palette opens there, so a region that grew UPWARDS would leave
-    // this reading identical. Measured — a mutation that put the occurrences in the palette
+    // this reading identical. Measured: a mutation that put the occurrences in the palette
     // left this case green.
     //
     // IT USED TO SAY "the half with teeth is the boundary case below", AND THERE IS NO SUCH
     // CASE. It was the session run at the shortest height where a growing region could be
     // walked over the point at which the library redraws the whole screen, and it died with
-    // that boundary — the note further down this file records the removal. Nothing grows with
+    // that boundary: the note further down this file records the removal. Nothing grows with
     // what a session says any more: the middle region is a fixed-height window onto a roll, so
     // there is no boundary left for an occurrence to cross and no case to point at. What
     // covers the row above the badge now is `tests/the-input-has-its-own-place.test.ts`, where
@@ -339,8 +339,8 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes.slice(0, ran.at[3])).toContain(first);
     expect(ran.bytes.slice(0, ran.at[1])).not.toContain(first);
     // AND THE ONE THING THE READING ABOVE NO LONGER LOOKS AT, asserted here so that taking
-    // it out is a narrowing and not a hole: the corner DID change, because the record moved
-    // — which is the whole of why its text is not part of the shape. What it says while the
+    // it out is a narrowing and not a hole: the corner DID change, because the record moved,
+    // which is the whole of why its text is not part of the shape. What it says while the
     // record has moved is `the-corner-says-what-its-level-covers.test.ts`'s subject; what
     // this needs is that it is not the same row, so the exclusion above is doing work.
     expect(theCorner(ran.bytes.slice(0, ran.at[3]))).not.toBe(
@@ -351,8 +351,8 @@ describe('a session shows what another process wrote while it was open', () => {
   it('goes on answering the caller afterwards', () => {
     // THE WITNESS USED TO BE THE ECHO OF THE WORD THAT LEAVES, and there is no such word: the
     // way out is a key, and a key on an empty row echoes nothing to look for. What says the
-    // same thing more strongly is that the session ENDED at all — it read the keystroke,
-    // unwound, and gave the screen back — after the occurrences had landed on its page.
+    // same thing more strongly is that the session ENDED at all (it read the keystroke,
+    // unwound, and gave the screen back) after the occurrences had landed on its page.
     const gave = ran.bytes.lastIndexOf(`${ESC}[?1049l`);
     expect(gave, 'the session never gave the screen back').toBeGreaterThan(-1);
     expect(gave, 'the occurrence landed after the session had gone').toBeGreaterThan(
@@ -363,11 +363,11 @@ describe('a session shows what another process wrote while it was open', () => {
   // A CASE STOOD HERE AND IT DIED WITH THE BOUNDARY IT BRACKETED. It ran the session at the
   // shortest height where the layout still redrew PART of the page and one row below it, to prove
   // an occurrence landing could not push the region over the height at which the library redraws
-  // the WHOLE screen — the path whose sequence carries the erase of the caller's history.
+  // the WHOLE screen: the path whose sequence carries the erase of the caller's history.
   //
   // NOTHING GROWS WITH WHAT A SESSION SAYS ANY MORE. An occurrence goes on the roll, and the
   // middle region is a WINDOW onto it whose height is what the two fixed regions leave
-  // (`repl/scrolling.ts`, `repl/region.ts`) — so the region is the same height after ten thousand
+  // (`repl/scrolling.ts`, `repl/region.ts`), so the region is the same height after ten thousand
   // occurrences as after none, and there is no boundary for one to walk the page over. The frame
   // is fullscreen at every height by construction, which means the library's own path is reached
   // on every session there is; that it costs the caller's history nothing is asserted where it is
@@ -397,8 +397,8 @@ function entriesOfTheRecord(): string[] {
 }
 
 /**
- * THE TREES A SESSION OPENED HERE WOULD FOLLOW, out of the same call the opening pays for
- * — the committed one first, then this machine's private one.
+ * THE TREES A SESSION OPENED HERE WOULD FOLLOW, out of the same call the opening pays for:
+ * the committed one first, then this machine's private one.
  *
  * Asked of `runVerify` rather than joined out of path fragments, because that is where a
  * session takes them from: a case that spelled the directories would be asserting against
@@ -418,7 +418,7 @@ function withoutStyle(bytes: string): string {
 
 /**
  * The mark the badge opens with, spelled by its code point like every unusual glyph in
- * this repository — and the top of the region the layout redraws.
+ * this repository, and the top of the region the layout redraws.
  */
 const LEVEL_MARK = '◉';
 
@@ -426,18 +426,18 @@ const LEVEL_MARK = '◉';
  * THE SHAPE OF THE REGION THAT IS REDRAWN: every row of it, top to bottom.
  *
  * It is read off a replayed screen because the question is about rows a reader sees. The
- * region runs from the BADGE — the corner row, and the top of the tallest arrangement — to
+ * region runs from the BADGE (the corner row, and the top of the tallest arrangement) to
  * the last row anything is written on, which is the hint. An occurrence landing inside it
  * would put a row between those two that the reading before it does not have.
  *
  * IT WAS "EVERY ROW FROM THE PROMPT DOWN", and that measured the wrong thing twice: the
  * ECHO of a submitted line carries the prompt too and sits in the scrollback, and the blank
- * rows under the frame are as many as the page has not filled yet — so the reading moved
+ * rows under the frame are as many as the page has not filled yet, so the reading moved
  * with how much the session had said rather than with the shape of the region.
  *
  * WHAT THE BADGE'S ROW CARRIES IS NOT PART OF THE SHAPE, and that arrived when the corner
  * stopped being fixed for the session. The row is still where the region begins and it is
- * still COUNTED — it is one row, in this position, and a reading with an occurrence among
+ * still COUNTED: it is one row, in this position, and a reading with an occurrence among
  * these rows has it one further down. What is on it is replaced by the mark alone, text and
  * indent together, because the corner degrades the moment the record moves past what the
  * opening ruled on and it is drawn at the far END of its row, so its text and the blanks in
@@ -463,7 +463,7 @@ function shapeOfTheInput(bytes: string): readonly string[] {
   return shape;
 }
 
-/** The row the badge is on, as a reader sees it — the corner, trimmed. */
+/** The row the badge is on, as a reader sees it: the corner, trimmed. */
 function theCorner(bytes: string): string {
   const rows = screenOf(bytes, COLUMNS, ROWS).rows.map((row) => row.trimEnd());
   const at = lastIndexWhere(rows, (row) => row.includes(LEVEL_MARK));
@@ -476,7 +476,7 @@ function theCorner(bytes: string): string {
 // ---------------------------------------------------------------------------
 
 describe('following the record answers with what grew, and only once', () => {
-  /** The committed tree of this project — the one every write of these cases lands in. */
+  /** The committed tree of this project: the one every write of these cases lands in. */
   const roots = (): readonly string[] => [theTrees()[0] as string];
 
   it('answers with nothing at all while nothing moves', async () => {
@@ -491,7 +491,7 @@ describe('following the record answers with what grew, and only once', () => {
     const happened = following.whatHappened();
     expect(happened.map((event) => event.kind)).toContain('task.created');
     expect(happened.some((event) => event.subject === id)).toBe(true);
-    // ASKED AGAIN WITH NOTHING NEW: the mark has not moved, so there is nothing to say —
+    // ASKED AGAIN WITH NOTHING NEW: the mark has not moved, so there is nothing to say,
     // and an occurrence a caller has already read may not arrive a second time.
     expect(following.whatHappened()).toEqual([]);
     // And a follower built AFTER the append starts from there: what was already written is
@@ -516,8 +516,8 @@ describe('following the record answers with what grew, and only once', () => {
   });
 
   it('follows a tree that has no record yet, and says so when one appears', async () => {
-    // The private tree of a fresh project has nothing on disk at all — no tails, no
-    // directory — and a follower over it is a follower over an empty extent. The first
+    // The private tree of a fresh project has nothing on disk at all (no tails, no
+    // directory) and a follower over it is a follower over an empty extent. The first
     // thing written there is an occurrence, not a baseline.
     const following = followingTheRecord([theTrees()[1] as string]);
     expect(following.whatHappened()).toEqual([]);
@@ -558,7 +558,7 @@ describe('an occurrence is one line, whatever the record holds', () => {
 
   it('keeps a forged agent, id, instant and kind inside the line they were written in', () => {
     // THE SHARPEST FORM OF THE RULE. Elsewhere a broken field forges a row in a list under
-    // a header that counts them; here there is no list — the second half would be an
+    // a header that counts them; here there is no list: the second half would be an
     // occurrence that never happened, arriving in the caller's scrollback while they watch
     // and reading exactly like one that did.
     for (const breaker of BREAKERS) {
@@ -575,7 +575,7 @@ describe('an occurrence is one line, whatever the record holds', () => {
   });
 
   it('says a person when no agent did it, rather than leaving a gap', () => {
-    // An absent `which` is a FACT — somebody acted directly — and the word is the one the
+    // An absent `which` is a FACT, somebody acted directly, and the word is the one the
     // rest of the product uses for the same absence.
     expect(renderPlain(occurrenceLine(event({})))).toContain('a person');
     expect(renderPlain(occurrenceLine(event({ which: 'an-agent' })))).toContain('an-agent');
@@ -602,7 +602,7 @@ describe('the cadence is the one that already existed', () => {
     //
     // IT WAS TWO READERS OF ONE CONSTANT AND IT IS ONE, which is the count going DOWN and is
     // as much what this case is for. The same number was how long the terminal's size had to
-    // stop changing before the page was drawn again — a drag delivered a size every two or three
+    // stop changing before the page was drawn again: a drag delivered a size every two or three
     // milliseconds and each of them TURNED A PAGE, so the wait existed to coalesce them. Nothing
     // is turned now: a resize is a frame drawn at the size the device has when it is drawn
     // (`repl/console.ts`, `resized`), so there is nothing for a wait to coalesce and the damper
@@ -624,7 +624,7 @@ describe('the cadence is the one that already existed', () => {
 describe('what asks the disk about the record, on this surface', () => {
   /**
    * THE DOORS. Every way this product reaches a chain on disk: the replay, the verifier,
-   * the projections, the tails themselves — and the PROBE, which is not a read and is
+   * the projections, the tails themselves, and the PROBE, which is not a read and is
    * named here so it can be held to one module rather than left out of the question.
    */
   const DOORS = [
@@ -641,8 +641,8 @@ describe('what asks the disk about the record, on this surface', () => {
 
   it('is the opening and the probe, and nothing else redraws through either', () => {
     // THE SITES ARE FOUND BY THE DISCRIMINANT rather than by a list: every module of the
-    // session, asked which doors it names. Two of them may — the one that pays for the
-    // opening, and the one that asks whether anything moved — and a third would be a
+    // session, asked which doors it names. Two of them may (the one that pays for the
+    // opening, and the one that asks whether anything moved) and a third would be a
     // console that reads the record without being asked to.
     const opened: Record<string, string[]> = {};
     for (const file of modulesIn('repl')) {
@@ -651,14 +651,14 @@ describe('what asks the disk about the record, on this surface', () => {
     }
     // IT WAS TWO AND IT IS THREE, and the third is the one this list exists to make
     // visible. `proving.ts` asks whether the record has moved past what the opening ruled
-    // on — the same `chainExtent` the follower asks, and nothing else — because the corner
+    // on (the same `chainExtent` the follower asks, and nothing else), because the corner
     // was stating a level about a record it had not read: measured, the body printed `seq
     // gap` and the corner said `fully-signed` in the same frame. It is a THIRD module
     // rather than a field of the follower because the two answer different questions, and
     // folding them would make the feed show a duplicate as news.
     expect(Object.keys(opened).sort()).toEqual(['following.ts', 'proving.ts', 'session.ts']);
     // The opening pays a verify and asks nothing else; the probe asks the extent and reads
-    // the tail it names; the watch on the proof asks the extent and NOTHING else — which is
+    // the tail it names; the watch on the proof asks the extent and NOTHING else, which is
     // what makes each of them the ONE place its rule lives, and what says the corner did
     // not quietly gain a reader of tails.
     expect(opened['session.ts']).toEqual(['runVerify']);

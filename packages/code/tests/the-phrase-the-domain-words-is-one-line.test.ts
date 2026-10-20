@@ -1,7 +1,7 @@
 /**
  * EVERY VALUE THE DOMAIN PUTS IN A SENTENCE, AND WHERE IT CAME FROM.
  *
- * Two slices before this one closed the lines the SURFACE words — the wiring's, with a
+ * Two slices before this one closed the lines the SURFACE words: the wiring's, with a
  * template tag (`a-line-of-success-is-one-line.test.ts`), and the readings', value by
  * value (`the-line-a-reading-words-is-one-line.test.ts`). Both stopped at the same wall
  * and both named it: a sentence `@mnema/chain` or `@mnema/core` wrote is handed to the
@@ -11,7 +11,7 @@
  *
  * SO THE RULE CAME DOWN, and it came down further than the debt said. `@mnema/core` is
  * where the refusals of the whole product are worded, but it cannot hold the rule:
- * the dependency runs `core → chain`, and `@mnema/chain` words the verifier's findings —
+ * the dependency runs `core → chain`, and `@mnema/chain` words the verifier's findings,
  * which is the sharpest reader there is, because a verdict is what a third party reads
  * to decide whether to believe the record. `one-line.ts` is therefore in `@mnema/chain`,
  * published as its own subpath so reaching it is not reaching the proof engine, and
@@ -19,21 +19,21 @@
  * it is under everything.
  *
  * THE CLASS IS WHAT THESE PACKAGES RETURN, NEVER WHAT THEY THROW. A finding and a
- * refusal are one per line under a count; an exception is not — the line it eventually
+ * refusal are one per line under a count; an exception is not: the line it eventually
  * occupies is worded by the surface's last-resort catch, which is a different layer with
  * a rule of its own. So {@link sitesInSource} seeds on the three fields these packages
- * carry prose out in — `message`, `detail` and `reason` — plus the two a verdict's
+ * carry prose out in (`message`, `detail` and `reason`) plus the two a verdict's
  * clauses use, follows a sink that takes one as a parameter and a function that produces
  * one, and everything under a `throw` is out. That boundary is structural, so a parser's
  * complaint moving from an exception into a finding lands in the classification by
  * itself.
  *
  * NOTHING HERE IS FOUND BY A LIST. This series has now missed four times from the same
- * cause — a handoff's addresses standing in for a rule — and the handoff for THIS slice
+ * cause, a handoff's addresses standing in for a rule, and the handoff for THIS slice
  * says twenty-three sites, twelve in `core` and eleven in `chain`. It counted SENTENCES,
  * not values, and it counted only the ones written at a `detail:` or a `message:`
  * directly: the walk finds eighty-one values. Six of the ones it adds are in
- * `verifyTailOwnership`, which words its four findings through a local `push` — and one
+ * `verifyTailOwnership`, which words its four findings through a local `push`, and one
  * of those six is a forgery this file drives end to end.
  *
  * WHAT WAS OPEN, MEASURED AGAINST THE SHIPPED BINARY, and all three are driven below:
@@ -42,16 +42,16 @@
  *     lines, the second a whole sentence the record never said. `--fingerprint` is a
  *     positional nothing validates before the roster answers about it.
  *   - a `tailproof.json` holding a newline made `mnema verify` print a second line under
- *     the issue heading, through the JSON reader's own message — which quotes the bytes
+ *     the issue heading, through the JSON reader's own message, which quotes the bytes
  *     it choked on, newline and all.
  *   - a tail DIRECTORY named `aa\n  forged  public  a record nobody wrote` broke the
  *     issue line in two, twice over: once in the chain's own detail and once in the
  *     heading the wiring puts in front of it. Both halves are closed here.
  *
  * THE DISCRIMINANT IS THE ORIGIN OF THE VALUE and the question is the one this family
- * always asks — CAN THIS HOLD A NEWLINE. A count, a `seq`, a byte total, a word of a
+ * always asks: CAN THIS HOLD A NEWLINE. A count, a `seq`, a byte total, a word of a
  * closed union, a constant of the module that prints it cannot. What arrived through the
- * argv, came back OUT OF THE RECORD, or was read off this machine's disk can — and in
+ * argv, came back OUT OF THE RECORD, or was read off this machine's disk can, and in
  * the verifier that is nearly everything, because the verifier's whole premise is that
  * what it is reading may have been written by somebody it does not trust.
  */
@@ -73,7 +73,7 @@ const LAYERS: readonly { readonly name: string; readonly src: string }[] = [
 
 /** A newline, built rather than typed, so no literal in this file spans two lines. */
 const LF = String.fromCharCode(10);
-/** The collapse — `@mnema/chain/one-line`, and the one door these two packages have. */
+/** The collapse: `@mnema/chain/one-line`, and the one door these two packages have. */
 const DOOR = 'oneLine';
 
 /**
@@ -92,7 +92,7 @@ const CARRIES_PROSE = ['message', 'detail', 'reason', 'text', 'summary'] as cons
  *
  * `text` is not in it and that is deliberate: half the content layer takes a `text:
  * string`, and so does the rule of the line itself. What names a sink is a parameter
- * that means "the prose of a no" — `err(code, message)` in the gates, `push(detail)` in
+ * that means "the prose of a no": `err(code, message)` in the gates, `push(detail)` in
  * the verifier's ownership check.
  */
 const SINK_PARAMETERS: readonly string[] = ['message', 'detail', 'reason'];
@@ -105,8 +105,8 @@ const SINK_PARAMETERS: readonly string[] = ['message', 'detail', 'reason'];
  * The source with comments blanked and every offset kept, so a `detail:` inside a
  * paragraph of prose is not a field and a `//` never eats a line of code.
  *
- * Strings keep their content — a sentence is often a template followed by `+` and a
- * plain string — and templates are left whole, because their text is what
+ * Strings keep their content (a sentence is often a template followed by `+` and a
+ * plain string) and templates are left whole, because their text is what
  * {@link readTemplate} reads a shape out of.
  */
 function withoutComments(source: string): string {
@@ -267,7 +267,7 @@ function valueOfProperty(text: string, from: number): string {
   return out;
 }
 
-/** The top-level arguments — or parameters — of the list whose `(` is at `open`. */
+/** The top-level arguments, or parameters, of the list whose `(` is at `open`. */
 function argumentsOf(text: string, open: number): string[] {
   const found: string[] = [];
   let i = open + 1;
@@ -385,7 +385,7 @@ function functionBodies(text: string): Map<string, string> {
 interface Site {
   /** The package, and the file within its `src`. */
   readonly file: string;
-  /** The expression, as it is written — whitespace collapsed so a wrap cannot move it. */
+  /** The expression, as it is written: whitespace collapsed so a wrap cannot move it. */
   readonly expression: string;
   /** `<package> <file> «<shape>» <expression> #<n>`. */
   readonly key: string;
@@ -396,13 +396,13 @@ interface Walk {
   readonly sites: Site[];
   /** The fields that really did seed something, so no name in the list is decoration. */
   readonly seeded: Set<string>;
-  /** Functions taking the prose of a no as a parameter — a sink by its own signature. */
+  /** Functions taking the prose of a no as a parameter: a sink by its own signature. */
   readonly sinks: string[];
   /** Functions that PRODUCE one, reached from a sentence and followed into. */
   readonly producers: string[];
   /** Files that word at least one value into a sentence. */
   readonly wording: string[];
-  /** Files whose prose the walk never entered — the completeness hole, if any. */
+  /** Files whose prose the walk never entered: the completeness hole, if any. */
   readonly missed: string[];
 }
 
@@ -416,7 +416,7 @@ interface Walk {
  * THE SINK is a function whose parameter is named one of {@link SINK_PARAMETERS} and
  * typed `string`. The gates hand their refusals to `err(code, message)` and the
  * verifier's ownership check to a local `push(detail)`, so a walk that read only the
- * literal `message:` would have missed six sentences — four of them in the one function
+ * literal `message:` would have missed six sentences: four of them in the one function
  * whose forgery is measured. A call through a member (`issues.push`) is not one: the
  * name collides with an array's, and a scan that took it would count every object
  * pushed anywhere as a sentence.
@@ -426,7 +426,7 @@ interface Walk {
  * The expansion is a fixpoint, so a producer that words itself out of another one is
  * reached too.
  *
- * WHAT IS UNDER A `throw` IS NOT A SITE, and that is the class's edge — see this file's
+ * WHAT IS UNDER A `throw` IS NOT A SITE, and that is the class's edge: see this file's
  * head.
  */
 function walk(src: string): Walk {
@@ -507,7 +507,7 @@ function walk(src: string): Walk {
   }
 
   // A file that words a sentence with a value in it but yielded no site is a file this
-  // walk did not enter — which is the one way the classification below can be total
+  // walk did not enter, which is the one way the classification below can be total
   // about nothing. It is derived, so it cannot be forgotten.
   const wording = [...new Set(sites.map((site) => site.file))].sort();
   const missed: string[] = [];
@@ -567,26 +567,26 @@ const UNWALKED: string[] = FOUND.flatMap((layer) =>
 // ---------------------------------------------------------------------------
 
 /**
- * Where one value in a sentence came from — the answer to the one question this family
+ * Where one value in a sentence came from: the answer to the one question this family
  * asks.
  *
- *   - `collapsed` — it arrived through the argv, came back OUT OF THE RECORD, or was
+ *   - `collapsed`: it arrived through the argv, came back OUT OF THE RECORD, or was
  *     read off this machine's disk, so it goes through `oneLine` HERE. The table does
  *     not decide this: the expression really does hold the call, and a value that stops
  *     going through it goes red.
- *   - `minted` — it is the product's own and cannot hold whitespace: a count, a `seq`, a
+ *   - `minted`: it is the product's own and cannot hold whitespace (a count, a `seq`, a
  *     byte total, a word of a closed union, a field path of the content contract, a
  *     constant of the module that prints it, a fingerprint this run computed by hashing
- *     a key. It must NOT be collapsed, so a value that quietly stops being the product's
+ *     a key). It must NOT be collapsed, so a value that quietly stops being the product's
  *     own cannot keep this verdict.
- *   - `composed` — it is not text from anywhere yet: another function of this package
+ *   - `composed`: it is not text from anywhere yet; another function of this package
  *     words it, and every value THAT function puts in it is a site of its own.
  *
  * A NOTE ON THE VERIFIER, because it is where nearly every verdict is `collapsed` and
  * that looks excessive until you say why. Everywhere else in this product, "out of the
  * record" means text this product wrote and sealed. In `verify` it does not: the
  * verifier's whole premise is that the bytes under it may have been written by somebody
- * who wanted a particular answer. A tail id is a DIRECTORY NAME — anyone who can write
+ * who wanted a particular answer. A tail id is a DIRECTORY NAME: anyone who can write
  * the tree can create one. A signer fingerprint is a field of a stored entry. A reader's
  * complaint quotes the bytes it choked on. So the values in a finding are exactly the
  * values an adversary chooses, and the line they land on is the line a third party reads
@@ -598,9 +598,9 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * Every value these two packages put in a sentence, and where it comes from.
  *
  * The KEYS are reconciled against the source in both directions and the VERDICTS are
- * checked against it; the REASONS cannot be — no walk derives "a `seq` is a whole number
+ * checked against it; the REASONS cannot be: no walk derives "a `seq` is a whole number
  * the catalog requires" from an expression. So the table carries what a reader knows, and
- * the part that rots — which values exist, and whether each is collapsed — is derived.
+ * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
   '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it says nothing: » field #1':
@@ -1057,12 +1057,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the JSON reader’s own complaint, which quotes the stored bytes it choked on',
   },
   // THESE FOUR MOVED, and the move is the whole of what changed about them. The three
-  // structural questions a tail is asked — is the entry stored under the tail it names,
-  // does its seq follow, does its prev chain — are now ONE function in `chain/entry.ts`
+  // structural questions a tail is asked (is the entry stored under the tail it names,
+  // does its seq follow, does its prev chain) are now ONE function in `chain/entry.ts`
   // that the verdict and the plain READ of a tail both ask, because a reader more
   // lenient than the verifier is what let a record `verify` refuses be searched with no
   // word about it. The verdict still reaches these sentences, through a wording
-  // function called at its `detail:` — which is what keeps this walk able to see them —
+  // function called at its `detail:` (which is what keeps this walk able to see them)
   // and the values are the same four, so the verdicts below are the ones they had.
   '@mnema/chain chain/entry.ts «entry names tail {}, stored under {}» oneLine(broke.named) #1': {
     verdict: 'collapsed',
@@ -2017,7 +2017,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
  * What a file that words a sentence ALSO holds, and why none of it is one.
  *
  * The walk enters a file through a field a sentence leaves in. What it cannot see is a
- * template that same file builds for some other purpose — so every one of those is named
+ * template that same file builds for some other purpose, so every one of those is named
  * here, with what it is instead. It is reconciled in both directions: a template that
  * appears has to be declared, and a declaration whose template went away has to leave.
  */
@@ -2076,8 +2076,8 @@ describe('every value the domain puts in a sentence is classified', () => {
 
   it('walks enough to mean something', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
-    // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
-    // sites, twelve in `core` and eleven in `chain` — because it counted sentences
+    // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
+    // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
     expect(SITES.length).toBe(296);
     expect(FOUND[0]?.sites.length).toBe(108);
@@ -2087,7 +2087,7 @@ describe('every value the domain puts in a sentence is classified', () => {
 
   it('follows the indirections rather than reading a field name', () => {
     // The three shapes the walk has to see through, each named by what it found. Without
-    // the SINK it misses six sentences, four of them in `verifyTailOwnership` — which
+    // the SINK it misses six sentences, four of them in `verifyTailOwnership`, which
     // holds the one measured forgery in the whole verifier. Without the PRODUCER it
     // misses the census note's own account of a cut. The second sink of the core is the
     // refusal of a checkout whose recorded identity no longer counts its key
@@ -2104,7 +2104,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     // A name in the seed that seeds nothing makes the walk look wider than it is. All
     // five are reached: `message` is a refusal's, `detail` an issue's and a census
     // note's, `reason` a declined key's, `text` a verdict clause's, and `summary` the
-    // whole verdict's — which words nothing of its own, because it is the clauses joined.
+    // whole verdict's, which words nothing of its own, because it is the clauses joined.
     const seeded = new Set(FOUND.flatMap((layer) => [...layer.seeded]));
     expect([...seeded].sort()).toEqual([...CARRIES_PROSE].sort());
   });
@@ -2150,7 +2150,7 @@ describe('every value the domain puts in a sentence is classified', () => {
 
   it('accounts for every other template a wording file holds', () => {
     // The direction that catches a value the walk cannot see. What is under a `throw` is
-    // out of the class by construction — see this file's head — and everything else a
+    // out of the class by construction, see this file's head, and everything else a
     // file that words a sentence builds has to be named.
     expect(UNWALKED.sort()).toEqual(Object.keys(NOT_A_SENTENCE).sort());
     const thin = Object.entries(NOT_A_SENTENCE).filter(([, why]) => why.trim().length < 20);
@@ -2158,7 +2158,7 @@ describe('every value the domain puts in a sentence is classified', () => {
   });
 
   it('tells a raised message from a returned one', () => {
-    // The class's edge, on input this file owns — because if `throwSpans` matched
+    // The class's edge, on input this file owns, because if `throwSpans` matched
     // everything the case above would be green with nothing in it, and if it matched
     // nothing every parser complaint in the catalog would be demanding a verdict.
     // `${` is BUILT and not typed: a plain string holding one is a lint error, and a
@@ -2180,7 +2180,7 @@ describe('every value the domain puts in a sentence is classified', () => {
 
 describe('the rule has one door and it is below both packages', () => {
   /**
-   * The door's own body — `text.replace(/\s+/g, ' ')`, to ONE SPACE.
+   * The door's own body: `text.replace(/\s+/g, ' ')`, to ONE SPACE.
    *
    * The space is what makes it this rule. `decodeKeyRequest` strips whitespace to
    * NOTHING, which un-wraps a pasted base64url line rather than making a line of it, and
@@ -2191,8 +2191,8 @@ describe('the rule has one door and it is below both packages', () => {
   const RULE = fileURLToPath(new URL('../../chain/src/one-line.ts', import.meta.url));
 
   it('collapses with the shared function and with nothing of its own', () => {
-    // A second collapse written in either package — a `replace` by hand, a local
-    // helper — would be a second rule, and the one that stops agreeing is always the
+    // A second collapse written in either package (a `replace` by hand, a local
+    // helper) would be a second rule, and the one that stops agreeing is always the
     // second. The ban is checked against the place the shape really is first, or it
     // would pass on a pattern that matches nothing anywhere.
     expect(A_COLLAPSE.test(readFileSync(RULE, 'utf-8'))).toBe(true);
@@ -2247,14 +2247,14 @@ describe('the rule has one door and it is below both packages', () => {
     // `search-store.ts` is the ONE importer that is not wording a sentence: it collapses
     // the head of a body into an excerpt for the index, which is a value the projection
     // stores rather than a line anybody prints. It is here rather than holding a
-    // `replace` of its own for the reason this case exists — two collapses would be two
-    // rules — and it is named so the day it stops importing the door this goes red.
+    // `replace` of its own for the reason this case exists (two collapses would be two
+    // rules) and it is named so the day it stops importing the door this goes red.
     expect(importing).toEqual([...collapsing, '@mnema/core projections/search-store.ts'].sort());
   });
 
   it('accounts for every collapse these packages perform', () => {
     // If a file holds a `oneLine` that no site's expression holds, it is collapsing
-    // something in a position this scan does not reach — which means the classification
+    // something in a position this scan does not reach, which means the classification
     // is not total, whatever it says about itself.
     const atASite = new Map<string, number>();
     for (const site of SITES) {
@@ -2303,7 +2303,7 @@ async function invoke(...argv: string[]): Promise<{ out: string[]; err: string[]
 /**
  * The two shapes a forged half can take, one per family of line.
  *
- * A refusal is a one-item list — one per reply — so the second half only has to look
+ * A refusal is a one-item list, one per reply, so the second half only has to look
  * like a refusal to be one. An issue is one row of a list under a count, so the second
  * half is shaped like a row: the indent, the layer, the tree and a finding.
  */
@@ -2342,7 +2342,7 @@ afterAll(() => {
 });
 
 /**
- * The one tail a founded project has — asserted to be the only one.
+ * The one tail a founded project has: asserted to be the only one.
  *
  * `readdirSync` does not promise an order, so "the first entry" is not a tail: the day
  * a probe fabricates a second one, a helper that took `[0]` would tamper with whichever
@@ -2357,10 +2357,10 @@ function tailIn(project: string): string {
 }
 
 describe('a value from outside cannot forge a second line', () => {
-  it('keeps `key revoke` to one line — the fingerprint nothing validated', async () => {
+  it('keeps `key revoke` to one line: the fingerprint nothing validated', async () => {
     // THE DEFECT, AS MEASURED AGAINST THE SHIPPED BINARY. `--fingerprint` is a
     // positional, the roster answers about it before anything has checked its shape,
-    // and the sentence it lands in is `identity/roster.ts`'s — a package the surface's
+    // and the sentence it lands in is `identity/roster.ts`'s: a package the surface's
     // own rule cannot reach inside of.
     await founded('revoke');
     const said = await invoke('key', 'revoke', `aa${LF}${FORGED_REFUSAL}`, '--reason', 'a reason');
@@ -2377,7 +2377,7 @@ describe('a value from outside cannot forge a second line', () => {
     expect(whole.split(LF)).toHaveLength(1);
   }, 60_000);
 
-  it('keeps `verify` to one line — the JSON reader’s complaint about a whole file', async () => {
+  it('keeps `verify` to one line: the JSON reader’s complaint about a whole file', async () => {
     // The proof a tail carries over its own id is read as ONE document, so the reader's
     // message quotes the bytes it choked on, newline and all. Anybody who can write the
     // tree can write that file.
@@ -2388,13 +2388,13 @@ describe('a value from outside cannot forge a second line', () => {
     expect(whole).toContain('has a malformed ownership proof');
     // THAT THE BYTES ARRIVED AND THE BREAK IN THEM DID NOT. The reader quotes only the
     // head of the document it choked on, so the mark to look for is the newline ITSELF:
-    // `x` then whitespace is what was written, and `x ` — one space — is what a reader
+    // `x` then whitespace is what was written, and `x `, one space, is what a reader
     // gets. Asserted on the collapse rather than on how many bytes V8 chooses to quote.
     expect(whole).toContain('"x ');
     expect(whole.split(LF).filter((line) => line.trimStart().startsWith('issue [T1]'))).toEqual([]);
   }, 60_000);
 
-  it('keeps `verify` to one line — a tail directory named with a newline', async () => {
+  it('keeps `verify` to one line: a tail directory named with a newline', async () => {
     // A tail is a DIRECTORY, and its name is in the finding twice: once in the chain's
     // own detail and once in the heading the wiring puts in front of it. Both halves are
     // the same rule at two layers, and this is the case that needs both of them.
@@ -2422,7 +2422,7 @@ describe('a value from outside cannot forge a second line', () => {
 describe('the verifier’s own findings are one line each', () => {
   it('holds every detail and every clause to one line, over a tampered chain', async () => {
     // THE PROMISE STATED WHERE IT IS MADE. The three probes above go through the command
-    // line, and the surface tags the line it lays the findings out on — which means a
+    // line, and the surface tags the line it lays the findings out on, which means a
     // collapse that left THIS package would still come out looking like one line there.
     // So the same tampering is read at the source: `verify` returns the findings, and
     // every one of them has to be one line before anybody has printed anything.
@@ -2456,7 +2456,7 @@ describe('the verifier’s own findings are one line each', () => {
     expect(said.some((line) => line.includes('has no committed key fingerprint'))).toBe(true);
     expect(said.some((line) => line.includes('has a malformed ownership proof'))).toBe(true);
     expect(said.some((line) => line.includes('UNREADABLE:'))).toBe(true);
-    // AND THAT THE FORGED HALVES ARRIVED — the directory's name, and the reader's own
+    // AND THAT THE FORGED HALVES ARRIVED: the directory's name, and the reader's own
     // quote of the bytes, whose newline is now the space that proves it went through.
     expect(said.some((line) => line.includes(ISSUE_MARK))).toBe(true);
     expect(said.some((line) => line.includes('"x '))).toBe(true);

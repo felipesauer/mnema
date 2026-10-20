@@ -12,7 +12,7 @@ import {
   foundingsSince,
 } from './a-new-identity.js';
 
-/** An anchor the product could have derived — from a key it could have minted. */
+/** An anchor the product could have derived: from a key it could have minted. */
 function anAnchor(): string {
   return deriveAnchor(generateKeyPair().fingerprint);
 }
@@ -30,7 +30,7 @@ function foundedBeside(n: number): FoundedBeside {
 /**
  * What every sentence asks of whoever follows it, in every tree: the enrollment is made INSIDE each
  * project it is meant for, BY a machine already in that identity, and the record is committed and
- * shared there and pulled here BEFORE this key's first write — the three things the old words
+ * shared there and pulled here BEFORE this key's first write, the three things the old words
  * ("then `mnema key enroll` wherever its key is") left out, and without which following them saved
  * no project (`tests/a-write-says-what-it-founded.test.ts` follows them in the binary).
  */
@@ -41,7 +41,7 @@ const WHAT_FOLLOWING_IT_TAKES = [
   'and commits and shares the record, and pull it here before this key writes there.',
 ];
 
-describe('foundingSentence — one sentence, both surfaces', () => {
+describe('foundingSentence: one sentence, both surfaces', () => {
   it('names the identity founded and the one beside it, and hands over the command to copy', () => {
     const founded = foundedBeside(1);
     const short = shortenAnchors([founded.anchor, ...founded.besides]);
@@ -76,7 +76,7 @@ describe('foundingSentence — one sentence, both surfaces', () => {
     }
   });
 
-  it('keeps the enrollment out of the project that split, by name — where it would make it worse', () => {
+  it('keeps the enrollment out of the project that split, by name, where it would make it worse', () => {
     // By name because it is the project a reader would want mended. It is not the only place an
     // enrollment makes worse: every project this key has written in is, and the words keep those
     // out with "where this key has not written yet" (the case above).
@@ -88,7 +88,7 @@ describe('foundingSentence — one sentence, both surfaces', () => {
     );
   });
 
-  it('gives the trees kept on one machine their own words — no other machine wrote there', () => {
+  it('gives the trees kept on one machine their own words: no other machine wrote there', () => {
     for (const scope of ['private', 'global'] as const) {
       const said = foundingSentence(foundedBeside(1), scope);
       expect(said, scope).toContain(`in the ${scope} tree`);
@@ -103,14 +103,14 @@ describe('foundingSentence — one sentence, both surfaces', () => {
           'once this key writes there — no enrollment reaches a tree kept on one machine;',
       );
       expect(said, scope).not.toContain('your other projects');
-      // The machine that can vouch may be this very one, under the key it wrote with before —
+      // The machine that can vouch may be this very one, under the key it wrote with before,
       // and the words say how to sign with that key: it is under another data directory.
       expect(said, scope).toContain(
         'a machine already in that identity (this one, if it still holds the key that identity ' +
           'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key ' +
           'is kept under)',
       );
-      // Its enrollment goes to a PUBLIC tree, which this key may not have written — so nothing
+      // Its enrollment goes to a PUBLIC tree, which this key may not have written, so nothing
       // keeps it out of this project, and the words do not.
       expect(said, scope).not.toContain('Not in this project');
     }
@@ -176,7 +176,7 @@ describe('what is owed after a write, read off the disk and the record', () => {
     expect(owed[0]).toContain('beside 1 already there');
   });
 
-  it('owes it once — a watch forgets what it said', () => {
+  it('owes it once: a watch forgets what it said', () => {
     aKeyWrites('the first');
     const watch = new FoundingWatch();
     watch.opened(tree, 'public');

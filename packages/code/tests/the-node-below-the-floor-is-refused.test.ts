@@ -6,7 +6,7 @@
  * `src/node-floor.ts` for the mechanism.
  *
  * WHAT IS RUN. The built binary, on this machine's Node, with the version it reports lowered by a
- * preloaded module — so each alternative of the range is asked about the version just under its
+ * preloaded module, so each alternative of the range is asked about the version just under its
  * floor and about the floor itself, the pair that tells the number was read from `engines` and not
  * from somewhere that happens to be near it. Beside it, the shapes of the guard that the binary cannot show: the parse of a range, the
  * sentence, that the declaration is a shape the guard reads (a floor it cannot parse would switch

@@ -1,5 +1,5 @@
 /**
- * WHO ASSERTS ABOUT A FILE — the question coverage cannot answer.
+ * WHO ASSERTS ABOUT A FILE: the question coverage cannot answer.
  *
  * Coverage says a line RAN. It never says anyone looked at what it produced. This
  * repository measured the gap against itself: FOUR files sat at 100% line coverage with
@@ -17,7 +17,7 @@
  * helper that imports it) AND an `expect(...)` somewhere in that test mentions an
  * identifier the imported bindings can reach. Reachability is a taint walk over the test's
  * own source: a binding taints what is assigned from it, the function whose body mentions
- * it, and — the case dependency injection needs — every collaborator HANDED to it, because
+ * it, and, the case dependency injection needs, every collaborator HANDED to it, because
  * a test that passes a fake in and asserts on the fake is asserting about the callee.
  *
  * WHAT THIS DELIBERATELY DOES NOT COUNT, and why each exclusion is the point rather than a
@@ -25,7 +25,7 @@
  *
  *   - A CORPUS WALK. Guards here read every file under a directory and assert over the
  *     result ("no module in this layer does X"). By the mutation standard that IS an
- *     assertion about each file — edit one and the sweep reddens. Counting it would make
+ *     assertion about each file: edit one and the sweep reddens. Counting it would make
  *     this guard vacuous: repo-wide sweeps already reach nearly every file in
  *     `packages/code/src`, so every file would be witnessed and the question would answer
  *     itself. What such a sweep pins is one structural fact, never a behaviour, which is
@@ -35,7 +35,7 @@
  *     `every-file-has-a-test-that-names-it.test.ts` is nothing but path strings; under a
  *     rule that read literals, listing a file as debt would witness it and the ledger would
  *     dissolve itself. It cannot, here, by construction. How many rows it holds is not
- *     restated here — this said 77 while the table held 81, and a count with no assertion
+ *     restated here: this said 77 while the table held 81, and a count with no assertion
  *     under it rots the moment the table moves. The count lives where it is pinned, in that
  *     file's `says how many, so a scanner that stopped scanning cannot pass`.
  *   - A PACKAGE SPECIFIER. `import { getRun } from '@mnema/core'` resolves to that
@@ -74,20 +74,20 @@ export interface Witnessing {
   /** Product path to the test files whose assertions observe a value from it. */
   readonly witnessedBy: ReadonlyMap<string, readonly string[]>;
   /**
-   * Every relative specifier that named nothing — the fact this scanner used to discard.
+   * Every relative specifier that named nothing: the fact this scanner used to discard.
    *
    * A relative specifier is either a file or a mistake, and the walk that resolves them
    * met both and said nothing about either: it took `undefined` and moved to the next
    * import. THAT IS HOW A WRONG PATH ENTERED THE BRANCH THIS SCANNER IS THE POINT OF.
-   * `completion/lookups.test.ts` asked for `'../io.js'`, where no file has ever been —
-   * the interface it wanted is under `wiring/` and every sibling spells it that way —
+   * `completion/lookups.test.ts` asked for `'../io.js'`, where no file has ever been
+   * (the interface it wanted is under `wiring/` and every sibling spells it that way)
    * and nothing anywhere went red, because `tsc -b` excludes `.test.ts` and esbuild
    * strikes an `import type` before the runner ever loads the module. Two full passes
    * over this guard read past it.
    *
    * So the fact leaves here and the verdict is the caller's, the same split the module
    * comment draws: some of these are legitimate and must be declared with a reason,
-   * because this resolver only ever looks for TypeScript under a package — a `.mjs`
+   * because this resolver only ever looks for TypeScript under a package; a `.mjs`
    * beside the workflow files cannot resolve however right the path is.
    */
   readonly unresolved: readonly Unresolved[];
@@ -117,7 +117,7 @@ export function normalizePath(path: string): string {
  * The file a relative specifier points at, or undefined.
  *
  * A bare or scoped specifier resolves to a package's built output rather than to a source
- * file, so it is deliberately not followed — see the module comment.
+ * file, so it is deliberately not followed: see the module comment.
  */
 export function resolveImport(
   from: string,
@@ -136,14 +136,14 @@ export function resolveImport(
  * THE CLAUSE IS SPELLED OUT, and the premise that let it be `[\s\S]*?` was that a lazy
  * match stops at the first `from` and so cannot go far. It can. A line-initial `export`
  * that begins a DECLARATION carries no `from` of its own, so the lazy run leaves the
- * declaration and keeps going until it finds someone else's — and because `matchAll` does
+ * declaration and keeps going until it finds someone else's, and because `matchAll` does
  * not overlap, whatever it crossed is gone. Measured over `packages/`: twenty-three such
  * invented clauses in twenty files, the largest of them out of `mcp/server.ts`.
  *
  * THOSE LENGTHS ARE DATED, and this paragraph used to write one as though it were not. It
  * said "the largest 466 lines long, out of `every-file-has-a-test-that-names-it.test.ts`",
  * which was two claims and both fell: the largest anywhere is `mcp/server.ts`, and 466 was
- * the guard's own clause when it was measured at `60d4df0f` — a file of 994 lines then.
+ * the guard's own clause when it was measured at `60d4df0f` (a file of 994 lines then).
  * An invented clause runs from a declaration to somebody else's `from`, so its length is a
  * property of how long the file has since become, and every edit moves it. A number for it
  * belongs beside the commit it was taken at, which is why the ledger this module feeds
@@ -152,7 +152,7 @@ export function resolveImport(
  * One of them RESOLVES: `wiring/verb.ts` opens at `export interface Wiring {`, runs
  * fifty-one lines to the `from` on the re-export below it, lands on `record-effect.ts`,
  * and would hand `boundNames` eight fragments of doc-comment prose as the names that file
- * bound — while the real `export type { RecordEffect }` it crossed is never seen at all.
+ * bound, while the real `export type { RecordEffect }` it crossed is never seen at all.
  * So the old reading both invented a file's bindings and erased a true one, in one site.
  * WOULD, not did: this scanner is only ever handed the test tree, and that file is `src`,
  * so nothing here ever read it. The narrowing is what recovers the true re-export, and
@@ -161,18 +161,18 @@ export function resolveImport(
  * A clause holds identifiers, `type`, `as`, `*`, commas, braces and whitespace, and that
  * is the whole grammar; naming it is what closes the run-on, because `(`, `;`, `=` and `:`
  * end any declaration this could wander into. Over the tree this scanner reads the change
- * drops the three invented clauses and not one true declaration — 2351 matches to 2348.
+ * drops the three invented clauses and not one true declaration: 2351 matches to 2348.
  *
  * THE COST IS A COMMENT INSIDE A CLAUSE, and it is written here, once. This paragraph used
  * to declare that cost as a BLOCK comment and then say none existed; the second half was
  * read as being about comments in clauses, and about those it is false. What falsified it
  * is `context/src/index.ts:26`, an `export type {` carrying three LINE comments among the
  * names, with slashes, apostrophes and em-dashes on their way to `} from '@mnema/core'`.
- * The grammar above admits none of that, so the statement is not matched wrong — it is not
+ * The grammar above admits none of that, so the statement is not matched wrong; it is not
  * matched at all: handed that file this returns twenty-four clauses and `@mnema/core` is
  * not among them, where `[\s\S]*?` returned twenty-five and it was. Measured over
  * `packages/`, that clause is the ONLY one holding a character outside the set, and the
- * block comment the paragraph predicted is in no clause at all — the twenty-two others the
+ * block comment the paragraph predicted is in no clause at all: the twenty-two others the
  * narrowing drops are the run-on's own inventions, whose specifiers read `not a member`
  * and `the plugin was not installed that week`.
  *
@@ -204,13 +204,13 @@ export function importClauses(text: string): { clause: string; specifier: string
 }
 
 /**
- * Whether a clause is type-only for its WHOLE specifier — `import type { X } from '...'`.
+ * Whether a clause is type-only for its WHOLE specifier: `import type { X } from '...'`.
  *
  * esbuild ERASES such an import: the module is never loaded, nothing it would produce can
  * have been observed, and calling it an import overstates what happened by the widest
  * margin this scanner is capable of. Measured on this repository: seventy-three clauses
  * are shaped this way, and six product files were called witnessed on the strength of
- * them alone — the GUARD's header names which, at its point 5, and says what falsified
+ * them alone; the GUARD's header names which, at its point 5, and says what falsified
  * the earlier reading. This sentence used to send the reader to the module comment above,
  * which names none of them; the list has only ever been in the guard.
  *
@@ -227,7 +227,7 @@ export function isTypeOnlyClause(clause: string): boolean {
  * The names a clause binds: `{ a, b as c }`, a default, and `* as ns`.
  *
  * A binding is what the emitted code can still reach, so a type never is. The whole-clause
- * form binds nothing at all, and an inline `type B` is dropped from among its siblings —
+ * form binds nothing at all, and an inline `type B` is dropped from among its siblings,
  * which is the same rule read once, not twice.
  */
 export function boundNames(clause: string): string[] {
@@ -294,13 +294,13 @@ function endOfAngled(code: string, from: number): number {
  * live in this repository: a brace among the type parameters
  * (`landed<T extends { ok: boolean }>`), a brace in a parameter's own type, and a brace in
  * the return annotation (`fixedClock(): { clock: Clock; tick: () => void } {`). Each makes
- * the ANNOTATION the captured body — and an annotation mentions types, never values, so the
+ * the ANNOTATION the captured body, and an annotation mentions types, never values, so the
  * taint walk goes quiet over a function that in truth carries everything.
  *
  * Measured with both readings taking the SAME blanked source, so the blanker is not a
  * variable in it: over the 1271 declarations in this test tree, the first-brace reading
  * captured a different body for a couple of hundred of them. It cut both ways, which is
- * why it could not be left standing as the conservative side of a guard —
+ * why it could not be left standing as the conservative side of a guard:
  * `packages/core/src/workflow/clock.ts` was absent from the ledger because of it, and
  * `packages/code/src/version.ts` was present in the ledger because of it.
  *
@@ -313,8 +313,8 @@ function endOfAngled(code: string, from: number): number {
  * outlives its instrument is given exactly.
  *
  * The rule for the annotation is one line long: a `{` inside a group belongs to a type, and
- * a `{` at the top belongs to the body UNLESS what precedes it still WANTS a type — after
- * `:`, `|`, `&`, `,`, or an arrow. That is the entire difference between `: { a } {`, where
+ * a `{` at the top belongs to the body UNLESS what precedes it still WANTS a type (after
+ * `:`, `|`, `&`, `,`, or an arrow). That is the entire difference between `: { a } {`, where
  * the first brace is a type, and `: Promise<{ a }> {`, where it is not.
  */
 function bodyBrace(code: string, afterName: number): number {
@@ -421,9 +421,9 @@ export function assertionStatements(code: string): string[] {
 interface Flows {
   /** `const <pattern> = <initializer>` and its `let`/`var` siblings, plus assignments. */
   readonly bindings: readonly { readonly binds: readonly string[]; readonly from: string }[];
-  /** `function name(...) { body }` — the name carries whatever the body reaches. */
+  /** `function name(...) { body }`: the name carries whatever the body reaches. */
   readonly functions: readonly { readonly name: string; readonly body: string }[];
-  /** `callee(args)` — what a tainted callee is HANDED is observable through it. */
+  /** `callee(args)`: what a tainted callee is HANDED is observable through it. */
   readonly calls: readonly { readonly callee: string; readonly args: string }[];
 }
 
@@ -472,13 +472,13 @@ export function flowsIn(code: string): Flows {
  * `asserted` is every identifier inside an `expect(...)` statement, so `expect` is in all of
  * them. A walk that reaches the WORD therefore intersects every assertion in the file, and
  * "some assertion observes a value this file produced" collapses back into "some test
- * imports this file" — which is the question this module exists to be narrower than, so the
+ * imports this file", which is the question this module exists to be narrower than, so the
  * collapse is total rather than partial.
  *
  * It is reached the ordinary way, by the third rule below: a test that hands `expect` to
  * something tainted taints it. Measured over this repository by taking the guard out and
- * driving the walk exactly as `witnessing` drives it — once per (test, product) pair, from
- * that pair's own seeds — EIGHTEEN test files reach it, sixteen of them through a tainted
+ * driving the walk exactly as `witnessing` drives it, once per (test, product) pair, from
+ * that pair's own seeds: EIGHTEEN test files reach it, sixteen of them through a tainted
  * call's arguments and the other two through a binding or a function body. This comment
  * said seven; that number came from seeding a file's imports all at once instead of pair by
  * pair, which is a different question and answers 4, and neither is what the scanner does.
@@ -491,7 +491,7 @@ const THE_ASSERTION_VERB = 'expect';
  * Every identifier a set of seeds can reach, to a fixed point.
  *
  * The three rules, and the third is the one a fake needs: a value taints what is derived
- * from it, a function taints its own name, and a CALL taints its arguments — because the
+ * from it, a function taints its own name, and a CALL taints its arguments, because the
  * only thing a test can observe about `armSessionClose(fake, close)` is what it did to
  * `fake`.
  */
@@ -555,7 +555,7 @@ export function witnessing(
   /**
    * The ONE place a specifier is followed, so the miss is recorded wherever it happens.
    *
-   * Both walks below resolve imports — the helpers' and the tests' — and a rule written
+   * Both walks below resolve imports, the helpers' and the tests', and a rule written
    * at each of them is two rules, which is the shape this whole file exists to catch. A
    * specifier is recorded once per (file, specifier) pair; a file that imports the same
    * missing module twice is one fact, not two.
@@ -586,7 +586,7 @@ export function witnessing(
       // THE ORDER HERE IS ITS OWN CASE, and it had none: `in the HELPER walk too` is
       // what swapping this pair reddens, and swapping it reddened nothing before that
       // case existed. The skip itself is `relays nothing through a helper whose
-      // re-export a compiler erases` — deleting it outright was green too.
+      // re-export a compiler erases`: deleting it outright was green too.
       const target = follow(source.path, specifier);
       if (isTypeOnlyClause(clause)) continue;
       if (target === undefined) continue;
@@ -599,8 +599,8 @@ export function witnessing(
   // A helper may reach production through another helper, and this repository has one such
   // chain: `support/pty.ts` imports `support/console.ts`, which imports `repl/floor.ts`.
   // Stopping at one hop would make the answer depend on how deeply somebody nested a
-  // helper, so the relay is closed to a fixed point instead. It terminates on a cycle —
-  // `pty.ts` and `screen.ts` import each other — because a pass that adds nothing ends it.
+  // helper, so the relay is closed to a fixed point instead. It terminates on a cycle,
+  // `pty.ts` and `screen.ts` import each other, because a pass that adds nothing ends it.
   for (let pass = 0; pass < sources.length; pass++) {
     let grew = false;
     for (const [helper, reached] of throughHelper) {
@@ -628,7 +628,7 @@ export function witnessing(
       // FOLLOWED FIRST, and the type-only skip comes after: whether esbuild erases
       // the import decides if it is an IMPORT, never whether the path is a path. The
       // wrong specifier that reached this branch was `import type`, so a walk that
-      // skipped before following could not have seen it — that specifier is the defect
+      // skipped before following could not have seen it: that specifier is the defect
       // this whole guard shipped to catch, and it is what `in the case walk` pins.
       const target = follow(source.path, specifier);
       if (isTypeOnlyClause(clause)) continue;

@@ -1,6 +1,6 @@
 /**
  * What a host whose hooks are PROCESSES hands a hook before a file is written, and how such a
- * host is answered — for the hosts where the record can ask for a person or refuse a write
+ * host is answered: for the hosts where the record can ask for a person or refuse a write
  * that way.
  *
  * Claude Code runs this product's per-edit hook as a call into the connected MCP server
@@ -8,7 +8,7 @@
  * the plugin run only `type: "command"`: a process, handed a JSON payload on stdin, answering on
  * stdout. This module is what the command half knows about each of them, measured against the
  * host installed on the day, and nothing here decides what a
- * write meets — that is `whatAWriteMeets`, the one site every door passes through.
+ * write meets; that is `whatAWriteMeets`, the one site every door passes through.
  *
  * ## Which hosts, and what each can be told
  *
@@ -17,13 +17,13 @@
  * command before the tool, and a reply carrying `permissionDecision: "ask"` holds the write for
  * a person (the host's own log: *"requires confirmation (preToolUse hook returned 'ask')"*; the
  * file stayed unwritten); `deny` refuses it. Cursor's command-line agent 2026.09.18 runs the
- * same hook before its write — and IGNORES `ask`: the file was written, from its own hook file
+ * same hook before its write, and IGNORES `ask`: the file was written, from its own hook file
  * and from the plugin alike, while `deny` was honored, with the reason as the write's error.
  *
  * Codex 0.161.0 does what Cursor does, held by its host contract: `deny` refuses, and `ask` is
  * rejected as unsupported and the write goes on.
  *
- * Copilot CLI 1.0.94 does what VS Code does — it is the same family of agent — and is read under
+ * Copilot CLI 1.0.94 does what VS Code does (it is the same family of agent) and is read under
  * the PascalCase event name, which hands the payload in snake_case and in Claude Code's tool
  * names: its `create` is `Write`; its `edit`, `str_replace_editor` and `apply_patch` are all
  * `Edit`, and the last hands the patch text itself where the others hand an object. Run without a
@@ -38,7 +38,7 @@
  *
  *   - THE TOOL NAMES ARE THE HOST'S OWN. VS Code's agent writes through `create_file`,
  *     `replace_string_in_file`, `multi_replace_string_in_file`, `insert_edit_into_file`,
- *     `edit_notebook_file` and `apply_patch` — which of them a session is offered depends on the
+ *     `edit_notebook_file` and `apply_patch`; which of them a session is offered depends on the
  *     model family (measured: `apply_patch` for the GPT families, `multi_replace_string_in_file`
  *     for the Claude ones). {@link WRITES} names every one.
  *   - THE PATH IS `filePath`, camelCase, and for two tools it is not one field. A multi-replace
@@ -47,7 +47,7 @@
  *     module can read answers with an empty list, and the caller says so on its second stream
  *     rather than guessing a path.
  *
- * ## VS Code does not read the matcher — which is what makes the plugin entry safe elsewhere
+ * ## VS Code does not read the matcher, which is what makes the plugin entry safe elsewhere
  *
  * The plugin declares this hook under a matcher of VS Code's tool names. Claude Code and Cursor
  * apply a matcher, and neither has a tool by those names, so neither runs it (measured, both).
@@ -101,13 +101,13 @@ const replacements: PathsOf = (raw) => {
  *
  * The patch format the host's `apply_patch` takes opens each file with one of three headers and
  * may rename one with a fourth; every path a patch writes, deletes or moves to is on one of them.
- * A deleted file is a write for this purpose — a rule that asks for a person before a file under
+ * A deleted file is a write for this purpose: a rule that asks for a person before a file under
  * it changes is asked before it disappears.
  */
 const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/;
 
 /**
- * The files a patch touches, read off its headers, each once — the patch under the field a host
+ * The files a patch touches, read off its headers, each once; the patch under the field a host
  * hands it in: VS Code's `apply_patch` names it `input`, Codex's names it `command` (Codex 0.161.0,
  * `codex-rs/core/src/tools/handlers/apply_patch.rs`). One format, one reader; the field is the
  * host's.
@@ -166,7 +166,7 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   copilot: { Write: pathUnder('path'), Edit: copilotEdit },
   // THE NAMES OPENCODE GIVES ITS OWN TOOLS, handed over as they are by the plugin it loads
   // (`tool.execute.before` is given a tool's id and its arguments): `write` and `edit` name an
-  // absolute `filePath`, and `apply_patch` — the writer the `gpt-` models get instead of those two —
+  // absolute `filePath`, and `apply_patch`, the writer the `gpt-` models get instead of those two,
   // the patch under `patchText` (`packages/opencode/src/tool/`, 1.18.35).
   opencode: { write: filePath, edit: filePath, apply_patch: patchIn('patchText') },
   // THE NAMES GEMINI CLI GIVES ITS TWO WRITING TOOLS, handed over as they are to a `BeforeTool`
@@ -177,7 +177,7 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
 };
 
 /**
- * Whether a host holds a write for a person when a hook answers `ask` — the one thing the two
+ * Whether a host holds a write for a person when a hook answers `ask`: the one thing the two
  * command hosts measured differently. Read off the host table (`host-names.ts`), where every host
  * has an `asks` cell and says how it is known.
  */
@@ -185,7 +185,7 @@ export function asksAPerson(host: HookHost): boolean {
   return does(host, 'asks');
 }
 
-/** The tool names a host writes through — what the plugin's filter and matcher name. */
+/** The tool names a host writes through: what the plugin's filter and matcher name. */
 export function writeToolsOf(host: HookHost): readonly string[] {
   return Object.keys(WRITES[host]);
 }
@@ -212,8 +212,8 @@ export function pathsOfAWrite(host: HookHost, payload: unknown): readonly string
 /**
  * The reply a host reads, for what the record has to say.
  *
- * VS Code and Cursor read the same reply Claude Code does — `hookSpecificOutput`, `permissionDecision`,
- * `permissionDecisionReason` — measured, so the shape is written once, in `mcp/hook-reply.ts`,
+ * VS Code and Cursor read the same reply Claude Code does (`hookSpecificOutput`, `permissionDecision`,
+ * `permissionDecisionReason`) measured, so the shape is written once, in `mcp/hook-reply.ts`,
  * and this is the table that says so per host rather than a second spelling of the fields.
  */
 export function replyFor(host: HookHost, said: HookSaid): object {
@@ -223,7 +223,7 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // refused the write and its reason came back as the write's error.
     cursor: (s) => hookReply('PreToolUse', s),
     // Codex reads the same nested reply: `deny` with a reason blocks the call and hands the model
-    // the reason; `ask` is parsed and rejected as unsupported, and the write goes on — which is
+    // the reason; `ask` is parsed and rejected as unsupported, and the write goes on, which is
     // why the Codex door never answers it (`codex-rs/hooks/src/engine/output_parser.rs`, 0.161.0).
     codex: (s) => hookReply('PreToolUse', s),
     // Copilot CLI read the nested reply too, measured on 1.0.94: `deny` refused the write and its
@@ -232,7 +232,7 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // OpenCode's plugin is this product's own and reads the same nested reply: it throws the
     // reason on `deny`, which OpenCode hands the model as the call's error.
     opencode: (s) => hookReply('PreToolUse', s),
-    // Gemini CLI reads the decision at the top level of the reply — `decision` and `reason` — and
+    // Gemini CLI reads the decision at the top level of the reply, `decision` and `reason`, and
     // has no field called `permissionDecision`; the nested reply would be read as nothing. Only a
     // refusal reaches it: its row says it is not asked.
     gemini: (s) => {

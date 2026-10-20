@@ -2,11 +2,11 @@
  * EVERY NO IS RED, AND NOTHING IS RED ALONE.
  *
  * THE FIRST HALF USED TO BE NARROWER, AND THIS IS WHAT FALSIFIED IT. It read: *red
- * marks a TYPED refusal — the domain's own no — and a usage error does not paint,
+ * marks a TYPED refusal, the domain's own no, and a usage error does not paint,
  * because that one is the parser's channel*. The argument for it was that the rule
  * stayed sayable. What fell over it is a terminal: a person one argument short met
- * `error: missing required argument 'rationale'` — unpainted, lowercase, naming an
- * internal parameter — and a person one letter off met the same. The line was true
+ * `error: missing required argument 'rationale'` (unpainted, lowercase, naming an
+ * internal parameter) and a person one letter off met the same. The line was true
  * about where a no CAME FROM and false about what a reader does with it, because
  * "the gate said no" and "you typed it wrong" are one piece of news: the thing did
  * not happen. The rule now is A LINE IS RED WHEN THE COMMAND DID NOT DO WHAT YOU
@@ -15,7 +15,7 @@
  *
  * What the rule still does NOT reach is an ANSWER that happens to be unwelcome, and
  * the boundary is worth stating because it is the one an adversary probes: `verify`
- * naming a broken tree DID what it was asked — it ruled — so its line is not a no and
+ * naming a broken tree DID what it was asked (it ruled), so its line is not a no and
  * this file's rule says nothing about it.
  *
  * HALF OF WHY IT SAID NOTHING WAS A TECHNICAL LIMIT, AND THE LIMIT IS GONE. The reason
@@ -23,7 +23,7 @@
  * verbatim, with the tree's name in the label the colour would land on*. Both clauses
  * were true and the conclusion drawn from them was not, because a verdict's news does
  * not have to ride its label: the chain hands its verdict over as CLAUSES now, and the
- * hue lands on the one clause that is the answer, while the label — a tree's name —
+ * hue lands on the one clause that is the answer, while the label, a tree's name,
  * stays unpainted for exactly the reason that sentence gave. So `verify` paints, and it
  * is still not a refusal; what it paints is how far the proof got, on a scale, which is
  * why its severity is decided in the verb and not in the funnel.
@@ -33,7 +33,7 @@
  *   - A REFUSAL IS ONE SHAPE, WORDED IN ONE PLACE. The surface refuses from twenty-odd
  *     verbs and it says so through a single funnel, which is what lets the whole
  *     surface acquire a colour in one edit. The failure is a verb that words its own:
- *     it exits non-zero either way, so nothing breaks — a reader just meets one bad
+ *     it exits non-zero either way, so nothing breaks; a reader just meets one bad
  *     line that does not look like the other twenty. This file found one when it was
  *     written (`refs` re-typed the funnel's own `NO_PROJECT` sentence by hand), which
  *     is why the guard is a scan of the SOURCE and not a list of verbs. The scan now
@@ -64,7 +64,7 @@ import { everyCommandOf } from './wiring/misuse.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
-/** Red, and the closer for it — what the refusal is painted with. */
+/** Red, and the closer for it: what the refusal is painted with. */
 const RED = '\u001b[31m';
 const DEFAULT_HUE = '\u001b[39m';
 
@@ -104,7 +104,7 @@ describe('a refusal is worded in exactly one place', () => {
 
   it('reaches the stream through a renderer at every one of its producers', () => {
     // The line is a `Line` now, so a producer that wrote it as bytes would not
-    // compile — but a producer could still be ADDED with its own wording, and the case
+    // compile, but a producer could still be ADDED with its own wording, and the case
     // above is what refuses that. This one names the ones that exist and asserts each
     // hands the line to a renderer rather than to `io.err` directly, because that is
     // what makes the colour reach it. `misuse.ts` is the newest: the parser's no falls
@@ -117,7 +117,7 @@ describe('a refusal is worded in exactly one place', () => {
     }
     // The third is reached from the entry, outside `wiring/`: the throw for a machine whose
     // record names no identity it may write as. It is a refusal like any other and it is
-    // rendered like any other — by the funnel's own door for it, which the entry hands the
+    // rendered like any other: by the funnel's own door for it, which the entry hands the
     // throw to (`reportIdentityRefusal`), because that door is also the one that says where the
     // key file is when the way out is a restore of it. THIS ASSERTED the entry rendered the line
     // itself; it hands it over now, and renders nothing of its own.
@@ -133,7 +133,7 @@ describe('a refusal is worded in exactly one place', () => {
   it('and no verb hands the shared wording to a stream itself', () => {
     // The other half of "worded in one place", and the half the SHAPE detector above
     // cannot see: a verb does not have to rebuild `Refused (CODE)` to write a refusal
-    // of its own — it can reach for the funnel's own sentence and print it. One did,
+    // of its own; it can reach for the funnel's own sentence and print it. One did,
     // and its line was the only refusal on the surface that came out unpainted while
     // every case about the shape stayed green.
     const guilty = shipped().filter(
@@ -147,7 +147,7 @@ describe('a refusal is worded in exactly one place', () => {
   it('and no verb writes a line to the error stream without a renderer', () => {
     // The half the two cases above cannot see, and the one the widened rule needs: a
     // verb does not have to REBUILD a shape or REUSE a sentence to leave a no
-    // unpainted — it can word its own and hand it to `io.err` as a string. Eighteen
+    // unpainted; it can word its own and hand it to `io.err` as a string. Eighteen
     // did, and every case in this file was green while they did it, because a plain
     // string on stderr breaks nothing: it exits non-zero, it says the right thing,
     // and it is the one line in the report a colour never reaches.
@@ -156,8 +156,8 @@ describe('a refusal is worded in exactly one place', () => {
     // raw one is still accused.
     //
     // ASKED OF THE CODE, NOT OF THE FILE. It read raw text, and a module whose
-    // doc-comment QUOTED the call it is about — explaining why it hands back lines
-    // instead of bytes — was accused of writing an unpainted one. That is the same
+    // doc-comment QUOTED the call it is about, explaining why it hands back lines
+    // instead of bytes, was accused of writing an unpainted one. That is the same
     // blindness `every-sandbox-is-removed-where-it-was-made.test.ts` paid for, and
     // `codeOnly` is the one function this workspace already has for it; a second
     // comment-stripper written here would be the second reading of a rule that has one.
@@ -182,7 +182,7 @@ describe('a refusal is worded in exactly one place', () => {
     expect(rendered('to.io.err(to.render(line));')).toBe(1);
     expect(rendered('io.err(\n  render(\n    fact(x),\n  ),\n);')).toBe(1);
     // And it read a surface that really writes. FEW modules reach the stream directly
-    // now — that is the funnel working, not the scan missing — so the floor is over
+    // now (that is the funnel working, not the scan missing), so the floor is over
     // the SITES, and a rewrite that emptied the corpus would fall through it.
     const total = shipped().reduce((count, file) => count + sites(sourceOf(file)), 0);
     expect(total).toBeGreaterThanOrEqual(6);
@@ -198,10 +198,10 @@ describe('a refusal is worded in exactly one place', () => {
     // than folded into the funnel because folding an answer into the funnel would make
     // it look like a failure to answer. `guard.ts` ruled and the answer is REFUSED, so
     // the word carries the news. `verify.ts` ruled too, and what it says is how far the
-    // proof got — a level, on a scale with a middle, which is a table only the verb that
+    // proof got: a level, on a scale with a middle, which is a table only the verb that
     // reads levels can hold.
     expect(deciding).toEqual(['guard.ts', 'report.ts', 'verify.ts']);
-    // And the funnel is where the parser's no gets it too — never at the call site.
+    // And the funnel is where the parser's no gets it too, never at the call site.
     expect(sourceOf('misuse.ts')).not.toContain("'bad'");
     expect(sourceOf('misuse.ts')).toContain('refusalSentence(');
   });
@@ -214,7 +214,7 @@ describe('a refusal is worded in exactly one place', () => {
     // second red arriving from there.
     //
     // Two files, and only one of them decides anything. `line.ts` DECLARES the vocabulary
-    // — the tuple the union is derived from — which is where the words have to appear at
+    // (the tuple the union is derived from), which is where the words have to appear at
     // all. `state.ts` is the decision: what a task's position says to a reader, mapped
     // from the disposition the domain derives (`core`'s `disposition.ts`) onto this scale.
     // It is a table and not an `if`, so a disposition added tomorrow does not build until
@@ -232,8 +232,8 @@ describe('a refusal is worded in exactly one place', () => {
 
   it('and the session decides none either, a second directory over', () => {
     // THE RULE IS ABOUT WHOEVER SAYS NO, AND THE INTERACTIVE SESSION IS THE NEWEST ONE.
-    // It words four refusals of its own — a write typed at its prompt, a word no verb
-    // answers to, a quote left open, a session inside a session — and none of them is a
+    // It words four refusals of its own (a write typed at its prompt, a word no verb
+    // answers to, a quote left open, a session inside a session) and none of them is a
     // verb, so neither scan above would have looked at it. What it must do is what a
     // verb does: hand a SENTENCE to the funnel and let the funnel decide the severity.
     const files = readdirSync(join(HERE, 'repl'))
@@ -251,7 +251,7 @@ describe('a refusal is worded in exactly one place', () => {
     // The corpus is the one whose whole job is answering a typed line.
     expect(files).toContain('gate.ts');
     expect(files).toContain('session.ts');
-    // And it really does refuse — otherwise the three absences above are about a
+    // And it really does refuse: otherwise the three absences above are about a
     // directory that says no to nothing.
     expect(sourceIn('session.ts')).toContain('reportUsage(');
     expect(sourceIn('gate.ts')).toContain("does: 'refuse'");
@@ -259,7 +259,7 @@ describe('a refusal is worded in exactly one place', () => {
 
   it('would accuse a verb that worded one itself', () => {
     // The other vacuous form: a detector whose term matches nothing any more. Composed
-    // against the line the careful author would write — the one this guard actually
+    // against the line the careful author would write: the one this guard actually
     // caught, which re-typed a sentence rather than inventing a new one.
     // The hole is assembled rather than typed because the lint refuses a template
     // placeholder inside a plain string, and this repository opens no exception to a
@@ -273,14 +273,14 @@ describe('a refusal is worded in exactly one place', () => {
 });
 
 describe('every verb that can refuse routes through that one place', () => {
-  /** The wiring modules that call the funnel — the verbs that CAN refuse. */
+  /** The wiring modules that call the funnel: the verbs that CAN refuse. */
   const refusing = (): readonly string[] =>
     shipped().filter((file) => file !== 'report.ts' && sourceOf(file).includes('reportRefusal('));
 
   it('is most of the surface, counted from the source rather than listed here', () => {
     // The number is the argument for putting the colour in the funnel: one edit, this
     // many verbs. It is a floor rather than an equality, because a verb ADDED to the
-    // surface should not turn this case red — the case below is the one that has to.
+    // surface should not turn this case red: the case below is the one that has to.
     const files = refusing();
     expect(files.length).toBeGreaterThanOrEqual(20);
     const sites = files.reduce(
@@ -351,7 +351,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
   });
 
   /**
-   * The ways this surface says no, one per producer and one per shape — and, since
+   * The ways this surface says no, one per producer and one per shape, and, since
    * the rule widened, one per ORIGIN as well.
    *
    * The gate's typed refusal and the run pin's are the `Refused (CODE)` shape from two
@@ -387,7 +387,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
 
   it("paints the pin's refusal too, which no verb reports", async () => {
     // The producer that is not a verb: the session a write is pinned to is proven at
-    // the transport, once, before any tree is opened — and its refusal is the same
+    // the transport, once, before any tree is opened, and its refusal is the same
     // shape and the same colour as the gate's.
     process.env.MNEMA_RUN = 'nope';
     const styled = await invoke('--color=always', 'memory', 'x');
@@ -421,7 +421,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
     expect(allowed).not.toBe(refused);
     expect(allowed).toContain('ALLOWED');
     expect(refused).toContain('REFUSED');
-    // And with the paint on, the same two words are still there — the hue was added,
+    // And with the paint on, the same two words are still there: the hue was added,
     // nothing was taken away.
     const painted = await invoke(
       '--color=always',

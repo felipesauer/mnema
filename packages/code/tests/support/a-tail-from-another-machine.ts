@@ -17,7 +17,7 @@
  *
  * THE SIX HAVE ALREADY DRIFTED, which is the whole argument for there being one: three
  * signatures between them (two arguments, one, none), two return shapes (the tail id, or
- * the id and the anchor), and — the difference that matters — FOUR of the six leave the
+ * the id and the anchor), and, the difference that matters, FOUR of the six leave the
  * donor machine on the disk. A caller measuring what a record holds across an invocation
  * would then be measuring a tree that still has somebody else's whole machine beside it.
  * Only this one and the one in `every-write-signs-what-it-wrote.test.ts` remove it.
@@ -47,7 +47,7 @@ import { createTask, openTreeForWriting } from '@mnema/core/write';
  * Writes a tail on `machine`, merges it into the tree at `into`, and answers with its id.
  *
  * The machine itself is removed afterwards, so nothing left behind is inside the window a
- * caller measures across an invocation — what remains is the merged copy, which is part
+ * caller measures across an invocation: what remains is the merged copy, which is part
  * of the project being exercised.
  */
 export function mergeAForeignTail(into: string, machine: string): string {
@@ -69,7 +69,7 @@ export function mergeAForeignTail(into: string, machine: string): string {
 }
 
 /**
- * An AGENT KEY the project's person enrolled, which signed `signed` facts and was then retired —
+ * An AGENT KEY the project's person enrolled, which signed `signed` facts and was then retired,
  * the one record the CLI cannot write yet (no verb enrols an agent), written the way the chain's
  * own tests write one: the person's writer appends the enrolment and the retirement, a writer
  * holding the agent's key appends its tasks in a tail of its own, and every tail is checkpointed.

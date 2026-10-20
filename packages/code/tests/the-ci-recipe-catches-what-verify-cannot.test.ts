@@ -1,5 +1,5 @@
 /**
- * THE CI RECIPE THE PAGE PUBLISHES CATCHES WHAT `verify` CANNOT — run, from the page's own bytes.
+ * THE CI RECIPE THE PAGE PUBLISHES CATCHES WHAT `verify` CANNOT: run, from the page's own bytes.
  *
  * WHERE THIS COMES FROM. A record that is honest in every byte can still be a lie about its own
  * past, and four of them were measured walking past `mnema verify` on a clean clone: the newest
@@ -8,17 +8,17 @@
  * middle of its own tail and signing it again. Three of the four exit 0 even under
  * `--require=signed`, and the second reader says VERIFIED over them too; the fourth, every
  * tail deleted, is refused by the bare `verify` now (FORMAT.md section 4). Nothing inside the
- * directory remembers what it replaced — what does is git, which kept the commit the change
+ * directory remembers what it replaced: what does is git, which kept the commit the change
  * started from. So `docs/cli-reference.md` publishes a gate that asks it.
  *
  * WHAT IS RUN. The block between the page's two markers, unedited, by `bash`, in a sandbox git
- * repository whose record the built binary made — `mnema` on the PATH is `dist/cli.js`, `HOME` is
+ * repository whose record the built binary made: `mnema` on the PATH is `dist/cli.js`, `HOME` is
  * the sandbox's, and `BASE` is the commit before the change, which is all the page says to set.
  * Each case asserts what `verify --require=signed` alone says over the same commit too, so a case
  * the bare gate already catches is not counted as one only the recipe does.
  *
  * WHAT IT DOES NOT SAY. Whether the base commit is the RIGHT one is the CI's to get right (a
- * shallow clone has none). A history rewritten on the remote itself — a force-push of the base —
+ * shallow clone has none). A history rewritten on the remote itself, a force-push of the base,
  * moves the base with it; that is a protection the git host gives (a protected branch), not this.
  */
 
@@ -284,7 +284,7 @@ describe('the CI recipe the page publishes', () => {
     expect(said.out).toContain(says);
   });
 
-  it('fails, saying why, when the base is not in the clone — a comparison that was not made is not a pass', () => {
+  it('fails, saying why, when the base is not in the clone: a comparison that was not made is not a pass', () => {
     const said = mnema(base, 'verify', '--since', 'no-such-revision');
     expect(said.status).not.toBe(0);
     expect(said.out).toContain('since no-such-revision: not compared — no commit by that name');

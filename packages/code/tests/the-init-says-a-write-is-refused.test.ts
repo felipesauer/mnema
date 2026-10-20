@@ -1,26 +1,26 @@
 /**
- * `mnema init` in a project that already exists says who this machine writes as here — and in a
+ * `mnema init` in a project that already exists says who this machine writes as here, and in a
  * checkout whose recorded identity no longer counts its key, it says that a write is refused, in
  * the refusal's own words, instead of naming an identity the next write contradicts.
  *
  * THE TRAP IT CLOSES. A checkout records, locally, the identity it writes as, and a key LEAVES an
- * identity by being retired from its roster — by another member, pulled in, or by this checkout's
+ * identity by being retired from its roster: by another member, pulled in, or by this checkout's
  * own `mnema key revoke`. Every write asks, before it appends, whether the recorded identity still
  * counts the key, and refuses where it does not (`STALE_ANCHOR`). `init` did not ask: it answered
  * the recorded identity by `authorizingAnchor`, which does not ask the roster, so in such a
  * checkout it printed `identity: <the recorded identity>` with exit 0 while the write right after
- * it was refused. Measured on the built binary before this, in both shapes below — and each case
+ * it was refused. Measured on the built binary before this, in both shapes below, and each case
  * here goes red the same way when `init` stops asking.
  *
  * WHAT IS ASSERTED, on the binary, with a bare remote and a clone per machine:
  *
  *   - in a healthy checkout the answer is the two lines it always was, byte for byte;
  *   - where another member retired the key from the identity the checkout adopted, `init` exits 0,
- *     changes no file, and says that a write to the public tree is refused — the code, the words
+ *     changes no file, and says that a write to the public tree is refused: the code, the words
  *     and the key file, the SAME bytes the write right after it prints; and a `--scope private`
  *     write there lands, which is why the words name the public tree;
  *   - where the checkout let its key go itself and the record proves the key in another identity,
- *     the same — and followed to the letter, with the file `init` names, the restore points the
+ *     the same, and followed to the letter, with the file `init` names, the restore points the
  *     checkout there: `init` then says that identity, the write lands as it, and the record
  *     verifies.
  *
@@ -43,7 +43,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { argvOf } from './support/reading-a-shell-line.js';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** How a refused write's line opens, and how `init`'s line about that write opens. */
@@ -158,7 +158,7 @@ function verifiedIn(remote: string, name: string): number | null {
   return mnema(checkout(remote, name), home(`auditor ${name}`), 'verify').status;
 }
 
-/** Every file under `directory` with a digest of its bytes — what "changed no file" is read off. */
+/** Every file under `directory` with a digest of its bytes: what "changed no file" is read off. */
 function contentsUnder(directory: string): Record<string, string> {
   const digests: Record<string, string> = {};
   if (!existsSync(directory)) return digests;
@@ -178,7 +178,7 @@ function contentsUnder(directory: string): Record<string, string> {
 
 /**
  * `mnema init` in `dir`, with every file of the checkout's tree and of the machine's home digested
- * before and after — and asserted unchanged, since a second init writes nothing in either shape.
+ * before and after, and asserted unchanged, since a second init writes nothing in either shape.
  */
 function initIn(
   dir: string,
@@ -203,7 +203,7 @@ function healthy(dir: string, anchor: string): string[] {
 
 /**
  * `init` in a checkout its key left, then the write it says is refused: asserts init exited 0,
- * said the refusal in the write's own bytes and named no identity — and returns those words, and
+ * said the refusal in the write's own bytes and named no identity, and returns those words, and
  * the file they say the restore takes.
  */
 function saysTheRefusal(
@@ -239,7 +239,7 @@ function saysTheRefusal(
 }
 
 describe('the checkout another member retired the key from', () => {
-  it('is answered its identity while the key counts — and once retired, that a write to the public tree is refused, in the write’s own words, with exit 0', () => {
+  it('is answered its identity while the key counts, and once retired, that a write to the public tree is refused, in the write’s own words, with exit 0', () => {
     const [a, b] = [home('a'), home('b the laptop')];
     const remote = join(sandbox, 'origin.git');
     git(sandbox, 'init', '-q', '--bare', remote);
@@ -279,7 +279,7 @@ describe('the checkout another member retired the key from', () => {
 });
 
 describe('the checkout that let its key go itself', () => {
-  it('is told the refusal and the file — and followed to the letter, init then says the identity the restore points it at', () => {
+  it('is told the refusal and the file, and followed to the letter, init then says the identity the restore points it at', () => {
     // The migration: C founds Y, B founds its own from `atB`, C vouches B into Y and retires; then
     // `atB` lets N into B's own identity and retires B from it.
     const [o, c, b, n] = [home('o'), home('c'), home('b the laptop'), home('n')];
@@ -330,12 +330,12 @@ describe('the checkout that let its key go itself', () => {
   }, 150_000);
 });
 
-/** `packages/code/src` — this surface, where an answer to "who writes here" reaches a person. */
+/** `packages/code/src`: this surface, where an answer to "who writes here" reaches a person. */
 const SURFACE = fileURLToPath(new URL('../src', import.meta.url));
 
 /**
  * The files of this surface that read `authorizingAnchor` and do NOT ask whether a recorded
- * identity still counts the key — each with why what it reads is not who writes here.
+ * identity still counts the key: each with why what it reads is not who writes here.
  */
 const NEED_NOT_ASK: Readonly<Record<string, string>> = {
   'commands/key-enroll.ts':
@@ -366,7 +366,7 @@ describe('every file of this surface that says who writes asks what the write as
   });
 
   it('walks enough to mean something: `init` is among the readers, and it asks', () => {
-    // The vacuous form of the case above is a walk that found no reader — two empty lists agree.
+    // The vacuous form of the case above is a walk that found no reader: two empty lists agree.
     const init = readers.find(({ file }) => file === 'commands/init.ts');
     expect(init, readers.map(({ file }) => file).join(', ')).toBeDefined();
     expect(init?.code).toMatch(/\brecordedAnchorOf\(/);

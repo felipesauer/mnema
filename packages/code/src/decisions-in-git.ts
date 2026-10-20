@@ -6,7 +6,7 @@
  * decision does this word mean" and "which paths does it address" are answers that must not come
  * out differently depending on which verb asked. The addresses are the push's own
  * ({@link readGovernsInForceEverywhere}), so a path this lists for a decision is a path
- * `mnema rules` would report it for — and only a decision IN FORCE has any: a superseded
+ * `mnema rules` would report it for, and only a decision IN FORCE has any: a superseded
  * decision governs nothing, and the verbs say so rather than listing a stale address.
  *
  * A LABEL IS DISPLAY, NOT IDENTITY (two trees each hold an `ADR-1`). So a word that is a label
@@ -21,11 +21,11 @@ import { caches } from './tree-sources.js';
 /** A decision as the bridge reads it. */
 export interface DecisionFacts {
   readonly id: string;
-  /** The citable `ADR-<n>` label — display, not identity. */
+  /** The citable `ADR-<n>` label: display, not identity. */
   readonly adr: string;
   readonly title: string;
   readonly state: string;
-  /** `at` of its last transition — the acceptance, for a decision whose state is `accepted`. */
+  /** `at` of its last transition: the acceptance, for a decision whose state is `accepted`. */
   readonly settledAt: string;
   /** The project-relative paths it governs, when it is in force; empty otherwise. */
   readonly addresses: readonly string[];
@@ -84,7 +84,7 @@ export function nameOf(all: readonly DecisionFacts[], word: string): Named {
     : { kind: 'none' };
 }
 
-/** Whether a trailer value cites `decision` — by its id, or by its label when only it carries it. */
+/** Whether a trailer value cites `decision`: by its id, or by its label when only it carries it. */
 export function cites(
   all: readonly DecisionFacts[],
   decision: DecisionFacts,

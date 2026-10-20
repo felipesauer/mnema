@@ -8,7 +8,7 @@
  * short form that looks like the real value will be pasted where the real value
  * goes, and a surface that prints a value its own next step refuses has not made
  * anything more legible, it has laid a trap. So the same set answers both
- * questions — {@link anchorForms} shortens against the identities the record knows,
+ * questions: {@link anchorForms} shortens against the identities the record knows,
  * and {@link resolveTypedAnchor} resolves against that same map's keys.
  *
  * The set is the RECORD's, never the report's. A read that shows two identities
@@ -19,7 +19,7 @@
  *
  * What is NOT here: any short form for an entity id. That is a different value with
  * a different problem (an alias is a label, not a prefix, and nobody pastes one as
- * an id), and a fingerprint stays whole wherever it appears — `key revoke` names a
+ * an id), and a fingerprint stays whole wherever it appears: `key revoke` names a
  * physical key, and which key a short value means is not a guess to make about key
  * material.
  */
@@ -36,7 +36,7 @@ import { withScopedCaches } from './tree-sources.js';
 
 /**
  * How each identity the record knows is written on a line, keyed by its full
- * anchor. An identity not in this map is printed whole — see {@link anchorText}.
+ * anchor. An identity not in this map is printed whole: see {@link anchorText}.
  */
 export type AnchorForms = ReadonlyMap<string, string>;
 
@@ -53,8 +53,8 @@ export function anchorForms(sources: readonly ScopedCache[]): AnchorForms {
  * it does not.
  *
  * The fallback is the rule, not a safety net. A short form only means something
- * where it can be resolved, so an identity this record has never seen — the actor
- * of an empty focus, a `who` from a tree not opened here — keeps every character.
+ * where it can be resolved, so an identity this record has never seen (the actor
+ * of an empty focus, a `who` from a tree not opened here) keeps every character.
  * The reader gets a value they can act on either way, and "is it shortened" and
  * "can it be pasted back" stay the same question.
  */
@@ -68,7 +68,7 @@ export type TypedAnchor =
   | { readonly ok: false; readonly code: string; readonly message: string };
 
 /**
- * Resolves the anchor a person typed — whole, or by any prefix that names exactly
+ * Resolves the anchor a person typed: whole, or by any prefix that names exactly
  * one identity the record knows.
  *
  * A refusal NAMES THE CANDIDATES, in the short form every read prints, because
@@ -84,12 +84,12 @@ export function resolveTypedAnchor(typed: string, forms: AnchorForms): TypedAnch
 
 /**
  * Resolves a typed anchor for a verb that has no reason to read the whole record
- * otherwise — and opens the trees only if it has to.
+ * otherwise, and opens the trees only if it has to.
  *
  * A value written WHOLE resolves against nothing, so the verb that was handed one
  * pays nothing: the trees stay closed and the read (or the write) proceeds. Only a
  * prefix needs the set, and then the cost is the convenience's own. `key request`
- * relies on the first half of that — it runs on a machine joining an identity, from
+ * relies on the first half of that: it runs on a machine joining an identity, from
  * a clone whose record may hold no identity to match against, and the whole value it
  * was handed has to keep working there.
  */
@@ -122,7 +122,7 @@ function refuse(
   const all = [...forms.keys()];
   if (typed.trim() === '') {
     // Nobody types an empty identity: this is `--actor "$ME"` with the variable
-    // unset. Naming the accident is what turns a refusal into a fix — the same
+    // unset. Naming the accident is what turns a refusal into a fix: the same
     // sentence the surface gives a `--which` that named no agent.
     return {
       ok: false,

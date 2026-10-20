@@ -1,7 +1,7 @@
 /**
  * Two projects on one machine share a home and nothing else. A note taken in the private tree
  * of the first is the first project's own: the second project's `recall`, plain and as a hook
- * reads it, never carries it, while the first project's does — so the absence is about where
+ * reads it, never carries it, while the first project's does, so the absence is about where
  * the note went and not about a note that went nowhere.
  */
 
@@ -63,7 +63,7 @@ describe('the private tree of one project, read from another', () => {
   it('is not promoted to the global tree, which every project reads', () => {
     // The first project holds the pattern in its PRIVATE tree; the second holds the same
     // words in its committed one. Counting the first as evidence would copy it to the one
-    // tree the third project reads — the private note, published by a promotion.
+    // tree the third project reads: the private note, published by a promotion.
     const first = join(sandbox, 'first');
     const second = join(sandbox, 'second');
     const third = join(sandbox, 'third');

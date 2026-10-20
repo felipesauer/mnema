@@ -2,17 +2,17 @@
  * What one session of the host did, read off its own transcript: which files its tool calls
  * wrote, and when it opened.
  *
- * IT READS THE SHAPE OF A LINE AND NEVER A MESSAGE'S WORDS — with ONE function that does, said where
+ * IT READS THE SHAPE OF A LINE AND NEVER A MESSAGE'S WORDS: with ONE function that does, said where
  * it stands ({@link whatThePersonSaid}), and used by the one reader that is switched off until a
  * person switches it on. The answer is a set of paths the
- * session's tool calls named, an instant, and whether the last response wrote anything — a
+ * session's tool calls named, an instant, and whether the last response wrote anything: a
  * line that is not an assistant's tool call is passed over without being looked into. This is
  * the limit `transcripts.ts` keeps for token counts, with one difference that is stated
  * rather than hidden: a PATH is what a person typed or what the model chose, so it is
  * content, and the module that returns it returns it to a caller that prints a COUNT.
  *
- * ONLY A WRITE THAT HAPPENED COUNTS. A tool call the host answered with an error — a hook that
- * refused it, an edit that matched nothing — is an attempt, and its result line says so; it is
+ * ONLY A WRITE THAT HAPPENED COUNTS. A tool call the host answered with an error (a hook that
+ * refused it, an edit that matched nothing) is an attempt, and its result line says so; it is
  * not a file written. A call whose result is not in the transcript is counted, as before.
  *
  * THE TOOLS THAT WRITE ARE A TABLE OF THE HOST'S OWN NAMES ({@link WRITING_TOOLS}) and each
@@ -25,7 +25,7 @@
  * wrote, and the sentence that carries it says so.
  *
  * A RESPONSE IS WHAT FOLLOWS THE LAST PERSON'S PROMPT. Tool results are `user` lines too, so a
- * prompt is the `user` line whose content is text and whose sender is a person — the host flags
+ * prompt is the `user` line whose content is text and whose sender is a person: the host flags
  * text it injected (`isMeta`) and names a sender that is not `human` on task notifications and a
  * subagent's hand-back, so neither is mistaken for somebody typing.
  */
@@ -151,7 +151,7 @@ function isAPrompt(line: Record<string, unknown>): boolean {
 
 /** One thing a person typed into a session, and where it is. */
 export interface WhatThePersonSaid {
-  /** The line of the transcript it is on, counted from 1 — what a finding cites. */
+  /** The line of the transcript it is on, counted from 1: what a finding cites. */
   readonly line: number;
   /** The host's own id for the line, when it wrote one. */
   readonly uuid: string | undefined;
@@ -162,7 +162,7 @@ export interface WhatThePersonSaid {
 }
 
 /**
- * Every prompt a person typed in the transcript at `path`, in order — the one place this module
+ * Every prompt a person typed in the transcript at `path`, in order: the one place this module
  * reads WORDS and not the shape of a line, and it is why it is a function of its own.
  *
  * IT RETURNS PROSE, and the caller is `user-corrections.ts`, which quotes at most one sentence of

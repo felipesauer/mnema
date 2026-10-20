@@ -2,7 +2,7 @@
  * THE PRODUCT CALLS NO MODEL, AND THREE FILES ARE ALLOWED TO REACH THE NETWORK AT ALL.
  *
  * WHY THIS IS A GUARD AND NOT A HABIT. This project's second stated refusal is *a
- * fact summarized by a model entering as a recorded entry* — the record is only
+ * fact summarized by a model entering as a recorded entry*: the record is only
  * worth what it proves, and a paragraph a model wrote about work it did not watch
  * proves nothing while looking exactly like something that does. That refusal is
  * currently held by nothing but everyone remembering it, and the verb that reads
@@ -14,7 +14,7 @@
  *
  * THE ALLOWLIST HAS THREE MEMBERS, each a question only somebody else can answer. The
  * outside WITNESS: T3 asks a calendar to attest a checkpoint digest, and what leaves is
- * a digest and nothing else — no id, no title, no body, no count. And the comparison
+ * a digest and nothing else (no id, no title, no body, no count). And the comparison
  * with GITHUB (`verify --against-github`): it asks `github.com/<name>.keys` for the
  * keys an account publishes, so what leaves is an account name the record already
  * holds in public, checked against GitHub's own rule before it is put in the address,
@@ -23,7 +23,7 @@
  * defensible and why the allowlist is by FILE rather than by package.
  *
  * THE NAIVE SWEEP MISSES IT, and that is the reason this file greps what it greps.
- * A `grep 'fetch('` over the whole product returns NOTHING — the single real call
+ * A `grep 'fetch('` over the whole product returns NOTHING: the single real call
  * site is `const call = network.fetch ?? fetch`, a bare reference to the global
  * with no parenthesis after it, handed to a variable and called through that. So a
  * rule written around the call shape would have reported a product with no network
@@ -35,7 +35,7 @@
  * nothing; but a model endpoint written in a comment is exactly as much of a finding
  * as one written in code, because it means somebody was building toward it. The
  * line-comment strip deliberately does not fire on `//` preceded by a colon, so a
- * URL in a string keeps its host — the one thing the host patterns need.
+ * URL in a string keeps its host: the one thing the host patterns need.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -44,7 +44,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -61,8 +61,8 @@ const TRACKED: readonly string[] = execFileSync(
   .filter((where) => where !== '');
 
 /**
- * The product: the sources that are published and run for a user — every package's
- * `src`, plus the plugin. Tests are out because a test that injects a fake fetcher
+ * The product: the sources that are published and run for a user (every package's
+ * `src`, plus the plugin). Tests are out because a test that injects a fake fetcher
  * is exactly how the one real network call is proved without one.
  */
 const PRODUCT: readonly string[] = TRACKED.filter(
@@ -91,7 +91,7 @@ const MAY_REACH_THE_NETWORK: readonly string[] = [
   // else in the package reaches the network.
   'packages/action/src/github.ts',
   // Runs `git fetch` into a cache of its own, from the repository a project points at to read its
-  // decisions — a network call only when that location is a URL, and only from `inherit set`,
+  // decisions: a network call only when that location is a URL, and only from `inherit set`,
   // `inherit update` and the one read that finds its pinned commit missing; never a model.
   'packages/code/src/inherited-record.ts',
   // `mnema stack add <https://…>`: one shallow `git clone` of the address the person typed,
@@ -171,7 +171,7 @@ describe('the product calls no model', () => {
     expect(MANIFESTS.length).toBeGreaterThan(3);
   });
 
-  it('has a ruler that fires — every pattern, against a control', () => {
+  it('has a ruler that fires: every pattern, against a control', () => {
     // An instrument that cannot say it is broken is worse than none. Each pattern is
     // held against text it MUST match, so a regex edited into inertness is red here
     // rather than silently reporting a clean product.
@@ -255,7 +255,7 @@ describe('the product calls no model', () => {
 
   it('reads other people’s decisions with no model, and the reader proves it', () => {
     // The specific case the guard was written for: the verb that reads decision
-    // documents is deterministic — headings and labels — and neither module it is
+    // documents is deterministic, headings and labels, and neither module it is
     // built from reaches anything.
     for (const where of ['packages/core/src/adr/read.ts', 'packages/core/src/adr/scan.ts']) {
       const source = code(read(where));

@@ -91,7 +91,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 2521,
+  'packages/code/src/': 755,
   // what it prints
   'packages/code/src/presentation/': 43,
   // the console
@@ -101,7 +101,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 7,
   // the cases beside @mnema/code
-  'packages/code/tests/': 2815,
+  'packages/code/tests/': 905,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context

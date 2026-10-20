@@ -4,7 +4,7 @@
  * THE DEFECT. The package declares `engines.node`, but `engines` is advice to the
  * installer: npm prints `EBADENGINE` and installs anyway, and the consumer does not inherit the
  * workspace's `engine-strict`. A person on a runtime the package says it does not support then
- * gets whatever the first module that needs a newer one throws — a stack trace out of an import,
+ * gets whatever the first module that needs a newer one throws: a stack trace out of an import,
  * which looks like the product's fault. The floor is where `node:sqlite` is a release candidate
  * and where `@sigstore/verify` and the Ed25519 rule of the verifier start to hold.
  *
@@ -14,7 +14,7 @@
  * the floor it says one line and exits 1.
  *
  * THE NUMBER IS NOT HERE. It is `engines.node` in this package's own `package.json`, read at run
- * time — the one place the floor is declared (`the-runtime-floor-is-declared-once.test.ts`), so
+ * time: the one place the floor is declared (`the-runtime-floor-is-declared-once.test.ts`), so
  * raising it there is raising it here. `node-floor.test.ts` holds that the declaration is a shape
  * this reads: a floor written in a form it cannot parse would switch the guard off, and that case
  * goes red instead.
@@ -43,7 +43,7 @@ function versionOf(text: string): Version | undefined {
 }
 
 /**
- * The Nodes a range takes, one entry per `||` alternative — or undefined when any alternative is
+ * The Nodes a range takes, one entry per `||` alternative, or undefined when any alternative is
  * written in a shape not read. `^` and `~` carry the ceiling semver gives them; `>=` and a bare
  * version are a floor with none.
  */
@@ -81,7 +81,7 @@ function reaches(running: Version, floor: Version): boolean {
 
 /**
  * The one line to say when `running` is a Node `range` does not take, or undefined when it is
- * taken (or when either cannot be read — a guard that refuses on a reading it cannot make would
+ * taken (or when either cannot be read: a guard that refuses on a reading it cannot make would
  * refuse a runtime nobody has measured to be wrong).
  */
 export function floorRefusal(running: string, range: string): string | undefined {

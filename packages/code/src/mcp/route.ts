@@ -2,28 +2,28 @@
  * Where a write goes: which project, and which of its trees.
  *
  * A workspace holds several projects and a conversation is regularly work in more
- * than one of them — a product being migrated into its successor, a fix made in one
+ * than one of them: a product being migrated into its successor, a fix made in one
  * codebase and normalized into two others. The cascade picks ONE of them for the
  * session ({@link resolveContext}), and until a write could name another, everything
  * a connection recorded landed there: the work done in the second and third projects
  * was written into the first, in a record that then says it happened somewhere it
- * did not. Nothing marks such a fact afterwards — no field of an event names a
- * project — so it is not a defect a reader can find and undo later.
+ * did not. Nothing marks such a fact afterwards (no field of an event names a
+ * project), so it is not a defect a reader can find and undo later.
  *
  * So a write says where it belongs, and this is the one function that answers it.
  * Two questions, and they are asked together because they are the same question:
  *
  *   1. WHICH PROJECT. The `project` argument, matched against the projects the
  *      client announced ({@link Session.workspaceProjects}). Absent, the answer is
- *      the session's own — the cascade's choice, unchanged, which is what makes a
+ *      the session's own: the cascade's choice, unchanged, which is what makes a
  *      caller that says nothing behave exactly as it did before the argument
  *      existed.
- *   2. WHICH TREE inside it. The `scope` argument over the tree the KIND names —
+ *   2. WHICH TREE inside it. The `scope` argument over the tree the KIND names:
  *      the per-action scope model applied to whichever project the write landed in.
  *
  * THE KIND IS AN ARGUMENT HERE, and that is what makes this the MCP's one place for
  * the rule. A session cannot answer it: the scope used to be settled at the
- * handshake, from the connecting agent, and the kind only exists at the tool — so a
+ * handshake, from the connecting agent, and the kind only exists at the tool, so a
  * default carried on the session was a default that could not know what it was
  * routing. Each verb passes its own kind (the same literal it appends), the core's
  * table answers, and no verb spells out an answer of its own. That is the CLI's shape
@@ -74,7 +74,7 @@ export type WriteRoute =
        * The project the write was routed to, ABSENT when it goes to the session's
        * own trees. Absent rather than filled in with the session's project, so that
        * "the caller named a destination" stays distinguishable from "the caller said
-       * nothing" all the way to the door — {@link openWrite} reads the session's own
+       * nothing" all the way to the door: {@link openWrite} reads the session's own
        * trees for the second case, and there is exactly one place that decides it.
        */
       readonly target?: WriteTarget;
@@ -93,10 +93,10 @@ export type WriteRoute =
 
 /**
  * Resolves a write's destination: the project the caller named (or the session's
- * own), and the scope inside it — the caller's override, else the tree this KIND
- * belongs in.
+ * own), and the scope inside it (the caller's override, else the tree this KIND
+ * belongs in).
  *
- * The order is deliberate — the project first, then the scope over it. A scope is
+ * The order is deliberate: the project first, then the scope over it. A scope is
  * only available or not with respect to a tree set, so checking it before the
  * project is known would check it against the wrong one: `public` is unavailable in
  * a session that landed outside a project and perfectly available in the project
@@ -116,7 +116,7 @@ export function routeWrite(
 
   const trees = target?.trees ?? session.trees;
   const scope = input.scope ?? defaultTree(session, trees, kind);
-  // A caller's scope may name a tree this destination does not have — `public` in a
+  // A caller's scope may name a tree this destination does not have: `public` in a
   // session with no project. Refuse as data rather than throwing, so the server
   // shapes it into a tool error and the agent sees the write did not happen. A
   // destination's own default always resolves, so an omitted scope never hits this.
@@ -131,7 +131,7 @@ export function routeWrite(
 }
 
 /**
- * The directory a write fell in, for the reply to say — and only when the CALLER named
+ * The directory a write fell in, for the reply to say, and only when the CALLER named
  * the project.
  *
  * A path the caller carried can outlive the connection it was learnt in: after
@@ -154,7 +154,7 @@ export function routedTo(
 
 /**
  * Whether the PERSON's key signs a write into `scope` of the project it was routed to, when the
- * server was asked to sign as an agent — the fact the opening says for the trees of the session
+ * server was asked to sign as an agent: the fact the opening says for the trees of the session
  * and cannot say for ANOTHER project of the workspace the write is routed to afterwards.
  *
  * Said only when all of these hold: the destination is a project other than the session's own,
@@ -177,20 +177,20 @@ export function personSignedIn(
 }
 
 /**
- * The tree a kind lands in at a destination that says nothing — the core's rule
+ * The tree a kind lands in at a destination that says nothing: the core's rule
  * inside a project, the global tree outside one.
  *
  * The second half is not a fallback but the only answer there is: outside a project
  * there is no public and no private to choose between, so a kind that asked for one
  * would name a tree that is not there. That is what keeps a decision recorded in a
- * global session going to the global tree instead of earning `SCOPE_UNAVAILABLE` —
+ * global session going to the global tree instead of earning `SCOPE_UNAVAILABLE`:
  * the refusal is for a scope the CALLER named and this context lacks, never for one
  * the rule chose on its own.
  *
  * The ORIGIN it passes is the connection's own agent, and it is always present here:
  * a stdio connection is a program talking to a program. The core reads it for the two
  * kinds whose tree the kind cannot decide, and that is the known-imperfect half of the
- * rule — on this surface it answers "an agent" even for a capture the person asked
+ * rule: on this surface it answers "an agent" even for a capture the person asked
  * for. Naming it here rather than hiding it: the session is where the value comes
  * from, so this is where a reader looks to see what the rule was told.
  *
@@ -224,13 +224,13 @@ type Picked =
  * server's working directory is whatever the host spawned it with. It used to be
  * described here as having "nothing to do with the projects"; for a client that
  * declares no workspace roots it is now what the cascade finds the session's own
- * project from (`context.ts`, rung 3) — and that is exactly why it cannot also decide
+ * project from (`context.ts`, rung 3), and that is exactly why it cannot also decide
  * what a caller's relative path means. It is one directory, chosen by the host, and a
  * workspace holds several projects. Resolving a relative argument against the
  * process's cwd would sometimes produce a real project's path by accident.
  *
- * A path is matched WHOLE and never walked up. The cascade walks up — a package of a
- * monorepo is a place to work — and this deliberately does not: adopting a nearby
+ * A path is matched WHOLE and never walked up. The cascade walks up (a package of a
+ * monorepo is a place to work) and this deliberately does not: adopting a nearby
  * project for an argument that missed is how a write lands in a project nobody named,
  * and every path this could walk up from is a path the caller can spell exactly. The
  * refusal names the projects, so a subdirectory earns a list rather than a guess.
@@ -243,7 +243,7 @@ function pickProject(session: Session, name: string): Picked {
     return { ok: false, code: 'UNKNOWN_PROJECT', message: pathsToUse(name, projects) };
   }
   // `resolve` so a trailing slash, a `.` or a `..` still matches the one spelling
-  // the list holds — the same directory, written two ways.
+  // the list holds: the same directory, written two ways.
   const wanted = resolve(name);
   const found = projects.find((project) => project.dir === wanted);
   if (found !== undefined) return { ok: true, target: found };
@@ -252,8 +252,8 @@ function pickProject(session: Session, name: string): Picked {
 
 /**
  * What a refusal says when the argument is not an absolute path: that a write takes only
- * the path, and the paths of this session — the ones whose directory has that name, when
- * some do, else all of them.
+ * the path, and the paths of this session (the ones whose directory has that name, when
+ * some do, else all of them).
  *
  * It says how to succeed rather than only what went wrong, because the caller cannot
  * derive it. The name it used may well be the name of a project here, and that is exactly
@@ -284,7 +284,7 @@ function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
  * Naming them is the whole value of the sentence. The caller passed a name because
  * it believes the work belongs somewhere other than where the session landed, and it
  * is right about that; what it got wrong is a spelling. A refusal that only said "not
- * a project" would leave it with one move — omit the argument — which puts the fact
+ * a project" would leave it with one move: omit the argument, which puts the fact
  * back in the project the name was passed to avoid.
  */
 function noSuchProject(name: string, projects: readonly WriteTarget[]): string {
@@ -301,7 +301,7 @@ function noSuchProject(name: string, projects: readonly WriteTarget[]): string {
 }
 
 /**
- * The projects' paths, quoted, on one line — the ONE spelling of this list, shared
+ * The projects' paths, quoted, on one line: the ONE spelling of this list, shared
  * by the refusals here and by the sentence the opening read tells the agent.
  *
  * Shared because the two are read together: an agent is told the list, passes one of
@@ -311,7 +311,7 @@ function noSuchProject(name: string, projects: readonly WriteTarget[]): string {
  *
  * Quoted so the boundary between two paths stays visible: a directory name may hold
  * a comma, and an unquoted list would then read as one more project than there are.
- * And each through {@link oneLine}, for the reason every refusal is one line — a
+ * And each through {@link oneLine}, for the reason every refusal is one line: a
  * directory name may hold a newline, and the second half of a broken refusal has the
  * shape of a whole refusal about something nobody asked.
  */

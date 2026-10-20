@@ -1,15 +1,15 @@
 /**
- * THE FRONT PAGE IS DRAWN FROM THE CONSOLE — the pictures in `docs/assets/` are made by a script
+ * THE FRONT PAGE IS DRAWN FROM THE CONSOLE: the pictures in `docs/assets/` are made by a script
  * from the same sources the console draws from, and painted in one accent.
  *
  *   - THE BANNER is the console's wordmark: `.github/the-front-page/draw.mjs` reads the rows of
  *     `THE_BLOCKS` (`src/presentation/banner.ts`) and draws each glyph as geometry. Here the
  *     script runs again in memory over the rows the console draws today, and every picture it
- *     makes is held byte for byte to the one committed — so a wordmark changed in the console and
+ *     makes is held byte for byte to the one committed, so a wordmark changed in the console and
  *     not drawn again fails here, and so does a picture edited by hand.
  *   - THE ACCENT is one constant (`.github/the-front-page/accent.mjs`): `#c4a0f5` on a dark page,
- *     `#997dbf` on a light one. Every colour in every SVG of `docs/assets/` is either neutral — a
- *     grey, whose channels lie within {@link NEUTRAL_SPREAD} of each other — or the accent of the
+ *     `#997dbf` on a light one. Every colour in every SVG of `docs/assets/` is either neutral (a
+ *     grey, whose channels lie within {@link NEUTRAL_SPREAD} of each other) or the accent of the
  *     theme the file is named for. Any other hue fails, and so does a colour written in a form
  *     this does not read (a name, `rgb()`, `hsl()`), rather than pass unread.
  *   - THE PACKAGES: each published package but `@mnema/code` has its own picture, drawn by the

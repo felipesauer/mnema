@@ -1,5 +1,5 @@
 /**
- * READING SOURCE AS CODE — the two things three structural guards each needed and
+ * READING SOURCE AS CODE: the two things three structural guards each needed and
  * each had written out for itself.
  *
  * A guard that walks the workspace's own files asks the same two questions every
@@ -13,8 +13,8 @@
  * the paths; what counts as a violation belongs to the guard that asks.
  *
  * THE WALK HAS TWO READINGS NOW, and they are one walk on purpose. {@link codeOnly} keeps
- * the code; {@link literalsOnly} keeps the other half — what the string and template
- * literals say — for the guard that reads the commands the product hands a person
+ * the code; {@link literalsOnly} keeps the other half, what the string and template
+ * literals say, for the guard that reads the commands the product hands a person
  * (`the-command-handed-over-runs-as-handed.test.ts`). A second lexer written for that guard
  * would be a second answer to where a literal begins. Measured when the second reading
  * arrived: over the 719 tracked scripts, `codeOnly` returns the same bytes it returned
@@ -50,14 +50,14 @@ const A_REGEX_CAN_FOLLOW_THESE_WORDS =
 
 /**
  * The source with every comment, string literal and REGEX literal blanked, and newlines
- * kept so nothing shifts. A template's interpolations survive — `${deriveAlias(id)}` is a
- * call — while the literal text around them does not, which is why a nested template
+ * kept so nothing shifts. A template's interpolations survive (`${deriveAlias(id)}` is a
+ * call), while the literal text around them does not, which is why a nested template
  * inside an interpolation is handled by the stack rather than by a counter.
  *
  * THE REGEX MODE IS NOT DECORATION, and the premise it replaces was that a regex holds
  * nothing this scanner has to know about. It holds quotes. `/"at":"([^"]+)"/` carries five
  * of them, so the reader took the fifth for the start of a string and swallowed everything
- * up to the next quote ANYWHERE in the file — a hundred and nineteen lines of
+ * up to the next quote ANYWHERE in the file, a hundred and nineteen lines of
  * `what-the-agent-just-did.test.ts`, assertions included. Measured over the whole
  * workspace by appending a sentinel and asking whether it survived: nine of five hundred
  * and seventy-eight files ended outside code mode before this mode existed, and none do
@@ -65,9 +65,9 @@ const A_REGEX_CAN_FOLLOW_THESE_WORDS =
  * that the guard was wrong about `repl/following.ts`; this is what it was wrong about.
  *
  * Telling a regex from a division is the one judgement here: after an identifier, a digit,
- * a `)` or a `]` a slash divides, and after anything else it opens a pattern — with the
+ * a `)` or a `]` a slash divides, and after anything else it opens a pattern (with the
  * keywords that end in a letter and still want an operand named above, because `return
- * /x/` is not a division.
+ * /x/` is not a division).
  */
 export function codeOnly(source: string): string {
   return scan(source).code;
@@ -83,7 +83,7 @@ export const LITERAL_EDGE = '\u0000';
 export const INTERPOLATED = '\u0001';
 
 /**
- * The source with ONLY the text of its string and template literals kept — the other half of
+ * The source with ONLY the text of its string and template literals kept: the other half of
  * {@link codeOnly}, read by the same walk, so the two can never disagree about where a literal
  * begins. Code, comments and regex literals are blanked; newlines are kept everywhere, so a
  * line number counted here is the line number of the source.
@@ -203,7 +203,7 @@ function scan(source: string): { code: string; literals: string } {
       i += 2;
       continue;
     }
-    // A pattern ends at an unescaped `/` — but not one inside a character class, where
+    // A pattern ends at an unescaped `/`, but not one inside a character class, where
     // `[^/]` is a literal slash, and not past a newline, which no regex may cross.
     //
     // A CLASS DOES NOT NEST, and reading it with a depth counter is the one place this

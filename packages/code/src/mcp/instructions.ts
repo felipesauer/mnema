@@ -1,27 +1,27 @@
 /**
- * What this server says about itself when a client connects — the `instructions` of the
+ * What this server says about itself when a client connects: the `instructions` of the
  * MCP handshake, which the server had never sent.
  *
  * WHY THIS TEXT, AND WHY HERE. The host this product ships a plugin for hands a server's
  * `instructions` to every session the server is connected to, under the server's name,
- * before the session's first turn — in the system section of an interactive session, and as a
- * reminder at the head of the first message of a headless one — and it DEFERS the tools:
+ * before the session's first turn (in the system section of an interactive session, and as a
+ * reminder at the head of the first message of a headless one) and it DEFERS the tools:
  * "only tool names and server instructions load at session start"
  * (code.claude.com/docs/en/mcp, *Scale with MCP tool search*). So before
  * an agent decides to reach for a tool of this server, the only words of this server it has
  * read are the tool names and this. Read in the field, the names alone were not enough: almost
  * none of the agent's tool calls went to this server, the ones that wrote came after a person
  * typed that it should be used, and every tool search the agent made was a `select:` of a name
- * it had already decided on — never a search by what a tool does. The day, the host and the
+ * it had already decided on, never a search by what a tool does. The day, the host and the
  * counts are on `docs/evidence.md`, under "Historical". The host's own advice for this field
  * is the gap in one sentence: say what the tools are for and WHEN to search for them. That is
  * what this is.
  *
- * IT MAY SAY WHAT TO DO, AND THE FRAMING OF THE RECORD MAY NOT — and the line between the
+ * IT MAY SAY WHAT TO DO, AND THE FRAMING OF THE RECORD MAY NOT, and the line between the
  * two is the one `record-framing.ts` already draws. The framing is about RECORD text,
  * somebody else's decisions, and this product has no standing to tell a reader to obey
  * them; that is why "Follow them." left the document. This text is about THIS product's
- * own doors — when one is worth opening, and what comes back through it — which is the
+ * own doors (when one is worth opening, and what comes back through it), which is the
  * manual a server owes, in the place the host reads a manual from. It never tells a reader
  * to follow what the record says, and the channel guard's tripwire holds it to that the
  * same way it holds every framing (`the-agent-is-told-what-it-has.test.ts`).
@@ -36,10 +36,10 @@
  *
  * IT IS NOT A {@link ModelChannel}, and the reason is the union's own criterion. A channel
  * there is a point that puts text OUT OF THE RECORD in front of a model; this carries no
- * record text at all — it is the class of a tool description, the product describing
+ * record text at all: it is the class of a tool description, the product describing
  * itself. It could not carry any either: it is sent in the handshake, before the session
  * knows which project it serves, so it is the same bytes for every connection. For the same
- * reason there is no switch in front of it — there is no record to read one from yet — and
+ * reason there is no switch in front of it (there is no record to read one from yet) and
  * what turns it off is disconnecting the server. `record-framing.ts` lists it among the
  * texts deliberately outside the union, with this reason.
  *
@@ -56,32 +56,32 @@
  *
  * WHAT IT CLAIMS, AND WHAT HOLDS EACH, because a manual that promised more than the server
  * does would be the one text of this product nobody checks:
- *   - that every tool it names is served — `the-agent-is-told-what-it-has.test.ts`,
+ *   - that every tool it names is served: `the-agent-is-told-what-it-has.test.ts`,
  *     against `tools/list`;
- *   - that a decision is born `proposed` and is in force once accepted — the workflow's
+ *   - that a decision is born `proposed` and is in force once accepted: the workflow's
  *     only transitions (`core/src/workflow/decision-transitions.ts`), and the brief's own
  *     cases for which decisions it lists;
  *   - that a credential does not belong here because a record is permanent and a public
- *     one is committed — `RECORD_CONTRACT`, the text every write tool but `skills` carries
+ *     one is committed: `RECORD_CONTRACT`, the text every write tool but `skills` carries
  *     (`mcp-e2e.test.ts`, "every write tool declares the contract"; this said "every write
  *     tool", while two did not, and `rules_before_an_edit` came to carry it);
  *   - that, with the plugin, a session opens with the decisions in force, the adopted
  *     patterns and the notes this machine holds, the ones near the work first, unless that was
- *     switched off —
+ *     switched off:
  *     `the-record-arrives-unasked.test.ts` for both handlers the plugin declares, and
  *     `the-switch-is-a-fact.test.ts` for the switch.
  *   - that no tool here reports, sends or accepts a report of an internal error, and that the
- *     report is the person's to run — `a-report-needs-a-person.test.ts`, against `tools/list`
+ *     report is the person's to run: `a-report-needs-a-person.test.ts`, against `tools/list`
  *     and the binary.
  * It does NOT claim that the plugin is installed, because a server cannot see how it was
- * connected — so the sentence about what comes back says "with the mnema plugin".
+ * connected, so the sentence about what comes back says "with the mnema plugin".
  */
 
 /**
  * The text, as the lines a reader sees under the server's name.
  *
- * Lines rather than one string so that the source reads the way the host renders it —
- * a paragraph, a list, a paragraph — and joined once, below, so there is one string on
+ * Lines rather than one string so that the source reads the way the host renders it
+ * (a paragraph, a list, a paragraph) and joined once, below, so there is one string on
  * the wire and one here.
  */
 const LINES = [

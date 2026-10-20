@@ -5,7 +5,7 @@
  * provider, no network: the token is unsigned, which is all a double reads.
  *
  * Every call makes new keys, so a bundle of one Sigstore is a bundle of an unknown root to
- * another — which is how a case gets a signature this binary's root does not reach.
+ * another, which is how a case gets a signature this binary's root does not reach.
  */
 
 import { createHash, generateKeyPairSync } from 'node:crypto';

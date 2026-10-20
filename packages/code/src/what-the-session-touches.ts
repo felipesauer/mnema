@@ -1,5 +1,5 @@
 /**
- * What a session touches as it opens — the words the notes it is handed are chosen by.
+ * What a session touches as it opens: the words the notes it is handed are chosen by.
  *
  * WHY IT EXISTS. The notes a session opens with (`mnema recall`) were the NEWEST ones, and
  * the newest note is not the one about the work in front of the session: a record whose
@@ -10,13 +10,13 @@
  * WHAT CAN BE READ, AND WHEN. The opening runs before the person has asked anything, so
  * there is no request to read, and the host hands the handler nothing about the work
  * (`plugin/hooks/hand-over.mjs` reads no stdin, and the host's input at that moment is a
- * session id, a transcript path and a reason — no text of the task). What exists at that
+ * session id, a transcript path and a reason: no text of the task). What exists at that
  * instant, and reads with no model, is the project's own directory and its own record:
  *
- *   - the files CHANGED in the working tree — the work in progress, when there is some;
- *   - the tasks IN PROGRESS in the record — the one piece of it that names the work;
- *   - the name of the BRANCH — which names the work more often than not;
- *   - the files of the last {@link COMMITS} commits — the work just done, when the tree
+ *   - the files CHANGED in the working tree: the work in progress, when there is some;
+ *   - the tasks IN PROGRESS in the record: the one piece of it that names the work;
+ *   - the name of the BRANCH, which names the work more often than not;
+ *   - the files of the last {@link COMMITS} commits: the work just done, when the tree
  *     is clean.
  *
  * They are read in that order, and the order is the priority when there are more words
@@ -24,7 +24,7 @@
  *
  * THE RECORD'S OWN FILES ARE NOT THE WORK. Every write to the record changes the committed
  * tree, so in a project whose only change is the record, the changed files are its own
- * chain — measured on a field project at the moment its session would open: its two
+ * chain, measured on a field project at the moment its session would open: its two
  * changed files were `.mnema/tails/…/000001.jsonl` and `checkpoints.jsonl`. The record's
  * directory is excluded from both git reads by a pathspec, and what is left is the project.
  *
@@ -36,14 +36,14 @@
  * (`--no-show-signature`), which would start `gpg` once per commit.
  *
  * NO GIT IS NOT AN ERROR. Outside a repository, with no `git` on the PATH, in a repository
- * with no commit yet, or when a read takes longer than {@link GIT_TIMEOUT_MS} — every one
+ * with no commit yet, or when a read takes longer than {@link GIT_TIMEOUT_MS}: every one
  * of those is a signal that is not there, and a session with no signal is handed the
  * newest notes, as before. The timeout is the one input here that is not a function of the
  * tree: a machine slow enough to cross it is handed the newest notes where a faster one is
  * handed the nearest. It is there because the opening must not wait on a repository.
  *
  * DETERMINISTIC, AND NOTHING ELSE MOVES IT: the same tree and the same record produce the
- * same words in the same order — git's own orders (paths sorted, commits newest first), the
+ * same words in the same order; git's own orders (paths sorted, commits newest first), the
  * record's tasks by id, and a first-seen dedupe. Nothing is sampled, and no clock is read.
  */
 
@@ -51,7 +51,7 @@ import { spawnSync } from 'node:child_process';
 import type { ScopedCache } from '@mnema/context';
 import { PROJECT_DIR, type TaskState, wordsOf } from '@mnema/core';
 
-/** What the session touches, as words — and where the words came from, counted. */
+/** What the session touches, as words, and where the words came from, counted. */
 export interface SessionTouch {
   /** The words the notes are ranked by, in priority order, each once. Empty is no signal. */
   readonly words: readonly string[];
@@ -61,7 +61,7 @@ export interface SessionTouch {
   readonly tasks: number;
   /** Whether the branch's name contributed a word. */
   readonly branch: boolean;
-  /** How many of the last commits were read — up to {@link COMMITS}. */
+  /** How many of the last commits were read: up to {@link COMMITS}. */
   readonly commits: number;
 }
 
@@ -81,7 +81,7 @@ export const MAX_WORDS = 64;
 
 /**
  * The shortest word that counts. Under three characters, the words of a path are its
- * extensions and its fragments (`ts`, `md`, `v2`) — they say what FORMAT a file is in, and
+ * extensions and its fragments (`ts`, `md`, `v2`): they say what FORMAT a file is in, and
  * a note that says `ts` is not about the file.
  */
 const MIN_WORD = 3;
@@ -102,7 +102,7 @@ const GIT_MAX_BYTES = 4 * 1024 * 1024;
 /** What every git read here runs with: no lock taken, no program of the repository's run. */
 const READ_ONLY = ['-c', 'core.fsmonitor=false', '--no-optional-locks'];
 
-/** Everything under the project's directory except the record itself — both reads' pathspec. */
+/** Everything under the project's directory except the record itself: both reads' pathspec. */
 const THE_PROJECT_NOT_THE_RECORD = ['--', '.', `:(exclude)${PROJECT_DIR}`];
 
 /**
@@ -167,8 +167,8 @@ function workingTree(root: string): { readonly changed: string[]; readonly branc
     '--branch',
     // Pinned rather than left to the person's configuration, so a `status.showUntrackedFiles
     // = no` somewhere does not decide what a session is near. `all` and not `normal`: a new
-    // directory is listed as `src/` under `normal`, and the words of the files in it — the
-    // new work itself — never reach the ranking (measured on the binary: a session that had
+    // directory is listed as `src/` under `normal`, and the words of the files in it, the
+    // new work itself, never reach the ranking (measured on the binary: a session that had
     // just written `src/invoice/rounding.ts` was near nothing but `src`).
     '--untracked-files=all',
     '--ignore-submodules=all',
@@ -180,7 +180,7 @@ function workingTree(root: string): { readonly changed: string[]; readonly branc
 
 /**
  * Reads `git status --porcelain=v2 -z --branch`: the branch from its header, and one path
- * per entry — the new path of a rename, whose original is the next NUL-separated field.
+ * per entry (the new path of a rename, whose original is the next NUL-separated field).
  * The field counts are git's documented ones for each entry type.
  */
 export function parseStatus(out: string): { readonly changed: string[]; readonly branch?: string } {
@@ -206,7 +206,7 @@ export function parseStatus(out: string): { readonly changed: string[]; readonly
   return { changed: changed.filter((path) => path !== ''), ...(branch ? { branch } : {}) };
 }
 
-/** What follows the `n`th space of an entry — the path, which may itself hold spaces. */
+/** What follows the `n`th space of an entry: the path, which may itself hold spaces. */
 function afterFields(entry: string, n: number): string {
   let at = -1;
   for (let k = 0; k < n; k += 1) {
@@ -224,7 +224,7 @@ function branchWordsOf(branch: string | undefined): string[] {
   );
 }
 
-/** The mark each commit's entry starts with in the log below — a byte no path holds. */
+/** The mark each commit's entry starts with in the log below: a byte no path holds. */
 const COMMIT_MARK = '\u0001';
 
 /** The paths of the last {@link COMMITS} commits that touched the project, newest first. */
@@ -257,7 +257,7 @@ export function parseLog(out: string): { readonly paths: string[]; readonly comm
   return { paths, commits };
 }
 
-/** The state a task is in while somebody works on it — typed, so a renamed state does not compile. */
+/** The state a task is in while somebody works on it: typed, so a renamed state does not compile. */
 const IN_PROGRESS: TaskState = 'IN_PROGRESS';
 
 /** The titles of the tasks in progress, out of every tree read, by id. */
