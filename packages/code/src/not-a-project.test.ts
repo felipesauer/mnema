@@ -1,5 +1,5 @@
 /**
- * What the product says about a `.mnema/` it passes over — the words, the count, and when
+ * What the product says about a `.mnema/` it passes over: the words, the count, and when
  * it says nothing.
  *
  * The count is asserted against events the product's own writer stored, and read back by
@@ -73,7 +73,7 @@ describe('what a passed-over tree holds', () => {
     expect(heldIn(tree)).toEqual({ events: 0, tails: 0, unreadable: 1 });
   });
 
-  it('holds nothing where there are no tails — a data directory’s key and global tree are not counted', () => {
+  it('holds nothing where there are no tails: a data directory’s key and global tree are not counted', () => {
     const dataDir = join(home, '.mnema');
     mkdirSync(join(dataDir, 'identity', 'keys'), { recursive: true });
     mkdirSync(join(dataDir, 'global', 'tails', 'x'), { recursive: true });
@@ -82,7 +82,7 @@ describe('what a passed-over tree holds', () => {
 });
 
 describe('the sentence', () => {
-  it('names the tree, why it is no project, and the count — on one line', () => {
+  it('names the tree, why it is no project, and the count: on one line', () => {
     const tree = join(home, '.mnema');
     const said = passedOverSentence({ tree, why: 'home' }, { events: 5, tails: 2, unreadable: 0 });
     expect(said).toBe(
@@ -118,7 +118,7 @@ describe('the sentence', () => {
 });
 
 describe('the sentences a walk owes', () => {
-  it('names the home tree the walk from a folder under it passed over — and only that', () => {
+  it('names the home tree the walk from a folder under it passed over, and only that', () => {
     writtenInto(join(home, '.mnema'), 'a note that landed in the home tree');
     const folder = join(home, 'work', 'x');
     mkdirSync(folder, { recursive: true });

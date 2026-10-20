@@ -7,8 +7,8 @@
  * can act on, the second is the product's to fix.
  *
  * WHAT COUNTS AS INTERNAL is decided by the discriminant the language already gives, not by
- * a list of the product's classes. An `Error` whose message was written for a reader — a
- * `CodedError`, the chain's parse errors, `new Error('--timeout takes …')` — is a refusal;
+ * a list of the product's classes. An `Error` whose message was written for a reader (a
+ * `CodedError`, the chain's parse errors, `new Error('--timeout takes …')`) is a refusal;
  * the engine's own classes (`TypeError`, `RangeError`, `ReferenceError`, …) and anything
  * thrown that is not an `Error` at all were not written for anybody, which is what makes
  * them a bug. A failed network call is the one `TypeError` that is the machine's: it carries

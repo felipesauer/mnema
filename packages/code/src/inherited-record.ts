@@ -1,5 +1,5 @@
 /**
- * A record read from another repository, at one commit — what a project INHERITS.
+ * A record read from another repository, at one commit: what a project INHERITS.
  *
  * A project points at a repository of decisions (any git repository whose tree holds a mnema
  * record) by two facts in a committed file, `.mnema/inherit.json`: where it is, and the commit.
@@ -99,7 +99,7 @@ export function readPointer(projectPublic: string): PointerRead {
   return { state: 'found', pointer: { where, commit } };
 }
 
-/** Writes the pointer file — the only file this feature writes into a project. */
+/** Writes the pointer file: the only file this feature writes into a project. */
 export function writePointer(projectPublic: string, pointer: Pointer): void {
   writeFileSync(
     join(projectPublic, POINTER_FILE),
@@ -139,7 +139,7 @@ const TRANSPORTS = [
   'protocol.file.allow=always',
 ].flatMap((setting) => ['-c', setting]);
 
-/** A git failure, with the last line git said — the part a person can act on. */
+/** A git failure, with the last line git said: the part a person can act on. */
 export class GitFailed extends Error {
   override readonly name = 'GitFailed';
 }
@@ -248,7 +248,7 @@ function whyNotRead(verdict: VerifyResult): string {
   return [...named, verdict.summary].join(' ');
 }
 
-/** The decisions in force of one extracted record, once it verifies — or why it does not. */
+/** The decisions in force of one extracted record, once it verifies, or why it does not. */
 function readRecord(
   root: string,
 ):
@@ -317,7 +317,7 @@ export function readProjectInherited(trees: ResolvedTrees): InheritedReading | u
   return readInherited(trees, found.pointer);
 }
 
-/** The commit a revision of the where names, after fetching — or why none. */
+/** The commit a revision of the where names, after fetching, or why none. */
 export function resolveAtOrigin(
   trees: ResolvedTrees,
   where: string,

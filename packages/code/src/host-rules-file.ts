@@ -1,12 +1,12 @@
 /**
- * The rules of the record, in the file format another host reads its own rules from — only for an
+ * The rules of the record, in the file format another host reads its own rules from, only for an
  * address a glob can name, and saying which were left out and why.
  *
  * FOR WHOM. A session with the plugin is handed the rules addressed at a file by the per-edit
  * hook. A host without the plugin reads rules from files of its own: VS Code's agent from
  * `.github/instructions/*.instructions.md`, each with an `applyTo` glob; Cursor from
  * `.cursor/rules/*.mdc`, each with `globs`; Claude Code from `.claude/rules/*.md`, each with a `paths`
- * list — the plugin hands a Claude Code session the same rules at each edit, so that file is for a
+ * list: the plugin hands a Claude Code session the same rules at each edit, so that file is for a
  * session without it. This module composes that file's text, and the
  * command that prints it (`mnema rules-file`) prints; writing it is the person's, the way
  * `mnema brief > MNEMA.md` is.
@@ -15,16 +15,16 @@
  *
  * An address in this record is a PREFIX over path segments: `src/billing` governs itself and
  * everything under it, and never `src/billing_old` (`governance.ts`). A glob is another language,
- * and translating one into the other can govern the wrong file in silence — `app/[id]` as a glob
+ * and translating one into the other can govern the wrong file in silence: `app/[id]` as a glob
  * is a character class that matches `app/i` and `app/d` and not the directory it names. So an
  * address goes into the file only when its glob matches exactly the paths the address governs,
- * under any reading of the glob a host could apply — or, where the host adds a reading of its own,
+ * under any reading of the glob a host could apply, or, where the host adds a reading of its own,
 only when the output says what it adds:
  *
  *   - A FILE whose every segment is letters, digits, `.`, `_` and `-` becomes its own path. A
  *     literal path matches itself in every glob dialect, a leading dot included, since the dot is
  *     written in the pattern. THAT SENTENCE STOPPED THERE, AND VS CODE ADDS A READING: where it
- *     matches an `applyTo` at all — against a file attached to its chat — it puts `**` and a
+ *     matches an `applyTo` at all, against a file attached to its chat, it puts `**` and a
  *     slash before a relative pattern and matches the file's absolute path, so `src/x.ts` also
  *     matches `other/src/x.ts` (VS Code 1.137's own glob, run on 30 Sep 2026;
  *     not held by a file of this tree). A file stays in, and {@link WHO_MATCHES} says so beside it.
@@ -40,13 +40,13 @@ only when the output says what it adds:
  *     its pattern to the MODEL, which decides whether to read it (measured).
  *   - An address that names nothing in the working tree does not go in: whether it would be a
  *     file or a directory cannot be told.
- *   - A character a glob reads as syntax — `* ? [ ] { } ! ,` or a backslash, or anything outside
- *     the set above — keeps the address out, and the reason names the character.
+ *   - A character a glob reads as syntax: `* ? [ ] { } ! ,` or a backslash, or anything outside
+ *     the set above: keeps the address out, and the reason names the character.
  *
  * AND ONLY WHAT IS COMMITTED, for the document's reason: the file lives in the repository, so a
  * rule recorded privately, or an address asserted outside the committed tree, would travel to
  * every clone in a file while the record there does not hold it. Rules that ask for a person are
- * never in it — a file a host reads cannot hold a write.
+ * never in it: a file a host reads cannot hold a write.
  */
 
 import type { PushedRule } from '@mnema/context';
@@ -55,14 +55,14 @@ import { ruleLine } from './edit-rules-push.js';
 import type { RulesFileHost } from './host-names.js';
 import { recordFramingBlock } from './record-framing.js';
 
-/** Where each host reads such a file from, relative to the repository — what the recipe names. */
+/** Where each host reads such a file from, relative to the repository: what the recipe names. */
 export const WHERE_A_HOST_READS: { readonly [H in RulesFileHost]: string } = {
   claude: '.claude/rules/mnema.md',
   vscode: '.github/instructions/mnema.instructions.md',
   cursor: '.cursor/rules/mnema.mdc',
 };
 
-/** What each host does with the file's pattern, said beside the output — measured or not. */
+/** What each host does with the file's pattern, said beside the output: measured or not. */
 export const WHO_MATCHES: { readonly [H in RulesFileHost]: string } = {
   claude:
     'Claude Code’s documentation says it loads a rule with a paths list when it reads, writes or edits a file matching one of them; that was not measured here, nor whether a directory’s “/**” reaches a name that starts with a dot.',
@@ -89,7 +89,7 @@ export interface AddressedForAFile {
 const LITERAL = /^[A-Za-z0-9._-]$/;
 
 /**
- * The glob for an address, or why it has none — the one place a translation is decided.
+ * The glob for an address, or why it has none: the one place a translation is decided.
  */
 export function globFor(
   one: AddressedForAFile,
@@ -121,7 +121,7 @@ export function globFor(
   return { glob: rule.address };
 }
 
-/** What the file is generated by — its first line of body, as the document's is. */
+/** What the file is generated by: its first line of body, as the document's is. */
 function generatedBy(host: RulesFileHost): string {
   return `<!-- Generated by \`mnema rules-file --host ${host}\` from this project’s mnema record. Do not edit by hand. -->`;
 }
@@ -146,7 +146,7 @@ function frontmatter(host: RulesFileHost, globs: readonly string[]): readonly st
 }
 
 /**
- * The file's text for the rules that translated, or `undefined` when none did — a file whose
+ * The file's text for the rules that translated, or `undefined` when none did: a file whose
  * pattern names nothing would be read by nobody, and an empty pattern reads as everything to
  * some matchers.
  */

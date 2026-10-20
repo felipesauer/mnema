@@ -10,7 +10,7 @@
  *   - the version of mnema, of Node, the platform and the architecture;
  *   - the NAME of the verb that was run, and only when the program declares a verb by that name
  *     (so what the person typed after it cannot reach here);
- *   - the error's class, or its code when it carries a constant one — never its message;
+ *   - the error's class, or its code when it carries a constant one, never its message;
  *   - the stack reduced to `@mnema/<package>/<file>:<line>`, and only for frames inside the
  *     product (a frame in anybody's code is dropped, and no frame keeps a directory above the
  *     package);

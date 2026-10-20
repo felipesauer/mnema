@@ -1,19 +1,19 @@
 /**
- * What the surfaces say about the text they just recorded — one wording, both of
+ * What the surfaces say about the text they just recorded: one wording, both of
  * them.
  *
  * Four things belong here because they are the same statement told at two moments.
  *
  * AFTER a write, {@link landedNotice} says which tree it went to,
- * {@link replacementNotice} says what was taken out, and {@link reachNotice} — on the
- * one verb whose target can be an address — says how much of the working tree that
+ * {@link replacementNotice} says what was taken out, and {@link reachNotice} (on the
+ * one verb whose target can be an address) says how much of the working tree that
  * address covers. The last is a fact and not a warning, and it is here rather than in
  * either surface for the reason the other two are: a person recording an address at the
  * command line and an agent recording one through a tool must be told the same thing,
  * and a number worded twice is two numbers that can come to differ. A scrub that
  * happened in silence would be the tool lying to its caller: it asked to record X
  * and X is not what landed, so the next session reads a placeholder with no idea
- * why, and — the part that actually costs something — a live credential stays
+ * why, and, the part that actually costs something, a live credential stays
  * unrotated because nobody was told it had been typed. The notice names the
  * classes and says what to do, which is the only useful instruction there is: the
  * record is permanent, so rotating is the remedy, not deleting.
@@ -23,14 +23,14 @@
  * record is committed and clones to the whole team (and is published with a public
  * repository); and the scrub only catches formats it recognizes, so what it does
  * not recognize goes in verbatim. That last clause is the one that earns the other
- * two — the scrub covers recognizable shapes and the declaration covers exactly
+ * two: the scrub covers recognizable shapes and the declaration covers exactly
  * what it cannot, so leaving it out would let silence read as safety. Neither half
  * is a substitute for the other.
  *
  * The wording lives in one place because the two surfaces would drift apart
  * otherwise, and a contract that differs between the CLI and the MCP is not a
- * contract. The FORM differs — the CLI writes lines, a tool call returns one text
- * block — and only that.
+ * contract. The FORM differs (the CLI writes lines, a tool call returns one text
+ * block) and only that.
  */
 
 import { RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
@@ -47,17 +47,17 @@ import { EMAIL_PLACEHOLDER, FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/c
  * A rule addressed at a whole repository is a legitimate thing to record, and a
  * product with an opinion about how much of somebody's tree their own rule should
  * reach would be charging for a judgement nobody recorded. What was missing was never
- * a policy — it was that the person typing the address could not see what it reached
+ * a policy: it was that the person typing the address could not see what it reached
  * until after they had recorded it.
  *
  * THE FRACTION AND NOT THE NUMBER, because the number alone lies by omission: 128
  * files is most of a small repository and a corner of a large one, and it is the pair
- * that makes a cliff visible — an address one segment shallower can multiply what it
+ * that makes a cliff visible; an address one segment shallower can multiply what it
  * covers tenfold, and that is the whole reason this line exists.
  *
  * IT SAYS "FILES, NOT EDITS" ON THE LINE ITSELF. The measurement that produced this
  * line counted file touches across commits; this counts what is ON DISK, and the two
- * are not the same quantity — a directory of a thousand files nobody opens weighs
+ * are not the same quantity: a directory of a thousand files nobody opens weighs
  * here exactly as much as a thousand files touched daily, and will fire far less. A
  * reader who takes this for a rate of firing has been misled by a number, which is
  * worse than not having one, so the qualification travels ON the line and never only
@@ -65,7 +65,7 @@ import { EMAIL_PLACEHOLDER, FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/c
  *
  * IT NAMES WHAT THE BASE LEFT OUT, for the same reason: the base is a judgement
  * (`NOT_HAND_WRITTEN`), and a fraction whose denominator was decided out of sight
- * cannot be argued with. A truncated walk says so too — a count cut in silence is
+ * cannot be argued with. A truncated walk says so too: a count cut in silence is
  * worse than no count.
  */
 export function reachNotice(reach: AddressReach | undefined): string[] {
@@ -90,13 +90,13 @@ export function reachNotice(reach: AddressReach | undefined): string[] {
  * WHAT THE LINK JUST RECORDED WILL REACH, AND WHAT THE RULE IT NAMES WILL NOT.
  *
  * The lines a link prints when it travels further than its subject, and NONE when it
- * does not — which is the ordinary case, so the ordinary write is unchanged.
+ * does not, which is the ordinary case, so the ordinary write is unchanged.
  *
  * MEASURED, and it is why these lines exist. `mnema link --scope public --rel governs
  * <a-private-decision> <path>` is accepted today. The edge is committed and reaches
  * every clone; the decision it names never leaves the machine. So the reply said
- * *"Landed in the public tree — committed with the repository, so it reaches every
- * clone"*, which is true of the EDGE and reads as a promise about the RULE — and over a
+ * *"Landed in the public tree <em dash> committed with the repository, so it reaches every
+ * clone"*, which is true of the EDGE and reads as a promise about the RULE, and over a
  * record with two of those, a clone was told `3 govern this path` where one governed.
  *
  * IT DOES NOT REFUSE, and the decision behind that is not this function's. Whether a
@@ -106,7 +106,7 @@ export function reachNotice(reach: AddressReach | undefined): string[] {
  * where it belongs, and records nothing about it.
  *
  * TWO CASES, because the repairs differ. A subject in a narrower tree is a rule that
- * exists and does not travel — move it, or address it from the tree it lives in. A
+ * exists and does not travel: move it, or address it from the tree it lives in. A
  * subject in NO tree is a rule nobody here has written, which is usually a mistyped id.
  */
 export function subjectReachNotice(landedIn: Scope, subjectScope: Scope | undefined): string[] {
@@ -136,8 +136,8 @@ const TRAVELS: Scope = 'public';
  * The lines to print after a write that replaced something, or none at all when
  * it did not.
  *
- * Every placeholder is listed, including a repeat, so the count and the list agree
- * — "2 values" next to one placeholder would leave a reader wondering which of the
+ * Every placeholder is listed, including a repeat, so the count and the list agree:
+ * "2 values" next to one placeholder would leave a reader wondering which of the
  * two it stood for. After a credential comes the instruction, and it is unconditional:
  * the caller cannot know whether the value was real, and the cost of rotating a
  * credential that was fake is nothing next to the cost of not rotating one that
@@ -169,7 +169,7 @@ function placeholderOf(replaced: ReplacedClass): string {
  * WHERE the write landed, as the line that follows every confirmation.
  *
  * The tree a fact lands in is now decided by what the fact IS, and nothing on the
- * call said it — so the reply is the only place the author can learn it. That is the
+ * call said it, so the reply is the only place the author can learn it. That is the
  * product's own doctrine applied to the one thing it did not cover: the content door
  * tells the author what it replaced AT THE MOMENT they can still act, and the scope
  * said nothing at all. A session of real use discovered its own scope by reading the
@@ -181,7 +181,7 @@ function placeholderOf(replaced: ReplacedClass): string {
  * What a caller acts on is whether the fact travels: a decision that reaches the team
  * on clone, or a note that never leaves this machine.
  *
- * It states the fact and stops there — no instruction to re-record elsewhere. The
+ * It states the fact and stops there: no instruction to re-record elsewhere. The
  * override is in every write's own interface, the routing is deliberate, and a
  * suggestion appended to every successful write would be noise on the path that is
  * working as designed.
@@ -206,7 +206,7 @@ export interface Replacement {
  * The half of a write result that says the PERSON's key signed a write the server was asked to
  * sign as an agent: the destination project does not enrol that agent, so the write is signed
  * with the person's key and the agent it names is declared, not attested. Present only for a
- * write routed to another project than the session's — by `project`, or by an id only it holds —
+ * write routed to another project than the session's (by `project`, or by an id only it holds)
  * where that is so; the server's own trees say it once at the opening, and this is the same fact for a
  * tree the opening did not name. Absent on the command line, which has no agent to configure.
  */
@@ -220,25 +220,25 @@ export interface PersonSigned {
 }
 
 /**
- * The half of a write result that reports WHERE it landed — the tree the kind (or
+ * The half of a write result that reports WHERE it landed: the tree the kind (or
  * the caller's override) routed it to.
  *
  * Present on every successful write of both surfaces, and not optional: a write
  * that could not say where it went is the state this closes. It is the RESOLVED
- * scope, never the argument — the argument is regularly absent.
+ * scope, never the argument: the argument is regularly absent.
  */
 export interface Landed extends PersonSigned {
   readonly scope: Scope;
   /**
    * The absolute directory of the project the CALLER named, when the write was routed by
-   * the `project` argument and fell in a project's tree. Absent otherwise — the command
+   * the `project` argument and fell in a project's tree. Absent otherwise: the command
    * line has no such argument, and a write that named nothing echoed no name.
    */
   readonly project?: string;
 }
 
 /**
- * The replacement report, ready to spread onto an adapter's own result — present
+ * The replacement report, ready to spread onto an adapter's own result: present
  * when something was replaced, absent when nothing was.
  *
  * Every adapter between the core and a surface has to forward it, and forwarding
@@ -255,7 +255,7 @@ export function forwardReplacement(result: Replacement): Replacement {
  * What a link's relation may be, as both surfaces say it: the catalog's recommended
  * labels, and the fact that any other label is taken.
  *
- * Read from the catalog's own tuple rather than typed out. It was typed out — the
+ * Read from the catalog's own tuple rather than typed out. It was typed out: the
  * four labels appeared in the CLI's help, in the tool description, and in two
  * doc-comments, while `RECOMMENDED_LINK_RELATIONS` sat exported with no caller and
  * a docstring saying it existed so nobody would hard-code the strings. Four copies

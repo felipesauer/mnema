@@ -1,11 +1,11 @@
 /**
- * WHAT THIS PRODUCT PROMISES — one sentence, and every door says the same one.
+ * WHAT THIS PRODUCT PROMISES: one sentence, and every door says the same one.
  *
  * The sentence lives here because it was measured to live in NINE places at once: the
  * npm manifest of the published package, the `--help` of the binary, the golden that
  * pins that help, a second manifest, and the opening of four READMEs. Nothing held them
  * together. Eight could be rewritten and one left behind, and the one left behind is the
- * one the world reads — which is how a claim the product's own README spent forty lines
+ * one the world reads, which is how a claim the product's own README spent forty lines
  * refuting stayed on the npm page and in `mnema --help` for the whole life of the alpha.
  *
  * THE SENTENCE IS NOT THIS FILE'S TO CHOOSE. It was decided outside the code, on a study
@@ -14,21 +14,21 @@
  * reader written from `FORMAT.md` in dependency-free Python reaches the same verdict
  * without importing any of this (held by `second-reader-agrees-on-the-record.test.ts` and
  * `both-readers-read-the-same-bytes.test.ts`, in `@mnema/chain`). What it deliberately does NOT promise is identity, time,
- * or that nothing was removed — a record forged whole, with `.mnema` deleted and refounded
+ * or that nothing was removed: a record forged whole, with `.mnema` deleted and refounded
  * under another key, verifies clean and word for word like an honest one, and so does a
  * tail deleted together with its key. `docs/cli-reference.md` carries that argument in
- * full under "What it proves — and what it does not", and this sentence is the short form
+ * full under "What it proves <em dash> and what it does not", and this sentence is the short form
  * of it rather than a stronger claim placed on top of it.
  *
  * THE CAVEAT IS HALF THE PROMISE, NOT A FOOTNOTE, which is why it is a constant here and
  * not prose somebody remembers to repeat. A door that carries only {@link PRODUCT_PROMISE}
  * carries no claim the caveat would have to walk back; a door with room for both carries
- * both. The rule is that no door may claim MORE than these two strings claim — shortening
+ * both. The rule is that no door may claim MORE than these two strings claim: shortening
  * is allowed, adding is not.
  *
  * WHAT ASSERTS IT: `tests/the-sentence-reaches-every-door.test.ts` reads every door off
- * the disk and compares, so nine-of-ten reddens — the tenth is the repository's own root
- * page, which did not exist when this was written; it also bans the clauses the study
+ * the disk and compares, so nine-of-ten reddens (the tenth is the repository's own root
+ * page, which did not exist when this was written); it also bans the clauses the study
  * falsified, reconciled against a declared list of the places that mention them for a
  * reason. `cli.help.golden.txt` pins the bytes commander prints.
  */

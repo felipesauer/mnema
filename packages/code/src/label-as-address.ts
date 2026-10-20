@@ -1,5 +1,5 @@
 /**
- * What an `ADR-<n>` typed where an id goes MEANS — the one place that decides it.
+ * What an `ADR-<n>` typed where an id goes MEANS: the one place that decides it.
  *
  * `Recorded decision ADR-1 (01a0f7…)` is the line a write prints, and `ADR-1` is what the brief and
  * the reads call the decision. A person who types that label back at a verb is naming a decision,
@@ -9,12 +9,12 @@
  * in effect, that the decision was not there.
  *
  * WHAT IT DECIDES: a label is accepted when it names EXACTLY ONE decision in this project, and is
- * turned into that decision's id before anything else sees it — so no verb ever records or looks up
+ * turned into that decision's id before anything else sees it, so no verb ever records or looks up
  * the label itself. A label is numbered inside ONE tree, so two trees (the team's and this
  * machine's) can each hold an `ADR-1`; then it names no single decision and the answer lists every
  * id that carries it, and the person picks. Nothing here picks for them.
  *
- * The detector is `ProjectionCache.listDecisions` read over every tree — the same set the brief's
+ * The detector is `ProjectionCache.listDecisions` read over every tree: the same set the brief's
  * collision notice is built from. A word that is not shaped like a label, or a label no decision
  * carries, is passed through untouched: the verb's own refusal for an unknown id is then the whole
  * truth. It is a READ and opens no writer.

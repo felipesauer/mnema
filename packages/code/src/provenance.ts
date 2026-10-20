@@ -1,5 +1,5 @@
 /**
- * The word this product says a PROVENANCE with — one string, for every channel that
+ * The word this product says a PROVENANCE with: one string, for every channel that
  * puts one on a line.
  *
  * ## What the word is for, and the defect that made it one place instead of four
@@ -12,8 +12,8 @@
  * the one they came from, and five of the six the committed document printed were among
  * them.
  *
- * The record already holds the answer — the `derived-from` edge the import wrote, whose
- * target carries the source's own number inside it — and three reads that serve one
+ * The record already holds the answer (the `derived-from` edge the import wrote, whose
+ * target carries the source's own number inside it) and three reads that serve one
  * record whole were taught to carry it. The channels that arrive UNASKED were not, and
  * they are the ones with a reader who never chose to read: the committed document, the
  * rules pushed at each edit, and the charge that stops a write. They
@@ -23,7 +23,7 @@
  *
  * The collapse ({@link oneLine}) stays at each site, inside each template, and this file
  * holds the WORD alone. A helper returning `derived from <target>` would read better and
- * would take the collapse out of the layer the line rule is guarded over — measured in
+ * would take the collapse out of the layer the line rule is guarded over, measured in
  * this repository before: a value collapsed behind a helper is a value the scanner of
  * `presentation/` cannot see, and the guard goes quietly blind on the site it was written
  * for. So the sharing stops exactly where the guard's sight would end.
@@ -35,8 +35,8 @@
 /**
  * How a record's provenance is introduced, on every surface that prints one.
  *
- * It is the RELATION's own sense in the product's words — `derived-from` is what the
- * link asserts — and it is the same on a terminal, in a committed file and in a text
+ * It is the RELATION's own sense in the product's words (`derived-from` is what the
+ * link asserts) and it is the same on a terminal, in a committed file and in a text
  * pushed at a model, because a reader who meets it in two of those must not have to work
  * out that they are one fact.
  *

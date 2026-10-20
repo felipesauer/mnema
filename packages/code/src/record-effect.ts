@@ -1,11 +1,11 @@
 /**
- * WHAT AN ACT OF EITHER SURFACE CAN DO TO THE RECORD — one rule, one type, two words,
+ * WHAT AN ACT OF EITHER SURFACE CAN DO TO THE RECORD: one rule, one type, two words,
  * for the command line and for the MCP alike.
  *
  * This product has two doors onto the same record. The command line is the AUDIT
  * surface, and every one of its verbs has declared its side of this question for as long
- * as `mnema repl` has existed. The MCP is the AGENT surface — the one the work actually
- * goes through — and it declared nothing anywhere, so nothing distinguished a tool that
+ * as `mnema repl` has existed. The MCP is the AGENT surface, the one the work actually
+ * goes through, and it declared nothing anywhere, so nothing distinguished a tool that
  * reads from one that writes: not for whoever reviews a pull request, not for a guard,
  * not for anyone deciding what a read-only session may call.
  *
@@ -14,15 +14,15 @@
  * "touches the disk" on one surface and "appends an event" on the other, and the two
  * readings would be indistinguishable from agreement until the day they disagreed about
  * a real act. So the type is declared once, both constructors are declared once, and
- * each surface's declaration is a call to the same function with its own subject — a
+ * each surface's declaration is a call to the same function with its own subject: a
  * `Command` on one side, a tool's name on the other. `every-tool-says-if-it-writes.test.ts`
  * holds the other half of that: no file of either surface may build one of these by
  * hand.
  *
  * WHY IT IS DECLARED RATHER THAN DERIVED. It was looked for first, on the command line,
  * and it is not in the code. `grep writer` over the adapters names FIFTEEN files and six
- * of them are reads — `show`, `timeline`, `resume`, `next-actions`, `brief`,
- * `accountability` — because the word is in their PROSE, so the search answers with
+ * of them are reads (`show`, `timeline`, `resume`, `next-actions`, `brief`,
+ * `accountability`), because the word is in their PROSE, so the search answers with
  * false positives rather than a set. `pinnedRun()` is asked at FOURTEEN sites, and the
  * three writes that stamp no session (`init`, `key`, `run` itself) are not among them,
  * so it answers "carries a run", which is a different question. Nothing in the code
@@ -32,15 +32,15 @@
  * same trap this file names two paragraphs down about the tools. Eleven was true on the
  * day it was first typed, in the guard over this surface's declarations; it was copied
  * into this file a month later, by which time the surface asked at fourteen, and neither
- * copy was ever counted again. Nothing here depends on the number — the argument is that
- * the question is a DIFFERENT question — but a wrong count in the reasoning is a wrong
+ * copy was ever counted again. Nothing here depends on the number (the argument is that
+ * the question is a DIFFERENT question), but a wrong count in the reasoning is a wrong
  * count. It is fourteen sites over fifteen command paths (`switch off` and `switch on`
  * are declared by one function), and the paths are now DERIVED from the program rather
  * than counted by eye: `the-refused-run-is-refused-everywhere.test.ts` measures which
  * paths ask, and its list is red the day the set changes.
  *
- * The MCP surface has a discriminant the command line lacks — every write there goes
- * through one door (`mcp/session.ts`'s `openWrite`) — and it is still declared rather
+ * The MCP surface has a discriminant the command line lacks: every write there goes
+ * through one door (`mcp/session.ts`'s `openWrite`), and it is still declared rather
  * than derived, for two reasons. The first is this file: a rule read one way here and
  * another way there is the whole defect. The second is that a derivation would answer
  * about the code as it is, and the claim is about POWER: a tool that opens no writer
@@ -61,8 +61,8 @@
  * key material" for as long as those were the only two ways to change anything, and
  * `mnema witness` is neither: it writes an external attestation beside a tail's
  * checkpoints, appends nothing, mints nothing, and moves `verify` from `not-covered` to
- * `covered`. Under the old wording it would have classified as a READ — which is the
- * unsafe side — so the wording widened to the thing all three have in common, which is
+ * `covered`. Under the old wording it would have classified as a READ (which is the
+ * unsafe side), so the wording widened to the thing all three have in common, which is
  * what a verifier would afterwards say.
  *
  * IT IS NOT "TOUCHES DISK". This paragraph used to give a read that touches disk as the
@@ -72,20 +72,20 @@
  * (`every-tool-says-if-it-writes.test.ts`, the case the protocol's `readOnlyHint` is held to).
  * IT IS TRUE OF THE COMMAND LINE NOW, AND THE WORDING STANDS BECAUSE IT NEVER WAS ABOUT THE
  * DISK: a read keeps the projection it built in the tree it read (`CacheOptions.persist`,
- * `locks/projection.db`) so the next one pays only for what arrived — one derived file that
+ * `locks/projection.db`) so the next one pays only for what arrived, one derived file that
  * is not the record, that a clone never carries and that deleting changes no answer of
  * (`the-record-is-kept-between-reads.test.ts`). A verb that left anything else would still be
  * accused. The other direction is what makes the
  * wording earn its place, and it is the sharpest case on either surface: the `skills`
  * TOOL serves a pattern's body and records that a run was served it, so a reading that
  * mints a fact belongs on the `mutates` side. Its namesake on the command line,
- * `mnema skill provenance`, lists patterns and records nothing, so it reads — though it hangs
+ * `mnema skill provenance`, lists patterns and records nothing, so it reads, though it hangs
  * under `skill`, a group declared a write for its other members (`wiring/verb.ts`). The two are
  * not one act under two names, and the classification is what says so out loud.
  *
  * TWO FILES KEEP THE DECLARATIONS HONEST, one per surface, and both do it the same way:
  * they enumerate what is registered from the thing that registers it, and then EXERCISE
- * every act in a sandbox and count what reached the chain — so an act declared `reads`
+ * every act in a sandbox and count what reached the chain, so an act declared `reads`
  * that writes is accused by the record rather than by a review
  * (`every-verb-says-if-it-writes.test.ts`, `every-tool-says-if-it-writes.test.ts`).
  */
@@ -96,7 +96,7 @@ export type RecordEffect = 'mutates' | 'reads';
  *
  * The ACT travels rather than its name, so nothing spells its own name twice: a verb
  * carries the `Command` commander routes it with, and a tool carries the name the
- * protocol serves it under — the same value each surface registered.
+ * protocol serves it under, the same value each surface registered.
  */
 export interface Declared<Act> {
   /** The act itself: a verb's command, or a tool's name. */
@@ -104,7 +104,7 @@ export interface Declared<Act> {
   /** What invoking it can do to the record. */
   readonly effect: RecordEffect;
   /**
-   * The members of a group, each answering for itself — present only where a group's members
+   * The members of a group, each answering for itself: present only where a group's members
    * differ in what they can do (`task`, `skill`). The group's own `effect` is then the most
    * powerful of theirs, which is what everything that does not look at members still reads;
    * a caller that decides per member (the console's gate) reads these.
@@ -122,7 +122,7 @@ export function groupOf<Act>(act: Act, members: readonly Declared<Act>[]): Decla
  * The act CAN change the record: it appends an event, it touches key material, or it
  * alters what a verifier rules on.
  *
- * Used by every write of the command line, `mcp` among them — the server serves every
+ * Used by every write of the command line, `mcp` among them: the server serves every
  * write TOOL there is, so the verb that starts it can do everything they can. That is
  * not everything this product can do: `tail prune` has no tool and never will, so the
  * MCP's reach is the tools' and that verb's classification is about the tools it serves.

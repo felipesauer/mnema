@@ -2,12 +2,12 @@
  * Resolving the tree a stdio MCP server operates on.
  *
  * THIS PARAGRAPH USED TO SAY A SERVER HAS NO WORKING DIRECTORY WORTH READING: *"A CLI
- * command has an obvious working directory; a server does not — the host spawns it with
+ * command has an obvious working directory; a server does not: the host spawns it with
  * an arbitrary cwd, so the project cannot be read off `cwd` the way `mnema init` reads
  * it."* That was a premise about hosts, and no host had been measured against it. On
  * Cursor's command-line agent it is false: the server's working directory is the root of
- * the workspace on both routes that start it — the project's `.cursor/mcp.json` and the
- * Claude Code plugin that agent loads — and it stays the workspace root when the agent
+ * the workspace on both routes that start it, the project's `.cursor/mcp.json` and the
+ * Claude Code plugin that agent loads, and it stays the workspace root when the agent
  * itself is launched from another directory. The same client declares no `roots`
  * capability, so the cascade below had nothing else to go on, and every session it opened
  * landed on the machine-global tree: a note an agent took in one project came back in the
@@ -16,34 +16,34 @@
  *
  * So the project comes from the client when the client says where its workspace is, and
  * from the directory the host started the server in only when the client says NOTHING
- * about a workspace — in a fixed cascade from most explicit to fallback:
+ * about a workspace, in a fixed cascade from most explicit to fallback:
  *
  *   1. an explicit project path (`mnema mcp --project`), if the operator named one.
- *      It is the one rung that can REFUSE rather than fall through to the next —
+ *      It is the one rung that can REFUSE rather than fall through to the next:
  *      see {@link configuredProject};
- *   2. the client's workspace `roots` — the first root that resolves to a
+ *   2. the client's workspace `roots`: the first root that resolves to a
  *      project (has a `.mnema/`), walked up from that root's directory;
- *   3. the server's WORKING DIRECTORY, walked up the same way — for a client that
+ *   3. the server's WORKING DIRECTORY, walked up the same way: for a client that
  *      declared no `roots` capability, and for no other (see {@link ClientWorkspace}). A
- *      client that declared it and listed nothing — a window with no folder open — has
+ *      client that declared it and listed nothing, a window with no folder open, has
  *      SAID its workspace holds no folder, and serving whatever project sits at the cwd
  *      there would be the answer about a project nobody named that rung 1 exists to
  *      refuse;
- *   4. GLOBAL — with no project found by any rung above. It operates on the global tree.
+ *   4. GLOBAL: with no project found by any rung above. It operates on the global tree.
  *      This is not a limbo; the global tree is legitimate cross-project knowledge. It
  *      never refuses.
  *
  * "Walked up" is the core's walk for every rung, and it passes over two kinds of `.mnema/`
- * — the home directory's, and any machine's data directory — so no rung serves either as a
+ * (the home directory's, and any machine's data directory), so no rung serves either as a
  * project (`whyNoProjectRootAt`, `@mnema/core`). THAT USED TO BE RUNG 3'S ALONE: a guard
  * here refused the data directory for the working-directory rung only, and its comment said
  * rungs 1 and 2 and every command-line verb still took that directory for a project, because
  * closing it for them would change what a client that DOES declare `roots` is served. That
- * change was then chosen on purpose — a client whose root is a folder under the home that
- * nobody initialized was being served the home as its project — and the guard moved to the
+ * change was then chosen on purpose (a client whose root is a folder under the home that
+ * nobody initialized was being served the home as its project) and the guard moved to the
  * one walk every rung and every verb climbs, where it applies to all of them at once.
  *
- * No rung creates a `.mnema/` — only `mnema init` may. Rung 3 uses one that is already
+ * No rung creates a `.mnema/`, only `mnema init` may. Rung 3 uses one that is already
  * there, and says so: the rung a session landed by is part of what this module returns
  * ({@link Rung}), so the server's log line can tell a project taken from the working
  * directory from one taken from the roots.
@@ -51,7 +51,7 @@
  * Rungs 2, 3 and 4 never refuse and rung 1 does, and the asymmetry is the whole of
  * what an operator can rely on here. An unmatched CASCADE is a legitimate global
  * session: nobody said which project, so landing outside one is an answer. An
- * operator NAMING a project that does not exist is not — it is a statement about
+ * operator NAMING a project that does not exist is not: it is a statement about
  * the world that is false, and the two possible behaviours are to say so or to serve
  * some other project in silence. The second is the defect this rung exists to close:
  * a session that answered about a project nobody asked for, in a reply indistinguishable
@@ -60,12 +60,12 @@
  *
  * It also answers a second question the cascade alone cannot: WHICH OTHER projects
  * the workspace holds. The cascade returns at the first root that resolves, so it
- * learns of exactly one — and one project and five look identical from inside the
+ * learns of exactly one, and one project and five look identical from inside the
  * session that landed. So every root is probed, and the projects among them are
  * collected by a rule of their own (a root counts when it IS a project's root, never
- * when one lies above it — see {@link announcedProjects}). The list changes nothing
+ * when one lies above it: see {@link announcedProjects}). The list changes nothing
  * about WHERE the session lands: that stays the cascade's, and omitting it stays the
- * cascade's answer. It is reported for two things a reader and a caller each need —
+ * cascade's answer. It is reported for two things a reader and a caller each need:
  * a reader can tell that where it landed was a choice, and a caller can NAME one of
  * the others, which is the only way work done in a second project can be recorded
  * in that project instead of in whichever one the cascade happened to pick.
@@ -75,7 +75,7 @@
  * the filesystem it touches is read, by the walk-up, and never written. WHICH of them a
  * write lands in is not decided here; that is the core's routing rule
  * ({@link resolveScope}), applied at the write, where the KIND is known. This decides
- * only which PROJECT — never public/private.
+ * only which PROJECT, never public/private.
  */
 
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -100,7 +100,7 @@ import { oneLine } from '../one-line.js';
  */
 export interface WorkspaceProject {
   /**
-   * The project DIRECTORY — the parent of its `.mnema/`, absolute.
+   * The project DIRECTORY: the parent of its `.mnema/`, absolute.
    *
    * Absolute because it is compared against what a caller passes, and a comparison
    * between two spellings of one path is a comparison that fails on the same
@@ -114,7 +114,7 @@ export interface WorkspaceProject {
 }
 
 /**
- * What the client said about its workspace — TWO different statements, which used to
+ * What the client said about its workspace: TWO different statements, which used to
  * reach this module as one empty list.
  *
  * A client that DECLARED the `roots` capability answers `roots/list`, and its answer is
@@ -122,7 +122,7 @@ export interface WorkspaceProject {
  * A client that declared NO `roots` capability has said nothing about a workspace at all,
  * and the one signal left is the directory the host started this server in. The field
  * that carried the roots used to be documented as *"Empty when the client declares no
- * `roots` capability or opened no workspace"* — both arrived as `[]`, and a cascade handed
+ * `roots` capability or opened no workspace"*: both arrived as `[]`, and a cascade handed
  * `[]` can only treat them alike. That is why the fix for the second could not be "an
  * empty list falls back to the cwd": it would have fired for the first as well, and served
  * the project at the cwd to a client that had just said there is none.
@@ -130,21 +130,21 @@ export interface WorkspaceProject {
  * So the difference is carried in the SHAPE. The working directory exists only in the
  * variant for a client that declared nothing, and a root list only in the other; a value
  * holding both does not compile. A cascade that consulted the cwd for a client that
- * declared `roots` would need a cwd this type does not give it — the trap cannot be
+ * declared `roots` would need a cwd this type does not give it: the trap cannot be
  * written below this line, only at the one place that decides which variant a connection
  * gets, where the capability is read (`clientWorkspace`, `server.ts`), and a test drives a
  * client through that place for each variant.
  */
 export type ClientWorkspace =
   | {
-      /** The workspace roots the client listed, as `file://` URIs — empty when it listed none. */
+      /** The workspace roots the client listed, as `file://` URIs: empty when it listed none. */
       readonly roots: readonly string[];
       readonly cwd?: never;
     }
   | {
       /**
        * The directory the host started this server in, for a client that declared no
-       * `roots` capability — the only statement about a workspace such a client makes,
+       * `roots` capability: the only statement about a workspace such a client makes,
        * and made by the host rather than by the client. Measured on the one client known
        * to take this path, it is the root of the workspace.
        */
@@ -152,10 +152,10 @@ export type ClientWorkspace =
       readonly roots?: never;
     };
 
-/** What the server hands the resolver — the raw discovery inputs. */
+/** What the server hands the resolver: the raw discovery inputs. */
 export type ContextInput = ClientWorkspace & {
   /**
-   * An explicit project directory the server was configured with, if any — what
+   * An explicit project directory the server was configured with, if any: what
    * `mnema mcp --project` carries. The strongest signal: the operator named the
    * exact project.
    *
@@ -176,8 +176,8 @@ export type ContextInput = ClientWorkspace & {
  * made it necessary. Before it, a project in the log could only have come from a
  * configured path or from the roots, and the line did not need to say which. With a rung
  * that reads the working directory, the same project name can arrive by two roads that
- * differ in what they rest on — what the client said, and where the host happened to
- * start a process — and a reader who cannot tell them apart cannot tell a landing the
+ * differ in what they rest on (what the client said, and where the host happened to
+ * start a process) and a reader who cannot tell them apart cannot tell a landing the
  * client asked for from one the server inferred.
  */
 export type Rung = 'configured' | 'roots' | 'cwd' | 'global';
@@ -193,7 +193,7 @@ export interface ResolvedContext {
    */
   readonly inProject: boolean;
   /**
-   * The project DIRECTORY this landed on — the parent of its `.mnema/` — absent
+   * The project DIRECTORY this landed on, the parent of its `.mnema/`, absent
    * when it landed on the global tree.
    *
    * It is reported because a cascade nobody can see is a cascade nobody can
@@ -205,10 +205,10 @@ export interface ResolvedContext {
    * answer and says it out loud rather than leaving the reader to re-derive it.
    */
   readonly project?: string;
-  /** Which rung of the cascade produced this answer — see {@link Rung}. */
+  /** Which rung of the cascade produced this answer: see {@link Rung}. */
   readonly rung: Rung;
   /**
-   * The DISTINCT projects this session knows the workspace holds — the one above
+   * The DISTINCT projects this session knows the workspace holds: the one above
    * among them, always.
    *
    * Naming the project a session landed on answers "where am I"; it does not
@@ -219,27 +219,27 @@ export interface ResolvedContext {
    * and a caller who knows their directories can name the one the work is actually
    * happening in.
    *
-   * Collected by the ROOT rule — see {@link announcedProjects}. It is a FACT about
+   * Collected by the ROOT rule: see {@link announcedProjects}. It is a FACT about
    * the workspace and is reported as one: nothing here or downstream reads it as
    * a warning, because a signal that fires in every multi-folder workspace stops
    * being read, and which project is the right one is not this server's to say.
    *
    * In the order the client announced the roots, with the project the session
-   * landed on last when no root announced it (it is in the list either way — the
+   * landed on last when no root announced it (it is in the list either way: the
    * session writes there). The order is the host's and is not improved on: this
-   * server has no ranking of its own to impose, and the list is read as a list —
+   * server has no ranking of its own to impose, and the list is read as a list;
    * every reader of it either matches a name against the whole thing or prints it.
    */
   readonly workspaceProjects: readonly WorkspaceProject[];
   /**
-   * Every `.mnema/` a walk of this cascade reached and would not take for a project — the
-   * home directory's, a machine's data directory — once each, nearest first per walk.
+   * Every `.mnema/` a walk of this cascade reached and would not take for a project (the
+   * home directory's, a machine's data directory) once each, nearest first per walk.
    *
    * It changes nothing about where the session lands; the walk already passed them by.
    * It is carried so the server can SAY so: a home's `.mnema/` can hold events recorded
    * there before the walk learned to pass it, and a session that went past them in silence
    * would make them vanish from every answer without a word. Whether they hold anything is
-   * the server's question to ask, at the log — this module reads no chain.
+   * the server's question to ask, at the log: this module reads no chain.
    */
   readonly passedOver: readonly PassedOverTree[];
 }
@@ -262,18 +262,18 @@ interface ProbedRoot {
  *
  * It never creates a `.mnema/`, and it refuses in exactly one case: an explicitly
  * configured project that is relative or is no project ({@link configuredProject},
- * which throws). An unmatched CASCADE is not that case and never refuses — nobody
+ * which throws). An unmatched CASCADE is not that case and never refuses: nobody
  * named a project, so a global session is a legitimate answer.
  */
 export function resolveContext(input: ContextInput): ResolvedContext {
   // EVERY root is probed, before the cascade picks one. The cascade returns at the
   // first root that resolves, so a session that only ran the cascade cannot say how
-  // many projects the workspace holds — it stopped counting at one. That is the one
+  // many projects the workspace holds: it stopped counting at one. That is the one
   // thing the cascade's answer can never tell a reader, and it is cheap: a probe is
   // a walk-up over already-listed paths, and the roots a host announces are few. A
   // client that declared no `roots` has none to probe.
   const probed: ProbedRoot[] = [];
-  // What every walk this cascade climbs passed over — the roots', and the working
+  // What every walk this cascade climbs passed over: the roots', and the working
   // directory's below. Collected, never acted on: see {@link ResolvedContext.passedOver}.
   const passedOver: PassedOverTree[] = [];
   for (const root of input.cwd === undefined ? input.roots : []) {
@@ -284,7 +284,7 @@ export function resolveContext(input: ContextInput): ResolvedContext {
     passedOver.push(...walked.passedOver);
   }
 
-  // 1. An explicit project path wins — or refuses. It never falls through.
+  // 1. An explicit project path wins, or refuses. It never falls through.
   if (input.configProject !== undefined) {
     const configured = configuredProject(input.configProject, input.env);
     return landedInProject(configured, probed, 'configured', passedOver);
@@ -297,7 +297,7 @@ export function resolveContext(input: ContextInput): ResolvedContext {
     }
   }
 
-  // 3. The working directory — which exists on the input only for a client that
+  // 3. The working directory, which exists on the input only for a client that
   // declared no `roots` (see {@link ClientWorkspace}), so no test of the list's
   // emptiness belongs here: a client that listed nothing never reaches this line with
   // a directory to walk from.
@@ -312,7 +312,7 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // 4. Fallback: the GLOBAL tree, deliberately with NO project. `resolveTrees`
   // always returns `global` + `keyRoot` regardless of where it resolves from,
   // so we take exactly those two and drop any project scopes a walk-up might
-  // have found — the server must never adopt a project the client did not point
+  // have found: the server must never adopt a project the client did not point
   // at. From the home itself the walk finds none: the home directory is never a
   // project's root (`whyNoProjectRootAt`, `@mnema/core`).
   const { global, keyRoot } = resolveTrees(input.env.home, input.env);
@@ -326,7 +326,7 @@ export function resolveContext(input: ContextInput): ResolvedContext {
 }
 
 /**
- * The trees an explicitly configured project resolves to — or a refusal, which is
+ * The trees an explicitly configured project resolves to, or a refusal, which is
  * the whole point of this function existing beside {@link resolveTrees}.
  *
  * ## It must be ABSOLUTE
@@ -335,23 +335,23 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  * process's working directory. That directory is whatever the host spawned the
  * server with; it is not the operator's shell, and it is not visible from where the
  * value is written. A configured path is written ONCE, into a file, and read by a
- * process nobody watches start — so `./repo` would resolve against a directory the
+ * process nobody watches start, so `./repo` would resolve against a directory the
  * person who wrote it never saw, and would land somewhere different the day the host
  * changed how it spawns.
  *
  * THIS PARAGRAPH ENDED "This whole module exists because a server has no cwd worth
- * trusting, and honouring a relative path here would bring that back" — and rung 3 now
+ * trusting, and honouring a relative path here would bring that back", and rung 3 now
  * trusts the cwd, so the reason has to stand on what is still true. Rung 3 reads the
  * working directory as EVIDENCE of where the host is working, and only when the client
  * offered no other; it is a fallback, it can be wrong, and it never refuses. This rung is
  * the operator's statement, the one that refuses, and a refusal means something only if
- * the value it judges means one thing — a path whose meaning depends on how a host
+ * the value it judges means one thing: a path whose meaning depends on how a host
  * happens to start a process means as many things as there are hosts.
  *
  * Refusing is also the only honest option: a relative path CAN resolve to a real
  * project by accident, and the accident is silent. `resolve` is then applied to what
  * survives, so the walk-up is given ONE spelling of the directory whatever the
- * operator typed — a trailing slash, a `.`, a `..`. It is belt and braces rather
+ * operator typed: a trailing slash, a `.`, a `..`. It is belt and braces rather
  * than what makes those spellings work: the walk-up joins each candidate and `join`
  * normalizes as well. It is here so the value handed on is settled at the door,
  * rather than by whichever step below happens to normalize it today.
@@ -360,14 +360,14 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  *
  * A path that resolves to no project is refused, and NOT passed over to the roots.
  * Falling through is what produced this rung's requirement: the operator said which
- * project, the value did not resolve, and the session opened somewhere else — an
+ * project, the value did not resolve, and the session opened somewhere else, an
  * answer about a record nobody asked about, which reads exactly like an answer about
  * the right one. "I named the project and you served another in silence" is the
  * defect; continuing the cascade IS that defect.
  *
  * Both refusals are shaped for the one person who can act on them: they name the
  * value as it was configured (the string to go and find), say which of the two rules
- * it broke, and say what to do — because the operator is reading this in a host's log
+ * it broke, and say what to do, because the operator is reading this in a host's log
  * with no other account of what happened. The value is collapsed to one line: a
  * directory may hold a newline, and a refusal is a one-item list whose second half
  * would look like a refusal of its own.
@@ -375,7 +375,7 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  * It THROWS rather than returning a refusal, because there is no honest session to
  * return: the server's caller ({@link openSession}) fails this way, the session never
  * opens, and every tool call on the connection reports the same sentence instead of
- * answering out of the wrong record. Nothing has been written when it fires — the trees
+ * answering out of the wrong record. Nothing has been written when it fires: the trees
  * are resolved before the anchor is asked, which is the first thing that touches disk.
  */
 function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees {
@@ -436,7 +436,7 @@ function landedInProject(
   const project = projectDirOf(trees);
   const workspaceProjects = announcedProjects(probed);
   // The project this session landed on belongs in the list even when no root
-  // announced it as its own — which is the common shape, not the corner: the
+  // announced it as its own, which is the common shape, not the corner: the
   // walk-up regularly arrives at a project ABOVE every root (a folder opened
   // inside a repository), a configured path need not be among the roots at all,
   // and a working directory never is. Including it is what stops the list
@@ -480,7 +480,7 @@ function distinctTrees(passedOver: readonly PassedOverTree[]): PassedOverTree[] 
  * tree instead of the project. Collecting must not, because the walk-up makes every
  * folder inside a project look like one: a notes directory checked out inside
  * another repository would appear as a project of its own, and the list would name
- * two where the workspace has one. A list that inflates is worse than no list —
+ * two where the workspace has one. A list that inflates is worse than no list:
  * it is a fact the reader cannot check, and a name a caller could route a write to
  * that names no project anybody opened.
  *
@@ -494,7 +494,7 @@ function announcedProjects(probed: readonly ProbedRoot[]): WorkspaceProject[] {
     if (trees.projectPublic === undefined) continue;
     const project = projectDirOf(trees);
     // `resolve` so a root announced with a trailing slash still matches the
-    // directory `dirname` reports — the same path, spelled two ways.
+    // directory `dirname` reports: the same path, spelled two ways.
     if (project !== resolve(dir)) continue;
     if (projects.some((known) => known.dir === project)) continue;
     projects.push({ dir: project, trees });
@@ -507,7 +507,7 @@ function announcedProjects(probed: readonly ProbedRoot[]): WorkspaceProject[] {
  * absolute.
  *
  * One function because the directory is derived at three places and compared
- * across them — the list, the cascade's answer, and a caller's argument — and two
+ * across them (the list, the cascade's answer, and a caller's argument) and two
  * of those comparisons are for equality. A `dirname` that kept a relative
  * configured path would make the same project unequal to itself depending on which
  * rung produced it. Callers must have established that the public tree is present.

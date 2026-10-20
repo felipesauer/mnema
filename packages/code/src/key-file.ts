@@ -3,9 +3,9 @@
  *
  * WHY THE SETTING IS SAID. The key root lives in the data directory, which is `$MNEMA_HOME` when
  * it is set and `~/.mnema` when it is not (`core/src/topology/resolve.ts`), so the same key file
- * sits under two different directories depending on one variable. Four places print the path — `key revoke` when it
+ * sits under two different directories depending on one variable. Four places print the path (`key revoke` when it
  * retires this machine's own key, `init` and every other write when the checkout's identity no
- * longer counts the key, and the agent's server for the same refusal — and none said which of
+ * longer counts the key, and the agent's server for the same refusal) and none said which of
  * the two it was. A person told to `mnema key restore "<the key file>"`, or holding a key under a
  * root this process was not started with, could not tell from the words that the answer is the
  * variable: a key kept under another root signs when `MNEMA_HOME` names it.
@@ -16,7 +16,7 @@
  * THE AGENT'S SERVER IS THE FIFTH READER AND IT GETS ANOTHER SENTENCE ({@link
  * keyFileLineForAModel}). The sentence above is for somebody who is going to type
  * `mnema key restore "<the key file>"`, and it carries the absolute path of a file in a home
- * directory — which, in a reply to an agent, is a path that leaves the machine for a provider.
+ * directory, which, in a reply to an agent, is a path that leaves the machine for a provider.
  * A model cannot restore a key and has no use for where it lives; what it can do is tell the
  * person which file to look for, and a name and a variable say that.
  */
@@ -38,7 +38,7 @@ export function keyFileLine(keyFile: string, mnemaHome: string | undefined): str
 }
 
 /**
- * The same fact for a reader that is a MODEL: which key file, and under what — no absolute path.
+ * The same fact for a reader that is a MODEL: which key file, and under what; no absolute path.
  *
  * `fingerprint` is the file's name without its extension and `mnemaHome` is read as above. The
  * path of a key file names the person's home directory and the layout of their machine, and

@@ -1,5 +1,5 @@
 /**
- * What a write MEETS before it happens: a refusal, a pause for a person, or nothing — decided
+ * What a write MEETS before it happens: a refusal, a pause for a person, or nothing, decided
  * in one place for every host.
  *
  * Two relations of the record can stop a write. `asks-for-a-person` holds it until somebody
@@ -9,8 +9,8 @@
  * for the same file.
  *
  * THE ORDER IS THE WHOLE RULE, and it is written here and nowhere else: if any path of the
- * write is refused by a rule in force, the write is REFUSED, and only the refusals are carried
- * — no person is asked about a write that will not happen, so nothing from this answer may be
+ * write is refused by a rule in force, the write is REFUSED, and only the refusals are carried;
+ * no person is asked about a write that will not happen, so nothing from this answer may be
  * recorded as an asking. Only when nothing refuses does the asking apply, through
  * {@link whatAWriteAsks}, unchanged.
  *
@@ -35,9 +35,9 @@ import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing
 
 /** One write, as a hook sees it: every path it touches, and where they are read from. */
 export interface AWrite {
-  /** The paths the write touches, as the host named them — relative or absolute. */
+  /** The paths the write touches, as the host named them: relative or absolute. */
   readonly paths: readonly string[];
-  /** The project's root directory — the parent of its `.mnema/`, absolute. */
+  /** The project's root directory: the parent of its `.mnema/`, absolute. */
   readonly root: string;
   /** The directory a relative path is resolved against (see `GovernedRead.from`). */
   readonly from: string;
@@ -45,7 +45,7 @@ export interface AWrite {
 
 /** What the write meets: the grade, the paths and rules behind it, and the reason to hand over. */
 export interface WriteVerdict {
-  /** `refuse` — the write does not happen; `ask` — it waits for a person. */
+  /** `refuse`: the write does not happen; `ask`: it waits for a person. */
   readonly grade: 'refuse' | 'ask';
   /**
    * The paths that met this grade, each with the rules in force there under that grade's
@@ -92,7 +92,7 @@ export function reasonTold(met: WriteVerdict, seen: Map<string, number>): string
 }
 
 /**
- * What `write` meets over `sources`, or `undefined` — the ordinary case — when it meets
+ * What `write` meets over `sources`, or `undefined`, the ordinary case, when it meets
  * nothing: no rule in force refuses or asks at any of its paths, or the channel that would
  * have spoken is switched off.
  */
@@ -141,8 +141,8 @@ export function whatAWriteMeets(
  * WHAT THE WRITE MEETS IS READ FROM THE RECORD, so a record that cannot be read cannot say the
  * write meets nothing: the gate refuses rather than answering a silence the host would read as
  * leave to write. The reason says which tree and which line, in the reader's own words
- * (`FORMAT.md` §7.1: never guessed at, never skipped), how far the refusal reaches — the
- * project, or for the machine-global tree every project on the machine — and the ways out, which
+ * (`FORMAT.md` §7.1: never guessed at, never skipped), how far the refusal reaches (the
+ * project, or for the machine-global tree every project on the machine) and the ways out, which
  * differ because only the public tree is kept by the repository. Switching the refusal off is
  * not one of them: the switch reads the same record.
  *
@@ -224,13 +224,13 @@ function verdict(
  *
  * THE RULE REFUSES WHETHER OR NOT ITS FACT LANDS. The refusal and the asking are decided by
  * reading the record, which takes no lock; only the fact that a write was refused or held is an
- * append. This used to fall the other way — a fact that could not be written refused nobody — and
+ * append. This used to fall the other way (a fact that could not be written refused nobody) and
  * that made any live process holding the tail a way around every rule of the project for as long
  * as it held it: measured, the write went through at 2.3 s with the lock held by a live pid. So
  * the fact gets more patience than an ordinary write, and its absence is said in the reason.
  *
- * A BUDGET IN TIME, NOT A COUNT OF TRIES. The first try in the server can take two waits — it
- * opens the session's run, then appends the facts, each under a hold of its own — so a count of
+ * A BUDGET IN TIME, NOT A COUNT OF TRIES. The first try in the server can take two waits (it
+ * opens the session's run, then appends the facts, each under a hold of its own), so a count of
  * three let one call wait 8 s and more. No later try opens the run again, so no try can end past
  * this budget: 7 s is the worst, however the waits fall. Measured on the binary with the tail held
  * by a live pid: the command hook answered `deny` in 6.3 s, the server's refusal and asking in
@@ -243,7 +243,7 @@ function verdict(
  */
 export const A_CHARGE_WAITS_MS = 7_000;
 
-/** Whether a charge's facts are on the chain, and if not, why — in words the reason can carry. */
+/** Whether a charge's facts are on the chain, and if not, why: in words the reason can carry. */
 export type ChargeRecorded = { readonly ok: true } | { readonly ok: false; readonly why: string };
 
 /**

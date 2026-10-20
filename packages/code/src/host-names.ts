@@ -1,6 +1,6 @@
 /**
- * The hosts this product knows, what each one does with it, and how each of those facts is known
- * — one table, and every list a `--host` enumerates is read off it.
+ * The hosts this product knows, what each one does with it, and how each of those facts is known:
+ * one table, and every list a `--host` enumerates is read off it.
  *
  * ONE TABLE, BY CAPABILITY. A host is not "supported" or not: it is in a rung, and the rungs are
  * not a ladder every host climbs in order. (a) the MCP server and a rules file, (b) the opening
@@ -17,8 +17,8 @@
  *
  * A MODULE OF ITS OWN, ON THE FLOOR, for the reason it always was: the command line declares
  * every option before it can route a word, so the lists a `--host` enumerates are loaded on every
- * invocation, while what each verb knows about a host — the payload it reads, the file format it
- * prints — is loaded only when that verb runs (`tests/the-floor-is-the-declaration.test.ts`).
+ * invocation, while what each verb knows about a host (the payload it reads, the file format it
+ * prints) is loaded only when that verb runs (`tests/the-floor-is-the-declaration.test.ts`).
  * It is data and imports nothing.
  */
 
@@ -48,8 +48,8 @@ export type Cell =
   | { readonly held: 'not ported' };
 
 /**
- * Where a host reads the skills, or the agents, a stack brings — the folder under a project's root
- * and the one under the home — and how that is known.
+ * Where a host reads the skills, or the agents, a stack brings, the folder under a project's root
+ * and the one under the home, and how that is known.
  *
  *   - `documentation`: the host's own documentation says it reads that folder, read at `at` on the
  *     day `read` names. Nothing was run: documented, not measured. An agent's folder is given only
@@ -82,7 +82,7 @@ export interface Host {
   readonly door: 'mcp_tool' | 'command' | 'none';
   /**
    * The variable the host sets for every hook and no other host sets, for a host whose hook the
-   * others would also run — the command starts nothing where it is unset.
+   * others would also run: the command starts nothing where it is unset.
    */
   readonly saysItIsTheHost?: string;
   /**
@@ -266,7 +266,7 @@ export const HOSTS = {
     title: 'Codex',
     door: 'command',
     // Codex reads the plugin through a manifest of its own (`.codex-plugin/plugin.json`) that
-    // names this hooks file, so no other host runs its command and none of theirs runs in Codex —
+    // names this hooks file, so no other host runs its command and none of theirs runs in Codex,
     // which they would: Codex matches `apply_patch` by `Write` and `Edit` too, and VS Code's
     // matcher names `apply_patch`. No variable has to say which host this is.
     hooksFile: 'hooks/codex.json',
@@ -426,7 +426,7 @@ export const HOSTS = {
     title: 'Gemini CLI',
     door: 'command',
     // Gemini CLI reads no hooks file of this plugin's: it loads an extension, a folder with a
-    // `gemini-extension.json` at its root and its hooks in `hooks/hooks.json` — the path the Claude
+    // `gemini-extension.json` at its root and its hooks in `hooks/hooks.json`, the path the Claude
     // Code plugin's own hooks file already has, so the extension is a folder of its own
     // (`plugin/gemini/`), generated from this row and self-contained, since installing it copies it.
     hooksFile: 'gemini/hooks/hooks.json',
@@ -663,7 +663,7 @@ export type HostName = keyof typeof HOSTS;
 export const HOST_NAMES = Object.keys(HOSTS) as readonly HostName[];
 
 /**
- * A host this product answers as a command hook before a write — see `host-hook.ts`: the hosts
+ * A host this product answers as a command hook before a write (see `host-hook.ts`): the hosts
  * of {@link HOSTS} whose {@link Host.door} is `command`.
  */
 export type HookHost = {
@@ -676,7 +676,7 @@ export const HOOK_HOSTS = HOST_NAMES.filter(
 ) as readonly HookHost[];
 
 /**
- * A host this product prints a rules file for — see `host-rules-file.ts`: the hosts whose rules
+ * A host this product prints a rules file for (see `host-rules-file.ts`): the hosts whose rules
  * file is held by the verb's own test rather than by the host's documentation.
  */
 export type RulesFileHost = {
@@ -702,7 +702,7 @@ export function hookTextOf(host: HostName): Host['hookText'] {
   return row.hookText;
 }
 
-/** Whether a host does a capability with this product — a cell that says yes, however known. */
+/** Whether a host does a capability with this product: a cell that says yes, however known. */
 export function does(host: HostName, capability: Capability): boolean {
   const cell: Cell = HOSTS[host].cells[capability];
   return cell.held !== 'not ported' && cell.does;

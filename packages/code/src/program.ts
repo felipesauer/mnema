@@ -1,9 +1,9 @@
 /**
  * The `mnema` program: the commands, the parse, and the process.
  *
- * Three layers meet here and nothing else does. `commands/` implements a verb —
+ * Three layers meet here and nothing else does. `commands/` implements a verb:
  * one adapter per verb, calling ONE core operation. `wiring/` declares a verb to
- * commander — its flags, its help, and what it prints. `presentation/` decides
+ * commander: its flags, its help, and what it prints. `presentation/` decides
  * what a line looks like. This file builds the program, hands the wiring the three
  * things every verb may touch (where to write, how a line becomes bytes, and the
  * session its writes are pinned to), and turns a throw into an honest exit code.
@@ -11,10 +11,10 @@
  * THE ENTRY IS WHERE THE PROCESS IS, and that is why the style capability is read
  * here: the flag, the environment and whether the destination is a terminal are
  * three facts about this invocation, and `presentation/` may not ask for any of
- * them — a line whose bytes depended on the machine could not be compared to a
+ * them; a line whose bytes depended on the machine could not be compared to a
  * recorded transcript. Read once, here, and handed down as a renderer.
  *
- * There is no domain logic here and none in the adapters — the logic is the gate
+ * There is no domain logic here and none in the adapters: the logic is the gate
  * and the projections in the core.
  *
  * Output is injected ({@link CliIo}) so the whole program can be driven in a test
@@ -58,13 +58,13 @@ export type { CliIo } from './wiring/io.js';
  * Leaves quietly when the reader goes away.
  *
  * `mnema … | head` closes the pipe while we are still writing, and node reports
- * that as an asynchronous `EPIPE` on the stream — which, unhandled, crashes with
+ * that as an asynchronous `EPIPE` on the stream, which, unhandled, crashes with
  * a stack trace that reads like mnema failed. It did not: the reader stopped
  * listening, which is the normal end of a pipeline, and every Unix tool treats it
  * as one. The output that matters is already through, so exit clean rather than
  * complain into a pipe nobody is reading.
  *
- * Registered on the real streams only, at the entry — the injected io a test
+ * Registered on the real streams only, at the entry: the injected io a test
  * drives never touches these.
  */
 function exitQuietlyOnClosedPipe(): void {
@@ -87,7 +87,7 @@ function exitQuietlyOnClosedPipe(): void {
 export interface BuiltProgram {
   /** The program, ready to parse. */
   readonly program: Command;
-  /** How a line becomes bytes for this invocation — resolved once, on first use. */
+  /** How a line becomes bytes for this invocation: resolved once, on first use. */
   readonly render: Render;
   /** Where this program writes, so whoever parses it reports through the same port. */
   readonly io: CliIo;
@@ -98,7 +98,7 @@ export interface BuiltProgram {
    * (`wiring/repl.ts`) offers a line only when the verb it names declared `reads`, and
    * it has to read that off the SAME registration the parser is about to route with.
    * A second `registerVerbs` into a program of its own would answer about a program
-   * nobody runs — which is precisely how the first half of
+   * nobody runs, which is precisely how the first half of
    * `every-verb-says-if-it-writes.test.ts` was once a tautology, and what a command
    * hung on the entry's program by any other path would slip through.
    */
@@ -117,18 +117,18 @@ const IDENTIFY_HELP =
  * Builds the configured `mnema` program. `io` defaults to the real streams.
  *
  * `typed` is what the caller wrote, and it is a fact about THIS invocation like the
- * three the renderer is resolved from — which is why it enters at the entry rather
+ * three the renderer is resolved from, which is why it enters at the entry rather
  * than being read back out of the parser. Two of the parser's refusals are about a
  * token rather than about a declaration (a flag nothing declares, a flag with nothing
  * after it), and naming the token is the difference between telling a caller what is
  * wrong and telling them that something is. Defaulted, because a caller that only
- * wants the declarations — the guards that walk the command tree — parses nothing.
+ * wants the declarations, the guards that walk the command tree, parses nothing.
  *
  * `render` is given by a caller that has ALREADY resolved the capability and must not
  * resolve it again. There is one such caller and there was never going to be a second:
  * an interactive session builds a program per line, and a session whose first answer
  * was painted and whose tenth was not would be one line's worth of doubt about every
- * line in the scrollback — the same argument that makes {@link rendererFor} answer at
+ * line in the scrollback, the same argument that makes {@link rendererFor} answer at
  * most once inside one command, one level up. Omitted, this invocation resolves its
  * own, which is what every other caller does.
  */
@@ -170,7 +170,7 @@ export function buildProgram(
         sub.parent === program ? sub.name() : STOCK_HELP.subcommandTerm(sub),
     })
     // Throw instead of calling process.exit, so the whole program can be driven
-    // in a test — {@link run} turns the thrown CommanderError into an exit code.
+    // in a test: {@link run} turns the thrown CommanderError into an exit code.
     .exitOverride()
     // Route commander's own output (help, usage errors) through the injected io.
     .configureOutput({
@@ -178,7 +178,7 @@ export function buildProgram(
       writeErr: (str) => io.err(str.replace(/\n$/, '')),
     });
 
-  // Which renderer, from the facts about this invocation — read late, because
+  // Which renderer, from the facts about this invocation: read late, because
   // `--color` does not exist until commander has parsed, and at most once, because a
   // report styled in halves would be a report a reader has to doubt (see
   // {@link rendererFor}). `isTty` is asked of stdout alone: it is where a report
@@ -189,12 +189,12 @@ export function buildProgram(
   // same kind of fact and the answer is spent on the same decision: a terminal that says
   // how wide it is gets its lines folded to it, and everything else gets the bytes it
   // always got (`wiring/color.ts`). A stream that reported no width answers zero, which
-  // is what the rule reads as "no screen to fold to" — a width nobody reported is not a
+  // is what the rule reads as "no screen to fold to": a width nobody reported is not a
   // width to guess at.
   //
   // ONE READING OF THE CAPABILITY AND TWO DOORS ONTO IT. The rule is asked for a WIDTH
   // ({@link rendererAtEachWidth}) and the renderer every verb is handed is that rule asked
-  // for this terminal's own — so the flag, the two variables and whether the destination is
+  // for this terminal's own, so the flag, the two variables and whether the destination is
   // a terminal are read exactly once, and the width is the one input a caller can change
   // while the process runs. A second factory beside this one would be a second reading of
   // the same stream at another instant, which is two terminals.
@@ -215,11 +215,11 @@ export function buildProgram(
   // The open session's run, resolved lazily and at most once (see
   // {@link pinnedRunResolver}). A verb asks it when it STAMPS a run, and forwards what
   // it returns; the reads never do, and neither do `init`, `verify`, `key` and `run`
-  // itself — none of those stamps a run, so none has a reason to prove one.
+  // itself: none of those stamps a run, so none has a reason to prove one.
   //
   // THAT IS NOT WHICH VERBS WRITE, and this comment used to read as though it were: it
   // listed the four alongside "the reads", and three of them (`init`, `key`, `run`) write
-  // — they found an identity, move a key roster, open and seal a session. Anything that
+  // (they found an identity, move a key roster, open and seal a session). Anything that
   // needs to know what a verb may do to the record asks the verb, which declares it
   // (`wiring/verb.ts`); asking this resolver would have answered a different question
   // and looked right.
@@ -252,7 +252,7 @@ export function buildProgram(
  * ON EVERY PROGRAM THIS FILE BUILDS, and not once per invocation the way the walk's notice is
  * ({@link sayWhatTheWalkPassesOver}): the console builds a program for every line typed into it,
  * and a write typed there founds as surely as one run from a shell. It cannot repeat within one
- * installation — the key's anchor is settled in a tree once, at its first write there — so hanging
+ * installation (the key's anchor is settled in a tree once, at its first write there), so hanging
  * it per line costs a reader nothing. This said "a founding happens once per key per tree", which
  * is true of the founding and not of the sentence: a fresh clone of the record, or a key restored
  * into one, is a new installation of the same key, and it is said there again, true of the key
@@ -260,11 +260,11 @@ export function buildProgram(
  *
  * THE QUESTION IS ASKED OF THE DISK, BEFORE AND AFTER, and not of the verb: a key's first write
  * into a tree is the one that settles its anchor there, so a verb that left a new anchor behind is
- * a verb that could have founded, and the record then says whether it did — beside whom. Every
+ * a verb that could have founded, and the record then says whether it did, beside whom. Every
  * verb is covered by construction, including one added tomorrow, and none has to report it.
  *
  * `mnema mcp` is passed by: the server says it in the reply of the call that founded. And it can
- * never be the reason an answer did not arrive — a throw here is swallowed, because a notice that
+ * never be the reason an answer did not arrive: a throw here is swallowed, because a notice that
  * cannot be composed is a notice not given, which is what the product said before.
  */
 function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void {
@@ -299,14 +299,14 @@ function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void
 /**
  * Runs the CLI: builds the program for this invocation and parses the line with it.
  *
- * A thrown error becomes an honest failure — a message and a non-zero exit — never an
+ * A thrown error becomes an honest failure, a message and a non-zero exit, never an
  * uncaught stack trace that could read as "nothing to report". That half is
  * {@link parseWith}, which is where the catch lives so the one caller that inspects a
  * program before parsing it reports exactly the same way.
  *
  * Its example used to be `verify` over a chain too corrupt to parse, and that one
  * no longer arrives here: an unreadable line is part of the VERDICT now (a `T1`
- * issue naming the tail and the position — see the chain's verify.ts), because a
+ * issue naming the tail and the position: see the chain's verify.ts), because a
  * parser's message reaching this catch-all was a correct exit code carrying no
  * finding. Every other verb still reaches it: a read that replays the trees and a
  * write that resumes a tail both parse stored lines, and a corrupt one there is a
@@ -324,7 +324,7 @@ export async function run(
 
 /**
  * Before a verb's answer, on stderr: every `.mnema/` the walk from here passed over that
- * still holds events — a home's, a machine's data directory with a project's tails in it.
+ * still holds events (a home's, a machine's data directory with a project's tails in it).
  * The sentences are `not-a-project.ts`'s; this only decides WHEN.
  *
  * ONCE PER INVOCATION, which is why it hangs on the program {@link run} parses and not in
@@ -334,7 +334,7 @@ export async function run(
  *
  * BEFORE THE ACTION, SO BEFORE ANY ANSWER, and only for an action: `--help` and
  * `--version` reach no action and say nothing, and neither does a line commander refuses.
- * `mnema mcp` is passed by — the server says the same sentences per session, in its own
+ * `mnema mcp` is passed by: the server says the same sentences per session, in its own
  * log, about the walks each session climbed, and the directory this process started in is
  * the walk of one kind of client only (`wiring/mcp.ts`).
  *
@@ -356,7 +356,7 @@ function sayWhatTheWalkPassesOver({ program, io, render }: BuiltProgram): void {
   });
 }
 
-/** The name of the verb a (possibly nested) command belongs to — `task` for `task move`. */
+/** The name of the verb a (possibly nested) command belongs to: `task` for `task move`. */
 function topLevelVerbOf(command: Command): string {
   let verb = command;
   while (verb.parent !== null && verb.parent.parent !== null) verb = verb.parent;
@@ -372,7 +372,7 @@ function topLevelVerbOf(command: Command): string {
  * {@link BuiltProgram.verbs} and only then hands the line over. Building a second
  * program to run it would mean deciding about one program and parsing with another,
  * and writing the catch below a second time would put the surface's last-resort report
- * in two places — which is the shape three deliveries of this series spent themselves
+ * in two places, which is the shape three deliveries of this series spent themselves
  * removing.
  */
 export async function parseWith(built: BuiltProgram, argv: readonly string[]): Promise<void> {
@@ -380,7 +380,7 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
   try {
     await program.parseAsync(argv, { from: 'user' });
   } catch (error) {
-    // commander throws for --help/--version (a clean, zero exit — it already
+    // commander throws for --help/--version (a clean, zero exit: it already
     // printed) and for a usage error (a non-zero exit already reported in the
     // product's own voice, by the walk `buildProgram` installed).
     // Honor its exit code; do not re-print.
@@ -390,8 +390,8 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
     }
     // The record does not name ONE identity for this machine's key, so the write
     // refused rather than guessing whose record this is. It is thrown, not
-    // returned, because the decision sits below every write — every verb would
-    // otherwise carry the same branch — so it is reported HERE, in the one place
+    // returned, because the decision sits below every write (every verb would
+    // otherwise carry the same branch), so it is reported HERE, in the one place
     // that already turns a throw into an honest failure, and it reads exactly like
     // any other refusal.
     if (error instanceof IdentityUnavailableError) {
@@ -418,8 +418,8 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       reportIdentityRefusal({ io, render }, { code: 'KEY_MADE_MEANWHILE', message: error.message });
       return;
     }
-    // A throw the product did not write for anybody — an engine error out of its own code, a
-    // value that is not an Error — is a FAULT, not a no, and it is said as one with its own
+    // A throw the product did not write for anybody (an engine error out of its own code, a
+    // value that is not an Error) is a FAULT, not a no, and it is said as one with its own
     // exit (`internal-error.ts` decides which is which).
     // Loaded here, not at the top: it is only ever wanted by a throw, and the floor every
     // command starts on does not grow an edge for a failure (`the-floor-is-the-declaration.test.ts`).
@@ -445,8 +445,8 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       io.fail(INTERNAL_ERROR_EXIT);
       return;
     }
-    // Any other throw — e.g. a read whose replay meets a stored line no parser
-    // can open — is an honest failure, not an uncaught stack trace that could
+    // Any other throw (e.g. a read whose replay meets a stored line no parser
+    // can open) is an honest failure, not an uncaught stack trace that could
     // read as "nothing wrong". (`verify` no longer arrives here for that: it
     // answers with a verdict naming the tail and the line.) It is a message somebody wrote
     // for a reader, so it is rendered like every other no on this surface: the command did
@@ -476,7 +476,7 @@ export interface Entry {
    *
    * The `&&` is the decision and it is the console's own: the arrows come from stdin and
    * the page goes to stdout, so an invocation with either one redirected is one whose
-   * caller cannot see what they are answering — and, far more importantly, it is a PIPE,
+   * caller cannot see what they are answering, and, far more importantly, it is a PIPE,
    * where the answer has to go on being the bytes it has always been.
    */
   readonly interactive: boolean;
@@ -485,14 +485,14 @@ export interface Entry {
 /**
  * THE BINARY'S OWN DOOR: the bare name asks what you want, and everything else runs.
  *
- * `mnema` with nothing after it printed the catalogue — thirty verbs and the options
- * above them — which is the right answer for somebody who knows what they are looking for
+ * `mnema` with nothing after it printed the catalogue, thirty verbs and the options
+ * above them, which is the right answer for somebody who knows what they are looking for
  * and the wrong one for somebody who has just typed the name of a program. So at a terminal
  * it ASKS, with two doors that depend on what is in this directory (`choice/doors.ts`), and
  * what the caller picks is a LINE this same function then runs.
  *
  * WITHOUT A TERMINAL NOTHING MOVED, and that is the half with everything resting on it. A
- * pipe, a script, a CI job, `mnema | less` — every one of them gets the help on stderr and
+ * pipe, a script, a CI job, `mnema | less`: every one of them gets the help on stderr and
  * the exit code of one, byte for byte as it always has, because {@link run} is reached
  * unchanged with the same empty argv. It is the same rule the session already followed and
  * it protects more than the session did: every script that has ever called this binary with
@@ -501,7 +501,7 @@ export interface Entry {
  * very call the golden drives.
  *
  * ONLY THE BARE NAME, and the narrowness is deliberate. `mnema --color=never` is a caller
- * who typed something, and what they typed is about OUTPUT — so there is output, and it is
+ * who typed something, and what they typed is about OUTPUT, so there is output, and it is
  * the catalogue. The question is for the invocation that asked nothing at all.
  *
  * A CALLER WHO LEAVES WITHOUT CHOOSING RUNS NOTHING AND EXITS ZERO. Asking is not an error,
@@ -509,7 +509,7 @@ export interface Entry {
  */
 export async function start(argv: readonly string[], entry: Entry): Promise<void> {
   if (argv.length > 0 || !entry.interactive) return await run(argv, entry.io);
-  // Reached by a dynamic import, and the whole of `choice/` behind it — the layout library
+  // Reached by a dynamic import, and the whole of `choice/` behind it: the layout library
   // is the most expensive import on this surface, and `mnema --version` must not know it
   // exists (`tests/the-floor-is-the-declaration.test.ts`).
   const [{ theChoice }, { leavingProcess }] = await Promise.all([

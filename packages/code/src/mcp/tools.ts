@@ -3,11 +3,11 @@
  *
  * Each tool is the MCP counterpart of a CLI command: it takes the session's
  * resolved context, calls ONE core function, and returns what that function
- * returned. It holds no domain logic — the id is minted by the operation, the
+ * returned. It holds no domain logic: the id is minted by the operation, the
  * actor is the session's `who`. WHERE a NEW write lands is a per-action choice in
  * two dimensions: the PROJECT (the session carries the cascade's answer, overridable
  * per call with `project`) and the TREE inside it (the KIND decides, overridable per
- * call with `scope`). The second one is NOT the session's — the tree follows what the
+ * call with `scope`). The second one is NOT the session's: the tree follows what the
  * fact IS, and the kind only exists here, at the tool. Both are answered by one
  * function, {@link routeWrite}, so ten verbs cannot disagree about where a write
  * goes; a MOVE, by contrast, follows the entity's home tree, never a destination
@@ -24,31 +24,31 @@
  * `decision_transition`, and `skill_transition` (the same mold applied to a gated
  * state change), `bootstrap`/`focus`/`resume`/`next_actions` (the read mold, one
  * derivation over the projection cache), `guard` (the read mold applied to a
- * DRY-RUN of the gate — it simulates a move and returns the verdict, writing
+ * DRY-RUN of the gate: it simulates a move and returns the verdict, writing
  * nothing), `skills` (the one read that also WRITES: it serves a pattern's body and
  * records that it was served, because that fact is derivable
  * from nothing else afterwards), `search`/`read_record` (the read mold widened to
  * every tree the session can see: an index of what matched, then one whole record
  * by the id that index gave), and the intelligence reads `runTimelineTool`/
  * `runReferencesTool`/`runAccountabilityTool`/`runAntipatternsTool`/
- * `runExposureTool` (the auditor's view — they fold every tree of every project the
+ * `runExposureTool` (the auditor's view: they fold every tree of every project the
  * workspace holds, opening no cache and no writer; `runExposureTool` keeps them
  * separate because its answer has to name the tree). The knowledge
  * FACTS (observation/handoff/link) share the
- * memory mold exactly — one append, no gate — and forward the ids they reference
+ * memory mold exactly (one append, no gate) and forward the ids they reference
  * without validating them (a dangling reference is honest cross-tree). The server
  * wires these onto the protocol; the wiring adds nothing but the schema and the
  * response envelope.
  *
  * The read mold does not OPEN a cache: it asks the session's registry for the
- * one over the tree it serves — the session's own for the actor reads, the
- * ENTITY's home tree for `next_actions` and `guard`. So a connection replays a
+ * one over the tree it serves (the session's own for the actor reads, the
+ * ENTITY's home tree for `next_actions` and `guard`). So a connection replays a
  * chain when a write has made that necessary, not once per call, and the answer
  * is the same either way (the registry rebuilds a stale cache before handing it
  * over). The write mold needs no counterpart discipline: every write asks
  * {@link openWrite} for its context, and that door is where the invalidation lives.
  *
- * That door is also where the session's RUN comes from — never off the session — and
+ * That door is also where the session's RUN comes from, never off the session, and
  * a write mold added later inherits both by asking for the same two things. A write
  * cannot reach a run any other way: the session's own cell is `string | undefined`,
  * so an operation that needs one will not take it.
@@ -235,7 +235,7 @@ export type CreateTaskResult =
   | (Replacement &
       Landed & {
         readonly ok: true;
-        /** The minted task id (the event subject) — the key a move takes. */
+        /** The minted task id (the event subject): the key a move takes. */
         readonly id: string;
         /** The short human-facing alias (`t-xxxx`), derived from the id. */
         readonly alias: string;
@@ -262,7 +262,7 @@ export type TransitionResult =
       })
   | {
       readonly ok: false;
-      /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
+      /** The gate's (or operation's) typed code, e.g. ILLEGAL_TRANSITION. */
       readonly code: string;
       /** The human-readable reason the move was refused. */
       readonly message: string;
@@ -275,7 +275,7 @@ export type RecordDecisionResult =
         readonly ok: true;
         /** The minted decision id (the event subject). */
         readonly id: string;
-        /** The citable `ADR-<n>` label frozen into the record — a decision's name. */
+        /** The citable `ADR-<n>` label frozen into the record: a decision's name. */
         readonly adr: string;
       })
   | {
@@ -308,7 +308,7 @@ export type DecisionTransitionResult =
       })
   | {
       readonly ok: false;
-      /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
+      /** The gate's (or operation's) typed code, e.g. ILLEGAL_TRANSITION. */
       readonly code: string;
       /** The human-readable reason the move was refused. */
       readonly message: string;
@@ -319,9 +319,9 @@ export type CreateSkillResult =
   | (Replacement &
       Landed & {
         readonly ok: true;
-        /** The minted skill id — the canonical identifier, the key a move takes. */
+        /** The minted skill id: the canonical identifier, the key a move takes. */
         readonly id: string;
-        /** The skill's short name — DISPLAY only, not a key (not unique). */
+        /** The skill's short name: DISPLAY only, not a key (not unique). */
         readonly name: string;
       })
   | {
@@ -346,19 +346,19 @@ export type SkillTransitionResult =
       })
   | {
       readonly ok: false;
-      /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
+      /** The gate's (or operation's) typed code, e.g. ILLEGAL_TRANSITION. */
       readonly code: string;
       /** The human-readable reason the move was refused. */
       readonly message: string;
     };
 
 /**
- * `capture_memory` — records one point-in-time fact into a tree.
+ * `capture_memory`: records one point-in-time fact into a tree.
  *
  * The destination is a per-action choice: an explicit `project` names which of the
  * workspace's projects it belongs to, and an explicit `scope` which of that project's
  * trees. Omitted, the project is the one the cascade landed on and the tree is the
- * rule's answer for this KIND — which for a memory is the one place the rule still
+ * rule's answer for this KIND, which for a memory is the one place the rule still
  * reads the AUTHOR, so an agent's capture goes private (global outside a project).
  * That exception is deliberate and documented in the core: the same kind holds a fact
  * the team needs and a note that is nobody's business but the writer's, so the kind
@@ -366,7 +366,7 @@ export type SkillTransitionResult =
  *
  * Opens that tree's writer, captures the memory attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints so the new
- * fact is signature-covered at once — the same posture every command leaves the
+ * fact is signature-covered at once: the same posture every command leaves the
  * tree in.
  */
 export function runCaptureMemory(
@@ -390,7 +390,7 @@ export function runCaptureMemory(
     if (written.ok) ctx.writer.checkpoint();
     return written;
   });
-  // A capture runs no gate, but the authority invariant still applies — surface
+  // A capture runs no gate, but the authority invariant still applies: surface
   // the core's refusal rather than asserting ok, and checkpoint nothing.
   if (!captured.ok) {
     return { ok: false, code: captured.code, message: captured.message };
@@ -426,7 +426,7 @@ export type FactRecordedResult =
       Landed & {
         readonly ok: true;
         /**
-         * The label or relation AS RECORDED — screened, so an echo shows what
+         * The label or relation AS RECORDED: screened, so an echo shows what
          * landed. A handoff and a link mint no id, so this is what a caller has to
          * report the fact by.
          */
@@ -441,14 +441,14 @@ export type FactRecordedResult =
     };
 
 /**
- * `record_observation` — records one observation about an entity, the MCP
+ * `record_observation`: records one observation about an entity, the MCP
  * counterpart of `mnema observe`. Like `capture_memory`, the destination is a
  * per-action choice: an explicit `project` and `scope` win, else the cascade's project
- * and the rule's answer for this kind — the other kind that still reads the author, so
+ * and the rule's answer for this kind (the other kind that still reads the author), so
  * an agent's observation goes private. An observation mints its OWN id (it is an
  * entity), which is returned.
  *
- * The `about` reference is forwarded to the core as-is and NEVER validated — the
+ * The `about` reference is forwarded to the core as-is and NEVER validated: the
  * observed entity may live in a tree this session cannot see, an honest
  * cross-tree assertion resolved on read. That is also why `project` matters most
  * here and on the other two verbs that carry a foreign id: nothing about the
@@ -492,13 +492,13 @@ export function runRecordObservation(
 }
 
 /**
- * `record_handoff` — records one handoff on a task, the MCP counterpart of
+ * `record_handoff`: records one handoff on a task, the MCP counterpart of
  * `mnema task handoff`. The destination is a per-action choice on top of the session's
  * defaults (`project`, then `scope`). A handoff mints NO id (its subject IS the
- * task), so the result carries no id — only whether it landed.
+ * task), so the result carries no id, only whether it landed.
  *
- * The `task` reference is forwarded as-is and NEVER validated, so — as with
- * `record_observation` and `link_knowledge` — the reference cannot reveal a write
+ * The `task` reference is forwarded as-is and NEVER validated, so, as with
+ * `record_observation` and `link_knowledge`, the reference cannot reveal a write
  * that went to the wrong project, and `project` is the only thing that can.
  * `from == to` is legitimate (a chat restart) and is not refused. Opens the
  * destination's writer, records the handoff attributed to the agent (`which`) and
@@ -542,7 +542,7 @@ export function runRecordHandoff(
  * A link was recorded, with what its address covers when the relation carries one.
  *
  * A shape of its own rather than a `reach` added to {@link FactRecordedResult}, because
- * a handoff shares that type and has no target that could be an address — a field there
+ * a handoff shares that type and has no target that could be an address: a field there
  * would be one every handoff carries and none can ever fill.
  */
 export type LinkRecordedResult =
@@ -552,7 +552,7 @@ export type LinkRecordedResult =
       /** The target as the tree holds it, present only where that is not what was typed (an absolute path under the root, recorded relative). */
       readonly recordedTarget?: string;
       /**
-       * WHICH TREE HOLDS THE RULE THIS LINK NAMES — absent when none here does.
+       * WHICH TREE HOLDS THE RULE THIS LINK NAMES: absent when none here does.
        *
        * A link written into the tree that TRAVELS whose subject lives in one that does
        * not is an address that reaches every clone naming a rule no reader of one can
@@ -566,15 +566,15 @@ export type LinkRecordedResult =
   | Extract<FactRecordedResult, { readonly ok: false }>;
 
 /**
- * `link_knowledge` — links one entity to another, the MCP counterpart of `mnema
+ * `link_knowledge`: links one entity to another, the MCP counterpart of `mnema
  * link`. The destination is a per-action choice (`project`, then `scope`); omitted,
- * the cascade's project and the tree this KIND names — a link asserts a relation
+ * the cascade's project and the tree this KIND names: a link asserts a relation
  * between the project's records, so it travels with them. A link mints NO id (it is an
  * edge), so the result carries no id.
  *
  * An `ADR-<n>` label is recorded as the id of the one decision it names, refused when several carry it
- * and when none does; anything else is not validated — a link is legitimately cross-tree and a
- * dangling reference is honest, resolved on read — which is exactly why the
+ * and when none does; anything else is not validated (a link is legitimately cross-tree and a
+ * dangling reference is honest, resolved on read), which is exactly why the
  * EDGE's own project has to be said rather than inferred: a link between two
  * projects is a legitimate thing to write, and the tree it is written in is the one
  * that will report it. `rel` is an OPEN string, forwarded verbatim (no enum on the
@@ -589,7 +589,7 @@ export function runLinkKnowledge(
   const route = routeWrite(session, 'knowledge.linked', input);
   if (!route.ok) return route;
   const trees = route.target?.trees ?? session.trees;
-  // Both ends are addresses first, and a label left raw is refused before a writer is opened — the
+  // Both ends are addresses first, and a label left raw is refused before a writer is opened: the
   // rule the command line asks, from the same functions (`link-target.ts`).
   const subject = addressedIn(session, input.subject);
   if (!subject.ok) return ambiguousLabel(subject.message);
@@ -626,7 +626,7 @@ export function runLinkKnowledge(
     return { ok: false, code: recorded.code, message: recorded.message };
   }
   // What the address covers, off the relation AS RECORDED and against the root of the
-  // project this write was ROUTED to — not the session's, which is a different project
+  // project this write was ROUTED to, not the session's, which is a different project
   // whenever the caller named one. A write that landed outside a project has no root
   // for an address to be relative to and reports no reach.
   const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
@@ -635,17 +635,17 @@ export function runLinkKnowledge(
   // line asks it: a link is accepted with a subject in any tree or in none, and this is
   // the moment the caller can still write the rule where it belongs. The rule is the
   // command's (`commands/link.ts`), stated in both doors because both doors write the
-  // edge — the read that COUNTS them is one function and this one is not, because a
+  // edge: the read that COUNTS them is one function and this one is not, because a
   // write reports what it just did and there is nothing to share but the question.
   //
   // IT ASKS THE SESSION'S OWN LOCATE, not the core's. This surface answers that question
   // from its warm projections and falls back to a replay only when they come up empty,
   // and `mcp-locate-cache.test.ts` refuses any file here that reaches for the core's
-  // one-record locate — a second walk is a second rule to keep in step. Written the other
+  // one-record locate: a second walk is a second rule to keep in step. Written the other
   // way first, and that guard is what caught it.
   const located = locateEntity(session, subject.id);
   const subjectScope = located.outcome === 'found' ? located.home.scope : undefined;
-  // The relation AS RECORDED — screened, so the echo shows what landed.
+  // The relation AS RECORDED: screened, so the echo shows what landed.
   return {
     ok: true,
     recorded: [recorded.rel],
@@ -659,16 +659,16 @@ export function runLinkKnowledge(
 }
 
 /**
- * `create_task` — creates a task, the MCP counterpart of `mnema task create`. Until it
+ * `create_task`: creates a task, the MCP counterpart of `mnema task create`. Until it
  * existed the agent could MOVE tasks but never open one, so an agent told to
- * break work down had no tool for it — the asymmetry this closes.
+ * break work down had no tool for it: the asymmetry this closes.
  *
  * The birth mold of `create_skill` exactly: the destination is a per-action choice (an
  * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
- * names — the team's board travels), the id is MINTED by the operation, and the write is
+ * names: the team's board travels), the id is MINTED by the operation, and the write is
  * attributed to the connecting agent (`which`) and pinned to that destination's run.
  *
- * Returns the minted `id` (the key a move takes) AND the derived `alias` — the
+ * Returns the minted `id` (the key a move takes) AND the derived `alias`: the
  * short name the human reads afterwards, the same pair the CLI reports. A
  * destination it cannot resolve is refused as data, never thrown, so the server
  * shapes it into a tool error.
@@ -690,7 +690,7 @@ export function runCreateTask(
     if (written.ok) ctx.writer.checkpoint();
     return written;
   });
-  // A birth is not a gated transition, but the operation's return is a union —
+  // A birth is not a gated transition, but the operation's return is a union:
   // surface the refusal it can carry (the authority invariant) rather than
   // asserting ok, and checkpoint nothing when no event was appended.
   if (!created.ok) {
@@ -707,12 +707,12 @@ export function runCreateTask(
 }
 
 /**
- * `task_transition` — moves a task through the workflow, the MCP counterpart of
+ * `task_transition`: moves a task through the workflow, the MCP counterpart of
  * `mnema task move`. Both call the SAME {@link transitionTask}, so the gate
  * accepts and refuses identically; only the transport and the context differ.
  *
  * The transition follows the ENTITY, not the session's scope. A task lives in
- * one tree, and a move must land there — writing it to the session's tree
+ * one tree, and a move must land there: writing it to the session's tree
  * instead (the session opened private, but the task may be public) would split
  * the task's history and hide the move from whoever reads only one tree. So the
  * tool LOCATES the task's home tree ({@link locateEntity}) and opens THAT tree's
@@ -720,7 +720,7 @@ export function runCreateTask(
  * an existing entity is moved. If no tree of the workspace holds the task, it
  * refuses `UNKNOWN_TASK`; if several records hold the id, `AMBIGUOUS_RECORD`.
  *
- * The home may be in ANOTHER project, and then the write is routed there — through
+ * The home may be in ANOTHER project, and then the write is routed there: through
  * the same door a named write goes through ({@link openWrite}), so the move lands in
  * that project's tree and pins to that project's run. A birth routed to the second
  * project of a workspace used to succeed while the move of that same task was
@@ -733,7 +733,7 @@ export function runCreateTask(
  *
  * The agent supplies the action as a string and whichever proof field it has;
  * the tool forwards them and stamps the session's `which` (the executing agent)
- * and `run`. It holds no workflow logic — the gate decides legality and proof,
+ * and `run`. It holds no workflow logic; the gate decides legality and proof,
  * and the tool relays the verdict: on success the new state, on refusal the
  * gate's own code and message, returned as data (never thrown) so the server can
  * shape it into a tool error without crashing the connection.
@@ -743,7 +743,7 @@ export function runTaskTransition(
   input: { id: string; action: string; reason?: string; note?: string; feedback?: string },
 ): TransitionResult {
   // Route by the task's home tree, not the session's scope: the move follows the
-  // entity so its history stays whole in one tree — in whichever project that is.
+  // entity so its history stays whole in one tree, in whichever project that is.
   const located = locateEntity(session, input.id);
   if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
 
@@ -793,9 +793,9 @@ function proofToFields(input: {
 }
 
 /**
- * `record_decision` — records one decision into a tree, the MCP counterpart of
+ * `record_decision`: records one decision into a tree, the MCP counterpart of
  * `mnema decision record`. The destination is a per-action choice: an explicit `project` and
- * `scope` win, else the cascade's project and the tree this KIND names — a decision is
+ * `scope` win, else the cascade's project and the tree this KIND names; a decision is
  * a declaration about the project, so it goes to the record that travels. A decision
  * needs both a `title` and a `rationale`, both required by the schema; what it
  * turned down (`alternatives`) is optional and forwarded only when given, so a
@@ -803,7 +803,7 @@ function proofToFields(input: {
  *
  * Opens that tree's writer, records the decision attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints. Returns the
- * frozen `ADR-<n>` label — a decision has no alias, the ADR is its human name, and
+ * frozen `ADR-<n>` label: a decision has no alias, the ADR is its human name, and
  * the number is the destination tree's own count, so a decision recorded in another
  * project is numbered in that project's series. A destination it cannot resolve is
  * refused as data, never thrown, so the server shapes it into a tool error.
@@ -835,7 +835,7 @@ export function runRecordDecision(
   });
   // A decision birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
-  // return is a union — surface any refusal honestly rather than asserting ok.
+  // return is a union: surface any refusal honestly rather than asserting ok.
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
@@ -850,20 +850,20 @@ export function runRecordDecision(
 }
 
 /**
- * `decision_transition` — moves a decision through its workflow, the MCP
+ * `decision_transition`: moves a decision through its workflow, the MCP
  * counterpart of `mnema decision move` and `mnema decision supersede` folded into
  * ONE tool. Both surfaces call the SAME operations, so the gate accepts and
- * refuses identically; only the transport differs — the CLI splits supersede into
+ * refuses identically; only the transport differs: the CLI splits supersede into
  * its own verb for a required positional `by`, the MCP carries `by` as an optional
  * arg on the single tool.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
  * decision's home tree ({@link locateEntity}) and opens THAT writer, so the move
- * never splits the history — including when that tree belongs to another project of
+ * never splits the history, including when that tree belongs to another project of
  * the workspace, which the door routes to. If no tree of the workspace holds it,
  * `UNKNOWN_DECISION`; if several records do, `AMBIGUOUS_RECORD`.
  *
- * The action string routes to the operation — `accept`/`reject` carry the `note`,
+ * The action string routes to the operation: `accept`/`reject` carry the `note`,
  * `supersede` carries the `by` (successor id) and the `reason`. `by` is forwarded
  * ONLY on supersede; a supersede with no `by` reaches the gate as an empty
  * successor and is refused MISSING_BY, the honest refusal. It holds no workflow
@@ -882,7 +882,7 @@ export function runDecisionTransition(
   const input = { ...asked, id: named.id, ...(successor?.ok ? { by: successor.id } : {}) };
   const upcasters = catalogUpcasters();
   // Route by the decision's home tree, not the session's scope: the move follows
-  // the entity so its history stays whole in one tree — in whichever project it is.
+  // the entity so its history stays whole in one tree, in whichever project it is.
   const located = locateEntity(session, input.id);
   if (located.outcome !== 'found') {
     return refuseUnlocated(session, 'decision', input.id, located);
@@ -916,7 +916,7 @@ export function runDecisionTransition(
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
-  // tree — who (the machine) != which (the agent) is preserved on a decision move
+  // tree, who (the machine) != which (the agent) is preserved on a decision move
   // exactly as it is on a task move.
   // Asked again inside the write, under the tail's lock (`DecisionTransitionInput.refusedWhen`).
   const refusedWhen = () =>
@@ -928,7 +928,7 @@ export function runDecisionTransition(
         ? supersedeDecision(ctx, {
             id: input.id,
             // A missing `by` becomes '', which the gate reads as no successor and
-            // refuses MISSING_BY. `by` reaches only supersede — the other ops have
+            // refuses MISSING_BY. `by` reaches only supersede: the other ops have
             // no channel for it.
             by: input.by ?? '',
             ...(fields !== undefined ? { fields } : {}),
@@ -952,7 +952,7 @@ export function runDecisionTransition(
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
   }
-  // Resolve the ADR from the projection — a decision has no alias, so its human
+  // Resolve the ADR from the projection: a decision has no alias, so its human
   // name is the frozen label. Read the ONE tree the entity was located in, and read
   // it through the one function both surfaces resolve a moved display with, fallback
   // included.
@@ -991,7 +991,7 @@ export type RetractNoteResult =
     };
 
 /**
- * Retracts a note — a memory or an observation — in the tree it was written in.
+ * Retracts a note, a memory or an observation, in the tree it was written in.
  *
  * It follows the NOTE, as a decision's move follows the decision: the walk is the one every
  * entity-keyed tool asks ({@link locateEntity}), reaching the notes as well, and the write
@@ -1047,7 +1047,7 @@ export type RetractLinkResult =
     };
 
 /**
- * `retract_link` — takes a link back, the MCP counterpart of `mnema unlink`, and the same two
+ * `retract_link` takes a link back, the MCP counterpart of `mnema unlink`, and the same two
  * steps in the same order: both ends are addresses first (an `ADR-<n>` label becomes the id of
  * the one decision it names, as `link_knowledge` records it), the link is followed to the tree
  * it was recorded in ({@link locateLinkAsRecorded}), and the write is the core's {@link retractLink},
@@ -1120,15 +1120,15 @@ function decisionProofToFields(input: {
 }
 
 /**
- * `create_skill` — proposes a reusable pattern into a tree, the MCP counterpart
+ * `create_skill`: proposes a reusable pattern into a tree, the MCP counterpart
  * of `mnema skill create`. Like `record_decision`, the destination is a per-action choice: an
  * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
- * names — a pattern states how the work is done here, so it travels. A skill needs both
+ * names; a pattern states how the work is done here, so it travels. A skill needs both
  * a `name` and a `body`, both required by the schema.
  *
  * Opens that tree's writer, proposes the skill attributed to the connecting
  * agent (`which`) and pinned to that destination's run, then checkpoints. Returns the
- * minted `id` (the key a move takes) and the `name` (DISPLAY only) — a skill has
+ * minted `id` (the key a move takes) and the `name` (DISPLAY only): a skill has
  * no alias. A destination it cannot resolve is refused as data, never thrown, so the
  * server shapes it into a tool error.
  */
@@ -1152,7 +1152,7 @@ export function runCreateSkill(
   });
   // A skill birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
-  // return is a union — surface any refusal honestly rather than asserting ok.
+  // return is a union: surface any refusal honestly rather than asserting ok.
   if (!created.ok) {
     return { ok: false, code: created.code, message: created.message };
   }
@@ -1167,17 +1167,17 @@ export function runCreateSkill(
 }
 
 /**
- * `skill_transition` — moves a skill through its workflow, the MCP counterpart of
+ * `skill_transition`: moves a skill through its workflow, the MCP counterpart of
  * `mnema skill move`. Both surfaces call the SAME operations, so the gate accepts
  * and refuses identically; only the transport differs.
  *
  * The transition follows the ENTITY, not the session's scope: it locates the
  * skill's home tree ({@link locateEntity}) and opens THAT writer, so the move never
- * splits the history — including when that tree belongs to another project of the
+ * splits the history, including when that tree belongs to another project of the
  * workspace, which the door routes to. If no tree of the workspace holds it,
  * `UNKNOWN_SKILL`; if several records do, `AMBIGUOUS_RECORD`.
  *
- * The action string routes to the named operation — review/adopt/reject carry a
+ * The action string routes to the named operation: review/adopt/reject carry a
  * `note`, deprecate a `reason`. Unlike a decision's supersede, NO action carries a
  * `by` (a skill is not relational). An action outside `SKILL_ACTIONS` is refused
  * `UNKNOWN_ACTION` before any op is called, never falling through to a default.
@@ -1190,7 +1190,7 @@ export function runSkillTransition(
 ): SkillTransitionResult {
   const upcasters = catalogUpcasters();
   // Route by the skill's home tree, not the session's scope: the move follows the
-  // entity so its history stays whole in one tree — in whichever project it is.
+  // entity so its history stays whole in one tree, in whichever project it is.
   const located = locateEntity(session, input.id);
   if (located.outcome !== 'found') return refuseUnlocated(session, 'skill', input.id, located);
 
@@ -1209,7 +1209,7 @@ export function runSkillTransition(
   const fields = skillProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
-  // tree — who (the machine) != which (the agent) is preserved on a skill move
+  // tree, who (the machine) != which (the agent) is preserved on a skill move
   // exactly as it is on a task move.
   const stamp = { which, run };
   const args = { id: input.id, ...(fields !== undefined ? { fields } : {}), ...stamp };
@@ -1229,7 +1229,7 @@ export function runSkillTransition(
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
   }
-  // Resolve the name from the projection to orient the human — a skill has no
+  // Resolve the name from the projection to orient the human: a skill has no
   // alias. Read the ONE tree the entity was located in (not the session's own tree
   // of that scope, which is a different chain when the skill lives in another
   // project), through the one function that resolves a moved display and falls back
@@ -1261,12 +1261,12 @@ function skillProofToFields(input: {
 }
 
 /**
- * `bootstrap` — the opening context for the session's actor.
+ * `bootstrap`: the opening context for the session's actor.
  *
  * Takes the session's caches over EVERY tree of its project and composes the
  * context's `bootstrap` derivation for the machine's anchor (`who`): where the actor
  * left off, the NAMES of the live work, the NAMES of the adopted patterns, and
- * the NAMES of the decisions in force. Read-only — it opens no writer and emits no
+ * the NAMES of the decisions in force. Read-only: it opens no writer and emits no
  * event.
  *
  * Names on every half, and each second read named in the tool's own description: the
@@ -1279,12 +1279,12 @@ function skillProofToFields(input: {
  * oversight. `sessionCaches` is the three trees of the project this connection landed
  * in; the decisions that govern THIS work are that project's. Widening it would drag
  * in the union question AND the cut that can silence a whole project without saying so
- * (`search` answers that one with `hidden`) — so if a later slice makes this read
+ * (`search` answers that one with `hidden`), so if a later slice makes this read
  * workspace-wide, it owes the `hidden` half in the same change.
  *
  * Every tree, and no longer the one the session's writes defaulted to. A task lands
  * in the tree that travels and a memory in this machine's own, whoever wrote either,
- * so "the session's tree" names none of them in particular — and the work list read
+ * so "the session's tree" names none of them in particular, and the work list read
  * from one came back EMPTY while looking like an answer. An agent told there is
  * nothing to do proceeds as if that were true, which is the worst shape the opening
  * read can have. It also closes the older half of the same hole: a person's tasks,
@@ -1294,7 +1294,7 @@ function skillProofToFields(input: {
  * The caches come from the session's registry rather than being opened here, so
  * a second read in the same connection reuses the replay this one paid for. The
  * registry rebuilds one when a write has made it stale, so what this reads is
- * always the chain as it stands — the reuse is invisible to the answer.
+ * always the chain as it stands: the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
   return bootstrap(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
@@ -1304,8 +1304,8 @@ export function runBootstrap(session: Session): Bootstrap {
  * What THIS CONNECTION knows about itself that the record cannot hold: the runs it
  * opened, and the instant it is answering at.
  *
- * The runs come from `session.runs`, which is a STRUCTURAL fact rather than a claim
- * — the session opened them, so it knows their ids. That is the whole reason this
+ * The runs come from `session.runs`, which is a STRUCTURAL fact rather than a claim;
+ * the session opened them, so it knows their ids. That is the whole reason this
  * exists: the record cannot tell two sessions of one machine apart, because they
  * share the authorizing anchor, and the other candidate (compare the agent NAME) is
  * a declared value that two homonymous agents defeat. So the distinction has to come
@@ -1313,7 +1313,7 @@ export function runBootstrap(session: Session): Bootstrap {
  *
  * EVERY run of the map, not the session's own tree's. A connection that wrote to a
  * second project holds a run there too, and a read served from one tree that omitted
- * it would report that run — if it ever saw it — as somebody else's.
+ * it would report that run, if it ever saw it, as somebody else's.
  *
  * The clock is the CORE's, in the core's own uniform shape, because the answer
  * compares this instant against instants the core minted. A second format would still
@@ -1333,11 +1333,11 @@ function askerContext(session: Session): AskerContext {
 /**
  * The trees of the session's OWN project, each paired with the scope it stands for
  * and with the project itself, in a fixed order. Outside a project that is the global
- * tree alone; inside one it is public, private and global — the team's record, this
+ * tree alone; inside one it is public, private and global: the team's record, this
  * machine's, and the personal cross-project one.
  *
  * The sources of the reads that serve THE SESSION rather than audit a record: the
- * skills it can see, and — through {@link workspaceCaches}, which starts here — the
+ * skills it can see, and (through {@link workspaceCaches}, which starts here) the
  * first project of every read that spans the workspace. No read composes this list
  * directly any more; a question about a record reaches every project the client
  * announced, and this is the part of that answer the session already had.
@@ -1353,7 +1353,7 @@ function scopedCaches(session: Session): ScopedCache[] {
 }
 
 /**
- * Every tree of every project this workspace holds — the sources of every read about
+ * Every tree of every project this workspace holds: the sources of every read about
  * THE RECORD (the three keyed by an id, `search` and `accountability`, and the two
  * that fold TAILS rather than caches: `exposure`, `antipatterns`) AND the trees the
  * entity-keyed tools locate a home in ({@link locateEntity}).
@@ -1370,7 +1370,7 @@ function scopedCaches(session: Session): ScopedCache[] {
  * OTHER projects (that is what normalizing a fix across three codebases produces);
  * a history does not end where a repository does; and words a person wrote are in the
  * project they were written in, not the one a cascade picked. Asking one project and
- * answering about the world is the shape of claim this product exists not to make —
+ * answering about the world is the shape of claim this product exists not to make,
  * and it is worse than a short answer, because the reply looks complete.
  *
  * The list is the same for all seven; what differs is what each may MERGE from it, and
@@ -1378,7 +1378,7 @@ function scopedCaches(session: Session): ScopedCache[] {
  * history and a list of exposed records are ITEMS: widening them adds without
  * changing, so they merge, each item labelled with the project. An account of
  * authorship, a scan's denominator and a count of recurring shapes are AGGREGATES:
- * widening them sums, and a sum answers a different question under the same name — so
+ * widening them sums, and a sum answers a different question under the same name, so
  * they come back decomposed, one entry per record, and no total across them.
  *
  * `exposure` is the read where BOTH halves of that rule land in ONE answer: its
@@ -1392,16 +1392,16 @@ function scopedCaches(session: Session): ScopedCache[] {
  * tool, and an option to choose would put a decision on the caller that the caller
  * has no better information to make.
  *
- * The session's OWN trees come first — so a workspace with one project produces that
+ * The session's OWN trees come first, so a workspace with one project produces that
  * list and nothing else, which is the non-regression held by construction rather than
  * by two loops agreeing. It also means a read cannot lose what the session could
  * already see, whatever the announced list turns out to hold.
  *
  * Deduplicated by CHAIN ROOT, and the machine-global tree is why it has to be. Every
  * project resolves the same global tree, so iterating projects hands that one tree
- * over N times — and a reader given the same tree three times reports each of its
+ * over N times, and a reader given the same tree three times reports each of its
  * facts three times. Some of the readers here would have absorbed it silently and
- * some would not (a merged history would not, and neither would a count — it would
+ * some would not (a merged history would not, and neither would a count: it would
  * report every personal note three times over), which is exactly the reason to dedupe
  * at the source rather than rely on each reader's own keying.
  *
@@ -1415,7 +1415,7 @@ function scopedCaches(session: Session): ScopedCache[] {
  * ({@link WorkspaceTree.target}), attached here because this is the one loop that
  * holds both the tree and the project object at once. A locate ends in a write, and
  * pairing them at the source is what stops a transition from reaching for the door by
- * name later and landing in the session's own trees when the lookup misses — a move
+ * name later and landing in the session's own trees when the lookup misses: a move
  * into the wrong repository, reported as success. The session's own trees and the
  * machine-global tree carry none: they are reached through the session, which is what
  * {@link openWrite} does when it is given no target.
@@ -1434,7 +1434,7 @@ export function workspaceTrees(session: Session): WorkspaceTree[] {
 }
 
 /**
- * Where an entity lives, across every tree of the workspace — the ONE locate every
+ * Where an entity lives, across every tree of the workspace: the ONE locate every
  * entity-keyed tool asks, and the only place the coverage and the walk are put
  * together.
  *
@@ -1448,7 +1448,7 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
 }
 
 /**
- * The tails this connection has read that do not chain — empty for a sound record,
+ * The tails this connection has read that do not chain: empty for a sound record,
  * which is every record this product wrote on its own.
  *
  * EVERY REPLY OF THIS SERVER ASKS IT, reads and writes alike, through the one composer
@@ -1461,7 +1461,7 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  * of one read and exits, so there the answer and the trees are the same set. A
  * connection accumulates: by the time a tool answers, the session holds a cache for
  * every tree any earlier call touched. Telling the agent about all of them is the
- * honest over-report — those trees are what this session is being served out of — and
+ * honest over-report (those trees are what this session is being served out of) and
  * the alternative, threading a source list out of fourteen adapters, would put the
  * rule in fourteen places to make the set smaller than the truth.
  *
@@ -1469,7 +1469,7 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  * neither opens a cache nor refreshes one, and on the READ door each cache carries its
  * breaks up from the replay `get` just brought forward ({@link ProjectionCache.linkBreaks}).
  * The WRITE door has not been near that path, so it asks the chain as it stands
- * ({@link ProjectionCache.linkBreaksAsOfNow}) — one `readdir` per tail and the entries past
+ * ({@link ProjectionCache.linkBreaksAsOfNow}): one `readdir` per tail and the entries past
  * the boundary, flat in the record. Which door is which is {@link WhichDoor}.
  *
  * A root the registry holds that no tree of this workspace names is skipped rather than
@@ -1482,9 +1482,9 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  * they redden rather than fade.
  *
  * FIRST: a connection whose FIRST call is a write has opened no cache, so it is told
- * nothing — a write marks its tree stale and never opens one. Closing it means OPENING, and
+ * nothing; a write marks its tree stale and never opens one. Closing it means OPENING, and
  * opening replays the chain: **6.4 ms over a 197 KB record (210 entries), 38.0 ms over
- * 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297)** — linear in the history, charged to the
+ * 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297)**, linear in the history, charged to the
  * first write of every connection, and worst exactly where the record is biggest, which is
  * the team's. Against a public that has not appeared: of **588** real sessions swept on
  * this machine, **none** opened with a write.
@@ -1498,7 +1498,7 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  * WHAT CLOSED IT IS NOT WHAT WAS TRIED FIRST, and the difference is the whole price.
  * Refreshing the cache on the write door was built, measured and reverted: a catch-up is
  * ~2.5 ms over a 60-entry record and ~4.3 ms over a 400-entry one, five writes then a read
- * comes to +12.7 ms and +21.3 ms, and it GROWS with the history — the reader pays one
+ * comes to +12.7 ms and +21.3 ms, and it GROWS with the history; the reader pays one
  * catch-up where that paid five, breaking the promise at the foot of
  * `mcp/cache-registry.ts`'s opening note outright. A cheaper variant of the same idea was
  * tried too and is worse than dear, it is WRONG: catching up only on movement this
@@ -1507,13 +1507,13 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  *
  * The expensive half of a catch-up is ADVANCING the projections; READING the arrivals is
  * what carries the breaks. So the write door reads and does not advance
- * ({@link ProjectionCache.linkBreaksAsOfNow}) — **0.09 ms per tree, and the same number at
+ * ({@link ProjectionCache.linkBreaksAsOfNow}): **0.09 ms per tree, and the same number at
  * 60 entries and at 400**, against 1.96 ms and 4.78 ms for a whole refresh. Nothing this
  * session has open moves, so the next read still catches up exactly once and the promise
  * in `cache-registry.ts` stands.
  *
  * WHAT THE WRITE DOOR STILL DOES NOT SEE is what that reading does not reach: a break
- * BELOW the frontier of a cache this session holds — bytes an earlier read already took —
+ * BELOW the frontier of a cache this session holds, bytes an earlier read already took,
  * and, among the arrivals, the second broken tail, because the reading stops at the first.
  * Both are {@link ProjectionCache.linkBreaksAsOfNow}'s limits and are stated there.
  *
@@ -1523,7 +1523,7 @@ function locateEntity(session: Session, id: string, reach: Reach = 'entities'): 
  * true while the frontier recorded the `seq` it reached; it records the BYTE now, so
  * the arrivals include a duplicate of the boundary entry and the catch-up rules on it
  * ({@link ProjectionCache.linkBreaks}). What survives of it is narrower: a break below
- * the boundary — the bytes a previous reading already took — is still outside.
+ * the boundary, the bytes a previous reading already took, is still outside.
  */
 export function sessionLinkBreaks(session: Session, door: WhichDoor): readonly ScopedLinkBreak[] {
   const scopeOf = new Map(workspaceTrees(session).map((tree) => [tree.chainRoot, tree.scope]));
@@ -1540,7 +1540,7 @@ export function sessionLinkBreaks(session: Session, door: WhichDoor): readonly S
 }
 
 /**
- * WHICH DOOR IS ASKING — and it decides one thing: whether the fact is read off the replay
+ * WHICH DOOR IS ASKING, and it decides one thing: whether the fact is read off the replay
  * these caches hold or off the chain as it stands now.
  *
  * A CLOSED UNION AND NOT A BOOLEAN, so a third door does not compile until somebody has
@@ -1551,19 +1551,19 @@ export function sessionLinkBreaks(session: Session, door: WhichDoor): readonly S
  * A READ has just been through {@link CacheRegistry.get}, which brought its caches into
  * agreement with the chain, so what they hold and what the chain holds are the same bytes
  * and asking again would be a `readdir` per tail for a window of microseconds. A WRITE has
- * not been near the registry's reading path — it invalidates and appends — so the replay it
+ * not been near the registry's reading path (it invalidates and appends), so the replay it
  * would answer off is as old as this connection's last read.
  */
 export type WhichDoor = typeof A_READ | typeof A_WRITE;
 
-/** Served out of what this session has open — see {@link WhichDoor}. */
+/** Served out of what this session has open: see {@link WhichDoor}. */
 export const A_READ = 'a read';
-/** Serving one fact beside an acknowledgement — see {@link WhichDoor}. */
+/** Serving one fact beside an acknowledgement: see {@link WhichDoor}. */
 export const A_WRITE = 'a write';
 
 /**
  * The `ADR-<n>` label a caller typed where an id goes, turned into the id of the one decision it
- * names, or refused when several carry it — the same rule the command line asks
+ * names, or refused when several carry it: the same rule the command line asks
  * (`label-as-address.ts`), over the decisions this session holds warm. Anything else comes back as
  * typed.
  */
@@ -1578,7 +1578,7 @@ function addressedIn(session: Session, named: string): Addressed {
   );
 }
 
-/** The refusal an ambiguous label is returned as — data, like every refusal on this surface. */
+/** The refusal an ambiguous label is returned as: data, like every refusal on this surface. */
 function ambiguousLabel(message: string): {
   readonly ok: false;
   readonly code: 'AMBIGUOUS_LABEL';
@@ -1597,7 +1597,7 @@ function workspaceCaches(session: Session): ScopedCache[] {
  * over it.
  *
  * Asking the registry means each is warm after the first read of that tree, and
- * rebuilt when this session's own writes left it behind — so a read composes the
+ * rebuilt when this session's own writes left it behind, so a read composes the
  * caches without knowing whether a replay just happened.
  */
 function withCaches(session: Session, trees: readonly ScopedTree[]): ScopedCache[] {
@@ -1605,7 +1605,7 @@ function withCaches(session: Session, trees: readonly ScopedTree[]): ScopedCache
 }
 
 /**
- * The caches of every tree of the session's own project — the source of every read
+ * The caches of every tree of the session's own project, the source of every read
  * that serves THE SESSION rather than audits a record: the opening context, the
  * actor's runs, the patterns it may use.
  *
@@ -1629,7 +1629,7 @@ export type SkillsResult =
    * The catalogue the context package decided ({@link SkillCatalogue}), verbatim: `served`
    * says whether the `skills` on it carry their bodies or are the NAMES of patterns
    * whose bodies did not fit one read. A caller reads the arm rather than the shape
-   * of the items — which is also what makes a consumer that assumed bodies fail
+   * of the items, which is also what makes a consumer that assumed bodies fail
    * loudly instead of quietly finding `body` undefined.
    */
   | (Replacement & { readonly ok: true } & SkillCatalogue)
@@ -1646,9 +1646,9 @@ export type SkillsResult =
     };
 
 /**
- * `skills` — serve a pattern's body, and record that it was served.
+ * `skills`: serve a pattern's body, and record that it was served.
  *
- * With no argument it returns every ADOPTED pattern — with their bodies when those
+ * With no argument it returns every ADOPTED pattern: with their bodies when those
  * fit in one read, and by NAME when they do not ({@link skillCatalogue}); with an
  * `id` it returns that one with no ceiling at all, and a pattern the project has not
  * ruled on is served THERE and only there. This is the read the `bootstrap` names
@@ -1658,12 +1658,12 @@ export type SkillsResult =
  *
  * THE CEILING IS THE CONTEXT PACKAGE'S, and it is asked here for the reason the disposition
  * is asked here: the sentence that frames names is this surface's, the decision that
- * they are what fits is not. The premise the paragraph above used to state — every
- * adopted body, however many there are — was falsified by measuring it: 40 patterns
+ * they are what fits is not. The premise the paragraph above used to state (every
+ * adopted body, however many there are) was falsified by measuring it: 40 patterns
  * of the market's median size came back at 146,431 B in one call, ~18% of a 200k
  * window, and recorded 40 consultations against a reader that had named none of them.
  *
- * WHAT IS SERVED IS DECIDED BY DISPOSITION, and not here — `lookupServedSkill`
+ * WHAT IS SERVED IS DECIDED BY DISPOSITION, and not here: `lookupServedSkill`
  * classifies (`SKILL_DISPOSITION` in `@mnema/context`), this adapter serves what it
  * gets back. Two places deciding which states are live is the shape that produces a
  * refusal disagreeing with the list beside it.
@@ -1672,12 +1672,12 @@ export type SkillsResult =
  * of the protection: the mass branch is `adoptedSkills`, so nothing awaiting a
  * judgement can reach a caller that did not NAME it. A candidate arriving unasked
  * would be a candidate served as an instruction; a candidate arriving by id is a
- * caller reading what it was asked to rule on. Asserted in `mcp-e2e.test.ts` —
+ * caller reading what it was asked to rule on. Asserted in `mcp-e2e.test.ts`:
  * "skills with no id serves ONLY the adopted, over a record that holds a candidate".
  *
  * Named `…Tool` because the command line has a `runSkills` of its own doing
- * something else — this serves a pattern to an agent, that audits where every
- * pattern came from for a person — the same split `runFocus`/`runFocusTool` and
+ * something else (this serves a pattern to an agent, that audits where every
+ * pattern came from for a person) the same split `runFocus`/`runFocusTool` and
  * `runSearch`/`runSearchTool` already carry.
  *
  * Each pattern comes back with its `state` and with the agent that adopted it, which
@@ -1688,25 +1688,25 @@ export type SkillsResult =
  * asserting an adoption that never happened.
  *
  * It is a read that WRITES, deliberately, and it is the only one. Whether work
- * was informed by a pattern is not derivable after the fact — nothing else in
- * the record would ever show it — so the moment of serving is the only moment
+ * was informed by a pattern is not derivable after the fact (nothing else in
+ * the record would ever show it), so the moment of serving is the only moment
  * the fact can be captured, and a session that passes without it is a session
  * that can never be compared. What lands is `skill.consulted`, ONE per (run,
  * skill): consulting the same pattern twice in one run is one run that used it. The
  * deduplication is the session's own memory ({@link Session.consulted}), not a
- * query, and it is asked per RUN — a connection has one per project it writes to,
+ * query, and it is asked per RUN: a connection has one per project it writes to,
  * and a pattern used in two projects is two facts.
  *
  * The consultation lands in the session's OWN tree, and this takes no `project`: it
  * is a fact about a reading, and the reading happened here. So a session whose work
- * goes to a second project records that work there and this consultation here —
+ * goes to a second project records that work there and this consultation here:
  * honest about what each event is, and leaving the second project's record unable to
  * show on its own which pattern informed it.
  *
  * The fact says CONSULTED, never "followed". Reading a pattern and ignoring it
  * is possible, and nothing observable here separates the two.
  *
- * Nothing is recorded for a call that serves nothing — an empty workspace, an
+ * Nothing is recorded for a call that serves nothing: an empty workspace, an
  * unknown id, a pattern the project has closed. A refusal to record IS surfaced
  * rather than swallowed: a silently unrecorded consultation is exactly the
  * perishable fact this exists to capture, so it is reported like any other
@@ -1715,22 +1715,22 @@ export type SkillsResult =
  * A CALL ANSWERED IN NAMES SERVES NOTHING, and it is the same rule and not an
  * exception to it: a name is not a pattern, and nobody can be said to have consulted
  * text they were not handed. So the recording is asked over the bodies this call
- * served — an empty list when the catalogue answered names, which is a question
+ * served: an empty list when the catalogue answered names, which is a question
  * settled before a run is opened or a cache marked stale.
  *
  * And the converse holds with no branch to keep it holding: a body that IS served
  * goes through {@link recordConsultations} whatever its state, because the recording
  * is downstream of the bifurcation and reads the served list. The invariant that
- * justified making this the only door — a body never leaves THIS SURFACE without the
- * fact of the reading — would have been the first casualty of a candidate served on a
- * shortcut. Asserted in `mcp-e2e.test.ts` — "skills with an id serves the body of a
+ * justified making this the only door (a body never leaves THIS SURFACE without the
+ * fact of the reading) would have been the first casualty of a candidate served on a
+ * shortcut. Asserted in `mcp-e2e.test.ts`: "skills with an id serves the body of a
  * pattern awaiting a judgement, and records the consultation".
  *
  * THE THREE WORDS "THIS SURFACE" USED TO BE ABSENT, and the sentence was too broad
  * before this slice as well as after it. The command line already took a body out with
  * nothing recorded (`mnema show <id>`, for a person curating), and `mnema skill export`
  * now takes one out as a FILE. Neither is a shortcut past this door: both are the
- * auditor's surface, and the invariant is about the AGENT's — which is exactly what
+ * auditor's surface, and the invariant is about the AGENT's, which is exactly what
  * `read_record` refusing a skill (`USE_SKILLS_TOOL`) buys, and what it would stop buying
  * if a tool here served a body without recording.
  *
@@ -1739,14 +1739,14 @@ export type SkillsResult =
  * command line, so a person reading there may well be inside one. The reason the auditor's
  * surface still records nothing is written where that verb lives (`commands/show.ts`), and
  * it is three measurements and one structural fact rather than an absence of sessions. What
- * the command line got instead is a REPORT — `mnema audit antipatterns` says whether the run that
+ * the command line got instead is a REPORT: `mnema audit antipatterns` says whether the run that
  * moved a pattern had been served its body, and says NOT OBSERVABLE where nothing was
  * listening. It is deliberately not a tool here: an auditor's finding the audited party can
  * query and clear before anyone reads it is not a finding.
  */
 export function runSkillsTool(session: Session, input: { id?: string } = {}): SkillsResult {
   // READ before WRITE: the caches are consulted first, because building a write
-  // context marks the written tree stale — doing it the other way round would
+  // context marks the written tree stale; doing it the other way round would
   // make every call rebuild the tree it is about to read.
   const caches = sessionCaches(session);
   const served = input.id === undefined ? undefined : lookupServedSkill(caches, input.id);
@@ -1756,7 +1756,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       code: 'UNKNOWN_SKILL',
       // The SESSION's sentence, not the workspace's: this read serves the patterns of
       // the trees the session can see, and a refusal claiming a search of every
-      // project would claim more than it did. `input.id` is defined here — `served`
+      // project would claim more than it did. `input.id` is defined here: `served`
       // is undefined without it.
       message: notFoundInSessionTrees(session, 'skill', input.id as string),
     };
@@ -1767,7 +1767,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       code: 'NOT_SERVED',
       // The STATE is what the refusal is for: an agent holding a name from an older
       // session learns what became of the pattern instead of being told nothing.
-      // The clause after it states the RULE, not a claim about this record — which is
+      // The clause after it states the RULE, not a claim about this record, which is
       // what keeps the sentence true of a state the workflow has never had.
       //
       // THE ID GOES THROUGH {@link oneLine}, like every other refusal that echoes a
@@ -1776,10 +1776,10 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // refusal about something nobody asked. This and `read_record`'s
       // `USE_SKILLS_TOOL` were the two refusals on this surface that echoed the id
       // raw. Reaching either with a break in it needs an id the RECORD holds, and
-      // every id the product mints is a UUID — so this is the rule applied where it
+      // every id the product mints is a UUID, so this is the rule applied where it
       // belongs, not a case that can be demonstrated (`mcp-e2e.test.ts` pins the
       // branch that a caller CAN reach, "a skills refusal stays ONE line whatever id
-      // the caller sent"). `input.id` is defined here — `served` is undefined without
+      // the caller sent"). `input.id` is defined here: `served` is undefined without
       // it, the same narrowing the branch above relies on.
       message:
         `skill "${oneLine(input.id as string)}" is ${served.state}: a pattern the ` +
@@ -1787,7 +1787,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
     };
   }
   // The bifurcation, and the ceiling ON ONE SIDE of it: a caller that named an id is
-  // served that body whatever it weighs — it asked for exactly this one, and what a
+  // served that body whatever it weighs; it asked for exactly this one, and what a
   // body may weigh at all was settled on the way in, by the content door. A caller
   // that named nothing gets what fits.
   const catalogue: SkillCatalogue =
@@ -1801,7 +1801,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
   );
   if (!recorded.ok) return recorded;
   // This is a READ that writes, so it is the one place a replacement report could
-  // reasonably be dropped — and dropping it is exactly the silence the report
+  // reasonably be dropped, and dropping it is exactly the silence the report
   // exists against. A consultation carries the session's agent name on its
   // envelope like every other fact, so if that name held a credential this call is
   // the one that recorded it, and this reply is where the caller can still act.
@@ -1810,7 +1810,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
 
 /**
  * Records one `skill.consulted` for each pattern served that this RUN has not
- * already recorded, in the tree the KIND names — the same tree a skill's own facts go
+ * already recorded, in the tree the KIND names: the same tree a skill's own facts go
  * to, because "this pattern was used" is a fact about the pattern. The evidence that
  * an adopted pattern earns its place is worth nothing on one machine, which is why it
  * travels with the pattern rather than staying where the reader happens to be.
@@ -1819,17 +1819,17 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
  * every body the caller was served, so a candidate read by three sessions that nobody
  * then ruled on is a fact the curation audit can see. The reading that counts these
  * says of itself that it COUNTS and does not judge, and the auditor's own pattern list
- * already includes the never-adopted — so nothing downstream reads a consultation as
+ * already includes the never-adopted, so nothing downstream reads a consultation as
  * evidence of adoption.
  *
- * The subject may name a skill that lives in ANOTHER tree — the read serves patterns
+ * The subject may name a skill that lives in ANOTHER tree: the read serves patterns
  * from every tree the session can see, so a consultation of a privately adopted one
  * is recorded in the committed tree and points across. That is the same honest
  * cross-tree reference a link or an observation makes, resolved on read; unlike a
  * `run`, it is a reference the caller chose and not one the envelope imposes.
  *
  * The dedup is asked per run, and the run is identified by the tree these facts go
- * to (see {@link Session.consulted}) — which is also why the question is asked
+ * to (see {@link Session.consulted}), which is also why the question is asked
  * BEFORE the write context is built rather than off the run the door returns. What
  * this decides is whether to write at all, and a call that turns out to have nothing
  * to record must not have opened a run, or marked a cache stale, to find that out.
@@ -1848,7 +1848,7 @@ function recordConsultations(
   // Routed by KIND like every other write, through the same door, even though this
   // one takes no `scope` and no `project` from its caller: a consultation is a fact
   // about a pattern, and the rule that says where a pattern's facts live is the same
-  // one. Reaching for a session default here — there is none now — is what used to put
+  // one. Reaching for a session default here (there is none now) is what used to put
   // it in a tree the pattern itself was not in.
   const route = routeWrite(session, 'skill.consulted', {});
   if (!route.ok) return route;
@@ -1875,7 +1875,7 @@ function recordConsultations(
       });
       if (!done.ok) {
         // Every fact here shares one authority decision, so this is unreachable
-        // for a real client — but a fact already appended must still be signed.
+        // for a real client, but a fact already appended must still be signed.
         if (appended > 0) ctx.writer.checkpoint();
         return { ok: false, code: done.code, message: done.message };
       }
@@ -1890,10 +1890,10 @@ function recordConsultations(
 }
 
 /**
- * `focus` — the session actor's open runs (what they are touching now).
+ * `focus`: the session actor's open runs (what they are touching now).
  *
  * The read mold applied to the context package's `focus`: take the session's cache over
- * its resolved tree and derive for the session's `who`. Read-only — no writer,
+ * its resolved tree and derive for the session's `who`. Read-only: no writer,
  * no event. The actor is the session's anchor (never a client-supplied value),
  * so the result carries only the machine's OWN open runs.
  */
@@ -1902,10 +1902,10 @@ export function runFocusTool(session: Session): Focus {
 }
 
 /**
- * `resume` — where the session actor left off: their latest run plus focus.
+ * `resume`, where the session actor left off: their latest run plus focus.
  *
  * The read mold applied to the context package's `resume`. Read-only. Like `focus`, the
- * actor is the session's `who`, so the latest run reported is the machine's own —
+ * actor is the session's `who`, so the latest run reported is the machine's own:
  * open OR already ended, the "where was I" anchor.
  */
 export function runResumeTool(session: Session): Resume {
@@ -1928,23 +1928,23 @@ export type NextActionsResult =
     };
 
 /**
- * `next_actions` — the moves the workflow allows a task next.
+ * `next_actions`: the moves the workflow allows a task next.
  *
  * Keyed by an ENTITY, not the actor: it locates the task's home tree
- * ({@link locateEntity}) — a task lives in exactly one tree of the workspace — takes
+ * ({@link locateEntity}; a task lives in exactly one tree of the workspace), takes
  * THAT tree's cache, and returns the context package's `nextActionsForTask`. Read-only. An id
  * no tree of the workspace holds is refused `UNKNOWN_TASK` (returned as data so the
  * server shapes it into a tool error, never thrown); an existing terminal task yields
- * an empty list — "no legal moves", not "no such task".
+ * an empty list: "no legal moves", not "no such task".
  *
  * The union is the same rule the reads keyed by an id follow: a task in a sibling
  * project is a task with one home, and asking one project answered "no such task"
- * about a task the workspace holds — the answer that made a move impossible on a task
+ * about a task the workspace holds, the answer that made a move impossible on a task
  * the same session had just created.
  *
  * This is the read that makes the session's caches per-TREE rather than one: the
- * tree it serves is the entity's, which need not be the session's own — nor even
- * this project's. Asking the registry by chain root keeps those apart — a task read
+ * tree it serves is the entity's, which need not be the session's own, nor even
+ * this project's. Asking the registry by chain root keeps those apart: a task read
  * out of the public tree can never be answered from the private tree's projection.
  */
 export function runNextActionsTool(session: Session, input: { id: string }): NextActionsResult {
@@ -1952,8 +1952,8 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
   if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
   const actions = nextActionsForTask(session.caches.get(located.home.chainRoot), input.id);
   // The birth was located, so a null here is not a missing task: this session has
-  // no state for it in that tree — its history stops at the creation, or another
-  // process appended past what this session has read. Report that rather than a
+  // no state for it in that tree (its history stops at the creation, or another
+  // process appended past what this session has read). Report that rather than a
   // false empty terminal list, and name the tree, because repeating the sentence
   // above would deny a birth this very call just found.
   if (actions === null) {
@@ -1976,7 +1976,7 @@ export type GuardResult =
   | {
       readonly ok: false;
       /**
-       * No tree of the workspace holds a task with this id, or several records do — or the key of
+       * No tree of the workspace holds a task with this id, or several records do, or the key of
        * this machine would be refused in the task's tree (nobody signs there, or the person's key is
        * protected by a passphrase that is not at hand) and the write this simulates would be refused
        * with the code that refusal carries. Held by the four tests of
@@ -1992,20 +1992,20 @@ export type GuardResult =
     };
 
 /**
- * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
- * task, and if not, why?" — the MCP counterpart of `mnema task guard`. Read-only: it
+ * `guard` (a DRY-RUN of the workflow gate: "would this move be allowed on this
+ * task, and if not, why?") the MCP counterpart of `mnema task guard`. Read-only: it
  * locates the task's home tree ({@link locateEntity}), takes THAT tree's cache, reads
  * the task's current state as the `from`, and calls the context package's pure
- * {@link guardWithFocus} — no writer, no event. The verdict is the gate's own, the
+ * {@link guardWithFocus} (no writer, no event). The verdict is the gate's own, the
  * SAME function `task_transition` consults, over the SAME locate, so what the gate
- * decides about the move and its proof is one answer — including for a task in
+ * decides about the move and its proof is one answer, including for a task in
  * another project.
  *
- * The authority simulated is the machine's own — never a client-supplied value — and the one that
+ * The authority simulated is the machine's own, never a client-supplied value, and the one that
  * signs in the TASK's tree: the same answer whichever root the workspace lists first. It asks the
  * key what the write would ask ({@link keyRefusalIn}, which opens no key and makes none) and answers
- * the refusal the write would give — the agent not enrolled in that tree, or retired, or the
- * person's key protected by a passphrase with none in the environment — in the write's own words and
+ * the refusal the write would give (the agent not enrolled in that tree, or retired, or the
+ * person's key protected by a passphrase with none in the environment) in the write's own words and
  * code, before the gate is consulted, as the write does (the four tests of
  * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with `task_transition`). What a
  * read cannot know it does not say: a passphrase that is set but wrong, the record busy at that
@@ -2070,7 +2070,7 @@ export function runGuardTool(
   const result = guardWithFocus(
     // The FOCUS's trees, not the task's. The verdict needs no cache (the gate is
     // pure, and the state it decides from was read above), and the runs the asker
-    // has open are the asker's — a session that wrote in two trees holds a run in
+    // has open are the asker's: a session that wrote in two trees holds a run in
     // each, and the tree this task happens to live in answers about neither.
     sessionCaches(session),
     {
@@ -2101,23 +2101,23 @@ export type SearchToolResult =
     };
 
 /**
- * `search` — find records across every project of the workspace, or list the
+ * `search`: find records across every project of the workspace, or list the
  * most recent ones.
  *
- * The read that makes the record readable. Everything an agent captures — a
- * memory, an observation, a decision, a task, a skill — was write-only until
+ * The read that makes the record readable. Everything an agent captures (a
+ * memory, an observation, a decision, a task, a skill) was write-only until
  * now: recoverable by id if you still had the id, and otherwise gone. This
  * returns an INDEX of what matched (id, kind, tree, project, instant, one line
  * each), never the bodies; `read_record` serves one whole record when the index
  * says which one is worth reading.
  *
- * The term is OPTIONAL. Without one the answer is the most recent records —
- * "what has been going on here" — and with one it is the best matches. They are
+ * The term is OPTIONAL. Without one the answer is the most recent records
+ * ("what has been going on here") and with one it is the best matches. They are
  * the same read because an inverted index makes them the same query.
  *
  * The union is what "have we written about X" has always meant. The words are in the
  * project they were written in, and the cascade's choice of one project is not a
- * filter the caller applied — so a search of one codebase answering "nothing matches"
+ * filter the caller applied, so a search of one codebase answering "nothing matches"
  * about a workspace says the one thing this product must not: it reports the world
  * from a search of a corner, in the same words it would use if the corner were the
  * world. Every hit says which project holds it, which is what makes filtering the
@@ -2127,10 +2127,10 @@ export type SearchToolResult =
  * approximation across corpora, and `limit` can fill the list from one project and
  * leave a sibling's matches out entirely. The constant half is in this description and
  * in `searchRecords`; the per-answer half is the `hidden` field, present only when a
- * whole record was shut out. No per-project quota — declared, not resolved.
+ * whole record was shut out. No per-project quota: declared, not resolved.
  *
  * Read-only in the strict sense: it asks the session's warm caches and composes
- * the context package's pure `searchRecords`. No writer, no event — including for a
+ * the context package's pure `searchRecords`. No writer, no event, including for a
  * skill, whose NAME may appear here. Only serving a skill's BODY is a
  * consultation worth recording, and that has its own tool.
  */
@@ -2139,7 +2139,7 @@ export function runSearchTool(session: Session, input: RecordQuery = {}): Search
   // reads as "no matches" when the truth is "that tree is not here". Checked on the
   // session's own trees and still right over the union: a workspace with a project in
   // it is a session IN a project, so the roles a sibling has are the roles this one
-  // has — what differs across projects is the tree behind a role, never the roles.
+  // has; what differs across projects is the tree behind a role, never the roles.
   if (input.scope !== undefined && chainRootForScope(session.trees, input.scope) === undefined) {
     return {
       ok: false,
@@ -2177,7 +2177,7 @@ export type ReadRecordResult =
     };
 
 /**
- * `read_record` — the whole of one record, by the id an index gave.
+ * `read_record`: the whole of one record, by the id an index gave.
  *
  * The second half of the search: the index says what exists and this says what
  * it says. It looks in every tree of every project this workspace holds (an id
@@ -2192,13 +2192,13 @@ export type ReadRecordResult =
  *
  * The union is not a widening of the question, it is the question. An id is minted
  * once; which project it landed in is a fact about where the work happened, not a
- * filter the caller meant to apply — so looking in one project and reporting "no
+ * filter the caller meant to apply, so looking in one project and reporting "no
  * record" is a false answer with a true-sounding shape, and it is the answer an agent
  * got for any id from a sibling project of the same workspace.
  *
  * A SKILL is refused here, and pointed at the `skills` tool instead. ONE reason, and
  * it is the skills tool's own: serving a pattern's body is a CONSULTATION, and that
- * fact is derivable from nothing else afterwards — so a body leaving through a second
+ * fact is derivable from nothing else afterwards, so a body leaving through a second
  * door would leave without it. That is the whole of it now.
  *
  * It used to be two, and the second was "only ADOPTED patterns are served". That is
@@ -2236,7 +2236,7 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
  *
  * The sentence had to grow because the search did. It used to say "in any tree this
  * session can see", which was true of three trees and is now true of every tree of
- * every project — a claim that got wider without a word of it changing, which is the
+ * every project: a claim that got wider without a word of it changing, which is the
  * kind of sentence a reader cannot check. So it names the projects, the same way a
  * routed write names the projects it could have meant (`namedProjects`, shared with
  * it).
@@ -2244,17 +2244,17 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
  * The clause that names them is now the entity-keyed refusals' too
  * ({@link inEveryTreeThisSessionSees}): those tools search exactly the trees this read
  * searches, so the account of where they looked is one function rather than two
- * wordings of one walk. What varies is only the subject in front of it — a record by
+ * wordings of one walk. What varies is only the subject in front of it: a record by
  * id here, a task or a decision or a skill there.
  *
  * It still does not say the id does not exist, and it has every reason not to: the
- * read covered every project the client announced, and that is still not the world — a
+ * read covered every project the client announced, and that is still not the world; a
  * project nobody opened, and a partial clone of one that was, both hold records this
  * cannot see. What is reported is the search.
  *
  * THE ID GOES THROUGH {@link oneLine}, because unlike a project path it comes from
  * the CALLER. A refusal is read as one line, so an id holding a newline lets the
- * argument write a second, well-formed refusal about something nobody asked — the
+ * argument write a second, well-formed refusal about something nobody asked: the
  * defect measured on a directory name, one step closer to whoever is calling.
  */
 function notInAnyProject(session: Session, id: string): string {
@@ -2267,7 +2267,7 @@ type IntelligenceResult<T> =
   | {
       readonly ok: false;
       /**
-       * There is no project here — an intelligence read is about a project's record — or the
+       * There is no project here (an intelligence read is about a project's record) or the
        * `ADR-<n>` it was asked about names several decisions.
        */
       readonly code: 'NO_PROJECT' | 'AMBIGUOUS_LABEL';
@@ -2275,13 +2275,13 @@ type IntelligenceResult<T> =
       readonly message: string;
     };
 
-/** The `audit_timeline` result — the entity's history, or a refusal. */
+/** The `audit_timeline` result: the entity's history, or a refusal. */
 export type TimelineToolResult = IntelligenceResult<readonly TimelineEntry[]>;
 
-/** The `audit_accountability` result — an account per project, or a refusal. */
+/** The `audit_accountability` result: an account per project, or a refusal. */
 export type AccountabilityToolResult = IntelligenceResult<WorkspaceAccountability>;
 
-/** The `audit_antipatterns` result — the shapes of each record, or a refusal. */
+/** The `audit_antipatterns` result: the shapes of each record, or a refusal. */
 export type AntipatternsToolResult = IntelligenceResult<WorkspaceAntipatterns>;
 
 /**
@@ -2293,8 +2293,8 @@ export type AntipatternsToolResult = IntelligenceResult<WorkspaceAntipatterns>;
  *
  * All five read every project of the workspace ({@link workspaceTrees}); what differs
  * is what each merges from it. The two keyed by an id merge items into one answer;
- * `accountability` and `antipatterns` keep their counts per record rather than summing
- * — "who authorized what" and "what keeps recurring" are questions about a record, and
+ * `accountability` and `antipatterns` keep their counts per record rather than summing:
+ * "who authorized what" and "what keeps recurring" are questions about a record, and
  * three added together answer a different one under the same name; and `exposure` does
  * both, merging its findings and decomposing its denominator. The guard is shared
  * because the CONDITION is shared: without a project there is no record to audit,
@@ -2323,11 +2323,11 @@ function projectsOf(session: Session): ResolvedTrees[] {
 }
 
 /**
- * `audit_timeline` — the whole history of one entity across every project of the
+ * `audit_timeline`: the whole history of one entity across every project of the
  * workspace.
  *
  * The auditor's counterpart of `next_actions`: it takes an id and merges every
- * tree's reference index into the entity's story — every event where it is the
+ * tree's reference index into the entity's story, every event where it is the
  * subject, plus the events that refer to it (an observation `about` it, a link
  * whose `target` is it, a supersede whose successor it is), which may live in a
  * different tree AND in a different project. Read-only: it asks the session's warm
@@ -2350,22 +2350,22 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
   return { ok: true, value: timeline(workspaceCaches(session), named.id, recordedAs) };
 }
 
-/** The `audit_refs` result — the graph around an entity, or a refusal. */
+/** The `audit_refs` result: the graph around an entity, or a refusal. */
 export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
 
 /**
- * `audit_refs` — what an entity is connected to, across every project of the
+ * `audit_refs`: what an entity is connected to, across every project of the
  * workspace.
  *
  * The graph reading of the index `audit_timeline` reads: not the events that
  * touch an entity but the ENTITIES it connects to. One hop either way is its
- * neighbourhood — the natural next question after a `search` hit; a direction
+ * neighbourhood: the natural next question after a `search` hit; a direction
  * and more depth is a lineage (a decision's supersede chain, everything derived
  * from a memory).
  *
  * `direction: 'in'` over the union is the question this whole surface was extended
  * for: *"have I normalized this in all three?"* The entities that point AT something
- * are the ones in the OTHER projects — that is what normalizing produces — so asking
+ * are the ones in the OTHER projects (that is what normalizing produces), so asking
  * one project answers with the edges of the project least likely to have any, and the
  * answer used to declare itself complete while doing it. Each edge now says which
  * project's record asserts it, which is what turns a count into an account.
@@ -2373,7 +2373,7 @@ export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
  * It walks across trees, because an edge lives in the tree its event was written
  * to while its far end may live in another. A far end no visible tree ever
  * authored comes back marked unresolved rather than dropped, and an answer the
- * depth cut says so — which is a promise the union makes harder to keep and not
+ * depth cut says so, which is a promise the union makes harder to keep and not
  * easier: a graph that fitted inside the cap over one project can be cut by it over
  * three, and the cut has to keep declaring itself. Read-only: the session's warm
  * caches and the context package's pure `references`; with no project it refuses `NO_PROJECT`.
@@ -2397,14 +2397,14 @@ export function runReferencesTool(
   };
 }
 
-/** The `governing_rules` result — the rules addressed at a path, or a refusal. */
+/** The `governing_rules` result: the rules addressed at a path, or a refusal. */
 export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
 
 /**
- * `governing_rules` — which recorded rules govern a path of this project.
+ * `governing_rules`: which recorded rules govern a path of this project.
  *
  * The reverse reading of the relations that carry an ADDRESS (`ADDRESS_RELATIONS`,
- * two of them since the gate shipped — this said "the one relation", and said "whose
+ * two of them since the gate shipped: this said "the one relation", and said "whose
  * target is a PATH" until `derived-from` began carrying the file a proposal was read
  * from, which is a path and covers nothing): a decision or a
  * pattern linked with `rel: "governs"` to `src/billing` is a rule with an address,
@@ -2412,7 +2412,7 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
  * record holds rules" into "these rules apply to what I am about to touch".
  *
  * IT CHARGES NOTHING. It refuses nothing, blocks nothing and grades nothing; it
- * does not even decide which rules still hold — each rule's state travels beside it
+ * does not even decide which rules still hold: each rule's state travels beside it
  * and reading it is the caller's. What it hands back is the id, which is what any
  * later charge would have to cite.
  *
@@ -2425,7 +2425,7 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
  * THE ADDRESSES ARE THIS PROJECT'S, and only this project's. An address is relative
  * to a project root, so a rule written in a sibling project's record addresses that
  * project's tree; importing it here would make it govern code nobody addressed. The
- * machine-global tree is left out for the same reason — it belongs to no project, so
+ * machine-global tree is left out for the same reason: it belongs to no project, so
  * a path in it is relative to nothing. That is the one read of this surface that
  * deliberately does NOT span the workspace, and the reason is the question's, not a
  * preference.
@@ -2434,7 +2434,7 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
  * directory: a server's working directory is its host's choice, not the directory an
  * agent wrote a path from. (It used to say the host spawns the server "with an
  * arbitrary cwd"; the one host measured without workspace roots starts it at the
- * workspace root, and the cascade now finds the project from it for such a client —
+ * workspace root, and the cascade now finds the project from it for such a client,
  * which still does not make it where an agent's `src/...` is relative to.) Read-only:
  * the session's warm caches, the context package's pure derivation, and one
  * `existsSync` per address. With no project it refuses `NO_PROJECT`.
@@ -2446,7 +2446,7 @@ export function runGoverningRulesTool(
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
   // `inProject` is what `requireProject` just checked, and a project session always
-  // carries its directory — the two are set together by the cascade.
+  // carries its directory: the two are set together by the cascade.
   const root = session.project ?? '';
   return {
     ok: true,
@@ -2459,19 +2459,19 @@ export function runGoverningRulesTool(
 }
 
 /**
- * `rules_before_an_edit` — the same graph, pushed instead of answered.
+ * `rules_before_an_edit`: the same graph, pushed instead of answered.
  *
  * IT IS A SECOND TOOL AND NOT A FLAG ON THE FIRST, and the reason is the channel rather
  * than the shape of the answer. `governing_rules` replies to a caller that asked: it
  * carries every address it found, each rule's state, the stale list and three counts, and
  * it judges nothing, because a caller that asked can read a `superseded` and decide. This
  * one is called by the HOST, before a file is written, and its text arrives in somebody's
- * work unasked — so it carries what is in force and nothing else, it carries the thin
+ * work unasked, so it carries what is in force and nothing else, it carries the thin
  * form, and it says whose text it is. Two channels with one subject is exactly the shape
  * `record-framing.ts` was built for, and putting a mode on the asked tool would have made
  * one function answer to two readers with different rights.
  *
- * WHAT IT RETURNS IS A HOOK REPLY, and that is not a leak of the host into the record —
+ * WHAT IT RETURNS IS A HOOK REPLY, and that is not a leak of the host into the record:
  * it is the price of the channel. On this host a hook of type `mcp_tool` reaches the model
  * only through `hookSpecificOutput.additionalContext`; a tool returning prose is called
  * and DROPPED, silently, which was measured rather than assumed. An agent that calls this tool itself gets the same
@@ -2484,7 +2484,7 @@ export function runGoverningRulesTool(
  * grade this tool shipped with and it is false now: when the record holds a rule that asks
  * for a PERSON at the path, this reply carries `permissionDecision: "ask"`, the host stops
  * the write, and two kinds of fact are appended. What survives of the old sentence is the
- * part the type still holds — no `updatedInput`, no `allow`, none of them representable
+ * part the type still holds: no `updatedInput`, no `allow`, none of them representable
  * ({@link HookReply}). `deny` was in that list and is not any more: where a rule REFUSES a write
  * at the path the reply carries `permissionDecision: "deny"` and the reason, and the push of the
  * rules beside the write is not made, because there is no write for it to ride beside.
@@ -2497,12 +2497,12 @@ export function runGoverningRulesTool(
  *     HERE AND NOWHERE ELSE, so it counts what is pushed at an edit and nothing more: the two
  *     texts a session opens with are reads and leave no fact (`CountedChannel`, in
  *     `record-framing.ts`, is the type that holds the line).
- *   - `channel.asked`, once per asking, citing the rule and the path — or `channel.refused`, once
+ *   - `channel.asked`, once per asking, citing the rule and the path, or `channel.refused`, once
  *     per rule that refuses, in the place of both of the above: a refusal is the fact itself, so
  *     it records no service.
  * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED, and the reply does not wait on it
- * landing. If the fact cannot be written — the record busy past `A_CHARGE_WAITS_MS`, or a field the
- * content door refuses — the charge still stands and its reason says the fact is missing
+ * landing. If the fact cannot be written (the record busy past `A_CHARGE_WAITS_MS`, or a field the
+ * content door refuses) the charge still stands and its reason says the fact is missing
  * (`recordTheCharge`): a charge that fell open whenever the fact could not be written let any
  * process holding the tail switch every rule of the project off.
  *
@@ -2512,21 +2512,21 @@ export function runGoverningRulesTool(
  * written where the text is composed (`edit-rules-push.ts`).
  *
  * THREE SWITCHES, ASKED BEFORE ANY WORK. Every channel this product pushes unasked can be
- * switched off with the switching recorded, and this tool pushes THREE of them — the text,
- * the gate and the refusal — so it asks about all of them before the path is resolved. All off, the reply is `{}`
+ * switched off with the switching recorded, and this tool pushes THREE of them (the text,
+ * the gate and the refusal), so it asks about all of them before the path is resolved. All off, the reply is `{}`
  * and the derivation never runs: it is the term that scales with the whole record on every
  * call, and a channel somebody turned off must not keep paying it. They are separate
  * switches because asking overrides every permission mode this host has, `bypassPermissions`
- * included — so this switch is the only way out of an
+ * included, so this switch is the only way out of an
  * inherited gate, and a single switch would charge whoever needed that way out the rules as
  * well.
  *
- * Which makes FOUR readings of one silence here — no rule addresses the path, the text
- * channel is off, the gate channel is off, the hook never ran — and the once-per-session
+ * Which makes FOUR readings of one silence here (no rule addresses the path, the text
+ * channel is off, the gate channel is off, the hook never ran) and the once-per-session
  * document distinguishes the first three for the committed case
  * (`presentation/brief.ts`, which says plainly what it still cannot tell apart).
  *
- * With no project it refuses `NO_PROJECT` — and a refusal on this channel is a tool error,
+ * With no project it refuses `NO_PROJECT`, and a refusal on this channel is a tool error,
  * which the host treats as non-blocking. The session of somebody who installed the plugin
  * outside a project proceeds exactly as it would have without it.
  */
@@ -2577,7 +2577,7 @@ function rulesBeforeAnEdit(
 
   // WHAT THE WRITE MEETS IS DECIDED WHERE THE OTHER DOORS DECIDE IT (`whatAWriteMeets`), and a
   // REFUSAL ENDS THE CALL: the fact is appended first, then the reply is `deny` and the reason,
-  // and nothing else is pushed — there is no write for the rules to ride beside, and no service
+  // and nothing else is pushed; there is no write for the rules to ride beside, and no service
   // to count, because each `channel.refused` is the refusal itself. A refusal whose fact cannot
   // be written still refuses, and says so in its reason. A RULE'S REFUSAL OUTRANKS THE
   // HOLD ON A FIRST WRITE below: it is returned before the hold is looked at, so a write a rule
@@ -2607,7 +2607,7 @@ function rulesBeforeAnEdit(
   const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
-  // is composed, and only then is the fact appended — because the fact cites what the text
+  // is composed, and only then is the fact appended, because the fact cites what the text
   // cites, and appending first would mean recording an accusation whose wording could still
   // fail to compose. Then the reply: the charge rides only if the append landed. What asks
   // is decided where the other doors decide it too (`whatAWriteMeets`).
@@ -2636,7 +2636,7 @@ function rulesBeforeAnEdit(
       ? firstWriteNotice(rulesAt)
       : undefined;
   if (deny !== undefined && heldKey !== undefined) session.held.add(heldKey);
-  // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run — never for a
+  // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run, never for a
   // channel that was switched off and never for one that had nothing to say. A fact saying
   // a channel served on a call where it said nothing would be the fact reading backwards.
   // NOT TRIED AT ALL WHEN THE CHARGE COULD NOT BE RECORDED: the tail just kept the charge out for
@@ -2650,7 +2650,7 @@ function rulesBeforeAnEdit(
       ...(deny !== undefined ? [FIRST_WRITE_GATE_CHANNEL] : []),
     ]);
   }
-  // WHAT THOSE WRITES FOUNDED rides in the text the host hands the agent — the one field of a
+  // WHAT THOSE WRITES FOUNDED rides in the text the host hands the agent: the one field of a
   // hook reply that reaches the model; prose beside it would be dropped. It can only be owed on
   // a call that already speaks, because the facts above are written only for a channel that
   // said something, and it is the first write of a connection into a tree that can found. So
@@ -2659,7 +2659,7 @@ function rulesBeforeAnEdit(
   // field: the path the host named is screened on its way into `channel.asked`.
   const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
   // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
-  // handed — which is why the rules and they are joined by one function (`edit-rules-push.ts`).
+  // handed, which is why the rules and they are joined by one function (`edit-rules-push.ts`).
   // On a held write the rules ride in the refusal, so the context is what was founded and nothing
   // more; the rules would otherwise reach the model twice in one reply.
   const told = editRulesTold(deny === undefined ? rulesAt : undefined, founded);
@@ -2702,8 +2702,8 @@ function otherRunsAt(session: Session, place: RulesAtPath | undefined): readonly
 }
 
 /**
- * Appends one `channel.asked` per rule that asked — or one `channel.refused` per rule that
- * refused — the facts a charge is made of.
+ * Appends one `channel.asked` per rule that asked, or one `channel.refused` per rule that
+ * refused, the facts a charge is made of.
  *
  * ONE PER RULE AND NOT ONE PER ASKING, which is the reading of the tie that the axis
  * settles: a charge cites the rule that caused it, and two rules asking about one file are
@@ -2713,7 +2713,7 @@ function otherRunsAt(session: Session, place: RulesAtPath | undefined): readonly
  * channel they name.
  *
  * They share one write context and one checkpoint: they are one act of asking, and signing
- * once is cheaper than signing each — the same arrangement the consultations have.
+ * once is cheaper than signing each, the same arrangement the consultations have.
  *
  * A FAILURE HERE IS NEVER A TOOL ERROR: the host reads `isError` as non-blocking, so an error
  * would let through the write the rule refuses. The caller runs this through `recordTheCharge`,
@@ -2729,7 +2729,7 @@ function recordWhatItMet(session: Session, met: WriteVerdict): { readonly ok: bo
 
 /**
  * The facts themselves: one `channel.refused` per rule when the channel is the one that refuses a
- * write, one `channel.asked` per rule otherwise — the hold on a first write is an asking of the
+ * write, one `channel.asked` per rule otherwise; the hold on a first write is an asking of the
  * record's kind, naming its own channel.
  */
 function recordFacts(
@@ -2774,7 +2774,7 @@ function recordFacts(
  * The dedupe is asked per run, and the run is identified by the tree these facts go to, so
  * the question is asked BEFORE the write context is built: this decides whether to write at
  * all, and a call with nothing to record must not have opened a run to find that out. It is
- * the arrangement `recordConsultations` has, for the same reason and on a hotter path — this
+ * the arrangement `recordConsultations` has, for the same reason and on a hotter path: this
  * one fires on every edit, and after the first of a run every call must cost one set lookup
  * and nothing else.
  *
@@ -2798,7 +2798,7 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
   if (fresh.length === 0) return;
 
   // A SERVICE FACT THAT CANNOT BE WRITTEN IS A GAP IN THE EVIDENCE, NEVER A FAILED CALL: this
-  // runs inside the edit gate, whose reply must reach the host whatever the tail does — a thrown
+  // runs inside the edit gate, whose reply must reach the host whatever the tail does; a thrown
   // busy tail here used to turn the whole reply into a tool error, which the host reads as "go on".
   try {
     const { ctx, run, which } = openWrite(session, route.scope);
@@ -2825,7 +2825,7 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
 }
 
 /**
- * The event this server answers a hook at — the only one.
+ * The event this server answers a hook at: the only one.
  *
  * Named here rather than passed by the caller because the host CHECKS it: a reply naming
  * an event other than the one that fired is dropped without a word, so the value has to
@@ -2835,11 +2835,11 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
 const PRE_TOOL_USE: HookEvent = 'PreToolUse';
 
 /**
- * `audit_accountability` — who authorized what, accounted for one project at a time.
+ * `audit_accountability`, who authorized what, accounted for one project at a time.
  *
  * Every project of the workspace, and the machine-global tree, each folded into its
  * own factual account of authorship. With no filter it accounts for the whole record
- * (git shortlog -sn); `from`/`to`/`who`/`which` only narrow it — they are aggregation
+ * (git shortlog -sn); `from`/`to`/`who`/`which` only narrow it: they are aggregation
  * filters, never the session actor's identity (the session's `who` is not imposed as
  * a filter).
  *
@@ -2849,23 +2849,23 @@ const PRE_TOOL_USE: HookEvent = 'PreToolUse';
  * codebases added up answer "how much have I written" while still being called "how
  * much is in this record", and the reader takes the bigger number for the smaller
  * question with nothing in the reply to catch it. Each entry here means exactly what
- * the single answer meant when a session saw one project — the arithmetic is
+ * the single answer meant when a session saw one project: the arithmetic is
  * unchanged, the attribution is new.
  *
  * Not decomposing was the other way to be wrong. These reads take no project
  * argument, deliberately, so an account locked to the session's own project leaves an
- * agent unable to ask about the others at all — a write already says which project it
+ * agent unable to ask about the others at all: a write already says which project it
  * belongs to ({@link routeWrite}), and the auditing of it would have stayed blind.
  *
  * AND BESIDE EACH AUTHOR, WHERE ITS IDENTITY WAS FOUNDED AMONG OTHERS (`foundedBeside`), the
  * mark the command line's account prints. This read had none of it, for one reason the command
  * line did not have: reading it off the disk was a second replay per tree on every call, into a
  * session that keeps its caches warm precisely not to replay. It is read off the order those
- * caches already hold (`ProjectionCache.foundedBeside`), inside the context package's one fold — so the
+ * caches already hold (`ProjectionCache.foundedBeside`), inside the context package's one fold, so the
  * agent, the summary line and `--json` are served by one selection. What it adds to a warm call,
  * measured with the arms alternated: over 602 events nothing the base-against-base ruler can
  * see (±0.007 ms against a ruler of 0.006–0.04 ms, on a 0.35 ms call); over 6,002 events
- * +0.07–0.11 ms on a 1.95 ms call, against a ruler of 0.10 ms — and the walk alone, which is
+ * +0.07–0.11 ms on a 1.95 ms call, against a ruler of 0.10 ms, and the walk alone, which is
  * the whole of the added work, is 16–19 µs there.
  *
  * Read-only: the session's warm caches and the context package's pure
@@ -2880,11 +2880,11 @@ export function runAccountabilityTool(
   return { ok: true, value: accountabilityByProject(workspaceCaches(session), input) };
 }
 
-/** The `audit_exposure` result — where a credential format sits, or a refusal. */
+/** The `audit_exposure` result, where a credential format sits, or a refusal. */
 export type ExposureToolResult = IntelligenceResult<WorkspaceExposure>;
 
 /**
- * `audit_exposure` — which records of which projects hold something shaped like a
+ * `audit_exposure`: which records of which projects hold something shaped like a
  * credential.
  *
  * The one intelligence read about the record's PAST rather than its shape. Writing
@@ -2892,7 +2892,7 @@ export type ExposureToolResult = IntelligenceResult<WorkspaceExposure>;
  * chain today; everything written before that could, and in a committed tree the
  * past is what decides the damage. This is how an agent asked to check finds out.
  *
- * It answers WHERE and never WHAT — the id, the kind, the tree, the project, the
+ * It answers WHERE and never WHAT: the id, the kind, the tree, the project, the
  * instant and the class. There is no value in the result to return, by construction,
  * because the detector behind it reports classes only: a tool that handed a credential
  * back would put it in a transcript, which is a second disclosure and a worse one (a
@@ -2909,7 +2909,7 @@ export type ExposureToolResult = IntelligenceResult<WorkspaceExposure>;
  *
  * It takes the trees SEPARATELY rather than merged, unlike the other `audit_*`
  * reads: a fact in the public tree is committed and clones to the team, and the
- * same fact in the global tree is on one disk — the merge is exactly what would
+ * same fact in the global tree is on one disk; the merge is exactly what would
  * lose the difference. Read-only: it reads the tails and folds them, opening no
  * writer and no cache. With no project it refuses `NO_PROJECT`.
  */
@@ -2923,23 +2923,23 @@ export function runExposureTool(session: Session): ExposureToolResult {
 }
 
 /**
- * `audit_antipatterns` — recurring shapes, one record of the workspace at a time.
+ * `audit_antipatterns`: recurring shapes, one record of the workspace at a time.
  *
- * Folds the union of EACH record's trees — every project's, and the machine-global
- * tree — and surfaces the shapes that recur in it (reopened tasks, superseded
+ * Folds the union of EACH record's trees (every project's, and the machine-global
+ * tree) and surfaces the shapes that recur in it (reopened tasks, superseded
  * decisions, deprecated skills), each with its evidence, plus the skill candidates
  * POINTED at. It points, it does not conclude, and it creates no skill.
  *
  * The `ADR-<n>` clashes come from each CHAIN of a record rather than from the union of
  * them, and the source hands over both views from one reading. A label is numbered
  * inside one chain, so a project's public and private trees hold an `ADR-1` each the
- * moment both have a decision — pooling them would report that on nearly every project
+ * moment both have a decision: pooling them would report that on nearly every project
  * and mean nothing when it did.
  *
  * DECOMPOSED rather than merged, for the reason `accountability` is: everything here
  * is a count, and counts of three codebases added up answer a question about a
  * workspace under the name of a question about a record. The skill candidates make it
- * concrete — a pattern is distilled by the person doing the work that kept reopening,
+ * concrete: a pattern is distilled by the person doing the work that kept reopening,
  * so a candidate list that pooled three projects would point them at somebody else's.
  *
  * Read-only: it reads the tails and folds them with the context package's pure

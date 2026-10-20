@@ -17,7 +17,7 @@
  * only facts that carry a path and a run. The sentence says "consulted" because the rule was
  * consulted at that path; it does not say the run wrote the file, and it does not say the run is
  * still working. A path no rule ever charged anyone at leaves no fact, and the edge of its edit
- * says nothing — see `@mnema/context`'s `runsHere`.
+ * says nothing: see `@mnema/context`'s `runsHere`.
  *
  * IT STATES AND DOES NOT INSTRUCT, like every sentence this product pushes at a model
  * (`record-framing.ts`, `tellsWhatToDo`): somebody else's work is not this product's to
