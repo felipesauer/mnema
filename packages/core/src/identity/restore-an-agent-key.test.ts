@@ -223,7 +223,7 @@ describe('restoring the key of an agent', () => {
       const result = refused({ name: 'codex', agentKeyRoot: join(runner, 'agents', 'codex') });
       expect(result.code).toBe('AGENT_UNDER_ANOTHER_NAME');
       expect(result.message).toBe(
-        `the record enrols the key ${copy.fingerprint} as the agent "ci" of ${anchor}, not as "codex" — ` +
+        `the record enrols the key ${copy.fingerprint} as the agent "ci" of ${anchor}, not as "codex": ` +
           'a key keeps the name it was enrolled under, so restore it with --agent ci',
       );
     });

@@ -301,7 +301,7 @@ function emptyTail(tail: string): EmptyTailNote {
     tail,
     detail:
       `tail ${oneLine(tail)} holds no event and no checkpoint, so it asserts nothing and is not ` +
-      'counted as a tail — what an older writer left when a first write was refused, and what a ' +
+      'counted as a tail: what an older writer left when a first write was refused, and what a ' +
       'tail emptied of its events with its ownership proof kept looks like too',
   };
 }
@@ -542,7 +542,7 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
         kind: 'declared-which',
         which: named.which,
         events: named.events,
-        detail: `${named.events} event(s) name the agent "${oneLine(named.which)}" — declared by the key that signed, not attested`,
+        detail: `${named.events} event(s) name the agent "${oneLine(named.which)}": declared by the key that signed, not attested`,
       }),
     ),
   ];
@@ -727,7 +727,7 @@ export function verifyChain(
         kind: 'partial-final-line',
         tail,
         detail:
-          `tail ${oneLine(tail)} ends in a partial line that was dropped — the mark of a write ` +
+          `tail ${oneLine(tail)} ends in a partial line that was dropped: the mark of a write ` +
           'interrupted mid-append, and indistinguishable from an appended fragment',
       });
     }
@@ -1044,7 +1044,7 @@ function foreignRetractions(
         seq: link.seq,
         detail:
           `a retraction of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, which did not ` +
-          `write it (${oneLine(author)} did) — only the identity that wrote a note takes it back, ` +
+          `write it (${oneLine(author)} did): only the identity that wrote a note takes it back, ` +
           'so it is not applied and the note is still served',
       });
     }
@@ -1086,7 +1086,7 @@ function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): 
       tail: (tails[tail] as (typeof tails)[number]).tail,
       seq: entry.link.seq,
       detail:
-        `a ${event.kind} of ${oneLine(event.subject)}: ${ruling.detail} — ` +
+        `a ${event.kind} of ${oneLine(event.subject)}: ${ruling.detail}: ` +
         'the workflow does not allow it, so it is not applied',
     };
   });
@@ -1132,9 +1132,9 @@ function foreignLinkRetractions(
         tail,
         seq: link.seq,
         detail:
-          `a retraction of the link ${oneLine(event.subject)} —${oneLine(rel)}→ ${oneLine(target)} ` +
+          `a retraction of the link ${oneLine(event.subject)} -${oneLine(rel)}→ ${oneLine(target)} ` +
           `signed by ${oneLine(event.who)}, which did not record it (${authors.map(oneLine).join(', ')} ` +
-          'did) — only the identity that recorded a link takes it back, so it is not applied and the ' +
+          'did): only the identity that recorded a link takes it back, so it is not applied and the ' +
           'link still stands',
       });
     }
@@ -1151,7 +1151,7 @@ function citationsNotHeld(citations: IdentityResolution['citations']): CitationN
     hash,
     detail:
       `the event at seq ${seq} cites ${oneLine(hash.slice(0, 12))}…, an entry this record does ` +
-      'not hold — ignored in the order, which places the event as if it cited nothing',
+      'not hold: ignored in the order, which places the event as if it cited nothing',
   }));
 }
 
@@ -1169,7 +1169,7 @@ function clocksBehind(citations: IdentityResolution['citations']): ClockBehindNo
     behindByMs,
     detail:
       `${events} event(s) stamped before an entry they cite, by up to ` +
-      `${(behindByMs / 1000).toFixed(3)} s — the clock of its writer ran behind what it had read; ` +
+      `${(behindByMs / 1000).toFixed(3)} s: the clock of its writer ran behind what it had read; ` +
       'the order puts each after what it cites',
   }));
 }
@@ -1191,7 +1191,7 @@ function retiredCheckers(retired: IdentityResolution['retiredCheckers']): Retire
       seq: retirement.seq,
       detail:
         `${retirement.resultsBefore} check result(s) signed by ${oneLine(fingerprint)} before ` +
-        `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
+        `${oneLine(retirement.by)} retired it: authentic, since the key held the role when it ` +
         'signed, and no longer vouched for: a result is placed before a retirement by the time ' +
         'the key itself wrote',
     });
@@ -1216,7 +1216,7 @@ function retiredAgents(retired: IdentityResolution['retiredAgents']): RetiredAge
       seq: retirement.seq,
       detail:
         `${retirement.eventsBefore} event(s) signed by the agent key ${oneLine(fingerprint)} before ` +
-        `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
+        `${oneLine(retirement.by)} retired it: authentic, since the key held the role when it ` +
         'signed, and no longer vouched for: an event is placed before a retirement by the time ' +
         'the key itself wrote',
     });
@@ -1278,7 +1278,7 @@ function backupKeyDetail(backup: KnownBackup): string {
       : `the backup key this machine registered for ${oneLine(backup.anchor)}`;
   return (
     said +
-    ' — a backup signs nothing until it is restored, so it has no tail (if it was restored ' +
+    ': a backup signs nothing until it is restored, so it has no tail (if it was restored ' +
     'and has signed, that tail is not here)'
   );
 }
@@ -1312,14 +1312,14 @@ function keyWithoutTailDetail(waivers: readonly TailWaiver[], declaredFor?: stri
       // Declared a backup, then revoked: the record DID declare it, so it cannot be said not to
       // have. The identity no longer holds the key, so its absence is not the expected one.
       return (
-        'committed public key has no tail on disk — the record declared it a backup of ' +
+        'committed public key has no tail on disk: the record declared it a backup of ' +
         `${oneLine(declaredFor)}, and that identity has since revoked it, so the absence is no ` +
         'longer expected: the tail may have been dropped (a botched merge), never written (an ' +
         'empty tail is not versioned), or removed'
       );
     }
     return (
-      'committed public key has no tail on disk, and the record declares no backup for it — ' +
+      'committed public key has no tail on disk, and the record declares no backup for it: ' +
       'the tail may have been dropped (a botched merge), never written (an empty tail is not ' +
       'versioned), or removed; a backup made before backups were declared in the record reads ' +
       'this way too'
@@ -1685,13 +1685,13 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
  */
 function witnessClause(witness: ChainWitness): string {
   const said: Readonly<Record<WitnessStatus, string>> = {
-    'not-covered': `external witness (T3): not covered — ${witness.detail}`,
-    pending: `external witness (T3): PENDING, which is not coverage — ${witness.detail}`,
+    'not-covered': `external witness (T3): not covered, ${witness.detail}`,
+    pending: `external witness (T3): PENDING, which is not coverage: ${witness.detail}`,
     // What `covered` checked is said in the same breath, because offline it is less than
     // the word reads: the header did the work it declares and the proof folds to its
     // merkle root, and nothing here asked whether that header is in the Bitcoin chain
     // (FORMAT.md section 8). `--require=witnessed` rests on exactly this.
-    covered: `external witness (T3): covered — ${witness.detail} (the work of its block header was checked here, not its place in the Bitcoin chain)`,
+    covered: `external witness (T3): covered, ${witness.detail} (the work of its block header was checked here, not its place in the Bitcoin chain)`,
   };
   return said[witness.status];
 }
@@ -1733,7 +1733,7 @@ function verdictSentence(clauses: readonly VerdictClause[]): string {
  */
 function coverageClause(facts: VerdictFacts): string {
   if (facts.level === 'unreadable') {
-    return 'the event count is INCOMPLETE — a tail could not be read';
+    return 'the event count is INCOMPLETE: a tail could not be read';
   }
   if (facts.totalEvents === 0) return 'no events yet';
   if (facts.uncheckpointed === 0) return 'all events are signature-covered';
@@ -1758,29 +1758,29 @@ function coverageClause(facts: VerdictFacts): string {
  */
 const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => string) | null>> = {
   'key-without-tail': (count) =>
-    `${count} committed key(s) without a tail (see census — informational, not a break)`,
+    `${count} committed key(s) without a tail (see census: informational, not a break)`,
   'backup-key': (count) =>
     `${count} backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)`,
   'empty-tail': (count) =>
-    `${count} empty tail(s), which hold no event and are not counted (see census — informational, not a break)`,
+    `${count} empty tail(s), which hold no event and are not counted (see census: informational, not a break)`,
   'partial-final-line': (count) =>
-    `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
+    `${count} tail(s) ending in a dropped partial line (see census: informational, not a break)`,
   'foreign-retraction': (count) =>
-    `${count} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)`,
+    `${count} retraction(s) by an identity that did not write the note, not applied (see census: informational, not a break)`,
   'foreign-link-retraction': (count) =>
-    `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
+    `${count} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)`,
   'illegal-move': (count) =>
-    `${count} move(s) the workflow does not allow, not applied (see census — informational, not a break)`,
+    `${count} move(s) the workflow does not allow, not applied (see census: informational, not a break)`,
   'retired-checker': (count) =>
-    `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
+    `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census: informational, not a break)`,
   'retired-agent': (count) =>
-    `${count} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)`,
+    `${count} retired agent key(s) whose earlier facts are no longer vouched for (see census: informational, not a break)`,
   'citation-not-held': (count) =>
-    `${count} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)`,
+    `${count} citation(s) of an entry this record does not hold, ignored in the order (see census: informational, not a break)`,
   'clock-behind-what-it-read': (count) =>
-    `${count} tail(s) whose clock ran behind what it had read (see census — informational, not a break)`,
+    `${count} tail(s) whose clock ran behind what it had read (see census: informational, not a break)`,
   'attested-which': (count) =>
-    `${count} agent key(s) attesting the agent their facts name (see census — informational, not a break)`,
+    `${count} agent key(s) attesting the agent their facts name (see census: informational, not a break)`,
   'declared-which': null,
 };
 

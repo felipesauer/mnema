@@ -116,7 +116,7 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
       code: 'TAIL_IS_OWN',
       message:
         `Tail ${oneLine(input.tail)} is the one this write lands on. A waiver has to outlive the ` +
-        'cut it authorizes, so it is written from another tail — never from the tail ' +
+        'cut it authorizes, so it is written from another tail: never from the tail ' +
         'being cut, which would take the waiver with it.',
     };
   }
@@ -132,7 +132,7 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
       code: 'UNKNOWN_TAIL',
       message:
         `No tail ${oneLine(input.tail)} holds events in this tree. A waiver is written BEFORE the ` +
-        'cut, while what it claims can still be checked against the record — and a tail ' +
+        'cut, while what it claims can still be checked against the record: and a tail ' +
         'with no events has nothing to account for.',
     };
   }

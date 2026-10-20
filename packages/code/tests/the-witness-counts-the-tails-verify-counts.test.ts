@@ -138,12 +138,12 @@ describe('witness and verify count the same tails', () => {
     const line = (said: Said) => said.out.find((one) => one.startsWith('public:')) ?? '';
     expect(line(after)).toContain('all events are signature-covered');
     expect(line(after)).toContain(
-      '1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+      '1 empty tail(s), which hold no event and are not counted (see census: informational, not a break)',
     );
     // The sentence is the one it was without the residue, plus that clause: nothing else.
     expect(
       line(after).replace(
-        '; 1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+        '; 1 empty tail(s), which hold no event and are not counted (see census: informational, not a break)',
         '',
       ),
     ).toBe(line(before));

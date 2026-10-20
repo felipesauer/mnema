@@ -146,8 +146,8 @@ describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE },
     const body = written[0]?.body ?? '';
     expect(body.startsWith(MARKER)).toBe(true);
     expect(body).toContain('`decision.recorded` | 1');
-    expect(body).toContain(`- ADR-2 — Round half to even: proposed`);
-    expect(body).toContain('`src/billing/invoice.ts` — governed by Keep money as integer cents');
+    expect(body).toContain(`- ADR-2: Round half to even (proposed)`);
+    expect(body).toContain('`src/billing/invoice.ts`: governed by Keep money as integer cents');
     expect(body).not.toContain('README.md');
     expect(second).not.toBe('');
   });
@@ -245,7 +245,7 @@ describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE },
 describe('the Action with a checker key', () => {
   /**
    * A base whose one rule carries a check, and a runner key the record enrolls as a checker,
-   * made under a home of its own — the way a repository secret holds it. The check passes only
+   * made under a home of its own (the way a repository secret holds it). The check passes only
    * when the program is NOT handed the Action's inputs: the key and the token are among them.
    */
   const HANDED =
@@ -276,8 +276,8 @@ describe('the Action with a checker key', () => {
     return { baseSha: git('rev-parse', 'HEAD'), key: readFileSync(join(keys, file), 'utf-8') };
   }
 
-  // Each run starts the binary several times — init, a request under another home, an
-  // enrolment, the Action's own verify and check run — so it is given room the default
+  // Each run starts the binary several times (init, a request under another home, an
+  // enrolment, the Action's own verify and check run), so it is given room the default
   // five seconds do not leave on a loaded machine.
   it('runs the checks with the key, leaves the results in the tree, and hands the program no input', async () => {
     const { baseSha, key } = aCheckedBase();

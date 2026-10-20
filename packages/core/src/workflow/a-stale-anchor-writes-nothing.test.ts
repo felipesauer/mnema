@@ -501,7 +501,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf:
-      'asks the question every append asks — whether the recorded identity counts the key',
+      'asks the question every append asks: whether the recorded identity counts the key',
     runRuleChecks:
       'signs under the checker’s own anchor, which no identity retires; a key that is not a checker is refused before it appends',
     requestAgentEnrollment:
@@ -509,7 +509,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     requestEnrollment: 'produces a request and may mint a key, in the key root',
     restoreAgentKey:
       'installs an agent’s key into its own folder and records no anchor: the agent’s key is read from the record',
-    restoreKey: 'records an anchor from the record — the way out this refusal names',
+    restoreKey: 'records an anchor from the record: the way out this refusal names',
     signerFor: 'reads who would sign in a tree',
     signerHeldFor: 'reads who would sign in a tree, and makes no key',
   };
@@ -599,7 +599,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
 
     const refusal = refusalOf(left);
     expect(refusal.message).toBe(
-      `this checkout records ${anchor} as the identity it writes as, and the record does not count this key among that identity's keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of ${j}: \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      `this checkout records ${anchor} as the identity it writes as, and the record does not count this key among that identity's keys: a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of ${j}: \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
     );
     expect(refusal.restores).toBe(left.writer.signerFingerprint);
   });
@@ -673,7 +673,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
       expect(left.writer.anchor).toBe(derived);
       const refusal = refusalOf(left);
       expect(refusal.message).toBe(
-        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete ${anchorPath({ root: tree }, fingerprint)}, and the next write here decides again, from the record, as a first write does`,
+        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete ${anchorPath({ root: tree }, fingerprint)}, and the next write here decides again, from the record, as a first write does`,
       );
       expect(refusal.restores).toBeUndefined();
 

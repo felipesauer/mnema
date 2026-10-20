@@ -58,7 +58,7 @@ export const WINDOW_IS_OVER: Readonly<Record<WindowSubject, readonly string[]>> 
     'by the instant each was recorded.',
   ],
   record: [
-    'A window (`from`/`to`) selects RECORDS by the instant each was RECORDED —',
+    'A window (`from`/`to`) selects RECORDS by the instant each was RECORDED,',
     'never by when one last moved, and never by the state it is in now.',
   ],
 };
