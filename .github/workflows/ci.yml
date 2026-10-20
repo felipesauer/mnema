@@ -18,7 +18,7 @@ concurrency:
 jobs:
   test:
     name: lint + build + test (node ${{ matrix.node }})
-    # Pinned rather than `ubuntu-latest`. Not because the next image breaks the suite — the
+    # Pinned rather than `ubuntu-latest`. Not because the next image breaks the suite: the
     # primitives `tests/support/pty.ts` needs (`script -qec`, `stty -F`) were checked on
     # util-linux 2.39.3 and 2.41.3 and behave identically on both. It is pinned because a
     # repository that stamps the build behind every measurement cell should not let the image
@@ -58,8 +58,8 @@ jobs:
         run: pnpm typecheck
 
       # WHAT THE SUITE LEAVES IN /tmp, half one. 187 prefixes are built under `tmpdir()` by this
-      # workspace and exactly one of them is watched by a test, because the obvious watch — list
-      # the directory before and after — is a race inside a suite that runs several files at once.
+      # workspace and exactly one of them is watched by a test, because the obvious watch, list
+      # the directory before and after, is a race inside a suite that runs several files at once.
       # It is not a race here: nothing of ours is running at this point in the job, so what appears
       # between this listing and the one after the last vitest step is what the run left.
       - name: What the suite left behind (before)
@@ -67,7 +67,7 @@ jobs:
 
       # The JSON report is kept because it carries a duration per case, and durations off the
       # runner are the one thing no workstation and no container can supply. It ANSWERED, once,
-      # the question `the-ceiling-belongs-to-the-case` names as beyond a source scan — whether
+      # the question `the-ceiling-belongs-to-the-case` names as beyond a source scan: whether
       # any case is near the ceiling it shares. It is no longer the only thing that does: `pnpm
       # test` now also leaves the ledger the step below reads, which carries the ceiling each
       # case ran under as well as its duration, and answers that question on every run instead
@@ -77,7 +77,7 @@ jobs:
         run: pnpm test --reporter=json --outputFile.json=vitest-report.json
 
       # ONE PASS ON NODE 24: this step is the suite for that cell, instrumented, and the gate
-      # in it — `thresholds` in `vitest.config.ts` — is read off the same run. It used to be a
+      # in it, `thresholds` in `vitest.config.ts`, is read off the same run. It used to be a
       # SECOND run of the suite, kept apart because instrumentation costs the slowest case that
       # shares the five-second ceiling more than it costs the wall clock. Measured on the runner
       # (three runs of this step alone, node 24, 7447 cases, no timeout): the slowest case at the
@@ -88,7 +88,7 @@ jobs:
         if: matrix.node == '24'
         run: pnpm test:coverage --reporter=json --outputFile.json=vitest-report.json
 
-      # WHY IT WENT RED, AND ONLY WHEN IT DID. `pnpm test` leaves a ledger behind — a duration,
+      # WHY IT WENT RED, AND ONLY WHEN IT DID. `pnpm test` leaves a ledger behind: a duration,
       # the ceiling each case actually ran under, and what the machine was doing in that case's
       # own window. This reads it and RE-RUNS every red on its own, so the page says which reds
       # reproduce alone (the guard catching something) and which do not. Two deliveries had to
@@ -124,7 +124,7 @@ jobs:
       # …and half two, which is why it sits at the END of the job rather than beside the test
       # steps: a sweep taken while a vitest is still writing would read a /tmp that run is about
       # to change. It refuses outright if any vitest is still alive, so an ordering mistake here
-      # reports `RULER BROKEN` rather than a wrong answer — and `continue-on-error`, because a
+      # reports `RULER BROKEN` rather than a wrong answer, and `continue-on-error`, because a
       # leaked directory is worth a red build no more than a broken ruler is worth masking the
       # reds above it.
       - name: What the suite left behind (after)
@@ -143,7 +143,7 @@ jobs:
 
   # THE SECOND READER ON ITS PYTHON FLOOR. Two pages promise that `packages/chain/verifier/` runs
   # on the Python its own README names "or later", and until this job every case that starts it
-  # ran on whatever `python3` the image carried — the matrix above sets up no Python, and
+  # ran on whatever `python3` the image carried: the matrix above sets up no Python, and
   # `ubuntu-24.04` ships 3.12. The floor had been checked for its grammar once, by hand, and never
   # run. A floor CI never runs is a floor nobody has checked, which is the sentence the node floor
   # already stands on.
@@ -161,7 +161,7 @@ jobs:
   # `PYTHON3_IS_THE_FLOOR` IS THE JOB SAYING WHAT IT SET UP. With it, the case that asks the
   # interpreter requires the `python3` the cases call to be the floor EXACTLY, so an image or an
   # action that stopped putting this Python first on `PATH` turns this job red instead of green on
-  # the image's own. Without it — a workstation, the matrix, the flake sampler — the same case asks
+  # the image's own. Without it (a workstation, the matrix, the flake sampler) the same case asks
   # only that it be no lower.
   #
   # Before the job `the-link-cannot-come-back`, which reads its own job from its header to the end
@@ -420,7 +420,7 @@ jobs:
   #
   # WHY `pull_request` ONLY, and this is a decision rather than an omission. The guard exists to
   # refuse the footer BEFORE it reaches the trunk. On `push` the commit is already in, so a red
-  # there repairs nothing and blocks every merge behind it until the history is rewritten — which
+  # there repairs nothing and blocks every merge behind it until the history is rewritten, which
   # is the state this repository was in for seven weeks. The pull request description, the half
   # that carried nineteen of the thirty-three leaks, does not exist on a `push` event at all.
   # `the-link-cannot-come-back.test.ts` reads this file and fails if the condition goes away, if
@@ -431,12 +431,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       # `fetch-depth: 0` because the scan reads `<base.sha>..<head.sha>` out of the event payload,
-      # and a default checkout on a `pull_request` is depth 1 — the base commit is not there, so
+      # and a default checkout on a `pull_request` is depth 1: the base commit is not there, so
       # `git rev-list` would exit non-zero. That is a refusal and not a green, which is the point
       # of the canary; but a guard whose normal state is RULER BROKEN is a guard nobody reads.
       # Measured on this repository: 16.43 MiB packed and 601 commits on the trunk, a full clone
       # against a depth-1 one is 0.59 s against 0.25 s and 13 MB against 4 MB of `.git`, with no
-      # network in either — the runner adds the transfer of the difference.
+      # network in either. The runner adds the transfer of the difference.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0

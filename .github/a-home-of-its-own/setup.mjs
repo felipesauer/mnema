@@ -1,28 +1,28 @@
 /**
- * A HOME OF ITS OWN — no process of this suite resolves the home of the machine it runs on.
+ * A HOME OF ITS OWN: no process of this suite resolves the home of the machine it runs on.
  *
  * WHY IT EXISTS. A test process that sees the machine's own home reaches the machine's own data:
  * the key root and the global tree live in `~/.mnema` unless `MNEMA_HOME` puts them elsewhere, so
  * such a process signs with the machine's key and appends to the machine's global tree. On a
  * runner that is a stray directory nobody reads; on a workstation it is somebody's real record.
- * Nothing in a test's own lines shows it — a case that isolates the directory it cares about and
+ * Nothing in a test's own lines shows it: a case that isolates the directory it cares about and
  * forgets `HOME` stays green while it writes.
  *
  * WHAT IT DOES, per test process (every test file runs in a process of its own):
  *
  *   1. `HOME` becomes a path of its own under the machine's temp, removed after the file.
- *      `MNEMA_HOME` is REMOVED rather than pointed there: the variable wins over `HOME` — that is
- *      what it is for — so a value set here would outrank the `HOME` of every child a case starts
+ *      `MNEMA_HOME` is REMOVED rather than pointed there: the variable wins over `HOME` (that is
+ *      what it is for), so a value set here would outrank the `HOME` of every child a case starts
  *      in a sandbox of its own, and the two machines a case starts as two homes would share one
  *      key. Removed, the value of whoever runs the suite reaches no case, and a case that wants the
  *      variable writes it.
  *   2. Every process this one starts is asked, before it starts, what home it will resolve: its
  *      `HOME` when that is an absolute path, and otherwise the account's home from the password
- *      database — what `os.homedir()` answers in a process whose `HOME` is missing or empty, and
+ *      database: what `os.homedir()` answers in a process whose `HOME` is missing or empty, and
  *      what the product falls back to for a relative one. A child that would resolve the machine's
  *      home, or whose `MNEMA_HOME` points into it or is the value this suite was started with, is
- *      started with this process's `HOME` instead and without the variable — so it cannot write
- *      where it was about to — and the case is failed with the line that started it.
+ *      started with this process's `HOME` instead and without the variable (so it cannot write
+ *      where it was about to) and the case is failed with the line that started it.
  *   3. After each case, this process's own environment is asked the same question.
  *
  * WHY IT DOES NOT LOOK AT `~/.mnema`. A guard that compared the machine's data directory before and
@@ -33,7 +33,7 @@
  * one exists.
  *
  * WHAT IT DOES NOT REACH, so nobody has to find it: a case that hands the core a `home` spelled as
- * the machine's by hand — in process, there is no boundary to stand at — and a grandchild that a
+ * the machine's by hand (in process, there is no boundary to stand at) and a grandchild that a
  * child starts with an environment built from nothing. `a-home-of-its-own.test.ts` counts both, and
  * both are zero.
  *
@@ -49,13 +49,13 @@ import { isAbsolute, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { afterAll, afterEach, expect } from 'vitest';
 
-/** The variable that relocates the key root — the product's own, read by `code/src/env.ts`. */
+/** The variable that relocates the key root: the product's own, read by `code/src/env.ts`. */
 export const THE_VARIABLE = 'MNEMA_HOME';
 
 /** The seven ways `node:child_process` starts a process. */
 const STARTERS = ['spawn', 'spawnSync', 'execFile', 'execFileSync', 'exec', 'execSync', 'fork'];
 
-/** The machine's home, from the password database — the one a process with no `HOME` resolves. */
+/** The machine's home, from the password database: the one a process with no `HOME` resolves. */
 export const THE_MACHINES_HOME = userInfo().homedir;
 
 const spellings = new Set([resolve(THE_MACHINES_HOME)]);
@@ -65,17 +65,17 @@ try {
   // A machine whose home is not on disk still has that home; it is compared as written.
 }
 
-/** The value of the variable this suite was started with — somebody's real key root, if set. */
+/** The value of the variable this suite was started with: somebody's real key root, if set. */
 const STARTED_WITH = process.env[THE_VARIABLE];
 
 /**
- * This process's home, for the one file it runs — a path no other process can have, and NOT
+ * This process's home, for the one file it runs: a path no other process can have, and NOT
  * created here: it comes into being the first time something writes under it (the product makes
  * `~/.mnema` with a recursive `mkdir`), and it goes when the file is done.
  *
- * Not created, because a file in which no case runs never reaches its `afterAll` — every case
+ * Not created, because a file in which no case runs never reaches its `afterAll` (every case
  * skipped, or a `-t` that selects nothing, as the re-run in `.github/why-it-went-red/` does on
- * purpose — and its worker is stopped without passing through `process.on('exit')` either. A home
+ * purpose) and its worker is stopped without passing through `process.on('exit')` either. A home
  * made up front was left behind by exactly those files: one empty `mnema-home-*` in the machine's
  * temp per run of the suite, measured before this changed. A home nothing wrote to is nothing to
  * leave behind.
@@ -88,7 +88,7 @@ delete process.env[THE_VARIABLE];
 delete process.env.MNEMA_AGENT_KEY;
 
 /**
- * Whether `path` is the machine's home — or, with `inside`, a directory under it.
+ * Whether `path` is the machine's home, or, with `inside`, a directory under it.
  *
  * @param {string | undefined} path
  * @param {boolean} inside
@@ -110,7 +110,7 @@ function inTheMachinesHome(path, inside) {
 }
 
 /**
- * What in `env` would reach the machine's own data, in words for the failure — empty when nothing.
+ * What in `env` would reach the machine's own data, in words for the failure: empty when nothing.
  *
  * `startedWith` is a parameter so the case beside this file can ask the question for a value no
  * runner of this suite has set; everything else calls it with the one this suite started with.
