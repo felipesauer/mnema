@@ -1,5 +1,5 @@
 /**
- * THE CENSUS SAYS WHAT A BACKUP IS — on the machine that made it — and a tail that is gone
+ * THE CENSUS SAYS WHAT A BACKUP IS (on the machine that made it), and a tail that is gone
  * is still said as gone.
  *
  * `mnema init` makes two keys: the machine's own, and a cold backup it tells the person to
@@ -12,7 +12,7 @@
  * WHAT DECIDES IT IS TWO FACTS, AND NEITHER IS AN ABSENCE. The key root of the machine asking
  * holds a usable registration naming the key as a backup, and the record's enrollment fold
  * proves the key a member of the identity that registration names. The record does not carry
- * the role — `key.enrolled` has only the new key and its consent — so a verify that was handed
+ * the role (`key.enrolled` has only the new key and its consent), so a verify that was handed
  * no key root, or a key root that never registered the key, reads it exactly as before.
  *
  * EACH CASE BELOW IS ONE SIDE: the backup said as one where it was registered; the same key
@@ -66,7 +66,7 @@ const env = (w: ChainWriter, subject: string) => ({
 /**
  * The tree a person has after their first `init`: founded by this machine's key, with the
  * cold backup registered at the key root and enrolled in the record. `enroll: false` leaves the
- * backup's public key committed and the enrollment out — a registration the record never took.
+ * backup's public key committed and the enrollment out: a registration the record never took.
  */
 function founded(enroll = true): { writer: ChainWriter; backup: string } {
   const writer = openChainForWriting(root, { keyRoot });
@@ -176,7 +176,7 @@ describe('the census says what a backup is', () => {
 
   it('takes no registration whose role is not a backup’s', () => {
     // The role is not covered by the registration's signature, so the file stays usable with
-    // another word in it — and a key registered for anything else is not said as a backup.
+    // another word in it, and a key registered for anything else is not said as a backup.
     const { backup } = founded();
     const path = registrationPath({ root: keyRoot }, backup);
     const fields = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;

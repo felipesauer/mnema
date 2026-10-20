@@ -6,8 +6,8 @@
  * with `readFileSync(file, 'utf-8')`, which turns a sequence that is not UTF-8 into U+FFFD and
  * reads on; U+FFFD is canonical, so the line passed the byte-identity check of section 4 over
  * bytes no writer of the format produces, while the second reader refused the line or stopped
- * on an exception. Each place that reads a file of the record is taken here in turn — a line of
- * a segment, a checkpoint, the tail proof, a stored block header, a committed public key — and
+ * on an exception. Each place that reads a file of the record is taken here in turn (a line of
+ * a segment, a checkpoint, the tail proof, a stored block header, a committed public key) and
  * one byte in the MIDDLE of it is made 0xff. Both readers refuse it and name the same byte.
  *
  * What is not refused: the torn final fragment a crash leaves, even when the crash cut it
@@ -74,7 +74,7 @@ afterEach(() => {
 
 /**
  * Makes 0xff the first byte of the value after `after` on line `number` of `file`, and returns
- * that byte's offset WITHIN THE LINE — the offset both readers have to name.
+ * that byte's offset WITHIN THE LINE: the offset both readers have to name.
  */
 function spoil(file: string, number: number, after: string): number {
   const lines = readFileSync(file).toString('latin1').split('\n');
@@ -165,7 +165,7 @@ describe('one byte that is not UTF-8, in the middle of a file of the record', ()
 
     // As a header that is not canonical is not read: the attestation it would check is
     // left uncheckable, which is not a refusal of the record. The product needs no strict
-    // decode for that — a header line is ASCII by construction, and U+FFFD in place of a bad
+    // decode for that: a header line is ASCII by construction, and U+FFFD in place of a bad
     // byte fails the 160-hex check all the same, so the decode there was left as it was.
     expect(readStoredWitness({ root: record }, tail, BLOCKS)?.headers.size).toBe(1);
 

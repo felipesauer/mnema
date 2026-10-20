@@ -14,7 +14,7 @@ const ENVELOPE = {
 describe('transitionProse', () => {
   it('reads every field the catalog can carry, in the module’s own order', () => {
     // Enumerated against `PROOF_FIELDS`, which is derived from a mapped type over
-    // `TransitionFields` — a sixth field does not compile until it is ranked, and this
+    // `TransitionFields`: a sixth field does not compile until it is ranked, and this
     // is what says the ranking reached the text.
     expect([...PROOF_FIELDS]).toEqual(['reason', 'note', 'feedback', 'pr_url', 'links']);
     expect(

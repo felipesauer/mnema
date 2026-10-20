@@ -5,7 +5,7 @@
  * that reached the network would be a verifier whose answer depended on somebody
  * else being up, and the whole claim of this product is that a clone with no
  * connection can re-derive the verdict. So verification reads files (witness.ts) and
- * this module — which nothing on the verifying path imports — is the only thing that
+ * this module, which nothing on the verifying path imports, is the only thing that
  * speaks to anyone.
  *
  * NOTHING ON THE WRITING PATH IMPORTS IT EITHER, and that is the second half of the
@@ -30,7 +30,7 @@
  * immediately with a promise; the promise becomes a proof when a Bitcoin block
  * carries the aggregate root, which is minutes to hours later. {@link stampCheckpoint}
  * is the ask, {@link completeWitness} is the return visit, and between them the record
- * reads `pending` — a real state with a name, never a green.
+ * reads `pending`: a real state with a name, never a green.
  */
 
 import { randomBytes } from 'node:crypto';
@@ -48,12 +48,12 @@ import {
 } from './ots.js';
 
 /**
- * The calendars a stamp is asked of by default — the public aggregators the
+ * The calendars a stamp is asked of by default: the public aggregators the
  * OpenTimestamps client ships with.
  *
  * SEVERAL, AND THE REASON IS THE ONLY TRUST THIS SCHEME HAS LEFT. A calendar cannot
- * forge a timestamp — the proof it returns either folds into a real block or it does
- * not — but it CAN simply never answer, and a proof asked of one server that goes
+ * forge a timestamp (the proof it returns either folds into a real block or it does
+ * not), but it CAN simply never answer, and a proof asked of one server that goes
  * away is a proof that never completes. Asking four means any one of them is enough,
  * and a record whose stamp completed through one has no dependency on the other
  * three ever existing again.
@@ -72,20 +72,20 @@ export const DEFAULT_CALENDARS: readonly string[] = [
  * whole point of storing the header. This service is asked once, when an attestation
  * completes; after that the 80 bytes are in the record and every verification for
  * the rest of the record's life is arithmetic. A reader who does not trust this
- * particular server checks the block id against any other — the header hashes to it,
+ * particular server checks the block id against any other: the header hashes to it,
  * so a substituted header is not a matter of trust but of a hash that does not match.
  */
 export const DEFAULT_BLOCK_SOURCE = 'https://blockstream.info/api';
 
 /**
- * The operator domains a calendar address may name — WILDCARD, per label, not a host list.
+ * The operator domains a calendar address may name: WILDCARD, per label, not a host list.
  *
  * IT EXISTS BECAUSE ONE OF THE TWO ACTS TAKES ITS ADDRESS FROM A FILE. What
  * {@link stampCheckpoint} asks is chosen by whoever owns the machine; what
  * {@link completeWitness} asks is written in the proof it was handed, and a proof is a
  * file a project can receive. Measured on the built product before this existed: a
  * forged `.ots` naming `http://127.0.0.1:<port>/attacker-chosen` was contacted, scheme,
- * host, port and path all intact, and the act reported no refusal at all — so the verb
+ * host, port and path all intact, and the act reported no refusal at all, so the verb
  * was a network probe anybody could aim by sending somebody a file, and its owner could
  * not tell. What travels is still a hash of a hash (see the head of this module); what
  * leaked was CONTACT.
@@ -94,8 +94,8 @@ export const DEFAULT_BLOCK_SOURCE = 'https://blockstream.info/api';
  * These calendars are named `alice`, `bob` and `finney` today and nobody outside the
  * operators decides what they are named tomorrow; a list of four exact hosts would turn a
  * legitimate proof taken by a fifth into PENDING for ever, while the reading tells its
- * owner to go back and ask again. A label boundary is required — `endsWith('.' + domain)`
- * — so `notopentimestamps.org` does not pass for being a suffix, and
+ * owner to go back and ask again. A label boundary is required (`endsWith('.' + domain)`),
+ * so `notopentimestamps.org` does not pass for being a suffix, and
  * `opentimestamps.org.evil.test` does not pass for containing one.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than implied: an operator who is asked
@@ -110,7 +110,7 @@ export const WITNESS_OPERATOR_DOMAINS: readonly string[] = [
 ];
 
 /**
- * Whether an address a proof named may be asked, and if not, why — in the words the
+ * Whether an address a proof named may be asked, and if not, why: in the words the
  * refusal carries.
  *
  * THE ONE DOOR. Both places that could contact somebody on this path go through it: the
@@ -140,15 +140,15 @@ export function refuseCalendarAddress(uri: string): string | null {
   return null;
 }
 
-/** How this module reaches the network — injected so a test drives it without one. */
+/** How this module reaches the network: injected so a test drives it without one. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
 /**
- * WHY an address is on the refusal list — the two are different news to a reader.
+ * WHY an address is on the refusal list: the two are different news to a reader.
  *
  * `unanswered` is somebody else's fault and it is ordinary: several calendars are asked
- * precisely so one of them can be down. `not-asked` is THIS machine's own act — the
- * address was refused before a packet left — and it is the one a reader has to be able to
+ * precisely so one of them can be down. `not-asked` is THIS machine's own act (the
+ * address was refused before a packet left) and it is the one a reader has to be able to
  * tell apart, because "the calendar is down, ask again later" and "your proof names
  * somewhere I will not go" call for opposite responses.
  */
@@ -168,7 +168,7 @@ export interface StampedWitness {
 }
 
 /**
- * What the RETURN VISIT asks through — a block source, and the fetcher behind both acts.
+ * What the RETURN VISIT asks through: a block source, and the fetcher behind both acts.
  *
  * IT HAS NO CALENDARS, AND THE ABSENCE IS THE TYPE DOING THE ARGUING. A return visit
  * does not pick who to ask: {@link upgradeNode} walks the proof's own pending
@@ -178,7 +178,7 @@ export interface StampedWitness {
  * than the caller's`, AND IT ARGUED THE DEFECT AS THE DESIGN. The mechanism it describes
  * is exactly right and the conclusion is backwards: a record can be a file somebody sent
  * you, so "the record's rather than the caller's" means the address belongs to whoever
- * wrote the file — and the caller, who owns the machine, has no say. Measured on the
+ * wrote the file, and the caller, who owns the machine, has no say. Measured on the
  * built product: a forged proof aimed the verb at a chosen host and port, the redirect it
  * answered with was followed to a second host, and both times the act reported no refusal.
  * Having no calendars in this shape is still right, for the reason the rest of this
@@ -187,7 +187,7 @@ export interface StampedWitness {
  * about the file being allowed to.
  *
  * While the two acts shared one shape, a caller could hand this one a list of calendars
- * and the compiler had nothing to say — and one did. `mnema witness upgrade --calendar` was a public option whose
+ * and the compiler had nothing to say, and one did. `mnema witness upgrade --calendar` was a public option whose
  * value was carried through three layers into this parameter and read by nothing, while
  * its help said `the calendars to ask, when the defaults are not the ones used`; there
  * are no defaults on this path, because there is no choice on this path. The option is
@@ -199,7 +199,7 @@ export interface WitnessReturnVisit {
 }
 
 /**
- * What the calendars and the block source are asked through — the ASK's shape.
+ * What the calendars and the block source are asked through: the ASK's shape.
  *
  * It is the return visit's plus the one thing only {@link stampCheckpoint} has to
  * decide: which calendars are handed a digest nobody holds yet.
@@ -212,8 +212,8 @@ export interface WitnessNetwork extends WitnessReturnVisit {
  * How long ONE request of the witness acts may take before it is given up on, in milliseconds.
  *
  * THE DEFECT. `fetch` has no deadline of its own, and the acts passed it none. A calendar that
- * accepts the connection and says nothing — a stalled server, a captive portal, a middlebox that
- * drops the reply — held `mnema witness stamp` for as long as the operating system kept the
+ * accepts the connection and says nothing (a stalled server, a captive portal, a middlebox that
+ * drops the reply) held `mnema witness stamp` for as long as the operating system kept the
  * socket, which is minutes, with nothing printed and the record unwitnessed. The measurement that
  * named it was in the suite itself: the two `.invalid` calendars its cases hand the act reached
  * the resolver, and each took more than five seconds to be refused on a runner.
@@ -225,7 +225,7 @@ export interface WitnessNetwork extends WitnessReturnVisit {
 export const WITNESS_DEADLINE_MS = 10_000;
 
 /**
- * The most bytes one answer may weigh, 64 KiB — the same bound a recorded field has.
+ * The most bytes one answer may weigh, 64 KiB: the same bound a recorded field has.
  *
  * A calendar's answer is a timestamp (a few hundred bytes) and a block header is 80 bytes in hex,
  * so the bound is two orders above anything an honest peer sends. It exists because the address
@@ -271,8 +271,8 @@ async function readBounded(response: Response, gone: Promise<never>): Promise<Bu
  *
  * ONE WRAPPER AT THE TWO ENTRANCES, and not a deadline written at each `call(...)`: `stampCheckpoint`
  * and `completeWitness` are the only functions that choose a fetcher, so wrapping there reaches
- * every request either makes — a calendar's stamp, a calendar's upgrade, each hop of a redirect and
- * both requests for a block header — and a fifth request added tomorrow is bounded without anybody
+ * every request either makes (a calendar's stamp, a calendar's upgrade, each hop of a redirect and
+ * both requests for a block header) and a fifth request added tomorrow is bounded without anybody
  * remembering to. It races the abort against the fetcher too, so a fetcher that ignores its signal
  * (a stub, a library that does not honour one) is bounded all the same.
  *
@@ -343,7 +343,7 @@ export async function stampCheckpoint(
     try {
       const response = await call(`${calendar}/digest`, {
         method: 'POST',
-        // The 32 raw bytes, handed over as a view the fetch body type accepts —
+        // The 32 raw bytes, handed over as a view the fetch body type accepts:
         // a Buffer IS one, and naming it so costs nothing and copies nothing.
         body: new Uint8Array(commitment),
         headers: OTS_HEADERS,
@@ -396,7 +396,7 @@ export interface CompletedWitness {
    * act resolves, and a proof naming somewhere this machine will not go, which repeating
    * the act cannot. A fixed floor of four exact hosts was rejected for this layer
    * precisely because it turns a legitimate proof into eternal PENDING while the screen
-   * says to go back and ask again — so a design that keeps that sentence for an address
+   * says to go back and ask again, so a design that keeps that sentence for an address
    * it will never ask has reproduced the thing it was chosen over. Zero with refusals on
    * the list is that case.
    */
@@ -407,7 +407,7 @@ export interface CompletedWitness {
  * The return visit: asks each calendar whether its promise has become a block, and
  * fetches the headers the result needs.
  *
- * Idempotent and safe to repeat — a calendar that still has nothing answers 404 and
+ * Idempotent and safe to repeat: a calendar that still has nothing answers 404 and
  * the proof comes back as it went in. A proof that is already anchored still has its
  * headers checked for, because the two halves complete separately: the block can be
  * mined long before anybody asked this record for its header.
@@ -441,7 +441,7 @@ export async function completeWitness(
  * One node's return visit, folded down the tree.
  *
  * The calendar is asked about the message THIS node stands at, which is the
- * commitment it was originally handed — so the answer splices in exactly where the
+ * commitment it was originally handed, so the answer splices in exactly where the
  * promise was. The promise itself is KEPT beside the answer rather than replaced:
  * dropping it would rewrite somebody's file to say the request was never made, and
  * the format carries both without contradiction.
@@ -465,7 +465,7 @@ async function upgradeNode(
     // A PROMISE THAT WAS ALREADY KEPT IS NOT ASKED AGAIN, and this line is the whole
     // of the act's idempotence. Without it a second visit splices the calendar's
     // answer in beside the copy from the first, and the stored file grows by a path
-    // every time anybody runs the verb — measured here as a proof that went from
+    // every time anybody runs the verb: measured here as a proof that went from
     // four attestations to six on the second pass over the same bytes.
     if (reachesBitcoin({ attestations, steps })) continue;
     const answer = await askCalendar(attestation.uri, message, call, refusals, asked);
@@ -476,7 +476,7 @@ async function upgradeNode(
   return { attestations, steps };
 }
 
-/** Whether a node already reaches a block — i.e. whether its promise was kept. */
+/** Whether a node already reaches a block, i.e. whether its promise was kept. */
 function reachesBitcoin(node: OtsTimestamp): boolean {
   return (
     node.attestations.some((a) => a.kind === 'bitcoin') ||
@@ -487,8 +487,8 @@ function reachesBitcoin(node: OtsTimestamp): boolean {
 /**
  * How many redirects one calendar may send this act through before it gives up.
  *
- * A number and not `0`, because a calendar moving its own path — a trailing slash, an
- * `/api` prefix — is ordinary maintenance and refusing it would break a legitimate
+ * A number and not `0`, because a calendar moving its own path (a trailing slash, an
+ * `/api` prefix) is ordinary maintenance and refusing it would break a legitimate
  * operator for no gain. Every hop is checked, so the count bounds work rather than trust.
  */
 const REDIRECT_LIMIT = 3;
@@ -528,11 +528,11 @@ async function askCalendar(
 
 /**
  * One request to an address already allowed, following a redirect only while it stays
- * where it was — `null` once a hop was refused, which is already on the list.
+ * where it was: `null` once a hop was refused, which is already on the list.
  *
  * THE REDIRECT IS THE HALF THAT MAKES THE ALLOWLIST WORTH HAVING. Without it the check
  * above is ornamental: an allowed host answers `302` and the act follows it anywhere,
- * which is the second thing measured on the built product — a first host was asked, and
+ * which is the second thing measured on the built product; a first host was asked, and
  * the machine went on to a second one nothing had ever named. `redirect: 'manual'` is
  * what stops the runtime from doing it before this code sees the answer; the hop is then
  * held to the SAME host and to {@link refuseCalendarAddress}, so a same-host downgrade to

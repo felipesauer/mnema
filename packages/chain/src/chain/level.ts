@@ -1,12 +1,12 @@
 /**
- * WHAT THE PROOF REACHED, derived in one place — the value the sentence, the exit
+ * WHAT THE PROOF REACHED, derived in one place: the value the sentence, the exit
  * code and the structured result all read.
  *
  * The verdict has two channels: a line a person reads and a code a script reads.
  * They used to be computed apart. The sentence was built from `ok` and the
  * residual count as INDEPENDENT arguments, so with `checkpoints.jsonl` emptied it
  * said `verified (T1/T2/T4)` in one clause and `no event is signature-covered` in
- * the next — two claims about the same chain, contradicting each other on one
+ * the next: two claims about the same chain, contradicting each other on one
  * line, while the exit code said success. Measured: two events deleted together
  * with the signatures that covered them, and the product answered `local integrity
  * verified`, exit 0.
@@ -19,19 +19,19 @@
  * `VerifyResult` all read this one value. A reader that disagrees with the sentence
  * is then a bug in one place instead of a discrepancy between two.
  *
- * THE VOCABULARY IS THE LAYERS' OWN — T1 (hash chain), T2/T4 (signature), T3
- * (external witness) — never a new scale beside them. `TailIssue.layer` already
+ * THE VOCABULARY IS THE LAYERS' OWN: T1 (hash chain), T2/T4 (signature), T3
+ * (external witness), never a new scale beside them. `TailIssue.layer` already
  * names two of them and the summary already names the third, so a `level 2` in
  * SLSA's style would be a second convention for one thing. What is taken from SLSA
  * is only the FORM of the answer: name the level reached instead of saying
  * "verified" and leaving the reader to guess which layers worked.
  *
- * WHY NOT FAIL when no signature was checked — the exit git and cosign take. A
+ * WHY NOT FAIL when no signature was checked: the exit git and cosign take. A
  * project between its first event and its first checkpoint is a legitimate state,
  * and so is a record whose consumer checkpoints on a CADENCE, where the events above
  * the last one are a standing residual. A verdict that fails there teaches its reader
  * to ignore it, and an ignored verdict is worse than none. So the tool REPORTS the
- * level and the caller declares the minimum it accepts — {@link LevelRequirement},
+ * level and the caller declares the minimum it accepts: {@link LevelRequirement},
  * the shape `npm audit --audit-level` settled on.
  *
  * THE CADENCE IS THE CONSUMER'S, AND THAT QUALIFIER USED TO BE MISSING. This read
@@ -39,8 +39,8 @@
  * false of the one in this workspace: `@mnema/code` seals a checkpoint at the end of
  * every act of writing, so its residual is empty whenever nothing is mid-write, and
  * `--require=signed` was measured passing in every state it reaches. Nothing about
- * the FORMAT changed — the residual is a property of it and a consumer that seals
- * less often still verifies — so the reasoning above holds for that consumer and no
+ * the FORMAT changed (the residual is a property of it and a consumer that seals
+ * less often still verifies), so the reasoning above holds for that consumer and no
  * longer pretends to hold for all of them. `README.md`'s truncation row carries the
  * same correction and names the rule that enforces it downstream.
  */
@@ -49,8 +49,8 @@
  * How the external-witness (T3) layer stands for one verification.
  *
  * THREE STATES, AND THE MIDDLE ONE IS WHY THIS IS A UNION AND NOT A BOOLEAN. An
- * attestation is asynchronous by construction — a calendar aggregates, a Bitcoin
- * block takes as long as it takes — so between asking for one and holding one there
+ * attestation is asynchronous by construction (a calendar aggregates, a Bitcoin
+ * block takes as long as it takes), so between asking for one and holding one there
  * is an ordinary, legitimate state that is NEITHER absence nor coverage. A record in
  * it has done everything it can and is not yet witnessed. Given two words it would
  * have to be filed under one of them, and the cheap direction is the one that turns
@@ -60,7 +60,7 @@
 export type WitnessStatus = 'not-covered' | 'pending' | 'covered';
 
 /**
- * Whether a witness status means T3 actually covered the record — TOTAL over
+ * Whether a witness status means T3 actually covered the record: TOTAL over
  * {@link WitnessStatus}, so a status added tomorrow does not compile until it says
  * whether it counts as coverage.
  *
@@ -83,7 +83,7 @@ const WITNESS_COVERS: Readonly<Record<WitnessStatus, boolean>> = {
 /**
  * How far the proof got, from nothing to everything.
  *
- * The order of this tuple IS the strength order — {@link LEVEL_RANK} reads it — so
+ * The order of this tuple IS the strength order, {@link LEVEL_RANK} reads it, so
  * a level inserted in the wrong place changes what a requirement accepts. Two
  * distinctions carry the weight:
  *
@@ -103,7 +103,7 @@ export const PROVEN_LEVELS = [
   'externally-witnessed',
 ] as const;
 
-/** How far the proof got — see {@link PROVEN_LEVELS}. */
+/** How far the proof got: see {@link PROVEN_LEVELS}. */
 export type ProvenLevel = (typeof PROVEN_LEVELS)[number];
 
 /** Each level's strength, taken from the tuple's order so the two cannot drift. */
@@ -111,13 +111,13 @@ const LEVEL_RANK: Readonly<Record<ProvenLevel, number>> = Object.fromEntries(
   PROVEN_LEVELS.map((level, rank) => [level, rank]),
 ) as Readonly<Record<ProvenLevel, number>>;
 
-/** What the verifier established, as the level's inputs — nothing else decides it. */
+/** What the verifier established, as the level's inputs: nothing else decides it. */
 export interface ProvenFacts {
   /** A stored line would not parse: the record could not be read. */
   readonly unreadable: boolean;
   /** The verifier found at least one issue. */
   readonly hasIssue: boolean;
-  /** Events covered by a checkpoint that VERIFIED — zero means no signature was checked. */
+  /** Events covered by a checkpoint that VERIFIED: zero means no signature was checked. */
   readonly signedEvents: number;
   /** Events resting on the hash chain alone. */
   readonly uncheckpointedEvents: number;
@@ -125,13 +125,13 @@ export interface ProvenFacts {
 }
 
 /**
- * The level a verification reached — the one derivation.
+ * The level a verification reached: the one derivation.
  *
  * The order of the tests is the whole safety of this function, and reordering it is
  * the mutation that proves it: a break is decided BEFORE any question about
  * coverage, so a truncated tail whose checkpoint no longer matches stays `broken`
  * and can never be softened to `hash-chain-only` because "there was a residual".
- * That inversion — a sentence that qualifies becoming a sentence that excuses —
+ * That inversion, a sentence that qualifies becoming a sentence that excuses,
  * would make this change worse than the defect it fixes.
  *
  * `signedEvents === 0` is a record whose events rest on the hash chain alone. It no
@@ -154,7 +154,7 @@ export function provenLevel(facts: ProvenFacts): ProvenLevel {
 export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
 
 /**
- * WHAT NO VALUE OF `--require` ANSWERS — the verdict's own declared holes.
+ * WHAT NO VALUE OF `--require` ANSWERS: the verdict's own declared holes.
  *
  * A verdict this product can serve to a machine has to carry its limits, or the
  * machine reads a `level` and an exit code and concludes it has been told everything.
@@ -193,11 +193,11 @@ export const NOT_ANSWERED_BY_ANY_REQUIREMENT: readonly string[] = [
   'One tail removed whole in a commit older than the revision --since compares with is not found by it. Only a copy of the record from before (--since <rev>, a git remote) shows any of these; the external witness dates a checkpoint and keeps no copy.',
 ];
 
-/** What a caller may demand — see {@link LEVEL_REQUIREMENTS}. */
+/** What a caller may demand: see {@link LEVEL_REQUIREMENTS}. */
 export type LevelRequirement = (typeof LEVEL_REQUIREMENTS)[number];
 
 /**
- * The level each requirement demands — TOTAL over {@link LevelRequirement}, so a
+ * The level each requirement demands: TOTAL over {@link LevelRequirement}, so a
  * requirement added tomorrow does not compile until it names the level it needs.
  *
  * `chained` is the default a surface declares, and it asks for exactly what
@@ -205,7 +205,7 @@ export type LevelRequirement = (typeof LEVEL_REQUIREMENTS)[number];
  * because a consumer that checkpoints on a cadence has a standing residual and a
  * gate that always fails is a gate somebody switches off. THE REASON WRITTEN HERE
  * WAS *demanding one by default would fail every session in flight*, without the
- * qualifier — see the note at the top of this file for the consumer that falsified
+ * qualifier: see the note at the top of this file for the consumer that falsified
  * the unqualified form. A surface whose every write seals still has a reason of its
  * own to keep this default, and it is a different one: `@mnema/code` states it above
  * `DEFAULT_REQUIREMENT` in `wiring/verify.ts`.
@@ -217,7 +217,7 @@ const REQUIRED_LEVEL: Readonly<Record<LevelRequirement, ProvenLevel>> = {
 };
 
 /**
- * Whether a proven level satisfies a declared minimum — the one function an exit
+ * Whether a proven level satisfies a declared minimum: the one function an exit
  * code is allowed to ask, so the code and the sentence cannot disagree.
  */
 export function meetsRequirement(level: ProvenLevel, requirement: LevelRequirement): boolean {
@@ -230,19 +230,19 @@ export function requiredLevel(requirement: LevelRequirement): ProvenLevel {
 }
 
 /**
- * The WEAKER of two proven levels — what an aggregate over several chains reports.
+ * The WEAKER of two proven levels: what an aggregate over several chains reports.
  *
  * One record can be several chains: a project keeps its committed tree and this
  * machine's private one, and both hold signed facts. A verdict over them has to be
  * ONE level, and it is the weakest, because the alternative is a pass earned by the
- * healthy half — a gate that goes green while a broken chain sits beside the one it
+ * healthy half: a gate that goes green while a broken chain sits beside the one it
  * looked at is worse than no gate, and it is the same defect as a sentence that
  * claims a layer that did not run.
  *
  * It lives HERE, beside {@link LEVEL_RANK}, for the reason {@link meetsRequirement}
  * does: the rank order is this file's, so an adapter that folded levels by comparing
  * them itself would be a second place where the order of {@link PROVEN_LEVELS} is
- * known — and the two could then disagree about which of two records is the weak one.
+ * known, and the two could then disagree about which of two records is the weak one.
  *
  * Binary and total, so the fold has no empty case to invent an answer for: a caller
  * with no chain to verify has no level to report, and one with chains folds from the
@@ -253,7 +253,7 @@ export function weakerLevel(a: ProvenLevel, b: ProvenLevel): ProvenLevel {
 }
 
 /**
- * How each level READS — the first clause of the one-line verdict, TOTAL over the
+ * How each level READS: the first clause of the one-line verdict, TOTAL over the
  * union so a level cannot reach a reader without a sentence of its own.
  *
  * Two of these are unchanged from before the level existed (`fully-signed` and

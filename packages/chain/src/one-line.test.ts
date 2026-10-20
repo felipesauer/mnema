@@ -2,8 +2,8 @@
  * `one-line.ts` DEPENDS ON NOTHING, asserted over its source.
  *
  * That is the whole property the module exists to have. The rule of the line is wanted
- * by three packages — this one words the verifier's findings, `core` words every refusal
- * the domain returns, and twenty-three modules of the command line word a reading — and
+ * by three packages (this one words the verifier's findings, `core` words every refusal
+ * the domain returns, and twenty-three modules of the command line word a reading) and
  * several of those are DECLARED, loaded by commander before it has routed a word. So
  * whatever this module imports, every invocation of every verb pays for, including
  * `mnema --version`, which reads nothing. While the rule lived beside a framing that
@@ -14,21 +14,21 @@
  *
  * THE PRICE IS WHY THE PACKAGE PUBLISHES IT AS A SUBPATH. `@mnema/code`'s own
  * `one-line.ts` re-exports `@mnema/chain/one-line` and not `@mnema/chain`, so what the
- * floor loads is this file rather than the proof engine behind it — and this file loads
+ * floor loads is this file rather than the proof engine behind it, and this file loads
  * nothing, which is the assertion below.
  *
  * SO THE ASSERTION IS ABSENCE, AND ABSENCE IS THE ASSERTION THAT ROTS. A guard that
  * looked for one bad specifier would pass the day somebody imports a different one; a
  * guard that read the import list would pass on a file whose imports it could no longer
  * parse. This one strips the comments and then asserts the CODE holds no `import`, no
- * `from`, and no `require` at all — which catches a static import, a dynamic one, a
+ * `from`, and no `require` at all, which catches a static import, a dynamic one, a
  * re-export, a CJS require, and the one that will actually be proposed: a type-only
  * import, which is erased and costs nothing at runtime and is exactly the argument that
  * admits the first edge back.
  *
  * THE COMMENTS HAVE TO BE STRIPPED AND THE STRIPPING HAS TO BE PROVED. The module's own
  * doc says the word `import` a dozen times, so a scan that read the file whole would be
- * red for the sentence explaining why it is green — and a stripper that ate too much
+ * red for the sentence explaining why it is green, and a stripper that ate too much
  * would be green for a file with a real import in it. Both directions are asserted on
  * source this file owns.
  *
@@ -44,7 +44,7 @@ import { neutralized, oneLine } from './one-line.js';
 
 /** The module this file is about. */
 const MODULE = fileURLToPath(new URL('./one-line.ts', import.meta.url));
-/** A module of this package that really does import things — the non-vacuity witness. */
+/** A module of this package that really does import things: the non-vacuity witness. */
 const IMPORTS_THINGS = fileURLToPath(new URL('./chain/verify.ts', import.meta.url));
 /** The manifest, which has to publish the subpath the floor reaches this file through. */
 const MANIFEST = fileURLToPath(new URL('../package.json', import.meta.url));
@@ -53,7 +53,7 @@ const MANIFEST = fileURLToPath(new URL('../package.json', import.meta.url));
 const LF = String.fromCharCode(10);
 
 /**
- * The source with every comment removed — block and line — so prose about an import is
+ * The source with every comment removed, block and line, so prose about an import is
  * not an import.
  *
  * Offsets are not preserved and do not need to be: what this file asserts is the
@@ -93,7 +93,7 @@ describe('the rule of the line needs nothing', () => {
   it('declares no import, of any kind, of anything', () => {
     // Not "no @mnema/*", and not "no package": NOTHING. A node builtin is a load too, a
     // relative import is how the last edge would arrive dressed as harmless, and a
-    // type-only import is the one somebody will argue for — it is erased, so it costs
+    // type-only import is the one somebody will argue for: it is erased, so it costs
     // nothing, right up to the day the clause stops being type-only and nobody notices
     // because there was never a line to change.
     expect(reaches(readFileSync(MODULE, 'utf-8'))).toEqual([]);
@@ -119,7 +119,7 @@ describe('the rule of the line needs nothing', () => {
 
   it('sees an import where there is one', () => {
     // The scan's own non-vacuity, against the module whose findings are the sharpest
-    // reason the rule came down here — and which imports half this package to make them.
+    // reason the rule came down here, and which imports half this package to make them.
     expect(reaches(readFileSync(IMPORTS_THINGS, 'utf-8')).length).toBeGreaterThan(0);
   });
 

@@ -12,7 +12,7 @@
  * FORWARD. A record holding a line whose `kind` and `v` no row of a reader's table declares is
  * what a newer writer leaves for an older reader. Built here signed, chained and checkpointed, so
  * the only thing wrong with it is that the reader does not hold its contract, and both readers have
- * to refuse it by naming the pair, what they do hold of that kind, and — for this product — the
+ * to refuse it by naming the pair, what they do hold of that kind, and, for this product, the
  * version of mnema that refuses.
  */
 

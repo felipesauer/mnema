@@ -1,6 +1,6 @@
 /**
  * What the passphrase prompt reads from a terminal, asserted on bytes: the keys a person presses
- * and the line that comes out. The terminal itself is not driven here — `aTerminalCanAnswer` is
+ * and the line that comes out. The terminal itself is not driven here; `aTerminalCanAnswer` is
  * false under a test runner, which is also the case that matters most: nothing waits for a line.
  */
 

@@ -4,24 +4,24 @@
  *
  * THE PREMISE THIS FILE FALSIFIES is written at the top of `writer.ts`, and the
  * sentence is quoted here because it is the reason nothing like this existed:
- * "Because each machine writes only its own tail, there is never an in-file merge
- * — concurrency across machines is resolved by reading many tails, not by locking
+ * "Because each machine writes only its own tail, there is never an in-file merge;
+ * concurrency across machines is resolved by reading many tails, not by locking
  * one file." That is true BETWEEN machines and false WITHIN one. Two sessions on
  * the same machine in the same project share the identity, therefore the
- * installation id, therefore the tail — so they are not two machines, they are two
+ * installation id, therefore the tail, so they are not two machines, they are two
  * writers of one file, and the argument never covered them. Measured, on the built
  * binary: two concurrent `mnema decision` runs corrupted the chain in 15 of 20
  * rounds, each process reading the same `seq` and the same `prev` and appending a
- * second entry at the same logical position. Nothing was LOST — every title
- * survived — but `verify` exited 1 with a `seq gap`, which is the whole product
+ * second entry at the same logical position. Nothing was LOST (every title
+ * survived), but `verify` exited 1 with a `seq gap`, which is the whole product
  * failing at the one thing it sells.
  *
  * ## Why a lock file, and why an advisory one
  *
  * `O_APPEND` already makes the BYTES safe: no line interleaves with another, which
  * is why the damage reads as a clean duplicate rather than shredded JSON. What is
- * unsafe is the read-modify-write around it — a writer reads the tail's last entry
- * for `seq` and `prev`, then appends — and no filesystem offers a compare-and-append
+ * unsafe is the read-modify-write around it (a writer reads the tail's last entry
+ * for `seq` and `prev`, then appends) and no filesystem offers a compare-and-append
  * that would close it. Node has no `flock` binding, so the portable primitive is the
  * one git uses for `index.lock`: create a file with `O_CREAT | O_EXCL`, which the
  * kernel makes atomic, and treat winning that creation as holding the lock.
@@ -51,9 +51,9 @@
  * the waiter judged nothing: measured, an empty lock refused every write at 2 s, and again
  * five seconds later, and would have for ever. Now one older than
  * {@link UNREADABLE_LOCK_ABANDONED_MS} is broken as abandoned, through the same claim below,
- * which puts it back if the holder wrote its record meanwhile. Breaking is itself a race — two waiters could both
+ * which puts it back if the holder wrote its record meanwhile. Breaking is itself a race (two waiters could both
  * decide to break, and the second could unlink a lock the first had just taken
- * fresh — so a breaker first `rename`s the file away, which the kernel gives to
+ * fresh), so a breaker first `rename`s the file away, which the kernel gives to
  * exactly one of them, and then confirms the bytes it moved are the bytes it judged.
  * If they are not, it puts the file back: it was about to destroy a live lock.
  *
@@ -84,8 +84,8 @@ import { sleepSync } from './sleep.js';
  *
  * Sized against what a holder actually does, not against a guess: a holder keeps the
  * lock for one append (or one batch) plus one checkpoint signature, which is
- * milliseconds, and the longest act the product has — `decision import --write` over
- * a directory of ADRs — takes the lock once per ADR rather than once for the import.
+ * milliseconds, and the longest act the product has, `decision import --write` over
+ * a directory of ADRs, takes the lock once per ADR rather than once for the import.
  * So two seconds is three orders of magnitude of headroom, and reaching it means
  * something is genuinely wrong rather than merely busy: that is what makes the
  * refusal worth printing instead of waiting longer.
@@ -95,8 +95,8 @@ import { sleepSync } from './sleep.js';
  * the core), and one that finds the chain moved since it read re-reads the whole
  * record while holding it: 0.10 s at 10 thousand events, 0.36 s at 30 thousand, 1.35 s
  * at 100 thousand. Three sessions moving at once can then leave the third waiting past
- * this budget — measured on the binary, three moves of three decisions at once: 1 of 3
- * tries at 50 thousand events, 3 of 3 at 75 and at 100 thousand, none at 30. The
+ * this budget (measured on the binary, three moves of three decisions at once: 1 of 3
+ * tries at 50 thousand events, 3 of 3 at 75 and at 100 thousand, none at 30). The
  * number is unchanged here, because changing it is one of the answers to that cost and
  * the choice among them is not this file's.
  *
@@ -110,7 +110,7 @@ export const DEFAULT_WAIT_MS = 2_000;
  * How old a lock file that names no pid must be before a waiter breaks it as abandoned.
  *
  * The holder it could wrong is one stopped between creating the file and writing the line
- * after it — a window of microseconds — for longer than this. Ten seconds is far past any
+ * after it, a window of microseconds, for longer than this. Ten seconds is far past any
  * stall of a live process in that window, and the cost of the margin is said plainly: after
  * a crash in that instant, writes wait and refuse for up to ten seconds before the next one
  * heals the tail. Wronging a live holder would put two writers on one tail; waiting does not.
@@ -129,7 +129,7 @@ const POLL_MS = 5;
  * surfaces turn a throw into a reported failure with a non-zero exit (see the
  * catch-all in `code/src/program.ts`), so the sentence below is what a person reads.
  *
- * It names the holder's pid because the only useful next move is to find it — the
+ * It names the holder's pid because the only useful next move is to find it: the
  * common cause is a second window of the same host open on the same project.
  */
 export class TailBusyError extends CodedError {
@@ -144,7 +144,7 @@ export class TailBusyError extends CodedError {
     // A live pid is never overruled, so a pid reused by an unrelated process keeps the tail
     // busy: the sentence says how to clear it, because nothing else will.
     // THIS WRITE, not "nothing": this said "nothing was appended", which is true of the act
-    // the lock refused and not of the call around it — through the agent's server, the call
+    // the lock refused and not of the call around it; through the agent's server, the call
     // that meets a busy tail may already have opened its session's run on the way in.
     super(
       `this machine's tail is being written by ${holder} and did not come free in ${waitedMs}ms. ` +
@@ -165,8 +165,8 @@ export interface TailLockOptions {
  * Runs `act` with this tail's lock held, and releases it however `act` ends.
  *
  * The release is in a `finally` for the reason that matters most here: an append
- * that throws — an unreadable event, a waiver the disk does not bear out, a full
- * disk — must not leave the tail wedged for every later writer on this machine. A
+ * that throws (an unreadable event, a waiver the disk does not bear out, a full
+ * disk) must not leave the tail wedged for every later writer on this machine. A
  * refusal is not a crash, and it may not behave like one.
  *
  * @throws {TailBusyError} if the lock does not come free inside the budget. Nothing
@@ -197,7 +197,7 @@ function acquire(path: string, waitMs: number): number {
         // The tree's `locks/` directory is not there yet, and the first lock the
         // tree ever takes makes it. (This said "the tail directory … a writer makes
         // it in its constructor", from when the lock lived beside the segments; it
-        // moved to `locks/` — see `tailLockPath` — and a writer's constructor now
+        // moved to `locks/`, see `tailLockPath`, and a writer's constructor now
         // makes nothing at all, see `ChainWriter.ensureBorn`.)
         mkdirSync(dirname(path), { recursive: true });
         continue;
@@ -219,7 +219,7 @@ function release(fd: number, path: string): void {
   } catch {
     // Already gone: somebody removed the file under us (a person clearing a lock they took for
     // a reused pid's, or a breaker that judged a previous owner dead). There
-    // is nothing to undo — the bytes of every append it made are already on the
+    // is nothing to undo: the bytes of every append it made are already on the
     // tail, and the next writer recovers its state from them.
   }
 }
@@ -234,7 +234,7 @@ interface Holder {
   /** How long ago the file was last written, by its mtime: what judges a file with no pid. */
   readonly ageMs: number;
   /**
-   * WHICH FILE was judged — its inode and its mtime to the nanosecond — so a breaker can prove the
+   * WHICH FILE was judged, its inode and its mtime to the nanosecond, so a breaker can prove the
    * file it moved is that one and not a fresh lock with the same bytes. Two empty locks have the
    * same bytes, so the record alone cannot tell them apart.
    */
@@ -273,7 +273,7 @@ function holderOf(path: string): Holder | undefined {
  * Breaks a lock whose holder's pid is gone, or whose file names no pid and is older than
  * {@link UNREADABLE_LOCK_ABANDONED_MS}, and no other. A pid that answers is a live holder however
  * old its record is: taking the lock from it would put two writers on one tail.
- * Returns true if the caller should try to take it again — either because this broke it, or
+ * Returns true if the caller should try to take it again: either because this broke it, or
  * because it moved under us and the situation is worth re-reading.
  */
 function breakIfAbandoned(path: string, held: Holder): boolean {
@@ -295,10 +295,10 @@ function breakIfAbandoned(path: string, held: Holder): boolean {
       return true;
     }
     // Different bytes, or the same bytes in a different file: between the judgement and the
-    // rename the old lock was released — or broken by another waiter — and a LIVE holder took
+    // rename the old lock was released, or broken by another waiter, and a LIVE holder took
     // a fresh one. Two empty locks read alike, so only the file's identity tells them apart
     // (measured: without it, a waiter that judged an old empty lock renamed and deleted the
-    // fresh empty lock of a live holder, and two writers held one tail). Put it back —
+    // fresh empty lock of a live holder, and two writers held one tail). Put it back:
     // breaking it would be exactly the corruption this file exists to prevent.
     renameSync(claim, path);
   } catch {

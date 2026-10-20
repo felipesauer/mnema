@@ -1,12 +1,12 @@
 /**
- * THE RECORD THAT WAS STAMPED, AND THEN WRITTEN TO — the state the product used to
+ * THE RECORD THAT WAS STAMPED, AND THEN WRITTEN TO: the state the product used to
  * lie about, on a disk.
  *
  * WHAT IT LIED. The reading asked the LAST checkpoint and nothing else, so a record
  * holding a valid attestation in its own tree began answering `nothing outside this
  * machine attests this record` the moment somebody appended one more event and sealed
  * it. The proof was still there, still valid, still proving that everything up to that
- * point existed at that instant — and the product had stopped saying so. It is the
+ * point existed at that instant, and the product had stopped saying so. It is the
  * mirror of the defect the delivery before this one fixed: there it overstated (a
  * request nobody had answered counted as coverage), here it understated.
  *
@@ -14,7 +14,7 @@
  * gives: reading `covered` means folding a checkpoint's digest through a Merkle path
  * into the merkle root of a block that was really mined, and a test that could build
  * that pair would be a test that had found a SHA-256 preimage. So this record is
- * frozen too — and it is the SAME record as `witnessed-record`, with the two older
+ * frozen too, and it is the SAME record as `witnessed-record`, with the two older
  * checkpoints stamped and the head left alone. Nothing was removed to make it: the
  * proofs were asked of the public OpenTimestamps calendars on 2026-08-25 over those
  * two checkpoints' own digests, by this product's own `stampCheckpoint`, and both
@@ -37,17 +37,17 @@ import { verify } from './chain.js';
 import { witnessBlocksPath, witnessProofPath } from './layout.js';
 import { meetsRequirement } from './level.js';
 
-/** The record as it was frozen — copied per case, never verified in place. */
+/** The record as it was frozen: copied per case, never verified in place. */
 const FIXTURE = fileURLToPath(new URL('./__fixtures__/witnessed-then-written', import.meta.url));
 
-/** The one tail it holds — the same tail `witnessed-record` holds. */
+/** The one tail it holds: the same tail `witnessed-record` holds. */
 const TAIL =
   '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
 
 /** The checkpoint covering seq 0..1, stamped first. */
 const OLDER = '797d1de8cd3eb8c8944a7b308f75ef04567de73702bd49742769e749c9770709';
 
-/** The checkpoint covering seq 2..2, stamped second — the NEWEST attested one. */
+/** The checkpoint covering seq 2..2, stamped second: the NEWEST attested one. */
 const NEWER = '19cd79b2bd85360bdcba5a812c48d92c633251aa40de6ceeda5a60402ecd2e73';
 
 /** The block both proofs confirmed in, and the instant its header claims. */
@@ -83,7 +83,7 @@ describe('a record that was dated, and then written to', () => {
     expect(clauseOf(verify(root, catalogUpcasters()))).toBe(THE_CLAUSE);
   });
 
-  it('does NOT say that nothing attests this record — the sentence that was the defect', () => {
+  it('does NOT say that nothing attests this record: the sentence that was the defect', () => {
     // Asserted as an ABSENCE. This record holds two valid attestations in its own
     // tree and answered that sentence before this delivery, which is not a wording
     // problem: it is the product being wrong about its own files.
@@ -93,7 +93,7 @@ describe('a record that was dated, and then written to', () => {
   });
 
   it('takes the NEWEST attestation, not the oldest one it can find', () => {
-    // Both proofs confirmed in the same block, so the date cannot tell them apart —
+    // Both proofs confirmed in the same block, so the date cannot tell them apart:
     // the REACH can. The newer checkpoint covers seq 2, leaving one event after it;
     // the older covers seq 1, leaving two. A reading that walked to the oldest would
     // say two, and would be reporting a smaller prefix than the record can prove.
@@ -111,7 +111,7 @@ describe('a record that was dated, and then written to', () => {
 
   it('is NOT coverage: the level is what the record earns without any witness at all', () => {
     // The mirror of what `pending` got wrong. A record dated to a point is not a
-    // record that is covered, so nothing here may reach the top rung — and the level
+    // record that is covered, so nothing here may reach the top rung, and the level
     // this record has is the one it would have with its witness directory empty.
     const result = verify(root, catalogUpcasters());
     expect(result.witness).toBe('not-covered');
@@ -120,7 +120,7 @@ describe('a record that was dated, and then written to', () => {
     expect(meetsRequirement(result.level, 'signed')).toBe(true);
   });
 
-  it('is a fully proven record underneath — the dating is the only thing missing', () => {
+  it('is a fully proven record underneath: the dating is the only thing missing', () => {
     const result = verify(root, catalogUpcasters());
     expect(result.issues).toEqual([]);
     expect(result.fullySigned).toBe(true);
@@ -129,8 +129,8 @@ describe('a record that was dated, and then written to', () => {
 
   it('says a request is in flight when the headers its proofs need are missing', () => {
     // THE STATE BETWEEN THE ANCHOR AND THE HEADER, on this record's real bytes. The
-    // `.blocks` sidecar is what makes the reading offline — a proof ends at "the merkle
-    // root of block N", and without N's header that is a claim rather than arithmetic —
+    // `.blocks` sidecar is what makes the reading offline (a proof ends at "the merkle
+    // root of block N", and without N's header that is a claim rather than arithmetic)
     // and a record lacks it whenever `witness --upgrade` ran while the block source
     // refused, which is the branch `completeWitness` returns `complete: false` from.
     // The proofs themselves are untouched: the same real attestations, still confirmed
@@ -141,13 +141,13 @@ describe('a record that was dated, and then written to', () => {
     //
     // AND THIS CASE WAS PINNING THE WRONG SENTENCE, which is how the next defect stayed
     // alive under a green test. It asserted *an attestation was requested from
-    // <calendar> and has not confirmed* — a sentence about waiting on a calendar — over
+    // <calendar> and has not confirmed*, a sentence about waiting on a calendar, over
     // the state its own name describes, where the anchoring already HAPPENED and only a
     // header is absent. The remedies differ: one is waited on, the other is fetched. The
     // right sentence existed in `witness.ts` and lost a race between two accumulators
     // filled with `??=`, decided by the order this third-party proof lists its
     // attestations in. So this record's real bytes were the defect's own witness, and
-    // the fix is `witness.ts`'s declared precedence — see
+    // the fix is `witness.ts`'s declared precedence: see
     // `witness.test.ts`'s "a proof that reached a block AND a calendar".
     for (const hash of [OLDER, NEWER]) rmSync(witnessBlocksPath({ root }, TAIL, hash));
     const result = verify(root, catalogUpcasters());
@@ -162,7 +162,7 @@ describe('a record that was dated, and then written to', () => {
     expect(result.summary).not.toContain('has not confirmed');
   });
 
-  it('is still NOT coverage with only the request showing — the level does not move', () => {
+  it('is still NOT coverage with only the request showing: the level does not move', () => {
     // The three places a promise could count, on a record that holds two of them: the
     // status, the level, and the requirement an exit code is derived from. The level is
     // asserted to be the one this record earns with its witness directory EMPTY, which
@@ -178,7 +178,7 @@ describe('a record that was dated, and then written to', () => {
   it('takes the NEWEST request still open, exactly as it takes the newest dating', () => {
     // With only the newer proof left headerless, the reading is about that one; with
     // only the older, about the older. Same block here, so what distinguishes them is
-    // that the walk CHOSE rather than landed — the newer proof reaches block 963989 as
+    // that the walk CHOSE rather than landed: the newer proof reaches block 963989 as
     // well, which the older one does not.
     rmSync(witnessBlocksPath({ root }, TAIL, NEWER));
     const result = verify(root, catalogUpcasters());
@@ -187,7 +187,7 @@ describe('a record that was dated, and then written to', () => {
     //
     // THE SECOND CLAUSE USED TO NAME THE CALENDAR, for the reason the case above gives:
     // the newer checkpoint is headerless, not un-answered. The block is named twice on
-    // purpose and both are true of different files — the OLDER checkpoint's sidecar
+    // purpose and both are true of different files: the OLDER checkpoint's sidecar
     // still carries the header that dates it, and the NEWER one's was removed above, so
     // its own attestation in the same block cannot be folded here.
     expect(clauseOf(result)).toBe(
@@ -201,7 +201,7 @@ describe('a record that was dated, and then written to', () => {
     // The non-regression, from the other direction: the walk may only ever ADD a
     // sentence to a record that holds a proof. Strip both proofs out of this sandbox
     // copy and the record is one nobody stamped, which earns the words every reader
-    // of this product has matched on — byte for byte.
+    // of this product has matched on: byte for byte.
     for (const hash of [OLDER, NEWER]) {
       rmSync(witnessProofPath({ root }, TAIL, hash));
       rmSync(witnessBlocksPath({ root }, TAIL, hash));

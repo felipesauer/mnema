@@ -1,19 +1,19 @@
 /**
  * On-disk layout, of two kinds of root: a CHAIN root (what a chain writes and a
  * verifier reads) and a KEY root (where a person's private key lives, separate
- * from any chain — see keystore.ts). The paths below serve both; which files
+ * from any chain: see keystore.ts). The paths below serve both; which files
  * appear depends on the root's kind.
  *
  * Everything a machine writes to a chain lives under its own tail directory, so
  * two machines never touch the same file and an offline merge is just copying
- * directories — no in-file merge, ever. A tail is a run of sealed segment files
+ * directories: no in-file merge, ever. A tail is a run of sealed segment files
  * plus its append-only checkpoints.
  *
  * A tail id is `<fingerprint>-<installationId>`: the signing key's fingerprint,
  * then a random id minted once per installation and kept local. The fingerprint
  * prefix ties the tail to a committed key (its owner); the installation suffix
- * keeps a key's several installations — one per chain, or two of the same copied
- * key — on separate tails, so they merge without overwriting each other.
+ * keeps a key's several installations (one per chain, or two of the same copied
+ * key) on separate tails, so they merge without overwriting each other.
  *
  *   <chainRoot>/
  *     tails/
@@ -27,7 +27,7 @@
  *                             needs, both committed like the checkpoints
  *     keys/
  *       <fingerprint>.pub     MATERIALIZED public key, committed (the private
- *                             half is NOT here — it lives in the key root)
+ *                             half is NOT here: it lives in the key root)
  *       <fingerprint>.inst    LOCAL installation id for this chain (never committed)
  *       <fingerprint>.anchor  LOCAL anchor this installation serves (never committed)
  *
@@ -40,7 +40,7 @@
  *                             but does not sign here: the signature proving it
  *                             consented, replayable into every tree
  *     backup/
- *       <fingerprint>.key     the COLD private half of the backup key — kept OUT
+ *       <fingerprint>.key     the COLD private half of the backup key, kept OUT
  *                             of keys/, where the FIRST private key found becomes
  *                             this machine's identity, and meant to leave the
  *                             machine entirely
@@ -63,7 +63,7 @@ export function tailsDir(layout: ChainLayout): string {
  *
  * Published beyond this package for one reason: the verb that authorizes a cut has
  * to tell whoever authorized it WHERE the files are, and it may not compose that
- * path itself — two ideas of where a tail lives would be one command naming a
+ * path itself; two ideas of where a tail lives would be one command naming a
  * directory the verifier does not read.
  */
 export function tailDir(layout: ChainLayout, tailId: string): string {
@@ -117,7 +117,7 @@ export function tailProofPath(layout: ChainLayout, tailId: string): string {
  * and the committed public keys; a lock is machinery, it exists between two syscalls
  * of one append and is unlinked on the way out. Putting it beside the segments would
  * have been closer to what it guards and would have made "not part of the record" a
- * thing to remember rather than a thing to see — and it would have had to be excused
+ * thing to remember rather than a thing to see, and it would have had to be excused
  * from the tree's own rule that NOTHING under `tails/` is hidden from git, which is
  * the rule that keeps the proof surface reachable by a clone. A separate directory
  * costs one `.gitignore` line and needs no exception.
@@ -125,8 +125,8 @@ export function tailProofPath(layout: ChainLayout, tailId: string): string {
  * It is per TAIL and not per tree: two installations on one machine writing the same
  * tree own different tails and must not wait on each other.
  *
- * A holder killed with SIGKILL leaves the file behind — the next writer breaks it, see
- * `tail-lock.ts` — so the directory is one git ignores.
+ * A holder killed with SIGKILL leaves the file behind (the next writer breaks it, see
+ * `tail-lock.ts`), so the directory is one git ignores.
  */
 export function tailLockPath(layout: ChainLayout, tailId: string): string {
   return join(layout.root, 'locks', `${tailId}.lock`);
@@ -140,7 +140,7 @@ export function tailLockPath(layout: ChainLayout, tailId: string): string {
  * looks away rather than a claim that it is a lock. Every tree's own `.gitignore` carries
  * `/locks/` (see `ensureTree`), the tree already has to be writable there for any write to
  * land, and a directory of its own would need a line in a `.gitignore` the chain never
- * touches once it exists — which every tree created before this has. It is derived and never
+ * touches once it exists, which every tree created before this has. It is derived and never
  * the record: deleting it costs the next reader a rebuild and changes no answer, and a clone
  * never carries it.
  */
@@ -159,13 +159,13 @@ export function keyRootLockPath(keyRoot: ChainLayout): string {
 }
 
 /**
- * Where a tail's external witnesses live — one directory, beside the checkpoints
+ * Where a tail's external witnesses live: one directory, beside the checkpoints
  * they are about.
  *
  * A directory rather than a file, and one file per checkpoint rather than a log,
  * because an attestation is not appended: it is REPLACED as it completes (a proof
  * is born incomplete and is upgraded until a block carries it), and a name that is
- * the checkpoint's own digest makes that replacement idempotent — the same
+ * the checkpoint's own digest makes that replacement idempotent; the same
  * checkpoint always lands on the same path, so no reader has to decide which of two
  * lines about one checkpoint is the current one.
  */
@@ -174,7 +174,7 @@ export function witnessDir(layout: ChainLayout, tailId: string): string {
 }
 
 /**
- * The detached OpenTimestamps proof over one checkpoint — the ecosystem's own file
+ * The detached OpenTimestamps proof over one checkpoint: the ecosystem's own file
  * format, at a path named by what it commits to.
  */
 export function witnessProofPath(
@@ -186,7 +186,7 @@ export function witnessProofPath(
 }
 
 /**
- * A Sigstore bundle over one checkpoint — the ecosystem's own file (bundle v0.3), unaltered, at a
+ * A Sigstore bundle over one checkpoint: the ecosystem's own file (bundle v0.3), unaltered, at a
  * path named by the checkpoint it countersigns. Neither reader of the format reads it: it is read
  * only when asked (`mnema verify --against-sigstore`), and a reader that only knows `.ots` passes
  * it by (§8).
@@ -200,7 +200,7 @@ export function witnessSigstorePath(
 }
 
 /**
- * The block headers a proof's attestations need — 80 bytes each, one JSON line
+ * The block headers a proof's attestations need: 80 bytes each, one JSON line
  * each, beside the proof they complete.
  *
  * They are a SEPARATE file because the `.ots` must stay byte-for-byte what the
@@ -224,7 +224,7 @@ export function publicKeyPath(layout: ChainLayout, fingerprint: string): string 
 }
 
 /**
- * Where a key root keeps the private half of `fingerprint` — the file a machine signs with, and
+ * Where a key root keeps the private half of `fingerprint`: the file a machine signs with, and
  * the one a surface names when it tells a person which file `mnema key restore` takes.
  */
 export function privateKeyPath(layout: ChainLayout, fingerprint: string): string {
@@ -234,7 +234,7 @@ export function privateKeyPath(layout: ChainLayout, fingerprint: string): string
 /**
  * The key root's COLD directory: private halves deliberately kept OUT of
  * `keys/`. A private key inside `keys/` is a candidate for THIS machine's
- * identity — the keystore adopts the first one it finds there — so a second
+ * identity, the keystore adopts the first one it finds there, so a second
  * private key in `keys/` would make WHICH key the machine speaks as depend on
  * directory order. The backup key's private half therefore lives here, where
  * nothing looks for an identity.
@@ -243,7 +243,7 @@ export function backupDir(layout: ChainLayout): string {
   return join(layout.root, 'backup');
 }
 
-/** Path to the cold private half of a backup key — outside `keys/`, never committed. */
+/** Path to the cold private half of a backup key: outside `keys/`, never committed. */
 export function backupPrivateKeyPath(layout: ChainLayout, fingerprint: string): string {
   return join(backupDir(layout), `${fingerprint}.key`);
 }
@@ -251,7 +251,7 @@ export function backupPrivateKeyPath(layout: ChainLayout, fingerprint: string): 
 /**
  * Path to a key's REGISTRATION at the key root: the proof that this key
  * consented to join an identity, kept beside the `.pub` it belongs to. It is
- * public material — a signature over fixed values, not a secret — and, because
+ * public material (a signature over fixed values, not a secret) and, because
  * those values are fixed, one registration is replayable into every tree this
  * machine founds.
  */
@@ -260,7 +260,7 @@ export function registrationPath(layout: ChainLayout, fingerprint: string): stri
 }
 
 /**
- * Path to the LOCAL installation id for a key — never committed, like the
+ * Path to the LOCAL installation id for a key, never committed, like the
  * private key. It holds the random suffix that distinguishes this installation's
  * tail from another installation of the same key.
  */
@@ -269,7 +269,7 @@ export function installationIdPath(layout: ChainLayout, fingerprint: string): st
 }
 
 /**
- * Path to the LOCAL anchor this key serves — never committed, like the private
+ * Path to the LOCAL anchor this key serves, never committed, like the private
  * key. It records WHICH anchor this installation's events authorize as: the
  * anchor it founded (its own, `deriveAnchor(fingerprint)`), or one it enrolled
  * into (another key's anchor). Kept local because committing it would let a
@@ -286,16 +286,16 @@ export function anchorPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}${ANCHOR_SUFFIX}`);
 }
 
-/** The ending of a local anchor file's name — spelled once, for the path and for the listing. */
+/** The ending of a local anchor file's name: spelled once, for the path and for the listing. */
 export const ANCHOR_SUFFIX = '.anchor';
 
 /**
- * Path to the chain's OWN `.gitignore` — the one the chain writes and owns, at
+ * Path to the chain's OWN `.gitignore`: the one the chain writes and owns, at
  * the root of its own tree. It exists only for a project tree that is meant to
  * be committed: it keeps the tree's local-only material (the private subtree,
  * private keys, installation ids, anchors) out of git while letting the proof
  * files (public keys, segments, checkpoints, tail proofs) through. It is never
- * the project's own `.gitignore` — the chain touches only what it owns.
+ * the project's own `.gitignore`: the chain touches only what it owns.
  */
 export function gitignorePath(layout: ChainLayout): string {
   return join(layout.root, '.gitignore');

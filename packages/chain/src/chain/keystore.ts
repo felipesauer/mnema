@@ -2,13 +2,13 @@
  * Persisting and loading a person's key pair, materializing its public half into
  * a chain, and minting a chain's installation id.
  *
- * The key belongs to the PERSON and lives in ONE place — a key root, separate
- * from any chain — so a single identity can write to several chains (a project's
+ * The key belongs to the PERSON and lives in ONE place (a key root, separate
+ * from any chain), so a single identity can write to several chains (a project's
  * public tree, its private one, a global one) without copying the private key.
  * The key root holds the full pair; a chain never does. A chain instead gets the
  * public half MATERIALIZED into it ({@link materializePublicKey}), named by
- * fingerprint and committed, so a verifier — a collaborator, an anonymous clone
- * — finds the key it needs without ever touching the key root.
+ * fingerprint and committed, so a verifier (a collaborator, an anonymous clone)
+ * finds the key it needs without ever touching the key root.
  *
  * The private key is written under the key root and never committed. Generating
  * a fresh pair on first use means a reinstalled machine simply gets a new
@@ -78,14 +78,14 @@ import { TailBusyError, withTailLock } from './tail-lock.js';
  * only the public keys of OTHER machines are present, a new pair is minted.
  *
  * TWO FIRST WRITES IN A NEW HOME MADE TWO KEYS. Both processes found no key, both minted
- * one, and the machine came out of it with two identities — measured on the binary, two
+ * one, and the machine came out of it with two identities: measured on the binary, two
  * writes launched together in a clone, under a HOME that had no key yet, left two keys in
  * 8 to 13 of 30 rounds; and which of the two a later write spoke as was the order
  * {@link listPrivateKeyFingerprints} lists them in. The tail's lock cannot see this race: a
  * tail is named after the key, so two keys take two locks. So the mint is decided under a
  * lock of the key root's own ({@link keyRootLockPath}): the first process to find no key
  * takes it and mints; the second waits, asks again, and adopts the key the first made. A
- * key root that already holds a key is read without the lock, as before — the lock is paid
+ * key root that already holds a key is read without the lock, as before: the lock is paid
  * once per machine. And the private half lands under its name whole
  * ({@link persistKeyPair}), so the read without the lock never finds a key half written.
  * `keystore.test.ts` holds both, with the mint released in two processes at one instant.
@@ -114,13 +114,13 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
 }
 
 /**
- * The keys made in this process for a key root that held none, and not kept yet — by key root.
+ * The keys made in this process for a key root that held none, and not kept yet: by key root.
  * One per root, so every question this process asks about who signs there gets the same answer.
  * Keyed by the root as given: every surface names a key root by one string (`ResolvedTrees.keyRoot`).
  */
 const unkept = new Map<string, KeyPair>();
 
-/** The key a writer signs with, and — when it is not on disk yet — how to keep it. */
+/** The key a writer signs with, and (when it is not on disk yet) how to keep it. */
 export interface KeyToSignWith {
   readonly keyPair: KeyPair;
   /** Present only for a key made in this process and not kept: called before its first byte. */
@@ -128,7 +128,7 @@ export interface KeyToSignWith {
 }
 
 /**
- * The machine's key at `layout`, or — where it holds none — a key made IN MEMORY and kept only
+ * The machine's key at `layout`, or, where it holds none, a key made IN MEMORY and kept only
  * when something is written with it ({@link KeyToSignWith.keep}).
  *
  * A FIRST WRITE THE GATE REFUSED MADE THE MACHINE'S KEY. The key was minted where a writer
@@ -140,7 +140,7 @@ export interface KeyToSignWith {
  *
  * The lock's race moves with it: two processes may each hold a key of their own while each
  * decides. The first to keep wins; the second, finding a key it did not make, refuses
- * ({@link KeyMadeMeanwhileError}) rather than sign as a second identity of this machine — its
+ * ({@link KeyMadeMeanwhileError}) rather than sign as a second identity of this machine: its
  * decision was taken as a key that is not the machine's. Its next write signs with the one kept.
  */
 export function keyToSignWith(layout: ChainLayout): KeyToSignWith {
@@ -194,7 +194,7 @@ export class KeyMadeMeanwhileError extends CodedError {
 /**
  * A key root another process held past the lock's budget while this one wanted to mint the
  * machine's first key. Minting is milliseconds, so reaching it means the holder stopped, not
- * that it is slow — the reasoning of the tail's own lock, whose budget this is.
+ * that it is slow: the reasoning of the tail's own lock, whose budget this is.
  */
 export class KeyRootBusyError extends CodedError {
   readonly code = 'KEY_ROOT_BUSY';
@@ -216,13 +216,13 @@ const PRIVATE_KEY_SUFFIX = '.key';
 
 /**
  * Every private key present at a key root, by fingerprint, in the order the
- * filesystem lists them — the candidates {@link loadOrCreateKeyPair} picks this
+ * filesystem lists them: the candidates {@link loadOrCreateKeyPair} picks this
  * machine's identity from.
  *
  * The CHOICE is the hazard, which is why this is exposed: the machine adopts the
  * FIRST pair it finds, so a second private key here makes WHICH key it speaks as
  * depend on directory order. An operation that installs a key must be able to see
- * what is already there before creating that ambiguity — and a name is all it
+ * what is already there before creating that ambiguity, and a name is all it
  * needs, so no private key is read to answer.
  */
 export function listPrivateKeyFingerprints(layout: ChainLayout): string[] {
@@ -235,14 +235,14 @@ export function listPrivateKeyFingerprints(layout: ChainLayout): string[] {
 
 /** Finds a local key pair (a public key whose matching private key is present). */
 /**
- * The fingerprint of the key this machine signs with, WITHOUT opening it — or `null` when it holds
+ * The fingerprint of the key this machine signs with, WITHOUT opening it, or `null` when it holds
  * none (a signer would be minted).
  *
  * It is the file's own name, the same one {@link findLocalKeyPair} trusts, so the two cannot
  * disagree about which key is the machine's. It exists for the questions that need to know WHO
  * signs and never sign: the anchor a session writes as, a refusal that names it. With a
  * passphrase on the key, answering those by opening the key would make "who am I" a question that
- * needs the passphrase — and a server that could not even open its session, so every tool would
+ * needs the passphrase, and a server that could not even open its session, so every tool would
  * answer with a bare error instead of the refusal that names the passphrase.
  */
 export function localKeyFingerprint(layout: ChainLayout): string | null {
@@ -327,7 +327,7 @@ export interface KeyFileChange {
 
 /**
  * Encrypts every private key file under the key root with `passphrase`, in place and atomically.
- * A file already protected is left as it is — even one protected with ANOTHER passphrase, which
+ * A file already protected is left as it is, even one protected with ANOTHER passphrase, which
  * this does not open: changing a passphrase is `unprotect` and then `protect`, so that it is
  * never done by accident.
  */
@@ -343,7 +343,7 @@ export function protectPrivateKeys(layout: ChainLayout, passphrase: string): Key
 }
 
 /**
- * Runs a rewrite of the key files under the key root's own lock — the one a mint is made under —
+ * Runs a rewrite of the key files under the key root's own lock (the one a mint is made under)
  * so two of them, or one and a mint, take turns instead of reading the same files and each
  * replacing what the other already replaced. It used to guard the mint alone, and `protect` and
  * `unprotect` rewrote the key files with nothing between them and a second process.
@@ -390,11 +390,11 @@ export function unprotectPrivateKeys(layout: ChainLayout, passphrase: string): K
 /**
  * Materializes ONLY the public half of a key into a chain, so an anonymous
  * verifier finds it there without the key root. Writes `<chain>/keys/<fp>.pub`
- * if it is absent; the private key is NEVER written to a chain — which is why it
+ * if it is absent; the private key is NEVER written to a chain, which is why it
  * asks for a {@link PublicHalf}, not a pair: a key whose private half has left
  * the machine (a cold backup) materializes exactly like one that never did.
  *
- * Idempotent — a chain already carrying the key is left untouched — and it never
+ * Idempotent (a chain already carrying the key is left untouched) and it never
  * overwrites: a
  * `.pub` already present (materialized before, or, in the pathological case,
  * swapped) stays as-is, because a swapped public key is caught by the verifier's
@@ -409,14 +409,14 @@ export function materializePublicKey(chainLayout: ChainLayout, key: PublicHalf):
 
 /**
  * Reads a public key MATERIALIZED into a chain, bound to the name it is filed
- * under — {@link materializePublicKey}'s inverse. Returns null when the key is
+ * under: {@link materializePublicKey}'s inverse. Returns null when the key is
  * absent, unreadable, or is not the key its filename names.
  *
  * The fingerprint is re-derived from the loaded key and compared, because the
  * filename is the only thing tying a file to a fingerprint: without that check,
  * swapping `keys/<fp>.pub` for another key would let a signature THAT key made
- * pass as this fingerprint's. Anyone deciding something about a committed key —
- * whether it consented to join an identity, say — needs the key it names, not
+ * pass as this fingerprint's. Anyone deciding something about a committed key
+ * (whether it consented to join an identity, say) needs the key it names, not
  * whatever the file now holds.
  *
  * It reads a CHAIN root, so what it returns is the committed, shareable half: no
@@ -442,28 +442,28 @@ export function committedPublicKey(
 
 /**
  * Loads this installation's id for the given key, minting and persisting one on
- * first use. The id is 16 random bytes as hex — no dashes, so it never disturbs
+ * first use. The id is 16 random bytes as hex: no dashes, so it never disturbs
  * the single `<fingerprint>-<installationId>` split, and wide enough that two
  * installations of the same copied key never collide.
  *
  * It is keyed by fingerprint but the FILE is local and uncommitted, so a machine
  * that receives a copied private key finds no `.inst` beside it and mints its
- * own — the mechanism that keeps the two on separate tails.
+ * own: the mechanism that keeps the two on separate tails.
  *
  * TWO PROCESSES OF ONE KEY GET ONE ID, and they did not. This wrote the file with
  * `writeFileSync` and read an empty file as an absent one, and the two together forked
  * an installation. Two fresh processes that both found the file absent both minted, and
  * the second write won: with the two aligned, 19 of 20 rounds ended with two ids, the
- * window one to three milliseconds wide (the race the tail lock cannot see — its path is
+ * window one to three milliseconds wide (the race the tail lock cannot see: its path is
  * derived FROM this id, so two ids take two locks). And `writeFileSync` creates the file
- * before it writes it: a process that read it in between — 5 of 5, on a simulation over
- * this function — minted another id over it, and the process that minted first went on
+ * before it writes it: a process that read it in between (5 of 5, on a simulation over
+ * this function) minted another id over it, and the process that minted first went on
  * writing a tail nothing would ever open again. Both measured over this function and its
  * callers, with a barrier releasing the two processes at one instant.
  *
  * So the id is created EXCLUSIVELY (`O_EXCL`, the primitive the tail lock already relies
  * on): of two processes that both mint, the kernel lets one create the file, and the
- * other adopts what it wrote — under the same barrier, through `openChainForWriting`, 0
+ * other adopts what it wrote. Under the same barrier, through `openChainForWriting`, 0
  * of 80 rounds released 0 to 3 ms apart forked, where the old code forked in 19 of 20 at
  * 0 ms. And an empty file is read as what it is, an id being written
  * ({@link readInstallationId}). `installation-id.test.ts` plants both states the race
@@ -471,7 +471,7 @@ export function committedPublicKey(
  *
  * AND A LINK TO NOTHING IN THE ID'S PLACE MADE THIS GO ROUND FOREVER. The read follows a
  * symbolic link and, finding nothing at its end, answers that there is no id; the exclusive
- * create does not follow one — that is what `O_EXCL` does — and finds the name taken. Nothing
+ * create does not follow one (that is what `O_EXCL` does) and finds the name taken. Nothing
  * ever writes at the end of a link to nothing, so the two answers came back every time: measured
  * on the binary, a write of that key in that tree was stopped by a ten-second timeout, a core at
  * 100%, having said nothing. A create that finds the name taken now asks what took it
@@ -480,7 +480,7 @@ export function committedPublicKey(
  * chain's id outside the chain, and the exclusive create is what keeps one id per key in it.
  * Whatever else keeps answering the two differently is looked at again every
  * {@link INSTALLATION_ID_POLL_MS} until the same budget runs out, and refused
- * ({@link UnsettledInstallationIdError}) — so that no state of the path holds a write here.
+ * ({@link UnsettledInstallationIdError}), so that no state of the path holds a write here.
  * `installation-id.test.ts` plants the link in both of its shapes, the race the create meets, and
  * the name that never settles, each in a thread the case can stop.
  *
@@ -503,7 +503,7 @@ export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: str
     // The read found no id and the create found the name taken. THIS SAID "another process
     // created it between the read above and this mint: its id is this installation's, and the
     // next read waits for it to be written", and went straight back to the read. A link to
-    // nothing falsified it — no process, and nothing to wait for — and the loop came back here
+    // nothing falsified it (no process, and nothing to wait for) and the loop came back here
     // forever. That link is refused by name; the race the sentence meant is still here, and the
     // next read settles it (*a create that finds the file the read missed adopts the id in it*);
     // and anything that settles neither way is refused once the budget runs out.
@@ -516,7 +516,7 @@ export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: str
   }
 }
 
-/** The installation ids chosen in this process for a key not kept yet — by the id's path. */
+/** The installation ids chosen in this process for a key not kept yet: by the id's path. */
 const unkeptIds = new Map<string, string>();
 
 /**
@@ -537,7 +537,7 @@ export function installationIdToKeep(
     keep: () => {
       mkdirSync(keysDir(layout), { recursive: true });
       if (mintInstallationId(path, id) === undefined) {
-        // Kept by another writer of this process — or a file nobody should have made for a key
+        // Kept by another writer of this process, or a file nobody should have made for a key
         // that was never kept, and then this is not the tail it names.
         const there = loadOrCreateInstallationId(layout, fingerprint);
         if (there !== id) throw new UnsettledInstallationIdError(path, 0);
@@ -549,16 +549,16 @@ export function installationIdToKeep(
 
 /**
  * How long a reader waits for an installation id another process has created and not yet
- * written, before it refuses — and how long a create that keeps finding the name taken, where
+ * written, before it refuses, and how long a create that keeps finding the name taken, where
  * no read finds an id, keeps looking. The honest wait is the time between two system calls of
  * one process (`open` and `write`), which is microseconds, and milliseconds under heavy I/O; two
- * seconds is the tail lock's budget (`DEFAULT_WAIT_MS`) on the same argument — reaching it
+ * seconds is the tail lock's budget (`DEFAULT_WAIT_MS`) on the same argument: reaching it
  * means the writer stopped, not that it is slow.
  */
 export const INSTALLATION_ID_WAIT_MS = 2_000;
 
 /**
- * How long that reader, and that create, sleep between looks — the tail lock's poll, for the
+ * How long that reader, and that create, sleep between looks: the tail lock's poll, for the
  * same reason. Exported inside the package for the case that counts the looks, not beyond it.
  */
 export const INSTALLATION_ID_POLL_MS = 5;
@@ -612,7 +612,7 @@ export class DanglingInstallationIdError extends CodedError {
 /**
  * An installation id's place that did not settle within the budget: every read found no id there
  * and every create found the name taken. Something kept creating and removing it, or the
- * filesystem answers the two questions differently — neither is a state this machine resolves by
+ * filesystem answers the two questions differently: neither is a state this machine resolves by
  * guessing, for the reason {@link UnwrittenInstallationIdError} gives.
  */
 export class UnsettledInstallationIdError extends CodedError {
@@ -635,7 +635,7 @@ export class UnsettledInstallationIdError extends CodedError {
 
 /**
  * Where the symbolic link at `path` points, when it is one and nothing is there; undefined for
- * anything else — no entry at all, a file, a link that leads somewhere.
+ * anything else: no entry at all, a file, a link that leads somewhere.
  *
  * It is asked only by a create that found the name taken after the read found no id, which is
  * the pair a link to nothing answers every time and a race answers once. A link that has come to
@@ -653,12 +653,12 @@ export function linkToNothingAt(path: string): string | undefined {
 }
 
 /**
- * The installation id recorded at `path`, or undefined when no file is reached there — which a
+ * The installation id recorded at `path`, or undefined when no file is reached there, which a
  * symbolic link to nothing answers too, and {@link loadOrCreateInstallationId} tells apart when
  * its create finds the name taken.
  *
  * AN EMPTY FILE IS NOT AN ABSENT ONE: it is an id another process has created and not yet
- * written — the moment between its `O_EXCL` and its write — so this waits for the id to land.
+ * written, the moment between its `O_EXCL` and its write, so this waits for the id to land.
  * It refuses once `deadline` passes instead of answering "absent", because the caller would
  * then mint over a file somebody else is about to fill.
  */
@@ -682,7 +682,7 @@ function readInstallationId(path: string, deadline: number): string | undefined 
 
 /**
  * Creates the installation id file at `path` holding a fresh id, EXCLUSIVELY, and returns the
- * id — or undefined when the file already exists, whoever created it: the caller then reads the
+ * id, or undefined when the file already exists, whoever created it: the caller then reads the
  * id that is there instead of writing over it.
  *
  * Exported inside the package for the test that plants the state the race produces (a mint that
@@ -718,7 +718,7 @@ export function mintInstallationId(
  * and uncommitted, like the installation id: it says WHICH anchor this
  * installation authorizes as. A machine with no recorded anchor asks the record
  * at its next write, and founds its own only when the record proves the key a
- * member of nothing — {@link anchorPath} says what this used to claim.
+ * member of nothing: {@link anchorPath} says what this used to claim.
  */
 export function readAnchor(layout: ChainLayout, fingerprint: string): string | null {
   const path = anchorPath(layout, fingerprint);
@@ -745,7 +745,7 @@ export interface ChainSigner {
 }
 
 /**
- * The installation of `fingerprint` in the chain at `layout`, as a {@link ChainSigner} — read
+ * The installation of `fingerprint` in the chain at `layout`, as a {@link ChainSigner}: read
  * from local material each time it is asked, never cached, so it answers what the disk holds.
  *
  * THE ONE READING of which anchor an installation serves. The writer's own `anchor` and
@@ -776,23 +776,23 @@ const KEY_ROOT_GITIGNORE = [
 ].join('\n');
 
 /**
- * Makes a key root ignore itself in git, unless it already carries a `.gitignore` of its own —
+ * Makes a key root ignore itself in git, unless it already carries a `.gitignore` of its own:
  * called by the two functions that write private key material ({@link persistKeyPair} and
  * `ensureBackupKey`), so it is there before the first private byte is.
  *
- * WHY THE KEY ROOT, AND WHY NOW. The key root lives in the home — `~/.mnema/identity`, or under
- * wherever `MNEMA_HOME` puts it — and a home kept under git, as dotfiles often are, is a
+ * WHY THE KEY ROOT, AND WHY NOW. The key root lives in the home (`~/.mnema/identity`, or under
+ * wherever `MNEMA_HOME` puts it) and a home kept under git, as dotfiles often are, is a
  * repository in which `git add .mnema` staged the private key and its backup. The tools that
  * write a directory into somebody's tree say so the same way (pytest's cache, ruff's, mypy's,
  * Python's `venv`: a `.gitignore` holding `*` in the directory they create); the ones that hold
  * keys write none, which is this product's reason to. It goes in the key root and not in the data
  * directory above it: the private half is what must never travel, while the global tree is the
- * person's to version or not — and only here does it hold wherever the key root sits, including a
+ * person's to version or not, and only here does it hold wherever the key root sits, including a
  * data directory that already carries a `.gitignore` written for something else, like a project
  * tree's, which covers `keys/*.key` and not `identity/keys/*.key`.
  *
  * One that exists is left as it is: a person who edited it keeps the edit. (A project tree's
- * `.gitignore`, by contrast, gains the one line it lacks, never more — see `ensureTree`.)
+ * `.gitignore`, by contrast, gains the one line it lacks, never more: see `ensureTree`.)
  */
 export function ensureKeyRootIgnored(keyRoot: ChainLayout): void {
   mkdirSync(keyRoot.root, { recursive: true });
@@ -802,12 +802,12 @@ export function ensureKeyRootIgnored(keyRoot: ChainLayout): void {
 }
 
 /**
- * Every key that has an anchor recorded in this tree, by fingerprint — which installations of
+ * Every key that has an anchor recorded in this tree, by fingerprint: which installations of
  * this machine have settled, locally, whom they speak for here. Empty for a tree with none, or no
  * tree at all.
  *
- * A write that settles an anchor where there was none is a key's first write into the tree —
- * the only moment it can found an identity — so a surface that lists these before and after a
+ * A write that settles an anchor where there was none is a key's first write into the tree
+ * (the only moment it can found an identity), so a surface that lists these before and after a
  * write knows whether that moment passed, without asking the write.
  */
 export function listAnchoredFingerprints(layout: ChainLayout): string[] {
@@ -820,7 +820,7 @@ export function listAnchoredFingerprints(layout: ChainLayout): string[] {
 }
 
 /**
- * Records the anchor this key serves — the anchor it founded (its own) or one it
+ * Records the anchor this key serves: the anchor it founded (its own) or one it
  * enrolled into. Written once and never committed; a second write with the same
  * value is a harmless no-op, a write with a different value would change which
  * identity this installation speaks for and is the caller's decision to make.

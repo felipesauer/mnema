@@ -1,18 +1,18 @@
 /**
- * THE PUBLISHED DECLARATIONS AND THE READER ARE ONE THING — the guard this
+ * THE PUBLISHED DECLARATIONS AND THE READER ARE ONE THING: the guard this
  * delivery exists for.
  *
  * `FORMAT.md` section 4 has always promised that a reader rebuilds an event from
  * the fields its kind declares and rejects any other. Until `event-schema.json`
  * existed, those declarations were published nowhere, and the measured
- * consequence was that an independent verifier — faithful to the document —
+ * consequence was that an independent verifier, faithful to the document,
  * accepted an event appended above the last checkpoint carrying a field no kind
  * declares, which the product refuses. A party with **no key** can walk through
  * that door: the entry hash takes no key, so whoever can write the repository
  * computes it, and above the last checkpoint no signature covers it.
  *
  * THE HARD PART IS NOT PUBLISHING THEM. It is that a published schema beside a
- * hand-written reader is TWO places the fields live, and two places drift — in
+ * hand-written reader is TWO places the fields live, and two places drift: in
  * silence, because the day they disagree is the day a second reader quietly goes
  * back to accepting what this one refuses, with nothing red anywhere. So the
  * declarations are not a description of `parse.ts`: they ARE `parse.ts`'s table
@@ -55,7 +55,7 @@ function contractFor(kind: string, v: number) {
   return artifact.contracts.find((row) => row.kind === kind && row.v === v);
 }
 
-/** An event with one payload field removed — what a stranger tests a declaration with. */
+/** An event with one payload field removed: what a stranger tests a declaration with. */
 function withoutPayloadField(event: CatalogEvent, field: string): CatalogEvent {
   const payload = { ...(event.payload as Record<string, unknown>) };
   delete payload[field];
@@ -90,7 +90,7 @@ describe('the published file is the reader’s table, byte for byte', () => {
 
   it('spells every rule it uses in the glossary it carries', () => {
     // The artifact is read by somebody who has only the artifact and the document, so
-    // a rule name it uses and does not define is a rule they have to guess at — which
+    // a rule name it uses and does not define is a rule they have to guess at, which
     // is a declaration that exists and cannot be used.
     const used = new Set<string>([
       ...Object.values(artifact.envelope),
@@ -103,12 +103,12 @@ describe('the published file is the reader’s table, byte for byte', () => {
 });
 
 /**
- * THE AGREEMENT, CASE BY CASE — and the reason this is not a snapshot test.
+ * THE AGREEMENT, CASE BY CASE, and the reason this is not a snapshot test.
  *
  * Each published vector is a real event of its kind. For every field the FILE
  * declares, the reader is asked the question the declaration answers: is it
  * required? So a declaration that said `string?` where the reader demands a value
- * fails here, and so does the reverse — the two directions are separate cases
+ * fails here, and so does the reverse: the two directions are separate cases
  * because only one of them is caught by a record verifying green.
  */
 describe('the reader obeys the published declarations, field by field', () => {
@@ -166,7 +166,7 @@ describe('the reader obeys the published declarations, field by field', () => {
 describe('the envelope the file declares is the envelope the reader takes', () => {
   it('accepts the two optional envelope fields the file calls optional', () => {
     // NON-VACUITY WITH A HISTORY. `which` and `run` were declared NOWHERE, and
-    // `FORMAT.md` section 7 said an event has "seven top-level keys" — a sentence
+    // `FORMAT.md` section 7 said an event has "seven top-level keys": a sentence
     // taken from the INTERSECTION of the published vectors rather than from any
     // declaration. Sixteen of the twenty-three vectors published when this was found
     // carry `which`, three carry `run`, and an independent verifier built on that

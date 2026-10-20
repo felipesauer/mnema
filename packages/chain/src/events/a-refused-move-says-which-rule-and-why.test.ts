@@ -1,8 +1,8 @@
 /**
  * A REFUSED MOVE NAMES ITS RULE AND SAYS WHY IN THE WORDS THE CENSUS PRINTS.
  *
- * The cases beside `workflow.test.ts` assert the rule alone. These assert the whole ruling —
- * rule and line — and each choice of the judgment that a ruling-by-rule leaves open: which half
+ * The cases beside `workflow.test.ts` assert the rule alone. These assert the whole ruling,
+ * rule and line, and each choice of the judgment that a ruling-by-rule leaves open: which half
  * of a birth is wrong, which half of a row is wrong, who a successor may be, and which writer's
  * sight excuses a `from`.
  */

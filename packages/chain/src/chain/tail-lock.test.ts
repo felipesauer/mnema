@@ -4,14 +4,14 @@
  * The defect these cases exist for is a read-modify-write: a writer reads the tail's
  * last entry for `seq` and `prev` and then appends, and a second writer that read the
  * same end appends at the same logical position. Measured on the built binary before
- * the fix — two concurrent `mnema decision` runs corrupted the chain in 15 of 20
+ * the fix: two concurrent `mnema decision` runs corrupted the chain in 15 of 20
  * rounds, and two MCP sessions calling `record_observation` in 10 of 10.
  *
  * ## Why these cases are not a race
  *
  * A test that spawns two processes and hopes to hit the window is a probe with a
  * PROBABILITY, and this workspace has paid for asserting one of those. The hazard,
- * however, is not the concurrency — it is the STALE STATE the concurrency produces,
+ * however, is not the concurrency; it is the STALE STATE the concurrency produces,
  * and two writers in one process reproduce that exactly and every time: open both,
  * let the first append, then let the second append from the end it read before. On
  * the base that is a duplicate `seq` in 100% of runs, not 75%.
@@ -19,9 +19,9 @@
  * The rounds-and-rates form still exists, because it is what proves the fix on the
  * real binary through the real transports.
  *
- * The other half — that a tail already held by somebody else is REFUSED rather than
+ * The other half (that a tail already held by somebody else is REFUSED rather than
  * waited on forever, and that a lock outliving its holder is broken rather than
- * wedging the tail — is tested against the lock itself, with a holder this file
+ * wedging the tail) is tested against the lock itself, with a holder this file
  * plants.
  */
 
@@ -114,7 +114,7 @@ describe('two writers of one tail do not write over each other', () => {
     const all = entries();
     const before = all[all.length - 2];
     expect(late.link.prev).toBe(before?.link.hash);
-    // And the whole record still verifies — the assertion above could hold over a
+    // And the whole record still verifies: the assertion above could hold over a
     // chain broken somewhere else.
     expect(verify(root, upcasters).ok).toBe(true);
   });
@@ -158,8 +158,8 @@ describe('two writers of one tail do not write over each other', () => {
   it('notices the other writer rolling onto a segment this one does not know about', () => {
     // THE CASE THE FIRST DRAFT OF THIS FILE DID NOT HAVE, and it was the mutation
     // that found it: blinding the mark to a new segment left 0 tests red. The
-    // doc-comment on `TailMark` argued the case was unreachable — "a roll is always
-    // PRECEDED by growth we would have seen" — and that is false. The growth that
+    // doc-comment on `TailMark` argued the case was unreachable ("a roll is always
+    // PRECEDED by growth we would have seen") and that is false. The growth that
     // pushes a segment over its cap happens BEFORE this writer's mark is taken, so
     // the other writer's next append lands in a segment whose birth is the only
     // trace: the segment we are watching does not change size at all.
@@ -204,11 +204,11 @@ describe('the lock a writer holds while it appends', () => {
   /**
    * THE ONE CASE IN THIS WORKSPACE WITH A CEILING OF ITS OWN, and the line says what it
    * waits on: a lock held by a process that is alive and stays alive, which is a wait the
-   * writer is SUPPOSED to serve out. It appends twice — once for the refusal and once for
-   * what the refusal says — so it spends two full `DEFAULT_WAIT_MS` of 2000 ms by design.
+   * writer is SUPPOSED to serve out. It appends twice, once for the refusal and once for
+   * what the refusal says, so it spends two full `DEFAULT_WAIT_MS` of 2000 ms by design.
    *
    * Measured by `pnpm why-it-went-red`: 4044 ms inside the suite and 4018 ms with the
-   * machine to itself, against a shared ceiling of 5000 ms. So it was not failing — it was
+   * machine to itself, against a shared ceiling of 5000 ms. So it was not failing: it was
    * spending four fifths of everybody's ceiling while declaring nothing, which is the
    * reading `.github/why-it-went-red/` calls WAITS WITHOUT SAYING SO, and it was reported
    * on every run. A case one second from a ceiling it never declared is a red waiting for a
@@ -261,7 +261,7 @@ describe('the lock a writer holds while it appends', () => {
     const w = founded();
     const before = entries().length;
     const lock = tailLockPath({ root }, w.tail);
-    // A LIVE pid — ours — whose record is ten minutes old: a holder that is alive and slow
+    // A LIVE pid, ours, whose record is ten minutes old: a holder that is alive and slow
     // (a stopped process, a suspended laptop). Breaking it would put two writers on one tail,
     // which is the corruption the lock exists to prevent, so the writer waits and refuses.
     plantAt(lock, process.pid, Date.now() - 10 * 60_000);
@@ -342,7 +342,7 @@ describe('the lock a writer holds while it appends', () => {
     const w = founded();
     w.checkpoint();
     const lock = tailLockPath({ root }, w.tail);
-    // A live holder: a checkpoint that asked for the lock would wait it out and refuse — after
+    // A live holder: a checkpoint that asked for the lock would wait it out and refuse, after
     // the write it follows had already landed, which is the refusal that said "not appended".
     plantAt(lock, process.pid, Date.now());
 
@@ -374,7 +374,7 @@ describe('the lock a writer holds while it appends', () => {
     // An event no reader could accept: the writer refuses it before sealing.
     expect(() => w.append(taskCreated(env(w, 't-x'), { title: '' }))).toThrow();
     expect(existsSync(lock)).toBe(false);
-    // And the tail is still writable — a refusal may not behave like a crash.
+    // And the tail is still writable: a refusal may not behave like a crash.
     w.append(task(w, 'after-a-refusal'));
     expect(entries().length).toBe(2);
   });
@@ -402,7 +402,7 @@ describe('the lock a writer holds while it appends', () => {
       holder.push(readFileSync(lock, 'utf-8'));
       return [one, ...two].map((e) => e.link.seq);
     });
-    // One hold for the whole act — the same record before and after the appends inside it.
+    // One hold for the whole act: the same record before and after the appends inside it.
     expect(holder[0]).toBe(holder[1]);
     expect(holder[0]).toContain(String(process.pid));
     expect(appended).toEqual([1, 2, 3]);

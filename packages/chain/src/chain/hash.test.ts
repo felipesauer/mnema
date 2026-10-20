@@ -11,10 +11,10 @@ const env = (subject: string) => ({
   subject,
 });
 const ev = (title: string): CatalogEvent => taskCreated(env('t-1'), { title });
-/** The written form of a freshly built event — what every digest is over. */
+/** The written form of a freshly built event: what every digest is over. */
 const wev = (title: string) => writtenAsBuilt(ev(title));
 
-describe('contentRoot — framing rules out concatenation collisions', () => {
+describe('contentRoot: framing rules out concatenation collisions', () => {
   it('is deterministic for the same events', () => {
     const events = [wev('a'), wev('b')];
     expect(contentRoot(events)).toBe(contentRoot([wev('a'), wev('b')]));
@@ -43,7 +43,7 @@ describe('contentRoot — framing rules out concatenation collisions', () => {
   });
 });
 
-describe('entryHash — binds content, position, and predecessor', () => {
+describe('entryHash: binds content, position, and predecessor', () => {
   const base = { event: wev('x'), tail: 't', seq: 1, prev: 'deadbeef' as string | null };
 
   it('is deterministic', () => {

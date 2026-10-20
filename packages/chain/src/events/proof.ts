@@ -1,5 +1,5 @@
 /**
- * WHAT A TRANSITION CARRIED, as text — the one reading of a move's proof.
+ * WHAT A TRANSITION CARRIED, as text: the one reading of a move's proof.
  *
  * A transition's `fields` are the words somebody wrote to justify a move: why a task
  * was canceled, what was done on completing it, what has to change when a review sends
@@ -21,8 +21,8 @@
  * TOTAL IN THE TYPE, and deliberately in `src` rather than in a test: {@link
  * PROOF_FIELD_RANK} is a mapped type over every key of `TransitionFields`, so a sixth
  * field added to the catalog DOES NOT COMPILE until it says where it belongs. A type
- * check written in a `.test.ts` would be vacuous here — the build excludes tests and the
- * runner erases types without checking them — so the guard has to live beside the value.
+ * check written in a `.test.ts` would be vacuous here (the build excludes tests and the
+ * runner erases types without checking them), so the guard has to live beside the value.
  */
 
 import type { CatalogEvent, TransitionFields } from './catalog.js';
@@ -33,14 +33,14 @@ import type { CatalogEvent, TransitionFields } from './catalog.js';
  *
  * It is filtered on `action` and not on `fields`, and the difference is the whole
  * reason this line has a comment: `fields` is OPTIONAL, so every arm of the union
- * satisfies `{ payload: { fields?: … } }` — absence satisfies an optional — and the
+ * satisfies `{ payload: { fields?: … } }`, absence satisfies an optional, and the
  * filter would keep the catalog entire. `action` is required on the three and absent
  * from the rest.
  */
 type ATransition = Extract<CatalogEvent, { readonly payload: { readonly action: string } }>;
 
 /**
- * The kinds that carry a move's proof — the totality guard for {@link proofFields}.
+ * The kinds that carry a move's proof: the totality guard for {@link proofFields}.
  *
  * A mapped type over every transition kind, so a FOURTH state machine added to the
  * catalog does not compile until it says whether its moves carry proof. That is
@@ -71,7 +71,7 @@ export function proofFields(event: CatalogEvent): TransitionFields | undefined {
  * Every field a transition can carry, ranked by the order a reader meets them.
  *
  * The rank is what makes the order a property of this module rather than of whichever
- * order a writer happened to serialize the object in — two records holding the same
+ * order a writer happened to serialize the object in: two records holding the same
  * proof read the same way. `reason` and `feedback` lead because they are what a reader
  * chasing a refusal or a send-back came for; `pr_url` and `links` trail because they
  * are locators rather than words.
@@ -93,7 +93,7 @@ export const PROOF_FIELDS = (Object.keys(PROOF_FIELD_RANK) as (keyof TransitionF
 );
 
 /**
- * The proof a transition carried, as `name: value` lines — empty when it carried none.
+ * The proof a transition carried, as `name: value` lines: empty when it carried none.
  *
  * EMPTY RATHER THAN A PLACEHOLDER, because absence is a fact here: most transitions
  * carry nothing, and a caller that got `"note: "` back could not tell a move that said

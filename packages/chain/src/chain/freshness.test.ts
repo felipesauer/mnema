@@ -3,7 +3,7 @@
  *
  * Every case here is a fact about the SIGNAL, stated against files rather than
  * against a writer, because that is what the signal reads. What it means for a
- * retained projection is the surface's business — `the-record-may-have-moved.test.ts`
+ * retained projection is the surface's business: `the-record-may-have-moved.test.ts`
  * in `@mnema/code` runs the whole of it against real other processes.
  */
 
@@ -48,14 +48,14 @@ describe('a chain that has not moved reads the same', () => {
 });
 
 describe('every way a chain moves changes it', () => {
-  it('an append — the last segment grew', () => {
+  it('an append: the last segment grew', () => {
     writeSegment('tail-a', 1, 'one line\n');
     const before = chainExtent(layout);
     writeSegment('tail-a', 1, 'one line\nanother line\n');
     expect(chainExtent(layout)).not.toBe(before);
   });
 
-  it('a rotation — a later segment, on a tail already known', () => {
+  it('a rotation: a later segment, on a tail already known', () => {
     // The one move that does not make a file bigger: the segment being filled is
     // sealed at its size and the next one starts. An extent that watched only the
     // size of a known file would call this unchanged.
@@ -65,7 +65,7 @@ describe('every way a chain moves changes it', () => {
     expect(chainExtent(layout)).not.toBe(before);
   });
 
-  it('a tail that did not exist — another installation writing here', () => {
+  it('a tail that did not exist: another installation writing here', () => {
     writeSegment('tail-a', 1, 'ours\n');
     const before = chainExtent(layout);
     writeSegment('tail-b', 1, 'theirs\n');
@@ -74,7 +74,7 @@ describe('every way a chain moves changes it', () => {
 
   it('a tail directory appearing before its first event', () => {
     // An older writer made the directory (and its proof of ownership) when it
-    // opened, and records committed then still hold such tails — so the empty
+    // opened, and records committed then still hold such tails, so the empty
     // tail is a real state, and the append that follows still has to move the
     // mark. (A writer born today makes both inside its first append.)
     const before = chainExtent(layout);
@@ -93,7 +93,7 @@ describe('every way a chain moves changes it', () => {
     expect(chainExtent(layout)).not.toBe(before);
   });
 
-  it('a truncation — the writer healing a torn line off the end', () => {
+  it('a truncation: the writer healing a torn line off the end', () => {
     // Growth is what an append does, but the extent is not asserting monotonicity:
     // a recovering writer cuts a crash fragment off the last segment, and a
     // reader that had already replayed the fragment must not be left holding it.
@@ -107,7 +107,7 @@ describe('every way a chain moves changes it', () => {
 describe('what it does not see, and must not', () => {
   it('a rewrite that preserves the size', () => {
     // The declared blind spot. This is tampering, and answering it means
-    // recomputing hashes and checking signatures — which is `verifyChain`'s
+    // recomputing hashes and checking signatures, which is `verifyChain`'s
     // subject, on a chain the extent has no business making claims about. A probe
     // that pretended to catch this would be promising proof on a signal chosen
     // for being one `stat`.
@@ -132,8 +132,8 @@ describe('what it does not see, and must not', () => {
   });
 
   it('a checkpoint appended with no event behind it', () => {
-    // Checkpoints are not what a projection replays — the replay reads segments
-    // — so a checkpoint file that grew on its own says nothing about what the
+    // Checkpoints are not what a projection replays: the replay reads segments,
+    // so a checkpoint file that grew on its own says nothing about what the
     // read model owes. The verifier is what reads every one of them.
     writeSegment('tail-a', 1, 'an event\n');
     const before = chainExtent(layout);

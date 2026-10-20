@@ -2,7 +2,7 @@
  * The keys an identity owns that do NOT sign on this machine: how they are
  * registered at the key root, and the COLD BACKUP key registered at founding.
  *
- * mnema refuses central recovery by design — an entity able to restore an
+ * mnema refuses central recovery by design: an entity able to restore an
  * identity is an entity able to FORGE one, and that is the one permanent error.
  * The consequence is that the only protection against losing a machine's key is
  * PREVENTION: a second key, proven a member of the identity while the first key
@@ -11,30 +11,30 @@
  *
  * Three files hold it, and the split between them is the whole design:
  *
- *   <keyRoot>/keys/<fp>.pub      the public half — what an enrollment names and
+ *   <keyRoot>/keys/<fp>.pub      the public half (what an enrollment names and
  *                                what a verifier checks a signature against
  *   <keyRoot>/keys/<fp>.enroll   the REGISTRATION: the signature over
  *                                `enroll:<anchor>:<fp>` proving this key
  *                                consented to join that anchor
- *   <keyRoot>/backup/<fp>.key    the private half, COLD — mode 0600, outside
+ *   <keyRoot>/backup/<fp>.key    the private half, COLD) mode 0600, outside
  *                                `keys/`, and meant to leave the machine
  *
  * Why the private half is NOT in `keys/`: the keystore adopts the FIRST private
  * key it finds there as this machine's identity, so a second one would make
- * WHICH key the machine speaks as depend on directory order — it could differ
+ * WHICH key the machine speaks as depend on directory order; it could differ
  * between two runs. `backup/` is a place nothing looks for an identity.
  *
  * Why the registration is replayable: the signature covers fixed values (the
  * anchor and the new fingerprint), so ONE signature proves consent forever, in
  * every tree. A tree founded a year from now can still enroll the backup key
- * without its private half ever returning to this machine — which is what lets
+ * without its private half ever returning to this machine, which is what lets
  * every tree be born carrying the whole identity.
  *
  * Why a registration is verified HERE, before it is used: an enrollment event is
  * append-only. Emitting one whose proof does not check out would leave that tree
  * permanently failing verification, with no way to take the event back. So a
  * registration is only ever reported as usable once its signature has been
- * checked against the very key it names — a bad registration is refused while
+ * checked against the very key it names: a bad registration is refused while
  * refusing is still free.
  */
 
@@ -83,7 +83,7 @@ export type KeyRegistration =
   | {
       readonly fingerprint: string;
       readonly usable: true;
-      /** The anchor the signature covers — the registration proves nothing for any other. */
+      /** The anchor the signature covers: the registration proves nothing for any other. */
       readonly anchor: string;
       /** What the key was registered for; {@link BACKUP_ROLE} is the cold key. */
       readonly role: string;
@@ -102,18 +102,18 @@ export type KeyRegistration =
 export interface BackupKey {
   readonly fingerprint: string;
   /**
-   * Where the cold private half is written — outside `keys/`. The path is
+   * Where the cold private half is written: outside `keys/`. The path is
    * reported whether or not this call created the key; the FILE may be gone,
    * which is the intended end state (the human moved it off the machine).
    */
   readonly privateKeyPath: string;
-  /** True when THIS call generated it — the one moment the human must act on. */
+  /** True when THIS call generated it: the one moment the human must act on. */
   readonly created: boolean;
 }
 
 /**
  * Every key registered at the key root, in fingerprint order. Each is reported
- * as usable — with the material an enrollment needs — or with the fault that
+ * as usable, with the material an enrollment needs, or with the fault that
  * makes it unusable; a broken registration is never silently dropped, because
  * dropping it would leave a person believing they hold a backup they cannot use.
  */
@@ -165,15 +165,15 @@ export function readRegistration(keyRoot: ChainLayout, fingerprint: string): Key
 }
 
 /**
- * Whether a registration is a usable cold BACKUP key — of `anchor`, or of any identity when
+ * Whether a registration is a usable cold BACKUP key: of `anchor`, or of any identity when
  * none is named.
  *
  * The one reading of it, asked from two sides: {@link ensureBackupKey} asks it for the
  * identity it is about to protect, so a second backup is never minted beside the first, and
  * the verifier's census asks it for every key it finds with no tail, so the key this module
  * made is said as what it is rather than as a key whose tail may have gone. Usable is the
- * whole of the trust put in it: the ROLE is not covered by the signature — only the anchor
- * and the fingerprint are — and nothing but this machine's own key root carries it.
+ * whole of the trust put in it: the ROLE is not covered by the signature (only the anchor
+ * and the fingerprint are) and nothing but this machine's own key root carries it.
  */
 export function isBackupRegistration(
   registration: KeyRegistration,
@@ -191,7 +191,7 @@ export function isBackupRegistration(
  * registering one on first use, and reports it either way.
  *
  * The backup belongs to the IDENTITY, not to the machine or the project: it is
- * keyed by anchor. One is generated once per anchor and then only re-reported —
+ * keyed by anchor. One is generated once per anchor and then only re-reported,
  * never a second one, because a second cold key would silently turn whatever
  * copy the person already carries off the machine into a worthless file. But a
  * registration made for a DIFFERENT anchor does not count as this identity's
@@ -207,7 +207,7 @@ export function isBackupRegistration(
  * their back.
  *
  * The three files are written private half FIRST, then the public half, then the
- * registration — the registration is what says "this identity has a backup", so
+ * registration: the registration is what says "this identity has a backup", so
  * it is written last. A crash before it leaves an unregistered orphan that the
  * next run ignores (and replaces with a fresh backup), never a registration whose
  * key material is missing.

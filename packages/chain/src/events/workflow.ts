@@ -1,5 +1,5 @@
 /**
- * THE WORKFLOWS, AS PART OF THE FORMAT — which moves a decision, a task, a skill and a run may
+ * THE WORKFLOWS, AS PART OF THE FORMAT: which moves a decision, a task, a skill and a run may
  * make, and the one function every reader judges a move by (FORMAT.md §6.7).
  *
  * WHY THE TABLES LIVE HERE AND NOT IN THE DOMAIN. They used to be code of the product
@@ -8,20 +8,20 @@
  * was served as the decision's state. A reader can only judge a move by a table it has, and
  * `verify` lives in this package, which imports nothing of the domain. So the tables are data
  * of the format now, published in `event-schema.json`, and the domain's gate takes them from
- * here — one table, read by the gate that writes and by every reader that folds.
+ * here: one table, read by the gate that writes and by every reader that folds.
  *
  * WHAT A READER DOES WITH A MOVE THIS JUDGES ILLEGAL: it does not apply it, and `verify` names
- * it in its census, informational, the exit unchanged — the precedent of a stranger's
+ * it in its census, informational, the exit unchanged; the precedent of a stranger's
  * retraction (§6.4). The event is intact, hashed, chained and signed; what it lacks is a place
  * in the workflow, and that is a reading of the record rather than a fact about its bytes.
  *
  * THE STATE A MOVE IS JUDGED FROM. A move names the state it left (`from`). It is legal from
  * the state the subject is in at that point of the merged order (FORMAT.md, "Reading many
- * tails") — or, when that does not admit it, from the state its writer SAW: the moves its own
+ * tails"), or, when that does not admit it, from the state its writer SAW: the moves its own
  * tail holds before it, and those up to the entries its tail cites in `after`. The second is
  * what keeps two machines that moved one decision without seeing each other a divergence, as
  * the format has always said, and not an illegal move; the first is what reads a record whose
- * writers cited nothing — every record from before citations — as it was written. A writer
+ * writers cited nothing, every record from before citations, as it was written. A writer
  * whose sight holds nothing of the subject at all (its tail never said what it read) is held to
  * a state the subject had been in before the move, so two such machines that moved one subject
  * apart remain a divergence too.
@@ -47,7 +47,7 @@ export interface WorkflowMove {
 /** One workflow: its states, the move that gives a subject its first state, and the rest. */
 export interface Workflow {
   readonly states: readonly string[];
-  /** The birth: `from: null`, this action, to this state — once per subject. */
+  /** The birth: `from: null`, this action, to this state, once per subject. */
   readonly birth: { readonly action: string; readonly to: string };
   readonly moves: readonly WorkflowMove[];
 }
@@ -57,7 +57,7 @@ export interface Workflow {
  * the birth is not a row, because a subject is born once and never moved into being.
  *
  * Decisions: `supersede` is legal from `proposed` and from `accepted`, and names the successor.
- * Tasks: the one machine with a cycle — a task reopened leaves `IN_PROGRESS` again.
+ * Tasks: the one machine with a cycle; a task reopened leaves `IN_PROGRESS` again.
  * Skills: `deprecate` is the only way out of `adopted`.
  */
 export const WORKFLOWS = {
@@ -107,7 +107,7 @@ export type TransitionKind = keyof typeof WORKFLOWS;
 
 /**
  * A move a reader judges: a transition of one of the three workflows, or the end of a run. A
- * run has no table — it is open from its `run.started` and ends once — so its move is the one
+ * run has no table (it is open from its `run.started` and ends once), so its move is the one
  * kind here with no `from`.
  */
 export type MoveEvent = Extract<CatalogEvent, { readonly kind: TransitionKind | 'run.ended' }>;
@@ -125,7 +125,7 @@ export function isMove(event: CatalogEvent): event is MoveEvent {
 }
 
 /**
- * Why a move is not applied — one rule each, so the census can say which.
+ * Why a move is not applied: one rule each, so the census can say which.
  *
  * - `not-born`: the subject has no birth before it (a run: no `run.started`).
  * - `born-twice`: a birth (`from: null`) of a subject already born.
@@ -133,7 +133,7 @@ export function isMove(event: CatalogEvent): event is MoveEvent {
  *   one of its states lands here too; for a birth, an action or a `to` that is not the birth's.
  * - `proof-missing`: a field the row requires is absent.
  * - `successor`: a move that must name its successor in `by` does not name a decision the record
- *   holds a birth of, or names its own subject — or a move that takes no successor carries one.
+ *   holds a birth of, or names its own subject, or a move that takes no successor carries one.
  * - `not-the-state-seen`: `from` is neither the state the subject is in at that point nor the
  *   state its writer saw.
  * - `ended-twice`: a run's end after an end its writer had seen.
@@ -162,7 +162,7 @@ export interface MoveStanding {
    */
   readonly now: string | undefined;
   /**
-   * The state its writer saw — the same fold over only the moves its own tail holds before it
+   * The state its writer saw: the same fold over only the moves its own tail holds before it
    * and those up to what its tail cites. Asked only when {@link now} does not admit the move,
    * which is the rare case, so a reader that cannot answer it cheaply may stop there.
    */
@@ -170,11 +170,11 @@ export interface MoveStanding {
   /**
    * Whether the subject was in `state` at some point before this move, in the merged order and
    * by the moves that were legal. Asked only when {@link seen} is undefined while the subject is
-   * born — a writer whose sight holds nothing of it, which is a tail that never says what it
-   * read: written before an event named its heads, or by a writer that names none.
+   * born (a writer whose sight holds nothing of it, which is a tail that never says what it
+   * read: written before an event named its heads, or by a writer that names none).
    */
   held(state: string): boolean;
-  /** Whether the record holds the birth of decision `id` — what a successor must name. */
+  /** Whether the record holds the birth of decision `id`: what a successor must name. */
   born(id: string): boolean;
 }
 
@@ -225,8 +225,8 @@ export function judgeMove(event: MoveEvent, standing: MoveStanding): IllegalMove
 }
 
 /**
- * A ruling, worded: the move as it was written — every value of it out of the record, so each
- * goes through `oneLine` — and then what the rule found.
+ * A ruling, worded: the move as it was written (every value of it out of the record, so each
+ * goes through `oneLine`) and then what the rule found.
  */
 function ruled(rule: MoveRule, event: TransitionMove, detail: string): IllegalMove {
   const { from, to, action } = event.payload;

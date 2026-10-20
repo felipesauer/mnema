@@ -1,10 +1,10 @@
 /**
  * Asking a person for the key's passphrase at the terminal they are sitting at, with nothing
- * echoed — the second place a passphrase can come from, after the environment variable.
+ * echoed: the second place a passphrase can come from, after the environment variable.
  *
  * IT ASKS ONLY WHERE SOMEBODY CAN ANSWER. Both the input and the error stream have to be a
  * terminal: an agent's server, a hook, a pipe and a CI job have neither, so none of them is ever
- * made to wait for a line nobody will type — which is why the first version of the passphrase
+ * made to wait for a line nobody will type, which is why the first version of the passphrase
  * left a prompt out, and why leaving it out for those is still right.
  *
  * IT READS SYNCHRONOUSLY, because the key is opened where it signs, deep inside a write that is
@@ -13,7 +13,7 @@
  * what it was and can be piped.
  *
  * WHAT IS PURE IS {@link collectLine}: the bytes in, the line (or the abandonment) out, so the
- * keys that matter — enter, backspace, the end of input, ^C — are asserted on bytes and not on a
+ * keys that matter (enter, backspace, the end of input, ^C) are asserted on bytes and not on a
  * terminal.
  */
 

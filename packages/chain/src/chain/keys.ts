@@ -1,31 +1,31 @@
 /**
- * Ed25519 key material — the only cryptographic material in mnema.
+ * Ed25519 key material: the only cryptographic material in mnema.
  *
  * A machine signs its own checkpoints with a private key that stays local and
  * is never committed. Its public key travels with the chain (committed, named
- * by fingerprint) so anyone — a collaborator, an anonymous clone — can verify a
+ * by fingerprint) so anyone (a collaborator, an anonymous clone) can verify a
  * checkpoint offline without any secret. Reinstalling a machine generates a
  * fresh pair; checkpoints signed by the old key stay verifiable against the old
  * public key. There is no shared secret to distribute or re-provision.
  *
- * The fingerprint is the SHA-256 of the key's SubjectPublicKeyInfo — its DER
- * `spki` encoding, the twelve-byte RFC 8410 prefix included — in full. This
+ * The fingerprint is the SHA-256 of the key's SubjectPublicKeyInfo (its DER
+ * `spki` encoding, the twelve-byte RFC 8410 prefix included) in full. This
  * used to read "the SHA-256 of the raw public key", which is FALSE and is the
  * one thing about the derivation the repository said out loud: the raw 32-byte
  * key is precisely what it is not a hash of. What falsified it was an
  * independent verifier written from `FORMAT.md`, which had to try four
  * candidate derivations against the two fingerprints in the frozen records to
  * find out which one closes (`verifier/mnemaverify/keys.py`, gap G03). The full
- * fingerprint — not a short prefix — is bound into every signed checkpoint, so
+ * fingerprint, not a short prefix, is bound into every signed checkpoint, so
  * a signature cannot be re-pointed at a different key while looking valid; that
  * clause is only CHECKABLE by a party who can recompute it, which is why the
  * derivation is now written here and in `FORMAT.md` section 6.
  *
  * Two identities are derived from that fingerprint, of different natures:
- *   - the SIGNER FINGERPRINT is the fingerprint itself — WHICH physical key
+ *   - the SIGNER FINGERPRINT is the fingerprint itself: WHICH physical key
  *     attested a fact. It rides on the envelope of every event alongside the
  *     checkpoint that also binds it, so a reader knows exactly which key signed.
- *   - the ANCHOR is a further hash of the fingerprint — WHO the key speaks for.
+ *   - the ANCHOR is a further hash of the fingerprint: WHO the key speaks for.
  *     A machine mints its anchor from its own key with no coordination, so two
  *     offline clones can never derive the same one; that uniqueness by
  *     construction is what forecloses a false identity merge at the root. Today,
@@ -57,8 +57,8 @@ export interface KeyPair {
 
 /**
  * The half of a key a CHAIN ever carries: the public key and its fingerprint.
- * Materializing a key into a chain needs exactly this much — never the private
- * half — so the operation asks for exactly this much. It also lets a key that is
+ * Materializing a key into a chain needs exactly this much, never the private
+ * half, so the operation asks for exactly this much. It also lets a key that is
  * a member of an identity WITHOUT signing here (a cold backup, whose private
  * half has left the machine) be materialized like any other.
  */
@@ -79,12 +79,12 @@ export function fingerprintOf(publicKey: KeyObject): string {
 /**
  * The prefix that marks an anchor id, so a reader can tell an anchor from a
  * bare fingerprint at a glance and a future scheme has a namespace to grow in.
- * Cosmetic — it carries no meaning beyond "this is a mnema identity anchor".
+ * Cosmetic: it carries no meaning beyond "this is a mnema identity anchor".
  */
 export const ANCHOR_PREFIX = 'mnid:';
 
 /**
- * Derives the anchor id — WHO a key speaks for — from a signer fingerprint. A
+ * Derives the anchor id, WHO a key speaks for, from a signer fingerprint. A
  * further SHA-256 over the fingerprint (not the fingerprint itself) so the
  * anchor is a distinct value from the physical-key identity, leaving room for
  * several keys to fold under one anchor later without the anchor ever being one
@@ -121,7 +121,7 @@ export function privateKeyFromPem(pem: string): KeyObject {
  *
  * This is what makes a cold key ONE file. The copy a person keeps off the machine
  * needs no `.pub` beside it, so there is no second file to lose, and no pair of
- * files that could disagree about which key this is — the fingerprint is
+ * files that could disagree about which key this is: the fingerprint is
  * re-derived here from the material itself. Throws when the text is not a private
  * key, so a caller can tell "unreadable" from "not a member".
  */
@@ -145,7 +145,7 @@ const P = (1n << 255n) - 19n;
 const L = (1n << 252n) + 27742317777372353535851937790883648493n;
 
 /**
- * The eight points of small order — [8]P is the identity — in their canonical encodings, as
+ * The eight points of small order ([8]P is the identity) in their canonical encodings, as
  * CCTV's `ed25519/README.md` lists them. Every other encoding of one of them is non-canonical
  * (`y >= p`, or `x = 0` with the sign bit set), and {@link strictPoint} refuses those first, so
  * these eight are the whole set left to refuse.

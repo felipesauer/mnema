@@ -35,7 +35,7 @@ function line(event: CatalogEvent): string {
   return canonicalStringify(toCanonical(event));
 }
 
-describe('parseEvent — happy path across the catalog', () => {
+describe('parseEvent: happy path across the catalog', () => {
   it('parses run.started', () => {
     const event = runStarted({ ...envelope, subject: 'r-1' }, { agent: 'claude', goal: 'ship' });
     expect(parseEvent(line(event), reg)).toEqual(event);
@@ -88,7 +88,7 @@ describe('parseEvent — happy path across the catalog', () => {
   });
 });
 
-describe('parseEvent — memory.captured (closed shape)', () => {
+describe('parseEvent: memory.captured (closed shape)', () => {
   it('rejects an unknown payload field (a forger cannot smuggle state into a fact)', () => {
     const good = memoryCaptured({ ...envelope, subject: 'm-1' }, { content: 'hi' });
     const forged = line(good).replace('"content":"hi"', '"content":"hi","state":"stale"');
@@ -116,7 +116,7 @@ describe('parseEvent — memory.captured (closed shape)', () => {
   });
 });
 
-describe('parseEvent — the three knowledge facts (closed shapes)', () => {
+describe('parseEvent: the three knowledge facts (closed shapes)', () => {
   it('parses observation.recorded', () => {
     const event = observationRecorded(
       { ...envelope, subject: 'o-1' },
@@ -185,7 +185,7 @@ describe('parseEvent — the three knowledge facts (closed shapes)', () => {
   });
 });
 
-describe('parseEvent — skill events (a workflow entity, no `by`)', () => {
+describe('parseEvent: skill events (a workflow entity, no `by`)', () => {
   it('parses skill.created and round-trips it', () => {
     const event = skillCreated(
       { ...envelope, subject: 'sk-1' },
@@ -240,7 +240,7 @@ describe('parseEvent — skill events (a workflow entity, no `by`)', () => {
   });
 
   it('rejects ANY payload field on a skill.consulted (the empty shape is closed)', () => {
-    // A consultation is entirely envelope, so there is no key a forger may add —
+    // A consultation is entirely envelope, so there is no key a forger may add,
     // not even one borrowed from another skill event.
     const good = skillConsulted({ ...envelope, subject: 'sk-1' });
     for (const smuggled of ['"name":"Small PRs"', '"body":"the pattern"', '"guided":true']) {
@@ -257,7 +257,7 @@ describe('parseEvent — skill events (a workflow entity, no `by`)', () => {
   });
 });
 
-describe('parseEvent — transition proof fields', () => {
+describe('parseEvent: transition proof fields', () => {
   it('parses a transition carrying proof fields and round-trips it', () => {
     const event = taskTransitioned(
       { ...envelope, subject: 't-1', which: 'claude', run: 'r-1' },
@@ -335,7 +335,7 @@ describe('parseEvent — transition proof fields', () => {
   });
 });
 
-describe('parseEvent — decision events', () => {
+describe('parseEvent: decision events', () => {
   it('parses decision.recorded and round-trips it', () => {
     const event = decisionRecorded(
       { ...envelope, subject: 'd-1' },
@@ -363,7 +363,7 @@ describe('parseEvent — decision events', () => {
 
   it('reads a decision recorded before `alternatives` existed', () => {
     // The version question, settled as data. A decision written under the payload
-    // as it was — title, rationale, adr and nothing else — parses unchanged and
+    // as it was (title, rationale, adr and nothing else) parses unchanged and
     // canonicalizes to the SAME bytes it was signed as, which is why adding an
     // optional field is not a version bump: nothing already written moves.
     //
@@ -443,7 +443,7 @@ describe('parseEvent — decision events', () => {
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
   });
 
-  it('keeps `by` out of fields — a relational id is not textual proof', () => {
+  it('keeps `by` out of fields: a relational id is not textual proof', () => {
     // `by` lives at payload level, never inside fields; a forged `by` smuggled
     // into fields is an unknown fields key and is rejected.
     const forged =
@@ -467,7 +467,7 @@ describe('parseEvent — decision events', () => {
   });
 });
 
-describe('parseEvent — enrollment events', () => {
+describe('parseEvent: enrollment events', () => {
   const anchor = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
 
   it('parses identity.founded and round-trips it', () => {
@@ -543,7 +543,7 @@ describe('parseEvent — enrollment events', () => {
   });
 });
 
-describe('parseEvent — round-trip is byte-stable', () => {
+describe('parseEvent: round-trip is byte-stable', () => {
   it('re-canonicalizes a parsed event to identical bytes', () => {
     const event = taskTransitioned(
       { ...envelope, subject: 't-1' },
@@ -555,7 +555,7 @@ describe('parseEvent — round-trip is byte-stable', () => {
   });
 
   it('re-canonicalizes a birth transition (from: null) to identical bytes', () => {
-    // The rebuild must preserve `from: null`, not drop it or coerce it — a
+    // The rebuild must preserve `from: null`, not drop it or coerce it: a
     // birth transition that re-canonicalized differently would read as tampered.
     const event = taskTransitioned(
       { ...envelope, subject: 't-1' },
@@ -567,7 +567,7 @@ describe('parseEvent — round-trip is byte-stable', () => {
   });
 });
 
-describe('parseEvent — rejects malformed input', () => {
+describe('parseEvent: rejects malformed input', () => {
   it('rejects non-JSON', () => {
     expect(() => parseEvent('{not json', reg)).toThrow(EventParseError);
   });
@@ -641,7 +641,7 @@ describe('parseEvent — rejects malformed input', () => {
   });
 
   it('rejects an empty-string `from` (only null, never "", is the valued absence)', () => {
-    // null means "born, no prior state"; "" is neither a state nor null — a
+    // null means "born, no prior state"; "" is neither a state nor null: a
     // forged or corrupt line. Accepting it would create a second way to spell
     // birth and blur the single projection rule.
     const bad =
@@ -650,7 +650,7 @@ describe('parseEvent — rejects malformed input', () => {
   });
 });
 
-describe('parseEvent — closed shape (no field smuggling)', () => {
+describe('parseEvent: closed shape (no field smuggling)', () => {
   it('rejects an unknown top-level field (a forger cannot ride extra data along)', () => {
     const forged =
       '{"kind":"run.ended","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{},"evil":"x"}';
@@ -725,13 +725,13 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
  * `unreadableReason` is not a second validator: it runs the one `parseEvent` runs,
  * which is what makes "the writer refuses exactly what the reader refuses" true by
  * construction rather than by two lists agreeing. The pairing below is the proof of
- * that identity — for each event, the answer here and the answer from a round trip
+ * that identity: for each event, the answer here and the answer from a round trip
  * through `parseEvent` are the SAME verdict and the same words.
  *
  * It exists because the asymmetry it closes was not theoretical: an empty title
  * reached the tail, signed, and every later read of that project failed forever.
  */
-describe("unreadableReason — the reader's verdict, before anything is sealed", () => {
+describe("unreadableReason: the reader's verdict, before anything is sealed", () => {
   /** What `parseEvent` says about the same event, so the two can be compared. */
   function readerVerdict(event: CatalogEvent): string | undefined {
     try {
@@ -771,7 +771,7 @@ describe("unreadableReason — the reader's verdict, before anything is sealed",
   });
 
   it("gives the READER's own words for every field a caller could empty", () => {
-    // One case per field a write path can carry an empty value into — the fields
+    // One case per field a write path can carry an empty value into: the fields
     // the corruption actually travelled through. Each asserts the same thing twice:
     // the writing side refuses it, and the reading side refuses it with the SAME
     // message. A field where the two differed would be the defect back.
@@ -819,7 +819,7 @@ describe("unreadableReason — the reader's verdict, before anything is sealed",
 
   it('answers for what the reader refuses beyond an empty string', () => {
     // The rule is the reader's WHOLE rule, not an emptiness check bolted onto the
-    // writing side — so the other things a read refuses come back too.
+    // writing side, so the other things a read refuses come back too.
     const badClock = { ...taskCreated(envelope, { title: 't' }), at: '2026-07-21T00:00:00Z' };
     expect(unreadableReason(badClock as CatalogEvent)).toContain('ISO-8601');
 
@@ -849,7 +849,7 @@ describe("unreadableReason — the reader's verdict, before anything is sealed",
   });
 });
 
-describe('parseEvent — the citation `after` (hashes?)', () => {
+describe('parseEvent: the citation `after` (hashes?)', () => {
   const h = (digit: string): string => digit.repeat(64);
   const cited = (after: unknown): string =>
     JSON.stringify({
