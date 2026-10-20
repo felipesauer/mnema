@@ -75,9 +75,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // @mnema/action
   'packages/action/': 28,
   // @mnema/chain, its reader in Python and its format
-  'packages/chain/': 276,
-  // the page of @mnema/chain
-  'packages/chain/README.md': 57,
+  'packages/chain/': 57,
   // the source of @mnema/code outside the areas below
   'packages/code/src/': 752,
   // what it prints

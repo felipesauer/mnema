@@ -16,17 +16,17 @@
 The proof engine at the core of [mnema](https://github.com/felipesauer/mnema): a
 signed, append-only event log for the work of AI agents. It records what happened
 as typed, self-contained events and chains them, so that what is still in the log
-has not changed since it was signed — tamper-evident, not tamper-proof — and a
+has not changed since it was signed (tamper-evident, not tamper-proof) and a
 stranger can check that, with or without the private key that signed it.
 
 This package is the part that carries the proof, so it is deliberately small: it
 has **zero runtime dependencies** and knows nothing about databases, projections,
-or the surfaces built on top of it. That isolation is the point — the code you
+or the surfaces built on top of it. That isolation is the point: the code you
 have to trust for tamper-evidence is auditable on its own.
 
 ## What it gives you
 
-- **A typed event catalog** — a closed, versioned discriminated union of every
+- **A typed event catalog**: a closed, versioned discriminated union of every
   fact the chain may hold, with deterministic canonicalization (event → bytes) and
   per-kind upcasters so the catalog can grow without rewriting the past. This
   line used to list four kinds by name (`task.created`, `task.transitioned`,
@@ -34,11 +34,11 @@ have to trust for tamper-evidence is auditable on its own.
   list that stops being true. `canonical-vectors.json` carries one frozen event
   per kind and is total over the catalog by type, so it is the list that cannot
   fall behind.
-- **An append-only chain** — each machine writes its own tail (a directory of segments);
+- **An append-only chain**: each machine writes its own tail (a directory of segments);
   entries are hash-chained so a changed or reordered event breaks the chain.
-- **Signed checkpoints** — an Ed25519 signature over a root recomputed from the
+- **Signed checkpoints**: an Ed25519 signature over a root recomputed from the
   event *content*, taken every so many events and chained to the previous one.
-- **A verifier** — reads every tail, checks the hash chain and the signatures,
+- **A verifier**: reads every tail, checks the hash chain and the signatures,
   and reports honestly what is proven and what is not.
 
 ## What it proves, and what it does not
@@ -51,35 +51,35 @@ any secret at verify time:
 
 | Threat | Covered by |
 |---|---|
-| **Accidental corruption** — a truncated write, a flipped byte | The hash chain — keyless, always on. |
-| **A write lost to a power cut** — an event reported as written that never reached the disk | Every entry and every checkpoint is synced to the disk (`fsync`) before the write returns, and so is the directory of a file the write created (`durable.test.ts`). It costs about 10 ms per write, measured on an NVMe disk with other work on it. The files written once beside the record — a key's public half in the tree, a tail's proof, the local key root — are not synced. |
+| **Accidental corruption**: a truncated write, a flipped byte | The hash chain: keyless, always on. |
+| **A write lost to a power cut**: an event reported as written that never reached the disk | Every entry and every checkpoint is synced to the disk (`fsync`) before the write returns, and so is the directory of a file the write created (`durable.test.ts`). It costs about 10 ms per write, measured on an NVMe disk with other work on it. The files written once beside the record (a key's public half in the tree, a tail's proof, the local key root) are not synced. |
 | **An edit made *without* the signing key** | Ed25519 checkpoints over a content-recomputed root. Editing content and re-chaining the keyless hashes is still caught, because the signed root folds the actual event bytes. |
-| **An outside audit with only what was committed** — no secrets | The public key is committed by fingerprint; verification re-derives that fingerprint from the key it loads, so swapping the committed key for another is caught. |
-| **An edit made *with* the signing key** | **Not covered by local crypto, and covered by T3 when a record is stamped.** A key holder can rewrite and re-sign, and everything local verifies. What they cannot produce is an attestation dated before they started: `witness.ts` stores an OpenTimestamps proof over a checkpoint's digest and the Bitcoin block header it lands in, and `verify` reads both offline. This row used to say the seam was one *this package leaves open, never a guarantee it fakes* — it is closed for a record somebody stamped, and exactly as open as it ever was for one nobody did. See FORMAT.md §8. |
+| **An outside audit with only what was committed**: no secrets | The public key is committed by fingerprint; verification re-derives that fingerprint from the key it loads, so swapping the committed key for another is caught. |
+| **An edit made *with* the signing key** | **Not covered by local crypto, and covered by T3 when a record is stamped.** A key holder can rewrite and re-sign, and everything local verifies. What they cannot produce is an attestation dated before they started: `witness.ts` stores an OpenTimestamps proof over a checkpoint's digest and the Bitcoin block header it lands in, and `verify` reads both offline. This row used to say the seam was one *this package leaves open, never a guarantee it fakes*; it is closed for a record somebody stamped, and exactly as open as it ever was for one nobody did. See FORMAT.md §8. |
 
 **Removing what was there, and trusting who signed.** A hash chain proves
 nothing was *changed*; it cannot prove nothing was *deleted*, and it proves the
 record is self-consistent, not that it is bound to any outside identity. These
-are the honest gaps. T3 closes the *dating* half of them — a rebuilt chain has no
-checkpoint anybody attested yesterday — and closes none of the rest: what a
+are the honest gaps. T3 closes the *dating* half of them (a rebuilt chain has no
+checkpoint anybody attested yesterday) and closes none of the rest: what a
 timestamp proves is that a digest existed at an instant, never who else has a copy
 of the bytes or whose key it really was.
 
 | Threat | Covered by |
 |---|---|
-| **Truncating a tail** — dropping the newest events off the end | Partly local. Checkpoints are chained, so dropping an *earlier* checkpoint while keeping a later one breaks the link and is caught (the later one's `prev` no longer resolves). But truncating off the *end* — dropping the last checkpoint and the events above it — leaves a shorter, internally consistent chain that verifies green: the hash chain cannot see events that are no longer there. `verify` already declares the window above the last checkpoint as unsigned (`fullySigned: false`, `uncheckpointedEvents`); end-truncation shrinks that window rather than tripping a break, so it is the residual only a copy of the record from before the cut closes — the history a git remote keeps; a timestamp does not. The verdict now NAMES how far its signatures got: events left above the last checkpoint read `verified (T1/T2/T4) up to the last checkpoint`, and a tail with no checkpoint left reads `verified (T1 only) — no signature was checked`. It used to read `verified (T1/T2/T4)` in both cases, which was the sentence claiming a layer that had not run. A cut that takes the newest events together with the checkpoints that covered them leaves neither mark: it reads `verified (T1/T2/T4)`, as the record before it did. *(The consumer in this workspace now does exactly that: `@mnema/code` seals a checkpoint at the end of every act of writing — a command, a tool call, the close of a session — so the residual is empty whenever nothing is mid-write. This paragraph used to name that as a future direction; it is present, and guarded by `every-write-signs-what-it-wrote.test.ts`. It does not change what THIS package promises: the residual is a property of the format, and a consumer that seals less often still verifies.)* |
-| **Deleting a whole tail** | Partly local. A committed public key is written before its machine's first event and names its tail, so deleting the tail while leaving the key shows up: `verify` crosses `keys/` against the tails present and flags the orphaned key — a signal to look, not a verdict (a key can also outlive its tail innocently). What that signal could not say, until `tail.pruned` existed, is *which* of its three readings applied. A waiver written **before** the cut — while the tail is still there, so its head hash and event count are checked against the disk — makes the note name the account instead: who authorized it, how many events, through which head. It answers the third reading only; a merge that dropped a tail and a machine that never wrote produce no waiver and read exactly as they always did. Deleting the tail *and* its key together, while another tail remains, still leaves nothing on disk to cross — only a copy from before, such as the history a git remote keeps, sees the files that were removed. A record in which no tail holds anything any more is not that case: `verify` refuses it, by name, at every requirement. |
-| **Trusting the signing key's origin** | **Not covered by local crypto.** The fingerprint binding proves *self-consistency* — the key that signed is the one committed — not a tie to any outside identity. Someone who rewrites everything, mints a fresh key, re-signs, and publishes the new public key passes green. The anchor that closes this is the key's provenance in an external witness: a committed public key has a history there. |
-| **Ordering across tails** | Within one tail, ordering is unforgeable — the hash chain fixes it. Across tails, a merged timeline is deterministic but *conventional*: it is not a trusted clock, and each event's `at` is self-declared. The order decides which moves of a workflow a reader applies and, in an unlucky record, which event a verifier refuses (`FORMAT.md` §6.2, §6.7), so an honest move written from a clock that ran behind can be named among the moves not applied (informational, never a failure). An aggregated timeline is a weaker guarantee than the per-tail chain, and reads only as strong as the honesty of the machines that wrote it. |
+| **Truncating a tail**: dropping the newest events off the end | Partly local. Checkpoints are chained, so dropping an *earlier* checkpoint while keeping a later one breaks the link and is caught (the later one's `prev` no longer resolves). But truncating off the *end* (dropping the last checkpoint and the events above it) leaves a shorter, internally consistent chain that verifies green: the hash chain cannot see events that are no longer there. `verify` already declares the window above the last checkpoint as unsigned (`fullySigned: false`, `uncheckpointedEvents`); end-truncation shrinks that window rather than tripping a break, so it is the residual only a copy of the record from before the cut closes: the history a git remote keeps; a timestamp does not. The verdict now NAMES how far its signatures got: events left above the last checkpoint read `verified (T1/T2/T4) up to the last checkpoint`, and a tail with no checkpoint left reads `verified (T1 only): no signature was checked`. It used to read `verified (T1/T2/T4)` in both cases, which was the sentence claiming a layer that had not run. A cut that takes the newest events together with the checkpoints that covered them leaves neither mark: it reads `verified (T1/T2/T4)`, as the record before it did. *(The consumer in this workspace now does exactly that: `@mnema/code` seals a checkpoint at the end of every act of writing (a command, a tool call, the close of a session) so the residual is empty whenever nothing is mid-write. This paragraph used to name that as a future direction; it is present, and guarded by `every-write-signs-what-it-wrote.test.ts`. It does not change what THIS package promises: the residual is a property of the format, and a consumer that seals less often still verifies.)* |
+| **Deleting a whole tail** | Partly local. A committed public key is written before its machine's first event and names its tail, so deleting the tail while leaving the key shows up: `verify` crosses `keys/` against the tails present and flags the orphaned key: a signal to look, not a verdict (a key can also outlive its tail innocently). What that signal could not say, until `tail.pruned` existed, is *which* of its three readings applied. A waiver written **before** the cut (while the tail is still there, so its head hash and event count are checked against the disk) makes the note name the account instead: who authorized it, how many events, through which head. It answers the third reading only; a merge that dropped a tail and a machine that never wrote produce no waiver and read exactly as they always did. Deleting the tail *and* its key together, while another tail remains, still leaves nothing on disk to cross: only a copy from before, such as the history a git remote keeps, sees the files that were removed. A record in which no tail holds anything any more is not that case: `verify` refuses it, by name, at every requirement. |
+| **Trusting the signing key's origin** | **Not covered by local crypto.** The fingerprint binding proves *self-consistency* (the key that signed is the one committed) not a tie to any outside identity. Someone who rewrites everything, mints a fresh key, re-signs, and publishes the new public key passes green. The anchor that closes this is the key's provenance in an external witness: a committed public key has a history there. |
+| **Ordering across tails** | Within one tail, ordering is unforgeable: the hash chain fixes it. Across tails, a merged timeline is deterministic but *conventional*: it is not a trusted clock, and each event's `at` is self-declared. The order decides which moves of a workflow a reader applies and, in an unlucky record, which event a verifier refuses (`FORMAT.md` §6.2, §6.7), so an honest move written from a clock that ran behind can be named among the moves not applied (informational, never a failure). An aggregated timeline is a weaker guarantee than the per-tail chain, and reads only as strong as the honesty of the machines that wrote it. |
 
-`verify` reflects all of this. Its `ok` means *nothing verifiable is broken* —
+`verify` reflects all of this. Its `ok` means *nothing verifiable is broken*:
 the hash chain holds and every signature it found checks out. It does **not**
 mean every event is signed: events written after the last checkpoint rest on the
 hash chain alone, and `verify` reports that separately (`fullySigned`). Nor does
 it mean nothing was removed: an orphaned key surfaces as a census note
 (informational, never a failure), but a deletion that erased its own traces does
 not. A cut that was **authorized in advance** is the one case the note can now
-explain rather than merely flag — and a waiver is neither permission (anyone who
+explain rather than merely flag, and a waiver is neither permission (anyone who
 can write can sign one; it records who did) nor a cure (a tail that is present and
 broken keeps every issue it had). It never touches `ok`, and it covers a whole tail
 only: cutting *part* of one produces the seq gap and the checkpoint cascade it
@@ -97,7 +97,7 @@ record a frozen fixture proves it with is
 `packages/chain/src/chain/witnessed-record.test.ts`.
 
 The same verdict is handed over as the **clauses** it is made of (`clauses`), each
-saying which part of the verdict it is — the level, the tail count, what the events
+saying which part of the verdict it is: the level, the tail count, what the events
 rest on, a census note, the external witness. It is there so a caller can show the
 parts apart (a terminal paints the level's clause and dims the rest) without matching
 text on a verdict, and `summary` is those clauses joined by the one function that
@@ -105,7 +105,7 @@ joins them, so no two readings of one verdict can disagree.
 
 Every finding is **one line**, and that is part of what it means. An issue is
 printed one per line under a count, and every value in one comes from the thing
-under suspicion — a tail id is a directory name, a signer fingerprint is a field
+under suspicion: a tail id is a directory name, a signer fingerprint is a field
 of a stored entry, a reader's complaint quotes the bytes it choked on. A value
 carrying a newline would put a second finding on the page about a tail nobody
 has, so each of them is collapsed where the sentence is written. The rule is
@@ -120,18 +120,18 @@ witnesses do different halves of that, and neither does the other's:
 
 - **A timestamp anchor (T3), which this package now implements.** It attests that a
   checkpoint's digest existed at an instant, so a chain rebuilt today cannot claim a
-  history — the one thing a key holder could otherwise do unseen. It says nothing
+  history: the one thing a key holder could otherwise do unseen. It says nothing
   about deletion or identity, and it is **opt-in**: a record nobody stamped reads
   `not covered`, exactly as every record did before. Attestations accumulate and the
   reading asks the **newest** one, so a record that was stamped and then written to
-  goes on reporting the date it holds, with the count of events written after it — and
+  goes on reporting the date it holds, with the count of events written after it, and
   a request that has not confirmed is reported too, with the calendar it is with,
   because a promise that counts for nothing is still not the same fact as no promise.
   FORMAT.md §8 is the bytes; `witness.ts` is the reading; nothing on the verifying
   path touches a network. The two acts that DO touch one are held to an address list:
   a return visit reads its address off the proof, which is a file a record can receive,
   so it goes only to an https host, on the https port, at a public timestamp operator and follows a redirect
-  only while it stays on the same host — anything else is named and not contacted
+  only while it stays on the same host: anything else is named and not contacted
   (`refuseCalendarAddress`, `packages/chain/src/chain/witness-request.test.ts`). What
   travels was never the record's content; what this closes is being made to talk to
   somebody of a file's choosing.
@@ -149,8 +149,8 @@ npm i @mnema/chain
 Nothing is on npm yet, so that answers 404 until the first publication; the [install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the install from the source.
 
 **This package is released on its own, and that is the point of it.** This section
-used to say it was internal and never published, and the channel it named — the
-repository, and only the repository — was the one way to reach what makes its promise
+used to say it was internal and never published, and the channel it named (the
+repository, and only the repository) was the one way to reach what makes its promise
 checkable. That promise is that the code you have to trust for tamper-evidence is
 auditable on its own, and a tarball of compiled JavaScript would have been the promise
 without the means. So what travels with it was chosen rather than defaulted:
@@ -159,7 +159,7 @@ without the means. So what travels with it was chosen rather than defaulted:
 |---|---|
 | `FORMAT.md` | the bytes specified in prose, for a reader who did not write this code |
 | `canonical-vectors.json` · `event-schema.json` | the two published artifacts a reader reproduces |
-| `verifier/` | the second implementation — Python, standard library only, importing nothing of this product |
+| `verifier/` | the second implementation: Python, standard library only, importing nothing of this product |
 
 `python3 verifier/mnema_verify.py vectors` runs from an installed copy with nothing else
 beside it, and that is asserted rather than assumed: the guard packs this package,
@@ -187,14 +187,14 @@ import { identityFounded, openChainForWriting, taskBirth, verify } from '@mnema/
 const root = '.mnema/chain';
 const keyRoot = '/a/path/outside/the/repository';
 
-// One writer owns this machine's tail. The key pair is loaded from `keyRoot` — or, where there is
-// none, made there when the first event is appended — and its PUBLIC half is copied into the
+// One writer owns this machine's tail. The key pair is loaded from `keyRoot` (or, where there is
+// none, made there when the first event is appended) and its PUBLIC half is copied into the
 // chain, which is what lets a stranger verify with no secret.
 const writer = openChainForWriting(root, { keyRoot });
 
 // The proof fields every event carries. Neither identity is a name somebody typed:
 // `who` is the ANCHOR derived from the key, `signerFp` is the fingerprint of the
-// key that signs, and the writer holds both. `which` IS a free name — an agent has
+// key that signs, and the writer holds both. `which` IS a free name: an agent has
 // no key of its own, so the machine signs on its behalf.
 const proof = {
   at: new Date().toISOString(),
@@ -205,7 +205,7 @@ const proof = {
 
 // Found the anchor before writing any work under it: this event is what says "this
 // key speaks for this identity". Every later event's signer is checked against it,
-// so a chain whose first event is a task verifies RED — the signature is good and
+// so a chain whose first event is a task verifies RED: the signature is good and
 // nothing enrolled the key that made it.
 const founding = identityFounded(
   { ...proof, subject: writer.anchor },
@@ -221,14 +221,14 @@ const birth = taskBirth(
   { title: 'Ship the parser', initial: 'DRAFT' },
 );
 
-// One call, so no reader ever sees a created task that has no state — and nothing
+// One call, so no reader ever sees a created task that has no state, and nothing
 // is ever written under an anchor the record has not founded.
 writer.appendAll([founding, ...birth]);
 
 // Sign a checkpoint over everything appended so far.
 writer.checkpoint();
 
-// Anyone can verify the whole chain — aggregating every tail — from the root.
+// Anyone can verify the whole chain (aggregating every tail) from the root.
 const result = verify(root);
 // result.ok is true, result.level is 'fully-signed', and `summary` words it.
 ```
@@ -243,7 +243,7 @@ Everything a chain needs lives under one root directory:
 ```
 <root>/
   keys/<fingerprint>.pub       committed public keys, named by fingerprint
-  tails/<fingerprint>-<id>/    one tail per installation — appends never collide
+  tails/<fingerprint>-<id>/    one tail per installation: appends never collide
     NNNNNN.jsonl               the events, as sealed entries (six-digit segments)
     checkpoints.jsonl          the signed checkpoints for this tail
     tailproof.json             the key's signature over the tail's own id
@@ -256,10 +256,10 @@ folder). The private key is not part of it and must never be shared.
 
 ## The two halves of the package
 
-- **`events/`** — the event core: the catalog (`catalog.ts`), the builders
+- **`events/`**: the event core: the catalog (`catalog.ts`), the builders
   (`build.ts`), canonicalization (`canonical.ts`), parsing with a closed shape
   (`parse.ts`), and versioned upcasters (`upcaster.ts`, `registry.ts`).
-- **`chain/`** — the log: the per-tail writer (`writer.ts`), the hash and content
+- **`chain/`**: the log: the per-tail writer (`writer.ts`), the hash and content
   root (`hash.ts`), sealed entries (`entry.ts`), signed checkpoints
   (`checkpoint.ts`), keys and keystore (`keys.ts`, `keystore.ts`), tail storage
   (`store.ts`), how far a chain reaches on disk (`freshness.ts`), and the
@@ -275,16 +275,16 @@ hashing, the entry hash, the stored line, the content root, and the signed
 checkpoint; and the rules by which a reader decides what it applies: which key may
 sign (enrolment), who may take a note back, which moves of a workflow stand, and what
 one version of the format promises another. It is written for someone who did not write this code and wants to
-implement a verifier from it — every claim in it names the test that holds it, and
+implement a verifier from it: every claim in it names the test that holds it, and
 the version tags in it are read out of the source by a guard.
 
 Two machine-readable halves sit beside it. `canonical-vectors.json` is one frozen
 event per catalog kind and the SHA-256 of its canonical bytes, plus the aggregate
-digests: canonicalize a row's `event`, hash the bytes, compare — that is the whole
+digests: canonicalize a row's `event`, hash the bytes, compare; that is the whole
 check, and it needs nothing of ours. `event-schema.json` is what every kind
 **declares**, as a rule per field: the vectors are exemplars, and from an exemplar a
 required field and an optional one that happens to be present look identical. It is
-not a description of the reader — it is the reader's own table, serialized, and a
+not a description of the reader: it is the reader's own table, serialized, and a
 guard holds the two byte for byte.
 
 [`verifier/`](https://github.com/felipesauer/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
@@ -298,8 +298,8 @@ twenty-seven points where the document was not enough to write it from; the list
 which are fixed and which are still open (`python3 verifier/mnema_verify.py gaps`).
 
 *Refuses every mutation* is a sentence this page carried while it was not true, and it is
-not true now: five are not refusals (see the second reader's page). One mutation was **accepted** — an event appended above the last checkpoint carrying a
-field no kind declares, which a party with no key can produce — because the per-kind
+not true now: five are not refusals (see the second reader's page). One mutation was **accepted** (an event appended above the last checkpoint carrying a
+field no kind declares, which a party with no key can produce) because the per-kind
 declarations were published nowhere; and one *honest* input was **refused**, an event
 carrying `which`, because the envelope could only be guessed at from the intersection
 of the vectors. `event-schema.json` and the enrolment rule (§4.1, §6.2) closed both.
@@ -308,8 +308,8 @@ the sentence about the mutations that are refused is not.
 
 What that does **not** buy is stated in the document itself, in the same terms as
 the table above: it is not an open standard, and publishing the format adds no
-external witness. The line that used to stand here — *there is no second
-implementation* — is the one `verifier/` falsified, and the document now says
+external witness. The line that used to stand here (*there is no second
+implementation*) is the one `verifier/` falsified, and the document now says
 precisely which half of it fell: the second implementation is independent in the
 **technical** sense (another language, written from the document, sharing no code)
 and not in the **social** one (same author, same repository).
