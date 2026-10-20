@@ -57,7 +57,7 @@
  *
  *     THE THIRD SHAPE IS AN ARM of a public record whose whole value IS called: it
  *     lives at the bottom of this file, and it is here because it was found the way
- *     the other two were — by a defect. `ALIAS_PREFIXES` declared `task`, `epic` and
+ *     the other two were, by a defect. `ALIAS_PREFIXES` declared `task`, `epic` and
  *     `sprint`; production passed `'task'` at all four call sites and never the other
  *     two. The value had a caller, so this guard was silent and right to be: an arm
  *     is not a value, and enumeration is by runtime key of the MODULE, not of the
@@ -84,7 +84,7 @@
  *
  *     THE SIXTH IS REAL AND IS NAMED WHERE IT LIVES: `CacheOptions.dbPath`, public on
  *     `@mnema/core`, read in `core/src/projections/cache.ts`, and set by no
- *     production caller — the production sites pass `upcasters` alone, and the command
+ *     production caller; the production sites pass `upcasters` alone, and the command
  *     line's pass `persist: true` beside it, which is the option that DOES have a caller.
  *     It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
  *     prove persistence across a close and re-open through. Its own doc now says so,
@@ -383,7 +383,7 @@ function unwired(): string[] {
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
  *
- * IT HELD THE PURE FOLDS — `projectTasks`, `projectRuns`, `projectSkills` — for as long as a
+ * IT HELD THE PURE FOLDS (`projectTasks`, `projectRuns`, `projectSkills`) for as long as a
  * write took its state from the projection the tree keeps and nothing in production called them.
  * A gate folds its subject's own events by them now, read off the chain, so they left. The
  * entry before them was `@mnema/core listProjects`: the reader of a machine-local project index that
@@ -477,8 +477,8 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
 describe('every public value has a caller', () => {
   it('accuses nothing but what is declared unwired', () => {
     // One assertion, both directions: an export that loses its last caller lands in
-    // `accused`, and a declared one that gained a caller — or stopped being exported
-    // — lands in `stale` until its entry leaves the table.
+    // `accused`, and a declared one that gained a caller (or stopped being exported)
+    // lands in `stale` until its entry leaves the table.
     expect(reconcile(unwired(), UNWIRED)).toEqual({ accused: [], stale: [] });
   });
 
@@ -633,8 +633,8 @@ describe('every public value has a caller', () => {
     // A commented-out import is not an import.
     expect(importedNames("// import { x } from '@mnema/core';").size).toBe(0);
     expect(importedNames(" * import { x } from '@mnema/core';").size).toBe(0);
-    // A verb loads its work when it runs, and that attributes the name just the same
-    // — the shape this guard did not know until a caller moved inside an action.
+    // A verb loads its work when it runs, and that attributes the name just the same,
+    // the shape this guard did not know until a caller moved inside an action.
     expect(
       importedNames("      const { requiredLevel } = await import('@mnema/chain');")
         .get('@mnema/chain')
@@ -677,7 +677,7 @@ const THE_KIND_IT_PASSES = /^deriveAlias\(\s*'([^']*)'/;
  * IT TAKES A SOURCE RATHER THAN WALKING THE TREE, and that is not tidiness. Asked over
  * production only, the blanking step is redundant TODAY: no production comment happens
  * to spell a call with a literal kind, so replacing `codeOnly(source)` with `source`
- * changes nothing and leaves the guard at ZERO — measured by mutation. A step whose
+ * changes nothing and leaves the guard at ZERO, measured by mutation. A step whose
  * removal reddens nothing is a step nothing proves. So
  * the reader is a function over text, and the case below drives it on prose it owns; the
  * same mutation now reddens that case instead of passing in silence.

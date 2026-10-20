@@ -147,7 +147,7 @@ function matchingClose(code: string, open: number): number {
  *
  * `function heldChains(ctx: C): { chains: X; trees: Y } { … }` puts a brace group
  * between the parameters and the body, and taking the first one read the annotation as
- * the body — sixty characters of field names, no calls, no reads. A function whose body
+ * the body (sixty characters of field names, no calls, no reads). A function whose body
  * is missed contributes nothing to the graph, which is how this instrument would err by
  * ACCUSING. So a group whose close is followed by another brace was the annotation.
  */
@@ -633,7 +633,7 @@ export function reconcile(
  * A guard over an ABSENCE goes green the day its enumerator breaks, and this one has
  * three ways to break quietly: the interception could stop capturing handlers, the walk
  * could stop descending into subcommands, and `buildProgram` could change shape. So the
- * count has a floor and four options are named — one per shape the enumeration has to
+ * count has a floor and four options are named, one per shape the enumeration has to
  * reach: a group's own option, a subcommand's, one declared multi-line, and the one
  * declared outside `wiring/` altogether.
  *

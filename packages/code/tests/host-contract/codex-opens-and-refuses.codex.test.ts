@@ -2,7 +2,7 @@
  * CODEX OPENS WITH THE RECORD AND REFUSES THE WRITE, in the real Codex with the plugin installed
  * from this repository: the opening is in the first request, the mnema server's tools are offered,
  * a patch under a rule that refuses is not applied and the model is handed the rule, and a pause
- * for a person is not something Codex gives — a hook's `ask` is let through.
+ * for a person is not something Codex gives; a hook's `ask` is let through.
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema before-a-write --host codex`
  * answers, and what `mnema brief --hook` prints) is `a-rule-that-refuses-a-write.test.ts` and the
@@ -198,7 +198,7 @@ describe('codex opens with the record and refuses the write', () => {
     ],
   });
 
-  it('ask: Codex does not hold a write for a person — a hook that answers `ask` is let through', async () => {
+  it('ask: Codex does not hold a write for a person (a hook that answers `ask` is let through)', async () => {
     const session = await start({
       project: (project) => {
         ruleAt(project, 'Ledger changes need finance', 'src/ledger', 'asks-for-a-person');

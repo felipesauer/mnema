@@ -93,8 +93,8 @@ async function foundIdentity(): Promise<string> {
 }
 
 /**
- * A content digest of every file under `dir` — what a read that must write
- * NOTHING is proven against: not an event, not a checkpoint, not a byte.
+ * A content digest of every file under `dir` (what a read that must write
+ * NOTHING is proven against: not an event, not a checkpoint, not a byte).
  */
 function digestOf(dir: string): string {
   const hash = createHash('sha256');
@@ -374,7 +374,7 @@ describe('mnema CLI: init → task → verify, end to end', () => {
     expect(first.failed()).toBe(false);
 
     // The one line the person must act on: where the private half is, and that it
-    // has to leave this machine — a backup on this disk is lost with the disk.
+    // has to leave this machine; a backup on this disk is lost with the disk.
     const backupLine = first.out.find((line) => line.includes('backup key:')) as string;
     expect(backupLine).toContain('created and enrolled — private half at');
     const privateKeyPath = backupLine.slice(backupLine.indexOf('at ') + 3);
@@ -590,8 +590,8 @@ describe('mnema CLI: a record no read could open, end to end', () => {
 
   it('refuses the authorizing identity offered as the agent, in its short form too', async () => {
     // The same family: a value one surface PRINTS and another accepts where it must
-    // not. The short form of an anchor is a prefix of it, so it is the same identity
-    // — and it only became typeable when the reads started printing it.
+    // not. The short form of an anchor is a prefix of it, so it is the same identity,
+    // and it only became typeable when the reads started printing it.
     const accountability = capture();
     await run(['audit', 'accountability'], accountability.io);
     const short = /mnid:[0-9a-f]+/.exec(accountability.out.join('\n'))?.[0] as string;
@@ -628,7 +628,7 @@ describe('mnema CLI: decision, end to end', () => {
     // The human name is the ADR, never a `t-xxxx`-style alias, which a decision
     // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
     // no alias in between.
-    // Two lines: the headline, then WHERE it landed — a decision is a declaration
+    // Two lines: the headline, then WHERE it landed; a decision is a declaration
     // about the project, so it goes to the tree that travels, and nothing in the
     // command said so.
     expect(c.out.join('\n')).toMatch(
@@ -1230,7 +1230,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
   it('resume requires --actor and reports an empty focus for the founder (--json faithful)', async () => {
     const who = await foundIdentity();
 
-    // --json emits the faithful object — the WHOLE anchor, never the short form:
+    // --json emits the faithful object (the WHOLE anchor, never the short form):
     // that channel is data an agent may feed back, not a line a person reads. A fresh
     // project has no runs (runs are opened by a session, not the CLI), so the actor's
     // open runs are empty: reported honestly, not as silent output.
@@ -1779,7 +1779,7 @@ describe('mnema CLI: key restore, end to end', () => {
     expect(m.failed()).toBe(false);
 
     // The proof: the new event speaks for the SAME identity, and the tree carries
-    // exactly ONE founding — no split.
+    // exactly ONE founding, no split.
     const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
     const memory = events.find((e) => e.kind === 'memory.captured');
     expect(memory?.who).toBe(lost.anchorBefore);
@@ -1955,7 +1955,7 @@ describe('mnema CLI: a second machine joins one identity, end to end', () => {
     expect(t.failed()).toBe(false);
 
     // The proof: B's facts carry A's anchor, and the record holds exactly ONE
-    // founding — no second identity was minted.
+    // founding; no second identity was minted.
     const events = orderedEvents({ root: publicTree() }, catalogUpcasters());
     const fromB = events.filter((event) => event.kind === 'memory.captured');
     expect(fromB).toHaveLength(1);
@@ -2018,7 +2018,7 @@ describe('mnema CLI: a second machine joins one identity, end to end', () => {
   it('still wants the WHOLE fingerprint to retire a key: a prefix is not a key', async () => {
     // An anchor may now be named by a prefix, and a fingerprint may not. The two are
     // different values: an anchor is an identity the record lists, so a prefix
-    // resolves against something and an ambiguous one is refused by name — a
+    // resolves against something and an ambiguous one is refused by name. A
     // fingerprint names a physical key, and guessing which one a short value means
     // is not a guess to make about key material. Nothing is retired.
     asMachine('a');
@@ -2436,7 +2436,7 @@ describe('mnema CLI: run (the session), end to end', () => {
 
     // The refusal is the PARSER's, and asserting which one it is, is what makes this
     // test discriminate: with the flag merely optional the invocation reaches the
-    // command and earns `NO_AGENT` instead — also a refusal, also non-zero, so a test
+    // command and earns `NO_AGENT` instead, also a refusal, also non-zero, so a test
     // that only checked "it failed" passed on the declaration this one is about. (The
     // matrix found exactly that, in the first version of this test.)
     //
@@ -2722,8 +2722,8 @@ describe('mnema CLI: run (the session), end to end', () => {
     expect(closeSession(session).closed).toHaveLength(1);
 
     // Both in ONE tree, and that is not incidental: the CLI's run is born where every
-    // kind can cite it, and the MCP's run opened in the tree its write landed in — a
-    // skill, so the committed one. Two surfaces, one record.
+    // kind can cite it, and the MCP's run opened in the tree its write landed in (a
+    // skill, so the committed one). Two surfaces, one record.
     const sealed = eventsOf(treesOf().projectPublic).filter((e) => e.kind === 'run.ended');
     expect(sealed).toHaveLength(2);
     // The SAME envelope shape from both: one surface cannot carry a field the other

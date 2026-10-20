@@ -445,7 +445,7 @@ describe('what answers a Tab reaches for no door onto the disk', () => {
    * Every way a module of this workspace opens something.
    *
    * The chain is on the list because it is the door the SIBLING really uses: where the
-   * session is standing is a `readdir` and a small file, and neither is spelled here —
+   * session is standing is a `readdir` and a small file, and neither is spelled here;
    * `standing.ts` asks `@mnema/chain` for both. A ban that named only `node:fs` would
    * have missed the one module that proves it can accuse anything.
    *

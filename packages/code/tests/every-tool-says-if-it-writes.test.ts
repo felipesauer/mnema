@@ -129,7 +129,7 @@ afterEach(() => {
  * The file on disk is not decoration: an address whose path the working tree no longer
  * holds has stopped governing (`governed-tree.ts`), so a rule pointed at a directory that
  * does not exist would leave `rules_before_an_edit` with nothing to say and nothing to
- * record — a write measured as recording nothing, for a reason that has nothing to do
+ * record, a write measured as recording nothing, for a reason that has nothing to do
  * with the tool.
  */
 function makeProject(name: string): string {
@@ -218,7 +218,7 @@ function asItStands(dir: string): Map<string, Standing> {
 
 /**
  * What a call did to the sandbox: every path it touched, and the paths whose earlier bytes
- * it did not leave where they were — removed, or no longer the start of what is there.
+ * it did not leave where they were (removed, or no longer the start of what is there).
  *
  * Growing a file is not destroying it: an append leaves every earlier byte in place, which is
  * the whole of what `destructiveHint: false` claims.

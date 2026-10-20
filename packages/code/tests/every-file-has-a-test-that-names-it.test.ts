@@ -2009,7 +2009,7 @@ describe('every file has a test that names it', () => {
       obsolete: [],
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
-    // really does hold rows — a scanner returning nothing would satisfy the line above.
+    // really does hold rows; a scanner returning nothing would satisfy the line above.
     expect(unresolved.length).toBe(10);
     expect(Object.keys(LED_NOWHERE)).toHaveLength(10);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
@@ -2451,8 +2451,8 @@ describe('the source it reads is code, and a pattern is not code', () => {
 
   it('takes a slash inside a character class for a literal, not the pattern’s end', () => {
     // ON ONE LINE, and that is the whole case. Read without the class, `/[^/` ends at the
-    // slash inside it and the `/` after `]+` opens a SECOND pattern that swallows the rest
-    // — but a pattern cannot cross a newline, so a version of this written across two
+    // slash inside it and the `/` after `]+` opens a SECOND pattern that swallows the rest,
+    // but a pattern cannot cross a newline, so a version of this written across two
     // lines is rescued by that rule and stays green under the very mutation it is for.
     const source = 'const parts = split(/[^/]+/); const after = one(2);';
     expect(codeOnly(source)).toContain('const after = one(2);');

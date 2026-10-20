@@ -260,7 +260,7 @@ describe('the floor is eighty by forty-two, and it is a function of both measure
     let shortest = 0;
     while (shortest < 400 && !theWindowServes(THE_FLOOR.columns, shortest)) shortest += 1;
     // THE PAIR MOVED TWICE, AND THE HEIGHT IS THE ONE THAT MOVED BOTH TIMES. It was twenty-four
-    // — the canonical terminal — then fifty-one, which is the height a NINE-ROW drawing of the
+    // (the canonical terminal), then fifty-one, which is the height a NINE-ROW drawing of the
     // name is chosen at, and it is forty-two, which is the height the SIX-ROW one is chosen at.
     // The second move was made by a delivery about art that never opened this file's subject: the
     // floor is worked out from the drawing now (`src/repl/floor.ts`, `theFloorFor`), so three

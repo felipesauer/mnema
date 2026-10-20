@@ -20,7 +20,7 @@
  *
  * WHAT THE EXPECTATION IS, AND WHOSE IT IS. Not a verdict of ours:
  *   - Wycheproof: each test's own `result`;
- *   - CCTV: its flags, read the way its README describes `verify_strict` — refused when the
+ *   - CCTV: its flags, read the way its README describes `verify_strict`, refused when the
  *     vector has a small-order or non-canonical A or R, or a residue only a cofactored equation
  *     would cancel; accepted otherwise, a point with a small-order COMPONENT included;
  *   - ed25519-speccheck: the "Dalek strict" row of its README's results table;

@@ -7,7 +7,7 @@
  * actions misinforms a reader. A `z.enum(['public', 'private', 'global'])` typed by hand
  * REFUSES: an input schema is the contract the client validates against, so a fourth tree
  * added to the domain would have reached the CLI's help, its Tab and its refusal, and left
- * the agent-facing door rejecting a word the same product accepts — in the SDK's voice,
+ * the agent-facing door rejecting a word the same product accepts, in the SDK's voice,
  * with a schema error, on the surface agents use.
  *
  * Three things are asserted here, and they are different:
@@ -260,7 +260,7 @@ describe('the MCP takes its sets from the domain', () => {
       expect(fieldAt(fields, where).values, where).toBeUndefined();
     }
     // And the words are still SAID, which is how an agent learns a vocabulary the schema
-    // does not own: each transition tool names every member of its own workflow's set —
+    // does not own: each transition tool names every member of its own workflow's set,
     // whole, in one generated phrase, so a set listed short is red at whichever tool did
     // it. The `action` field of `guard` reads the task vocabulary too, from the tool
     // description that carries it.

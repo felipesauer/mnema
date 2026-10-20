@@ -4,7 +4,7 @@
  *
  * `cli.golden.test.ts` holds the bytes: it drives every page and compares the transcript
  * to `src/cli.help.golden.txt`. That file is what would go red if a page arrived unpinned
- * — the transcript would carry a section the committed file has not got — so a second
+ * (the transcript would carry a section the committed file has not got), so a second
  * mechanism is not what this adds. What it adds is the NAME. A golden's answer to a page
  * nobody pinned is a diff of the whole transcript; this one says `switch off`, in a second,
  * without founding a fixture.

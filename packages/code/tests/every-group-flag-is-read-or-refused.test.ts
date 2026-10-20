@@ -9,8 +9,8 @@
  * way. `wiring/from-the-group.ts` is where each subcommand now declares what it reads, and the one
  * function that refuses the rest.
  *
- * WHAT IS ASSERTED, over every pair the program holds — every option of every group against every
- * subcommand of that group, enumerated from the tree and not listed here:
+ * WHAT IS ASSERTED, over every pair the program holds (every option of every group against every
+ * subcommand of that group, enumerated from the tree and not listed here):
  *
  *   - written after the subcommand, the flag is refused by name or it is not, and which is
  *     {@link WHAT_A_SUBCOMMAND_READS}: reconciled both ways, so a subcommand added under a group
@@ -23,9 +23,10 @@
  *     share, which would agree with itself.
  *
  * HOW A LINE RUNS AND DOES NOTHING: in a directory that is not a project, under a HOME of its own,
- * every subcommand here stops before it could write or reach anybody — `NO_PROJECT`, a value the
- * adapter refuses, or `witness`'s `NO_TAIL` over trees that hold none. So "takes no" is said by one
- * function and nothing else, and a subcommand that dropped the flag answers with one of the others.
+ * every subcommand here stops before it could write or reach anybody (`NO_PROJECT`, a value the
+ * adapter refuses, or `witness`'s `NO_TAIL` over trees that hold none). So "takes no" is said by
+ * one function and nothing else, and a subcommand that dropped the flag answers with one of the
+ * others.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';

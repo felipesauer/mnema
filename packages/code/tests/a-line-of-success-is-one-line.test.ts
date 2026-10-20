@@ -21,7 +21,7 @@
  * WHAT THE HANDOFF'S OWN GREP MISSED, AND WHY IT MATTERS TWICE. The debt named 28 sites,
  * found with `io.out(` and a template on ONE line of `wiring/*.ts`. The discriminant
  * finds 60: the other 32 live inside a multi-line call, inside `render(fact(…))`, or are
- * the second template of a concatenation — the same shape of miss the refusal family had
+ * the second template of a concatenation, the same shape of miss the refusal family had
  * (six declared, eight real), from the same cause, which is a list of ADDRESSES standing
  * in for a rule.
  *
@@ -39,8 +39,8 @@
  *       start → doing — 1 event(s):
  *       2026-08-17T15:06:09.760Z  observation.recorded  [about]  mnid:755798b3
  *
- * — where the second line is indented exactly as the item under it is, and carries the
- * count. That is why {@link theListGainsNoItem} counts ITEMS and not lines.
+ * (where the second line is indented exactly as the item under it is, and carries the
+ * count). That is why {@link theListGainsNoItem} counts ITEMS and not lines.
  *
  * The sites are closed anyway where the value merely CANNOT break today rather than
  * cannot break in principle, for the reason `no-such-record.ts` gives: the rule is about
@@ -170,7 +170,7 @@ function pastQuoted(text: string, at: number): number {
  * and whether the identifier immediately before its backtick is the tag.
  *
  * A nested template inside an interpolation is skipped rather than reported. It is a
- * value of the outer one: `${x ? ` — ${y}` : ''}` is ONE interpolation — and reporting
+ * value of the outer one: `${x ? ` — ${y}` : ''}` is ONE interpolation, and reporting
  * it as a site of its own would ask a verdict about half of a value.
  */
 function readTemplate(
@@ -233,7 +233,7 @@ const FOUND = sitesInSource();
  *   - `collapsed`: at least one value came from the argv or out of the record, so every
  *     value on the line goes through the tag. The template IS tagged, and this file
  *     checks that rather than believing it.
- *   - `minted` — every value is one this product wrote: a uuid, an alias
+ *   - `minted`: every value is one this product wrote: a uuid, an alias
  *     (`<prefix>-<hex>`), an `ADR-<n>`, a key fingerprint, an anchor (`mnid:` and 64 hex,
  *     which `resolveAnchorPrefix` enforces), a content hash, a count, a word of a closed
  *     transition table, or a sentence this surface composed out of those. None can hold a
@@ -1295,8 +1295,8 @@ describe('WHAT_IS_NOT_CLOSED', () => {
   it('no longer names the twin reading, because the twin was closed', () => {
     // THIS CASE USED TO BE THE DEBT AND IT IS THE CORRECTION OF ITS OWN SHAPE. It said
     // `status` printed a run's goal raw and that it *cannot* collapse it "without a
-    // static import that would put the context package's edge on the floor of every invocation"
-    // — which was wrong twice. `status.ts` already imports the rule of the line, and it
+    // static import that would put the context package's edge on the floor of every invocation",
+    // which was wrong twice. `status.ts` already imports the rule of the line, and it
     // is loaded inside the action, so the floor was never the question; and the fix was
     // never `status`'s to make. The collapse belongs in `lastRunPhrase`, where the phrase
     // is WORDED, so both readings come through it.

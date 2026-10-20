@@ -35,14 +35,14 @@
  *
  * | how the name reaches its removal | who does it |
  * |---|---|
- * | `for (const r of [a, b])` — an array LITERAL the loop drains | `topology/locate.test.ts`, `topology/compose.test.ts`, `integration/cross-entity.test.ts` |
- * | `for (const r of roots)` — a VARIABLE the name entered by `= [x]` or `.push(x)` | `workflow/skill-operations.test.ts`, `workflow/decision-operations.test.ts`, `workflow/session-operations.test.ts` |
- * | `while (…) rmSync(sandboxes.pop())` — a stack drained to empty | `code/tests/the-sampler-counts-or-refuses.test.ts` |
- * | `return { root }`, removed later as `rmSync(a.root)` — the name leaves as a FIELD | `integration/enrollment-e2e.test.ts` |
+ * | `for (const r of [a, b])`: an array LITERAL the loop drains | `topology/locate.test.ts`, `topology/compose.test.ts`, `integration/cross-entity.test.ts` |
+ * | `for (const r of roots)`: a VARIABLE the name entered by `= [x]` or `.push(x)` | `workflow/skill-operations.test.ts`, `workflow/decision-operations.test.ts`, `workflow/session-operations.test.ts` |
+ * | `while (…) rmSync(sandboxes.pop())`: a stack drained to empty | `code/tests/the-sampler-counts-or-refuses.test.ts` |
+ * | `return { root }`, removed later as `rmSync(a.root)`: the name leaves as a FIELD | `integration/enrollment-e2e.test.ts` |
  *
  * The fourth row is the one no earlier sweep had: it is not an array and not a loop, and a rule
  * built to forgive collections alone still accuses it. `namesLeftBehind` below reads all four,
- * and over the corpus it accuses **nobody** — measured, and each of the four legs is load-bearing:
+ * and over the corpus it accuses **nobody**, measured, and each of the four legs is load-bearing:
  * deleting the loop leg accuses 6 files, the collection leg 4, the field leg 1. Every case below
  * that names a shape names it on source this file owns, because an assertion over a corpus that
  * is clean today proves the rule silent, not right.
@@ -416,8 +416,8 @@ describe('the rule follows the name it was given', () => {
   });
 
   it('clears a for…of over a collection the name entered', () => {
-    // `workflow/skill-operations.test.ts`, `decision-operations.test.ts`, `session-operations.test.ts`
-    // — one name in by assignment, one by push, both out through the same loop variable.
+    // `workflow/skill-operations.test.ts`, `decision-operations.test.ts`, `session-operations.test.ts`:
+    // one name in by assignment, one by push, both out through the same loop variable.
     const { orphans } = reading(
       `const root = ${made};`,
       'roots = [root];',

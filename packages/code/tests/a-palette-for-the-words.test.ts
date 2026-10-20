@@ -313,7 +313,7 @@ describe('one palette, one list, and the slash counts only at the start of the l
 
   it('offers nothing for a slash that is not the first character', () => {
     // A slash inside a path, an argument or a word is a character like any other. Both
-    // halves are asserted: the palette is shut, and it is shut BECAUSE of the position —
+    // halves are asserted: the palette is shut, and it is shut BECAUSE of the position;
     // the same characters at the start of the line do open it.
     for (const line of [`show a${PREFIX}b`, `search ${PREFIX}clear`, `a${PREFIX}`]) {
       expect(offeredBy(line, [], asked), line).toEqual([]);
@@ -654,14 +654,14 @@ describe('the list shows four offers, and the room a terminal has can only make 
     // product instead ({@link atMost}): deliberately, because a case that retyped it would be
     // asserting its own arithmetic and would go red for a rewording rather than for a defect.
     //
-    // IT WAS AN INTERNAL BUDGET AND IT IS A PROMISE NOW. A caller asked for it in as many words
-    // — *only 4 commands rendered on the screen, with the arrows moving through the detail* —
+    // IT WAS AN INTERNAL BUDGET AND IT IS A PROMISE NOW. A caller asked for it in as many words:
+    // *only 4 commands rendered on the screen, with the arrows moving through the detail*,
     // and the delivery that put the verbs ahead of the session's own word was asked for because
     // FOUR of them were not being drawn. A ceiling nobody pinned can be lowered by an edit that
     // reads like tuning, and the promise would go with it in silence.
     //
     // WHAT LOWERING IT REALLY COSTS TODAY, measured on the whole package with the ceiling at
-    // three: four red, this case and three that name the number for other reasons — two rows of
+    // three: four red, this case and three that name the number for other reasons, two rows of
     // a real screen at the floor (`tests/the-floor-is-where-the-name-is-drawn.test.ts`, where a
     // bare slash is asserted to draw four) and the pair of keys that must open the same list.
     // So the number was not unpinned, and it was nowhere said to be a PROMISE: an incidental
@@ -687,7 +687,7 @@ describe('the list shows four offers, and the room a terminal has can only make 
  * behind one letter, and two more behind another.
  *
  * WHY IT IS NOT THE PRODUCT'S VOCABULARY: the question is what a filter does that still leaves
- * MORE than four verbs, and this product has no such filter today — sixteen verbs, and the
+ * MORE than four verbs, and this product has no such filter today; sixteen verbs, and the
  * fullest letter (`s`) has exactly four behind it, so every narrowing of the real list is at or
  * under the ceiling and the only list bigger than four is the whole one. Measured rather than
  * assumed, and the case that asks it of the real vocabulary is the one above.
@@ -1037,7 +1037,7 @@ describe('a row of the area the terminal would fold is not drawn at all', () => 
 });
 
 // ---------------------------------------------------------------------------
-// The budget: the palette is cut by what is left over the row being typed — on a page
+// The budget: the palette is cut by what is left over the row being typed, on a page
 // with nothing on it. What a page with something on it leaves is
 // `the-list-is-a-window.test.ts`.
 // ---------------------------------------------------------------------------
@@ -1381,7 +1381,7 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     for (const offer of offers) {
       if (offer.word.startsWith(PREFIX)) continue;
       // Read as prose, not as a layout: commander wraps a description at the column its
-      // longest command sets, so where the line breaks depends on the NEIGHBOURS — measured
+      // longest command sets, so where the line breaks depends on the NEIGHBOURS, measured
       // when `decision` stopped declaring `<title> <rationale>` and the column narrowed,
       // splitting `accountability`'s description across two lines with nothing it says
       // changed.
@@ -1474,7 +1474,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
       // line and the blank row between them could only be the palette's. What falsified it is the
       // delivery that took the FRAME off the panel: the opening is three rows shorter at this
       // size, so the page has room over again and the row two above the list is one of the
-      // leftover's — measured, as this very assertion going red on an empty string.
+      // leftover's, measured, as this very assertion going red on an empty string.
       //
       // WHAT REPLACES IT IS STRONGER THAN WHAT IT WAS, because it does not depend on how much
       // room the page happens to have: the blank row is COUNTED as well as drawn (`repl/area.ts`,
@@ -1540,7 +1540,7 @@ function prompts(screen: Screen): number {
  *
  * AND THE PAINT COMES OUT FIRST, which is what this delivery had to add: the mark carries the
  * accent now (`src/repl/palette.ts`), so the glyph and the word beside it are no longer a run of
- * bytes on the wire — there is a closer between them. Measured as three cases waiting out their
+ * bytes on the wire; there is a closer between them. Measured as three cases waiting out their
  * whole budget for a mark that was on the screen the whole time.
  */
 function marks(word: string): (bytes: string, since: number) => boolean {
@@ -1564,7 +1564,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
         // What this case is about is the ENDS of the vocabulary, so it asks for all of it.
         { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_UP, until: marks(last), what: 'marked the last word' },
-        // THE END HOLDS, AND WHAT IS ASSERTED IS AN ABSENCE — so the step waits for a frame
+        // THE END HOLDS, AND WHAT IS ASSERTED IS AN ABSENCE, so the step waits for a frame
         // rather than for something in one: a Down that wrapped WOULD write a frame, and the
         // settle this waits out is long enough to have caught it (`support/pty.ts`, `endOf`).
         { types: MOVES_DOWN, until: aFrameAfter(PROMPT), what: 'was asked to step past the end' },
@@ -1609,7 +1609,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
     const ran = await inPty({ columns, rows, steps });
 
     // EVERY STEP: the mark is on the word the arrows have reached, and that row is ON THE
-    // SCREEN — the second half is the one a window that did not follow would fail.
+    // SCREEN; the second half is the one a window that did not follow would fail.
     for (const [at, word] of words.entries()) {
       const screen = screenOf(ran.bytes.slice(0, ran.at[at + 2] as number), columns, rows);
       expect(pickedOn(screen), `step ${at + 1} lost the mark`).toBe(word);
@@ -1717,7 +1717,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     // is a WORD, so the mark cannot drift onto a neighbour while the list narrows: the case
     // reads which word the mark is on AFTER the filter, and then which one Return brought.
     //
-    // AND THE OTHER HALF OF THE SAME QUESTION — a filter that EXCLUDES the picked word — is
+    // AND THE OTHER HALF OF THE SAME QUESTION (a filter that EXCLUDES the picked word) is
     // asserted where a value can be read: nothing is picked afterwards and Return hands the row
     // over exactly as it does on a list nobody moved through (`src/repl/editing.test.ts`).
     //
@@ -1929,7 +1929,7 @@ describe('the mark survives what changes around it', () => {
 });
 
 describe('a page shows four, says how many it could not, and does it at every height', () => {
-  // TWO SIZES, AND THEY USED TO BE TWO REGIMES OF THE SAME PROMISE — a page with room showed
+  // TWO SIZES, AND THEY USED TO BE TWO REGIMES OF THE SAME PROMISE. A page with room showed
   // what it had room for and a shorter one showed fewer, so the counts here moved every time
   // the geometry did: eleven and fifteen, before that thirteen and seventeen, before that
   // fifteen and nineteen. Every one of those numbers was *what fitted*, which is the thing a
@@ -2002,7 +2002,7 @@ describe('opening the palette never makes the frame outgrow the screen', () => {
   // session there is and there is no boundary to be on one side of. What replaces the bracket is
   // the property the bracket was protecting, asked at the sizes where a list is tallest: the
   // frame ends on the last row of the terminal with the list open, and not one row of the
-  // caller's history is erased — with the library's own request as the witness that the
+  // caller's history is erased, with the library's own request as the witness that the
   // absence is merited (`src/repl/erasing.ts`, `erasesTheScreen`).
   // THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE, TWICE. Sixty columns, eight rows
   // and twelve rows were all under the shortest window a console is drawn on, and so are

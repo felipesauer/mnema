@@ -126,7 +126,7 @@ const REACHED_BY: Readonly<Record<TaskState, readonly (readonly string[])[]>> = 
  * that undoes it costs a reason, which is the same shape as a task's `DONE` and takes the
  * same green. THE GREEN IS THE POINT OF THIS TABLE and not a detail of it: `supersede`
  * stays legal from `accepted` forever, so a rule built on "has a legal move" would paint
- * every settled call as a pendency that never clears — the same rule that kept every
+ * every settled call as a pendency that never clears, the same rule that kept every
  * completed TASK on the opening read's work list until that list asked the
  * classification instead. The two terminal states carry
  * nothing: the word says what happened and there is nothing to do about it.
@@ -277,7 +277,7 @@ beforeAll(async () => {
   // One decision per state and one pattern per state, each walked there the same way.
   // `superseded` needs a successor and takes the one already accepted, which is why the
   // loop runs in the machine's own declared order: `DECISION_STATES` puts `accepted`
-  // before `superseded`, and the missing successor is thrown on rather than defaulted —
+  // before `superseded`, and the missing successor is thrown on rather than defaulted;
   // a fixture that superseded a decision with an id nobody minted would be writing a
   // record the product refuses.
   for (const [index, state] of DECISION_STATES.entries()) {

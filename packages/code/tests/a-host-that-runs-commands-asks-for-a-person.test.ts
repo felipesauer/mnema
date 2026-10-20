@@ -184,7 +184,7 @@ describe('mnema before-a-write --host vscode', () => {
     expect(said.reason).toContain(asking);
     expect(notes).toEqual([]);
     // The same facts the MCP tool appends: one asking per rule, citing it and the path, and the
-    // service of the gate — attributed to the host that ran the hook.
+    // service of the gate, attributed to the host that ran the hook.
     expect(askings()).toEqual([`${asking} @ src/billing/invoice.ts by vscode`]);
     expect(services()).toEqual(['edit-asks-a-person']);
   });
@@ -451,7 +451,7 @@ describe('the plugin command VS Code runs', () => {
       }
     }
     expect(existsSync(calls)).toBe(false);
-    // NON-VACUITY: the shim is on the path the gates use — a VS Code write does start it.
+    // NON-VACUITY: the shim is on the path the gates use; a VS Code write does start it.
     const vscode = gates.find((command) => command.includes('edit-asks-a-person.mjs')) ?? '';
     host(vscode, createFile('src/other/ledger.ts'));
     expect(readFileSync(calls, 'utf-8')).toContain('node ');

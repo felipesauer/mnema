@@ -1,5 +1,5 @@
 /**
- * A rule carries its check, and a runner's key records whether it held — driven the way the
+ * A rule carries its check, and a runner's key records whether it held, driven the way the
  * binary drives it, over a real git repository in a sandbox, with two homes: the person's and
  * the runner's. Held:
  *   - `check declare` records a program and its arguments on a rule;

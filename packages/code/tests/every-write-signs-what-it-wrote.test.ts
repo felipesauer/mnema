@@ -118,7 +118,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *      every time. And the set driven is checked against the set the source guard
  *      found, so a path cannot be added to one half and forgotten in the other.
  *
- * WHAT THIS DOES NOT CATCH — the honest half, because a guard read as more than it is
+ * WHAT THIS DOES NOT CATCH, the honest half, because a guard read as more than it is
  * becomes the next silence:
  *
  *   - A path that signs SOMETHING but not everything it wrote. The question asked is
@@ -134,7 +134,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *     deliberate and it is the strictness the guard is for: the checkpoint has to be
  *     visible where the write is, because a helper is one more place a later path can
  *     be routed around. Measured: moving `runTask`'s checkpoint into a one-line helper
- *     — byte-identical output — lights the source half and nothing else.
+ *     (byte-identical output) lights the source half and nothing else.
  *   - A path outside `packages/code/src`. An embedder calling `@mnema/core/write`
  *     directly owns its own signing; the core's operations deliberately do not sign
  *     (`enrollKey` and `revokeKey` are the two that do, because they complete an act
@@ -1189,8 +1189,8 @@ describe('the ceiling the writer holds on its own', () => {
     //
     // (This was `decision import --write` over 33 ADRs, which crossed 64 in one act while
     // the import signed once for the whole directory. The import now signs each file in
-    // the hold that wrote it — a signature asked for under a lock of its own could be
-    // refused after the decisions landed — so it never leaves 64 open any more.)
+    // the hold that wrote it; a signature asked for under a lock of its own could be
+    // refused after the decisions landed, so it never leaves 64 open any more.)
     //
     // What this measures is the CEILING, not the cadence: the ceiling caps how much
     // one act may leave open, the cadence is one signature per act, and this is the

@@ -7,9 +7,9 @@
  * agent what to call. Same shape as `the-agent-is-told-what-it-has.test.ts`, which holds the
  * server's own instructions to `tools/list`.
  *
- * WHAT COUNTS AS CITING A TOOL. A backticked word written in the style of a tool or a field —
+ * WHAT COUNTS AS CITING A TOOL. A backticked word written in the style of a tool or a field,
  * lowercase words joined by underscores, once the host's own prefix (`mcp__plugin_mnema_mnema__`,
- * `mcp__mnema__`) is taken off — must be a tool the server serves, or a field one takes. A single
+ * `mcp__mnema__`) is taken off, must be a tool the server serves, or a field one takes. A single
  * lowercase word is a tool only when it is one, so a renamed `search` is not found by this and a
  * renamed `record_decision` is; the first is a limit of the discriminant, and said.
  */

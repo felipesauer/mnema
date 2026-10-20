@@ -5,7 +5,7 @@
  * The exactness is asserted against a real glob matcher, Node's own `path.matchesGlob`, rather
  * than against the reasons this product wrote: a carried glob must match its address and not a
  * sibling that merely starts the same, and the two reasons that keep the common addresses out are
- * shown to be true of that matcher — `app/[id]` as a glob matches `app/i` and not itself, and
+ * shown to be true of that matcher; `app/[id]` as a glob matches `app/i` and not itself, and
  * `src/**` does not reach `src/.env`. A reason that stopped being true of a real matcher would be
  * this product keeping rules out for nothing.
  */

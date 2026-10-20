@@ -40,7 +40,7 @@ const PACKAGES = join(import.meta.dirname, '..', '..');
  * guard rather than a detail. That helper drops `.test.ts`, because the guards it serves
  * ask about what SHIPS; this one asks about a shape that lives in assertions, and the one
  * occurrence in this repository was in a `.test.ts`. Written on the shared walker, this
- * file would have been born blind to the defect that motivated it — measured: 320 files
+ * file would have been born blind to the defect that motivated it. Measured: 320 files
  * swept instead of 578, and zero of the guilty among them.
  */
 function everyTypeScriptFile(directory: string): string[] {

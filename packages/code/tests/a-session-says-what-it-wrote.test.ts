@@ -1,7 +1,7 @@
 /**
  * A session says what it wrote: at the end of a response that wrote a file, and before a
- * conversation is compacted, one line with two counts — the files its own tool calls wrote and
- * the decisions recorded since it opened.
+ * conversation is compacted, one line with two counts (the files its own tool calls wrote and
+ * the decisions recorded since it opened).
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half: that the counts are the ones the
  * transcript and the record hold, that the line says what each is a count OF, and that every

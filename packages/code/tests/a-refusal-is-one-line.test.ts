@@ -11,7 +11,7 @@
  *
  * THE SITES ARE READ OFF THE SOURCE, NEVER LISTED HERE. That is the whole technique,
  * and the reason for it is in this delivery's own history: the debt was declared with a
- * hand-written list of SIX addresses, and re-running the discriminant found EIGHT — the
+ * hand-written list of SIX addresses, and re-running the discriminant found EIGHT; the
  * list held one refusal per file and `skill.ts` has two, and it did not have
  * `decision.ts` at all. So {@link sitesInSource} walks the source on every run and
  * {@link PROBES} is reconciled against it in both directions: a ninth site with no

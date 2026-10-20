@@ -13,8 +13,8 @@
  * alone, so every move reads each segment ONE more time, as bytes, and that reading is not a replay.
  *
  * WHAT IS COUNTED is the segment files read whole, split by who read them: the gate's search, and
- * every other reading — a replay of a tail reads its segments, so a second walk of the record, by
- * whichever door, shows as a second read of the same file. It is counted on a record whose
+ * every other reading (a replay of a tail reads its segments, so a second walk of the record, by
+ * whichever door, shows as a second read of the same file). It is counted on a record whose
  * projection is already kept, which is every move but the first on a clone.
  */
 

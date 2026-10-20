@@ -21,7 +21,7 @@
  * the same digest over the same tree moves when that key's write is accepted.
  *
  * AND THE VERBS WHOSE REFUSAL COMES FROM THE OPERATION'S OWN DOOR. This header said they were NOT
- * asserted: an oversize field, a name that holds a credential, a move the gate refuses — the door is
+ * asserted: an oversize field, a name that holds a credential, a move the gate refuses; the door is
  * inside the operation on purpose (a caller able to screen separately could skip it), so they open
  * the writer before it speaks, and they left the four entries. Measured on the binary, 13 verbs, and
  * the residue did not stay inert: committed, the empty tail put a tail more in every `verify` of the
@@ -99,7 +99,7 @@ function mnema(home: string, ...argv: string[]): ReturnType<typeof mnemaIn> {
 }
 
 /**
- * Every directory and every file under the project's `.mnema/`, each file with its digest — the
+ * Every directory and every file under the project's `.mnema/`, each file with its digest, the
  * private tree included, and the files git ignores included: "nothing" means nothing on the disk,
  * not nothing `git status` shows.
  */

@@ -214,7 +214,8 @@ interface Drive {
 
 /**
  * A session driven in THIS process over a pair of streams, and what it said: every byte, and the
- * transcript it hands the caller's own buffer once it has left — the roll, whole, one row to a line.
+ * transcript it hands the caller's own buffer once it has left (the roll, whole, one row to a
+ * line).
  *
  * IT IS THE INSTRUMENT FOR THE PAINT AND THE CLOCK, where the pseudo-terminal below is the one for
  * the GEOMETRY: what a case about a hue needs is the escapes around a row, and what a case about a

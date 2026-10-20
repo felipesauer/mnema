@@ -48,7 +48,7 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /**
  * The `initialize` Cursor's command-line agent (2026.09.18) sends, captured on the wire
- * and pasted here unchanged: `elicitation` and nothing else — no `roots`.
+ * and pasted here unchanged: `elicitation` and nothing else, no `roots`.
  */
 const CURSOR_INITIALIZE =
   '{"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"elicitation":{"form":{}}},"clientInfo":{"name":"Cursor","version":"1.0.0"}},"jsonrpc":"2.0","id":0}';
@@ -89,8 +89,8 @@ function makePlainDir(name: string): string {
  * The server the product builds, started in `cwd`, and a client connected to it.
  *
  * `roots` is what the client says about its workspace, and its three values are the
- * three clients this file is about: ABSENT is a client with no `roots` capability — the
- * capabilities are Cursor's, verbatim; a LIST is a client that declared the capability
+ * three clients this file is about: ABSENT is a client with no `roots` capability (the
+ * capabilities are Cursor's, verbatim); a LIST is a client that declared the capability
  * and answers with it, empty included; `'fails'` declared it and throws when asked.
  */
 async function connect(cwd: string, roots?: readonly string[] | 'fails'): Promise<Client> {
@@ -299,7 +299,7 @@ describe('a client that declared `roots` is served what it listed: empty include
 
 /**
  * One JSON-RPC conversation with the built binary, the way a host that declares no
- * `roots` holds it: its `initialize`, byte for byte, then the calls — each one awaited
+ * `roots` holds it: its `initialize`, byte for byte, then the calls, each one awaited
  * before the next, and the pipe closed only after the last reply, because a close that
  * overtakes a write in flight ends the session the write needs.
  *

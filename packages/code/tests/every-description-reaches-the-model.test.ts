@@ -154,7 +154,7 @@ describe('every description reaches the model', () => {
   it('accuses a description over the ceiling, and only that one', async () => {
     // The accuser's own case, on input this test owns, because the product gives it
     // nothing to accuse. Both directions: one character over is reported with its
-    // overage, and exactly at the ceiling is not reported — an off-by-one here would
+    // overage, and exactly at the ceiling is not reported; an off-by-one here would
     // make the guard either permanently red or permanently blind.
     const atTheEdge = 'x'.repeat(THE_HOSTS_CEILING);
     expect(
@@ -169,7 +169,7 @@ describe('every description reaches the model', () => {
     // The server's `instructions` meet the same ceiling, and for this field it was measured
     // on the text itself rather than inferred from the descriptions: a session's transcript
     // records what the host folded in (`mcp_instructions_delta`), and a server there that
-    // sent more arrived as exactly 2,048 characters followed by `… [truncated]` — host
+    // sent more arrived as exactly 2,048 characters followed by `… [truncated]`, host
     // 2.1.280, on 22/09/2026; since 2.1.296 the host keeps 4,096, and the product stays at 2,048. The host's own documentation says the same of both fields
     // ("truncates tool descriptions and server instructions at 2KB each"), which is why the
     // constant is shared rather than stated twice. What a cut takes is the end, and the end

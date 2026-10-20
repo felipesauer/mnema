@@ -3,7 +3,7 @@
  *
  * A write takes only the absolute path of a project, never the name of its directory: a
  * name a conversation carries can mean another directory after a reload, and the write
- * — signed, append-only — would resolve to it without a word. A name is refused with the
+ * (signed, append-only) would resolve to it without a word. A name is refused with the
  * paths to use. What a path routes still says, in the one reply the caller reads, the
  * absolute path it fell in (one directory can still have two paths, through a symlink).
  *
