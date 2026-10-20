@@ -386,11 +386,11 @@ export function refuseUnlocated<K extends LocatableKind>(
  */
 export function inEveryTreeThisSessionSees(session: Session): string {
   if (session.workspaceProjects.length === 0) {
-    return 'in the machine-global tree, the only tree this session sees — it resolved to no project';
+    return 'in the machine-global tree, the only tree this session sees: it resolved to no project';
   }
   return (
     `in any tree of this workspace's projects (${namedProjects(session.workspaceProjects)}) or ` +
-    'in the machine-global tree — the only trees this session sees'
+    'in the machine-global tree, the only trees this session sees'
   );
 }
 
@@ -423,12 +423,12 @@ export function notFoundInSessionTrees(session: Session, kind: LocatableKind, id
   if (session.project === undefined) {
     return (
       `${kind} "${oneLine(id)}" was not found in the machine-global tree, the only tree ` +
-      'this session sees — it resolved to no project'
+      'this session sees: it resolved to no project'
     );
   }
   return (
     `${kind} "${oneLine(id)}" was not found in this project (${oneLine(session.project)}) or in ` +
-    'the machine-global tree — the only trees this session sees'
+    'the machine-global tree, the only trees this session sees'
   );
 }
 
@@ -454,8 +454,8 @@ function severalRecordsHold(
   holders: readonly WorkspaceTree[],
 ): string {
   return (
-    `${kind} "${oneLine(id)}" is held by ${holders.length} records this session sees — ` +
-    `${holders.map(recordName).join(', ')} — so it does not say which one a move belongs ` +
+    `${kind} "${oneLine(id)}" is held by ${holders.length} records this session sees (` +
+    `${holders.map(recordName).join(', ')}), so it does not say which one a move belongs ` +
     'in; an id is minted once, so two records holding it is a chain copied between them'
   );
 }
@@ -493,7 +493,7 @@ function severalRecordsHold(
  */
 export function locatedButUnreadable(kind: LocatableKind, id: string, home: WorkspaceTree): string {
   return (
-    `${kind} "${oneLine(id)}" is in ${treeName(home)}, but has no readable state there — ` +
+    `${kind} "${oneLine(id)}" is in ${treeName(home)}, but has no readable state there: ` +
     'this session sees its creation and nothing after it'
   );
 }

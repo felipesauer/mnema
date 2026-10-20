@@ -196,7 +196,7 @@ describe('a client with no `roots` capability is served the project it works in'
     expect(readdirSync(plain)).toEqual([]);
     // And the log says why it is global: the one input a reader of it cannot see.
     expect(openedLine()).toContain(
-      'project=(none — the global tree) (the client declared no workspace roots, and no ' +
+      'project=(none: the global tree) (the client declared no workspace roots, and no ' +
         `project is at or above this server's working directory, ${plain})`,
     );
 
@@ -236,7 +236,7 @@ describe('the machine’s own data directory, reached from a workspace nobody in
     const two = await connect(second);
     const said = whereItIs(await two.callTool({ name: 'bootstrap' }));
     expect(said).toContain('operating on the machine-global tree');
-    expect(openedLine()).toContain('project=(none — the global tree)');
+    expect(openedLine()).toContain('project=(none: the global tree)');
     expect(openedLine()).not.toContain(`project=${home} `);
     await two.close();
   });
@@ -259,7 +259,7 @@ describe('a client that declared `roots` is served what it listed: empty include
     expect(kindsIn(trees.projectPrivate)).toEqual([]);
     expect(kindsIn(trees.projectPublic)).toEqual([]);
     expect(openedLine()).toContain(
-      "project=(none — the global tree) (no project among the client's workspace roots)",
+      "project=(none: the global tree) (no project among the client's workspace roots)",
     );
     expect(openedLine()).not.toContain('working directory');
 
@@ -274,7 +274,7 @@ describe('a client that declared `roots` is served what it listed: empty include
     const client = await connect(app, 'fails');
     await client.callTool({ name: 'focus' });
 
-    expect(openedLine()).toContain('project=(none — the global tree)');
+    expect(openedLine()).toContain('project=(none: the global tree)');
     expect(openedLine()).not.toContain('working directory');
     expect(logged.some((line) => line.startsWith('roots/list unavailable:'))).toBe(true);
 

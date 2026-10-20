@@ -384,7 +384,7 @@ function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees
       oneLine(
         `the configured project "${configured}" is not an absolute path. This server's ` +
           'working directory is whatever the host spawned it with, so a relative path ' +
-          'would resolve against a directory nobody chose — pass the full path of the ' +
+          'would resolve against a directory nobody chose: pass the full path of the ' +
           'project to serve to `mnema mcp --project`, or drop the flag to take the ' +
           "project from the host's workspace roots.",
       ),
@@ -396,7 +396,7 @@ function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees
       oneLine(
         `the configured project "${configured}" is not a project: ` +
           `${whyNothingWasFound(walked.passedOver)}. This server was told which project to ` +
-          'serve and will not serve another instead — point `mnema mcp --project` at a ' +
+          'serve and will not serve another instead: point `mnema mcp --project` at a ' +
           'directory `mnema init` has been run in, or drop the flag to take the project ' +
           "from the host's workspace roots.",
       ),
@@ -416,7 +416,7 @@ function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees
 function whyNothingWasFound(passedOver: readonly PassedOverTree[]): string {
   const nearest = passedOver[0];
   if (nearest === undefined) return 'no `.mnema/` is there or in any directory above it';
-  return `the \`.mnema/\` the walk reached, ${nearest.tree}, is passed over — ${WHY_NO_PROJECT_ROOT[nearest.why]}`;
+  return `the \`.mnema/\` the walk reached, ${nearest.tree}, is passed over: ${WHY_NO_PROJECT_ROOT[nearest.why]}`;
 }
 
 /**

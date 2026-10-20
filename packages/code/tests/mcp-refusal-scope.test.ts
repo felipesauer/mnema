@@ -76,7 +76,7 @@ function notFoundAcross(projects: readonly string[], kind: string, id: string): 
   return (
     `${kind} "${id}" was not found in any tree of this workspace's projects ` +
     `(${projects.map((project) => `"${project}"`).join(', ')}) or in the ` +
-    'machine-global tree — the only trees this session sees'
+    'machine-global tree, the only trees this session sees'
   );
 }
 
@@ -84,7 +84,7 @@ function notFoundAcross(projects: readonly string[], kind: string, id: string): 
 function notFoundInSession(project: string, kind: string, id: string): string {
   return (
     `${kind} "${id}" was not found in this project (${project}) or in the ` +
-    'machine-global tree — the only trees this session sees'
+    'machine-global tree, the only trees this session sees'
   );
 }
 
@@ -92,7 +92,7 @@ function notFoundInSession(project: string, kind: string, id: string): string {
 function noStateIn(project: string, scope: Scope, kind: string, id: string): string {
   return (
     `${kind} "${id}" is in the ${scope} tree of "${project}", but has no readable ` +
-    'state there — this session sees its creation and nothing after it'
+    'state there: this session sees its creation and nothing after it'
   );
 }
 
@@ -332,7 +332,7 @@ describe('what the sentence is careful not to say', () => {
       code: 'UNKNOWN_TASK',
       message:
         `task "${NOWHERE}" was not found in the machine-global tree, the only tree ` +
-        'this session sees — it resolved to no project',
+        'this session sees: it resolved to no project',
     });
     closeSession(session);
   });

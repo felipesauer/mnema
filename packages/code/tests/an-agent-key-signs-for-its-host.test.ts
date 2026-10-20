@@ -1627,7 +1627,7 @@ describe('retiring an agent, and making it a new key', () => {
 
 describe('the server says, tree by tree, where its agent is not the one that signs', () => {
   const declaredIn = (where: string): string =>
-    `agent key "claude" is not in force in ${where} — this machine holds no key under that name, or the record there does not enrol it as "claude": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent claude\` where you hold your own key puts it in force (\`mnema key request --agent claude --anchor <identity>\` first, if this machine holds no key under that name)`;
+    `agent key "claude" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "claude": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent claude\` where you hold your own key puts it in force (\`mnema key request --agent claude --anchor <identity>\` first, if this machine holds no key under that name)`;
 
   it('says one line for the tree it opens in, and one for each tree of a project it lands on, and does not repeat', async () => {
     await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());

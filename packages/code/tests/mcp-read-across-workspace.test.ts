@@ -82,7 +82,7 @@ function memoryIn(session: Session, project?: string): string {
     content: `a fact${project !== undefined ? ` in ${project}` : ''}`,
     ...(project !== undefined ? { project } : {}),
   });
-  if (!captured.ok) throw new Error(`setup: capture refused — ${captured.message}`);
+  if (!captured.ok) throw new Error(`setup: capture refused: ${captured.message}`);
   return captured.id;
 }
 
@@ -94,7 +94,7 @@ function linkIn(session: Session, subject: string, target: string, project?: str
     rel: 'normalizes',
     ...(project !== undefined ? { project } : {}),
   });
-  if (!linked.ok) throw new Error(`setup: link refused — ${linked.message}`);
+  if (!linked.ok) throw new Error(`setup: link refused: ${linked.message}`);
 }
 
 beforeEach(() => {

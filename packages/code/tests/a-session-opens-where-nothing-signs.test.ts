@@ -302,7 +302,7 @@ describe('a machine that holds only the agent, and the agent is not enrolled', (
 
     expect(log.join('\n')).not.toContain('could not open session');
     expect(log.find((line) => line.startsWith('session opened'))).toContain(
-      "who=(none yet — no key of this machine signs in this session's own trees)",
+      "who=(none yet: no key of this machine signs in this session's own trees)",
     );
     expect(replies.bootstrap?.isError).not.toBe(true);
     expect(textOf(replies.bootstrap as Reply)).toContain('Keep the parser small');
