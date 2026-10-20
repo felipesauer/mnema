@@ -15,7 +15,9 @@
  * - the two jobs that write outside (the publish and the tag and release) ask for the `npm` environment, in
  *   both ways to reach the tag, so nothing is tagged or released without a person's approval;
  * - no job that installs or builds can ask for the OIDC token, and the job that can publishes without
- *   installing or building anything;
+ *   installing or building anything (not even a newer npm: it only reads the one it has);
+ * - the publish checks the tarballs it downloaded against the SHA-256 the pack job exposes as outputs, not
+ *   against a file that travels in the same artifact;
  * - the publish needs the packed install and does not run when it failed (no `always()` in its `if`).
  *
  * What this reads is the file, not a run: the workflow has never run, the trusted publisher is configured on
@@ -89,9 +91,26 @@ describe('the release workflow publishes without a token', () => {
 
   it('publishes without installing or building anything', () => {
     const publish = job('publish');
-    expect(publish).not.toMatch(/pnpm |actions\/checkout|actions\/cache/);
+    expect(publish).not.toMatch(
+      /npm install|npm ci|npm run|pnpm|git clone|checkout|actions\/cache/,
+    );
     expect(publish).toContain('actions/download-artifact@');
-    expect(publish).toContain('sha256sum --check');
+    expect(publish).toContain('npm --version');
+    expect(publish).toContain('older than 11.5.1, which publishing through OIDC needs');
+  });
+
+  it('checks the downloaded tarballs against the hashes the pack job exposes', () => {
+    const pack = job('pack');
+    const publish = job('publish');
+    for (const p of ['chain', 'core', 'context', 'stacks', 'code']) {
+      expect(pack).toContain(`sha256-${p}: \${{ steps.pack.outputs.${p} }}`);
+      expect(publish).toContain(
+        `SHA256_${p.toUpperCase()}: \${{ needs.pack.outputs.sha256-${p} }}`,
+      );
+    }
+    expect(publish).toContain('sha256sum "$tarballs/mnema-$p-$VERSION.tgz"');
+    expect(publish).not.toMatch(/SHA256SUMS|sha256sum --check/);
+    expect(publish.indexOf('sha256sum "$tarballs')).toBeLessThan(publish.indexOf('npm publish'));
   });
 
   it('does not run the publish when the packed install failed', () => {
@@ -111,11 +130,11 @@ describe('the release workflow publishes without a token', () => {
     expect(publish).toContain(
       'npm publish "$tarballs/mnema-$p-$VERSION.tgz" --provenance --access public',
     );
-    expect(publish).toContain('npm install --global npm@11.5.1');
     const order = [...publish.matchAll(/for p in ([a-z ]+); do/g)].map((m) => m[1]);
-    expect(order).toEqual(['chain core context stacks code']);
+    const five = 'chain core context stacks code';
+    expect(order).toEqual([five, five]);
     const packed = [...job('pack').matchAll(/for p in ([a-z ]+); do/g)].map((m) => m[1]);
-    expect(packed).toEqual(['chain core context stacks code']);
+    expect(packed).toEqual([five, five]);
     expect(publish).toContain('is already on npm');
   });
 

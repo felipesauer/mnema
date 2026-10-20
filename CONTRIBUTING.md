@@ -154,14 +154,19 @@ pnpm build && bash .github/the-packed-install/run.sh
    `npm` environment.
 3. On approval the publish downloads the tarballs, checks the SHA-256 and publishes them in the order chain,
    core, context, stacks, code (with `--provenance`, skipping one that is already at the version). It installs
-   and builds nothing, so what is published is what was tested and no install script runs while the job can
-   ask for the OIDC token.
+   and builds nothing (it only checks that the npm it has is 11.5.1 or newer), so what is published is what was
+   tested and no install script runs while the job can ask for the OIDC token. It checks each tarball against
+   the SHA-256 that the packing job exposed as its own outputs, not against a file that travels with the
+   tarballs.
 4. The tag and the release (whose notes are the CHANGELOG section) come only after the five are on npm, and
    they ask for your approval in the `npm` environment once more.
 
 If a publish stops halfway, run the workflow again (Actions, Run workflow, `mode: publish`): the packages
 already at the version are skipped and the ones left are published. The tag and the release are made only
-once all five are on npm.
+once all five are on npm. A run again packs and tests the head of `main` as it is then, not the commit of
+the run that stopped: the packages already published came from the earlier commit, and the tag falls on
+the commit of the run that finishes. If `main` moved in between, the packages are not all from one commit,
+so before running again check that the commits since are not changes to the packages.
 
 While `@mnema/code` is not on npm, a push to `main` does not publish: the workflow says the first
 publication is by hand and ends green. The workflow has not run yet.

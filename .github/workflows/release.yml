@@ -16,8 +16,9 @@ name: Release
 # green.
 #
 # WHAT IS PUBLISHED IS WHAT WAS TESTED. One job without `id-token` installs, builds and packs the five and
-# uploads the tarballs with their SHA-256; the packed install installs those very files on the three Nodes;
-# the publish downloads them, checks the SHA-256 and publishes them. It installs nothing and builds
+# uploads the tarballs and exposes their SHA-256 as outputs; the packed install installs those very files on the
+# three Nodes; the publish downloads them, checks them against those outputs (not against a file that travels
+# with them) and publishes them. It installs nothing and builds
 # nothing, so no code of the repository or of its dependencies runs while the job can ask for the OIDC token.
 # The tag and the release also ask for the `npm` environment, in both ways to reach them: nothing is
 # tagged or released without the approval.
@@ -101,6 +102,12 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    outputs:
+      sha256-chain: ${{ steps.pack.outputs.chain }}
+      sha256-core: ${{ steps.pack.outputs.core }}
+      sha256-context: ${{ steps.pack.outputs.context }}
+      sha256-stacks: ${{ steps.pack.outputs.stacks }}
+      sha256-code: ${{ steps.pack.outputs.code }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -116,6 +123,7 @@ jobs:
       - run: pnpm build
 
       - name: Pack the five and write their SHA-256
+        id: pack
         run: |
           set -euo pipefail
           tarballs="$RUNNER_TEMP/tarballs"
@@ -124,6 +132,9 @@ jobs:
             (cd "packages/$p" && pnpm pack --pack-destination "$tarballs" >/dev/null)
           done
           (cd "$tarballs" && sha256sum ./*.tgz > SHA256SUMS && cat SHA256SUMS)
+          for p in chain core context stacks code; do
+            echo "$p=$(sha256sum "$tarballs"/mnema-$p-*.tgz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          done
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -174,9 +185,16 @@ jobs:
         with:
           node-version: '24'
 
-      # Trusted publishing needs npm 11.5.1 or newer; the exact version is what was read.
-      - name: Install the npm that can publish by OIDC
-        run: npm install --global npm@11.5.1
+      # Trusted publishing needs npm 11.5.1 or newer. The npm that setup-node brings is not replaced: this
+      # only reads it, so no code from the registry runs while the job can ask for the OIDC token.
+      - name: Check that the npm can publish by OIDC
+        run: |
+          have="$(npm --version)"
+          if [ "$(printf '%s\n11.5.1\n' "$have" | sort -V | head -n 1)" != "11.5.1" ]; then
+            echo "::error::npm $have is older than 11.5.1, which publishing through OIDC needs"
+            exit 1
+          fi
+          echo "npm $have can publish by OIDC."
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -186,10 +204,20 @@ jobs:
       - name: Publish the tarballs that were tested, in dependency order
         env:
           VERSION: ${{ needs.plan.outputs.version }}
+          SHA256_CHAIN: ${{ needs.pack.outputs.sha256-chain }}
+          SHA256_CORE: ${{ needs.pack.outputs.sha256-core }}
+          SHA256_CONTEXT: ${{ needs.pack.outputs.sha256-context }}
+          SHA256_STACKS: ${{ needs.pack.outputs.sha256-stacks }}
+          SHA256_CODE: ${{ needs.pack.outputs.sha256-code }}
         run: |
           set -euo pipefail
           tarballs="$RUNNER_TEMP/tarballs"
-          (cd "$tarballs" && sha256sum --check SHA256SUMS)
+          for p in chain core context stacks code; do
+            want="SHA256_${p^^}"
+            want="${!want}"
+            have="$(sha256sum "$tarballs/mnema-$p-$VERSION.tgz" | cut -d' ' -f1)"
+            [ -n "$want" ] && [ "$have" = "$want" ] || { echo "::error::mnema-$p-$VERSION.tgz is not the file the pack job made"; exit 1; }
+          done
           for p in chain core context stacks code; do
             if [ "$(npm view "@mnema/$p@$VERSION" version 2>/dev/null || true)" = "$VERSION" ]; then
               echo "@mnema/$p@$VERSION is already on npm: skipped."

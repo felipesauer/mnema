@@ -213,8 +213,10 @@ with its own changelog.
   publishes them, installing and building nothing, so no install or build runs while a job can ask for the OIDC token.
   The tag and the release also run in the `npm` environment, after a publish and in `mode: tag-only`, so nothing is
   tagged or released without the reviewer's approval. `.github/the-packed-install/run.sh` takes an optional directory
-  of tarballs to install instead of packing its own. `CONTRIBUTING.md` says what to do when a publish stops halfway:
-  run the workflow again, which skips the packages already at the version. The test of the workflow holds the
+  of tarballs to install instead of packing its own. The publish checks each tarball against the SHA-256 the packing
+  job exposes as its outputs, and does not install a newer npm: it only fails if the npm it has is older than
+  11.5.1. `CONTRIBUTING.md` says what to do when a publish stops halfway: run the workflow again, which skips the
+  packages already at the version, and that a rerun packs the head of `main` as it is then. The test of the workflow holds the
   environment in both jobs, no `id-token` in a job that installs or builds, the publish without install or build, the
   publish needing the packed install and no `always()` in its `if`.
 - **The five published packages carry no source maps and say where in the repository they live.** `files` of each now

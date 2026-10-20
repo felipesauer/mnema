@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Packs the publishable packages, installs them TOGETHER into an empty prefix the way the release
-# notes tell a person to, and drives the installed binary through `init`, `decision record` and
-# `verify` in a project and a HOME that are empty. It needs the workspace built (`pnpm build`)
-# and it touches nothing outside the temporary directory it makes.
+# Installs the publishable packages TOGETHER into an empty prefix the way the release notes tell a
+# person to, and drives the installed binary through `init`, `decision record` and `verify` in a
+# project and a HOME that are empty. It touches nothing outside the temporary directory it makes.
+# Without a directory it packs the packages itself and needs the workspace built (`pnpm build`); with
+# a directory it packs nothing, needs no build, and installs the tarballs found there.
 #
 # WHY IT IS A SCRIPT AND NOT A TEST. Every test of the suite runs the workspace's own `dist`, with
 # its own `node_modules`: a package missing from the tarballs, a file `files` leaves out, a
