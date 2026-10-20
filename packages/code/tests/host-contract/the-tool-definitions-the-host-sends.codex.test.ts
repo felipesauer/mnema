@@ -32,6 +32,6 @@ describe("what Codex sends of the plugin's tools", () => {
     expect(named('mnema')).toEqual([]);
     expect(named('mcp__mnema')).toEqual([]);
     expect(String(search?.['description'])).toContain('- mnema:');
-    expect(weigh(JSON.stringify(search))).toEqual({ bytes: 2_891, tokens: 672 });
+    expect(weigh(JSON.stringify(search))).toEqual({ bytes: 2_882, tokens: 672 });
   }, 180_000);
 });
