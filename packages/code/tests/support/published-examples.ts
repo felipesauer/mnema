@@ -95,7 +95,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
       '',
     ],
     whyElided:
-      'Running these two literals would create a chain and mint a signing key inside the working tree — the case points both at a sandbox it makes and removes.',
+      'Running these two literals would create a chain and mint a signing key inside the working tree: the case points both at a sandbox it makes and removes.',
     pagePreamble: [],
     whyPreamble:
       'The page declares everything it uses: the two roots it elides from the CASE are on the page, as literals, so the block stands alone as a unit.',
@@ -136,7 +136,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
       'declare const chainRoot: string;',
     ],
     whyPreamble:
-      'The prose above the block says "given a rebuilt cache over your chain" and names `chainRoot` as "that tree\'s chain directory", so the block opens neither. These are the two types the case really produces — `bench.cache()` and `bench.root`.',
+      'The prose above the block says "given a rebuilt cache over your chain" and names `chainRoot` as "that tree\'s chain directory", so the block opens neither. These are the two types the case really produces: `bench.cache()` and `bench.root`.',
   },
 ];
 
@@ -148,7 +148,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
 export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
   {
     pkg: 'code',
-    why: 'It is the manual for a command line, not for a library: ZERO ```ts blocks. Measured on 16/09/2026: 24 fenced blocks, of which 21 ```sh, one ```bash, one ```json, and one with no language declared at all. THE SENTENCE THAT USED TO FOLLOW SAID "a guard over it means running the built binary twenty-two times in a sandbox, which is a piece of work with a cost of its own and no overlap with reading a page", AND THAT PREMISE IS FALSE. What falsified it is `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`, which resolves every verb and every flag those blocks publish against the program `buildProgram` builds — the page is read, and nothing is executed. This entry excuses the page from the ```ts comparison alone, and from nothing else.',
+    why: 'It is the manual for a command line, not for a library: ZERO ```ts blocks. Measured on 16/09/2026: 24 fenced blocks, of which 21 ```sh, one ```bash, one ```json, and one with no language declared at all. THE SENTENCE THAT USED TO FOLLOW SAID "a guard over it means running the built binary twenty-two times in a sandbox, which is a piece of work with a cost of its own and no overlap with reading a page", AND THAT PREMISE IS FALSE. What falsified it is `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`, which resolves every verb and every flag those blocks publish against the program `buildProgram` builds: the page is read, and nothing is executed. This entry excuses the page from the ```ts comparison alone, and from nothing else.',
   },
   {
     pkg: 'action',

@@ -359,7 +359,7 @@ function expectTheTerminalCameBack(ran: Ran, what: string): void {
   // And the terminal itself: a caller's next command can be typed and seen.
   expect(
     ran.usable,
-    `${what}: the terminal is not usable — ${ran.afterwards.slice(0, 200)}`,
+    `${what}: the terminal is not usable: ${ran.afterwards.slice(0, 200)}`,
   ).toEqual({ echo: true, canonical: true });
   // AND THE PAGE THE CALLER WAS ON USED TO BE THE PAGE THEY WERE STILL ON, asserted as the
   // alternate screen never being taken at all: *a full-screen program would have switched

@@ -478,7 +478,7 @@ describe('the reading, on pages of its own', () => {
     expect(slugOf('What lives where')).toBe('what-lives-where');
     expect(slugOf('In VS Code and Cursor')).toBe('in-vs-code-and-cursor');
     expect(slugOf('8. The external witness (T3)')).toBe('8-the-external-witness-t3');
-    expect(slugOf('A — B')).toBe('a--b');
+    expect(slugOf('A – B')).toBe('a--b');
     expect(slugOf('`mcp_asked` against `mcp_pushed`, separated')).toBe(
       'mcp_asked-against-mcp_pushed-separated',
     );

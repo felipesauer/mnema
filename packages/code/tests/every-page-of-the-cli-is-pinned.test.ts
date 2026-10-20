@@ -103,12 +103,12 @@ describe('every page of the CLI is pinned', () => {
     const { unpinned, orphaned } = reconcile(pagesOf(declared()), pagesPinnedIn(GOLDEN));
     expect(
       unpinned,
-      'these pages answer `--help` and no byte of what they say is pinned — add them to ' +
+      'these pages answer `--help` and no byte of what they say is pinned: add them to ' +
         'the golden by regenerating it, AFTER reading what each one tells a person',
     ).toEqual([]);
     expect(
       orphaned,
-      'the golden pins these pages and the program no longer has them — a reader of the ' +
+      'the golden pins these pages and the program no longer has them: a reader of the ' +
         'committed transcript would believe this surface still answers them',
     ).toEqual([]);
   });
