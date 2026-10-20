@@ -616,10 +616,11 @@ function howMnemaFits(blocks, theme) {
   );
   const scale = 0.25;
   const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
-  // The wordmark's ink, not its last cell, on the hub's middle, which is the lanes' line.
+  // The wordmark's ink, not its last cell, on the hub's middle, which is the lanes' line, at the
+  // whole unit nearest it: a fractional place blurs the letters' edges and pales them.
   const markH = inkFoot(blocks) * scale;
   body.push(
-    `<g transform="translate(${n(hub.x + (hub.w - markW) / 2)} ${n(hub.y + (hub.h - markH) / 2)}) scale(${scale})">`,
+    `<g transform="translate(${n(Math.round(hub.x + (hub.w - markW) / 2))} ${n(Math.round(hub.y + (hub.h - markH) / 2))}) scale(${scale})">`,
     ...wordmark(blocks, s.accent, 0, 0),
     '</g>',
   );
