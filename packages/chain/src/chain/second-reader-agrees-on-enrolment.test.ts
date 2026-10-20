@@ -1222,7 +1222,7 @@ describe('the two readers agree on records the product itself wrote: an agent', 
           said,
         );
         if (attested !== null) return [`attested ${attested[2]} ${attested[1]}`];
-        const declared = /^6\.2: (\d+) event\(s\) name the agent "(.*)" — declared/.exec(said);
+        const declared = /^6\.2: (\d+) event\(s\) name the agent "(.*)": declared/.exec(said);
         return declared === null ? [] : [`declared ${declared[2]} ${declared[1]}`];
       })
       .sort();
@@ -1871,7 +1871,7 @@ describe('the two readers agree on records the product itself wrote: a declared 
     const census = verify(root, catalogUpcasters()).census;
     expect(census.map((note) => note.kind)).toEqual(['key-without-tail']);
     expect(census[0]?.detail).toBe(
-      `committed public key has no tail on disk — the record declared it a backup of ${anchor}, ` +
+      `committed public key has no tail on disk: the record declared it a backup of ${anchor}, ` +
         'and that identity has since revoked it, so the absence is no longer expected: the tail ' +
         'may have been dropped (a botched merge), never written (an empty tail is not versioned), ' +
         'or removed',

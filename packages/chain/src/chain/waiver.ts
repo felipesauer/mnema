@@ -137,11 +137,11 @@ export function unprovenWaiverReason(input: {
   if (event.kind !== 'tail.pruned') return undefined;
   const claim = event.payload;
   if (claim.tail === ownTail) {
-    return `a waiver cannot name the tail it is written to (${ownTail}) — it would be cut with it`;
+    return `a waiver cannot name the tail it is written to (${ownTail}): it would be cut with it`;
   }
   const standing = tailStanding(layout, claim.tail, upcasters);
   if (standing === undefined) {
-    return `no tail ${claim.tail} holds events in this chain — a waiver is written BEFORE the cut, while its claims can still be checked`;
+    return `no tail ${claim.tail} holds events in this chain: a waiver is written BEFORE the cut, while its claims can still be checked`;
   }
   if (standing.throughHash !== claim.throughHash) {
     return `tail ${claim.tail} ends at ${standing.throughHash}, not at the claimed ${claim.throughHash}`;

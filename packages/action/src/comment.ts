@@ -69,13 +69,15 @@ const rule = (hit: RuleHit): string =>
 
 function decisionLine(decision: DecisionMoved): string {
   const label = plain(decision.adr ?? decision.id);
-  const title = decision.title === undefined ? '' : ` — ${plain(decision.title)}`;
-  return `- ${label}${title}: ${decision.to.map(plain).join(', ')}`;
+  const moved = decision.to.map(plain).join(', ');
+  return decision.title === undefined
+    ? `- ${label}: ${moved}`
+    : `- ${label}: ${plain(decision.title)} (${moved})`;
 }
 
 function governedLines(file: GovernedFile): string[] {
   const by = (verb: string, hits: readonly RuleHit[]): string[] =>
-    hits.map((hit) => `- \`${plain(file.path)}\` — ${verb} ${rule(hit)}`);
+    hits.map((hit) => `- \`${plain(file.path)}\`: ${verb} ${rule(hit)}`);
   return [
     ...by('governed by', file.governs),
     ...by('asks for a person:', file.asks),
@@ -91,7 +93,7 @@ function checkLines(checks: { passed: boolean; said: string }): string[] {
   const results = lines.flatMap((line) => {
     const m = RULE_RESULT.exec(line);
     if (m === null) return [];
-    const why = m[3] === undefined || m[3].trim() === '' ? '' : ` — ${plain(m[3])}`;
+    const why = m[3] === undefined || m[3].trim() === '' ? '' : `: ${plain(m[3])}`;
     return [`- ${m[1]} \`${plain(m[2] ?? '')}\`${why}`];
   });
   if (results.length === 0) {
@@ -104,11 +106,11 @@ function checkLines(checks: { passed: boolean; said: string }): string[] {
 
 /** The comment body when the repository holds no record at all. */
 export const renderNoRecord = (): string =>
-  `${MARKER}\n### mnema — this pull request and the record\n\nThis repository holds no mnema record.\n`;
+  `${MARKER}\n### mnema: this pull request and the record\n\nThis repository holds no mnema record.\n`;
 
 /** The comment body. */
 export function renderComment(report: Report): string {
-  const out: string[] = [MARKER, '### mnema — this pull request and the record', ''];
+  const out: string[] = [MARKER, '### mnema: this pull request and the record', ''];
 
   const { passed, said } = report.verification;
   out.push(

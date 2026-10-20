@@ -156,7 +156,7 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
       ok: false,
       code: 'KEY_PRESENT',
       message:
-        `this machine already holds the private key ${oneLine(other)} — ` +
+        `this machine already holds the private key ${oneLine(other)}: ` +
         'restoring another would leave two, and which one the machine signs as ' +
         'would depend on the order the directory lists them. Restore is for a key ' +
         'that is gone; bringing a second key into an identity is an enrollment',
@@ -175,7 +175,7 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
       ok: false,
       code: 'AN_AGENT_KEY',
       message:
-        `the key ${oneLine(keyPair.fingerprint)} is an agent key of ${oneLine(found.anchor)} — it signs ` +
+        `the key ${oneLine(keyPair.fingerprint)} is an agent key of ${oneLine(found.anchor)}: it signs ` +
         "for its host from its own agent's folder and is not a key of a person to restore; " +
         `\`mnema key restore --agent ${oneLine(name)} <file>\` installs it there. Nothing was written`,
     };
@@ -297,7 +297,7 @@ export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | Rest
       ok: false,
       code: 'PROTECTED_AGENT_KEY',
       message:
-        `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at — ` +
+        `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at: ` +
         '`mnema key request --agent <name> --anchor <your identity>` makes the agent a key that is not protected',
     };
   }
@@ -316,7 +316,7 @@ export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | Rest
       code: 'UNREADABLE_KEY',
       message:
         `the key ${oneLine(keyPair.fingerprint)} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, ` +
-        "and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind",
+        "and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind",
     };
   }
 
@@ -328,7 +328,7 @@ export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | Rest
       ok: false,
       code: 'NOT_AN_AGENT_KEY',
       message:
-        `the key ${oneLine(keyPair.fingerprint)} is a key of ${oneLine(found.anchor)} itself, not an agent's — ` +
+        `the key ${oneLine(keyPair.fingerprint)} is a key of ${oneLine(found.anchor)} itself, not an agent's: ` +
         "`mnema key restore <file>` brings it back as the person's. Nothing was written",
     };
   }
@@ -339,7 +339,7 @@ export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | Rest
       code: 'AGENT_UNDER_ANOTHER_NAME',
       message:
         `the record enrols the key ${oneLine(keyPair.fingerprint)} as the agent "${oneLine(enrolledAs)}" of ` +
-        `${oneLine(found.anchor)}, not as "${oneLine(input.name)}" — a key keeps the name it was enrolled under, ` +
+        `${oneLine(found.anchor)}, not as "${oneLine(input.name)}": a key keeps the name it was enrolled under, ` +
         `so restore it with --agent ${oneLine(enrolledAs)}`,
     };
   }
@@ -351,7 +351,7 @@ export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | Rest
       ok: false,
       code: 'KEY_PRESENT',
       message:
-        `the folder of the agent "${oneLine(input.name)}" already holds the private key ${oneLine(other)} — ` +
+        `the folder of the agent "${oneLine(input.name)}" already holds the private key ${oneLine(other)}: ` +
         'a second would make the key the agent signs with depend on the order the directory lists them',
     };
   }

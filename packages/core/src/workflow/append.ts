@@ -271,7 +271,7 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
       ok: false,
       code: 'UNREADABLE_EVENT',
       message:
-        `${reason}. The fact was NOT recorded — an entry no read could open would ` +
+        `${reason}. The fact was NOT recorded: an entry no read could open would ` +
         'leave every later read of this project failing, and a tail cannot be edited.',
     };
   }
@@ -280,7 +280,7 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
     return {
       ok: false,
       code: 'NOT_A_TITLE',
-      message: `${unfilled}. The fact was NOT recorded — a record is permanent, and its title is what every later reading finds it by.`,
+      message: `${unfilled}. The fact was NOT recorded: a record is permanent, and its title is what every later reading finds it by.`,
     };
   }
   const unreferenced = unfilledReference(event);
@@ -288,7 +288,7 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
     return {
       ok: false,
       code: 'NOT_A_REFERENCE',
-      message: `${unreferenced}. The fact was NOT recorded — a record is permanent, and a reference is what every later reading looks it up by.`,
+      message: `${unreferenced}. The fact was NOT recorded: a record is permanent, and a reference is what every later reading looks it up by.`,
     };
   }
   const unstated = unstatedReason(event);
@@ -296,6 +296,6 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
   return {
     ok: false,
     code: 'NOT_A_REASON',
-    message: `${unstated}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.`,
+    message: `${unstated}. The fact was NOT recorded: a record is permanent, and its why is the part a later reader reads.`,
   };
 }

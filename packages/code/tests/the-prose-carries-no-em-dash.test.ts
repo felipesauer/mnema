@@ -68,8 +68,6 @@ const ESCAPES: readonly string[] = [
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
   '.github/': 164,
-  // the headers mnema writes into its own tree
-  '.mnema/': 2,
   // the changelog
   'CHANGELOG.md': 20,
   // the front page
@@ -78,12 +76,10 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'SECURITY.md': 4,
   // the manual
   'docs/': 387,
-  // @mnema/action
-  'packages/action/': 28,
   // the page of @mnema/action
   'packages/action/README.md': 9,
   // @mnema/chain, its reader in Python and its format
-  'packages/chain/': 276,
+  'packages/chain/': 219,
   // the page of @mnema/chain
   'packages/chain/README.md': 58,
   // the manifest of @mnema/code, whose description the registry shows
@@ -103,11 +99,11 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the cases beside @mnema/code
   'packages/code/tests/': 905,
   // @mnema/context
-  'packages/context/': 10,
+  'packages/context/': 6,
   // the page of @mnema/context
   'packages/context/README.md': 41,
   // @mnema/core
-  'packages/core/': 106,
+  'packages/core/': 10,
   // the page of @mnema/core
   'packages/core/README.md': 20,
   // the page of @mnema/sdk
