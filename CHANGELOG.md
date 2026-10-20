@@ -614,6 +614,14 @@ with its own changelog.
   nothing, the steps' numbers light one after the other, and a reader who asks for less motion sees the last frame.
   Their words, frames and text alternatives do not change; their text takes the family's sizes, and the family's
   guards hold them too.
+- **The banner, the steps and "how mnema fits" stand on the middle of their frame, with room around them, and are
+  fainter under the accent on a light page.** Each leaves 8 units between what it draws and every side of its frame,
+  centred from top to foot as well as across; the frames grow by up to 16 units, so the drawings show a little
+  smaller at the same width. On a light page the glow, the tints and the faces under the accent are fainter, the
+  newest cube of the banner is the accent itself with its faces parted by the page, and the chips of the steps are
+  edged at 1.5; the dark pictures keep their paint, and the words and text alternatives do not change. The test that
+  holds a one-unit stroke to the middle of a pixel now reads curves, relative commands, lines, polylines, polygons,
+  transforms and inherited strokes, and names what it cannot hold instead of passing it.
 
 ## [0.2.0-beta] - 2026-10-11
 
