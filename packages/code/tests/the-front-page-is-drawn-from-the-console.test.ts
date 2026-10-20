@@ -478,9 +478,7 @@ describe('the front page is drawn from the console', () => {
     ],
     [
       'a </defs> without a <defs>',
-      (s: string) =>
-        s
-          .replace(/<defs>[\s\S]*?<\/defs>/, `<path d="M0 48H880" ${OFF}/></defs>`),
+      (s: string) => s.replace(/<defs>[\s\S]*?<\/defs>/, `<path d="M0 48H880" ${OFF}/></defs>`),
       /^the picture opens <defs> 0 times and closes it 1 times$/,
     ],
   ])('refuses a picture with %s, and names it', (_, change, named) => {
