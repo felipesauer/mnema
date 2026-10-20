@@ -1,5 +1,5 @@
 /**
- * THE COMMAND HANDED OVER RUNS AS HANDED — every `mnema …` the product gives a person to type, in
+ * THE COMMAND HANDED OVER RUNS AS HANDED: every `mnema …` the product gives a person to type, in
  * a sentence it prints or on a page it publishes, passes the parser once its markers are filled,
  * with nothing added.
  *
@@ -13,19 +13,19 @@
  * span inside a sentence is a reference rather than a line to type; and nothing read the
  * sentences the product itself prints.
  *
- * THE CLASS HAD MORE SITES THAN THE ONE THAT WAS FOUND, and the discriminant found them — a
+ * THE CLASS HAD MORE SITES THAN THE ONE THAT WAS FOUND, and the discriminant found them: a
  * backtick followed by `mnema `, over every literal of the source and every tracked page, tests
  * included in the sweep. `run end` requires `--which <agent>` and was handed without it in four
  * places: the sentence `run start` prints, the runs contract four tool descriptions carry to the
- * agent, a sentence on the page, and a BLOCK on the page — the one a reader copies to close the
+ * agent, a sentence on the page, and a BLOCK on the page, the one a reader copies to close the
  * session the block opened. And the discriminant has a blind spot of its own: the product also
  * hands commands over WITHOUT backticks. `key request` prints `mnema key enroll <the line>` alone
  * on a line, the `--help` pages print examples, and `status` prints `— mnema decision import
  * <dir>`. Those are read here too.
  *
  * WHAT IS CHECKED. Each command is read the way the shell reads it
- * (`support/reading-a-shell-line.ts`), with every MARKER — `<id>`, `<the line>`, `"<why>"`, a
- * template's `${…}` — filled with a value and nothing else changed, and it is then one of four
+ * (`support/reading-a-shell-line.ts`), with every MARKER (`<id>`, `<the line>`, `"<why>"`, a
+ * template's `${…}`) filled with a value and nothing else changed, and it is then one of four
  * things:
  *   - a LINE, which hands the verb something. It must pass commander's own parser WHOLE: every
  *     argument and option the verb requires is there, and nothing the verb does not take.
@@ -39,7 +39,7 @@
  *
  * THE PARSER IS COMMANDER'S, OVER THE PROGRAM'S DECLARATIONS AND NOTHING ELSE. A line is parsed by
  * a MIRROR of the program `buildProgram` builds: the same commands, arguments and options, with
- * no action body and no hook — so nothing here opens a record, reads a home or runs a verb — and
+ * no action body and no hook (so nothing here opens a record, reads a home or runs a verb) and
  * with no value parser, because a value is exactly what a marker does not know. Where the real
  * program refuses a line before anything runs, the mirror is asked to refuse it with the same
  * code, and a case below holds that.
@@ -85,14 +85,14 @@ interface Unreadable {
 /** A code span that opens with the program's name. */
 const SPAN = /`(mnema [^`]*)`/g;
 
-/** A backtick that opens `mnema ` and is still open — what is left once {@link SPAN} is removed. */
+/** A backtick that opens `mnema ` and is still open: what is left once {@link SPAN} is removed. */
 const OPENS = /`mnema /;
 
 /**
  * Every command a page hands over: the code spans of its prose, and the command lines of its blocks.
  *
  * PROSE IS READ BY THE PARAGRAPH, NOT BY THE LINE, because that is how Markdown reads a code span:
- * one may run across a line break — which a reader sees as a space — and never across a blank
+ * one may run across a line break, which a reader sees as a space, and never across a blank
  * line. Read by the line, `plugin/README.md` hands over `mnema switch off` and loses the
  * `brief-document` on the next line; the first run of this guard found that, as a span it could
  * not close.
@@ -138,7 +138,7 @@ export function handedOnPage(
   return { handed, unreadable };
 }
 
-/** A command at the head of a line of literal text — one the product prints with no backtick. */
+/** A command at the head of a line of literal text: one the product prints with no backtick. */
 const AT_THE_HEAD = /^\s*(mnema ([a-z][a-z-]*)[^`\n]*)/;
 
 /** …or after the dash `status` puts between a thing and the command that reads it. */
@@ -146,15 +146,15 @@ const AFTER_A_DASH = /— (mnema ([a-z][a-z-]*)[^`\n]*)/;
 
 /**
  * Every command a source file hands over, read off what its string and template literals SAY
- * (`literalsOnly`) — never off its comments, which are handed to nobody.
+ * (`literalsOnly`), never off its comments, which are handed to nobody.
  *
  * A literal is one piece of text: a span has to open and close inside one, and a span that runs
- * into the edge of its literal is reported as unreadable rather than guessed at — the words on
+ * into the edge of its literal is reported as unreadable rather than guessed at; the words on
  * the other side of a `+` are the program's to choose, and a reading that joined them would be
  * reading a line nobody can see in the source.
  *
  * A command with no backtick is read only where it cannot be prose: at the head of a line of text,
- * or after `status`'s dash, and only when the word after `mnema` is one of the program's verbs —
+ * or after `status`'s dash, and only when the word after `mnema` is one of the program's verbs,
  * which is what keeps `mnema is append-only`, a sentence about the product, out of it.
  */
 export function handedInSource(
@@ -193,7 +193,7 @@ export function handedInSource(
 
 /**
  * A command as a failure prints it: whitespace collapsed, and what the program interpolates shown
- * as `{}` — the spelling `the-phrase-the-domain-words-is-one-line.test.ts` already gives a hole.
+ * as `{}` (the spelling `the-phrase-the-domain-words-is-one-line.test.ts` already gives a hole).
  */
 function shown(text: string): string {
   return text.replaceAll(INTERPOLATED, '{}').replace(/\s+/g, ' ').trim();
@@ -217,7 +217,7 @@ function speakingSources(): readonly string[] {
 /** A marker for what a person fills in: `<id>`, `<the line>`, `<path...>`. */
 const MARKER = /<[a-z][a-z0-9 .-]*>/g;
 
-/** One word standing where a marker or an interpolation was — no shell reads it as anything. */
+/** One word standing where a marker or an interpolation was: no shell reads it as anything. */
 const FILLED = '‹filled›';
 
 /** What a reading of one command said it is. */
@@ -227,7 +227,7 @@ type Reading =
   | { readonly kind: 'flag'; readonly path: readonly string[]; readonly flag: string }
   | { readonly kind: 'unwritten' };
 
-/** The option a flag names at `command` — looked up the way commander looks it up, up the chain. */
+/** The option a flag names at `command`: looked up the way commander looks it up, up the chain. */
 function optionAt(command: Command, flag: string): Option | undefined {
   for (let at: Command | null = command; at !== null; at = at.parent) {
     const found = at.options.find((one) => one.long === flag || one.short === flag);
@@ -272,7 +272,7 @@ export function readingsOf(program: Command, text: string): readonly Reading[] {
 // ---------------------------------------------------------------------------
 
 /**
- * The commands of the program that were handed an action of their own — read by watching the
+ * The commands of the program that were handed an action of their own: read by watching the
  * public `action()` while the program is built, and not out of commander's private field.
  *
  * It is the one thing the mirror cannot read back from a declaration: `witness` and `switch` act
@@ -310,8 +310,8 @@ function spelled(argument: Argument): string {
 
 /**
  * The program as its declarations describe it, and no more: every command, argument and option,
- * whether an option is mandatory and what it defaults to, the version, and whether a command acts
- * — with an empty body where it does, no hook anywhere, and no parser on any value.
+ * whether an option is mandatory and what it defaults to, the version, and whether a command acts,
+ * with an empty body where it does, no hook anywhere, and no parser on any value.
  */
 export function mirrorOf(real: Command): Command {
   const copy = new Command(real.name());
@@ -341,8 +341,8 @@ export function mirrorOf(real: Command): Command {
 }
 
 /**
- * What commander says about a line: nothing when it takes it whole — which includes asking for
- * help or for the version, the two answers that end with exit 0 — and its own refusal otherwise.
+ * What commander says about a line: nothing when it takes it whole (which includes asking for
+ * help or for the version, the two answers that end with exit 0) and its own refusal otherwise.
  * The mirror is built fresh for every line, so no option a line set can satisfy the next one.
  */
 export function refusalOf(program: Command, argv: readonly string[]): CommanderError | undefined {
@@ -361,7 +361,7 @@ export function refusalOf(program: Command, argv: readonly string[]): CommanderE
 
 /**
  * Every site whose command does not write its verb, and why nothing is lost by not checking it.
- * Keyed by the file and the command as the source spells it — never by line, which moves.
+ * Keyed by the file and the command as the source spells it, never by line, which moves.
  */
 export const THE_VERB_IS_NOT_WRITTEN: Readonly<Record<string, string>> = {
   'packages/code/src/repl/gate.ts: mnema {}':
@@ -392,10 +392,10 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * Every NAME in the corpus whose verb requires more than its path, keyed by the file and the
  * command, with how many times the file names it and why it is a name and not a line to type.
  *
- * It used to be a count inside a sentence — "nineteen names" — and a count cannot tell the next
+ * It used to be a count inside a sentence, "nineteen names", and a count cannot tell the next
  * instruction to type a bare line from the next mention of a verb. Each was read in its sentence
- * (29/09/2026): the ones below NAME a verb — to say what it does, what its output is for, or to
- * answer a line the person already typed whole — and none tells a person to type the verb alone.
+ * (29/09/2026): the ones below NAME a verb (to say what it does, what its output is for, or to
+ * answer a line the person already typed whole) and none tells a person to type the verb alone.
  */
 export const NAMES_THAT_NEED_MORE: Readonly<
   Record<string, { readonly times: number; readonly why: string }>
@@ -595,14 +595,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * NOT A FLOOR, AND NOT A FILTER. It is compared with what the readings found, exactly: a command
  * that starts being handed over moves a number here until somebody has looked at it, and a reading
- * that quietly stopped reading empties a row — which is how a sweep that broke is told apart from a
+ * that quietly stopped reading empties a row, which is how a sweep that broke is told apart from a
  * product that stopped handing commands over.
  *
  * THE WAY OUT OF AN IDENTITY WHOSE ONLY KEY IT IS moved two rows, each command looked at, and run
  * to the letter by `the-refusal-names-the-way-out.test.ts`: in the source, the refusal of a key in
- * two identities hands over the three steps of that way out that were never handed over — `key
+ * two identities hands over the three steps of that way out that were never handed over (`key
  * enroll <the line>` in the checkout the key founded from, the `key request --anchor` that prints
- * that line where the other key lives, and `key restore "<the key file>"` there — and the
+ * that line where the other key lives, and `key restore "<the key file>"` there) and the
  * revocation of a machine's own key hands over the same restore, with the file it takes (23 → 27
  * lines); on the page, the row that says so names the enrollment and the restore (21 → 23).
  *
@@ -630,7 +630,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * THE OPENING TEXTS ARE ASKED FOR WITH `--hook`, and that moved rows of the pages and of the
  * source, each looked at. The plugin's page names what its two handlers run as `mnema brief
- * --hook` and `mnema recall --hook` — a bare name became a line in four spans (67 → 63 names)
+ * --hook` and `mnema recall --hook`: a bare name became a line in four spans (67 → 63 names)
  * and the package's page says the hook's copy is `mnema brief --hook` (24 → 29 lines); the two
  * blocks a person runs to see what a session is handed carry the flag too (20 → 18 names,
  * 33 → 35 lines). In the source, the table of what
@@ -639,11 +639,11 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT, and the plugin's page says what that
  * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
- * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
+ * `--hook`, and the session is handed what `mnema brief` prints, two names in one span, looked
  * at (63 → 65 names).
  *
- * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose — the
- * witness that dates a record and the cut the CI recipe fails on by design — and the recipe
+ * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose, the
+ * witness that dates a record and the cut the CI recipe fails on by design, and the recipe
  * itself is one block line more (66 → 68 names in spans, 35 → 36 lines in blocks); and
  * `verify --since` beside `--workspace` hands over the line to run in each project instead
  * (34 → 35 lines in the source).
@@ -653,7 +653,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * that shows where things stand, `mnema status` (a name), and, when the directory is not the root of
  * the repository, `mnema init` to run there (a name); `status` without an identity says to run `mnema
  * init` (a name); and a supersede by a proposal names the accept that would put the successor in
- * force, `mnema decision move accept <id> --note "<why>"` (a line) — 34 → 36 lines, 46 → 49 names.
+ * force, `mnema decision move accept <id> --note "<why>"` (a line): 34 → 36 lines, 46 → 49 names.
  *
  * THE COUNT IS PER FILE. Up to here it was one total for each part of the corpus (the spans of
  * the pages, their blocks, the source), and every change that handed a command over in any file
@@ -883,8 +883,8 @@ describe('the readings know what they read', () => {
 
   it('the program uses no parse setting the mirror cannot copy', () => {
     // THE MIRROR'S PREMISE, READ OFF THE SOURCE. A setting commander keeps with no getter cannot
-    // be carried over, so a verb that began using one would be parsed here by commander's default
-    // — and a stricter real parse would be a line this guard passes. `aliases()` with nothing in
+    // be carried over, so a verb that began using one would be parsed here by commander's default,
+    // and a stricter real parse would be a line this guard passes. `aliases()` with nothing in
     // it READS the aliases, and is left alone.
     const setters =
       /\.(?:allowExcessArguments|allowUnknownOption|passThroughOptions|enablePositionalOptions|conflicts|implies|env|preset|alias)\(|\.aliases\(\s*[^)\s]/;
@@ -992,7 +992,7 @@ describe('the reading FIRES', () => {
   });
 
   it('the mirror refuses what the program refuses, with the same code', () => {
-    // Asked of the REAL program only for lines it refuses before anything runs — a refusal of the
+    // Asked of the REAL program only for lines it refuses before anything runs: a refusal of the
     // parser is thrown before any hook or action, so this reads no record and touches no home.
     const refusedLines = [
       ['key', 'revoke', 'x'],

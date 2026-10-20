@@ -1,10 +1,10 @@
 /**
- * THE FIRST USE SAYS WHAT IT DID AND WHAT COMES NEXT — one case per friction a first walkthrough
+ * THE FIRST USE SAYS WHAT IT DID AND WHAT COMES NEXT: one case per friction a first walkthrough
  * from a clone measured, each against the built command line.
  *
  * Every case below was a sentence a person was left to find: `status` refused for want of a flag
  * the person had no way to know, `init` left them to discover that `.mnema/` is committed and what
- * to type next, `ADR-1` — the name every write prints — was refused as an address with the same
+ * to type next, `ADR-1`, the name every write prints, was refused as an address with the same
  * words as an id that exists nowhere, a supersede by a proposal answered like a clean
  * replacement while the project was left with no rule in force, and `timeline` listed four events
  * all called `decision.transitioned`.

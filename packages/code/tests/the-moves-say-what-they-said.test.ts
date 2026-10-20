@@ -1,8 +1,8 @@
 /**
  * What a move SAID reaches the person and the index, not only a flag.
  *
- * A transition carries `fields` — `note`, `reason`, `feedback`, and the locators beside
- * them — and they are the words somebody wrote to justify the move. They enter the
+ * A transition carries `fields` (`note`, `reason`, `feedback`, and the locators beside
+ * them) and they are the words somebody wrote to justify the move. They enter the
  * signed chain. MEASURED on the built binary, before any of this existed, over a task
  * completed with `--note "ZEBRAMARKER …"`:
  *
@@ -11,7 +11,7 @@
  *     mnema show <id>              -> title, state, two instants, no note
  *     mnema search ZEBRAMARKER     -> "Nothing recorded matching …"
  *
- * A fact in the chain that only a flag can reach is a fact written for a flag — and for
+ * A fact in the chain that only a flag can reach is a fact written for a flag, and for
  * a TASK it is worse than that: the prose of its moves is the only body a task will ever
  * have, so the index held a record with nothing in it to find.
  *
@@ -19,7 +19,7 @@
  *   - the three surfaces, over one marker nothing else in the record contains, so a hit
  *     cannot come from the title.
  *   - THE CONTRAST, in the same shapes: a move that said nothing adds no line, no
- *     heading and no blank section — the absence has to survive, or "it prints the
+ *     heading and no blank section; the absence has to survive, or "it prints the
  *     proof" would be indistinguishable from "it prints a heading over nothing".
  *   - EVERY MOVE AND NOT THE LAST. A task completed, reopened with a reason and
  *     completed again holds three pieces of prose and the record holds all three. A
@@ -28,8 +28,8 @@
  *   - ALL THREE STATE MACHINES. The rule is one function called from three folds; a
  *     case per machine is what fails if one of them is missed.
  *
- * WHAT IS NOT HERE: the reading of `fields` itself — every field of the catalog, the
- * order, and the three ways of saying nothing — is asserted beside the function that
+ * WHAT IS NOT HERE: the reading of `fields` itself (every field of the catalog, the
+ * order, and the three ways of saying nothing) is asserted beside the function that
  * does it, in `chain/src/events/proof.test.ts`. This file is about the three SURFACES.
  */
 
@@ -135,7 +135,7 @@ describe('what a move said reaches the person and the index', () => {
     expect(timelineProse(id)).toEqual([
       `note: ${MARKER} the retry budget is capped at four attempts`,
     ]);
-    // 3 · `search`, by the words themselves — the read that had nothing at all.
+    // 3 · `search`, by the words themselves: the read that had nothing at all.
     expect(found(MARKER)).toEqual([id]);
   });
 
@@ -168,7 +168,7 @@ describe('what a move said reaches the person and the index', () => {
     // In the chain's own order, and each named by the move that said it.
     expect(shown(id).filter((line) => line.startsWith('complete ·')).length).toBe(2);
     expect(shown(id).filter((line) => line.startsWith('reopen ·')).length).toBe(1);
-    // And all three are findable — the half a "latest only" projection would lose.
+    // And all three are findable: the half a "latest only" projection would lose.
     expect(found(`${MARKER}-one`)).toEqual([id]);
     expect(found(`${MARKER}-two`)).toEqual([id]);
     expect(found(`${MARKER}-three`)).toEqual([id]);

@@ -7,7 +7,7 @@
  * is written by the surface that SERVES a body, which is the agent's; a person curating
  * patterns opens the file with `mnema show`, which records nothing and structurally
  * cannot. So a reading that treated "no consultation" as "did not consult" would name
- * every person doing the work correctly — a signal that fires on the correct behaviour is
+ * every person doing the work correctly: a signal that fires on the correct behaviour is
  * not a signal.
  *
  * What makes the middle answer sayable is the RUN, and the cases below are the truth
@@ -18,15 +18,15 @@
  *   3. the run was served nothing at all                 → not observable
  *
  * CASE 3 IS DRIVEN TWICE, and the second time is the point. Once through the agent's
- * surface with no consultation in the run, and once by a PERSON at the command line —
- * `run start`, `mnema show <id>`, `mnema skill move review <id>` — which is the exact
+ * surface with no consultation in the run, and once by a PERSON at the command line
+ * (`run start`, `mnema show <id>`, `mnema skill move review <id>`), which is the exact
  * sequence the study said no rule could tell apart from skipping the reading. The rule of
  * the run tells it apart, and the page comes back with nothing pointed at that pattern.
  *
  * NOTHING HERE WRITES A `skill.consulted` BY HAND. Every one of them comes out of
  * `runSkillsTool`, the only thing in the product that writes one, and every move comes out
  * of the MCP tool or the CLI verb that moves a pattern. A fixture that appended the event
- * itself would leave this suite green over a shape the product does not produce — and the
+ * itself would leave this suite green over a shape the product does not produce, and the
  * envelope field the whole rule turns on (`run`) is exactly the field a hand-written
  * fixture gets to choose.
  *
@@ -123,7 +123,7 @@ async function page(): Promise<string> {
   return said.out.join('\n');
 }
 
-/** An agent connection over this project — the surface that serves a body. */
+/** An agent connection over this project: the surface that serves a body. */
 function connect(): Session {
   return openSession({ clientName: 'agent-alpha', roots: [pathToFileURL(repo).href], env });
 }
@@ -135,7 +135,7 @@ function propose(session: Session, name: string): string {
   return created.id;
 }
 
-/** Has the connection served a body — the only thing that writes a consultation. */
+/** Has the connection served a body: the only thing that writes a consultation. */
 function consult(session: Session, id: string): void {
   const served = runSkillsTool(session, { id });
   if (!served.ok) throw new Error(`setup: skills refused — ${served.message}`);
@@ -156,7 +156,7 @@ function move(session: Session, id: string, action: 'review' | 'adopt' | 'deprec
 }
 
 /**
- * A content digest of every file under `dir` — the shape the read-only guards of this
+ * A content digest of every file under `dir`: the shape the read-only guards of this
  * suite share.
  */
 function digest(dir: string): string {
@@ -218,7 +218,7 @@ describe('the three answers the record can give about a pattern move', () => {
     expect(witness.consulted.map((m) => [m.skill, m.action])).toEqual([[id, 'review']]);
     expect(witness.movedWithoutConsulting).toEqual([]);
     expect(witness.notObservable).toEqual([]);
-    // The consultation and the move name the SAME session — the field the whole rule
+    // The consultation and the move name the SAME session: the field the whole rule
     // turns on, so a run that quietly stopped travelling would not pass here.
     expect(witness.consulted[0]?.run).toBeDefined();
     expect(await page()).toContain('pattern moves with a consultation in the same run: 1');
@@ -233,7 +233,7 @@ describe('the three answers the record can give about a pattern move', () => {
 
     const witness = await reported();
     // The run recorded a consultation, so its silence about the other pattern MEANS
-    // something — and it is the only pattern the reading names.
+    // something, and it is the only pattern the reading names.
     expect(witness.movedWithoutConsulting.map((m) => [m.skill, m.action])).toEqual([
       [moved, 'review'],
     ]);
@@ -258,7 +258,7 @@ describe('the three answers the record can give about a pattern move', () => {
     expect(witness.consulted).toEqual([]);
 
     // TWO ASSERTIONS, and the second is the one this reading exists for: the page says
-    // the count, and it says nothing ABOUT this pattern — the accusing line is absent,
+    // the count, and it says nothing ABOUT this pattern; the accusing line is absent,
     // and so is the id it would have carried.
     const said = await page();
     expect(said).toContain('pattern moves in a run with no consultation at all: 1');
@@ -266,7 +266,7 @@ describe('the three answers the record can give about a pattern move', () => {
     expect(said).not.toContain(id);
   });
 
-  it('a person driving the command line — run start, show, skill move — is never accused', async () => {
+  it('a person driving the command line (run start, show, skill move) is never accused', async () => {
     // The sequence the study said nothing could tell apart from skipping the reading:
     // a session IS open, the body WAS read, and `mnema show` records nothing because the
     // auditor's surface has no writer. The rule of the run tells it apart.
@@ -309,7 +309,7 @@ describe('the three answers the record can give about a pattern move', () => {
 
   it('says what it can witness on the page, in all three cases', async () => {
     // The closing note is not a footer: it is what makes the counts above it readable,
-    // so it is on the page whatever the record says — including when there is no move in
+    // so it is on the page whatever the record says, including when there is no move in
     // it at all.
     expect(await page()).toContain(WITNESS_NOTE);
 
@@ -327,7 +327,7 @@ describe('the three answers the record can give about a pattern move', () => {
     move(quiet, unread, 'review');
 
     const said = await page();
-    // All three answers are on this one page — consulted, asserted, and unobservable —
+    // All three answers are on this one page (consulted, asserted, and unobservable)
     // so the sentence is being read beside every one of them rather than beside a zero.
     expect(said).toContain('pattern moves with a consultation in the same run: 1');
     expect(said).toContain('pattern moves with none, in a run that recorded others: 1');
@@ -337,10 +337,10 @@ describe('the three answers the record can give about a pattern move', () => {
     expect((await reported()).note).toContain(WITNESS_NOTE);
   });
 
-  it('is the command line’s alone — the agent’s own audit tool carries none of it', () => {
+  it('is the command line’s alone: the agent’s own audit tool carries none of it', () => {
     // The axis, held to being an axis. Handing an agent a tool for checking whether it
     // consulted before it moved lets the audited party clear the finding before anybody
-    // reads it, so this reading rides beside `Antipatterns` rather than inside it — and
+    // reads it, so this reading rides beside `Antipatterns` rather than inside it, and
     // that is a property of a type, which nothing but a case like this can see.
     const session = connect();
     const read = propose(session, 'the-one-we-read');
@@ -362,7 +362,7 @@ describe('the three answers the record can give about a pattern move', () => {
     }
   });
 
-  it('writes nothing — the whole sandbox, byte for byte, around the reading', async () => {
+  it('writes nothing: the whole sandbox, byte for byte, around the reading', async () => {
     const session = connect();
     const read = propose(session, 'the-one-we-read');
     const moved = propose(session, 'the-one-we-moved');

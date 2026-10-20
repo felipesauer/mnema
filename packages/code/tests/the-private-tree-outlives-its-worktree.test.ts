@@ -2,7 +2,7 @@
  * A private note written in a linked worktree survives `git worktree remove`.
  *
  * THE DEFECT, MEASURED ON THE SHIPPED BINARY. The private tree lived at
- * `<worktree>/.mnema/private/`, ignored by git — and `git worktree remove` deletes ignored files
+ * `<worktree>/.mnema/private/`, ignored by git, and `git worktree remove` deletes ignored files
  * without `--force` and without a word. Agents' hosts make and remove worktrees on their own, so
  * every private note an agent took in one went with it.
  *
@@ -110,7 +110,7 @@ describe('a private note taken in a linked worktree', () => {
 describe('a project nested where the top project’s tree keeps its tails', () => {
   it('keeps its private tree beside the top’s, and the top still verifies', () => {
     // Keyed by the relative path WITH its slashes, the tree of a project at `private/tails`
-    // was `<git dir>/mnema/private/tails/private` — inside the top's `tails/`.
+    // was `<git dir>/mnema/private/tails/private`: inside the top's `tails/`.
     const nested = join(repo, 'private', 'tails');
     mkdirSync(nested, { recursive: true });
     expect(mnema(nested, 'init').status).toBe(0);

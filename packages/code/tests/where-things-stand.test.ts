@@ -1,10 +1,10 @@
 /**
- * WHERE THINGS STAND — the opening read, and the proof that there is only one of it.
+ * WHERE THINGS STAND: the opening read, and the proof that there is only one of it.
  *
  * The derivation was never in question: `@mnema/context`'s `bootstrap` closes the table
  * of what a record can be waiting on (`ARCHITECTURE.md` §1.3), and it is proved against
  * the transition tables in its own package. What this file is about is the DOOR. Until
- * `mnema status` existed, that derivation had one caller — the MCP server — so an agent
+ * `mnema status` existed, that derivation had one caller, the MCP server, so an agent
  * could ask where things stood and the person whose record it is could not.
  *
  * A second door is exactly the shape that becomes a second ANSWER, so the cases here are
@@ -21,7 +21,7 @@
  *     nothing".
  *   - THE ANSWER REACHES EVERY CELL. Five of the six cells of §1.3 are served, and a
  *     record that cannot PRODUCE one of them makes a measurement of its absence
- *     meaningless — so the fixture rules on some things and deliberately leaves others
+ *     meaningless, so the fixture rules on some things and deliberately leaves others
  *     waiting, and each cell is asserted present before anything is asserted about how
  *     it reads. The task machine's waiting side is TWO of those things now: a task
  *     waiting on a move is the work list and a task waiting on a verdict is the other
@@ -33,7 +33,7 @@
  * WHAT THIS FILE DOES NOT DO is assert the derivation. Which decision governs, what
  * counts as awaiting a judgement, how the lists are ordered and where they are cut are
  * `context`'s (`bootstrap.test.ts`), and a copy of those assertions here would be a
- * second reading of the same rule — the thing the guards below exist to prevent.
+ * second reading of the same rule: the thing the guards below exist to prevent.
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -80,7 +80,7 @@ function capture(): { io: CliIo; out: string[]; err: string[]; failed: () => boo
  * `##` section.
  *
  * It is written the way `adr-tools` and every published template write one, because
- * that is what the reader was built for — a fixture in some other shape would be
+ * that is what the reader was built for: a fixture in some other shape would be
  * refused by the scan and would make a case about what is outside the record pass for
  * the wrong reason.
  */
@@ -96,7 +96,7 @@ async function mnema(...argv: string[]): Promise<string[]> {
   return c.out;
 }
 
-/** The id inside the parentheses of a birth's headline — `Created task t-1a2b (<id>)`. */
+/** The id inside the parentheses of a birth's headline: `Created task t-1a2b (<id>)`. */
 function bornId(lines: readonly string[], head: string): string {
   const line = lines.find((one) => one.startsWith(head));
   const id = line?.match(/\(([0-9a-f-]{36})\)/)?.[1];
@@ -105,14 +105,14 @@ function bornId(lines: readonly string[], head: string): string {
 }
 
 /**
- * A record that can PRODUCE every cell the opening read serves — which is the condition
+ * A record that can PRODUCE every cell the opening read serves, which is the condition
  * for measuring any of them.
  *
  * The five cells are live work, a decision in force, an adopted pattern, a decision
  * awaiting a ruling and a pattern awaiting one; the sixth (a task that already holds) is
  * deliberately unserved, because such a task is terminal and there is nothing to do
  * about it. A fixture that ruled on everything it proposed would leave the waiting side
- * empty, and a case over it would be asserting that the read says nothing — which is
+ * empty, and a case over it would be asserting that the read says nothing, which is
  * true of the FIXTURE and says nothing about the read.
  *
  * Every value here is written THROUGH the product: the anchor is the one `init` derived,
@@ -192,7 +192,7 @@ async function aRecordThatReachesEveryCell(): Promise<{
   // pattern can wait in.
   await mnema('task', 'move', 'submit', liveTask);
   // The task machine's two sides, through the gate: one waiting on a verdict, and one
-  // that ARRIVED — which the opening read serves on neither list, and which is here so
+  // that ARRIVED, which the opening read serves on neither list, and which is here so
   // that absence is measured over a record that can produce it.
   for (const id of [waitingTask, overTask]) {
     await mnema('task', 'move', 'submit', id);
@@ -230,7 +230,7 @@ async function statusJson(anchor: string): Promise<Record<string, unknown>> {
  * Three fields are derived from the instant the question was asked (`ageSeconds`,
  * `idleSeconds`) or from which party asked it (`thisSession`), so two doors answering
  * the same record milliseconds apart differ in them legitimately. Dropping them by NAME
- * rather than by a loose comparison is what keeps the rest exact — and the case that
+ * rather than by a loose comparison is what keeps the rest exact, and the case that
  * uses this asserts what SURVIVES, so a drop that emptied the comparison is caught
  * rather than passed.
  */
@@ -265,7 +265,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('mnema status — the opening read, over a record that reaches every cell', () => {
+describe('mnema status: the opening read, over a record that reaches every cell', () => {
   it('names the live work, what governs, what is adopted and what awaits a ruling', async () => {
     const fixture = await aRecordThatReachesEveryCell();
     const served = await statusJson(fixture.anchor);
@@ -317,19 +317,19 @@ describe('mnema status — the opening read, over a record that reaches every ce
       const lines = printed.filter((line) => line.includes(id));
       expect(lines, `one line for ${id}`).toHaveLength(1);
     }
-    // The task that arrived is on NO line of this read — the sixth cell, deliberately
+    // The task that arrived is on NO line of this read: the sixth cell, deliberately
     // empty, asserted over a record that holds one.
     expect(printed.filter((line) => line.includes(fixture.overTask))).toEqual([]);
-    // The waiting list says which machine each item is and which ruling is missing —
+    // The waiting list says which machine each item is and which ruling is missing:
     // without those two words the line names a record and no action.
     expect(text).toMatch(new RegExp(`${fixture.waitingTask}\\s+task\\s+.*\\(IN_REVIEW\\)`));
     expect(text).toMatch(new RegExp(`${fixture.waitingDecision}\\s+decision\\s+.*\\(proposed\\)`));
     expect(text).toMatch(new RegExp(`${fixture.waitingSkill}\\s+skill\\s+.*\\(reviewed\\)`));
-    // NAMES, NEVER BODIES — the derivation's rule, kept by the surface that prints it.
+    // NAMES, NEVER BODIES: the derivation's rule, kept by the surface that prints it.
     expect(text).not.toContain('One reviewable change with its tests.');
     expect(text).not.toContain('a wiki page goes stale');
     // THE SECOND CONTRAST for the section that says what was not looked at: this
-    // fixture is full — seven records across all three machines — and every one of them
+    // fixture is full, seven records across all three machines, and every one of them
     // is a kind this reading DOES look at. So the section is absent, which is what
     // separates "declares when something is outside" from "declares whenever there is
     // anything at all".
@@ -344,7 +344,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
     const printed = await mnema('status', '--actor', anchor);
     // Each half states its own emptiness. A heading with nothing under it is the shape
     // the derivation's own doc calls the worst an opening read can have: an empty answer
-    // that reads like an answer. Compared on the words rather than on the depth — the
+    // that reads like an answer. Compared on the words rather than on the depth: the
     // session's half is a FACT under the heading and the four lists are headings of
     // their own, which is a difference the golden pins and this case is not about.
     const said = printed.map((line) => line.trim());
@@ -367,7 +367,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
     const anchor = identity.trim().slice('identity:'.length).trim();
     // THE REPRODUCTION, on the surface that printed it. Three memories and nothing
-    // else — every list of this reading is about a task, a decision or a pattern, so
+    // else: every list of this reading is about a task, a decision or a pattern, so
     // all four are correctly empty and the record is not.
     const started = await mnema('run', 'start', '--which', 'probe', '--goal', 'x');
     const opened = started.find((line) => line.startsWith('Started run '));
@@ -407,7 +407,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
     // THE REPRODUCTION, on the surface a person types. Measured on a real project: four
     // documents in a base the record had already imported from were outside it, three of
     // them written the day before, with the product running the whole time. Nothing said
-    // so — the only way to find out was to run the import, which is the gesture nobody
+    // so: the only way to find out was to run the import, which is the gesture nobody
     // remembered.
     const initiated = await mnema('init');
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
@@ -420,7 +420,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
 
     // THE CONTRAST, and it comes first because it is what makes the case below about
     // the defect rather than about the section existing. Every document of the base is
-    // in the record, so there is nothing outside and the section is ABSENT — the rule
+    // in the record, so there is nothing outside and the section is ABSENT, the rule
     // the fifth section already follows, for its reason: a heading over no fact is this
     // surface asserting something it never asked.
     const settled = (await mnema('status', '--actor', anchor)).join('\n');
@@ -435,7 +435,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
     // The COUNT is of what is outside and not of what the base holds: three files are
     // there and two of them are in the record.
     expect(printed).not.toContain('docs/decisions (3)');
-    // It names the verb that PROPOSES and never one that accepts — what to do about a
+    // It names the verb that PROPOSES and never one that accepts: what to do about a
     // document outside the record is the reader's call.
     expect(printed).not.toMatch(/decision (accept|transition)/);
     // And the number moves with the disk: a second document outside makes it two.
@@ -471,15 +471,15 @@ describe('mnema status — the opening read, over a record that reaches every ce
 
   it('reports a base the record never named as ARRIVAL, under its own heading', async () => {
     // THIS CASE ASSERTED THE OPPOSITE AND WAS NAMED FOR IT: *"says nothing about bases the
-    // record never named — it guesses no directory"*. What it really held was that
+    // record never named; it guesses no directory"*. What it really held was that
     // `Not in the record:` stays silent, which is still true, so it would have gone on
-    // passing over the whole of the section below — green, and blind, for the one change
+    // passing over the whole of the section below: green, and blind, for the one change
     // that made its own title false. It is rewritten to hold BOTH halves.
     //
     // The doctrine it cited is unchanged where it was written: `decisionsOutsideTheRecord`
     // still names no directory of its own, and the drift section below is still silent
     // about a base nobody imported. What is new is a second reading that DOES name
-    // directories — five a published ADR tool creates — and it proposes nothing: it
+    // directories, five a published ADR tool creates, and it proposes nothing: it
     // counts file names and prints the verb. The argument is in `outside-the-record.ts`.
     const initiated = await mnema('init');
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
@@ -506,7 +506,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
     expect(after).toContain('docs/decisions (1) — mnema decision import docs/decisions');
   }, 30_000);
 
-  it('says nothing at all where no conventional base exists — the other half', async () => {
+  it('says nothing at all where no conventional base exists: the other half', async () => {
     // The half a section that only ever speaks would pass without. A repository with no
     // decision documents anywhere gets neither heading, and `No decisions in force` is the
     // whole honest answer.
@@ -536,7 +536,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
 
   it('never names a base the record already reads, so one directory is never two lines', async () => {
     // The two readings share ONE walk of the `derived-from` relation for this reason. A
-    // base the record names at all is the drift section's subject whatever its count —
+    // base the record names at all is the drift section's subject whatever its count,
     // including when every document of it is already in, and the drift section therefore
     // prints nothing. Silence from BOTH is the right answer there, and a second walk is how
     // the arrival section would come to re-announce a directory somebody already imported.
@@ -584,8 +584,8 @@ describe('the two surfaces answer with one derivation', () => {
       // A JSON round trip, so what is compared is a parsed document and not two live objects.
       const fromMcp = JSON.parse(JSON.stringify(runBootstrap(session))) as unknown;
 
-      // The session's actor IS the machine's anchor — the same identity the CLI was
-      // handed — so the two are answering the same question and not two.
+      // The session's actor IS the machine's anchor (the same identity the CLI was
+      // handed), so the two are answering the same question and not two.
       expect(session.who).toBe(fixture.anchor);
 
       const cli = withoutTheClock(fromCli) as Record<string, unknown>;
@@ -641,8 +641,8 @@ function production(): { path: string; code: string }[] {
  * is not "imports from context".
  *
  * THAT PARAGRAPH SAID `brief` REACHES TWO OF THEM AND IT REACHES FOUR NOW. The document
- * grew the two counts of what is recorded here and AWAITING A JUDGEMENT — the number
- * that makes `## Decisions in force (6)` legible over a record of 247 — and it takes
+ * grew the two counts of what is recorded here and AWAITING A JUDGEMENT, the number
+ * that makes `## Decisions in force (6)` legible over a record of 247, and it takes
  * them from the derivations `bootstrap` lists from, deliberately, so that the count and
  * the reading that NAMES them cannot come to disagree. The count of halves stopped
  * separating the two files on the day that happened, and what replaced it is not a
@@ -661,7 +661,7 @@ const HALVES = [
 ] as const;
 
 /**
- * The halves that are about the SESSION and the WORK — the three a governance document
+ * The halves that are about the SESSION and the WORK: the three a governance document
  * can never legitimately reach.
  *
  * They are the discriminant the count used to stand in for. What separates the
@@ -710,8 +710,8 @@ describe('one derivation, and the doors that serve it', () => {
   });
 
   it('serves the opening read from exactly two doors, and the derivation itself', () => {
-    // THE RULE. `bootstrap` is called by the two adapters that serve it — one per
-    // surface — and by the module that defines it. A third door added tomorrow arrives
+    // THE RULE. `bootstrap` is called by the two adapters that serve it, one per
+    // surface, and by the module that defines it. A third door added tomorrow arrives
     // here as a failure rather than as a second answer nobody compared.
     expect(callsBootstrap(FILES)).toEqual([
       'code/src/commands/status.ts',
@@ -730,7 +730,7 @@ describe('one derivation, and the doors that serve it', () => {
     ]);
     const brief = FILES.find((file) => file.path === 'context/src/context/brief.ts')?.code ?? '';
     // WHICH four, exactly. The assertion this replaces was `toBe(2)`, and it would have
-    // gone on passing over a brief that had traded `decisionsInForce` for `liveWork` —
+    // gone on passing over a brief that had traded `decisionsInForce` for `liveWork`:
     // a count cannot tell one half from another, which is the whole failure it existed
     // to catch.
     expect(halvesOf(brief)).toEqual([
@@ -745,7 +745,7 @@ describe('one derivation, and the doors that serve it', () => {
     for (const half of SESSION_AND_WORK) expect(halvesOf(brief)).not.toContain(half);
   });
 
-  it('accuses a third door and a hand-composed answer — on input of its own', () => {
+  it('accuses a third door and a hand-composed answer: on input of its own', () => {
     // The mechanism's teeth. With the tree honest the two cases above say only "nothing
     // is accused", so neither has ever shown these nets can go red.
     const thirdDoor = [{ path: 'code/src/wiring/later.ts', code: 'return bootstrap(caches, s);' }];
@@ -758,7 +758,7 @@ describe('one derivation, and the doors that serve it', () => {
     ];
     expect(composesTheOpening(handComposed)).toEqual(['code/src/commands/later.ts']);
     // And neither net is a constant: a file that does neither comes through clean, and
-    // the PROSE that names the derivation is not a call — which is the whole reason the
+    // the PROSE that names the derivation is not a call, which is the whole reason the
     // scan runs over code with the comments blanked.
     const innocent = [
       {
@@ -786,7 +786,7 @@ describe('the console offers it, and does not run it on opening', () => {
     expect(program.commands.map((command) => command.name())).toContain('status');
   });
 
-  it('is a verb and not part of the opening — nothing in the console reaches it', () => {
+  it('is a verb and not part of the opening: nothing in the console reaches it', () => {
     // The console draws its opening without asking the record what there is to do, and
     // it must stay that way: what the opening costs is measured in
     // `the-name-and-the-hints.test.ts` and this read is not in that budget. So no file

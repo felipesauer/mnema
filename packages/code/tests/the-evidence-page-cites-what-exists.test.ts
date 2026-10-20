@@ -1,5 +1,5 @@
 /**
- * THE EVIDENCE PAGE CITES ONLY WHAT EXISTS — every file `docs/evidence.md` names as the thing
+ * THE EVIDENCE PAGE CITES ONLY WHAT EXISTS: every file `docs/evidence.md` names as the thing
  * that holds a claim is a file of this tree.
  *
  * The page is a table from a claim to what holds it. A row whose file was renamed, or never

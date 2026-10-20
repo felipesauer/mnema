@@ -9,9 +9,9 @@
  * what a person's machine would emit.
  *
  * It also binds the two readings of one declared window. `--from`/`--to`/`--who`/
- * `--which` are stated once (`AuthorshipFilter`) and READ twice — `accountability` counts
+ * `--which` are stated once (`AuthorshipFilter`) and READ twice (`accountability` counts
  * them in SQL over the reference index, this feed selects them in memory over the event
- * stream — because neither reading can be expressed as the other. Two readings of one rule
+ * stream), because neither reading can be expressed as the other. Two readings of one rule
  * is the shape that produces silent divergence, so the rule is not that there is one
  * reading; the rule is that the two are held to the same answer over the same record, which
  * is what the matrix below does.
@@ -67,7 +67,7 @@ async function mnema(...argv: string[]): Promise<string[]> {
   return c.out;
 }
 
-/** Every string anywhere in every payload of a tree — the record's own bodies. */
+/** Every string anywhere in every payload of a tree: the record's own bodies. */
 function recordedText(root: string | undefined): string[] {
   if (root === undefined || !existsSync(root)) return [];
   const found: string[] = [];
@@ -115,7 +115,7 @@ async function aRecordFullOfBodies(): Promise<{ anchor: string; task: string }> 
     'Recorded ',
   );
   await mnema('decision', 'move', 'accept', decision, '--note', BODY);
-  // A skill is BORN proposed, so its report says so — the workflow's own word, not a
+  // A skill is BORN proposed, so its report says so: the workflow's own word, not a
   // generic "created".
   const skill = after(
     await mnema('skill', 'create', `a pattern about ${BODY}`, '--body', BODY),
@@ -137,7 +137,7 @@ async function aRecordFullOfBodies(): Promise<{ anchor: string; task: string }> 
  *
  * READ FROM THE PARENTHESES when there are any. A birth prints its display ALIAS first
  * and the id beside it (`Created task t-4f2a (0198f3c1-…)`), and the alias is a label
- * rather than a second key — a verb handed one answers "No task t-4f2a here." So the
+ * rather than a second key: a verb handed one answers "No task t-4f2a here." So the
  * bracketed value is the id whenever the line carries one, and the bare word only where a
  * kind mints no alias (a run).
  */
@@ -174,7 +174,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('mnema export — the feed leaves the bodies behind', () => {
+describe('mnema export: the feed leaves the bodies behind', () => {
   it('emits not one byte of any body, over a record that is full of them', async () => {
     await aRecordFullOfBodies();
 
@@ -228,7 +228,7 @@ describe('mnema export — the feed leaves the bodies behind', () => {
     expect(born?.metadata.original_time).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it('answers ONE window with two readings that agree — the feed and the count', async () => {
+  it('answers ONE window with two readings that agree: the feed and the count', async () => {
     // ONE RULE, HELD RATHER THAN DECLARED. `accountability` counts the window in SQL over the
     // reference index; the feed selects it in memory over the event stream. A condition
     // added to one and not the other is red HERE, on the record both read.
@@ -238,7 +238,7 @@ describe('mnema export — the feed leaves the bodies behind', () => {
       [],
       ['--who', anchor],
       // The same identity by the SHORT form every read prints, which is the form a person
-      // pastes — and which both verbs have to resolve the same way or the counts part.
+      // pastes, and which both verbs have to resolve the same way or the counts part.
       ['--who', short],
       ['--which', 'agent-alpha'],
       ['--which', 'nobody-by-that-name'],

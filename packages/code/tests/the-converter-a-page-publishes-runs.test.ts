@@ -1,11 +1,11 @@
 /**
- * THE CONVERTER THIS PACKAGE PUBLISHES IS A CONVERTER THAT RUNS — and what it writes is
+ * THE CONVERTER THIS PACKAGE PUBLISHES IS A CONVERTER THAT RUNS, and what it writes is
  * what the door takes.
  *
  * WHY IT IS PUBLISHED AT ALL, which is the measurement this guard stands over. The reader
  * takes ONE shape: a decision per file, a level-1 title, a why. Of four real decision
  * corpora on one machine, two follow it and two do not, and one project keeps 416 decided
- * things in a markdown TABLE — which this product will not learn, because a generic table
+ * things in a markdown TABLE, which this product will not learn, because a generic table
  * reader would still need somebody to declare which column is the title, which holds the
  * why, and which half of the file is history rather than agenda. Declaring all of that IS
  * writing the converter, in a worse language. So the page publishes the converter instead
@@ -13,7 +13,7 @@
  *
  * WHAT WENT WRONG THE FIRST TIME, said out loud because it is the thing this guards
  * against. The study that produced this section wrote its converter in twenty minutes with
- * the corpus open, the build in hand, and knowledge of which table section was which — and
+ * the corpus open, the build in hand, and knowledge of which table section was which, and
  * called the cost cheap. That was the wrong cost measured: the reader of a published
  * converter has none of those. So what is published is generic, is thirty lines, names the
  * three things nobody can work out for them at the top, and is RUN HERE against a table
@@ -21,7 +21,7 @@
  *
  * THE PAGE'S OWN BYTES RUN, unedited. The block is lifted from `docs/cli-reference.md`
  * between its two markers and executed by `node` in a sandbox whose `DECISIONS.md` and
- * `docs/decisions` are the paths the published script already names — so a script that
+ * `docs/decisions` are the paths the published script already names, so a script that
  * only works after a reader edits something this test quietly supplied would not pass. A
  * page that publishes a converter that throws, or that writes files the import refuses,
  * goes red here rather than on somebody's first afternoon with this product.
@@ -65,7 +65,7 @@ function publishedConverter(): string {
 }
 
 /**
- * The table a reader would be converting FROM — written here, never taken from a corpus.
+ * The table a reader would be converting FROM: written here, never taken from a corpus.
  *
  * It carries the two rows a table really has and a converter really has to survive: one
  * whose why cell is empty, and one whose why cell is a markdown rule. Both are what the

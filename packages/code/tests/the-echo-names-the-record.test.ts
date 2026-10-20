@@ -2,7 +2,7 @@
  * The echo of a move NAMES the record it moved.
  *
  * A move's confirmation is the acknowledgement of a signed write, and it used to name
- * the record by its DISPLAY alone — `Decision ADR-1 → accepted`. None of the three
+ * the record by its DISPLAY alone: `Decision ADR-1 → accepted`. None of the three
  * displays is an identity: an `ADR-<n>` is minted within one chain, a pattern's name
  * has no uniqueness constraint at all, and a task's alias is a four-hex hash of the
  * id. So the line, read anywhere the command that produced it is not, could be the
@@ -12,13 +12,13 @@
  *
  *   1. THE CASE THAT ORIGINATED THIS. Over a record whose public and private trees
  *      each hold an `ADR-1`, the two moves used to print the SAME eleven bytes. Now
- *      each line says which rule moved — asserted by moving both and comparing the
+ *      each line says which rule moved: asserted by moving both and comparing the
  *      lines, on each of the two surfaces.
  *   2. THE ID IS FINDABLE, not merely present: the value the line prints is fed back
  *      to a read, and the read answers about the record that moved. A line carrying a
  *      value nothing resolves would pass a "contains an id" assertion and help nobody.
  *   3. ONE LINE, with the id inside it. A pattern's name is text an actor wrote, and
- *      a move echo is a one-item list — one per reply — so a break in the name would
+ *      a move echo is a one-item list, one per reply, so a break in the name would
  *      give the second half the whole shape of an acknowledgement to imitate.
  *   4. THE FALLBACK, both halves: with no display in the record the line names the id,
  *      and with one it names the display. Unreachable end to end (see the note on
@@ -50,7 +50,7 @@ let originalHome: string | undefined;
 
 const upcasters = catalogUpcasters();
 
-/** The source tree this guard walks — `packages/code/src`. */
+/** The source tree this guard walks: `packages/code/src`. */
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
 beforeEach(() => {
@@ -116,7 +116,7 @@ function idAfter(lines: readonly string[], head: string): string {
  * guaranteed to be one: the echo of a BIRTH does not collapse the whitespace of a
  * name an actor wrote, so proposing a pattern whose name holds a newline prints two
  * lines and the id lands on the second. That is a defect of the birth echo and not of
- * the move echo this file is about — this fixture works around it rather than
+ * the move echo this file is about: this fixture works around it rather than
  * asserting it, so nothing here reads as the shape being correct.
  */
 function mintedId(lines: readonly string[]): string {
@@ -157,7 +157,7 @@ describe('a label that names two rules', () => {
     await mnema('init');
     // One decision per tree. The label is minted from the count within ONE chain, so
     // the first decision of the public tree and the first of the private tree are
-    // BOTH `ADR-1` — which is the design, and the reason the label cannot identify.
+    // BOTH `ADR-1`, which is the design, and the reason the label cannot identify.
     const travels = await mnema(
       'decision',
       'record',
@@ -194,7 +194,7 @@ describe('a label that names two rules', () => {
     expect(first[0]).not.toBe(second[0]);
 
     // FINDABLE, not merely present: the value in the line, read back, answers about
-    // the decision that moved — and about the OTHER one when the other id is used.
+    // the decision that moved, and about the OTHER one when the other id is used.
     const shown = await mnema('show', idAfter(first, 'Decision '));
     expect(shown.join('\n')).toContain('Keep the runbook in the record');
     const other = await mnema('show', idAfter(second, 'Decision '));
@@ -282,7 +282,7 @@ describe('the three echoes, each naming a record a reader can find', () => {
 
     for (const [lines, id, title] of moved) {
       // The echo is ONE line, it holds the id, and the id resolves to the record that
-      // moved — the whole of what "names the record" means.
+      // moved: the whole of what "names the record" means.
       expect(lines).toHaveLength(1);
       expect(idAfter(lines, '')).toBe(id);
       expect((await mnema('show', idAfter(lines, ''))).join('\n')).toContain(title);
@@ -337,7 +337,7 @@ describe('the three echoes, each naming a record a reader can find', () => {
 
     for (const [reply, id, reads] of replies) {
       // THE ECHO IS ONE LINE, and what may follow it is the one sentence an acceptance by an agent
-      // says about itself — the product's own words, never a second line a record could forge.
+      // says about itself: the product's own words, never a second line a record could forge.
       const [line = '', ...after] = textOf(reply).split('\n');
       expect(
         after.every((one) => one.startsWith('This acceptance is recorded as made by an agent')),
@@ -412,7 +412,7 @@ describe('a display the record does not hold', () => {
    * The fallback is UNREACHABLE end to end, and that is why it is asserted here.
    *
    * A move locates the entity's birth, appends to that same chain, then reads the
-   * display out of a projection of it — so a move that succeeded is a move whose
+   * display out of a projection of it, so a move that succeeded is a move whose
    * entity the projection holds. The states that would drop it (a record with no
    * initial transition, the truncated birth a complete write never produces) are the
    * states the gate refuses to move at all, so no fixture can reach the echo with the
@@ -485,7 +485,7 @@ describe('the rule has one site', () => {
   /**
    * The files a move's echo can be written in, found BY WHAT THEY DO: they call one of
    * the transition adapters and do not define it. That is the discriminant rather than
-   * a list kept here — a fourth verb wired into a new file is covered without an edit,
+   * a list kept here: a fourth verb wired into a new file is covered without an edit,
    * and the two reads that also print an arrow and a destination (the moves
    * `next-actions` offers, the verdict `guard` returns) are outside the set because
    * neither moves anything.

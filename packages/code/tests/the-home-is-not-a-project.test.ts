@@ -1,23 +1,23 @@
 /**
- * The home directory is not a project, and a machine's data directory is no project's tree —
+ * The home directory is not a project, and a machine's data directory is no project's tree:
  * through the binary a person runs and the server a host starts.
  *
- * WHAT WAS WRONG. The data directory is `~/.mnema` — it was whenever `$XDG_DATA_HOME` was
- * unset, when this was measured, and it always is now — and a directory called `.mnema` is
+ * WHAT WAS WRONG. The data directory is `~/.mnema` (it was whenever `$XDG_DATA_HOME` was
+ * unset, when this was measured, and it always is now) and a directory called `.mnema` is
  * exactly what the project walk looks for. Measured on the
  * built binary before this: after the first `mnema init` anywhere, `mnema memory` in a plain
  * folder under the home answered "Landed in the public tree — committed with the repository"
  * and wrote into `~/.mnema/tails/`, and `mnema recall` there spoke of "notes recorded for
  * this project". A rule for the working-directory rung of the server already refused that
- * directory; nothing else did. And a `.mnema/` FOUNDED in the home — `mnema init` there,
- * offered as the first door of the bare name — took every folder under the home as its own.
+ * directory; nothing else did. And a `.mnema/` FOUNDED in the home (`mnema init` there,
+ * offered as the first door of the bare name) took every folder under the home as its own.
  *
  * WHAT IS ASSERTED, each beside the case that would pass if the rule refused too much:
  *
  *   - the defect itself: a verb from a folder under the home is
  *     not told it landed in a project, and nothing is written into the home's `.mnema/tails`;
  *   - a home tree written before this, by the product's own writer, is passed over and
- *     NAMED — where, why, how many events — and not a byte of what it holds changes, whatever
+ *     NAMED (where, why, how many events) and not a byte of what it holds changes, whatever
  *     runs: with the data directory kept elsewhere, and where it is the data directory itself;
  *   - outside a project the command line still answers over the machine-global tree, and
  *     a data directory holding nothing but its key and its global tree draws no line at all;
@@ -42,11 +42,11 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;
-/** The sandbox's home — every case stands somewhere under it, or in it. */
+/** The sandbox's home: every case stands somewhere under it, or in it. */
 let home: string;
 
 beforeEach(() => {
@@ -69,7 +69,7 @@ function dir(...parts: string[]): string {
 /**
  * `mnema <argv>` in `cwd`, with this environment and nothing else. `relocated` is
  * `$MNEMA_HOME`, the one way to keep the data directory out of `~/.mnema`; absent, the data
- * directory is the home's `.mnema/` — which is the ordinary case.
+ * directory is the home's `.mnema/`, which is the ordinary case.
  */
 function mnema(
   at: { cwd: string; home: string; relocated?: string },
@@ -83,8 +83,8 @@ function mnema(
 
 /**
  * A home tree written the way the product wrote one before this: the trees the old walk
- * resolved from any folder under the home — the home's `.mnema/` as the committed project
- * tree — handed to the product's own writer. Nothing here invents an event; each one is
+ * resolved from any folder under the home, the home's `.mnema/` as the committed project
+ * tree, handed to the product's own writer. Nothing here invents an event; each one is
  * what `mnema memory` would have signed and stored.
  */
 function writtenAsTheOldWalkDid(dataDir: string, note: string): void {
@@ -107,7 +107,7 @@ function writtenAsTheOldWalkDid(dataDir: string, note: string): void {
   writer.checkpoint();
 }
 
-/** Every path under `root` with a digest of each file's bytes — directories included. */
+/** Every path under `root` with a digest of each file's bytes: directories included. */
 function digestOf(root: string): string {
   const hash = createHash('sha256');
   const walk = (at: string): void => {
@@ -152,7 +152,7 @@ describe('the defect, through the binary', () => {
     const app = dir('home', 'code', 'app');
     const plain = dir('home', 'Downloads', 'x');
     expect(mnema({ cwd: app, home }, 'init').status).toBe(0);
-    // The first init made the data directory — `~/.mnema`, with the key root in it.
+    // The first init made the data directory: `~/.mnema`, with the key root in it.
     expect(existsSync(join(home, PROJECT_DIR, 'identity'))).toBe(true);
 
     const note = mnema({ cwd: plain, home }, 'memory', 'a note taken in a plain folder');
@@ -164,8 +164,8 @@ describe('the defect, through the binary', () => {
     const recalled = mnema({ cwd: plain, home }, 'recall');
     expect(recalled.stdout).not.toContain('recorded for this project');
 
-    // Non-vacuity: a note meant for no project still has a place, and it is the global tree
-    // — inside the data directory, never as a project's tails beside it.
+    // Non-vacuity: a note meant for no project still has a place, and it is the global tree,
+    // inside the data directory, never as a project's tails beside it.
     const global = mnema(
       { cwd: plain, home },
       'memory',
@@ -183,8 +183,8 @@ describe('the defect, through the binary', () => {
   }, 60_000);
 });
 
-describe('a home tree written before this — passed over, named, and left as it is', () => {
-  it('says where it is, why it is no project, and how many events it holds — before the answer', () => {
+describe('a home tree written before this: passed over, named, and left as it is', () => {
+  it('says where it is, why it is no project, and how many events it holds: before the answer', () => {
     const data = join(sandbox, 'data');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a second one');
@@ -197,11 +197,11 @@ describe('a home tree written before this — passed over, named, and left as it
     expect(said).toHaveLength(1);
     expect(said[0]).toContain(`${join(home, PROJECT_DIR)} is not taken for a project`);
     expect(said[0]).toContain('the home directory is never a project’s root');
-    // identity.founded and the two memories — one machine's tail.
+    // identity.founded and the two memories: one machine's tail.
     expect(said[0]).toContain('It holds 3 event(s) in 1 tail(s)');
   }, 60_000);
 
-  it('changes not one byte of it, whatever runs under the home — reads, writes, a refused init', () => {
+  it('changes not one byte of it, whatever runs under the home: reads, writes, a refused init', () => {
     const data = join(sandbox, 'data');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const plain = dir('home', 'work', 'unrelated');
@@ -224,7 +224,7 @@ describe('a home tree written before this — passed over, named, and left as it
     expect(digestOf(join(home, PROJECT_DIR))).toBe(before);
   }, 60_000);
 
-  it('and where that tree IS the data directory — the ordinary case — what it held keeps every byte, and only the data directory’s own appears beside it', () => {
+  it('and where that tree IS the data directory, the ordinary case, what it held keeps every byte, and only the data directory’s own appears beside it', () => {
     // No `$MNEMA_HOME`: the data directory is `~/.mnema`, which on a machine the old walk
     // wrote to is this very tree. The first write puts the key root and the global tree in
     // it. Nothing the tree held is rewritten, nothing is written into it AS A PROJECT'S, and
@@ -250,7 +250,7 @@ describe('a home tree written before this — passed over, named, and left as it
     const after = filesIn(tree);
     for (const [path, digest] of before) expect(after.get(path), path).toBe(digest);
     const added = [...after.keys()].filter((path) => !before.has(path));
-    // Non-vacuity: the data directory did land here — it is the case.
+    // Non-vacuity: the data directory did land here; it is the case.
     expect(added.some((path) => path.startsWith('identity/'))).toBe(true);
     expect(added.some((path) => path.startsWith('global/'))).toBe(true);
     expect(added.filter((path) => !/^(identity|global)\//.test(path))).toEqual([]);
@@ -258,7 +258,7 @@ describe('a home tree written before this — passed over, named, and left as it
     expect(saidBefore).toContain('It holds 2 event(s) in 1 tail(s)');
   }, 60_000);
 
-  it('still answers over the machine-global tree outside a project — the tree it passed is not a refusal', () => {
+  it('still answers over the machine-global tree outside a project: the tree it passed is not a refusal', () => {
     const data = join(sandbox, 'data');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const plain = dir('home', 'work', 'unrelated');
@@ -298,7 +298,7 @@ describe('a home tree written before this — passed over, named, and left as it
 });
 
 describe('another environment’s data directory', () => {
-  it('is not taken for a project by an environment whose home is elsewhere — and is not written to', () => {
+  it('is not taken for a project by an environment whose home is elsewhere, and is not written to', () => {
     // A run whose `HOME` is not the home it stands in: a sandbox under a real home, `sudo`.
     // Only the key root inside the directory says what it is.
     const realHome = dir('real-home');
@@ -353,7 +353,7 @@ describe('the server says it too, in its log', () => {
     return { client, logged };
   }
 
-  it('names a home tree a root climbed past, once, under the landing — and names nothing where none was', async () => {
+  it('names a home tree a root climbed past, once, under the landing, and names nothing where none was', async () => {
     const data = join(sandbox, 'data');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const one = dir('home', 'a');

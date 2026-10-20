@@ -4,7 +4,7 @@
  *
  * The script is the shipped file, run by `sh` against the built binary behind a `mnema` on the
  * PATH, in a home of its own. What is asked afterwards is the product's own answer for the path,
- * through the same door a host's hook uses — not a look inside the record.
+ * through the same door a host's hook uses, not a look inside the record.
  */
 
 import { spawnSync } from 'node:child_process';

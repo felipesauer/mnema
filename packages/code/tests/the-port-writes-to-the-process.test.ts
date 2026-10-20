@@ -1,10 +1,10 @@
 /**
- * THE PORT THAT TALKS TO THE PROCESS IS ASKED TO TALK TO IT — once, here, and nowhere
+ * THE PORT THAT TALKS TO THE PROCESS IS ASKED TO TALK TO IT: once, here, and nowhere
  * else.
  *
  * Every other test of this package injects a `CliIo` of its own, which is exactly what
  * makes the whole surface drivable without spawning anything. The cost was that
- * `processIo` — the three lines that ARE the product at a terminal — ran in no test at
+ * `processIo`, the three lines that ARE the product at a terminal, ran in no test at
  * all: a report on stdout, a refusal on stderr, and a non-zero exit code. The ledger of
  * files no test names said so in prose ("every test injects its own port so processIo
  * never runs"), and the coverage report said 40% of a five-line file. This case is what
@@ -22,8 +22,8 @@
  * rather than just worth doing. It writes to the real `process.stdout` and it sets the
  * real `process.exitCode`, so a case that got either half wrong would leave the suite
  * printing into its own report, or exiting non-zero with every case green. All three are
- * borrowed inside a `try` and given back in a `finally` — which runs even when an
- * assertion throws — and nothing is asserted until after they are back.
+ * borrowed inside a `try` and given back in a `finally`, which runs even when an
+ * assertion throws, and nothing is asserted until after they are back.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -43,7 +43,7 @@ type Written = string[];
  * THE EXIT CODE IS IN THE SAME `finally`, and it is the one of the three that would poison
  * the whole run rather than one case: a value set and not given back ends the suite
  * non-zero with every assertion green. It belongs here and not in a case because the only
- * `finally` that covers it is one that wraps the CALL — a restore written after the call,
+ * `finally` that covers it is one that wraps the CALL: a restore written after the call,
  * however carefully, is skipped by anything the call throws, and the mechanism that kept
  * the suite honest would then be "nothing in this window throws today".
  */
@@ -80,7 +80,7 @@ describe('the port writes to the process', () => {
       processIo.err('Refused (UNKNOWN_RUN): MNEMA_RUN names a run this project has no record of');
     });
 
-    // The bytes, whole: the line the caller passed and the newline the PORT adds — no
+    // The bytes, whole: the line the caller passed and the newline the PORT adds; no
     // presentation function returns one, so a line printed without this would run into
     // the next.
     expect(written.out).toEqual(['Captured memory 0198f0a4-0000-7000-8000-000000000000\n']);
@@ -104,7 +104,7 @@ describe('the port writes to the process', () => {
     const written = withTheProcessBorrowed(() => {
       // Cleared to the value `fail()` has to move it OFF, and given back by the same
       // `finally` the streams are: a case that set this and walked away would end the whole
-      // run non-zero with every assertion green — the shape that makes a suite lie in the
+      // run non-zero with every assertion green, the shape that makes a suite lie in the
       // direction nobody checks.
       process.exitCode = undefined;
       processIo.fail();
@@ -134,7 +134,7 @@ describe('the port writes to the process', () => {
     writeLines(port, ['first', 'second', 'third']);
     expect(said).toEqual(['first', 'second', 'third']);
 
-    // An empty report writes nothing — the read that found no rows says so with its own
+    // An empty report writes nothing: the read that found no rows says so with its own
     // sentence, and this must not add a blank line under it.
     writeLines(port, []);
     expect(said).toEqual(['first', 'second', 'third']);

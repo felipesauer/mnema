@@ -1,6 +1,6 @@
 /**
  * The gate refuses a write over a record it cannot read, and over NOTHING ELSE that throws: a fault
- * of the product, or a tail another process holds, leaves each door as the exception it is — never
+ * of the product, or a tail another process holds, leaves each door as the exception it is, never
  * as a `deny`, and never as the empty reply a host reads as leave to write.
  *
  * THE DOORS ARE HELD HERE, not the function they ask. That function answers `undefined` for such an

@@ -1,5 +1,5 @@
 /**
- * A REAL PSEUDO-TERMINAL, DRIVEN — because an interactive surface does not prove itself
+ * A REAL PSEUDO-TERMINAL, DRIVEN, because an interactive surface does not prove itself
  * in process.
  *
  * `support/console.ts` gives a pair of streams a console will treat as a device, and that
@@ -11,7 +11,7 @@
  *
  * SO THIS SPAWNS THE BUILT BINARY UNDER `script`, which is the portable way to hand a
  * program a terminal it did not inherit, and it RESIZES that terminal from outside with
- * `stty` — the way a caller drags the corner of a window. What comes back is every byte
+ * `stty`: the way a caller drags the corner of a window. What comes back is every byte
  * the device received, and a mark at the end of each step, so a case can replay the bytes
  * up to one moment onto a screen (`support/screen.ts`) and ask what a reader was looking
  * at.
@@ -19,7 +19,7 @@
  * IT IS ONE FILE BECAUSE IT IS ONE INSTRUMENT. Two deliveries needed it and the second
  * copied the first, which is how two ideas of "wait until the session settled" come to
  * exist and how one of them quietly stops waiting. Everything about a particular fixture
- * — where the project is, what the binary is called, what environment it runs in —
+ * (where the project is, what the binary is called, what environment it runs in)
  * arrives as an argument, so nothing here knows about any one case.
  */
 
@@ -47,8 +47,8 @@ const WHAT_THE_DEVICE_SAID = 'size';
  * THE LINES A RUNNER BEGINS WITH: the size the case asked for, and what the device became.
  *
  * THE SIZE WAS ASKED FOR AND NEVER CHECKED, in four separate runners, and a case has no
- * other way of knowing. Everything downstream is arithmetic ABOUT the size — which drawing
- * of the name fits, whether the input area keeps its rules, how many rows the page spends —
+ * other way of knowing. Everything downstream is arithmetic ABOUT the size (which drawing
+ * of the name fits, whether the input area keeps its rules, how many rows the page spends)
  * so a device that is not the size the case asked for makes every one of those numbers
  * wrong, and each of them fails as an off-by-one that mentions no size at all. Two cases of
  * this surface have been red intermittently for three deliveries with exactly that shape.
@@ -58,8 +58,8 @@ const WHAT_THE_DEVICE_SAID = 'size';
  *
  * AND IT IS RENAMED INTO PLACE RATHER THAN WRITTEN INTO IT, because the first version of
  * this accused a session that was fine. A redirection CREATES the file and fills it after,
- * so a reader waiting for the file to exist reads an EMPTY one — measured in a run of the
- * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*. A rename
+ * so a reader waiting for the file to exist reads an EMPTY one (measured in a run of the
+ * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*). A rename
  * within a directory is atomic, so the name appearing at all means the content is there.
  */
 export function sizedTo(rows: number, columns: number, here: string): readonly string[] {
@@ -72,7 +72,7 @@ export function sizedTo(rows: number, columns: number, here: string): readonly s
 }
 
 /**
- * What `stty size` answers with: the rows and the columns, in that order — and nothing when
+ * What `stty size` answers with: the rows and the columns, in that order, and nothing when
  * it is not two numbers.
  *
  * The nothing is the half that matters: a partial read has to be told from an answer, or
@@ -89,7 +89,7 @@ function asSaid(said: string): { readonly rows: number; readonly columns: number
  *
  * It is the half of the seam a screen cannot see. A replay is handed the size the case
  * asked for (`support/screen.ts`), and the page it replays was written by a process that
- * read a size off a device — so the two questions are *did the device become what was
+ * read a size off a device, so the two questions are *did the device become what was
  * asked?* and *was the page drawn at that?*, and they have to be asked separately or a red
  * cannot say which of them went wrong.
  *
@@ -104,13 +104,13 @@ export async function theDeviceWasTheSizeAskedFor(
 ): Promise<void> {
   // IT IS WAITED FOR RATHER THAN READ, and the wait belongs here rather than at each driver:
   // the runner writes the file before the session starts, so a caller that read it the
-  // instant it spawned would be racing the shell — and four drivers racing it four ways is
+  // instant it spawned would be racing the shell, and four drivers racing it four ways is
   // the shape of divergence this whole delivery is about.
   //
   // AND WHAT IS WAITED FOR IS THE ANSWER, NOT THE FILE. Waiting for the name is what made
   // this instrument accuse an innocent session once in ten runs of the suite: the file is
   // there before it has anything in it. It is renamed into place now ({@link sizedTo}) AND
-  // the content is what ends the wait — one of those alone is a race that comes back.
+  // the content is what ends the wait: one of those alone is a race that comes back.
   const at = join(here, WHAT_THE_DEVICE_SAID);
   let said: { readonly rows: number; readonly columns: number } | undefined;
   for (let tried = 0; tried < 400 && said === undefined; tried += 1) {
@@ -132,10 +132,10 @@ export async function theDeviceWasTheSizeAskedFor(
  * it became.
  *
  * The read-back is out of the same device one call later, while the session is certainly
- * still on it — the resize itself would have failed otherwise — so it says what the running
+ * still on it (the resize itself would have failed otherwise), so it says what the running
  * process is about to be told, rather than what it was asked to be told.
  *
- * ONE CALL, TWO SIZES — and this is the fact everything a case reads about a resize has to be
+ * ONE CALL, TWO SIZES, and this is the fact everything a case reads about a resize has to be
  * written against. `stty rows R cols C` sets the height and the width in two separate calls to
  * the device, so a session on the other side of it can be told TWICE, and the size in between
  * is the OLD width at the NEW height. Measured directly, with a program that says every size it
@@ -143,14 +143,14 @@ export async function theDeviceWasTheSizeAskedFor(
  *
  *     START 120x40 → 110x30 → **110x64** → 190x64 → 120x40
  *
- * The 110x64 was never asked for by anybody. Whether it is seen at all is a race — the process
+ * The 110x64 was never asked for by anybody. Whether it is seen at all is a race (the process
  * has to be scheduled between the two calls, which is why what it breaks is red under load and
- * green on a quiet machine — and a page drawn for it is CORRECT, because the terminal really was
+ * green on a quiet machine) and a page drawn for it is CORRECT, because the terminal really was
  * that shape. A caller dragging the corner of a window produces the same thing.
  *
  * THE ORDER IS THE HEIGHT FIRST, AND NO ORDER MAKES A SHRINK ALONG BOTH AXES MEASURABLE FRAME BY
- * FRAME. Either one leaves the size in between larger than the final one along one axis — the
- * height first keeps the old width, the width first keeps the old height — so a case that holds
+ * FRAME. Either one leaves the size in between larger than the final one along one axis (the
+ * height first keeps the old width, the width first keeps the old height), so a case that holds
  * every frame of such a shrink to the FINAL size accuses the page drawn for the size in between.
  * One did: *writes no frame taller than the screen it is on* shrank both axes, and under load it
  * was red on a frame 120 columns wide that had been written while the device said 120. So a case
@@ -205,8 +205,8 @@ function theSizeIsTheOneAskedFor(
  * wrapped the whole frame in.
  *
  * IT WAS THE CURSOR, SHOWN AGAIN, and a one-row terminal falsified that inside this
- * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`
- * — the caret is hidden and never shown, because there is nowhere to put it. The end of the
+ * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`;
+ * the caret is hidden and never shown, because there is nowhere to put it. The end of the
  * synchronized update is written on every path there is, which is what makes it the frame's
  * boundary rather than a symptom of one. Spelled by its code point, like every unusual byte
  * in this repository.
@@ -226,8 +226,8 @@ export const FRAME_IS_DRAWN = '\u001b[?2026l';
  *
  * The sister of {@link FRAME_IS_DRAWN}, and it is exported for the same reason: where a frame
  * BEGINS is not where the chunk before its end begins. Bytes that are nobody's frame land in
- * between — the runner's own echo before the session started, the modes the console asks the
- * terminal for, the transcript on the way out — and a count that started at the previous
+ * between (the runner's own echo before the session started, the modes the console asks the
+ * terminal for, the transcript on the way out) and a count that started at the previous
  * boundary counts those too.
  */
 export const A_FRAME_BEGINS = '\u001b[?2026h';
@@ -238,7 +238,7 @@ export const A_FRAME_BEGINS = '\u001b[?2026h';
  * THE ONE READING OF *how tall is a frame*, and it is one because it is easy to get wrong in a
  * way that accuses the product. Measured wrongly once, inside this delivery: cutting the stream
  * on the frame boundary alone and counting the newlines of each chunk reported a NINE-row frame
- * on an eight-row screen — and the ninth row was `TTY=/dev/pts/0`, the runner's own echo, which
+ * on an eight-row screen, and the ninth row was `TTY=/dev/pts/0`, the runner's own echo, which
  * is in the first chunk because the first chunk starts at the beginning of the stream and not at
  * the beginning of a frame. A guard that says *the product wrote a frame taller than the screen*
  * when it did not is worse than no guard.
@@ -288,7 +288,7 @@ export function widestRowOfTheFrames(bytes: string): readonly number[] {
 }
 
 /**
- * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK — the cursor put on the last row of the
+ * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK: the cursor put on the last row of the
  * device BY NUMBER, which is what every row written after it scrolls off the top.
  *
  * ONE READING AND FIVE FILES, and it is here for the reason the header of this file gives: it was
@@ -297,7 +297,7 @@ export function widestRowOfTheFrames(bytes: string): readonly number[] {
  * one.
  *
  * THE HEIGHT IS LEFT OPEN because a page is carried at whatever height the device has when it is
- * carried — a page turned after the caller made their window shorter is carried at the NEW height,
+ * carried: a page turned after the caller made their window shorter is carried at the NEW height,
  * so a count naming one height reads it as nought.
  *
  * AND THERE ARE TWO THINGS THAT CARRY ONE, which is what this delivery added and what no
@@ -307,7 +307,7 @@ export function widestRowOfTheFrames(bytes: string): readonly number[] {
  *     screen (`repl/console.ts`, `followTheTerminal`);
  *   - and the DOOR answers the library, when the library gives up on redrawing part of the screen
  *     and starts the whole page over. What it starts over with carries the erase of the caller's
- *     history inside it, and the answer to that is this product's own way of emptying a page —
+ *     history inside it, and the answer to that is this product's own way of emptying a page,
  *     which is carrying one into the scrollback (`repl/page.ts`, `theEraseAsAScroll`).
  *
  * They are the same operation, so they are the same bytes; nothing in a stream tells them apart,
@@ -325,7 +325,7 @@ export function carriedPages(bytes: string): number {
  *
  * FIVE FILES WAITED FOR THE PROMPT INSTEAD, and a prompt is written in the MIDDLE of a
  * frame: the rows under it, and the caret's own position, come after. Two of them went red
- * on one delivery for the same reason and neither was about a prompt — the opening grew by
+ * on one delivery for the same reason and neither was about a prompt: the opening grew by
  * a third on a terminal with room for the biggest drawing of the name, so a frame is more
  * writes and there are more places for a read to be cut in half. What was measured: a caret
  * one row below the prompt, and a rule that had not been written yet.
@@ -333,14 +333,14 @@ export function carriedPages(bytes: string): number {
  * IT IS HERE BECAUSE THIS FILE IS THE INSTRUMENT, and the paragraph at the top of it says
  * why in advance: two ideas of "wait until the session settled" is how one of them quietly
  * stops waiting. Two cases drive a pty of their own rather than this one, and they take
- * this function — what a finished frame IS is the rule, and it is written once.
+ * this function: what a finished frame IS is the rule, and it is written once.
  */
 export function aFrameAfter(prompt: string): (bytes: string) => boolean {
   // AND NOTHING AFTER IT. A frame boundary that is not the END of the stream is a frame
   // boundary with another frame already in flight behind it, and a screen replayed from
   // half of one is the defect this exists to stop. Measured: with the boundary alone, the
   // two rules of the input area were on the screen about half the time at a hundred
-  // columns — the rows are written after the prompt, in the same frame.
+  // columns; the rows are written after the prompt, in the same frame.
   return (bytes) =>
     bytes.endsWith(FRAME_IS_DRAWN) && bytes.lastIndexOf(prompt) < bytes.lastIndexOf(FRAME_IS_DRAWN);
 }
@@ -354,13 +354,13 @@ export function opensAConsole(prompt: string): Step {
  * The step every driven session ends with.
  *
  * IT WAITS FOR NOTHING, and that is honest rather than lazy: what it is waiting for is the
- * process to END, which is what the driver waits out after the last step — a predicate over
+ * process to END, which is what the driver waits out after the last step; a predicate over
  * the bytes would be waiting for a frame the session may never draw on its way out.
  */
 export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true, what: 'left' };
 
 /**
- * WHETHER `what` IS IN THE BYTES THAT ARRIVED SINCE THIS STEP BEGAN — rather than anywhere
+ * WHETHER `what` IS IN THE BYTES THAT ARRIVED SINCE THIS STEP BEGAN, rather than anywhere
  * in the stream.
  *
  * FOUR STEPS WAITED FOR SOMETHING THE OPENING ALREADY WRITES, and a predicate over the
@@ -368,7 +368,7 @@ export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true
  * page there is, so a step that typed `verify` and waited for *"local integrity verified"*
  * was over before the caller's line had been echoed. Measured: red once in two runs of the
  * suite, green three times out of three on its own, and the case it broke was the one
- * asserting the echo — *"the caller never typed a verb"*, over a screen of blank rows. The
+ * asserting the echo, *"the caller never typed a verb"*, over a screen of blank rows. The
  * fourth waited for a SLASH, which the opening writes three ways over: the project's path,
  * the record's `T1/T2/T4`, and the hint that names that very key.
  *
@@ -381,7 +381,7 @@ export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true
  * this step did?* Waiting for "the second occurrence" answers the same question only as long
  * as somebody keeps the count right, and the right count is different at every site.
  *
- * Pinned on bytes built by hand (`tests/the-opening-fits-the-screen.test.ts`) — a race does
+ * Pinned on bytes built by hand (`tests/the-opening-fits-the-screen.test.ts`): a race does
  * not answer a single run.
  */
 export function arrivedSince(what: string): (bytes: string, since: number) => boolean {
@@ -389,19 +389,19 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
 }
 
 /**
- * THE SAME QUESTION WITH THE PAINT TAKEN OUT — what a step waits for when what it is waiting
+ * THE SAME QUESTION WITH THE PAINT TAKEN OUT: what a step waits for when what it is waiting
  * for is a line the product COMPOSED.
  *
- * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now — the prompt in
+ * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now: the prompt in
  * the accent this product is marked by, their own words in a weight of their own
- * (`src/presentation/echo.ts`) — so `mnema> x` is not a run of bytes on the wire any more, and a
+ * (`src/presentation/echo.ts`). So `mnema> x` is not a run of bytes on the wire any more, and a
  * step waiting for one waits for ever.
  *
  * AND IT IS NOW BOTH ROWS. This said *the row being TYPED is still plain, so a step about the
  * input area goes on asking {@link arrivedSince}; this is for the ones about what LANDED*, and
  * the delivery that painted the prompt where the caller types falsified it: the input row is the
  * same composed line, so a step waiting for `mnema> v` on the wire waits for ever there too. What
- * is left for {@link arrivedSince} is anything that is not a line this product COMPOSED — a
+ * is left for {@link arrivedSince} is anything that is not a line this product COMPOSED: a
  * keystroke's own glyph, a word inside one part, the prompt on its own.
  *
  * ONLY THE STYLE IS TAKEN OUT, never every escape: what is left is where each glyph goes, which
@@ -415,13 +415,13 @@ export function arrivedUnpainted(what: string): (bytes: string, since: number) =
  * WHAT A RENDERER PAINTS WITH: every SGR sequence, and nothing else that an escape can be.
  *
  * Built from a code point rather than written with the byte in it, which is what keeps a control
- * character out of a source this repository has to be able to read — and out of the one lint rule
+ * character out of a source this repository has to be able to read, and out of the one lint rule
  * that exists to say so.
  */
 const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
 
 /**
- * A FRAME THE STEP ITSELF CAUSED, WITH `absent` NOT IN IT — which is how a step waits for
+ * A FRAME THE STEP ITSELF CAUSED, WITH `absent` NOT IN IT, which is how a step waits for
  * something to have GONE.
  *
  * THREE STEPS SPELLED THIS OUT AND ALL THREE WERE TRUE BEFORE ANYTHING HAPPENED. They read
@@ -430,18 +430,18 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  * nothing of `x` in it, while the first half is still approving the frame that arrived BEFORE the
  * key. So the step ended before the keystroke had been drawn at all, and the case then read a
  * screen with the thing still on it. Measured in whole-suite runs, under load: *cycle 10: the list
- * was open* at a hundred by thirty, and *the list is still open* on the Escape that shuts it —
+ * was open* at a hundred by thirty, and *the list is still open* on the Escape that shuts it,
  * both green on their own, because on an idle machine the next frame beats the settling wait.
  *
  * SO AN ABSENCE IS WAITED FOR IN TWO PARTS, and the first is a PRESENCE: the row being typed is
  * rewritten by every frame the layout draws, so a frame that arrived since the step began has the
  * prompt in what arrived. Then, and only then, does the absence mean the step is over.
  *
- * It is one function because it is one rule — the same reason {@link arrivedSince} is one — and
+ * It is one function because it is one rule (the same reason {@link arrivedSince} is one) and
  * the three sites that spelled it out are exactly how two ideas of "it has gone" come to exist.
  */
 /**
- * A FRAME THE STEP CAUSED, WITH `absent` OFF THE PAGE — the same question the case then asks,
+ * A FRAME THE STEP CAUSED, WITH `absent` OFF THE PAGE: the same question the case then asks,
  * asked of the same object.
  *
  * WHY THIS EXISTS BESIDE {@link aFrameWithout}, WHICH LOOKS LIKE IT ALREADY DOES THIS. That one
@@ -449,7 +449,7 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  * line drawn once early in the step is in that window forever, however far the roll has since
  * pushed it off the page. For "it has gone from the TEXT the caller is typing into" that is the
  * right question and it is why that function stays. For "it has scrolled off the PAGE" it is the
- * wrong one, and it is wrong in the direction that cannot be waited out — measured: widening
+ * wrong one, and it is wrong in the direction that cannot be waited out; measured: widening
  * `aFrameWithout` to cover the oldest line turned an intermittent assertion into a 31 s timeout
  * in 7 of 10 runs, because the line keeps being redrawn and so keeps arriving.
  *
@@ -459,7 +459,7 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  *
  * A REPLAY THAT CANNOT FIND A FRAME IS NOT AN ABSENCE. Until a frame at this width has been
  * drawn there is no page to have lost anything, and answering `true` there would end the step
- * before the session had drawn at all — the exact defect {@link aFrameWithout} carries in its own
+ * before the session had drawn at all: the exact defect {@link aFrameWithout} carries in its own
  * doc. So a replay that finds nothing is `false`, and so is one that throws.
  */
 export function aPageWithout(
@@ -482,13 +482,13 @@ export function aPageWithout(
 }
 
 /**
- * A FRAME THE STEP CAUSED, WITH `present` ON THE PAGE — {@link aPageWithout} turned the other way,
+ * A FRAME THE STEP CAUSED, WITH `present` ON THE PAGE: {@link aPageWithout} turned the other way,
  * for a key whose whole effect is to bring something BACK.
  *
  * WHY {@link aFrameSince} IS NOT ENOUGH FOR IT. That one answers on any finished frame that
  * arrived since the step began, and a frame that arrived since is not always a frame the key
  * caused: the answer the step before it waited for is still being drawn a moment after that step
- * ended — a row at the foot raised once the answer ended — and under load a key written in that
+ * ended, a row at the foot raised once the answer ended, and under load a key written in that
  * gap is "answered" by the tail of the PREVIOUS step. The case then reads a page the key has not
  * reached. Measured: the walk back to the top of the roll ended on such a frame in 18 of 20
  * runs on a machine kept busy, with the opening on the page one frame later.
@@ -528,7 +528,7 @@ export function aFrameWithout(
 }
 
 /**
- * A FRAME THE STEP ITSELF CAUSED — the presence half of {@link aFrameWithout}, on its own.
+ * A FRAME THE STEP ITSELF CAUSED: the presence half of {@link aFrameWithout}, on its own.
  *
  * IT IS THE SAME RULE AND IT IS WRITTEN ONCE, which is the whole reason it is here: a step that
  * ends on `aFrameAfter` alone is a step that can end on the frame which arrived BEFORE it did
@@ -538,14 +538,14 @@ export function aFrameWithout(
  *
  * IT IS ONLY HONEST FOR A STEP THAT REALLY CHANGES THE FRAME. The layout writes nothing at
  * all for a frame identical to the one on the screen, so a key that moves nothing produces no
- * bytes and this never answers — which is the driver's own wall rather than a failed assertion.
+ * bytes and this never answers, which is the driver's own wall rather than a failed assertion.
  * Every caller below is a step whose effect on the page is the thing under test.
  *
  * ONE STEP THAT USED TO BE ON THE WRONG SIDE OF THAT IS ON THE RIGHT ONE NOW: a line whose answer
- * leaves the window exactly as it was. It produced no bytes — the same document asked twice, taller
- * than the window, leaves the same rows — and this waited for ever on it. Such an answer draws a
+ * leaves the window exactly as it was. It produced no bytes (the same document asked twice, taller
+ * than the window, leaves the same rows) and this waited for ever on it. Such an answer draws a
  * row at the foot saying so now (`src/repl/console.ts`, `judged`), so its frame is not identical
- * and this answers on it. What it answers on is that row, raised once the answer has ENDED — never
+ * and this answers on it. What it answers on is that row, raised once the answer has ENDED, never
  * the answer itself, which draws nothing new (`a-read-asked-again-draws-what-changed.test.ts`).
  */
 export function aFrameSince(prompt: string): (bytes: string, since: number) => boolean {
@@ -554,12 +554,12 @@ export function aFrameSince(prompt: string): (bytes: string, since: number) => b
 }
 
 /**
- * THE SAME RULE FOR A KEY THAT REWRITES NO ROW — a frame the step itself caused, told by the
+ * THE SAME RULE FOR A KEY THAT REWRITES NO ROW: a frame the step itself caused, told by the
  * frame rather than by the prompt.
  *
  * THE ARROWS ARE WHY IT EXISTS. A key that moves the caret and changes nothing the frame SAYS
  * is answered by the library with a frame that carries no text at all: measured, one arrow puts
- * forty-five bytes on the wire — a synchronized update holding a relative move and a column —
+ * forty-five bytes on the wire, a synchronized update holding a relative move and a column,
  * and the prompt is not among them. So {@link aFrameSince} never answers for it, and
  * {@link aFrameAfter} on its own is answered by the frame that arrived BEFORE the key, which is
  * the trap four sites have already been red for.
@@ -567,8 +567,8 @@ export function aFrameSince(prompt: string): (bytes: string, since: number) => b
  * WHAT SAYS THE STEP CAUSED IT is the boundary of a finished frame arriving since the step
  * began, which is the direct form of what the prompt was standing in for: every frame this
  * console draws rewrites the row being typed, so the prompt was a PROXY for *a frame arrived*.
- * It is the same idea and the same settling — {@link aFrameAfter} still says what a finished
- * frame is — so there is no second definition of when the page is settled here.
+ * It is the same idea and the same settling ({@link aFrameAfter} still says what a finished
+ * frame is), so there is no second definition of when the page is settled here.
  */
 export function anotherFrameSince(prompt: string): (bytes: string, since: number) => boolean {
   const finished = aFrameAfter(prompt);
@@ -580,7 +580,7 @@ export interface Step {
   /** What the caller types, if anything. */
   readonly types?: string;
   /**
-   * WHAT HAPPENS OUTSIDE THE SESSION, before the step is waited out — another process
+   * WHAT HAPPENS OUTSIDE THE SESSION, before the step is waited out: another process
    * writing to the record while the console is up.
    *
    * It is a step of its own kind rather than a variant of typing, and the difference is
@@ -594,7 +594,7 @@ export interface Step {
   /**
    * What is true of everything received once the step has happened.
    *
-   * `since` is how many bytes had arrived when the step BEGAN — before it resized anything,
+   * `since` is how many bytes had arrived when the step BEGAN: before it resized anything,
    * before somebody else appended, and before a key was written. It is what lets a predicate
    * ask about the step's own doing rather than about the whole stream, which is the difference
    * between waiting for an answer and being answered by the opening ({@link arrivedSince}).
@@ -605,7 +605,7 @@ export interface Step {
 }
 
 /**
- * EVERYTHING THE DEVICE HAD RECEIVED BY THE END OF STEP `at` — the stream a case reads when
+ * EVERYTHING THE DEVICE HAD RECEIVED BY THE END OF STEP `at`: the stream a case reads when
  * the question is *what did this step leave on the page*.
  *
  * IT IS NOT READING BY INDEX, and the distinction is the whole of why it exists. Reading by
@@ -613,7 +613,7 @@ export interface Step {
  * resize draws more than one frame and the boundary lands wherever the stream was quiet. This
  * hands the boundary to a locator that still finds the page by a property of the FRAME
  * (`support/screen.ts`, {@link theSettledScreen}), and all it does is leave out what a LATER
- * step caused — which is the only thing a search over the whole stream cannot leave out.
+ * step caused, which is the only thing a search over the whole stream cannot leave out.
  *
  * WHAT MAKES A LATER STEP'S FRAMES A PROBLEM AT ALL is that a size is set in two calls, so a
  * session passes through a size nobody asked for on the way to the next one, and that size keeps
@@ -633,8 +633,8 @@ export interface Ran {
   /**
    * WHAT THE RUNNER EXITED WITH, and `undefined` when this driver killed it instead.
    *
-   * It is the runner's code and therefore the CLI's — `script -e` returns the code of the
-   * command it ran — which is what lets a case ask the one thing no byte on the page can
+   * It is the runner's code and therefore the CLI's, `script -e` returns the code of the
+   * command it ran, which is what lets a case ask the one thing no byte on the page can
    * answer: whether an invocation reported a failure. The `undefined` is the honest half:
    * every session that is left rather than ended is killed here after its last step, and a
    * number invented for it would be a code nobody produced.
@@ -644,7 +644,7 @@ export interface Ran {
 
 /** Where a session is opened, and what it is opened with. */
 export interface Fixture {
-  /** The built CLI — the same file the `mnema` bin points at. */
+  /** The built CLI: the same file the `mnema` bin points at. */
   readonly cli: string;
   /** The verb that opens a session. */
   readonly verb: string;
@@ -656,7 +656,7 @@ export interface Fixture {
   readonly environment: NodeJS.ProcessEnv;
 }
 
-/** Waits until `ready` answers true, or gives up — a poll, never a fixed sleep. */
+/** Waits until `ready` answers true, or gives up: a poll, never a fixed sleep. */
 export async function waitFor(ready: () => boolean, what: string, tries = 1200): Promise<void> {
   for (let tried = 0; tried < tries; tried++) {
     if (ready()) return;
@@ -685,7 +685,7 @@ async function settles(bytes: () => string): Promise<void> {
  * question answered YES.
  *
  * IT WAS TWO READINGS OF ONE RULE, and they diverged in silence. The question was asked
- * at one instant — *has the step happened?* — and the length was taken at ANOTHER, after a
+ * at one instant (*has the step happened?*) and the length was taken at ANOTHER, after a
  * pause that only watched the stream stop growing. Between the two, the next frame arrives;
  * the pause does not ask the question again, so under load a write that stalls mid-frame for
  * longer than the pause ends the step at a point the question would have REFUSED. Measured:
@@ -695,7 +695,7 @@ async function settles(bytes: () => string): Promise<void> {
  * SO THE ANSWER AND THE LENGTH COME OUT OF THE SAME STRING. The question is asked again once
  * the stream is quiet, and while it says no this goes on waiting; when it says yes, the
  * length taken is the length of the very string it just said yes about, with no `await`
- * between the two — so nothing can arrive in between.
+ * between the two, so nothing can arrive in between.
  *
  * A stream that has ENDED is answered wherever it is: the process is gone, there is nothing
  * more coming, and a case reading a dead session's screen has its own assertions to fail.
@@ -745,7 +745,7 @@ export async function inPty(
   let over = false;
   // WHAT IT EXITED WITH, kept only when the process ended of its own accord: `script -e`
   // answers with the code of the command it ran, and a run this driver killed answers with a
-  // signal instead — which is not an exit code and is not reported as one.
+  // signal instead, which is not an exit code and is not reported as one.
   let code: number | undefined;
   const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
     cwd: fixture.project,
@@ -767,11 +767,11 @@ export async function inPty(
     await waitFor(() => arriving.text().includes(named) || over, 'said which terminal it had');
     const device = /TTY=(\S+)/.exec(arriving.text())?.[1];
     expect(device, 'the runner never named the terminal').toBeDefined();
-    // BEFORE ANY STEP, because everything after this is read against a size — and a size
+    // BEFORE ANY STEP, because everything after this is read against a size, and a size
     // nobody checked is the premise every count below rests on.
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
-      // WHERE THE STEP BEGINS, taken before anything it does — the resize, the other process,
+      // WHERE THE STEP BEGINS, taken before anything it does: the resize, the other process,
       // and the keystroke are all the step's own doing, so a predicate that wants to know what
       // this step produced has to be able to cut in front of all three.
       const since = arriving.text().length;

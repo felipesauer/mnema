@@ -3,7 +3,7 @@
  *
  * `skills` asked with no id used to return every adopted body, however many there
  * were. Measured against a project with 40 adopted patterns of the market's median
- * size (3,427 B — the median of 86 real `SKILL.md` files), that answer came back at
+ * size (3,427 B: the median of 86 real `SKILL.md` files), that answer came back at
  * 146,431 B: 24.8× the opening context over the same patterns, and ~18% of a
  * 200k-token window spent in one call nobody had asked to spend.
  *
@@ -12,13 +12,13 @@
  * two of. That is the defect this closes: the fact is the only evidence the record
  * ever gets that an adopted pattern earns its place, and mass delivery made it false
  * for every pattern at once. Serving names records nothing, which is what makes the
- * fact true again — so this file asserts the ABSENCE of consultations over the big
+ * fact true again, so this file asserts the ABSENCE of consultations over the big
  * record as its central claim, and not only the smaller reply.
  *
  * The budget is 20 KiB of bodies and it is DERIVED: it is what the published skills
  * specification budgets for ONE activation (< 5,000 tokens of instructions), at four
  * characters per token. Serving N bodies unasked must not cost more than the market
- * spends serving the one a caller named — otherwise the mass read is strictly worse
+ * spends serving the one a caller named: otherwise the mass read is strictly worse
  * than the N reads by id the same tool already answers.
  */
 
@@ -39,7 +39,7 @@ import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/to
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 
 /**
- * The median body of the market's real patterns, in bytes — the size the measurement
+ * The median body of the market's real patterns, in bytes: the size the measurement
  * that produced this delivery used, and the size that makes "six is over the line"
  * mean something about a record somebody could actually have.
  *
@@ -80,7 +80,7 @@ function makeProject(name: string): string {
 }
 
 /**
- * Adopts a pattern the way the workflow does — born, reviewed, adopted. Both moves
+ * Adopts a pattern the way the workflow does: born, reviewed, adopted. Both moves
  * carry their note: the gate refuses either without one, and a loop that swallowed
  * the refusal would adopt nothing and measure an empty record.
  */
@@ -142,7 +142,7 @@ describe('a record whose bodies do not fit one read', () => {
     const session = sessionIn(makeProject('proj'));
     // Six of the market's median size: 20,562 B of bodies, over the 20 KiB budget by
     // one pattern. Five of them would have fit, and this is where the rule refuses to
-    // pick five — the whole answer changes layer instead of being trimmed.
+    // pick five: the whole answer changes layer instead of being trimmed.
     const ids = adoptMany(session, 6, MEDIAN_BODY);
 
     const result = runSkillsTool(session);
@@ -160,7 +160,7 @@ describe('a record whose bodies do not fit one read', () => {
     }
   });
 
-  it('records NOTHING — the fact says a pattern was read, and none was', () => {
+  it('records NOTHING: the fact says a pattern was read, and none was', () => {
     const project = makeProject('proj');
     const session = sessionIn(project);
     adoptMany(session, 6, MEDIAN_BODY);
@@ -171,7 +171,7 @@ describe('a record whose bodies do not fit one read', () => {
 
     // The claim this delivery is for: no consultation, because nothing was consulted.
     expect(consultations(publicRoot)).toEqual([]);
-    // And not a byte moved — no run opened, no checkpoint signed, nothing marked
+    // And not a byte moved: no run opened, no checkpoint signed, nothing marked
     // stale. Serving names is a pure read, exactly like serving nothing.
     expect(digest(sandbox)).toBe(before);
     expect(verify(publicRoot, catalogUpcasters()).ok).toBe(true);
@@ -230,7 +230,7 @@ describe('a record whose bodies do not fit one read', () => {
     // The body is whole: the ceiling is on what arrives UNASKED, and a caller that
     // named a pattern named exactly this one.
     expect((only as { body: string }).body.length).toBe(MEDIAN_BODY);
-    // And the fact is true again — one pattern served, one consultation.
+    // And the fact is true again: one pattern served, one consultation.
     const publicRoot = chainRootForScope(session.trees, 'public') as string;
     expect(consultations(publicRoot)).toEqual([asked]);
   });
@@ -281,7 +281,7 @@ describe('the budget is written in ONE place', () => {
    * accuses: two ceilings drift, and the surface would frame a cut the context package did
    * not make (or fail to frame one it did).
    *
-   * The discriminant is the NUMBER as it is written — `20 * 1024` — and not the
+   * The discriminant is the NUMBER as it is written, `20 * 1024`, and not the
    * constant's name, because a copy is exactly what would not share the name.
    */
   const BUDGET_LITERAL = /20\s*\*\s*1024/;
@@ -317,7 +317,7 @@ describe('the budget is written in ONE place', () => {
     ).toEqual([join('context', 'src', 'context', 'skills.ts')]);
   });
 
-  it('accuses a second copy — on input of its own', () => {
+  it('accuses a second copy: on input of its own', () => {
     // The net's teeth: with the tree honest the case above says only "nothing is
     // accused", so it has never shown it can go red.
     const copied = [

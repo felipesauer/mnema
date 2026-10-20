@@ -6,11 +6,11 @@
  * before-a-write`). Each answers in its own host's shape, and that is all each may do on its
  * own: which rules refuse or ask at a path, and the text that says so, are `whatAWriteMeets`
  * (`what-a-write-meets.ts`), over `whatAWriteAsks` (`edit-asks-a-person.ts`) for the asking. A door that reached the
- * derivation or composed the notice itself would be a second reading of the rule — the shape in
+ * derivation or composed the notice itself would be a second reading of the rule: the shape in
  * which one host stops somebody and another does not, for the same file.
  *
  * READ AS CODE, NOT AS TEXT: comments and strings are blanked (`codeOnly`), so a doc-comment that
- * names the functions — this file's own subject — is not a caller.
+ * names the functions, this file's own subject, is not a caller.
  */
 
 import { readFileSync } from 'node:fs';
@@ -37,7 +37,7 @@ function theTree(): { file: string; code: string }[] {
 
 /**
  * Every non-test source of the workspace whose CODE calls `name(`, repository-relative. A
- * definition (`function name(`) is not a call — the first reading of this ruler counted the
+ * definition (`function name(`) is not a call: the first reading of this ruler counted the
  * modules that define both functions as their callers.
  */
 function callersOf(name: string): string[] {

@@ -1,5 +1,5 @@
 /**
- * THE HELP IS GROUPED BY THE FLOW OF THE WORK — and a verb cannot arrive without a group.
+ * THE HELP IS GROUPED BY THE FLOW OF THE WORK, and a verb cannot arrive without a group.
  *
  * `mnema --help` lists every verb, and a list of fifty-odd names in one block is read by
  * nobody. The page is cut into groups in the order a person meets them: what is recorded,

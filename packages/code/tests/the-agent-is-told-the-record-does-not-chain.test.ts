@@ -1,5 +1,5 @@
 /**
- * THE AGENT IS TOLD THE RECORD DOES NOT CHAIN — over the real protocol.
+ * THE AGENT IS TOLD THE RECORD DOES NOT CHAIN: over the real protocol.
  *
  * ## What it was
  *
@@ -15,11 +15,11 @@
  * exact hole: 123 green cases with the served line deleted, because every one of them
  * ended at the adapter's return value and the text block is composed in the server. So
  * every case here goes through a real `Client`, over a real transport, and reads the
- * CONTENT BLOCKS the protocol carried — which is the only thing a model ever sees.
+ * CONTENT BLOCKS the protocol carried, which is the only thing a model ever sees.
  *
  * ## What the cases are asked to hold
  *
- * That the fact arrives in the SAME reply and not behind a second call — `verify` is not
+ * That the fact arrives in the SAME reply and not behind a second call: `verify` is not
  * a tool of this server, so "ask verify" would point at a door this reader cannot open;
  * that it arrives for every read that serves the record; that the PAYLOAD is untouched,
  * because `bootstrap`'s object is served as the same object through two doors (the CLI's
@@ -33,7 +33,7 @@
  * said nothing, which was declared as debt and closed after it:
  * `the-write-says-what-it-landed-on.test.ts` is the same shape of proof over the ten
  * tools that record and move, in the wording a write gets. `skills` is the one tool
- * declared a write that is asserted HERE, because it answers through `served` — it
+ * declared a write that is asserted HERE, because it answers through `served`: it
  * records that a pattern was consulted and serves the catalogue, so what the caller
  * reads is a read's reply.
  */
@@ -85,7 +85,7 @@ async function connect(): Promise<Client> {
   return client;
 }
 
-/** Every text block of a tool result, in order — what the model is handed. */
+/** Every text block of a tool result, in order: what the model is handed. */
 function blocks(result: unknown): string[] {
   const content = (result as { content?: { type: string; text?: string }[] }).content ?? [];
   return content.filter((c) => c.type === 'text').map((c) => c.text ?? '');
@@ -97,8 +97,8 @@ function privateRoot(): string {
 }
 
 /**
- * The plant: the last entry of a tail, appended again — the same `seq`, the same
- * `prev` — a duplicate of the boundary entry, which is the shape a resumed reading
+ * The plant: the last entry of a tail, appended again (the same `seq`, the same
+ * `prev`) a duplicate of the boundary entry, which is the shape a resumed reading
  * used to be blind to. It is NOT what the two-writer race left: measured with the lock
  * removed, that leaves the last PAIR duplicated and above a live session's frontier,
  * where the incremental catch-up already saw it.
@@ -123,7 +123,7 @@ const TOLD = 'The record this answer came off does not chain';
  *
  * `rules_before_an_edit` is deliberately NOT here: its reply is a hook reply the HOST
  * parses, and anything that is not the reply JSON is discarded in silence (measured
- * against the real binary) — so a notice in it would reach nobody. That claim lives in
+ * against the real binary), so a notice in it would reach nobody. That claim lives in
  * `TOOLS_SERVING_NO_RECORD_CONTENT` and the structural guard holds it there.
  */
 const READS = (id: string): readonly (readonly [string, Record<string, unknown>])[] => [
@@ -147,7 +147,7 @@ async function seed(client: Client): Promise<string> {
     name: 'capture_memory',
     arguments: { content: 'prefer PKCE over implicit' },
   });
-  // The id as the line PRINTS it — a memory has no alias, so the line ends in the id
+  // The id as the line PRINTS it: a memory has no alias, so the line ends in the id
   // itself rather than carrying it in parentheses.
   const id = /Captured memory (\S+)/.exec(blocks(captured)[0] ?? '')?.[1];
   if (id === undefined) throw new Error(`fixture: no id in ${blocks(captured)[0]}`);
@@ -173,7 +173,7 @@ describe('over a record that does not chain, every read says so', () => {
   it('tells the agent, in the same reply, in every read that serves the record', async () => {
     // Seeded and broken BEFORE the connection that is measured: a session accumulates
     // warm caches, and what is asserted here is what a connection meeting a broken
-    // record is told — not what one that watched it break is told.
+    // record is told, not what one that watched it break is told.
     const seeding = await connect();
     const id = await seed(seeding);
     await seeding.close();
@@ -184,7 +184,7 @@ describe('over a record that does not chain, every read says so', () => {
     for (const [name, args] of READS(id)) {
       const answered = await client.callTool({ name, arguments: args });
       const said = blocks(answered);
-      // IN A BLOCK OF ITS OWN, after the payload — never inside it.
+      // IN A BLOCK OF ITS OWN, after the payload, never inside it.
       const notice = said.find((block) => block.includes(TOLD));
       expect(notice, name).toBeDefined();
       expect(notice as string, name).toMatch(/issue \[T1\] \S+ \S+#\d+: .+/);
@@ -205,8 +205,8 @@ describe('over a record that does not chain, every read says so', () => {
     const client = await connect();
     const boot = await client.callTool({ name: 'bootstrap' });
     const said = blocks(boot);
-    // `bootstrap` is served as the same object through two doors — this one and the CLI's
-    // `--json` (indented, where this one is not) — so the notice may not enter the object, and the object has to stay
+    // `bootstrap` is served as the same object through two doors, this one and the CLI's
+    // `--json` (indented, where this one is not), so the notice may not enter the object, and the object has to stay
     // parseable on its own.
     expect(() => JSON.parse(said[0] as string)).not.toThrow();
     const context = JSON.parse(said[0] as string) as Record<string, unknown>;

@@ -1,6 +1,6 @@
 /**
- * `$MNEMA_CACHE_DIR` reaches the cache from every door — the command line, the server a host
- * spawns, and the library — and a value that cannot serve is refused where it is read.
+ * `$MNEMA_CACHE_DIR` reaches the cache from every door (the command line, the server a host
+ * spawns, and the library) and a value that cannot serve is refused where it is read.
  *
  * It is the mould of `mcp-flag-reaches-the-server.test.ts`: what is asserted is that the value
  * ARRIVES, not what the core does with it (`cache-home.test.ts`). The proof that it arrived is the
@@ -22,7 +22,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openRecord } from '../../sdk/src/record.js';
 
-/** The built binary — what a person runs, and what a host spawns as the server. */
+/** The built binary: what a person runs, and what a host spawns as the server. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;

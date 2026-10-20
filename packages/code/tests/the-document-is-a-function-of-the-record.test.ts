@@ -1,5 +1,5 @@
 /**
- * THE DOCUMENT IS A PURE FUNCTION OF THE RECORD — the property `mnema brief` is sold on,
+ * THE DOCUMENT IS A PURE FUNCTION OF THE RECORD: the property `mnema brief` is sold on,
  * guarded at the PATH and not only at the value.
  *
  * WHAT IS PUBLISHED. `mnema brief --help` says *"The output holds no clock, no session and
@@ -7,22 +7,22 @@
  * in the record"*, and the file the verb prints says the same thing in its own words:
  * `mnema brief | diff - AGENTS.md` is the ONLY thing that can tell a stale copy from a live
  * one, and it means that only if the bytes move when the record moves and at no other time.
- * Three doc-comments state it — `presentation/brief.ts`, `context/src/context/brief.ts`, and
+ * Three doc-comments state it: `presentation/brief.ts`, `context/src/context/brief.ts`, and
  * the wiring's help above.
  *
  * AND NOTHING GUARDED IT. Measured by mutation, in the delivery that added this file: the
  * composition was made to call `existsSync` on a path of this machine, and the whole suite
- * came back GREEN — 4692 of 4692. The same mutation with the read's value reaching the
+ * came back GREEN (4692 of 4692). The same mutation with the read's value reaching the
  * ANSWER went red in eight places. So the value was guarded and the path was not, and the
  * gap between those two is exactly where the defect lives: a read whose result is the same
- * on every machine the fixtures run on — `existsSync('AGENTS.md')`, a `cwd`, an env var —
+ * on every machine the fixtures run on (`existsSync('AGENTS.md')`, a `cwd`, an env var)
  * passes every case there is and moves the bytes on somebody else's checkout. The failure
  * would not be a red test; it would be `diff` reporting a difference that is not the
  * record's, which is the one signal this whole document rests on.
  *
  * THE FIRST GUARD WAS THE IMPORT, AND THE IMPORT IS NOT THE ONLY DOOR. That is the premise
- * this file was written on — *"a layer reaches the world through a module of the runtime, so
- * match the specifier and the door is shut"* — and it is FALSE, measured the same way it was
+ * this file was written on (*"a layer reaches the world through a module of the runtime, so
+ * match the specifier and the door is shut"*) and it is FALSE, measured the same way it was
  * arrived at: with `process.cwd()` and `Date.now()` planted in `context/src/context/brief.ts`,
  * the suite came back 4698 of 4698 GREEN and `pnpm lint` green with it. `process`, `Date`,
  * `Math.random` and `globalThis` are already in scope; a clock needs no `import` at all, and
@@ -33,15 +33,15 @@
  * matches the identifier on the source with comments, strings and patterns blanked, because
  * a global is an identifier in code and `codeOnly` is what tells one from a mention of one.
  * Neither is clever: what is banned is the whole global, with the two members of `Date` that
- * read no clock named as what they are. That list is a fact of the LANGUAGE — `Date.parse`
- * and `Date.UTC` are string-and-number functions — rather than a list of what this
+ * read no clock named as what they are. That list is a fact of the LANGUAGE (`Date.parse`
+ * and `Date.UTC` are string-and-number functions) rather than a list of what this
  * repository happens to call today, which is the kind of list that rots.
  *
  * AND A THIRD DOOR, WHICH THIS FILE DECLARED OPEN UNTIL IT WAS CLOSED: an import of somebody
  * else's function that does the reaching. `resolveTrees` walks the filesystem and
  * `systemClock` reads a clock, both are on `@mnema/core`'s surface, and neither net above sees
- * a layer that imports one — the specifier is a package of the workspace and the call names no
- * global. This file said closing it was "a different guard — which exports of `core` touch the
+ * a layer that imports one: the specifier is a package of the workspace and the call names no
+ * global. This file said closing it was "a different guard, which exports of `core` touch the
  * world, derived from `core`'s own source rather than from a list that rots". The third net is
  * that guard, and it reaches further than `core` because the door does: every value a layer
  * imports from outside its own root is followed to its declaration, through every re-export,
@@ -51,13 +51,13 @@
  *
  * THE PRINTER IS IN IT TOO, for the same reason at the other end: `presentation/brief.ts`
  * composes the bytes, and a printer that read an environment variable would move them just
- * as far. The adapter between them is deliberately NOT in this net — it is where the disk
+ * as far. The adapter between them is deliberately NOT in this net: it is where the disk
  * is supposed to be touched, and a guard that accused it would be a guard somebody has to
  * write an exception into within a week.
  *
  * ITS SIBLING IS `presentation/parts.test.ts`, AND THEY ASK DIFFERENT QUESTIONS. That one
  * bans `process.env`, `process.stdout`, `isTTY`, `NO_COLOR` and a colour library in
- * `code/src/presentation/` — a ban on asking WHERE THE OUTPUT IS GOING, over the raw source,
+ * `code/src/presentation/`: a ban on asking WHERE THE OUTPUT IS GOING, over the raw source,
  * one directory deep. This one bans reaching the machine at all, over `codeOnly`, across a
  * whole package and recursively. They overlap on `process` in one directory and neither
  * subsumes the other, and the reason they are two is that they would be reconciled by
@@ -89,19 +89,19 @@ const PURE: readonly { readonly what: string; readonly root: string }[] = [
 ];
 
 /**
- * A module of the runtime, named in an import — what a layer reaches the machine THROUGH.
+ * A module of the runtime, named in an import: what a layer reaches the machine THROUGH.
  *
  * It matches the SPECIFIER rather than a function, because the specifier is the door: a
  * scanner looking for `existsSync` would be a list of names that grows, and the one after
- * the list is the one that gets through. Both spellings are matched — `node:fs` is the form
+ * the list is the one that gets through. Both spellings are matched: `node:fs` is the form
  * this repository writes and bare `fs` is the form somebody pasting from elsewhere writes.
  *
  * IT READS THE RAW SOURCE, AND THAT IS THE ONE PLACE THIS FILE DIFFERS FROM ITS SIBLINGS.
  * Every other structural guard here scans `codeOnly`, which blanks comments AND STRING
- * LITERALS — and a specifier IS a string literal, so the collapsed form of every import in
+ * LITERALS, and a specifier IS a string literal, so the collapsed form of every import in
  * this repository is `import { x } from ''`. The first version of this scanner did that and
  * its own probe caught it: a net over `codeOnly` cannot see an import at all. So the match
- * is anchored to the executable form instead — `import` at the START of a line, which is
+ * is anchored to the executable form instead: `import` at the START of a line, which is
  * where this repository writes every one of them and where a `*`-prefixed doc-comment line
  * can never be. It is the same anchoring `DECLARES_MODEL_CHANNEL` uses, for the same reason.
  */
@@ -111,20 +111,20 @@ const REACHES_THE_MACHINE = new RegExp(
 );
 
 /**
- * The same modules of the runtime, as a whole specifier — what the INDIRECT net below counts
+ * The same modules of the runtime, as a whole specifier: what the INDIRECT net below counts
  * as a door when it finds one at the far end of an import. Both patterns are built from
  * {@link runtimeModules}, so the two nets cannot come to disagree about which modules of the
  * runtime reach this machine.
  */
 const A_MODULE_OF_THE_RUNTIME = new RegExp(`^${runtimeModules()}$`);
 
-/** The modules of the runtime that reach this machine, both spellings — one list, two nets. */
+/** The modules of the runtime that reach this machine, both spellings: one list, two nets. */
 function runtimeModules(): string {
   return String.raw`(?:node:)?(?:fs|path|os|process|child_process|crypto|url|tty|dns|net|http|https)(?:\/[a-z]+)?`;
 }
 
 /**
- * A global of this machine, reached with NO import at all — the other door.
+ * A global of this machine, reached with NO import at all: the other door.
  *
  * It matches a USE rather than a name, which is what keeps a type annotation out of it:
  * `Date` alone is `const at: Date`, while `new Date`, `Date(`, `Date.now` and `Math.round`
@@ -134,7 +134,7 @@ function runtimeModules(): string {
  * could only be one.
  *
  * IT MUST RUN OVER `codeOnly`. Every one of these names appears in the prose of this
- * repository — `process` alone is in nine doc-comments of the two roots — and a net over
+ * repository (`process` alone is in nine doc-comments of the two roots) and a net over
  * raw source would accuse every one of them. Blanking comments, strings and patterns is
  * what turns "the word appears" into "the code does it".
  */
@@ -142,13 +142,13 @@ const A_GLOBAL_OF_THIS_MACHINE =
   /\b(?:new\s+Date\b|Date\s*(?:\.\s*[A-Za-z_$][\w$]*|\()|Math\s*\.\s*[A-Za-z_$][\w$]*|process\b|globalThis\b|performance\b|require\s*\(|__dirname\b|__filename\b)/g;
 
 /**
- * The members of a banned global that read NOTHING — a fact of the language rather than an
+ * The members of a banned global that read NOTHING: a fact of the language rather than an
  * allowance for a call site.
  *
  * `Date.parse` and `Date.UTC` take a string or numbers and return a number; `Math` is pure
  * whole except for `Math.random`. Everything else on those two objects reads the clock or
  * the entropy pool, and everything on the other globals reads the machine. A member that is
- * not named here goes red on the day it is written — including one nobody has thought of —
+ * not named here goes red on the day it is written (including one nobody has thought of)
  * which is the opposite of a list of exceptions that grows by one each time.
  */
 const READ_NOTHING = new Set(['Date.parse', 'Date.UTC']);
@@ -208,7 +208,7 @@ interface Module {
 
 /**
  * Where an exported name ends: a declaration this net can read, a door out of what it can read,
- * a module of the runtime that reaches nothing, or nowhere — which is a ruler that broke.
+ * a module of the runtime that reaches nothing, or nowhere, which is a ruler that broke.
  */
 type Destination =
   | { readonly declaration: Declaration }
@@ -286,7 +286,7 @@ function moduleOf(file: string, source: string): Module {
       byDefault = named[1] as string;
       current = undefined;
     } else if (/^export\s+default\b/.test(line)) {
-      // An anonymous default — a function, a class or an expression — is a declaration too.
+      // An anonymous default (a function, a class or an expression) is a declaration too.
       current = { file, name: 'default', kind: 'const', body: '' };
       declarations.set('default', current);
     } else if (/^(?:import\b|export\s*[{*])/.test(line)) {
@@ -314,16 +314,16 @@ function moduleOf(file: string, source: string): Module {
  * cannot find and read. A module of the runtime OFF that list reaches nothing here, exactly as
  * it reaches nothing to the first net.
  *
- * AND THROUGH WHAT IT NAMES. A declaration that names another declaration — of its own module,
- * or one it imports, followed through every re-export to where it is declared — reaches
+ * AND THROUGH WHAT IT NAMES. A declaration that names another declaration (of its own module,
+ * or one it imports, followed through every re-export to where it is declared) reaches
  * whatever that one reaches. The answer is a fixed point over every declaration found, so a
  * cycle of calls cannot hide a door behind the order it was walked in.
  *
  * WHERE A SPECIFIER LEADS, and nothing about it is listed here. `@mnema/<name>[/<subpath>]` is
  * the `exports` entry of the package with that name, taken from `dist/` back to `src/`. Any
- * other package is found the way Node finds it — `node_modules/<name>`, walking up from the
+ * other package is found the way Node finds it (`node_modules/<name>`, walking up from the
  * REAL path of the file that imports it, because pnpm puts a package's own dependencies beside
- * it in the store and not beside the workspace — and its published source is read like ours.
+ * it in the store and not beside the workspace) and its published source is read like ours.
  * A package it cannot find is a door: nothing here can clear what it cannot read.
  *
  * `read` and `real` are seams for this net's own cases, which hand it a workspace of a few
@@ -442,7 +442,7 @@ function reachOf(
   /** Why each declaration reaches the machine, one step at a time; absent when it does not. */
   const why = new Map<Declaration, string>();
   const edges = new Map<Declaration, { to: Declaration; via: string }[]>();
-  /** Names a declaration used that led nowhere this net can read — a ruler that broke. */
+  /** Names a declaration used that led nowhere this net can read: a ruler that broke. */
   const unread: string[] = [];
 
   const mentions = (body: string, name: string): boolean =>
@@ -505,7 +505,7 @@ function reachOf(
     return steps.length === 0 ? undefined : steps.join(' → ');
   };
 
-  /** What `name`, imported by `from` through `spec`, reaches — and by what path — or undefined. */
+  /** What `name`, imported by `from` through `spec`, reaches, and by what path, or undefined. */
   const reaches = (from: string, spec: string, name: string): string | undefined => {
     const found = destinationOf(from, spec, name);
     if ('door' in found) return `${name} is ${found.door} itself`;
@@ -611,7 +611,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     );
   });
 
-  it('accuses a layer that reached the machine — on input of its own', () => {
+  it('accuses a layer that reached the machine: on input of its own', () => {
     // THE MECHANISM'S TEETH. With the tree honest the case above says only "nothing was
     // accused", so it has never shown this net can go red. The probe is the mutation that
     // found the hole: the composition calling `existsSync`, which left 4692 of 4692 green.
@@ -622,14 +622,14 @@ describe('the bytes of the document move when the record moves, and at no other 
     expect(REACHES_THE_MACHINE.test("import { join } from 'path';")).toBe(true);
     expect(REACHES_THE_MACHINE.test("import 'node:process';")).toBe(true);
     // AND IT IS NOT A CONSTANT. The imports these layers really do make come through clean,
-    // and a MENTION of one in prose is not a reach — which is what the line anchor buys,
+    // and a MENTION of one in prose is not a reach, which is what the line anchor buys,
     // since a doc-comment's lines begin with a star.
     expect(REACHES_THE_MACHINE.test("import type { Scope } from '@mnema/core';")).toBe(false);
     expect(REACHES_THE_MACHINE.test(" * it must never import from 'node:fs'.")).toBe(false);
     expect(REACHES_THE_MACHINE.test("const said = readFileSync('x');")).toBe(false);
   });
 
-  it('accuses the global that needs no import — the mutation that went green', () => {
+  it('accuses the global that needs no import: the mutation that went green', () => {
     // THE SECOND NET'S TEETH, and the input is the mutation that falsified this file's own
     // premise: both of these, planted in `context/src/context/brief.ts`, left the suite at
     // 4698 of 4698 green while the import net was the only one here.
@@ -677,7 +677,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     expect(adapters).toContain('code/src/commands/status.ts');
     expect(adapters).toContain('code/src/outside-the-record.ts');
     // And no file of the printer is among them, which is the case above read from the
-    // other end — the same sweep, over a root that holds both.
+    // other end: the same sweep, over a root that holds both.
     expect(adapters.filter((path) => path.startsWith('code/src/presentation/'))).toEqual([]);
   });
 
@@ -685,7 +685,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     // THE THIRD DOOR, AND IT WAS DECLARED RATHER THAN CLOSED UNTIL THIS CASE. The one this
     // replaces read: "what remains open is the INDIRECT one: a layer can still reach a disk by
     // importing a function of `@mnema/core` that does. `resolveTrees` walks the filesystem and
-    // `systemClock` reads a clock", and closing it was "a different guard — which exports of
+    // `systemClock` reads a clock", and closing it was "a different guard, which exports of
     // `core` touch the world, derived from `core`'s own source rather than from a list that
     // rots". That is {@link reachOf}: nothing in this file names an export, and the answer for
     // each comes off the workspace's source. It reaches past `core` because the door does:
@@ -699,7 +699,7 @@ describe('the bytes of the document move when the record moves, and at no other 
   it('read every import from outside the layers, and knows what core touches without a list', () => {
     // NON-VACUITY, from both ends. A net that resolved nothing would accuse nothing, so the
     // count of what it read is pinned under what is there; and the two names the case above
-    // replaced as a DECLARATION are asserted here as a DERIVATION — found reaching the machine,
+    // replaced as a DECLARATION are asserted here as a DERIVATION: found reaching the machine,
     // with the path, while four the layers really import are found reaching nothing.
     const { read } = reachedThroughAnImport();
     expect(read).toBeGreaterThanOrEqual(40);
@@ -779,8 +779,8 @@ describe('the bytes of the document move when the record moves, and at no other 
     // a name, a type, and a module of the runtime off the first net's list.
     expect(net.reaches(from, '@mnema/core', 'pure')).toBeUndefined();
     // A package from outside is read like ours: one that only counts clears, one that asks the
-    // environment is accused, and one this reader cannot read — nowhere to be found, or
-    // CommonJS, which declares nothing it sees — is a door, because nothing here can clear it.
+    // environment is accused, and one this reader cannot read (nowhere to be found, or
+    // CommonJS, which declares nothing it sees) is a door, because nothing here can clear it.
     expect(net.reaches(from, 'measures', 'default')).toBeUndefined();
     expect(net.reaches(from, 'colours', 'default')).toBe('level uses process');
     expect(net.reaches(from, 'common', 'default')).toBe('default is common itself');
@@ -796,11 +796,11 @@ describe('the bytes of the document move when the record moves, and at no other 
   it('says what it does NOT cover, so the promise is not wider than the net', () => {
     // THE LIMITS OF THE THIRD NET, each one a way it can be wrong and which way:
     //   - A DECLARATION IS ONE UNIT. A class with one method that reads the disk reaches the
-    //     machine as a whole, and so does every function that names it — even as a type in an
+    //     machine as a whole, and so does every function that names it, even as a type in an
     //     annotation, because a name is a use wherever it stands as an identifier. So is a
     //     local that shadows a top-level name. All three ACCUSE; none clears.
     //   - A VALUE THAT ARRIVES AT RUNTIME is not followed: a callback, or a handle a caller
-    //     opened — `context` answers over caches somebody else opened, by design, and a method
+    //     opened; `context` answers over caches somebody else opened, by design, and a method
     //     called on one is invisible here.
     //   - `import()` at runtime, `require` (the second net's), `export default` and a
     //     destructured declaration are not read. The last two cannot slip through: a name that
@@ -808,11 +808,11 @@ describe('the bytes of the document move when the record moves, and at no other 
     //   - A module of the runtime off the first net's list reaches nothing to this net either;
     //     one list, read by both. And a module ON the list counts whole, as it does to the first
     //     net: `join` from `node:path` or `createHash` from `node:crypto` reaches the machine
-    //     here, so a helper that only joins strings or hashes them ACCUSES — `resolveTrees` is
-    //     found through a `join` before any read of the disk.
+    //     here, so a helper that only joins strings or hashes them ACCUSES (`resolveTrees` is
+    //     found through a `join` before any read of the disk).
     //   - A package from outside the workspace is read as far as it can be: the entry its
     //     `exports` map or `main` names, as ESM, on this disk. One it cannot find, or cannot
-    //     read — CommonJS declares nothing it sees — is a door, and ACCUSES.
+    //     read, CommonJS declares nothing it sees, is a door, and ACCUSES.
     // And the other side of the rule, so no layer is asked for more than it owes: the ADAPTER
     // is where the disk is supposed to be touched, and the case above that names it holds.
     expect(A_MODULE_OF_THE_RUNTIME.test('node:fs')).toBe(true);

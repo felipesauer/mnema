@@ -1,20 +1,20 @@
 /**
- * THE EXAMPLE A PACKAGE PUBLISHES IS THE EXAMPLE THAT RUNS — line for line.
+ * THE EXAMPLE A PACKAGE PUBLISHES IS THE EXAMPLE THAT RUNS: line for line.
  *
  * WHAT WAS HERE BEFORE, AND WHY IT WAS NOT A GUARD. One package had a case called
  * `readme-example.test.ts` whose header said *"If this drifts from the README, fix one or
- * the other — the example must run."* That sentence is an intention, and the file was a
+ * the other; the example must run."* That sentence is an intention, and the file was a
  * parallel TRANSLATION of the page rather than a reading of it. Measured on 11/09/2026
  * against `a41a9ea8`: renaming `bootstrap` to `bootstrapZZZ` INSIDE the README's ```ts
- * block — an edit that makes the published example impossible to run — left the suite
+ * block (an edit that makes the published example impossible to run) left the suite
  * green. The other three packages had no such case at all, so copying that shape three
  * more times would have multiplied a guard that does not catch the defect it exists for.
  *
  * AND THE DRIFT WAS ALREADY THERE. Extracting the page's block and the case's body on
  * that same commit, the two disagreed on five lines: three comment rewraps, and two places
- * where the page said more than the code that ran — `// { kind: 'decision', record: … }`
+ * where the page said more than the code that ran (`// { kind: 'decision', record: … }`
  * against `// { kind: 'decision', … }`, and `// names only — one line each` against
- * `// names only`. Nobody had changed anything wrongly; the two copies simply aged apart,
+ * `// names only`). Nobody had changed anything wrongly; the two copies simply aged apart,
  * which is what two copies do.
  *
  * WHAT IT FOUND THE DAY IT LANDED, which is the measurement that says the shape is right.
@@ -22,7 +22,7 @@
  * errors, and every one of them was in a package that had no guard:
  *   - `@mnema/chain` called `openChainForWriting` with one argument where the signature
  *     takes two, and built an envelope with no `signerFp`. It also said the key pair "is
- *     loaded from the chain root" — contradicted by that function's own doc-comment — and
+ *     loaded from the chain root", contradicted by that function's own doc-comment, and
  *     presented `who: 'alice'` as "the human who authorized the work", where `who` is an
  *     anchor derived from the key and never a typed-in name.
  *   - `@mnema/core` imported `createTask` and `transitionTask` from `@mnema/core`, which
@@ -36,7 +36,7 @@
  * THE REASON GIVEN HERE WAS "because nothing type-checks a fenced code block", AND IT IS
  * NO LONGER TRUE: `the-example-is-type-checked.test.ts` extracts each page's block into a
  * sandbox and compiles it against the built declarations, every run. What falsified the
- * sentence was measuring what this file alone protects — putting one of those ten errors
+ * sentence was measuring what this file alone protects: putting one of those ten errors
  * back on the PAGE and in the CASE together left this guard, and the whole suite, green.
  * Two identical copies agree whether they compile or not, which is the half a comparison
  * can never cover.
@@ -48,18 +48,18 @@
  * second needs a TypeScript transform at test time and executes text nobody reviewed as
  * code. The third inverts authorship: the page would become output, and prose written to
  * be read would be written to be generated. What the comparison gives up is that the
- * bytes are checked rather than re-executed — and that is given up only in appearance,
+ * bytes are checked rather than re-executed, and that is given up only in appearance,
  * because the bytes checked are the bytes the case runs.
  *
  * ONE FORMATTER, ONE DIRECTION. Only the test file is formatted (`biome` does not read
  * Markdown), so the page carries the case's body dedented, and the comparison is exact
  * afterwards. If a line the formatter would rewrap is edited on the page first, this case
- * goes red and the fix is to edit the case and dedent again — which is the workflow, not
+ * goes red and the fix is to edit the case and dedent again, which is the workflow, not
  * a defect.
  *
  * WHERE THE ROSTER LIVES. The list of pages is not in this file: a second rule now stands
- * over the same roster — the example a package publishes TYPE-CHECKS, in
- * `the-example-is-type-checked.test.ts` — and two copies of a list is the shape that ends
+ * over the same roster (the example a package publishes TYPE-CHECKS, in
+ * `the-example-is-type-checked.test.ts`) and two copies of a list is the shape that ends
  * with one guard covering a page the other does not. Both read
  * `support/published-examples.ts`.
  *
@@ -163,7 +163,7 @@ function firstDifference(page: readonly string[], runs: readonly string[]): stri
 
 describe('the example a package publishes is the example that runs', () => {
   for (const example of PUBLISHED_EXAMPLES) {
-    it(`@mnema/${example.pkg} — the page's block IS the case's body`, () => {
+    it(`@mnema/${example.pkg}: the page's block IS the case's body`, () => {
       const page = pageBody(publishedBlock(read(example.readme)), example.elided);
       const runs = runnableBody(read(example.test));
       // Named first so a failure reads as the one line that moved rather than as two
@@ -172,7 +172,7 @@ describe('the example a package publishes is the example that runs', () => {
       expect(page).toEqual(runs);
     });
 
-    it(`@mnema/${example.pkg} — the page imports what the case imports`, () => {
+    it(`@mnema/${example.pkg}: the page imports what the case imports`, () => {
       const onThePage = importedNames(publishedBlock(read(example.readme)));
       const inTheCase = importedNames(read(example.test).split('\n'));
       const declared = Object.keys(example.specifiers).sort();
@@ -184,7 +184,7 @@ describe('the example a package publishes is the example that runs', () => {
       }
     });
 
-    it(`@mnema/${example.pkg} — every elided line is still on the page`, () => {
+    it(`@mnema/${example.pkg}: every elided line is still on the page`, () => {
       const below = belowTheImports(publishedBlock(read(example.readme)));
       expect(below.slice(0, example.elided.length)).toEqual([...example.elided]);
     });
@@ -243,7 +243,7 @@ describe('the comparison FIRES', () => {
     expect(firstDifference(page.slice(0, -1), page)).not.toEqual([]);
   });
 
-  it('identical bodies are no difference at all — the reading is not stuck on red', () => {
+  it('identical bodies are no difference at all: the reading is not stuck on red', () => {
     expect(firstDifference(page, [...page])).toEqual([]);
   });
 
@@ -255,7 +255,7 @@ describe('the comparison FIRES', () => {
   it('an elision is removed only where the page still carries it', () => {
     const block = ["import { a } from 'x';", '', 'const root = 1;', 'a(root);'];
     expect(pageBody(block, ['const root = 1;'])).toEqual(['a(root);']);
-    // The stale elision does not match, so nothing is dropped and the body stays whole —
+    // The stale elision does not match, so nothing is dropped and the body stays whole:
     // a difference the comparison then reports, rather than a line quietly swallowed.
     expect(pageBody(block, ['const root = 2;'])).toEqual(['const root = 1;', 'a(root);']);
   });

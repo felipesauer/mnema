@@ -1,10 +1,10 @@
 /**
- * THE PROSE CARRIES ITS OWN EMPHASIS. Two glyphs — the alarm and the no-entry sign — stood at
+ * THE PROSE CARRIES ITS OWN EMPHASIS. Two glyphs, the alarm and the no-entry sign, stood at
  * the head of six hundred comments in this workspace, and nothing here writes them any more.
  *
  * WHERE THIS COMES FROM. They were counted once: six hundred and twelve of them, across
  * fifty-eight files, and the count is the whole argument. A marker that appears six hundred
- * times marks nothing — the eye stops seeing it, and the paragraph it stands over is read at
+ * times marks nothing: the eye stops seeing it, and the paragraph it stands over is read at
  * the same weight as every other paragraph. It grew that way for a reason worth naming: each
  * session copied the style of the file it was editing, so the glyph spread by imitation rather
  * than by anybody deciding it earned its place.
@@ -21,13 +21,13 @@
  *   - THE CASES, which is the half that matters: three hundred and sixty-three of the six
  *     hundred lived in cases, so a scan that skipped them would pass over most of the tree
  *     while reporting zero.
- *   - WHAT THE PACKAGES PUBLISH AND WHAT THE PRODUCT PRINTS — the manifests, the READMEs, the
+ *   - WHAT THE PACKAGES PUBLISH AND WHAT THE PRODUCT PRINTS: the manifests, the READMEs, the
  *     golden files, and CI's own. None held one, and a ban that reached only sources would not
  *     be able to say so.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered: whether the sentence
  * left where a glyph was still says what the glyph was there to say. That question is about
- * prose, and no scan reads prose — it is answered by review, and it was.
+ * prose, and no scan reads prose: it is answered by review, and it was.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -36,7 +36,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** This file, which the scan reaches and must not accuse. */
@@ -45,7 +45,7 @@ const HERE = fileURLToPath(import.meta.url);
 /**
  * The two glyphs, spelled by CODE POINT. Written out, each would sit in this file's own source,
  * the scan would find itself, and the guard would be red the day it was written and switched
- * off the day after — so the one file in the workspace allowed to name them names them in a
+ * off the day after, so the one file in the workspace allowed to name them names them in a
  * form no editor renders.
  */
 const ALARM = 0x26a0;
@@ -55,14 +55,14 @@ const CARRIED_BY_A_GLYPH = new RegExp(
   'u',
 );
 
-/** The extensions text is carried in here — sources, manifests, CI's, and what is published. */
+/** The extensions text is carried in here: sources, manifests, CI's, and what is published. */
 const TEXT = /\.(ts|mts|cts|js|mjs|cjs|json|ya?ml|md|txt)$/;
 
 /**
  * EVERYTHING THE WORKSPACE SHIPS, ASKED OF THE WORKSPACE ITSELF rather than of a walk with a
  * list of directories to skip. What is tracked and what is merely present-and-not-ignored are
  * both here, so a file written this minute is covered before anybody stages it; what git ignores
- * is out, which is the point — the workbench and the local notes are somebody's own prose, and a
+ * is out, which is the point: the workbench and the local notes are somebody's own prose, and a
  * guard that reddened on those would be a guard switched off by the end of the week.
  *
  * IT CANNOT GO VACUOUS BY FAILING. If this comes back with nothing at all, the counts below say
@@ -98,12 +98,12 @@ const LAYOUT: readonly number[] = [0x09, 0x0a, 0x0d];
  * WHERE A READER CANNOT SEE ONE, spelled by code point for the same reason the glyphs above are:
  * written out, this file would be the list.
  *
- * IT WAS ALREADY WRITTEN DOWN, AND ONLY IN PROSE. The construction is one idiom — a NUL joining
- * the parts of a composite map key — and it is written at four places in three files. Product
+ * IT WAS ALREADY WRITTEN DOWN, AND ONLY IN PROSE. The construction is one idiom, a NUL joining
+ * the parts of a composite map key, and it is written at four places in three files. Product
  * code writes it as an escape and says why, at `context/src/intelligence/references.ts:248`:
  * "written as an escape and not as a raw byte, so that an editor shows it". The bench harness
  * writes it as an escape twice, in a harness since removed from the tree. And
- * `code/tests/support/witnessing.ts:531` wrote it RAW — one byte, inside the instrument of the
+ * `code/tests/support/witnessing.ts:531` wrote it RAW: one byte, inside the instrument of the
  * guard whose whole question is whether anything in this repository names a file. The odd one
  * out was the only one nothing could ask about: that file came back from `file(1)` as `data`
  * rather than as text, and `grep` answered for it with `binary file matches` in place of the
@@ -112,12 +112,12 @@ const LAYOUT: readonly number[] = [0x09, 0x0a, 0x0d];
  * NOTHING IN THE TOOLCHAIN ASKED EITHER. Biome's `noControlCharactersInRegex` is the only rule in
  * the class; it reaches regex literals, this one was in a template literal, and it is switched off
  * at sixteen places in eleven files. `the-opening-fits-the-screen.test.ts:359` reads as though it
- * covered this — its own comment names "an escape, a NUL, a zero-width space" — and it cannot
+ * covered this (its own comment names "an escape, a NUL, a zero-width space") and it cannot
  * express one: its class is `codePointAt(0) >= 0x80` over a single module, so a NUL is beneath its
  * threshold and outside its corpus, twice over.
  *
  * C0 AND DEL, AND NOT C1. Read as UTF-8, which is how every file here is read, a raw 0x80-0x9f
- * byte is not that code point — it is invalid UTF-8 and arrives as U+FFFD, which this does not
+ * byte is not that code point: it is invalid UTF-8 and arrives as U+FFFD, which this does not
  * accuse and should not. So the class stops at what a raw byte can actually be: below 0x20, or
  * DEL. Naming C1 would read as coverage and deliver none.
  *
@@ -181,7 +181,7 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
   });
 
   it('and would find either of them, in a comment or in a case’s own name', () => {
-    // Non-vacuity on text this case owns, one line per glyph and per place they were written —
+    // Non-vacuity on text this case owns, one line per glyph and per place they were written,
     // and each built from a code point, because a sample spelled whole would put this file in
     // the list above.
     const alarm = String.fromCodePoint(ALARM);
@@ -213,7 +213,7 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
 
     // AND THE CORPUS REACHES THE FILE THAT COST THIS GUARD. Asserted here rather than left to
     // the counts above: narrowing the scan out of the helper tree leaves every one of them
-    // green, because a hundred other files under `packages/code/tests/` satisfy them — measured,
+    // green, because a hundred other files under `packages/code/tests/` satisfy them (measured),
     // and it is how a guard goes quiet without a case to say so.
     expect(
       READ.map((file) => file.where),
@@ -222,7 +222,7 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
   });
 
   it('and would find one at either end of the class, or in the middle of a line', () => {
-    // Non-vacuity at every edge the class draws, each built from a code point — a sample written
+    // Non-vacuity at every edge the class draws, each built from a code point: a sample written
     // whole would put this file in the list above, and one of them cannot be written at all.
     const nul = String.fromCodePoint(0x00);
     const esc = String.fromCodePoint(0x1b);
@@ -238,13 +238,13 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
     // Nor is the first printable character, which is the bound on the other side.
     expect(hiddenAt(String.fromCodePoint(0x20))).toEqual([]);
     // Nor is a high code point: this bans the invisible, not the non-ASCII. Both of these are
-    // written by code point too — the second is the zero-width space the class leaves alone, and
+    // written by code point too: the second is the zero-width space the class leaves alone, and
     // spelling it out would be the very byte this file exists to keep out of a source.
     expect(hiddenAt(`a${String.fromCodePoint(0x2550)}b`)).toEqual([]);
     expect(hiddenAt(`a${String.fromCodePoint(0x200b)}b`)).toEqual([]);
     // Nor is the replacement character, which is what a raw C1 byte becomes on the way in:
     // it is invalid UTF-8, so the reader above hands this file U+FFFD and never U+0085. That
-    // is why the class stops at DEL — naming C1 would advertise a reach it cannot have.
+    // is why the class stops at DEL: naming C1 would advertise a reach it cannot have.
     expect(hiddenAt(String.fromCodePoint(0xfffd))).toEqual([]);
   });
 });

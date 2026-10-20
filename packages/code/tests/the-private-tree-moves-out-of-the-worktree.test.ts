@@ -4,8 +4,8 @@
  *
  * The old trees are made the way they were made: by the binary, writing privately in a project
  * whose repository it could not see (its `.git` set aside for the write), so each holds what an
- * old private tree held — a tail, the key's public half and anchor, an installation id, and the
- * writers' `locks/`.
+ * old private tree held (a tail, the key's public half and anchor, an installation id, and the
+ * writers' `locks/`).
  *
  * WHAT THIS HOLDS:
  *   - the doctor names every worktree's old tree, and how many tails it holds;

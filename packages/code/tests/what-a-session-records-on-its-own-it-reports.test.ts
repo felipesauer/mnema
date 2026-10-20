@@ -1,15 +1,15 @@
 /**
- * WHAT THE CONTENT DOOR REPLACED IN A FACT NO TOOL CALL ASKED FOR IS STILL SAID — to the agent,
+ * WHAT THE CONTENT DOOR REPLACED IN A FACT NO TOOL CALL ASKED FOR IS STILL SAID: to the agent,
  * in the words every write already uses.
  *
  * WHAT WAS WRONG. The agent's server records facts of its own: the run it opens for a
  * connection, and, from the edit hook, one `channel.asked` per rule that asks a person about the
  * path being edited and one `channel.served` per channel that spoke. Each of those writes hands
- * back what the content door replaced, and each site dropped it — `ensureRun` read `started.id`
+ * back what the content door replaced, and each site dropped it: `ensureRun` read `started.id`
  * and never `started.replaced`, and the hook's two writers returned `{ ok }` and nothing. The
  * path a host names is a BODY to the door (`core/src/content/fields.ts`: it is the circumstance a
  * rule was charged in, not an address), so a credential in a file name is replaced in the
- * record — and the agent was never told a value it handed over was recorded as a placeholder.
+ * record, and the agent was never told a value it handed over was recorded as a placeholder.
  *
  * WHICH OF THOSE SITES CAN REPLACE ANYTHING TODAY, measured against the door's table: only the
  * asking. The run's `agent` and every envelope `which` are NAMES, and a name holding a
@@ -31,10 +31,10 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
-/** Shaped like an AWS access key id — a class the door replaces in a body. */
+/** Shaped like an AWS access key id: a class the door replaces in a body. */
 const SECRET = 'AKIAABCDEFGHIJKLMNOP';
 
 /** The words the owed block opens with (`mcp/session.ts`). */
@@ -80,7 +80,7 @@ async function connected(): Promise<Client> {
   return client;
 }
 
-/** The text the hook hands the agent — the one field of its reply that reaches the model. */
+/** The text the hook hands the agent: the one field of its reply that reaches the model. */
 function contextOf(reply: unknown): string {
   const text = ((reply as { content?: { text: string }[] }).content ?? [])[0]?.text ?? '{}';
   const parsed = JSON.parse(text) as { hookSpecificOutput?: { additionalContext?: string } };

@@ -2,8 +2,8 @@
  * THE BINARY A BUILD LEAVES RUNS WHEN IT IS LINKED ONTO THE PATH, the way the page says to.
  *
  * WHAT WAS WRONG. The build-from-source page (`docs/build-from-source.md`) tells a reader who builds from a clone to *"symlink it onto your
- * `PATH` under the name `mnema`"*. `tsc` keeps no executable bit — it wrote `dist/cli.js` with mode
- * 0664 — so the symlink the page asks for gave `Permission denied`, exit 126, on the last step of
+ * `PATH` under the name `mnema`"*. `tsc` keeps no executable bit, it wrote `dist/cli.js` with mode
+ * 0664, so the symlink the page asks for gave `Permission denied`, exit 126, on the last step of
  * the only install that works while the package is not on the registry. Measured on the built
  * binary; it was not a test that was missing, it was that nothing ran the recipe.
  *
@@ -11,7 +11,7 @@
  * `PATH`, a symlink there named `mnema`, and `mnema --version` asked of the shell's own lookup.
  * Beside it the file's mode (every reader of the file may run it) and the root `build` script
  * (`tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs`), because the mode is only as lasting as
- * the step that sets it — `tsc` rewriting the file would take it away again.
+ * the step that sets it: `tsc` rewriting the file would take it away again.
  */
 
 import { spawnSync } from 'node:child_process';
