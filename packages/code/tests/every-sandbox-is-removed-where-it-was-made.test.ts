@@ -331,10 +331,9 @@ describe('the instrument reads what it claims to read', () => {
     // innocent, because its base is `fixture.scratch`. If this case ever goes red because that
     // file changed, the answer is to pick another innocent file, not to widen the rule.
     const pty = MAKINGS.filter((m) => m.where === 'packages/code/tests/support/pty.ts');
-    expect(
-      pty.length,
-      'support/pty.ts no longer makes a sandbox: pick another innocent file',
-    ).toBe(1);
+    expect(pty.length, 'support/pty.ts no longer makes a sandbox: pick another innocent file').toBe(
+      1,
+    );
     expect(
       pty[0]?.onTheMachinesTemp,
       'support/pty.ts is being read as making one under tmpdir()',
