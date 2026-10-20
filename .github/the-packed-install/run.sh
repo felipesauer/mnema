@@ -10,7 +10,7 @@
 # package installed from what `pnpm pack` made, with nothing of the workspace beside it, finds them.
 #
 # Usage: run.sh            (from the root of the workspace)
-set -u
+set -euo pipefail
 
 root="$(pwd)"
 work="$(mktemp -d)"
@@ -40,6 +40,11 @@ for dir in "${dirs[@]}"; do
   (cd "$dir" && pnpm pack --pack-destination "$work/tarballs" >/dev/null) || fail "could not pack $dir"
 done
 tarballs=("$work"/tarballs/*.tgz)
+# A source map in a tarball points at sources the package does not ship.
+for tarball in "${tarballs[@]}"; do
+  maps="$(tar -tzf "$tarball" | grep -c '\.map$' || true)"
+  [ "$maps" -eq 0 ] || fail "$(basename "$tarball") carries $maps source map file(s)"
+done
 echo "packed: $(basename -a "${tarballs[@]}" | tr '\n' ' ')"
 [ "${#tarballs[@]}" -eq "${#dirs[@]}" ] || fail "packed ${#tarballs[@]} tarballs for ${#dirs[@]} packages"
 
@@ -59,7 +64,7 @@ base_env=(env -i HOME="$home" PATH="$prefix/bin:$PATH" npm_config_cache="$work/n
   }
 
 want="$(node -p 'require("./packages/code/package.json").version')"
-got="$("${base_env[@]}" mnema --version 2>&1)"
+got="$("${base_env[@]}" mnema --version 2>&1)" || true
 [ "$got" = "$want" ] || fail "the installed binary says '$got', the package is $want"
 
 project="$work/project"
@@ -68,8 +73,8 @@ cd "$project" || exit 1
 
 run() {
   echo "\$ mnema $*"
-  "${base_env[@]}" mnema "$@" >"$work/out.txt" 2>&1
-  local status=$?
+  local status=0
+  "${base_env[@]}" mnema "$@" >"$work/out.txt" 2>&1 || status=$?
   cat "$work/out.txt"
   [ "$status" -eq 0 ] || fail "mnema $1 exited $status"
 }
