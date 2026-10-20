@@ -1,5 +1,5 @@
 /**
- * THE PROOF LAYER ANSWERS A MACHINE: and says what it does not answer.
+ * THE PROOF LAYER ANSWERS A MACHINE, and says what it does not answer.
  *
  * MEASURED against the built binary before this existed: of the reads this product
  * serves, `verify` and `witness` were the only two that REFUSED `--json`, both with

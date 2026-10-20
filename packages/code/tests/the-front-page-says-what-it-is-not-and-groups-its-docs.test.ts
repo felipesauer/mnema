@@ -1,5 +1,5 @@
 /**
- * THE FRONT PAGE SAYS WHAT MNEMA IS NOT, AND GROUPS ITS DOCS BY WHO READS THEM: and neither can
+ * THE FRONT PAGE SAYS WHAT MNEMA IS NOT, AND GROUPS ITS DOCS BY WHO READS THEM, and neither can
  * drift from the page it summarises or from the directory it lists.
  *
  *   - "WHAT IT IS NOT" has four lines, and each one is the line of `docs/where-it-fits.md` said

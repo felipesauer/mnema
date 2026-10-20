@@ -1,5 +1,5 @@
 /**
- * THE CONSOLE, IN A REAL PSEUDO-TERMINAL: because the promise it makes is about a
+ * THE CONSOLE, IN A REAL PSEUDO-TERMINAL, because the promise it makes is about a
  * device, and a device is the one thing an in-process test does not have.
  *
  * `mnema repl` takes the terminal: it puts the input in raw mode, so nothing a caller

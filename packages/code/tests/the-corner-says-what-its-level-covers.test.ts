@@ -239,7 +239,7 @@ describe('the corner stops claiming a level about a record it has not read', () 
       steps: [
         opensAConsole(PROMPT),
         {
-          // THE BODY SAYS THE RECORD IS SOUND, BEFORE ANYTHING MOVES: so the corner
+          // THE BODY SAYS THE RECORD IS SOUND, BEFORE ANYTHING MOVES, so the corner
           // agreeing with it is a fact about this run rather than about a fixture.
           types: 'verify\r',
           // THE SECOND OCCURRENCE: the opening panel already states the verdict once, so

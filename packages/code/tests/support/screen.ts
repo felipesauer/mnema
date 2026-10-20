@@ -107,8 +107,8 @@ const RUN = '\u2500';
  * and one wider than it ends on the row below.
  *
  * WHAT COUNTS IS A MAXIMAL RUN of {@link RUN}, and its width is its own length. IT USED TO
- * DEPEND ON WHAT BOUNDED IT: corner to corner was the run plus two, one end only was not a width
- * at all, and neither case can occur on a page without a frame.
+ * DEPEND ON WHAT BOUNDED IT (corner to corner was the run plus two, one end only was not a width
+ * at all), and neither case can occur on a page without a frame.
  */
 export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
   const page = rows.join('');

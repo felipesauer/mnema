@@ -848,7 +848,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
 /**
  * WHERE THE PAGE IS ON A SCREEN: the first row with anything on it, and the last.
  *
- * IT WAS ONE NUMBER: *how many rows from the top have anything on them*, and it was the
+ * IT WAS ONE NUMBER (*how many rows from the top have anything on them*), and it was the
  * same as the page's own height for as long as the page was drawn from the top of the screen.
  * That is what the delivery which anchored the input at the FOOT falsified
  * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is placed with as
@@ -1597,7 +1597,7 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     // the only run of glyphs the panel draws. `tests/the-page-follows-the-terminal.test.ts` asks
     // the same thing of the arrangement that puts the text beside it.
     //
-    // THE ROWS USED TO BE FOUND BY THE FRAME: every row beginning with the box's side, and
+    // THE ROWS USED TO BE FOUND BY THE FRAME (every row beginning with the box's side), and
     // each was read between its two ends. There is no frame: the rows are the ones between the
     // top of the screen and the sentence the session lands under the panel, and they are read
     // whole. Which also means the two rules the INPUT area draws have to be outside them, and

@@ -523,7 +523,7 @@ function everySource(): readonly { readonly path: string; readonly code: string 
 
 describe('the four rules this delivery touched hold at every site, found by the discriminant', () => {
   it('indents the page from ONE statement of the margin, wherever it is drawn', () => {
-    // THE DISCRIMINANT IS THE LAYOUT'S OWN WORD FOR IT: `paddingLeft`, and not a list of
+    // THE DISCRIMINANT IS THE LAYOUT'S OWN WORD FOR IT (`paddingLeft`), and not a list of
     // files. Wherever a component of this console pushes something right, the number has to be
     // the margin's (`src/repl/inset.ts`); a literal there is a second statement of where the
     // page begins, and the two would disagree the first time one of them moved.

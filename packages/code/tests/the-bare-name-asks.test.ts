@@ -229,7 +229,7 @@ describe('with no terminal the bare name is the help it always was', () => {
   }
 
   /**
-   * THE INVOCATION, HELD TO ANSWERING AT ALL: and a red that says what went wrong.
+   * THE INVOCATION, HELD TO ANSWERING AT ALL, and a red that says what went wrong.
    *
    * A verb that prints and exits comes back; a QUESTION does not, because it is waiting for a
    * key nobody is going to press. So the way this case fails when the terminal is taken out

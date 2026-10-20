@@ -592,7 +592,7 @@ describe('the badge says what the record proved, and the verb that says the rest
   const severityOf = (line: Line): Severity | undefined => line.parts[0]?.severity;
 
   it('carries the hue its level reads as, in each of the three outcomes', () => {
-    // THIS CASE USED TO ASSERT THE OPPOSITE: that the badge carries no style at all,
+    // THIS CASE USED TO ASSERT THE OPPOSITE (that the badge carries no style at all),
     // and it is renamed rather than edited, because a conserto that inverts an observable
     // leaves every device built on the old name asserting the new behaviour by accident.
     // What fell is in `repl/session.ts`, `badgeLine`: an unpainted corner is quiet while

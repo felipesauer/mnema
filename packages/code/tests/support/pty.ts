@@ -1,5 +1,5 @@
 /**
- * A REAL PSEUDO-TERMINAL, DRIVEN: because an interactive surface does not prove itself
+ * A REAL PSEUDO-TERMINAL, DRIVEN, because an interactive surface does not prove itself
  * in process.
  *
  * `support/console.ts` gives a pair of streams a console will treat as a device, and that
@@ -135,7 +135,7 @@ export async function theDeviceWasTheSizeAskedFor(
  * still on it (the resize itself would have failed otherwise), so it says what the running
  * process is about to be told, rather than what it was asked to be told.
  *
- * ONE CALL, TWO SIZES: and this is the fact everything a case reads about a resize has to be
+ * ONE CALL, TWO SIZES, and this is the fact everything a case reads about a resize has to be
  * written against. `stty rows R cols C` sets the height and the width in two separate calls to
  * the device, so a session on the other side of it can be told TWICE, and the size in between
  * is the OLD width at the NEW height. Measured directly, with a program that says every size it

@@ -26,7 +26,7 @@ export const ESC = '\u001b';
  * session.
  *
  * Spelled by its code point, like every other control byte here. IT WAS A WORD AT MOST OF THE
- * SITES THAT NOW READ THIS: `/exit`, typed and submitted, and the word is gone; what a caller
+ * SITES THAT NOW READ THIS (`/exit`, typed and submitted), and the word is gone; what a caller
  * types is the reads of the record, and the way out is the keystroke every console has answered
  * to since before this one existed (`src/session-words.ts`, `THE_KEY_THAT_LEAVES`).
  *

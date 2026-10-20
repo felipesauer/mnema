@@ -1,5 +1,5 @@
 /**
- * THE CONVERTER THIS PACKAGE PUBLISHES IS A CONVERTER THAT RUNS: and what it writes is
+ * THE CONVERTER THIS PACKAGE PUBLISHES IS A CONVERTER THAT RUNS, and what it writes is
  * what the door takes.
  *
  * WHY IT IS PUBLISHED AT ALL, which is the measurement this guard stands over. The reader
