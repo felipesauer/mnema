@@ -1842,7 +1842,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'you get back is a HOOK REPLY, because that is the only shape this host reads, ' +
         'and `{}` when there is nothing to say. Where a rule of the record is linked to ' +
         'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
-        '`permissionDecision: "ask"` and the host holds the write until a PERSON ' +
+        '`permissionDecision: "ask"`, and the host holds the write until a PERSON ' +
         'decides, citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
         'input: none of the three is representable in what it returns. It WRITES: every ' +
         'asking is appended to the record as a fact citing the rule and the path you ' +

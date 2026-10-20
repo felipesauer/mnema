@@ -301,7 +301,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
     // how many there are. The ids are what a reader copies into the next command, so
     // they are what the lines are found by.
     const printed = await mnema('status', '--actor', fixture.anchor);
-    expect(printed[0]).toMatch(/: where things stand\.$/);
+    expect(printed[0]).toMatch(/, where things stand\.$/);
     const text = printed.join('\n');
     expect(text).toContain('1 decision(s) in force:');
     expect(text).toContain('1 adopted pattern(s):');
