@@ -65,7 +65,7 @@ mnema init >/dev/null
 typed 'mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact."'
 OUT=$(mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact.")
 echo "$OUT" | sed -n '1p' | tilde
-OLD=$(echo "$OUT" | idIn)
+OLD=$(idIn <<<"$OUT")
 typed "mnema decision move accept $OLD --note \"Agreed.\""
 mnema decision move accept "$OLD" --note "Agreed." | tilde
 pause 1.2
@@ -81,7 +81,7 @@ typed 'mnema decision record "Keep money as a Money of integer cents" \' \
 OUT=$(mnema decision record "Keep money as a Money of integer cents" \
   "An amount never travels without its currency.")
 echo "$OUT" | sed -n '1p' | tilde
-NEW=$(echo "$OUT" | idIn)
+NEW=$(idIn <<<"$OUT")
 typed "mnema decision move accept $NEW --note \"Agreed.\""
 mnema decision move accept "$NEW" --note "Agreed." | tilde
 typed "mnema decision supersede $OLD \\" \
