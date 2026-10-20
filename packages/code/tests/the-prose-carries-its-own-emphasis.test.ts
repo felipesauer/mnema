@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PROSE CARRIES ITS OWN EMPHASIS. Two glyphs, the alarm and the no-entry sign, stood at
  * the head of six hundred comments in this workspace, and nothing here writes them any more.

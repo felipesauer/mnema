@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * Every value the workspace exports publicly has a caller in production.
  *

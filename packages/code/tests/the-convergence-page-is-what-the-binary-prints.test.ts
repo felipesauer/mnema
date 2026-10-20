@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE TWO MACHINES THE CONVERGENCE PAGE SHOWS ARE TWO MACHINES THE BINARY RUNS: every command of
  * the example, in order, and every line it printed.

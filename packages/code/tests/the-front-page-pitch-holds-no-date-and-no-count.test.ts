@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PITCH HOLDS NO DATE AND NO COUNT. The top of the README (what comes before `## Why`) and the
  * `## Why` section are what a stranger reads first, and they must not carry what goes stale or what

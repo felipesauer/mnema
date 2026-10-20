@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * WHAT A PACKAGE PUBLISHES IS WHAT ITS PAGE PROMISES: asked of the tarball, not of the tree.
  *

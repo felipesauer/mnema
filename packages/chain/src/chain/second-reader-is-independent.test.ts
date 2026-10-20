@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE SECOND READER IMPORTS NOTHING OF THIS PRODUCT: the guard on the only thing that
  * makes it worth having.

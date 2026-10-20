@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE INSTALL IS WRITTEN ONCE. Until the packages are on npm, `npm i -g @mnema/code` answers 404,
  * and the install is from the source: the block of `docs/install.md` builds the workspace, packs the

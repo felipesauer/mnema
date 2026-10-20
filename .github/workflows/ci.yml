@@ -407,6 +407,42 @@ jobs:
           packages/stacks/tests/the-example-stacks-hold.test.ts
           packages/stacks/tests/the-index-names-the-stacks-it-lists.test.ts
 
+  # THE GUARDS, FAST. The cases that walk the whole tree (a file nobody tests, a page that drifted
+  # from what the binary prints, a workflow nobody listed) are the ones a change breaks without
+  # touching them, and they used to show red only when the matrix finished. They carry the line
+  # `// @reads-the-tree`, `vitest.guards.config.ts` runs those and nothing else, and this job runs
+  # that config on one Node, in parallel with the matrix, so the same red shows up early. It is the
+  # same cases the matrix runs, not a replacement for it, and nothing waits for it.
+  #
+  # `vitest` and not the `test` script, for the reason the python floor job gives: the sweep of what
+  # the suite leaves behind reads this file for the steps that run that script, and this job runs on
+  # a runner of its own that sweep never sees.
+  #
+  # Before the job `the-link-cannot-come-back`, which reads its own job from its header to the end
+  # of this file and so has to stay last.
+  the-guards:
+    name: the guards
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Some of the cases read `dist`, so the build is not optional here.
+      - name: Build
+        run: pnpm build
+
+      - name: The cases that read the whole tree
+        run: pnpm exec vitest run --config vitest.guards.config.ts --maxWorkers=2
+
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.
   # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen

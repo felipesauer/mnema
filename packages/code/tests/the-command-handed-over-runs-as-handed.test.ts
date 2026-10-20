@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE COMMAND HANDED OVER RUNS AS HANDED: every `mnema …` the product gives a person to type, in
  * a sentence it prints or on a page it publishes, passes the parser once its markers are filled,

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE RED SAYS WHY IT WENT RED, or the instrument says it could not tell. Never a shrug.
  *

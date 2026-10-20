@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PYTHON FLOOR IS DECLARED ONCE, AND CI RUNS IT: the second reader's twin of
  * `the-runtime-floor-is-declared-once.test.ts`.

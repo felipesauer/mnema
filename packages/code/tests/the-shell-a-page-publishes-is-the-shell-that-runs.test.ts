@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE SHELL A PAGE PUBLISHES IS THE SHELL THAT RUNS: every verb, every flag.
  *

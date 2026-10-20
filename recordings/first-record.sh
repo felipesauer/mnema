@@ -76,7 +76,7 @@ typed 'mnema decision record "Keep money as integer cents" \' \
 OUT=$(mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact." \
   --alternatives "A decimal library: slower, one more dependency.")
 echo "$OUT" | tilde
-ID=$(echo "$OUT" | grep -m1 -oE '[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}')
+ID=$(grep -m1 -oE '[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}' <<<"$OUT")
 pause 1.6
 
 typed "mnema decision move accept $ID --note \"Agreed in review.\""

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE RUNTIME FLOOR IS DECLARED ONCE, and every place that repeats it repeats the same number.
  *

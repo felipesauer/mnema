@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A pull request whose title, description or commit message carries the em dash is refused,
  * and the finding says where. The text is the pull request's own, so the cases hand the

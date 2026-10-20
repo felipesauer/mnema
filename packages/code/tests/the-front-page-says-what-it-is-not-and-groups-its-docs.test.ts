@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE FRONT PAGE SAYS WHAT MNEMA IS NOT, AND GROUPS ITS DOCS BY WHO READS THEM, and neither can
  * drift from the page it summarises or from the directory it lists.

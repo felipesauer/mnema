@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY TEST FILE IS TYPE-CHECKED. The product's `tsc -b` excludes the `.test.ts` files and
  * vitest strips types without reading them, so for a long time a test could be wrong about

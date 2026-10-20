@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE EXAMPLE A PACKAGE PUBLISHES IS TYPE-CHECKED: against what the package publishes.
  *

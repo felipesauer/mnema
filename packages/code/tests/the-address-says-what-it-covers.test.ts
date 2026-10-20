@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * What an address covers, said at the moment somebody records one: on BOTH surfaces
  * that record one, over a real working tree.

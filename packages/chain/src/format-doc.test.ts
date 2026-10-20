@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * `FORMAT.md` is the format specified in prose, for a reader who did not write
  * this code. Prose has one failure mode a test file does not: it stays green
