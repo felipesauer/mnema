@@ -3,7 +3,7 @@
  * package boundary.
  *
  * A workflow state answers "where is this entity"; a table beside the machine says
- * what that state MEANS to a reader — governs, awaits somebody, is over, can still
+ * what that state MEANS to a reader: governs, awaits somebody, is over, can still
  * move. Several modules hold such a table, and each one declares in its own doc that the
  * table is NOT on the package's public surface, because a consumer that could import it
  * would re-derive the meaning where nobody can see the two copies drift. Nothing kept
@@ -11,17 +11,17 @@
  *
  * Not every subject is a per-state table. `fed-by.ts` says which projection tables each
  * event kind feeds, and a consumer able to import THAT could keep a second opinion about
- * which tables a write makes stale — two opinions about that is a cache nobody
+ * which tables a write makes stale: two opinions about that is a cache nobody
  * invalidates. It is here by the same mechanism and for the same reason: it declares
  * itself hidden, so the sweep finds it.
  *
  * IT WAS THE SECOND GUARD OF A PAIR THAT COULD NOT GO RED, and the last net below is what
  * changed that. THE ONE RED IT USED TO PROMISE HAD ALREADY GONE. The sentence here read: making a surface classify for itself
  * (`state === 'adopted'` instead of asking) leaves ONE red, and it comes from
- * `every-public-value-has-a-caller.test.ts` — the accessor loses its only consumer.
+ * `every-public-value-has-a-caller.test.ts` (the accessor loses its only consumer).
  * What falsified it is running that same mutation again over the whole suite.
  * Replacing `decisionDisposition(state)` in `presentation/state.ts` with the
- * comparison written out — output byte for byte the same — leaves 4376 of 4376
+ * comparison written out, output byte for byte the same, leaves 4376 of 4376
  * GREEN, and the same mutation on `skillDisposition` leaves 4376 of 4376 GREEN too.
  *
  * The premise underneath was that the accessor had ONE consumer, and none of the
@@ -32,8 +32,8 @@
  * nothing to say. The duplication is silent everywhere, not only inside one package.
  *
  * THE RULER WAS CHECKED IN THE SAME BATTERY, because two zeros with no proof the run
- * can go red are not a measurement: the same edit made WRONG — `accepted` painted
- * `closed` — goes red 4 times in 2 files (`a-state-is-a-position.test.ts`,
+ * can go red are not a measurement: the same edit made WRONG, `accepted` painted
+ * `closed`, goes red 4 times in 2 files (`a-state-is-a-position.test.ts`,
  * `styled.test.ts`). The zeros above are this guard's silence and not a broken run.
  *
  * THAT SAME MUTATION IS RED NOW, in this file, by the third net: the comparison written out
@@ -46,14 +46,14 @@
  *     stays cheaper than the copy.
  *
  * HOW THE SUBJECT IS ENUMERATED, and why each net is here:
- *   - BY DECLARATION. The modules are found by their own sentence — "not on the
- *     package's public surface" — and every plain-object value they export is then
+ *   - BY DECLARATION. The modules are found by their own sentence, "not on the
+ *     package's public surface", and every plain-object value they export is then
  *     subject. The DECLARATION is the source, not a list kept in this file: a table
  *     added to one of those modules tomorrow is covered without an edit here. The
  *     witness table below is what keeps the sweep from silently finding nothing.
  *   - BY SHAPE. An object whose keys are exactly the states of one of the product's
  *     machines is a per-state table whoever wrote it and wherever it lives, so this
- *     net catches one that carries no declaration at all — including a copy of a
+ *     net catches one that carries no declaration at all, including a copy of a
  *     hidden table under a new name. The machines come from `@mnema/core`'s own
  *     `*_STATES` tuples, so a fourth machine is covered without an edit.
  *   - BY NAME and BY IDENTITY, inside the first net. A re-export under the original
@@ -62,19 +62,19 @@
  *     name check and costs nothing to catch, since the module instance is the same
  *     one this file imported.
  *   - BY TEXT, the third net, over every production file of every package. It answers the
- *     case the other two cannot see — a surface that asks neither and writes the comparison
- *     itself — by reading a value NAMED `state` compared against a state word
+ *     case the other two cannot see, a surface that asks neither and writes the comparison
+ *     itself, by reading a value NAMED `state` compared against a state word
  *     ({@link writtenOut}), in each spelling that says one.
  *
  * WHAT IT DOES NOT DO, so a pass is not read as more than it says:
  *   - IT CATCHES REIMPLEMENTATION FROM SCRATCH ONLY IN THE SPELLINGS IT READS. This bullet
  *     read "IT DOES NOT CATCH REIMPLEMENTATION FROM SCRATCH … and nothing here sees it", after
- *     TWO scans were measured and both refused — the paragraphs below, kept because they were
+ *     TWO scans were measured and both refused: the paragraphs below, kept because they were
  *     right about the scans they were about. The narrow one was chosen and built, because
  *     what serves the proof is a guard whose every accusation is true: it was born with no
  *     exception, and it was refused only for its POWER. Its power is what grew. Still keyed
  *     on a value NAMED `state`, it reads the state word inline, behind a constant the same
- *     file binds, in an array or a `Set` asked for membership, and as a `switch`'s `case` —
+ *     file binds, in an array or a `Set` asked for membership, and as a `switch`'s `case`:
  *     three of the five spellings the refusal measured, the inline one among them, which is
  *     the mutation that left the suite green. WHAT IT STILL DOES NOT SEE: the word on a field
  *     called anything else (`to`, `status`, `currentState`), behind an alias (`const s =
@@ -83,7 +83,7 @@
  *     other way round: a value called `state` in some other domain, compared against a word
  *     that happens to be a workflow state, would be accused. The first is declared: the
  *     `state` of an ECC Vault memory, read in `core/src/adr/bridges.ts` as
- *     `RETIRED_IN_THE_VAULT.test(memory.state)` — another tool's vocabulary, which the guard
+ *     `RETIRED_IN_THE_VAULT.test(memory.state)`, another tool's vocabulary, which the guard
  *     lets through by a spelling it does not read (a regex test, not a comparison). It is
  *     declared, not accidental; a second one would be the day to argue it in place.
  *
@@ -96,9 +96,9 @@
  *
  *     THE NARROW SCAN CARRIES NO EXCEPTION AND NO POWER, which is the finding that
  *     keeps this limit written instead of closed. Restricted to the property a
- *     reimplementation actually compares —
- *     `grep -rnE "\bstate\s*(===|!==)\s*'<state>'"` over packages/*​/src, with the
- *     states taken from `DECISION_STATES`, `SKILL_STATES` and `TASK_STATES` — it
+ *     reimplementation actually compares
+ *     (`grep -rnE "\bstate\s*(===|!==)\s*'<state>'"` over packages/*​/src, with the
+ *     states taken from `DECISION_STATES`, `SKILL_STATES` and `TASK_STATES`) it
  *     finds ZERO, in
  *     production and in test code alike; the only three hits anywhere in the
  *     workspace are three sentences of this file's own prose. So it is born clean and
@@ -109,15 +109,15 @@
  *
  *     AND THE MISSED SHAPE IS THE HOUSE STYLE, not a hypothetical.
  *     `core/src/projections/skill.ts` holds `const ADOPTED = 'adopted'` and asks
- *     `event.payload.to === ADOPTED` — legitimately, a POSITION question inside the
+ *     `event.payload.to === ADOPTED`: legitimately, a POSITION question inside the
  *     fold that computes state, and invisible to both scans only because the field is
  *     called `to` and the word sits behind a constant. Widen either scan far enough
  *     to reach that shape and that site is the innocent it accuses. Narrow and
  *     powerless, or wide and born with an exception: neither was built.
  *
  *     That was the price, and the narrow scan widened within its own property is what
- *     paid part of it: its reading reaches the house style's constant, and its key — a
- *     value named `state` — is what keeps both innocents out without an exception.
+ *     paid part of it: its reading reaches the house style's constant, and its key, a
+ *     value named `state`, is what keeps both innocents out without an exception.
  *   - It is blind to a table keyed by a SUBSET of a machine's states, and to one
  *     keyed by a vocabulary that is not a machine's states at all: `LATEST_VERSION`
  *     is keyed by every event kind and is public on purpose, and `UNROUTED_KINDS` is
@@ -126,7 +126,7 @@
  *     runtime key of an entry point and is not seen. Neither exists here today.
  *   - It says nothing about whether an accessor's answers are RIGHT. That the
  *     exported function is the table asked rather than a second opinion is
- *     `skills.test.ts` — "skillDisposition is the table, asked rather than restated";
+ *     `skills.test.ts`: "skillDisposition is the table, asked rather than restated";
  *     that the tables agree with the workflow they read is `disposition.test.ts`.
  */
 
@@ -156,7 +156,7 @@ interface Surface {
  *
  * The source and not the `dist`: a guard that read the build would pass on a stale
  * one, which this repo has already paid for. Enumeration is by RUNTIME KEY, so a
- * type cannot enter — it is gone before this file runs.
+ * type cannot enter: it is gone before this file runs.
  */
 async function surfaces(): Promise<Surface[]> {
   const found: Surface[] = [];
@@ -213,7 +213,7 @@ const HIDDEN_CLAIM = /not on the package['’]s public surface/i;
 interface Hidden {
   /** The module's path from `packages/`, which is how the witness table names it. */
   readonly module: string;
-  /** Its exported plain objects — the tables. A function is the accessor, not a table. */
+  /** Its exported plain objects: the tables. A function is the accessor, not a table. */
   readonly tables: readonly { readonly name: string; readonly value: object }[];
 }
 
@@ -253,14 +253,14 @@ async function declaredHidden(): Promise<Hidden[]> {
 const HIDDEN = await declaredHidden();
 
 /**
- * What the sweep above must find — the WITNESS of the enumeration, never the subject
+ * What the sweep above must find: the WITNESS of the enumeration, never the subject
  * of the rule.
  *
  * The assertion runs on what the sweep found; this is what fails if the sweep starts
  * finding something else, which is the failure a claim-driven guard has to be loud
  * about: reword the sentence in one of those docs and the guard would otherwise cover
  * nothing and pass. Checked in both directions, so an EIGHTH module that declares
- * itself hidden — or a table added to one of these seven — announces itself here
+ * itself hidden, or a table added to one of these seven, announces itself here
  * instead of arriving silently. It said "a fifth… one of these four" while there were
  * five entries over four modules; the count is written from the table below now.
  */
@@ -339,16 +339,16 @@ function perStateTables(
  * The classifications a package outside the owning one has to be able to ASK about,
  * and the specifier that must answer.
  *
- * This half cannot be enumerated from a shape — "which meaning does a consumer of
- * another package need" is a design fact, not a property of the code — so the NAMES
+ * This half cannot be enumerated from a shape ("which meaning does a consumer of
+ * another package need" is a design fact, not a property of the code), so the NAMES
  * are the source here, and the staleness guard beside it is what keeps that from
  * rotting: every exported `…Disposition` function in the workspace has to appear,
  * so a second accessor written tomorrow fails this file until its surface status has
  * been decided.
  *
  * Three entries, one per machine, and the third is what the second half of this list is
- * for. `@mnema/code` frames a pattern body it just served — an instruction if the pattern
- * is in force, a proposal if it is not — and that framing has to know which, from the one
+ * for. `@mnema/code` frames a pattern body it just served (an instruction if the pattern
+ * is in force, a proposal if it is not) and that framing has to know which, from the one
  * place that says so. The same surface paints a POSITION by what its disposition says a
  * reader has to do about it, in the one column where all three machines meet, and each
  * derivation from a transition table lives where its machine does.
@@ -356,7 +356,7 @@ function perStateTables(
  * IT USED TO BE TWO, and the missing one is the shape this guard was built for.
  * `decisionDisposition` did not exist: `decisions.ts` declared its table hidden AND
  * offered no way to ask, so a surface wanting to know what `proposed` means had exactly
- * one path left, `state === 'proposed'` written out for itself — the reimplementation
+ * one path left, `state === 'proposed'` written out for itself, the reimplementation
  * this file's own doc says nothing here can see. The gap showed on screen instead: a
  * decision's and a pattern's position came out white beside a painted task's.
  */
@@ -366,7 +366,7 @@ const ASKED_NOT_COPIED: readonly { readonly specifier: string; readonly accessor
   { specifier: '@mnema/core', accessor: 'taskDisposition' },
 ];
 
-/** Every `export function …Disposition` in production — the accessors that exist. */
+/** Every `export function …Disposition` in production: the accessors that exist. */
 function accessorsInProduction(): string[] {
   const found: string[] = [];
   for (const directory of readdirSync(PACKAGES).sort()) {
@@ -391,7 +391,7 @@ function accessorsInProduction(): string[] {
  * A source file with its comments blanked and its literals KEPT, each literal fenced by
  * `LITERAL_EDGE` where its quotes were. `codeOnly` and `literalsOnly` are one walk read two
  * ways and keep every position, so a character is taken from the code where the code has one
- * and from the literals where it does not — which is what lets a comparison against a state
+ * and from the literals where it does not, which is what lets a comparison against a state
  * word be read without reading a sentence that merely quotes one.
  */
 function codeWithLiterals(source: string): string {
@@ -404,7 +404,7 @@ function codeWithLiterals(source: string): string {
   return merged;
 }
 
-/** Every state of every machine — the words a classification is written over. */
+/** Every state of every machine: the words a classification is written over. */
 const STATE_WORDS: ReadonlySet<string> = new Set(MACHINES.flatMap((machine) => machine.states));
 
 /** A literal as {@link codeWithLiterals} fences it, with its text captured. */
@@ -415,7 +415,7 @@ const A_STATE = String.raw`(?:[\w$]+\??\.)*state\b`;
 
 /**
  * Every place one file writes a classification out for itself: a value NAMED `state` compared
- * against a machine's state word — the question the accessors exist to be asked instead.
+ * against a machine's state word, the question the accessors exist to be asked instead.
  *
  * THE PROPERTY IS THE NARROW SCAN'S, AND THE READING IS WIDER. What is compared is always a
  * value called `state`, which is what keeps `decided.source === 'adopted'` (where an anchor came
@@ -529,7 +529,7 @@ describe('no classification table reaches the surface', () => {
 
   it('keeps every table its module declares hidden off every entry point', () => {
     // The rule. Eight tables in seven modules, each one declaring in its own doc that it
-    // is not on the package's public surface — now checked instead of asserted.
+    // is not on the package's public surface: now checked instead of asserted.
     expect(leaked(publishedValues())).toEqual([]);
   });
 
@@ -540,7 +540,7 @@ describe('no classification table reaches the surface', () => {
     expect(perStateTables(publishedValues())).toEqual([]);
   });
 
-  it('accuses a leak by name, by identity and by shape — on input of its own', () => {
+  it('accuses a leak by name, by identity and by shape: on input of its own', () => {
     // The mechanism's non-vacuity, in all three ways it can fire. With the real
     // surface clean the three cases above say only "nothing is accused": none of them
     // exercises the accusation, so nothing has ever proved these nets can go red. The
@@ -568,7 +568,7 @@ describe('no classification table reaches the surface', () => {
     expect(
       perStateTables([{ specifier: '@mnema/context', name: 'MEANINGS', value: { ...table } }]),
     ).toEqual(['@mnema/context MEANINGS (SKILL_STATES)']);
-    // A subset of the states is NOT accused — the declared blind spot, held as a case
+    // A subset of the states is NOT accused: the declared blind spot, held as a case
     // so it stays a decision rather than becoming a surprise.
     expect(
       perStateTables([
@@ -593,16 +593,16 @@ describe('no classification table reaches the surface', () => {
   it('finds no production file writing a classification out for itself', () => {
     // THE THIRD NET, over the text rather than the surface. The two above keep the TABLE off
     // the surface and the ACCESSOR on it; neither sees a surface that asks neither and writes
-    // the comparison itself — which left the whole suite green when it was done on purpose.
+    // the comparison itself, which left the whole suite green when it was done on purpose.
     const { read, accused } = writtenOutInProduction();
     expect(read, 'RULER BROKEN: the sweep read no production file').toBeGreaterThan(300);
-    // Fourteen words over three machines when this was written — sixteen states, two of them
+    // Fourteen words over three machines when this was written: sixteen states, two of them
     // shared by decisions and patterns. A vocabulary that emptied would clear everything.
     expect(STATE_WORDS.size).toBeGreaterThanOrEqual(14);
     expect(accused).toEqual([]);
   });
 
-  it('reads the rewrite in the spellings it names, and not the innocent — on input of its own', () => {
+  it('reads the rewrite in the spellings it names, and not the innocent: on input of its own', () => {
     // THE SCAN'S OWN CASE, from both sides. The five spellings are the five the refusal of
     // this net measured, each with the behaviour of the others; three are read, and the two
     // that are not are the limit this file declares, held here so they stay a decision.
@@ -623,7 +623,7 @@ describe('no classification table reaches the surface', () => {
     expect(reads("if (e.payload.to === 'adopted') x();")).toBe(0);
     expect(reads("const s = d.state;\nif (s === 'accepted') x();")).toBe(0);
     // And what must never be accused: a sentence quoting the shape, a word that is not a
-    // state, and the two innocents — read from the files that hold them, so a day they move
+    // state, and the two innocents, read from the files that hold them, so a day they move
     // is a failure here rather than a case that quietly tests nothing.
     expect(reads("// state === 'accepted' in prose\nconst y = 'state === \"accepted\"';")).toBe(0);
     expect(reads("if (d.state === 'accepting') x();")).toBe(0);

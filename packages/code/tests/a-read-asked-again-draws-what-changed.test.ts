@@ -1,11 +1,11 @@
 /**
- * A READ ASKED AGAIN IS SEEN — by the page where its answer changes it, and by a row at the foot
+ * A READ ASKED AGAIN IS SEEN: by the page where its answer changes it, and by a row at the foot
  * saying so where it does not.
  *
  * THIS SURFACE WAS SAID TO STOP DRAWING, AND THEN TO DRAW LATE, and both readings came out of one
  * measurement that was true about the wire and wrong about the page. Asked for the longest answer
- * it gives twice, the console put nothing on the wire for the second one — not the keys, not the
- * answer — and a burst of bytes turned up when the session left. Counted in bytes per step at six
+ * it gives twice, the console put nothing on the wire for the second one (not the keys, not the
+ * answer) and a burst of bytes turned up when the session left. Counted in bytes per step at six
  * heights it looked like a curve: nothing under forty-two rows, nothing for the second read at
  * forty-two and sixty, and the second read one or two steps late at a hundred and two hundred. Read
  * as a curve it said a frame was being held, and that the height decided for how long.
@@ -16,10 +16,10 @@
  *     (`src/repl/floor.ts`), so the page is the screen that says so, and what a verb answers goes
  *     on the roll without being shown until the window grows or the session hands the roll back
  *     (`a-floor-under-the-window.test.ts`).
- *   - WHERE THE WINDOW IS SHORTER THAN THE ANSWER, THE SECOND ANSWER LEFT THE FIRST PAGE — at
+ *   - WHERE THE WINDOW IS SHORTER THAN THE ANSWER, THE SECOND ANSWER LEFT THE FIRST PAGE: at
  *     forty-two rows and at sixty. The answer is the same document and it is taller than the
  *     window, so the window after the second read is the tail of the same answer the first one
- *     left — the same rows, byte for byte — and the layout writes nothing for a frame identical to
+ *     left (the same rows, byte for byte) and the layout writes nothing for a frame identical to
  *     the one on the screen (`support/pty.ts`, {@link aFrameSince}). Measured by asking the layout
  *     for every frame it composed: the second answer was on the roll forty milliseconds after its
  *     keys, and the frame composed for it was the frame already drawn.
@@ -32,14 +32,14 @@
  *
  * THE SECOND OF THOSE WAS PINNED HERE AS THE RULE, AND IT IS THE HALF THAT MOVED. The first case of
  * this file said the page a second identical read left IS the page the first one left, with nothing
- * drawn — asserted by a blank line under it, because the read itself had no frame to wait for. It
+ * drawn: asserted by a blank line under it, because the read itself had no frame to wait for. It
  * was true, and it was a defect: an answer that lands without a byte of the screen moving is an
  * answer a reader decides never came. So the console says so now. When an answer ends and the
  * window shows exactly what it showed when the answer began, the frame after it has ONE ROW MORE AT
  * THE FOOT saying that, and the window gives the row up from its top (`src/repl/console.ts`,
  * `judged`; `src/repl/session.ts`, `alreadyOnThePage`). The premise that fell is *a second identical
  * answer draws no frame*. What the layout does with a frame identical to the one on the screen did
- * not change — it still writes nothing — but the frame after that answer is not identical any more,
+ * not change, it still writes nothing, but the frame after that answer is not identical any more,
  * and it is what the first case below now waits for and asserts.
  *
  * AND THE ROW IS THE WHOLE OF THE CHANGE. On the other side of the height it is never drawn, because
@@ -48,13 +48,13 @@
  * row down before the next answer changed the page under it.
  *
  * A READER WHO HAS WALKED BACK WAS NEVER TOLD, AND THAT IS THE HALF THAT MOVED NEXT. This file said
- * so as a rule — *a reader who has walked back is never told, because for them the end of the answer
- * is not on the page at all* — and its reason still holds: the row's words would be false for them.
+ * so as a rule (*a reader who has walked back is never told, because for them the end of the answer
+ * is not on the page at all*) and its reason still holds: the row's words would be false for them.
  * What fell is the conclusion drawn from it. For that reader EVERY answer lands with the page as it
  * was, by a promise the roll keeps rather than by accident (`src/repl/scrolling.ts`, `landedIn`), so
  * every answer they ask is the silence the row exists to break. The row says its other sentence to
- * them now — the end is below the page, and End goes there (`src/repl/session.ts`, `belowThePage`)
- * — over the page they were reading, which nothing scrolls; and it comes down with the next key that
+ * them now: the end is below the page, and End goes there (`src/repl/session.ts`, `belowThePage`),
+ * over the page they were reading, which nothing scrolls; and it comes down with the next key that
  * is not a scroll, or on the first frame that brings the end onto the page, by whatever road
  * (`src/repl/console.ts`, `judged` and `moved`). One row, and one of its two sentences: never both.
  */
@@ -88,7 +88,7 @@ import {
 } from './support/pty.js';
 import { promptRow, type Screen, screenOf, theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
@@ -98,7 +98,7 @@ const PROMPT = 'mnema>';
 const SENT = '\u276f';
 
 /**
- * THE LONGEST ANSWER THIS SESSION GIVES — a read of the record, and the same document every time
+ * THE LONGEST ANSWER THIS SESSION GIVES: a read of the record, and the same document every time
  * it is asked over a record that did not move.
  *
  * The sameness is the fixture. A verb whose answer changed between two asks would change the page
@@ -109,31 +109,31 @@ const THE_LONGEST_READ = 'brief';
 /** The line a read was asked on, as the roll holds it: the mark of a sent command and the word. */
 const ASKED = `${SENT} ${THE_LONGEST_READ}`;
 
-/** The heading that closes the answer — on the page whenever its end is. */
+/** The heading that closes the answer: on the page whenever its end is. */
 const CLOSES_THE_ANSWER = '## Patterns adopted';
 
 /**
- * A READ WHOSE ANSWER IS NOT THAT DOCUMENT — the most recent records, a handful of rows — and the
+ * A READ WHOSE ANSWER IS NOT THAT DOCUMENT: the most recent records, a handful of rows, and the
  * words its answer begins with, which nothing else on the page says.
  */
 const A_DIFFERENT_READ = 'search';
 const THE_DIFFERENT_ANSWER = 'record(s):';
 
 /**
- * THE ROW THIS FILE IS ABOUT, in the words the session composes for it — read off the product
+ * THE ROW THIS FILE IS ABOUT, in the words the session composes for it: read off the product
  * rather than retyped, so a reworded row moves these cases with it instead of leaving them
  * asserting a sentence nobody draws.
  */
 const THE_ROW = renderPlain(alreadyOnThePage());
 
 /**
- * AND ITS OTHER SENTENCE — what the same row says to a reader who has walked back, whose page no
+ * AND ITS OTHER SENTENCE: what the same row says to a reader who has walked back, whose page no
  * answer moves. Read off the product for the same reason.
  */
 const THE_ROW_BELOW = renderPlain(belowThePage());
 
 /**
- * HOW FAR IN A ROW OF THE ROLL BEGINS — the margin, and the deepest indent an answer carries on
+ * HOW FAR IN A ROW OF THE ROLL BEGINS: the margin, and the deepest indent an answer carries on
  * the page (`src/repl/inset.ts`). A row that begins further in is not the roll's: it is the badge
  * in the corner, which is set against the far edge.
  *
@@ -165,7 +165,7 @@ const ERASE = '\u007f';
 const COLUMNS = 100;
 
 /**
- * A WINDOW TALLER THAN THE ANSWER — tall enough that the second read's line and the end of the
+ * A WINDOW TALLER THAN THE ANSWER: tall enough that the second read's line and the end of the
  * first answer are both on the page. It is a SIZE and not a threshold: which side of the rule a
  * window is on is read off the page in the case, never assumed from this number.
  */
@@ -241,7 +241,7 @@ function lastOfTheRoll(page: Screen): number {
 }
 
 /**
- * The rows of a page that are rows of the roll — what the session said, between the seam under the
+ * The rows of a page that are rows of the roll: what the session said, between the seam under the
  * opening and the row at the foot, with the machine's own measurements read as what they are.
  *
  * THERE IS NO GUIDE DOWN ITS MARGIN TO FIND THEM BY, so they are found by where they are: under the
@@ -268,7 +268,7 @@ function timesOn(page: Screen, what: string): number {
 }
 
 /**
- * NEITHER OF THE ROW'S SENTENCES ON A PAGE — what every case here means by *no row*. The row has two
+ * NEITHER OF THE ROW'S SENTENCES ON A PAGE: what every case here means by *no row*. The row has two
  * sentences, so an absence asserted of one of them is blind to the other one standing there.
  */
 function saysNeither(page: Screen, what: string): void {
@@ -277,7 +277,7 @@ function saysNeither(page: Screen, what: string): void {
 }
 
 /**
- * THE PAGE AT THIS SIZE, OR NOTHING — the replay a step asks while it waits.
+ * THE PAGE AT THIS SIZE, OR NOTHING: the replay a step asks while it waits.
  *
  * A replay that cannot find a page is not an answer, so it is `undefined` rather than a throw that
  * would end the step early.
@@ -291,7 +291,7 @@ function thePageNow(bytes: string, columns: number, rows: number): Screen | unde
 }
 
 /**
- * A FRAME THIS STEP CAUSED, WHOSE PAGE HOLDS `what` AT LEAST `times` TIMES — the question each
+ * A FRAME THIS STEP CAUSED, WHOSE PAGE HOLDS `what` AT LEAST `times` TIMES: the question each
  * case then asks, asked of the same object while the step waits.
  *
  * THE PAGE AND NOT THE WIRE, which is the whole of what this file corrects. What arrived is
@@ -336,7 +336,7 @@ function asks(columns: number, rows: number, times = 1): Step {
  * the second answer left the page the first one left, the layout writes nothing for a frame
  * identical to the one on the screen, and a step waiting for a frame it caused waited out the
  * driver's whole budget. So it waited for the stream to go quiet and read nothing at its end. It
- * has a frame of its own now, and the frame is the row — which the console raises only once the
+ * has a frame of its own now, and the frame is the row, which the console raises only once the
  * answer has ENDED, so a page holding it is a page the whole answer is already on.
  */
 function asksAgainAndIsTold(columns: number, rows: number): Step {
@@ -353,10 +353,10 @@ function presses(what: string, keys: string): Step {
 }
 
 /**
- * WHAT THE SESSION HANDED BACK — the caller's own buffer once it has left, one trimmed line each.
+ * WHAT THE SESSION HANDED BACK: the caller's own buffer once it has left, one trimmed line each.
  *
  * It is the roll, whole and in the order it landed (`src/repl/scrolling.ts`, `theTranscript`),
- * written after the queue has drained — so it answers *did it land* with no clock in the question,
+ * written after the queue has drained, so it answers *did it land* with no clock in the question,
  * which is the one thing a page shorter than the answer cannot answer at all.
  */
 function whatWasHandedBack(ran: Ran, columns: number, rows: number): readonly string[] {
@@ -379,12 +379,12 @@ function outgrowsTheWindow(page: Screen): void {
 }
 
 /**
- * THE SAME ROLL, LESS WHAT THE ROW TOOK FROM ITS TOP — the window after the row went up, read
+ * THE SAME ROLL, LESS WHAT THE ROW TOOK FROM ITS TOP: the window after the row went up, read
  * against the window before it.
  *
  * A SUFFIX AND NOT A SLICE OF ONE, because the answer FOLDS here: its widest lines are wider than
  * the floor has inside its margin, so a line of the roll can be two rows of the page, and a window
- * one row shorter gives up the whole line at its top — one row or two. What it may never do is
+ * one row shorter gives up the whole line at its top, one row or two. What it may never do is
  * lose a row at its FOOT, which is where the end of the answer is: a row drawn at the foot of the
  * area and not counted by it makes the frame a row taller than the screen, and the row a frame
  * like that loses is the last one of the window.
@@ -396,7 +396,7 @@ function theSameRollLessItsTop(
 ): void {
   // NOT LONGER, AND NOT NECESSARILY SHORTER: a window gives up whole lines at its top, so the row at
   // the foot costs it a row only when the roll's lines fall so that the row is a row it was not
-  // already leaving spare — a fold that leaves a row over (the answer folds to two columns less
+  // already leaving spare; a fold that leaves a row over (the answer folds to two columns less
   // than the page, `src/repl/inset.ts`) takes the row's from that one. What it may never be is
   // taller, and what it may never lose is the end (below).
   expect(shorter.length, `${what}: the window is taller than it was`).toBeLessThanOrEqual(
@@ -408,7 +408,7 @@ function theSameRollLessItsTop(
 }
 
 /**
- * THE SAME ROLL TO THE SAME LAST ROW — `part` is the end of `whole`, and may be all of it.
+ * THE SAME ROLL TO THE SAME LAST ROW: `part` is the end of `whole`, and may be all of it.
  *
  * NOT ALWAYS SHORTER, which is what separates it from {@link theSameRollLessItsTop}, and the fold is
  * why. A window gives a row up by the whole line at its top, but it takes one back only when the
@@ -448,7 +448,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     expect(first.text, 'the row was on the page before any answer left it as it was').not.toContain(
       THE_ROW,
     );
-    // THE ROW, ONCE, AT THE FOOT: under every row of the roll and over the row being typed — the
+    // THE ROW, ONCE, AT THE FOOT: under every row of the roll and over the row being typed, the
     // top of the input area, which is where it is drawn (`src/repl/region.ts`, `Present`).
     expect(timesOn(again, THE_ROW), 'the row is not on the page exactly once').toBe(1);
     // AND IN THE SENTENCE FOR A READER AT THE TAIL: the other one is for a reader who has walked back.
@@ -460,8 +460,8 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(again, PROMPT));
     // AND THE ROLL IS THE SAME ROLL: the second answer's end is the end the first one left, and all
     // that moved is the row the window gave up at its top for the row at the foot. This is the
-    // assertion the first case used to make with a blank line under the page — the page after it,
-    // less its last row, was the page before less its first — made now about the frame the answer
+    // assertion the first case used to make with a blank line under the page (the page after it,
+    // less its last row, was the page before less its first) made now about the frame the answer
     // itself drew.
     theSameRollLessItsTop(rowsOfTheRoll(again), rowsOfTheRoll(first), 'after the second read');
     // AND IT WAS ANSWERED, WHICH THE ROLL SAYS AND THE PAGE CANNOT: in what the session handed
@@ -486,7 +486,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
   it('takes the row down with the next key that is not a scroll, and puts it back for the next answer like it', async () => {
     // THE MOMENT THE ROW COMES DOWN, and the two things that must NOT take it down. It stands
     // until the next key that is not a scroll (`src/repl/console.ts`, `key`): a reader who takes
-    // its advice and scrolls back keeps it, and the first key of the next line takes it — so the
+    // its advice and scrolls back keeps it, and the first key of the next line takes it, so the
     // next answer is judged on a page without it and raises it again if it too left the page.
     const { columns, rows } = THE_FLOOR;
     const ran = await drive(columns, rows, [
@@ -495,8 +495,8 @@ describe('a read asked again is seen, on the page or on a row saying the page di
       asksAgainAndIsTold(columns, rows),
       presses('walked a page back', PAGE_UP),
       presses('went back to the tail', TO_THE_TAIL),
-      // A LETTER IS THE FIRST KEY OF A LINE, and it is answered at once — a key is not a line and
-      // does not wait on the session's queue — so the frame it causes is the page without the row.
+      // A LETTER IS THE FIRST KEY OF A LINE, and it is answered at once (a key is not a line and
+      // does not wait on the session's queue), so the frame it causes is the page without the row.
       {
         types: 'x',
         until: aPageWithout(PROMPT, columns, rows, THE_ROW),
@@ -518,7 +518,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     outgrowsTheWindow(told);
     expect(told.text, 'the second read raised no row').toContain(THE_ROW);
     // SCROLLING IS DOING WHAT THE ROW SAYS, AND IT LEAVES THE ROW. The walk really moved the window
-    // — the end of the answer went off the page — and the row stayed through it and back.
+    // (the end of the answer went off the page) and the row stayed through it and back.
     expect(walked.text, 'PgUp did not walk the window back').not.toContain(CLOSES_THE_ANSWER);
     expect(walked.text, 'walking back took the row down').toContain(THE_ROW);
     // AND A WALK DOES NOT CHANGE WHICH SENTENCE IT IS: both of these are about the last answer, and
@@ -530,7 +530,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     // THE FIRST KEY OF A LINE TAKES IT DOWN, and the window has its row back: the same tail, whole.
     expect(typed.text, 'a letter left the row up').not.toContain(THE_ROW);
     theSameRollLessItsTop(rowsOfTheRoll(told), rowsOfTheRoll(typed), 'with the row taken down');
-    // AND THE NEXT ANSWER THAT LEAVES THE PAGE AS IT WAS PUTS IT BACK, over the same roll again —
+    // AND THE NEXT ANSWER THAT LEAVES THE PAGE AS IT WAS PUTS IT BACK, over the same roll again,
     // which is the promise a moment chosen any later would break: a third copy of the same
     // document drawing nothing, exactly as the second one used to.
     expect(timesOn(third, THE_ROW), 'the third read raised no row').toBe(1);
@@ -544,7 +544,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
       asks(COLUMNS, rows),
       // A FRAME THIS STEP CAUSED WITH BOTH ENDINGS ON THE PAGE, which only the second answer can
       // produce. If that frame were held for a later step, this step would never end and the
-      // driver would say so — which is what "in its own step" means on a device.
+      // driver would say so, which is what "in its own step" means on a device.
       asks(COLUMNS, rows, 2),
       leavesTheSession,
     ]);
@@ -594,7 +594,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
   it('says so when a clear leaves a page that holds only the opening as it was', async () => {
     // THE OTHER ANSWER THAT LEAVES THE PAGE AS IT WAS, AND THE ONE NOBODY ASKS TWICE FOR: a clear on a
     // page that holds nothing but the opening. The page a clear leaves is the opening, which is what
-    // was already there — so the words that clear typed would otherwise draw nothing but the row being
+    // was already there, so the words that clear typed would otherwise draw nothing but the row being
     // typed emptying. It is an answer like any other, and the row says so. The first clear of a session
     // is one of these: a page that has just opened holds only the opening.
     const { columns, rows } = THE_FLOOR;
@@ -624,7 +624,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     // TWO LINES IN ONE WRITE, WHICH IS A PASTE: the same read again, whose answer leaves the page as
     // it was, and a different read behind it, whose answer does not. The second line's keys are
     // answered before the first answer has ended, so a row the first one raised would have nothing
-    // left to take it down — and it would stand over the different read's answer, saying the end
+    // left to take it down, and it would stand over the different read's answer, saying the end
     // was already on a page that has just changed (`src/repl/console.ts`, `judged`).
     const { columns, rows } = THE_FLOOR;
     const ran = await drive(columns, rows, [
@@ -660,7 +660,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
 // ---------------------------------------------------------------------------
 
 /**
- * HOW MANY LINES AN ANSWER LANDS IN PROCESS — more than a notch of the wheel, so the wheel has more
+ * HOW MANY LINES AN ANSWER LANDS IN PROCESS: more than a notch of the wheel, so the wheel has more
  * than one notch to go, and whatever a page is, the reader a page forward of where they walked back
  * to is still this many lines short of the end.
  */
@@ -668,7 +668,7 @@ const AN_ANSWER = 10;
 
 /**
  * A CONSOLE OPENED IN PROCESS over a roll twice as tall as the window, every line of it different,
- * whose answers are the case's own — so a key is pressed only once an answer has returned and
+ * whose answers are the case's own, so a key is pressed only once an answer has returned and
  * everything queued behind it has run, which a device cannot promise (`src/repl/console.ts`,
  * `judged`).
  *
@@ -719,8 +719,8 @@ async function walkedBackInProcess(columns: number, rows: number) {
 
 describe("an answer that lands below a reader who has walked back is told, in the row's other sentence", () => {
   it('tells a reader who has walked back that the end is below the page, over the page they were reading', async () => {
-    // A READER WHO HAS WALKED BACK SEES NO ANSWER MOVE THE PAGE — the promise the roll keeps
-    // (`src/repl/scrolling.ts`, `landedIn`) — so every answer they ask lands in silence, and the row
+    // A READER WHO HAS WALKED BACK SEES NO ANSWER MOVE THE PAGE: the promise the roll keeps
+    // (`src/repl/scrolling.ts`, `landedIn`), so every answer they ask lands in silence, and the row
     // tells them where it went. THIS CASE WAS *says nothing to a reader who has walked back, whose
     // page no answer moves*, and the half of it that stands is asserted below: the sentence for a
     // reader at the tail would be false here, and it is not on the page. The answer is typed and
@@ -764,7 +764,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
     expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll(told));
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(told, PROMPT));
     // AND THE READER IS WHERE THEY WERE READING. The answer is not on their page, and the window is
-    // the page they walked back to less what the row took from its top — the same last row, which is
+    // the page they walked back to less what the row took from its top: the same last row, which is
     // the line a window is cut upwards from (`src/repl/scrolling.ts`, `theWindowOn`). Nothing
     // scrolled to the answer.
     expect(
@@ -788,7 +788,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
     // leaves the end below the page leaves it true and leaves the row. The first key of a line takes
     // it down by the rule the other sentence follows, so the next answer asked from back there is
     // judged on a page without it and puts it back (`src/repl/console.ts`, `key`). And the frame that
-    // brings the end onto the page takes it down, whatever key brought it there — here a page at a
+    // brings the end onto the page takes it down, whatever key brought it there, here a page at a
     // time, more pages than there are: past the tail they move nothing (`src/repl/console.ts`,
     // `moved`).
     const { columns, rows } = THE_FLOOR;
@@ -831,7 +831,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
       rowsOfTheRoll(told),
     );
     expect(timesOn(further, THE_ROW_BELOW), 'walking further back took the row down').toBe(1);
-    // THE FIRST KEY OF A LINE TAKES IT DOWN, and the window has its row back: the same page, whole —
+    // THE FIRST KEY OF A LINE TAKES IT DOWN, and the window has its row back: the same page, whole;
     // the reader is where they were.
     saysNeither(typed, 'a letter left the row up');
     theSameRollToItsLastRow(
@@ -859,7 +859,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
     // CASE WAS *says nothing to a reader who has walked back, with the answer over before the next
     // key*; the sentence for a reader at the tail is still never theirs, which is asserted below.
     // What it covers that the device cannot: a page forward that stops short of the end keeps the
-    // row, and the WHEEL — the one road to the tail that is not a key — takes it down.
+    // row, and the WHEEL (the one road to the tail that is not a key) takes it down.
     const { columns, rows } = THE_FLOOR;
     const { terminal, page, thePage, walked, told } = await walkedBackInProcess(columns, rows);
     saysNeither(walked, 'the walk back raised a row');
@@ -894,7 +894,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
   it('takes the row down when the window grows to hold the end, though the reader never walked to it', async () => {
     // THE ROAD TO THE END THAT NO KEY STANDS FOR. How far back a reader has walked is corrected only
     // when they next move, so a reader who walked back and then made the window tall enough for the
-    // whole roll is still counted as walked back — with every line, the end of the answer included,
+    // whole roll is still counted as walked back: with every line, the end of the answer included,
     // on the page (`src/repl/scrolling.ts`, `theTailIsInTheWindow`). The sentence is about the page,
     // so the page is what is asked, on the frame drawn at the new size (`src/repl/console.ts`,
     // `moved`); asked by the count instead, the row would say the end is below a page it is on.

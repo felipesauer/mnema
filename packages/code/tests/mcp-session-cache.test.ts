@@ -10,10 +10,10 @@
  * The rest pins the boundaries the reuse depends on: one cache per TREE (a write
  * to one leaves the others alone, and a read of one is never answered from
  * another), the handles released when the session ends even if ending it fails,
- * and — structurally — that no write in the MCP surface reaches a chain without
+ * and, structurally, that no write in the MCP surface reaches a chain without
  * passing the door where the invalidation lives.
  *
- * The OTHER writer — a `mnema` command, a second agent, a headless run — is the
+ * The OTHER writer (a `mnema` command, a second agent, a headless run) is the
  * subject of `the-record-may-have-moved.test.ts`. Only the case at the door is
  * here.
  */
@@ -81,7 +81,7 @@ function makeProject(name: string): string {
   return dir;
 }
 
-/** Opens an agent session on a fresh project — the shape every test starts from. */
+/** Opens an agent session on a fresh project: the shape every test starts from. */
 function openOn(project: string): Session {
   return openSession({
     clientName: 'claude-code',
@@ -95,7 +95,7 @@ function rootOf(session: Session, scope: Scope): string {
   return chainRootForScope(session.trees, scope) as string;
 }
 
-/** The session's cache for a scope — the same one the read tools receive. */
+/** The session's cache for a scope: the same one the read tools receive. */
 function cacheOf(session: Session, scope: Scope): ProjectionCache {
   return session.caches.get(rootOf(session, scope));
 }
@@ -119,14 +119,14 @@ describe('a write is visible to the next read in the same session', () => {
    * `writeContext` failed to invalidate, `see` would find nothing.
    *
    * The assertion goes through the cache rather than a read tool because most of
-   * these facts have no read tool that surfaces them yet — a memory, a link, a
+   * these facts have no read tool that surfaces them yet: a memory, a link, a
    * decision. Checking the cache is checking the thing every present and future
    * read shares, which is where the staleness would live.
    */
   const cases: {
     readonly tool: string;
     /**
-     * The tree this tool's write lands in — stated per case, because the routing rule
+     * The tree this tool's write lands in, stated per case, because the routing rule
      * is per KIND: a memory and an observation still read the author (an MCP
      * connection is an agent, so private), and everything else goes to the tree that
      * travels. One shared "the session's tree" would have warmed and read a cache the
@@ -208,7 +208,7 @@ describe('a write is visible to the next read in the same session', () => {
   });
 
   for (const { tool, lands, write, see } of cases) {
-    it(`${tool} — the cache the next read gets already has it`, () => {
+    it(`${tool}: the cache the next read gets already has it`, () => {
       const session = openOn(makeProject('proj'));
       // Warm it: from here on the session HAS a cache that a write can leave behind.
       expect(cacheOf(session, lands)).toBeDefined();
@@ -221,7 +221,7 @@ describe('a write is visible to the next read in the same session', () => {
     });
   }
 
-  it('task_transition — the read tools report the state the move just reached', () => {
+  it('task_transition: the read tools report the state the move just reached', () => {
     const session = openOn(makeProject('proj'));
     const created = runCreateTask(session, { title: 'moves' });
     if (!created.ok) throw new Error('setup: create refused');
@@ -246,7 +246,7 @@ describe('a write is visible to the next read in the same session', () => {
     closeSession(session);
   });
 
-  it('decision_transition — the cache carries the new state, not the one it was warmed on', () => {
+  it('decision_transition: the cache carries the new state, not the one it was warmed on', () => {
     const session = openOn(makeProject('proj'));
     const recorded = runRecordDecision(session, { title: 'adopt X', rationale: 'because' });
     if (!recorded.ok) throw new Error('setup: record refused');
@@ -262,7 +262,7 @@ describe('a write is visible to the next read in the same session', () => {
     closeSession(session);
   });
 
-  it('skill_transition — the cache carries the new state, not the one it was warmed on', () => {
+  it('skill_transition: the cache carries the new state, not the one it was warmed on', () => {
     const session = openOn(makeProject('proj'));
     const created = runCreateSkill(session, { name: 'bisect', body: 'halve the range' });
     if (!created.ok) throw new Error('setup: create refused');
@@ -281,7 +281,7 @@ describe('a write is visible to the next read in the same session', () => {
   it('the run the first write opened is already in the next read', () => {
     // The run is appended by the door, on the way to the write the agent asked for,
     // and the cache is told through that same door. It has to be visible immediately
-    // anyway — a focus that could not see the run the previous call opened would be
+    // anyway: a focus that could not see the run the previous call opened would be
     // the reuse breaking on the connection's own work.
     const session = openOn(makeProject('proj'));
     if (!runCaptureMemory(session, { content: 'the write that opens the run' }).ok) {
@@ -294,11 +294,11 @@ describe('a write is visible to the next read in the same session', () => {
   });
 });
 
-describe('one cache per tree — the trees do not mix', () => {
+describe('one cache per tree: the trees do not mix', () => {
   it('a task read out of the public tree is not answered from the private one', () => {
     const session = openOn(makeProject('proj'));
 
-    // Two tasks with the same title, one per tree — so an answer from the wrong
+    // Two tasks with the same title, one per tree, so an answer from the wrong
     // cache would still look plausible. Only the ids tell them apart. The tree is
     // picked per call now, so it is the OVERRIDE that puts one in the private tree:
     // a task's kind sends it to the one that travels.
@@ -325,7 +325,7 @@ describe('one cache per tree — the trees do not mix', () => {
   it('a move follows the entity into another tree, and THAT tree’s read sees it', () => {
     // The cross-tree case the registry exists for: the session writes private,
     // but the task lives public, so the invalidation has to land on the public
-    // cache — the one the session never writes to by default.
+    // cache, the one the session never writes to by default.
     const session = openOn(makeProject('proj'));
     const created = runCreateTask(session, { title: 'lives in public', scope: 'public' });
     if (!created.ok) throw new Error('setup: create refused');
@@ -353,8 +353,8 @@ describe('one cache per tree — the trees do not mix', () => {
     // write must leave the public cache exactly as it was.
     //
     // Observed by COUNTING the work a read does against the chain, rather than by
-    // appending to public behind the session's back. That used to be the device — a
-    // stray event the public read must not pick up — and it stopped telling the two
+    // appending to public behind the session's back. That used to be the device (a
+    // stray event the public read must not pick up) and it stopped telling the two
     // apart the moment a read checked the tree it was serving: a public read picking
     // the stray up is now the correct answer, whether or not the private write
     // wrongly invalidated anything. What still separates over-invalidation from
@@ -362,8 +362,8 @@ describe('one cache per tree — the trees do not mix', () => {
     // without touching the chain at all.
     //
     // The call counted is `refresh` and it used to be `rebuild`. A read that has to
-    // catch up no longer replays the chain when it only grew — it is brought forward
-    // from what arrived — so counting `rebuild` would now read zero for BOTH halves
+    // catch up no longer replays the chain when it only grew (it is brought forward
+    // from what arrived), so counting `rebuild` would now read zero for BOTH halves
     // and the case would pass while proving nothing.
     const session = openOn(makeProject('proj'));
 
@@ -423,8 +423,8 @@ describe('a write from outside the session IS seen', () => {
     // had until something it did itself rebuilt that tree.
     //
     // What closed it is not what was rejected here. No mtime, no timer, no cache
-    // shared between processes: a read compares the tree's EXTENT — its tails,
-    // and the size of the one segment each is still growing — against what its
+    // shared between processes: a read compares the tree's EXTENT (its tails,
+    // and the size of the one segment each is still growing) against what its
     // projection was replayed from, and replays again when they differ.
     //
     // The whole of the behaviour, including what each of the two writers sees at
@@ -443,7 +443,7 @@ describe('a write from outside the session IS seen', () => {
     if (!theirs.ok) throw new Error('setup: outside create refused');
     outside.writer.checkpoint();
 
-    // The chain has both, and so does the next read — with nothing done in
+    // The chain has both, and so does the next read: with nothing done in
     // between, which is the whole of the change.
     expect(cacheOf(session, 'public').getTask(theirs.id)).not.toBeNull();
     expect(cacheOf(session, 'public').listTasks()).toHaveLength(2);
@@ -458,7 +458,7 @@ describe('the session releases what it held', () => {
     const cache = cacheOf(session, 'private');
     expect(cache.listTasks()).toEqual([]);
     // A run to end, so the close does its recording half as well as its releasing
-    // half — the release must not depend on the write, and this is the path where
+    // half: the release must not depend on the write, and this is the path where
     // both happen.
     if (!runCaptureMemory(session, { content: 'a note' }).ok) {
       throw new Error('setup: capture refused');
@@ -466,7 +466,7 @@ describe('the session releases what it held', () => {
 
     expect(closeSession(session).closed).toHaveLength(1);
 
-    // The handle is really gone — querying the closed cache throws rather than
+    // The handle is really gone: querying the closed cache throws rather than
     // quietly answering from a database nobody owns any more.
     expect(() => cache.listTasks()).toThrow();
   });
@@ -482,7 +482,7 @@ describe('the session releases what it held', () => {
     const [open] = [...session.runs.values()];
 
     // A run whose tree is not there any more: `writeContext` throws before `endRun`
-    // is ever reached. The close still releases what it holds — and still NAMES the
+    // is ever reached. The close still releases what it holds, and still NAMES the
     // run, because a run missing from the account is a run nothing says is open.
     const broken: Session = {
       ...session,
@@ -524,7 +524,7 @@ describe('no MCP write reaches a chain without passing the invalidation door', (
     // The structural guard behind the whole design. Every write tool builds its
     // context with `writeContext`, and that is the only place a cache is told it
     // went behind. A tool that opened its own writer would append events no cache
-    // ever hears about — a silent staleness with no test to catch it, because it
+    // ever hears about: a silent staleness with no test to catch it, because it
     // would look correct until the second read. So the ban is on the SYMBOL that
     // makes a writer, checked over the whole MCP surface: a write tool added
     // later inherits the invalidation or fails here.

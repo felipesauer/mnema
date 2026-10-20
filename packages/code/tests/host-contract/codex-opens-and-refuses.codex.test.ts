@@ -2,15 +2,15 @@
  * CODEX OPENS WITH THE RECORD AND REFUSES THE WRITE, in the real Codex with the plugin installed
  * from this repository: the opening is in the first request, the mnema server's tools are offered,
  * a patch under a rule that refuses is not applied and the model is handed the rule, and a pause
- * for a person is not something Codex gives — a hook's `ask` is let through.
+ * for a person is not something Codex gives; a hook's `ask` is let through.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema before-a-write --host codex`
- * answers, and what `mnema brief --hook` prints — is `a-rule-that-refuses-a-write.test.ts` and the
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema before-a-write --host codex`
+ * answers, and what `mnema brief --hook` prints) is `a-rule-that-refuses-a-write.test.ts` and the
  * brief's own cases. What Codex does with them is Codex's, read here off the requests it sends a
  * stand-in for the model and off the file that was or was not written. Codex's own ceiling for a
  * hook's text (2,500 tokens of 4 UTF-8 bytes, over which it hands a preview with its middle cut)
  * is held at its boundary, and so is the product cutting a long record under it at a whole rule.
- * NOT HELD: that the model reads what arrived; and any write that is not `apply_patch` — a file a
+ * NOT HELD: that the model reads what arrived; and any write that is not `apply_patch`: a file a
  * shell command writes meets no hook.
  */
 
@@ -198,7 +198,7 @@ describe('codex opens with the record and refuses the write', () => {
     ],
   });
 
-  it('ask: Codex does not hold a write for a person — a hook that answers `ask` is let through', async () => {
+  it('ask: Codex does not hold a write for a person (a hook that answers `ask` is let through)', async () => {
     const session = await start({
       project: (project) => {
         ruleAt(project, 'Ledger changes need finance', 'src/ledger', 'asks-for-a-person');

@@ -1,5 +1,5 @@
 /**
- * An answer that writes nothing leaves the tree as it found it — a refusal, and a question.
+ * An answer that writes nothing leaves the tree as it found it: a refusal, and a question.
  *
  * WHAT WAS WRONG. Opening a tree's writer touched the tree before a single event was appended: for a
  * key that never wrote there it materialized the key's public half, minted an installation id, and
@@ -7,27 +7,27 @@
  * nothing to write, and each left those four entries behind. Measured on the binary, every one of
  * them with a key new to the project:
  *
- *   - `key enroll` refused — as not a request, or as a request made for another identity — left an
+ *   - `key enroll` refused (as not a request, or as a request made for another identity) left an
  *     untracked `keys/<fp>.pub` and an empty tail; the key that asked is the one a person following
  *     the words of a split has at hand;
  *   - `key revoke` refused for a key the identity does not have, the same;
  *   - `init` in a project another key founded answered "nothing to found", and left them;
  *   - `decision import --write` that recorded 0 decisions left them;
  *   - an MCP connection whose one call was a READ left them in the private tree, on the first
- *     connection of every key — the key that founded the project included.
+ *     connection of every key: the key that founded the project included.
  *
  * WHAT IS ASSERTED: each of those, run by a key new to the tree, leaves every directory and every
  * file under `.mnema/` byte for byte as it was. And beside them, the eye that would have seen it:
  * the same digest over the same tree moves when that key's write is accepted.
  *
  * AND THE VERBS WHOSE REFUSAL COMES FROM THE OPERATION'S OWN DOOR. This header said they were NOT
- * asserted: an oversize field, a name that holds a credential, a move the gate refuses — the door is
+ * asserted: an oversize field, a name that holds a credential, a move the gate refuses; the door is
  * inside the operation on purpose (a caller able to screen separately could skip it), so they open
  * the writer before it speaks, and they left the four entries. Measured on the binary, 13 verbs, and
  * the residue did not stay inert: committed, the empty tail put a tail more in every `verify` of the
  * record and turned its T3 clause into "no checkpoint of this tail passed its signature check"
- * whenever it sorted first. What closed them is the change this header named — the writer's birth
- * moved to its first append (`ChainWriter.ensureBorn`) — and what they leave now is ONE entry, the
+ * whenever it sorted first. What closed them is the change this header named, the writer's birth
+ * moved to its first append (`ChainWriter.ensureBorn`), and what they leave now is ONE entry, the
  * key's installation id, which opening still mints and the tree's own `.gitignore` keeps out of
  * every clone. So for them the claim is "nothing a clone receives", not "nothing", and it is asked
  * of git as well as of the digest.
@@ -57,7 +57,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { buildMcpServer } from '../src/mcp/server.js';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;
@@ -99,7 +99,7 @@ function mnema(home: string, ...argv: string[]): ReturnType<typeof mnemaIn> {
 }
 
 /**
- * Every directory and every file under the project's `.mnema/`, each file with its digest — the
+ * Every directory and every file under the project's `.mnema/`, each file with its digest, the
  * private tree included, and the files git ignores included: "nothing" means nothing on the disk,
  * not nothing `git status` shows.
  */
@@ -129,7 +129,7 @@ function treeOf(project: string): string[] {
 }
 
 /**
- * Every FILE of the project's PRIVATE tree, `.git/mnema`, with its digest — the empty list where it
+ * Every FILE of the project's PRIVATE tree, `.git/mnema`, with its digest: the empty list where it
  * does not exist. A note lands there, so a refusal of a note is asked of it.
  *
  * Files, not directories, and not `locks/`: a server write takes the tail's hold before the
@@ -153,7 +153,7 @@ function privateTreeOf(project: string): string[] {
   return out;
 }
 
-/** The project founded by A — and A's identity. */
+/** The project founded by A, and A's identity. */
 function founded(): string {
   const init = mnema(homeA, 'init');
   expect(init.status, init.stderr).toBe(0);
@@ -162,7 +162,7 @@ function founded(): string {
   return anchor as string;
 }
 
-/** A's key fingerprint — the one key with an anchor recorded in the project. */
+/** A's key fingerprint: the one key with an anchor recorded in the project. */
 function fingerprintOfA(): string {
   const [anchored] = readdirSync(join(repo, '.mnema', 'keys')).filter((name) =>
     name.endsWith('.anchor'),
@@ -190,7 +190,7 @@ describe('a refused key verb leaves the tree as it found it', () => {
     expect(tree()).toEqual(before);
   });
 
-  it('key enroll refused as a request made for another identity — the wrong key at hand', () => {
+  it('key enroll refused as a request made for another identity: the wrong key at hand', () => {
     // B runs the enrollment of its OWN request: the move the words of a split invite when the key a
     // person has in their hands is the new one, not the one the identity already knows.
     const anchor = founded();
@@ -211,7 +211,7 @@ describe('a refused key verb leaves the tree as it found it', () => {
     expect(tree()).toEqual(before);
   });
 
-  it('key revoke refused for its reason, by a member that never wrote here — the screen comes first too', () => {
+  it('key revoke refused for its reason, by a member that never wrote here: the screen comes first too', () => {
     // B is a member (A vouched for it) whose key never wrote in this clone: its public half is here,
     // committed by the vouch, and its installation and tail are not. The reason is refused, and the
     // refusal must not be the thing that gives B a tail.
@@ -236,7 +236,7 @@ describe('a refused key verb leaves the tree as it found it', () => {
 });
 
 describe('an answer that writes nothing opens no writer', () => {
-  it('init in a project another key founded — "nothing to found", and nothing made', () => {
+  it('init in a project another key founded: "nothing to found", and nothing made', () => {
     founded();
     const before = tree();
     const again = mnema(homeB, 'init');
@@ -275,7 +275,7 @@ describe('an answer that writes nothing opens no writer', () => {
     expect(tree()).toEqual(before);
   });
 
-  it('an MCP connection that only reads — for the key that founded the project, and a new one', async () => {
+  it('an MCP connection that only reads: for the key that founded the project, and a new one', async () => {
     founded();
     for (const home of [homeA, homeB]) {
       const before = tree();
@@ -302,8 +302,8 @@ describe('an answer that writes nothing opens no writer', () => {
 
 describe('a refusal from the operation’s own door leaves nothing a clone receives', () => {
   /**
-   * The project as A left it — founded, with a task, a decision and a skill of A's for the gate to
-   * refuse moves on — built ONCE and copied per case, so each refusal lands on the same bytes and
+   * The project as A left it (founded, with a task, a decision and a skill of A's for the gate to
+   * refuse moves on) built ONCE and copied per case, so each refusal lands on the same bytes and
    * only the refusal differs. The copy is a working copy, ignored files and all, and it is a git
    * repository, so what the tree's own `.gitignore` keeps out can be asked of git itself.
    */
@@ -346,14 +346,14 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
   });
 
   const BIG = 'a'.repeat(70_000);
-  /** Shaped like an AWS access key id — a credential class the door names. */
+  /** Shaped like an AWS access key id: a credential class the door names. */
   const SECRET = 'AKIAABCDEFGHIJKLMNOP';
   /** An id no entity of the project carries. */
   const UNKNOWN = '01a0b100-d28b-7000-9b66-000000000000';
 
   /**
    * The thirteen verbs the census on the binary found leaving the four entries, each with the
-   * argument its own door refuses — and then the four refusals of the APPEND door, one per class,
+   * argument its own door refuses, and then the four refusals of the APPEND door, one per class,
    * which came after the founding: measured on the binary from an empty HOME, each left a key
    * under the HOME, a public key, an anchor and a tail holding `identity.founded` and no
    * checkpoint, so `verify --require=signed` failed for the whole project. The door is asked
@@ -419,10 +419,10 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
    * Measured on the binary from an empty HOME: `task move cancel` with no reason was refused
    * (`MISSING_PROOF`) and left a key pair under the HOME and an installation id in the project;
    * through the server, whose run opened before the operation decided, it also left a public key,
-   * an anchor and a tail holding `identity.founded` and `run.started` — and the refusal said "This
+   * an anchor and a tail holding `identity.founded` and `run.started`, and the refusal said "This
    * key founded an identity of its own".
    */
-  it('a first write the gate refuses makes no key and founds nothing — the command line', () => {
+  it('a first write the gate refuses makes no key and founds nothing: the command line', () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-gate-'));
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });
@@ -443,7 +443,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     }
   });
 
-  it('a first write the gate refuses makes no key and founds nothing — the server', async () => {
+  it('a first write the gate refuses makes no key and founds nothing: the server', async () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-gate-mcp-'));
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });
@@ -510,7 +510,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
    * an empty value leaves out as absence, and the filters of a read. The command line reaches it,
    * above (`task create ''`).
    */
-  it('a first write the append door refuses makes no key and founds nothing — the server', async () => {
+  it('a first write the append door refuses makes no key and founds nothing: the server', async () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-door-mcp-'));
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });
@@ -538,7 +538,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
         expect(readdirSync(homeB), name).toEqual([]);
       }
 
-      // The same session's first accepted write founds, opens its run and lands, in that order —
+      // The same session's first accepted write founds, opens its run and lands, in that order,
       // and stamped in that order: the fact is built after the founding, never before it.
       const accepted = (await client.callTool({
         name: 'create_task',
@@ -581,7 +581,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
    * founding, so the refusal came after it: an otherwise accepted first write left a key, an
    * anchor and a tail holding only `identity.founded`, and `verify --require=signed` exited 1.
    */
-  it('a first write from a client named by a marker makes no key and founds nothing — the server', async () => {
+  it('a first write from a client named by a marker makes no key and founds nothing: the server', async () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-marker-'));
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });
@@ -610,7 +610,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     }
   });
 
-  it('where the door words the refusal, it says the fact did not land — not that nothing did', () => {
+  it('where the door words the refusal, it says the fact did not land, not that nothing did', () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-words-'));
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });

@@ -4,8 +4,8 @@
  * `SubagentStop` hook and handed the format as its next instruction; one that stops with the
  * block is not touched; and the hook lets the second stop through.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — which replies are in the format and the
- * words of the reason — is `a-subagent-hands-back-its-decisions.test.ts`. What the host does with
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (which replies are in the format and the
+ * words of the reason) is `a-subagent-hands-back-its-decisions.test.ts`. What the host does with
  * exit 2 on that event is the host's, and it is read here with the real binary: the hook's own
  * report in the stream (`hook_response`), and the request the host sends for the subagent's next
  * turn, which carries the reason. The model is a stand-in that answers every turn with the text

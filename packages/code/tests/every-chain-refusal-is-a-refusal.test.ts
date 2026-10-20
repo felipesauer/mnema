@@ -1,9 +1,9 @@
 /**
  * Every error the product THROWS as a refusal leaves the MCP server as a refusal.
  *
- * Some refusals are thrown because the decision sits below every write — a lock another
+ * Some refusals are thrown because the decision sits below every write (a lock another
  * process holds, an installation id a stopped process left empty, a key the record gives no
- * honest identity — and the server's door answered two of them by name. The rest went out as
+ * honest identity) and the server's door answered two of them by name. The rest went out as
  * the SDK's bare message: no `Refused (CODE)`, none of what the session owed, and nothing to
  * say the fact was not recorded.
  *

@@ -3,8 +3,8 @@
  * the first request the host sends, before any tool is called, and a decision that was
  * superseded is not in it.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema brief --hook` prints, and
- * that it leaves a superseded decision out — is held by `the-record-arrives-unasked.test.ts` and
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema brief --hook` prints, and
+ * that it leaves a superseded decision out) is held by `the-record-arrives-unasked.test.ts` and
  * the brief's own cases. What none of those can say is that the host takes the text a hook prints
  * and puts it in front of the model: that is the host's, and it is read here off the request the
  * host sends to a stand-in for the model, with the version it was read on named by the run.
@@ -43,7 +43,7 @@ describe('the session opens with the record', () => {
     );
     expect(ran.length).toBeGreaterThan(0);
 
-    // It is in the FIRST request — the one that carries the call — and in a block the host names.
+    // It is in the FIRST request, the one that carries the call, and in a block the host names.
     const opened = whatTheSessionOpenedWith(session);
     expect(opened).toHaveLength(1);
     expect(opened[0]).toContain('Bill in UTC');

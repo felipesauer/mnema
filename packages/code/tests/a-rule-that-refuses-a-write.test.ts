@@ -1,9 +1,9 @@
 /**
  * A rule that refuses a write: in every host, the write does not happen and the reason cites the
- * rule — and where a rule refuses and another asks for a person at the same path, the refusal wins.
+ * rule, and where a rule refuses and another asks for a person at the same path, the refusal wins.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. That each host honours `deny` — the file is not written and
- * the model reads the reason — is the host's, measured against the real binaries
+ * WHAT IS HELD HERE AND WHAT IS NOT. That each host honours `deny` (the file is not written and
+ * the model reads the reason) is the host's, measured against the real binaries
  * (read on 2 Oct 2026; for Claude Code and VS Code it is held by the cases in `host-contract/`, which start the
  * real host, and for Cursor by nothing in this tree). What this file holds is this product's half, at each of the three
  * doors: the MCP tool Claude Code's hook calls, `mnema before-a-write --host vscode` and `--host
@@ -57,7 +57,7 @@ let refusing: string;
 let asking: string;
 let governing: string;
 
-/** Runs `mnema <argv>` in process and refuses to continue if it failed — setup, not assertion. */
+/** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<string> {
   const out: string[] = [];
   const err: string[] = [];
@@ -115,7 +115,7 @@ function counts(): Record<string, number> {
 }
 
 /**
- * A patch as Codex's `apply_patch` takes it, adding `relative` — the path as the model writes it,
+ * A patch as Codex's `apply_patch` takes it, adding `relative`: the path as the model writes it,
  * relative to the session's directory.
  */
 function aPatchAdding(relative: string): string {
@@ -207,8 +207,8 @@ function verb(
 }
 
 /**
- * Holds this machine's tail of the public tree as a live process would — this one, whose pid
- * answers, so no waiter may break it — and returns the lock file to remove.
+ * Holds this machine's tail of the public tree as a live process would (this one, whose pid
+ * answers, so no waiter may break it) and returns the lock file to remove.
  */
 function holdTheTail(): string {
   const root = resolveTrees(repo, env).projectPublic as string;
@@ -220,7 +220,7 @@ function holdTheTail(): string {
   return lock;
 }
 
-/** The one segment of a tree's one tail — the public tree's unless told — where the setup wrote. */
+/** The one segment of a tree's one tail, the public tree's unless told, where the setup wrote. */
 function theSegment(root = resolveTrees(repo, env).projectPublic as string): string {
   const tails = readdirSync(join(root, 'tails'));
   expect(tails).toHaveLength(1);
@@ -414,7 +414,7 @@ describe('the verb a command host runs', () => {
     // THE RECORD DECIDES THE REFUSAL, AND A RECORD THAT CANNOT BE READ CANNOT SAY THERE IS NONE. A
     // line the reader refuses (not JSON, a kind it does not know as a newer mnema's line is, a
     // field it does not know, bytes that are not canonical) is answered `deny`, with the reader's
-    // own refusal in the reason — at a path no rule addresses too, because which rules address it
+    // own refusal in the reason: at a path no rule addresses too, because which rules address it
     // is exactly what cannot be read.
     const segment = theSegment();
     const sound = readFileSync(segment, 'utf-8');

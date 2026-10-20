@@ -1,11 +1,11 @@
 /**
- * A STATE IS A POSITION, AND THE HUE SAYS WHAT THE READER DOES ABOUT IT — in all three
+ * A STATE IS A POSITION, AND THE HUE SAYS WHAT THE READER DOES ABOUT IT: in all three
  * machines the product has.
  *
  * This surface refused to paint a state once, and wrote the reason at the call site:
  * *they are categories, and a hue per category is noise*. The rule was right and the
- * classification was wrong. A `scope` is a category — three trees, no order, nothing
- * following from which one a record lives in — and it is still unpainted. A workflow
+ * classification was wrong. A `scope` is a category (three trees, no order, nothing
+ * following from which one a record lives in) and it is still unpainted. A workflow
  * state is a POSITION IN A CYCLE, and the transition table gives each position a
  * structurally different set of exits, which is what makes "is there anything to do about
  * this" answerable from the machine instead of from taste. Sixteen states, six
@@ -24,7 +24,7 @@
  *
  * WHAT IS ASSERTED HERE, and the order is the order the guarantees matter:
  *
- *   1. ALL SIXTEEN STATES, each with the hue its disposition earns — enumerated from
+ *   1. ALL SIXTEEN STATES, each with the hue its disposition earns: enumerated from
  *      `TASK_STATES`, `DECISION_STATES` and `SKILL_STATES`, so a state added to any
  *      machine cannot arrive without this file naming what it looks like. Each state is
  *      REACHED THROUGH THE WORKFLOW'S OWN MOVES: a fixture that wrote `BLOCKED` or
@@ -36,7 +36,7 @@
  *      the whole surface is the acceptance test for that; here it is asserted per state,
  *      because the golden's fixture only ever reaches a few of the sixteen.
  *   3. THE HUE ONLY REPEATS THE WORD. Strip the escapes and the painted line is the plain
- *      line, and the plain line names the state — so a pipe, a CI log, a monochrome
+ *      line, and the plain line names the state, so a pipe, a CI log, a monochrome
  *      terminal and `--color=never` lose nothing.
  *   4. A WORD TWO MACHINES SHARE MEANS THE SAME IN BOTH. The column carries a word and
  *      never a kind, so `asState` classifies by the word; `proposed` and `rejected`
@@ -73,7 +73,7 @@ import { type CliIo, run } from '../src/program.js';
 /**
  * The byte every sequence below opens with, written as its ESCAPE and never as itself: a
  * control character in source is invisible to a reader, and this bench has paid for that
- * eight times over — including once from the tool that wrote this file.
+ * eight times over, including once from the tool that wrote this file.
  */
 const ESC = '\u001b';
 /** The three hues the surface has, and the closer all of them take. */
@@ -87,7 +87,7 @@ const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|39)m`, 'g');
 const stripped = (text: string): string => text.replace(SGR, '');
 
 /**
- * What each of the seven positions looks like to a reader — the CLAIM, written out here
+ * What each of the seven positions looks like to a reader: the CLAIM, written out here
  * rather than asked of the code that implements it.
  *
  * Reading it against the transition table, which is where every entry comes from:
@@ -106,7 +106,7 @@ const HUE_OF: Readonly<Record<TaskState, string | undefined>> = {
   CANCELED: undefined,
 };
 
-/** The moves that reach each state from birth — the workflow's own, never a shortcut. */
+/** The moves that reach each state from birth: the workflow's own, never a shortcut. */
 const REACHED_BY: Readonly<Record<TaskState, readonly (readonly string[])[]>> = {
   DRAFT: [],
   READY: [['submit']],
@@ -122,11 +122,11 @@ const REACHED_BY: Readonly<Record<TaskState, readonly (readonly string[])[]>> = 
  * `DECISION_TRANSITIONS`.
  *
  * `proposed` is left by `accept` and `reject` and both are a verdict somebody owes, which
- * is the middle of the scale. `accepted` ARRIVED — it is what governs — and the one move
+ * is the middle of the scale. `accepted` ARRIVED (it is what governs) and the one move
  * that undoes it costs a reason, which is the same shape as a task's `DONE` and takes the
  * same green. THE GREEN IS THE POINT OF THIS TABLE and not a detail of it: `supersede`
  * stays legal from `accepted` forever, so a rule built on "has a legal move" would paint
- * every settled call as a pendency that never clears — the same rule that kept every
+ * every settled call as a pendency that never clears, the same rule that kept every
  * completed TASK on the opening read's work list until that list asked the
  * classification instead. The two terminal states carry
  * nothing: the word says what happened and there is nothing to do about it.
@@ -142,8 +142,8 @@ const DECISION_HUE_OF: Readonly<Record<DecisionState, string | undefined>> = {
  * What each of the skill machine's five positions looks like, read against
  * `SKILL_TRANSITIONS`.
  *
- * This machine's waiting side is TWO states — `proposed` needs someone to look and
- * `reviewed` needs someone to rule — and both are yellow for the one reason yellow
+ * This machine's waiting side is TWO states, `proposed` needs someone to look and
+ * `reviewed` needs someone to rule, and both are yellow for the one reason yellow
  * exists. `adopted` is the live pattern and takes the same green `accepted` does, for
  * the same reason: `deprecate` costs a reason, and being replaceable is not being
  * pending. `rejected` and `deprecated` are terminal and carry nothing.
@@ -168,7 +168,7 @@ const SKILL_HUE_OF: Readonly<Record<SkillState, string | undefined>> = {
 const SUBJECT = '<the record>';
 const SUCCESSOR = '<the successor>';
 
-/** The moves that reach each decision state from birth — the workflow's own. */
+/** The moves that reach each decision state from birth: the workflow's own. */
 const DECISION_REACHED_BY: Readonly<Record<DecisionState, readonly (readonly string[])[]>> = {
   proposed: [],
   accepted: [['move', 'accept', SUBJECT, '--note', 'we agreed in review']],
@@ -176,7 +176,7 @@ const DECISION_REACHED_BY: Readonly<Record<DecisionState, readonly (readonly str
   superseded: [['supersede', SUBJECT, SUCCESSOR, '--reason', 'a later call replaces it']],
 };
 
-/** The moves that reach each skill state from birth — the workflow's own. */
+/** The moves that reach each skill state from birth: the workflow's own. */
 const SKILL_REACHED_BY: Readonly<Record<SkillState, readonly (readonly string[])[]>> = {
   proposed: [],
   reviewed: [['move', 'review', SUBJECT, '--note', 'it reads well']],
@@ -232,7 +232,7 @@ function mintedId(report: readonly string[], prefix: string): string {
   return id;
 }
 
-/** One move's argv with the record it moves — and its successor, where one is asked for. */
+/** One move's argv with the record it moves, and its successor, where one is asked for. */
 function filled(move: readonly string[], id: string, successor?: string): string[] {
   return move.map((word) => {
     if (word === SUBJECT) return id;
@@ -277,7 +277,7 @@ beforeAll(async () => {
   // One decision per state and one pattern per state, each walked there the same way.
   // `superseded` needs a successor and takes the one already accepted, which is why the
   // loop runs in the machine's own declared order: `DECISION_STATES` puts `accepted`
-  // before `superseded`, and the missing successor is thrown on rather than defaulted —
+  // before `superseded`, and the missing successor is thrown on rather than defaulted;
   // a fixture that superseded a decision with an id nobody minted would be writing a
   // record the product refuses.
   for (const [index, state] of DECISION_STATES.entries()) {
@@ -328,7 +328,7 @@ function lineFor(report: readonly string[], id: string): string {
  *
  * The three are walked by the SAME cases rather than by three copies of them: the rule
  * is one rule and a copy per machine is the shape that lets one machine drift out of it
- * unnoticed — which is the shape the surface itself was in until this delivery.
+ * unnoticed, which is the shape the surface itself was in until this delivery.
  */
 interface Machine {
   readonly kind: string;
@@ -403,12 +403,12 @@ describe('every position reads as what it is, and paints only where it is news',
         const hue = machine.hue[state];
         // The words, either way: the state is named in both, so nothing lives in the hue.
         // Asserted as the END of the line and with the DOUBLE space refused, because
-        // `toContain` alone reads a state joined as a column as if nothing had moved —
+        // `toContain` alone reads a state joined as a column as if nothing had moved,
         // which is exactly the mutation that turned the golden red and left this green.
         expect(bare, where).toMatch(new RegExp(`[^ ] \\(${state}\\)$`));
         expect(stripped(painted), where).toBe(bare);
         if (hue === undefined) {
-          // Unpainted is asserted as the PLAIN sequence surviving verbatim — the space,
+          // Unpainted is asserted as the PLAIN sequence surviving verbatim: the space,
           // the parenthesis and the state with nothing between them. An escape anywhere
           // in that gap would break it, which makes this the same assertion as "no hue".
           expect(painted, where).toContain(` (${state})`);
@@ -422,7 +422,7 @@ describe('every position reads as what it is, and paints only where it is news',
     }
   }, 120_000);
 
-  it('paints eight of the sixteen — the count, so the tables are not all one thing', () => {
+  it('paints eight of the sixteen: the count, so the tables are not all one thing', () => {
     // The vacuous form of the case above is a table that says `undefined` everywhere: it
     // would then assert only that nothing paints, over and over. Named per machine so a
     // hue that moved says WHICH position moved, and counted so a table quietly emptied
@@ -437,7 +437,7 @@ describe('every position reads as what it is, and paints only where it is news',
       ['skill', ['proposed', 'reviewed', 'adopted']],
     ]);
     // All three hues are still in use, and every machine still has at least one position
-    // that says nothing — the two ways this could collapse into "everything paints" or
+    // that says nothing: the two ways this could collapse into "everything paints" or
     // "nothing does".
     const hues = MACHINES.flatMap((machine) =>
       machine.states.map((state) => machine.hue[state]).filter((hue) => hue !== undefined),
@@ -489,7 +489,7 @@ describe('every position reads as what it is, and paints only where it is news',
       const never = await invoke('--color=never', ...argv);
       expect(never.join('\n'), argv.join(' ')).not.toContain(ESC);
       // And it is the same report the default gives where output is not a terminal, line
-      // for line — so the flag is a second spelling of the transcript, not a third form.
+      // for line, so the flag is a second spelling of the transcript, not a third form.
       expect(await invoke(...argv), argv.join(' ')).toEqual(never);
     }
   }, 120_000);
@@ -497,7 +497,7 @@ describe('every position reads as what it is, and paints only where it is news',
 
 describe('and it answers for all three machines, in the one column they share', () => {
   it('paints a decision and a pattern in the same list that paints a task', async () => {
-    // The case this replaced pinned the OPPOSITE — a decision and a pattern plain — and
+    // The case this replaced pinned the OPPOSITE, a decision and a pattern plain, and
     // it was pinning a gap rather than a rule. One unfiltered `search` is the reading
     // where all three kinds meet in one column, which is where the gap was measured.
     const styled = await invoke('--color=always', 'search');
@@ -562,7 +562,7 @@ describe('no reading composes a state into another part', () => {
    * One module's source with its COMMENTS blanked.
    *
    * A doc that quotes the defect is not the defect, and three of these modules quote it on
-   * purpose — that is what a rewritten premise IS. Scanning the prose made this guard
+   * purpose, that is what a rewritten premise IS. Scanning the prose made this guard
    * accuse the two call sites it had just cleaned, which is the same lesson
    * `every-public-value-has-a-caller.test.ts` learned from a `{@link}`.
    */
@@ -579,7 +579,7 @@ describe('no reading composes a state into another part', () => {
   };
 
   /**
-   * A parenthesized state interpolated into a string — the shape this delivery removed.
+   * A parenthesized state interpolated into a string: the shape this delivery removed.
    *
    * Written as a literal, which is what the lint asks for and what is safe HERE: the
    * pattern holds a `$` and braces and not one control character, so there is no escape
@@ -598,7 +598,7 @@ describe('no reading composes a state into another part', () => {
   });
 
   it('would accuse the line the careful author would write', () => {
-    // The detector's non-vacuity, against the two sites this delivery changed — composed
+    // The detector's non-vacuity, against the two sites this delivery changed: composed
     // rather than typed, because the lint refuses a template placeholder inside a plain
     // string and this repository opens no exception to a rule for a test.
     const hole = `$${'{'}`;
@@ -606,8 +606,8 @@ describe('no reading composes a state into another part', () => {
     const shown = `fact(\`${hole}body.record.title} (${hole}body.record.state})\`)`;
     expect(COMPOSED_STATE.test(list)).toBe(true);
     expect(COMPOSED_STATE.test(shown)).toBe(true);
-    // And it is a filter and not a constant: the composed line the surface writes now —
-    // the state as a part beside the title — is not accused.
+    // And it is a filter and not a constant: the composed line the surface writes now,
+    // the state as a part beside the title, is not accused.
     expect(COMPOSED_STATE.test('itemLine([oneLine(hit.title), asState(state)])')).toBe(false);
     expect(composing().length).toBeGreaterThan(10);
     // The comment-blanking does not blank CODE, which is the way this guard could have

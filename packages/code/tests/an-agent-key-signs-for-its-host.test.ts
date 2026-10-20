@@ -518,7 +518,7 @@ describe('the server signs as the agent the record names', () => {
     });
   });
 
-  it('without the agent key, the same call is refused for the passphrase — the key is what makes it work', async () => {
+  it('without the agent key, the same call is refused for the passphrase: the key is what makes it work', async () => {
     await aMachineWithAProtectedKey();
     let reply: Reply | undefined;
     await connected('evil', undefined, repo, async (client) => {
@@ -547,7 +547,7 @@ describe('the server signs as the agent the record names', () => {
     expect(notes).toContainEqual(
       expect.objectContaining({ kind: 'declared-which', which: 'claude-code' }),
     );
-    // Declared is silence in `show` — the line says what it always said — and not attested in the account.
+    // Declared is silence in `show`, the line says what it always said, and not attested in the account.
     expect(await did(undefined, 'show', decision?.subject as string)).not.toContain('attested');
     const account = JSON.parse(await did(undefined, 'audit', 'accountability', '--json')) as {
       readonly byWho: readonly {

@@ -3,7 +3,7 @@
  *
  * Where the record does not enrol the agent a server was asked to sign as, the person's key signs and
  * the facts say their `which` is declared. When that key is protected and no passphrase is to hand, the
- * write is refused instead (`AGENT_NOT_ENROLLED`) — and where the passphrase IS in the environment the
+ * write is refused instead (`AGENT_NOT_ENROLLED`), and where the passphrase IS in the environment the
  * server was started in, the key opens, and the write goes through. The choice of key must read the
  * environment the way a write does, or a person who set it would be refused by a server that could sign.
  */

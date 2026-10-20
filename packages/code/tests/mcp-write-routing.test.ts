@@ -3,18 +3,18 @@
  *
  * A workspace holds several projects, the cascade picks one for the session, and
  * until a write could name another, everything a connection recorded landed in that
- * one — the work done in the second and third projects written into the first, in a
+ * one: the work done in the second and third projects written into the first, in a
  * record that then says it happened somewhere it did not. No field of an event names
  * a project, so nothing afterwards distinguishes such a fact from a correct one.
  *
  * What is tested here is that and the five things it drags along:
  *
- *   1. every write verb takes the argument — ONE test per verb, because a rule that
+ *   1. every write verb takes the argument: ONE test per verb, because a rule that
  *      holds at seven call sites and is tested at one is a rule that holds at six;
  *   2. the fact lands where it was told to, read off the DISKS of all three projects
  *      rather than off the answer the tool gave;
  *   3. each fact cites the run of its OWN project, so each project's clone resolves
- *      its own references — and each project's chain still verifies;
+ *      its own references, and each project's chain still verifies;
  *   4. a name that resolves to nothing, or to two projects, is REFUSED, and the
  *      refusal names what it could have meant;
  *   5. saying nothing still lands where the cascade landed, which is the whole of
@@ -72,17 +72,17 @@ function openOn(...projects: readonly string[]): Session {
   });
 }
 
-/** A project's private tree — where an agent session's writes land by default. */
+/** A project's private tree, where an agent session's writes land by default. */
 function privateOf(project: string): string {
   return join(project, PROJECT_DIR, 'private');
 }
 
-/** The root of one tree of a project — the pair a per-verb assertion needs. */
+/** The root of one tree of a project: the pair a per-verb assertion needs. */
 function treeOf(project: string, tree: 'public' | 'private'): string {
   return tree === 'public' ? join(project, PROJECT_DIR) : privateOf(project);
 }
 
-/** Every event in a chain, replayed off DISK — never the tool's own answer. */
+/** Every event in a chain, replayed off DISK, never the tool's own answer. */
 function eventsIn(root: string): readonly CatalogEvent[] {
   return orderedEvents({ root }, catalogUpcasters());
 }
@@ -108,12 +108,12 @@ afterEach(() => {
 /**
  * Every verb that can be told where it belongs, with the kinds it appends.
  *
- * KINDS and not one kind: the birth of a workflow entity is two appends — the record
- * and its initial transition — written atomically, so a tree that holds one without
+ * KINDS and not one kind: the birth of a workflow entity is two appends, the record
+ * and its initial transition, written atomically, so a tree that holds one without
  * the other is a tree that was fetched halfway.
  *
- * The three that carry a FOREIGN id in their payload — an observation about an
- * entity, a handoff on a task, a link between two — are in the table beside the four
+ * The three that carry a FOREIGN id in their payload (an observation about an
+ * entity, a handoff on a task, a link between two) are in the table beside the four
  * births, and they are the ones the argument matters most for: the reference they
  * carry is deliberately not validated, so nothing about it can reveal that the fact
  * landed in the wrong project.
@@ -122,7 +122,7 @@ const WRITE_VERBS: readonly {
   readonly name: string;
   readonly kinds: readonly string[];
   /**
-   * The tree inside the destination this verb's write lands in — stated per verb,
+   * The tree inside the destination this verb's write lands in: stated per verb,
    * because the routing rule reads the KIND. Two verbs still read the author instead
    * (`capture_memory`, `record_observation`), and an MCP connection is always an
    * agent, so those land private; the rest go to the tree that travels. What this
@@ -261,7 +261,7 @@ describe('three projects, one session', () => {
     closeSession(session);
   });
 
-  it('pins every fact to the run of ITS OWN project — each clone resolves alone', () => {
+  it('pins every fact to the run of ITS OWN project: each clone resolves alone', () => {
     // The defect a shared run would leave: the chain of the second project verifies
     // `ok` while a clone of it holds a fact citing a run that is not there. The proof
     // does not catch it, so the test has to.
@@ -277,7 +277,7 @@ describe('three projects, one session', () => {
       const root = privateOf(project);
       const events = eventsIn(root);
       const runs = projectRuns(events);
-      // One run per project — the connection's own, in that project's record.
+      // One run per project: the connection's own, in that project's record.
       expect([...runs.keys()]).toHaveLength(1);
       // And every fact of that project cites a run the same project holds.
       const cited = new Set(
@@ -311,8 +311,8 @@ describe('three projects, one session', () => {
   });
 
   it('naming the project the session is ALREADY in opens no second run', () => {
-    // Two spellings of one destination — the cascade's own answer, and the caller
-    // naming it — have to be one run. The map is keyed by the tree, which is what
+    // Two spellings of one destination (the cascade's own answer, and the caller
+    // naming it) have to be one run. The map is keyed by the tree, which is what
     // makes them the same key rather than two.
     const here = makeProject('here');
     const session = openOn(here, makeProject('elsewhere'));
@@ -342,7 +342,7 @@ describe('a name the session cannot honor is refused, never guessed', () => {
     expect(refused.ok).toBe(false);
     if (refused.ok) throw new Error('unreachable');
     expect(refused.code).toBe('UNKNOWN_PROJECT');
-    // Both valid ones named, so the second attempt does not have to guess — and the
+    // Both valid ones named, so the second attempt does not have to guess, and the
     // refusal is a refusal: nothing was written anywhere.
     expect(refused.message).toContain(`"${first}"`);
     expect(refused.message).toContain(`"${second}"`);
@@ -418,7 +418,7 @@ describe('a name the session cannot honor is refused, never guessed', () => {
 
   it('refuses a RELATIVE path rather than resolving it against a cwd nobody chose', () => {
     // This server's working directory is whatever the host spawned it with. Resolving
-    // a relative argument against it would sometimes hit a real project by accident —
+    // a relative argument against it would sometimes hit a real project by accident,
     // and the accident is the ambiguous case above, silently decided.
     const session = openOn(makeProject('api'), makeProject('web'));
 
@@ -479,7 +479,7 @@ describe('a routed write keeps the rest of the routing rules', () => {
     // Both halves of the destination, together: the project comes from the argument and
     // the tree from the write itself. A run in another tree than its fact is what a
     // clone of that fact's record cannot resolve, and a run in another PROJECT is what
-    // nothing marks afterwards — so the run is per tree, per project.
+    // nothing marks afterwards, so the run is per tree, per project.
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -502,13 +502,13 @@ describe('a routed write keeps the rest of the routing rules', () => {
   });
 
   it('leaves a MOVE following the entity, which takes no project of its own', () => {
-    // A move lands in the tree the entity lives in, and that tree is the answer — a
+    // A move lands in the tree the entity lives in, and that tree is the answer: a
     // `project` could only agree with it or contradict it. Which is why the move needs
     // no argument to reach a project the session did not land on: the entity is found
     // there, and the write is routed there.
     //
-    // This test used to assert the opposite — `UNKNOWN_SKILL`, naming the session's
-    // project — and it was right about the code at the time: the birth took the
+    // This test used to assert the opposite (`UNKNOWN_SKILL`, naming the session's
+    // project) and it was right about the code at the time: the birth took the
     // argument and the locate did not span the workspace, so the same session could
     // create a skill it could not review.
     const here = makeProject('here');
@@ -530,7 +530,7 @@ describe('a routed write keeps the rest of the routing rules', () => {
     expect(moved).toMatchObject({ ok: true, to: 'reviewed' });
 
     // And it landed in `there`, read off the disks: the birth and the review are in
-    // one tree — the one a skill travels in — and the session's own project holds
+    // one tree, the one a skill travels in, and the session's own project holds
     // neither.
     expect(factsIn(join(there, PROJECT_DIR))).toEqual([
       'skill.created',
@@ -542,7 +542,7 @@ describe('a routed write keeps the rest of the routing rules', () => {
   });
 
   it('records a consultation in the session’s own project, with that tree’s run', () => {
-    // `skills` is a READ that writes, and the fact it writes is about the reading —
+    // `skills` is a READ that writes, and the fact it writes is about the reading,
     // which happened here. So the consultation stays in the session's own PROJECT even
     // when the work it informs is being recorded in another one; the tree inside it is
     // the one a skill fact travels in, like every other skill fact. The dedup that
@@ -565,7 +565,7 @@ describe('a routed write keeps the rest of the routing rules', () => {
 
     const ownRoot = join(here, PROJECT_DIR);
     const own = eventsIn(ownRoot).filter((e) => e.kind === 'skill.consulted');
-    // One fact for two servings — the run recorded it once — and it cites the run of
+    // One fact for two servings, the run recorded it once, and it cites the run of
     // the tree it is in, not the run of the project the work went to.
     expect(own).toHaveLength(1);
     expect(own[0]?.run).toBe(session.runs.get(ownRoot)?.id);
@@ -654,7 +654,7 @@ describe('over the real transport', () => {
   it('opens two runs for CONCURRENT writes to two projects, and one per project', async () => {
     // Five writes arriving together, three to one project and two to the other. The
     // door is synchronous from reading a destination's entry to filling it, so each
-    // project gets exactly one run — and the two projects are two, which is the point
+    // project gets exactly one run, and the two projects are two, which is the point
     // rather than the same defect at a larger grain.
     const first = makeProject('first');
     const second = makeProject('second');

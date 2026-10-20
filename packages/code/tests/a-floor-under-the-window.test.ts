@@ -1,12 +1,12 @@
 /**
- * A FLOOR UNDER THE WINDOW — the shortest terminal this console draws a page on, and what a
+ * A FLOOR UNDER THE WINDOW: the shortest terminal this console draws a page on, and what a
  * window under it is shown instead.
  *
  * EVERY LADDER ON THIS SURFACE WAS TOTAL, AND THAT IS THE PREMISE THIS FILE TAKES AWAY. The
  * drawing of the name gave way to a smaller drawing and finally to the name; the arrangement at
  * the top gave way to the same lines on the roll; the input area dropped its badge and then its
  * rules; the list of words showed fewer and said how many it could not. Each of those files says
- * in its own words that its last rung is answered *whatever the size* — and what that produced
+ * in its own words that its last rung is answered *whatever the size*, and what that produced
  * was not a smaller console, it was a prompt with the product's identity gone from the screen.
  * There is a floor now (`src/repl/floor.ts`): below eighty by twenty-four the console does not
  * lay a page out at all.
@@ -15,7 +15,7 @@
  * its own text area exists, and it is refused on two grounds: it is disableable by whoever built
  * the terminal, whose own security guidance is to refuse to implement it, and the terminal this
  * product is developed on had a denial of service exactly there. The last case in this file scans
- * every source for it and reads the bytes of a real run — the product must not be able to move
+ * every source for it and reads the bytes of a real run: the product must not be able to move
  * somebody's window, and that has to be a measurement rather than an intention.
  *
  * WHAT THIS FILE HOLDS is one promise in five parts:
@@ -24,7 +24,7 @@
  *     smallest window that serves is walked to, on both measurements.
  *   - THE SCREEN SAYS BOTH NUMBERS AND NAMES THE AXIS. *Make your window bigger* makes a reader
  *     guess which edge and how far; what the window has, what the console needs, and what falls
- *     short is the same thing every refusal of this product does — say what happened and where.
+ *     short is the same thing every refusal of this product does: say what happened and where.
  *   - IT IS A SCREEN AND NOT AN ERROR. The session stays open, the record gains nothing, the roll
  *     is untouched, and the page comes back BY ITSELF when the window grows. Asserted by crossing
  *     the floor in both directions with a line already said, and finding it still there.
@@ -65,7 +65,7 @@ import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { screenOf, theSettledScreen } from './support/screen.js';
 import { held } from './support/the-record-held.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** `packages/code/src`, for the guards that read this surface's own source. */
@@ -78,7 +78,7 @@ const PROMPT = 'mnema>';
 const OPENED = 'a session over this project';
 
 /**
- * A LINE ONLY THE ROLL CAN BE CARRYING — the LAST line of a read this session answers.
+ * A LINE ONLY THE ROLL CAN BE CARRYING: the LAST line of a read this session answers.
  *
  * IT WAS A HEADING OF WHAT `/help` ANSWERED, and that word is gone: the list under the prompt
  * says what the session runs, and a list is drawn in the area rather than landed on the roll.
@@ -103,7 +103,7 @@ const THE_KEY_THAT_LEAVES = ENDS_THE_INPUT;
 const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 
 /**
- * WHAT THE FLOOR SCREEN SAYS AT A SIZE — asked of the module that composes it, never retyped.
+ * WHAT THE FLOOR SCREEN SAYS AT A SIZE: asked of the module that composes it, never retyped.
  *
  * It is the link between the arithmetic and the page: every assertion below about what a reader
  * sees is made against these rows, so a delivery that rewords the screen moves the cases with it
@@ -113,7 +113,7 @@ const floorRowsAt = (columns: number, rows: number): readonly string[] =>
   theFloorScreenFor({ columns, rows, render: renderPlain });
 
 /**
- * THE ONE ROW EVERY FLOOR SCREEN CARRIES, whatever the size — the heading, which is the only row
+ * THE ONE ROW EVERY FLOOR SCREEN CARRIES, whatever the size: the heading, which is the only row
  * at depth nought and therefore the only one whose bytes are contiguous under a renderer that
  * paints (a row indented under it carries its escapes between the indent and the text).
  */
@@ -185,7 +185,7 @@ async function inPty(options: {
  *
  * THE USUAL WAIT CANNOT BE USED HERE AND THE REASON IS THE SUBJECT. Every other step of this
  * bench waits for a finished frame carrying the PROMPT, because the row being typed is rewritten
- * by every frame the layout draws — and the floor screen has no row being typed at all. So what a
+ * by every frame the layout draws, and the floor screen has no row being typed at all. So what a
  * step waits for is the screen's own heading, arriving since the step began, at a frame boundary:
  * the first half keeps it from ending on a frame that was already in flight, and the second keeps
  * it from reading half of one (`support/pty.ts`).
@@ -204,12 +204,12 @@ const opensTheFloorScreen: Step = {
 const opens: Step = opensAConsole(PROMPT);
 
 /**
- * WHAT IS TYPED ONCE THE WINDOW HAS GROWN BACK — the mark that tells the page after the
+ * WHAT IS TYPED ONCE THE WINDOW HAS GROWN BACK: the mark that tells the page after the
  * crossing from the page before it.
  *
  * AND IT IS HERE BECAUSE A MUTATION WENT UNCAUGHT WITHOUT IT. The page after the window grew
  * back was found as *the last frame drawn a hundred columns wide with the answer on it*, and the
- * frames BEFORE the shrink are all of those too — so a console that emptied its roll while the
+ * frames BEFORE the shrink are all of those too, so a console that emptied its roll while the
  * floor screen was up passed the case, on a frame from before the crossing. Nothing else in the
  * run distinguishes the two pages: the caller types nothing and the record does not move, so the
  * console draws the same page it drew before. What this word buys is a property only a frame on
@@ -237,7 +237,7 @@ const leaves: Step = { types: THE_KEY_THAT_LEAVES, until: () => true, what: 'lef
  *
  * THE KEY THAT LEAVES IS THE END OF THE INPUT and a row with characters on it is not the end
  * of anything: measured, the session went on running and the driver waited out its whole budget.
- * So the row is abandoned first — which is what the key that clears it does — and the key that
+ * So the row is abandoned first (which is what the key that clears it does) and the key that
  * leaves then reads as the end it is.
  */
 const clearsAndLeaves: Step = {
@@ -252,7 +252,7 @@ const clearsAndLeaves: Step = {
 
 describe('the floor is eighty by forty-two, and it is a function of both measurements', () => {
   it('is walked to rather than written down here', () => {
-    // THE THRESHOLD, SEARCHED FOR — the same shape every other form on this surface is pinned by.
+    // THE THRESHOLD, SEARCHED FOR: the same shape every other form on this surface is pinned by.
     // Nothing here knows what the floor is: the walk asks the question at every size and the
     // first size that answers yes IS the boundary.
     let narrowest = 0;
@@ -260,7 +260,7 @@ describe('the floor is eighty by forty-two, and it is a function of both measure
     let shortest = 0;
     while (shortest < 400 && !theWindowServes(THE_FLOOR.columns, shortest)) shortest += 1;
     // THE PAIR MOVED TWICE, AND THE HEIGHT IS THE ONE THAT MOVED BOTH TIMES. It was twenty-four
-    // — the canonical terminal — then fifty-one, which is the height a NINE-ROW drawing of the
+    // (the canonical terminal), then fifty-one, which is the height a NINE-ROW drawing of the
     // name is chosen at, and it is forty-two, which is the height the SIX-ROW one is chosen at.
     // The second move was made by a delivery about art that never opened this file's subject: the
     // floor is worked out from the drawing now (`src/repl/floor.ts`, `theFloorFor`), so three
@@ -268,15 +268,15 @@ describe('the floor is eighty by forty-two, and it is a function of both measure
     //
     // THE TWO LITERALS ARE HERE ON PURPOSE, and the derivation is what they are worth rather
     // than what they cost: this is the one case that pins the constant to numbers rather than to
-    // itself, so a floor that moved BY ACCIDENT — a drawing edited without anybody meaning to
-    // move a window — is red here before it is anywhere else.
+    // itself, so a floor that moved BY ACCIDENT, a drawing edited without anybody meaning to
+    // move a window, is red here before it is anywhere else.
     expect(narrowest, 'the narrowest window that serves').toBe(80);
     expect(shortest, 'the shortest window that serves').toBe(42);
     // AND THE PAIR THE MODULE NAMES IS THE PAIR THE WALK FOUND, which is what keeps the constant
     // from drifting away from the rule that reads it.
     expect([narrowest, shortest]).toEqual([THE_FLOOR.columns, THE_FLOOR.rows]);
     // AND IT IS BOTH MEASUREMENTS AND NOT ONE. A window one column narrow fails at any height,
-    // and one row short fails at any width — so neither number can stand in for the other, which
+    // and one row short fails at any width, so neither number can stand in for the other, which
     // is the vacuity a floor on the width alone would pass.
     expect(theWindowServes(narrowest - 1, 400), 'one column short, on a tall window').toBe(false);
     expect(theWindowServes(400, shortest - 1), 'one row short, on a wide window').toBe(false);
@@ -376,7 +376,7 @@ describe('a window under the floor gets the screen, and the window at it gets th
   ] as const) {
     it(`draws the floor screen at ${columns}x${rows}, with its own axis on it`, async () => {
       const ran = await inPty({ columns, rows, steps: [opensTheFloorScreen, leaves] });
-      // THE PAGE, replayed up to the frame the opening step approved — the floor screen is the
+      // THE PAGE, replayed up to the frame the opening step approved: the floor screen is the
       // whole frame, so there is nothing else on it to find it by.
       const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
       expect(screen.alternate, 'the session did not take the screen').toBe(true);
@@ -419,7 +419,7 @@ describe('the floor is crossed in both directions and the session survives it', 
   it('shows the screen when the window shrinks and the roll when it grows back', async () => {
     const columns = 100;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
-    // and is under every floor there has been since — so a number written down here would open
+    // and is under every floor there has been since, so a number written down here would open
     // this case on the very screen it exists to cross INTO.
     const rows = THE_FLOOR.rows;
     const ran = await inPty({
@@ -451,12 +451,12 @@ describe('the floor is crossed in both directions and the session survives it', 
     // THE FLOOR SCREEN WAS DRAWN BY THE SHRINK, and it is read out of what arrived while the
     // step was happening rather than off a page replayed at the small size: everything above the
     // shrink was drawn a hundred columns wide, so a replay onto a seventy-column screen would be
-    // a page carrying two terminals — which is the one thing the screen model refuses by name.
+    // a page carrying two terminals, which is the one thing the screen model refuses by name.
     const shrank = ran.bytes.slice(ran.at[1] as number, ran.at[2] as number);
     expect(shrank, 'the shrink did not draw the floor screen').toContain(THE_HEADING);
     expect(shrank, 'the floor screen did not say what the window had become').toContain('70x20');
     // AND THE PAGE AFTER IT GREW BACK IS THE CONSOLE, WITH WHAT WAS SAID BEFORE THE SHRINK
-    // STILL ON IT. The line is one the ROLL is carrying — the opening says nothing like it — so a
+    // STILL ON IT. The line is one the ROLL is carrying, the opening says nothing like it, so a
     // console that had started over would be red here, and one that re-read the record could not
     // put it back.
     const back = theSettledScreen(ran.bytes, columns, rows, TYPED_AFTER);
@@ -473,7 +473,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     const started = held(sandbox);
     const columns = 100;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
-    // and is under every floor there has been since — so a number written down here would open
+    // and is under every floor there has been since, so a number written down here would open
     // this case on the very screen it exists to cross INTO.
     const rows = THE_FLOOR.rows;
     const ran = await inPty({
@@ -491,7 +491,7 @@ describe('the floor is crossed in both directions and the session survives it', 
           until: aFrameSince(PROMPT),
           what: 'was made big enough again',
         },
-        // AND A LINE IS TYPED AND ANSWERED FIRST — not only the key. What is being asked is
+        // AND A LINE IS TYPED AND ANSWERED FIRST: not only the key. What is being asked is
         // whether the session is still ANSWERING after the crossing, and the key that leaves is
         // handled a layer above the gate; a read goes through the whole of it. IT WAS THE WORD
         // THAT LEAVES, which did both at once and no longer exists: the way out is a keystroke,
@@ -518,7 +518,7 @@ describe('the floor is crossed in both directions and the session survives it', 
   }, 300_000);
 
   it('composes no opening under the floor, and hands the roll back whole', async () => {
-    // IN PROCESS, AND DETERMINISTIC — the half a pseudo-terminal cannot answer. *The console does
+    // IN PROCESS, AND DETERMINISTIC: the half a pseudo-terminal cannot answer. *The console does
     // not try to draw* is not *what it drew is different*: nothing is composed at all, and the
     // way to see that is to count the compositions.
     const said = 'a line the session said before the window shrank';
@@ -555,7 +555,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     terminal.resize(70, 20);
     await until(() => terminal.bytes().includes(THE_HEADING), 'drew the floor screen');
     // NOT ONE COMPOSITION FOR THE WINDOW UNDER THE FLOOR. The opening is the expensive half of
-    // a frame — the drawing of the name is chosen by composing every candidate — and a page that
+    // a frame (the drawing of the name is chosen by composing every candidate) and a page that
     // is not drawn may not pay for it.
     expect(composed.length, 'an opening was composed under the floor').toBe(beforeTheShrink);
     expect(composed.some(([columns]) => columns === 70)).toBe(false);
@@ -595,7 +595,7 @@ describe('the floor screen goes through the same renderer as every line of this 
       );
     }
     // AND WHAT DIFFERS IS THE PAINT. The frame the screen was drawn on carries no sequence that
-    // changes how a glyph looks when colour is off — and it carries some when it is on, which is
+    // changes how a glyph looks when colour is off, and it carries some when it is on, which is
     // what keeps the absence from being a page that was never painted anyway.
     const paintOn = (ran: Ran): string[] =>
       ran.bytes.slice(0, ran.at[0] as number).match(PAINTED) ?? [];
@@ -619,7 +619,7 @@ describe('the floor screen goes through the same renderer as every line of this 
 const RULES_ON_ROOM =
   /(?:<=|>=|<|>)\s*[\w.]*\b(?:columns|rows|within|under|room)\b|\b(?:columns|rows|within|under|room)\b[\w.]*\s*(?:<=|>=|<|>)/;
 
-/** What names the floor, in code — the constant and the question over it. */
+/** What names the floor, in code: the constant and the question over it. */
 const ASKS_THE_FLOOR = /theWindowServes|THE_FLOOR/;
 
 /**
@@ -655,8 +655,8 @@ describe('the floor is asked in one place, and every site that rules on room is 
 
   it('enumerates every site that decides whether there is room to draw', () => {
     // THE SITES ARE FOUND BY THE DISCRIMINANT and then named, with what each of them rules on.
-    // The list this delivery was handed had five — the floor, the console's last-resort guard,
-    // the area, the panel and the drawing of the name — and the scan finds more. The extras are
+    // The list this delivery was handed had five (the floor, the console's last-resort guard,
+    // the area, the panel and the drawing of the name) and the scan finds more. The extras are
     // the finding rather than noise: they are written down here so the next delivery inherits
     // them instead of rediscovering them.
     const ruling = sourceFiles(SRC)
@@ -688,8 +688,8 @@ describe('the floor is asked in one place, and every site that rules on room is 
       'repl/scrolling.ts',
       // AND THE SITE THE HANDED-DOWN LIST DID NOT HAVE, which is the finding this case exists
       // for: the renderer every verb is given decides whether a line FOLDS at all from the width
-      // the entry read (`isTty && columns > 0`). It is not on this surface and not in a frame —
-      // it is one door up — so a delivery reasoning about *what fits* from the repl alone would
+      // the entry read (`isTty && columns > 0`). It is not on this surface and not in a frame
+      // (it is one door up), so a delivery reasoning about *what fits* from the repl alone would
       // have missed the one place that rules on it for every line of the product.
       'wiring/color.ts',
     ]);

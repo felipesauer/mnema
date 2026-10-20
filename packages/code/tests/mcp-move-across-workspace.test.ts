@@ -4,7 +4,7 @@
  * A write already said which project it belonged to; the locate behind a MOVE did not.
  * So a birth routed to the second project of a workspace SUCCEEDED and the move of
  * that same task was refused `UNKNOWN_TASK`, naming the project the cascade had landed
- * the session on — a task that can be created and cannot be moved, with both answers
+ * the session on: a task that can be created and cannot be moved, with both answers
  * correct about the trees each of them looked at. The five tools keyed by an entity
  * (the three transitions, `next_actions`, `guard`) now locate over every tree of every
  * project the client announced, which is the same list the reads keyed by an id use.
@@ -15,7 +15,7 @@
  *      DISKS rather than the tool's answer: the move lands in the entity's project,
  *      and pins to THAT project's run;
  *   2. the two reads answer about an entity of another project;
- *   3. the sentence that names a tree names the project the entity was FOUND in — the
+ *   3. the sentence that names a tree names the project the entity was FOUND in: the
  *      failure that compiles, reads well, and sends the reader to the wrong repository;
  *   4. the sentence that names a search names every project it searched;
  *   5. two records holding one id is REFUSED, naming both, and nothing is written;
@@ -92,13 +92,13 @@ function openOn(...projects: readonly string[]): Session {
   });
 }
 
-/** A project's private tree — where an agent session's writes land by default. */
+/** A project's private tree, where an agent session's writes land by default. */
 function privateOf(project: string): string {
   return join(project, PROJECT_DIR, 'private');
 }
 
 /**
- * The tree a task, a decision or a skill lives in inside a project — the one that
+ * The tree a task, a decision or a skill lives in inside a project: the one that
  * TRAVELS, because their kind decides and every one of them is a declaration about the
  * project. This file is about which PROJECT a write reaches; the tree has to be right
  * for that question to be asked at all.
@@ -107,7 +107,7 @@ function publicOf(project: string): string {
   return join(project, PROJECT_DIR);
 }
 
-/** Every event in a chain, replayed off DISK — never the tool's own answer. */
+/** Every event in a chain, replayed off DISK, never the tool's own answer. */
 function eventsIn(root: string): readonly CatalogEvent[] {
   return orderedEvents({ root }, upcasters);
 }
@@ -120,12 +120,12 @@ function factsIn(root: string): string[] {
 }
 
 /**
- * Forges a COMPLETE task birth for a chosen id — the pair a real birth appends,
+ * Forges a COMPLETE task birth for a chosen id: the pair a real birth appends,
  * written straight to a tree.
  *
  * Complete on purpose: a projection holds only whole entities, so this is what makes
  * a second record's claim on the id visible to the FAST half of the locate. It is the
- * only way to produce the state the ambiguity refusal is about — an id is minted once,
+ * only way to produce the state the ambiguity refusal is about: an id is minted once,
  * so two records holding it takes a chain copied between repositories.
  */
 function forgeBirth(trees: ResolvedTrees, scope: Scope, id: string, title: string): void {
@@ -140,7 +140,7 @@ function forgeBirth(trees: ResolvedTrees, scope: Scope, id: string, title: strin
 }
 
 /**
- * Appends a task RECORD with no initial transition — the truncated birth a complete
+ * Appends a task RECORD with no initial transition: the truncated birth a complete
  * write never produces (the pair is appended atomically) but a chain fetched in part
  * can carry. Every replay finds it; no projection holds it, so the locate succeeds and
  * the state read comes back empty.
@@ -220,7 +220,7 @@ describe('a birth routed to another project can now be MOVED', () => {
 
   it('decision_transition lands there, and its ADR comes from THAT project’s series', () => {
     // The ADR is resolved from a projection AFTER the append, and it used to be read
-    // from the session's own tree of the located scope — a different chain. Over one
+    // from the session's own tree of the located scope: a different chain. Over one
     // project the two are the same tree and the bug is invisible; over two, the answer
     // is the raw id (or a stranger's label).
     const here = makeProject('here');
@@ -281,7 +281,7 @@ describe('a birth routed to another project can now be MOVED', () => {
 
   it('pins the move to the run of the DESTINATION, never the session’s own', () => {
     // A fact citing a run in another project leaves that project's clone unable to
-    // resolve its own reference while the chain still verifies `ok` — which is the one
+    // resolve its own reference while the chain still verifies `ok`, which is the one
     // kind of defect the proof does not catch. The door opens the run in the project
     // the write lands in, and the move goes through the same door.
     const here = makeProject('here');
@@ -294,7 +294,7 @@ describe('a birth routed to another project can now be MOVED', () => {
 
     const events = eventsIn(publicOf(there));
     const runs = projectRuns(events);
-    // One run in that project, and every fact of it — the birth AND the move — cites
+    // One run in that project, and every fact of it, the birth AND the move, cites
     // a run that same project holds.
     expect([...runs.keys()]).toHaveLength(1);
     const cited = new Set(
@@ -307,7 +307,7 @@ describe('a birth routed to another project can now be MOVED', () => {
     closeSession(session);
   });
 
-  it('and a move still takes no `project` argument — the id decides', () => {
+  it('and a move still takes no `project` argument: the id decides', () => {
     // The asymmetry is the design: a birth is told where it belongs because there is
     // no id yet to ask, and a move asks the id. The schema is where that is enforced,
     // so this asserts the shape the tools accept rather than a message.
@@ -319,7 +319,7 @@ describe('a birth routed to another project can now be MOVED', () => {
 
     // @ts-expect-error a transition has no `project` in its input type
     const moved = runTaskTransition(session, { id: created.id, action: 'submit', project: here });
-    // It landed by the ENTITY anyway — the extra key is not a destination.
+    // It landed by the ENTITY anyway: the extra key is not a destination.
     expect(moved.ok).toBe(true);
     expect(factsIn(publicOf(here))).toEqual([]);
     closeSession(session);
@@ -369,7 +369,7 @@ describe('what the sentences may claim once the walk is wider', () => {
   it('names the project the entity was FOUND in, not the session’s', () => {
     // The failure that passes a careless review: it compiles, the text reads
     // perfectly, and it sends the reader to the wrong repository. A test that only
-    // checked "the sentence is there" would pass with the bug — so this asserts the
+    // checked "the sentence is there" would pass with the bug, so this asserts the
     // project by name, and asserts the session's own project is ABSENT.
     const here = makeProject('here');
     const there = makeProject('there');
@@ -488,13 +488,13 @@ describe('two records holding one id is refused, not guessed', () => {
     expect(refused.message).toContain(`"${here}"`);
     expect(refused.message).toContain(`"${there}"`);
     expect(refused.message).toContain('is held by 2 records');
-    // Nothing was appended anywhere — not even a run.
+    // Nothing was appended anywhere, not even a run.
     expect([privateOf(here), privateOf(there)].map((root) => factsIn(root).length)).toEqual(before);
     expect(session.runs.size).toBe(0);
     closeSession(session);
   });
 
-  it('the reads refuse it too — one locate, one answer', () => {
+  it('the reads refuse it too: one locate, one answer', () => {
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -515,7 +515,7 @@ describe('two records holding one id is refused, not guessed', () => {
     // Every project resolves the SAME global tree, so a walk that asked each project
     // for its own three trees would find one birth N times and call it a copied chain.
     // The tree list is deduplicated by chain root, and the global tree belongs to the
-    // session's own record — which is why this comes back found, at any project count.
+    // session's own record, which is why this comes back found, at any project count.
     const first = makeProject('first');
     const second = makeProject('second');
     const third = makeProject('third');
@@ -536,7 +536,7 @@ describe('a workspace of one project is covered exactly as before', () => {
   it('the tree list is the session’s own record, and nothing else', () => {
     // The non-regression proven by the LIST, not by the intention: the coverage is one
     // function, and over one project it must produce the three trees the walk covered
-    // before it spanned anything — same trees, same order, and no write door on any of
+    // before it spanned anything, same trees, same order, and no write door on any of
     // them (they are reached through the session).
     const project = makeProject('only');
     const session = openOn(project);
@@ -588,7 +588,7 @@ describe('what the wider walk is not sensitive to', () => {
   });
 
   it('the ORDER the projects were announced in does not change which home is found', () => {
-    // The order reaches an answer in exactly one place — the order the projects are
+    // The order reaches an answer in exactly one place: the order the projects are
     // NAMED in when several hold the id. Everything else is decided by how many
     // records answered, so the same task is found in the same tree either way.
     const first = makeProject('first');
@@ -635,7 +635,7 @@ describe('the CLI is the witness', () => {
     const actions = JSON.parse(inThere.out.join('\n')) as { action: string }[];
     expect(actions.map((entry) => entry.action).sort()).toEqual(['cancel', 'start']);
 
-    // And in `here` it knows nothing of the task — the project boundary is real for a
+    // And in `here` it knows nothing of the task: the project boundary is real for a
     // command line, which is exactly why the session had to cross it deliberately.
     process.chdir(here);
     const inHere = capture();

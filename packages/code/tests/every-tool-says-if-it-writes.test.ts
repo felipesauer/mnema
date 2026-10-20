@@ -1,5 +1,5 @@
 /**
- * Every TOOL says whether it can change the record — and the record says whether it told
+ * Every TOOL says whether it can change the record, and the record says whether it told
  * the truth.
  *
  * The command line has answered this question per verb for as long as `mnema repl` has
@@ -17,8 +17,8 @@
  * THE GUARD HAS THE SAME TWO HALVES ITS SIBLING HAS, and the second is the one with teeth.
  *
  *   1. Everything the server SERVES is classified. The registrar already forces a
- *      declaration out of anything registered through it — there is no name-taking
- *      function in scope inside `registerTools` — so what is left to check is that the
+ *      declaration out of anything registered through it (there is no name-taking
+ *      function in scope inside `registerTools`), so what is left to check is that the
  *      registrar is ALL there is: a tool hung on the server by any other path would carry
  *      no declaration, and a caller reading the declarations would never learn it exists.
  *      Checked in both directions against `tools/list`, which is what the protocol
@@ -26,16 +26,16 @@
  *   2. A tool that claims to read does not write, MEASURED IN THE CHAIN. Every tool is
  *      called for real, over one connection to a real project in a sandbox, and what is
  *      counted around each call is the number of events in every tail of every tree and
- *      the key material on the machine — the same instrument the verbs are measured with
+ *      the key material on the machine: the same instrument the verbs are measured with
  *      (`support/the-record-held.ts`). A read that appends is accused by the record.
  *
  * AND WHAT THE PROTOCOL TELLS A CLIENT IS HELD TO THE SAME CALLS. The server derives the
- * four hints a client reads — `readOnlyHint`, `destructiveHint`, `idempotentHint`,
- * `openWorldHint` — from these declarations (`hintsOf` in `mcp/server.ts`), and each hint
+ * four hints a client reads (`readOnlyHint`, `destructiveHint`, `idempotentHint`,
+ * `openWorldHint`) from these declarations (`hintsOf` in `mcp/server.ts`), and each hint
  * is a claim about the ENVIRONMENT, which is wider than the record. So the same calls are
  * measured three more ways, and every call is made a second time with the same arguments:
  * every path of the sandbox is read before and after (a read may create, change or remove
- * nothing — not a file, not a directory), every byte a file held before a call must still
+ * nothing, not a file, not a directory), every byte a file held before a call must still
  * be where it was after it (nothing a tool does is destructive), a read's repeat may change
  * nothing either, and every reach for the network is counted. A hint the calls contradict
  * is named, tool by tool.
@@ -45,7 +45,7 @@
  * writes here (`skills`, `rules_before_an_edit`) record at most once PER RUN by design.
  * Exercising each tool in a connection of its own would measure twelve first calls and
  * never the arrangement an agent actually gets. So the calls share a session, in an order
- * where each one is handed values an earlier one MINTED — never a value written here.
+ * where each one is handed values an earlier one MINTED, never a value written here.
  *
  * AND THE EXERCISE IS CHECKED FOR HAVING HAPPENED. A refused call writes nothing, so a
  * fixture that quietly stopped producing a usable id would leave every read passing for
@@ -63,13 +63,13 @@
  *     verbs' guard repeated that number, while twenty-five were registered.
  *   - EACH TOOL IS CALLED ONCE, WITH ONE SHAPE OF ARGUMENT, and a tool that wrote only
  *     on a combination this file does not pass would go unaccused. It is this surface's
- *     version of the debt the command line carries — there, the declaration is per
+ *     version of the debt the command line carries: there, the declaration is per
  *     TOP-LEVEL verb, so a read group with a writing subcommand would be declared on the
  *     unsafe side. The MCP does not inherit that: a tool is one act with one input
  *     object, so there is no second name for a caller to gate on and no branch outside
  *     the declaration that covers it. What is left is narrower and is a limit of the
  *     MEASUREMENT rather than of the classification, and the calls below are chosen
- *     accordingly — the argument each tool is given is the one that RECORDS, the way the
+ *     accordingly: the argument each tool is given is the one that RECORDS, the way the
  *     verbs' guard runs `switch off` rather than the listing. `skills` is the case that
  *     shows it: asked by `id` it serves a body and records the consultation, asked for
  *     everything adopted it may serve names alone and record nothing, and the
@@ -79,7 +79,7 @@
  *     (`skills` and `rules_before_an_edit` record once per run) and would add again on a new
  *     connection, which is why neither is called idempotent.
  *   - THE NETWORK IS WATCHED IN THIS PROCESS: `fetch` and every TCP `connect`. A tool that
- *     reached it through a child process would not be seen here — and no module of the
+ *     reached it through a child process would not be seen here, and no module of the
  *     product starts one.
  *   - THE SANDBOX HOLDS NO TORN FRAGMENT, so the one byte a write may take back (the tail of
  *     a crashed append, which is not an event) is not what the destructive measurement sees.
@@ -129,7 +129,7 @@ afterEach(() => {
  * The file on disk is not decoration: an address whose path the working tree no longer
  * holds has stopped governing (`governed-tree.ts`), so a rule pointed at a directory that
  * does not exist would leave `rules_before_an_edit` with nothing to say and nothing to
- * record — a write measured as recording nothing, for a reason that has nothing to do
+ * record, a write measured as recording nothing, for a reason that has nothing to do
  * with the tool.
  */
 function makeProject(name: string): string {
@@ -218,7 +218,7 @@ function asItStands(dir: string): Map<string, Standing> {
 
 /**
  * What a call did to the sandbox: every path it touched, and the paths whose earlier bytes
- * it did not leave where they were — removed, or no longer the start of what is there.
+ * it did not leave where they were (removed, or no longer the start of what is there).
  *
  * Growing a file is not destroying it: an append leaves every earlier byte in place, which is
  * the whole of what `destructiveHint: false` claims.
@@ -271,7 +271,7 @@ interface Hinted {
  * Only the side that PROMISES is accused, as with the declarations: `readOnlyHint: false`,
  * `destructiveHint: true`, `idempotentHint: false` and `openWorldHint: true` are the
  * protocol's defaults and promise nothing, so no call can belie them. A hint that is not
- * sent at all is accused too — the defaults are what a client then reads, and they are
+ * sent at all is accused too: the defaults are what a client then reads, and they are
  * false of every tool here.
  */
 function belied(rows: readonly Hinted[]): string[] {
@@ -302,7 +302,7 @@ function belied(rows: readonly Hinted[]): string[] {
   return found.sort();
 }
 
-/** What a call that touched nothing measures — where the synthetic rows below start. */
+/** What a call that touched nothing measures, where the synthetic rows below start. */
 const QUIET: Omit<Exercised, 'tool' | 'effect'> = {
   appended: 0,
   touchedKeys: false,
@@ -312,7 +312,7 @@ const QUIET: Omit<Exercised, 'tool' | 'effect'> = {
 };
 
 /**
- * Watches this process's two ways out to the network — `fetch`, and every TCP `connect` —
+ * Watches this process's two ways out to the network (`fetch`, and every TCP `connect`)
  * refusing each attempt and counting it, so a tool that reached out is named rather than let
  * try. `vi.restoreAllMocks` in `afterEach` takes the watch down.
  */
@@ -348,7 +348,7 @@ function recordedNothing(exercised: readonly Exercised[]): string[] {
     .sort();
 }
 
-/** What a declaration table tolerates, and what it does not — checked both ways. */
+/** What a declaration table tolerates, and what it does not: checked both ways. */
 function reconcile(
   found: readonly string[],
   declarations: Readonly<Record<string, string>>,
@@ -364,9 +364,9 @@ function reconcile(
  * The WRITES whose call below records nothing, each with the reason.
  *
  * Empty, and that is a result rather than an omission: every tool that declares `mutates`
- * appends on the call this file makes. It is reconciled in BOTH directions anyway — a
+ * appends on the call this file makes. It is reconciled in BOTH directions anyway (a
  * write that stops recording has to arrive here with its reason, and one that starts has
- * to leave — because an empty table nobody checks is how the write side goes unmeasured.
+ * to leave), because an empty table nobody checks is how the write side goes unmeasured.
  */
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {};
 
@@ -386,7 +386,7 @@ describe('every tool says if it writes', () => {
     // a tool a caller reading these would never see; a declaration for a tool nothing
     // serves is a classification of something that does not exist.
     expect(served.slice().sort()).toEqual(tools.map((one) => one.act).sort());
-    // The number, said out loud, because it is the non-vacuity of the sweep — and
+    // The number, said out loud, because it is the non-vacuity of the sweep, and
     // because prose in this repository has twice put it at twenty-four.
     expect(served).toHaveLength(27);
     expect(tools).toHaveLength(27);
@@ -414,7 +414,7 @@ describe('every tool says if it writes', () => {
       // THE TWO THAT ANSWER A READING'S QUESTION AND RECORD WHILE DOING IT. `skills`
       // serves a pattern's body and records the consultation; `rules_before_an_edit`
       // hands over the rules addressed at a path and appends the asking and the service.
-      // Both are on this side because the rule is not "touches disk" — it is "can reach
+      // Both are on this side because the rule is not "touches disk": it is "can reach
       // the record", and a reading that mints a fact does.
       'skills',
       'rules_before_an_edit',
@@ -479,7 +479,7 @@ describe('every tool says if it writes', () => {
     /**
      * Calls one tool and measures the record around the call.
      *
-     * The result is handed back so the next call can be given what this one MINTED —
+     * The result is handed back so the next call can be given what this one MINTED:
      * an id from a birth, a name the product chose. Nothing below types an id.
      */
     const call = async (tool: string, args: Record<string, unknown> = {}): Promise<string> => {
@@ -516,7 +516,7 @@ describe('every tool says if it writes', () => {
     await call('retract_note', { id: observation, reason: 'the rollback was already there' });
     await call('record_handoff', { task, from: 'agent-alpha', to: 'agent-beta' });
     // The edge that ADDRESSES a rule at a path, which is what gives the hook channel
-    // something to say — and therefore something to record.
+    // something to say, and therefore something to record.
     await call('link_knowledge', { subject: decision, target: 'src', rel: 'governs' });
     await call('task_transition', { id: task, action: 'submit' });
     await call('skill_transition', { id: skill, action: 'review', note: 'it reads well' });
@@ -552,8 +552,8 @@ describe('every tool says if it writes', () => {
     await call('audit_antipatterns');
 
     // ---- the same calls, again, with the same arguments ----
-    // Whatever each answers now — a transition asked twice is refused, and that is an
-    // answer — what is measured is what the repeat did to the sandbox.
+    // Whatever each answers now (a transition asked twice is refused, and that is an
+    // answer) what is measured is what the repeat did to the sandbox.
     const repeated = new Map<string, Exercised>();
     for (const { tool, args } of script) repeated.set(tool, (await measure(tool, args)).exercised);
 
@@ -576,8 +576,8 @@ describe('every tool says if it writes', () => {
       again: repeated.get(first.tool) as Exercised,
     }));
     expect(belied(rows)).toEqual([]);
-    // The instrument's own teeth, on the same data. It saw the writes change the sandbox —
-    // so a walk that stopped reading files cannot leave the line above passing over nothing —
+    // The instrument's own teeth, on the same data. It saw the writes change the sandbox,
+    // so a walk that stopped reading files cannot leave the line above passing over nothing,
     // and it saw a REPEAT change it, so the repeats were really made and really measured.
     expect(measured.filter((one) => one.changed.length > 0).map((one) => one.tool)).toEqual(
       measured.filter((one) => one.appended > 0).map((one) => one.tool),
@@ -620,7 +620,7 @@ describe('every tool says if it writes', () => {
     });
   }, 120_000);
 
-  it('accuses a read that writes, and never a write that does not — on input of its own', () => {
+  it('accuses a read that writes, and never a write that does not: on input of its own', () => {
     // The mechanism's non-vacuity. With the surface honest, the case above says only
     // "nothing is accused": it exercises neither the accusation nor its limit. These rows
     // are synthetic and never enter the server's tables.
@@ -651,7 +651,7 @@ describe('every tool says if it writes', () => {
     });
   });
 
-  it('names every hint a call belies, and never one that promises nothing — on rows of its own', () => {
+  it('names every hint a call belies, and never one that promises nothing: on rows of its own', () => {
     // The hints' half of the case above: with the server honest, the measurement says only
     // "nothing is belied", which exercises neither the accusation nor its limit.
     const read: ToolAnnotations = {
@@ -770,18 +770,18 @@ describe('every tool says if it writes', () => {
 describe('the two surfaces cannot classify the same act differently', () => {
   it('lets exactly one module say what the two words are', () => {
     // The structural half of "one rule". Both surfaces DECLARE, and a surface that wrote
-    // one of the two words for itself would be a second reading of the classification —
+    // one of the two words for itself would be a second reading of the classification:
     // one that could come to mean "touches disk" here and "appends an event" there, and
     // that reads as agreement right up until it is not. So outside the module that owns
     // them, neither word may be WRITTEN: it may only be compared against.
     //
-    // Comparing is what a consumer does and it cannot invent a meaning — `repl/gate.ts`
+    // Comparing is what a consumer does and it cannot invent a meaning: `repl/gate.ts`
     // asks whether a verb declared `mutates` to decide whether to refuse a typed line,
     // and that is the classification being USED. Producing one is what only the owner
     // may do.
     //
     // Scoped to `packages/code/src`, which is where both surfaces live and where the rule
-    // is applied; `sourceFiles` leaves `.test.ts` out, and that limit is real — a test's
+    // is applied; `sourceFiles` leaves `.test.ts` out, and that limit is real: a test's
     // synthetic row is a fixture, not a classification, and the case above builds five of
     // them on purpose.
     const owner = relative(REPO, join(REPO, 'packages', 'code', 'src', 'record-effect.ts'));
@@ -805,8 +805,8 @@ describe('the two surfaces cannot classify the same act differently', () => {
     }
     // Nobody but the owner writes one.
     expect(written).toEqual([]);
-    // NON-VACUITY, both ways. The owner spells them SEVEN times — twice in the closed
-    // type, once in each constructor and three in the group's — so a pattern that stopped matching could not
+    // NON-VACUITY, both ways. The owner spells them SEVEN times (twice in the closed
+    // type, once in each constructor and three in the group's), so a pattern that stopped matching could not
     // leave the line above free; and the sweep reaches a file that is not the owner, so a
     // walk that found nothing at all could not either.
     // Seven since `groupOf`, which says which of the two a group is from its members.
@@ -825,7 +825,7 @@ describe('the two surfaces cannot classify the same act differently', () => {
       expect(source).toMatch(/mutatesTheRecord/);
       expect(source).toMatch(/readsTheRecord/);
     }
-    // And nothing else in the package DEFINES either word — a second definition is what
+    // And nothing else in the package DEFINES either word: a second definition is what
     // an import cannot rule out.
     const defines = /(?:export )?function (?:mutatesTheRecord|readsTheRecord)\b/;
     const definers = sourceFiles(join(REPO, 'packages', 'code', 'src'))

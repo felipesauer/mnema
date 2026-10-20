@@ -5,30 +5,30 @@
  * The fourth and last family of this class. A pattern's NAME was closed in
  * `served-patterns.ts`, a project's DIRECTORY in `verify --workspace`, the id in a
  * REFUSAL in `wiring/no-such-record.ts`. What was left is the line a verb prints when it
- * FOUND what it was asked for — and unlike the other three, this family has no sentence
+ * FOUND what it was asked for, and unlike the other three, this family has no sentence
  * in common. So the discriminant cannot be a phrase: it is the ORIGIN of each value, and
  * the one question `mnema` asks of it is CAN THIS HOLD A NEWLINE.
  *
  * THE CLASSIFICATION IS THE DELIVERABLE, AND IT IS TOTAL. {@link sitesInSource} walks
  * every `io.out`/`io.err` in `src/wiring` and pulls out every interpolated template
- * literal inside one — the line this wiring WORDS itself. {@link CLASSIFIED} gives each
+ * literal inside one: the line this wiring WORDS itself. {@link CLASSIFIED} gives each
  * one a verdict, and the two are reconciled in both directions: a line added next year
  * is unclassified and RED, and a verdict whose site went away is a fossil and RED. The
- * verdict is checked against the source rather than trusted — `collapsed` means the
- * template really is tagged, `minted` means it really is not — so a value that quietly
+ * verdict is checked against the source rather than trusted (`collapsed` means the
+ * template really is tagged, `minted` means it really is not), so a value that quietly
  * stops being the product's own cannot keep an old verdict.
  *
  * WHAT THE HANDOFF'S OWN GREP MISSED, AND WHY IT MATTERS TWICE. The debt named 28 sites,
  * found with `io.out(` and a template on ONE line of `wiring/*.ts`. The discriminant
  * finds 60: the other 32 live inside a multi-line call, inside `render(fact(…))`, or are
- * the second template of a concatenation — the same shape of miss the refusal family had
+ * the second template of a concatenation, the same shape of miss the refusal family had
  * (six declared, eight real), from the same cause, which is a list of ADDRESSES standing
  * in for a rule.
  *
  * AND THE SITE THE HANDOFF NAMED AS THE WORST IS NOT FORGEABLE. `next-actions` prints
  * `Task <id> — 2 legal move(s):` with one line per move under it, which is the list shape
  * `oneLine`'s doc names as the one a reader mis-attributes. But that line is reached only
- * when the id FOUND a task, and an id carrying a newline finds none — it is refused one
+ * when the id FOUND a task, and an id carrying a newline finds none: it is refused one
  * branch earlier, by the sentence the previous slice closed. The forgeable list header is
  * `timeline`'s, and it takes TWO steps: `observe <about>` does not validate its
  * positional, so a forged value enters the record through one verb and comes back out as
@@ -39,8 +39,8 @@
  *       start → doing — 1 event(s):
  *       2026-08-17T15:06:09.760Z  observation.recorded  [about]  mnid:755798b3
  *
- * — where the second line is indented exactly as the item under it is, and carries the
- * count. That is why {@link theListGainsNoItem} counts ITEMS and not lines.
+ * (where the second line is indented exactly as the item under it is, and carries the
+ * count). That is why {@link theListGainsNoItem} counts ITEMS and not lines.
  *
  * The sites are closed anyway where the value merely CANNOT break today rather than
  * cannot break in principle, for the reason `no-such-record.ts` gives: the rule is about
@@ -56,14 +56,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
-/** `packages/code/src/wiring` — the layer that words a verb's own lines. */
+/** `packages/code/src/wiring`: the layer that words a verb's own lines. */
 const WIRING = fileURLToPath(new URL('../src/wiring', import.meta.url));
-/** `packages/code/src` — for the reconciliation of what is deliberately NOT here. */
+/** `packages/code/src`: for the reconciliation of what is deliberately NOT here. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
 /** A newline, built rather than typed, so no literal in this file spans two lines. */
 const LF = String.fromCharCode(10);
-/** The tag that collapses every value of a template — `wiring/on-one-line.ts`. */
+/** The tag that collapses every value of a template: `wiring/on-one-line.ts`. */
 const TAG = 'onOneLine';
 /** The module that DEFINES the tag, and so is the one file that does not call it. */
 const WORDING = 'on-one-line.ts';
@@ -76,11 +76,11 @@ const WORDING = 'on-one-line.ts';
 interface Site {
   /** The file, relative to `src/wiring`. */
   readonly file: string;
-  /** The template with every interpolation written `{}` — what the line SAYS. */
+  /** The template with every interpolation written `{}`: what the line SAYS. */
   readonly shape: string;
   /** Whether the template is tagged with {@link TAG}. */
   readonly tagged: boolean;
-  /** `<file> «<shape>» #<n>` — what a verdict claims to be about. */
+  /** `<file> «<shape>» #<n>`: what a verdict claims to be about. */
   readonly key: string;
 }
 
@@ -91,7 +91,7 @@ interface Site {
  * missed is missed by any line-wise pattern: a call spans several lines, a template sits
  * three calls deep inside `render(fact(…))`, and two templates are concatenated into one
  * argument. So the walk tracks the bracket depth from the `(` to its match, and inside
- * that span it tracks the quoting — a `'` string, a `"` string, a template, and a
+ * that span it tracks the quoting: a `'` string, a `"` string, a template, and a
  * template's own `${…}`, which may hold another template.
  *
  * The SHAPE is the key rather than the line number: a line number moves whenever anything
@@ -170,7 +170,7 @@ function pastQuoted(text: string, at: number): number {
  * and whether the identifier immediately before its backtick is the tag.
  *
  * A nested template inside an interpolation is skipped rather than reported. It is a
- * value of the outer one — `${x ? ` — ${y}` : ''}` is ONE interpolation — and reporting
+ * value of the outer one: `${x ? ` — ${y}` : ''}` is ONE interpolation, and reporting
  * it as a site of its own would ask a verdict about half of a value.
  */
 function readTemplate(
@@ -228,22 +228,22 @@ const FOUND = sitesInSource();
 // ---------------------------------------------------------------------------
 
 /**
- * What the values on one line ARE — the answer to the one question this family asks.
+ * What the values on one line ARE: the answer to the one question this family asks.
  *
- *   - `collapsed` — at least one value came from the argv or out of the record, so every
+ *   - `collapsed`: at least one value came from the argv or out of the record, so every
  *     value on the line goes through the tag. The template IS tagged, and this file
  *     checks that rather than believing it.
- *   - `minted` — every value is one this product wrote: a uuid, an alias
+ *   - `minted`: every value is one this product wrote: a uuid, an alias
  *     (`<prefix>-<hex>`), an `ADR-<n>`, a key fingerprint, an anchor (`mnid:` and 64 hex,
  *     which `resolveAnchorPrefix` enforces), a content hash, a count, a word of a closed
  *     transition table, or a sentence this surface composed out of those. None can hold a
- *     newline, so the line needs no collapse — and it must NOT be tagged, so that a value
+ *     newline, so the line needs no collapse, and it must NOT be tagged, so that a value
  *     which stops being the product's own cannot keep this verdict quietly.
  *
  * THERE USED TO BE A THIRD, `elsewhere`, and it held the two lines of `wiring/verify.ts`
  * on the ground that the values on them are worded by `@mnema/chain`. That was half
  * right and the wrong half was the operative one: the DETAIL is the chain's, and the
- * rule for it belongs down there — but the TAIL on the same line is a directory name
+ * rule for it belongs down there, but the TAIL on the same line is a directory name
  * this wiring interpolates itself, and a tail directory holding a newline broke the
  * issue line in two whatever the chain did. A verdict that says "somebody else's
  * problem" about a line THIS file lays out is a verdict that cannot be true. Both are
@@ -255,7 +255,7 @@ type Verdict = 'collapsed' | 'minted';
 /**
  * Every line this wiring words, and where its values come from.
  *
- * The KEYS are reconciled against the source in both directions; the REASONS cannot be —
+ * The KEYS are reconciled against the source in both directions; the REASONS cannot be:
  * no walk derives "an anchor is `mnid:` and 64 hex" from a template. So the table carries
  * only what a reader knows, and the part that rots (which lines exist, and whether each
  * is tagged) is the part that is derived.
@@ -887,7 +887,7 @@ const ORDINARY = '0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55';
  * The value that forges a line, and its second half is an ITEM rather than a sentence.
  *
  * A refusal forges a refusal; a list header forges a HEADING WITH ITEMS UNDER IT, so the
- * half that matters here is one that reads as a row of the list it lands in — two spaces
+ * half that matters here is one that reads as a row of the list it lands in: two spaces
  * and a legal-looking move. That is what {@link theListGainsNoItem} counts.
  */
 const FORGED = `${ORDINARY}${LF}  start → doing`;
@@ -897,7 +897,7 @@ const FORGED = `${ORDINARY}${LF}  start → doing`;
  *
  * One sandbox serves the whole file, and the probes WRITE: `observe` and `link` record a
  * fact about whatever they were handed. Reusing one value made the later probes read back
- * what the earlier ones wrote — `timeline` answered with a history instead of the empty
+ * what the earlier ones wrote: `timeline` answered with a history instead of the empty
  * one its probe was written for, and the case failed for a reason that had nothing to do
  * with the product. A probe that consumes the fixture of the probe after it is a fixture
  * problem, not a finding, so each gets an id of its own.
@@ -940,7 +940,7 @@ describe('every line this wiring words is classified', () => {
 
   it('walks enough to mean something', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
-    // are equal. The scale is stated, and so is the SHARE — the handoff's own grep found
+    // are equal. The scale is stated, and so is the SHARE: the handoff's own grep found
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
@@ -1007,14 +1007,14 @@ describe('every line this wiring words is classified', () => {
 describe('the rule has one door in this layer', () => {
   it('nothing in wiring collapses a value on its own', () => {
     // `oneLine` applied by hand is a rule a call site can forget one FIELD of. The tag
-    // takes the whole template, so there is nothing to forget — and this is what keeps a
+    // takes the whole template, so there is nothing to forget, and this is what keeps a
     // second way of doing it from growing back beside the first.
     const offenders = sourceFiles(WIRING)
       .filter((file) => relative(WIRING, file) !== WORDING)
       .filter((file) => /\boneLine\b/.test(readFileSync(file, 'utf-8')))
       .map((file) => relative(WIRING, file));
     // `verify.ts` hands `oneLine` in as a parameter (`Named`), which is a shape with an
-    // open question over it — see WHAT_IS_NOT_CLOSED. It is named rather than silent, so
+    // open question over it: see WHAT_IS_NOT_CLOSED. It is named rather than silent, so
     // the day it changes this goes red and the exception is deleted with it.
     expect(offenders).toEqual(['no-such-record.ts', 'verify.ts']);
   });
@@ -1043,7 +1043,7 @@ const VALUE = '<value>';
  *
  * Seven are reachable this way. The rest are named in {@link UNREACHABLE} with what stands
  * between them and a command line, and the two lists are reconciled against the
- * classification — so a site cannot be quietly dropped from both. (This said "seven of the
+ * classification, so a site cannot be quietly dropped from both. (This said "seven of the
  * twenty-six" and "the other nineteen", and the case below "all thirty-three": sites were
  * added and the prose stayed, so the counts are the assertions' alone now.)
  */
@@ -1082,16 +1082,16 @@ const PROBES: readonly Probe[] = [
 
 describe('a value from outside cannot forge a second line', () => {
   for (const [nth, probe] of PROBES.entries()) {
-    it(`keeps it to one line — ${probe.keys.join(' + ')}`, async () => {
+    it(`keeps it to one line: ${probe.keys.join(' + ')}`, async () => {
       const value = forged(nth);
       const said = await invoke(...probe.argv.map((word) => (word === VALUE ? value : word)));
       const whole = said.out.join(LF);
       // THAT THIS PROBE REACHED ITS SITE. Every line of this surface is one line, so a
-      // count alone passes for a probe that never got there — which is exactly what a
+      // count alone passes for a probe that never got there, which is exactly what a
       // refusal one branch earlier looks like.
       expect(whole, probe.keys[0]).toContain(probe.says.slice(0, probe.says.indexOf(VALUE)));
       // The forged half is INSIDE the sentence rather than under it. Asserted on the
-      // line that carries the id, so a run where the break survived fails HERE — that
+      // line that carries the id, so a run where the break survived fails HERE: that
       // line would end at the id and the words after it would be a line of their own.
       const [head] = value.split(LF);
       const forgedLine = whole.split(LF).find((line) => line.includes(head as string));
@@ -1276,7 +1276,7 @@ describe('theListGainsNoItem', () => {
     await invoke('observe', FORGED, '--topic', 'a topic', '--text', 'an observation');
     const said = await invoke('timeline', FORGED);
     const lines = said.out.filter((line) => line.length > 0);
-    // The COUNT the header states, and the number of rows under it, have to agree — which
+    // The COUNT the header states, and the number of rows under it, have to agree, which
     // is the whole promise of the form. Counting lines alone would pass a run where the
     // forged half became a header of its own.
     const stated = /— (\d+) event\(s\):/.exec(lines[0] ?? '')?.[1];
@@ -1295,14 +1295,14 @@ describe('WHAT_IS_NOT_CLOSED', () => {
   it('no longer names the twin reading, because the twin was closed', () => {
     // THIS CASE USED TO BE THE DEBT AND IT IS THE CORRECTION OF ITS OWN SHAPE. It said
     // `status` printed a run's goal raw and that it *cannot* collapse it "without a
-    // static import that would put the context package's edge on the floor of every invocation"
-    // — which was wrong twice. `status.ts` already imports the rule of the line, and it
+    // static import that would put the context package's edge on the floor of every invocation",
+    // which was wrong twice. `status.ts` already imports the rule of the line, and it
     // is loaded inside the action, so the floor was never the question; and the fix was
     // never `status`'s to make. The collapse belongs in `lastRunPhrase`, where the phrase
     // is WORDED, so both readings come through it.
     //
     // AND THE RECONCILIATION COULD NOT HAVE GONE RED. It asserted `status.ts` does not
-    // hold the TAG — and the right fix does not put the tag there, so the day the debt
+    // hold the TAG, and the right fix does not put the tag there, so the day the debt
     // was paid this case would have stayed green with a dead reason under it. What
     // replaces it points at the file that owns the question now, and that file's
     // classification is what goes red if the collapse leaves.
@@ -1318,7 +1318,7 @@ describe('WHAT_IS_NOT_CLOSED', () => {
     // THIS CASE USED TO BE THE DEBT, and it is the second one in this file to be paid
     // rather than restated. It said `verify`'s issue line prints `@mnema/chain`'s detail
     // verbatim and that `oneLine` does not reach that package. The rule reaches it now:
-    // it MOVED there — `@mnema/chain/one-line`, under `core` and under this surface —
+    // it MOVED there (`@mnema/chain/one-line`, under `core` and under this surface)
     // and the detail goes through it where it is written.
     //
     // What replaces the debt is the assertion that the door is where it says it is, and

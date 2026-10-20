@@ -4,8 +4,8 @@
  * rule that refused it; where a rule asks for a person, the same command answers `ask`, and the
  * agent stops on a confirmation and creates nothing.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema before-a-write --host vscode`
- * answers for each kind of rule — is `a-rule-that-refuses-a-write.test.ts` and
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half, what `mnema before-a-write --host vscode`
+ * answers for each kind of rule, is `a-rule-that-refuses-a-write.test.ts` and
  * `a-host-that-runs-commands-asks-for-a-person.test.ts`. What the editor does with the answer is the
  * editor's, and it is read here with the real editor: the plugin is loaded from its own directory, the
  * model is a stand-in extension, and the file that does not appear and what the model is handed are
@@ -42,7 +42,7 @@ describe('an editor holds or refuses the write', () => {
       'channel.asked': 0,
     });
     // VS Code ran the plugin's own file and not Codex's: the gate it ran is VS Code's, and no
-    // command it started named Codex — the opening's included.
+    // command it started named Codex (the opening's included).
     const calls = session.calls();
     expect(calls).toContain('before-a-write --host vscode --agent-key vscode');
     expect(calls.filter((call) => call.includes('--host codex'))).toEqual([]);

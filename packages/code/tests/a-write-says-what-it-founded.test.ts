@@ -1,29 +1,29 @@
 /**
- * A write that founds an identity where others already were says so — once, where somebody reads
+ * A write that founds an identity where others already were says so, once, where somebody reads
  * it, on every path that can found.
  *
  * WHAT WAS WRONG. The founding was silent. A key's first write into a tree that already held other
  * identities founded one of its own, and the answer was "Captured memory … Landed in the public
  * tree" and nothing else; `status` said nothing, `verify` was clean, and only `accountability`
  * counted "2 author(s)". After that write the two authors of that tree cannot be joined, so the
- * only moment to say it is the moment it happens — and what it can still save is the person's
+ * only moment to say it is the moment it happens, and what it can still save is the person's
  * other trees.
  *
  * WHAT IS ASSERTED, each beside the silence that must stay a silence:
  *
- *   - the command line says it on stderr after the answer — and says nothing for the first founding
+ *   - the command line says it on stderr after the answer, and says nothing for the first founding
  *     of a tree, nothing for the key's next write, and nothing for a machine that joined by the
  *     handshake the page describes, which adopts and does not found;
  *   - a tree kept on one machine gets the words for that: the identity beside it was written from
  *     here too;
  *   - what the sentence tells the person to do works when it is done to the letter, between two
- *     projects with a remote each — and the enrollment the OLD words led to, in the project that
+ *     projects with a remote each, and the enrollment the OLD words led to, in the project that
  *     split, spares nothing and leaves a fresh clone of it refusing the key;
  *   - it is said again, and stays true, where the key takes up a founding of its own;
  *   - the server says it in the reply of the call whose write founded;
- *   - the hook — the path nobody asked for — says it in the one field of its reply the host hands
+ *   - the hook, the path nobody asked for, says it in the one field of its reply the host hands
  *     the agent;
- *   - and `accountability` names, beside the author, where and when that identity was founded —
+ *   - and `accountability` names, beside the author, where and when that identity was founded:
  *     in the line and in `--json`, from one reading;
  *   - and so does the account the AGENT reads, `audit_accountability`, which carried none of it:
  *     the same marks beside the same authors, from the same selection.
@@ -44,10 +44,10 @@ import { closeSession, openSession } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
-/** The words every founding sentence starts with — `a-new-identity.ts`. */
+/** The words every founding sentence starts with: `a-new-identity.ts`. */
 const FOUNDED = 'This key founded an identity of its own';
 
 let sandbox: string;
@@ -55,7 +55,7 @@ let repo: string;
 /** Two keys: two homes, each its own `~/.mnema`. */
 let homeA: string;
 let homeB: string;
-/** A home that writes nothing — the one the counts are read as, so no key of the case is asked. */
+/** A home that writes nothing: the one the counts are read as, so no key of the case is asked. */
 let auditor: string;
 
 beforeEach(() => {
@@ -101,7 +101,7 @@ function authors(dir: string): string {
 }
 
 /**
- * How many `identity.founded` the record at `dir` holds, counted in the stored lines themselves —
+ * How many `identity.founded` the record at `dir` holds, counted in the stored lines themselves,
  * not asked of the product whose sentence the count is there to check.
  */
 function foundingsIn(dir: string): number {
@@ -124,7 +124,7 @@ function founded(stream: string): string[] {
 }
 
 describe('the command line says it on stderr, once, after the answer', () => {
-  it('for a key whose first write founds beside another identity — and names both', () => {
+  it('for a key whose first write founds beside another identity, and names both', () => {
     expect(founded(mnema(homeA, 'init').stderr)).toEqual([]);
     const second = mnema(homeB, 'memory', 'from a key nobody vouched for');
     expect(second.status).toBe(0);
@@ -143,7 +143,7 @@ describe('the command line says it on stderr, once, after the answer', () => {
     expect(founded(mnema(homeB, 'memory', 'the same key again').stderr)).toEqual([]);
   }, 60_000);
 
-  it('says nothing for a machine that joined by the handshake — it adopts, and founds nothing', () => {
+  it('says nothing for a machine that joined by the handshake: it adopts, and founds nothing', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     const who = /(mnid:[0-9a-f]+)/.exec(
       mnema(homeA, 'audit', 'accountability').stdout,
@@ -160,7 +160,7 @@ describe('the command line says it on stderr, once, after the answer', () => {
     expect(mnema(homeA, 'audit', 'accountability').stdout).toContain('1 author(s)');
   }, 60_000);
 
-  it('gives a tree kept on one machine its own words — the identity beside it was written from here', () => {
+  it('gives a tree kept on one machine its own words: the identity beside it was written from here', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     expect(mnema(homeA, 'memory', 'a note of mine', '--scope', 'private').status).toBe(0);
     const said = founded(mnema(homeB, 'memory', 'mine too', '--scope', 'private').stderr);
@@ -174,7 +174,7 @@ describe('the command line says it on stderr, once, after the answer', () => {
 
 describe('what the sentence says to do, done to the letter, spares the other projects', () => {
   /**
-   * `git <args>` in `dir`, with a home of the sandbox's and no configuration of the machine's — so a
+   * `git <args>` in `dir`, with a home of the sandbox's and no configuration of the machine's, so a
    * signing key, an identity or a default somebody set there cannot reach the case.
    */
   function git(dir: string, ...args: string[]): string {
@@ -209,7 +209,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
   /** One project two machines work in, the way a team's does: through a remote. */
   interface Shared {
     readonly remote: string;
-    /** The clone on the machine already in the identity — the first key's, where it was founded. */
+    /** The clone on the machine already in the identity: the first key's, where it was founded. */
     readonly a: string;
     /** The clone on the machine whose key has not written there yet. */
     readonly b: string;
@@ -266,14 +266,14 @@ describe('what the sentence says to do, done to the letter, spares the other pro
   }
 
   /**
-   * Does what the sentence tells the second key's person to do — every command it names, where it
-   * names it, and nothing it does not say — for a person whose other project is `next`.
+   * Does what the sentence tells the second key's person to do (every command it names, where it
+   * names it, and nothing it does not say) for a person whose other project is `next`.
    *
    * THE PLACES ARE READ OFF THE WORDS. The place the sentence gives `mnema key enroll` is looked up
    * here, and one this does not know fails the case by name, so whoever changes the words has to
    * come here and say where they now send the person. `wherever its key is` stays in the table: it
-   * is the old words, read as the measurement read them — the machine that holds that identity's
-   * key runs it where it stands, which is the project that split — so that putting them back
+   * is the old words, read as the measurement read them (the machine that holds that identity's
+   * key runs it where it stands, which is the project that split), so that putting them back
    * turns this case red on what they lead to, and not on a string.
    */
   function followTheSentence(sentence: string, split: Shared, next: Shared): void {
@@ -310,7 +310,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(authors(next.b)).toBe('1 author(s)');
   }, 60_000);
 
-  it('enrolled where the old words led — the project that split — spares nothing, and a fresh clone of it refuses the key', () => {
+  it('enrolled where the old words led, the project that split, spares nothing, and a fresh clone of it refuses the key', () => {
     const split = sharedProject('split');
     const next = sharedProject('next');
     const sentence = theSentence(mnemaIn(split.b, homeB, 'memory', 'before anyone vouched'));
@@ -334,7 +334,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(authors(split.b)).toBe('2 author(s)');
 
     // And the record now proves the key a member of two identities, so a fresh clone refuses it
-    // rather than choose — and writes nothing.
+    // rather than choose, and writes nothing.
     const fresh = join(sandbox, 'machine-b', 'split-again');
     git(sandbox, 'clone', '-q', split.remote, fresh);
     const refused = mnemaIn(fresh, homeB, 'memory', 'from a fresh clone');
@@ -343,7 +343,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(authors(fresh)).toBe('2 author(s)');
   }, 60_000);
 
-  it('is said again, and stays true, where the key takes up a founding of its own — nothing founded', () => {
+  it('is said again, and stays true, where the key takes up a founding of its own: nothing founded', () => {
     const split = sharedProject('split');
     theSentence(mnemaIn(split.b, homeB, 'memory', 'before anyone vouched'));
     share(split.b);
@@ -369,7 +369,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(foundingsIn(restored)).toBe(before);
   }, 60_000);
 
-  it('in a tree kept on one machine, no enrollment reaches it — the public tree it names is spared', () => {
+  it('in a tree kept on one machine, no enrollment reaches it: the public tree it names is spared', () => {
     // One machine, two keys: one working copy, as for a key root that moved.
     expect(mnema(homeA, 'init').status).toBe(0);
     expect(mnema(homeA, 'memory', 'a note of mine', '--scope', 'private').status).toBe(0);
@@ -383,7 +383,7 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(sentence).toContain('the public trees of your projects, this one’s included,');
     const line = requestAsTheSentenceSays(sentence, repo);
     // The machine already in the identity is this one, under the key it wrote with; it enrolls
-    // inside each of the projects — this one included.
+    // inside each of the projects: this one included.
     for (const dir of [repo, other]) {
       expect(mnemaIn(dir, homeA, 'key', 'enroll', line).status).toBe(0);
     }
@@ -426,7 +426,7 @@ describe('the server says it where the agent reads', () => {
     );
   }
 
-  it('in the reply of the call whose write founded — and in none after it', async () => {
+  it('in the reply of the call whose write founded, and in none after it', async () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     const client = await connected(homeB);
     const first = blocks(
@@ -448,7 +448,7 @@ describe('the server says it where the agent reads', () => {
     await client.close();
   });
 
-  it('not in the refusal of a first write, which founds nothing — and the refusal says only the fact did not land', async () => {
+  it('not in the refusal of a first write, which founds nothing, and the refusal says only the fact did not land', async () => {
     // The run OPENED before the operation decided, so a key's first write into a tree founded
     // there even when the operation then refused, and the refusal carried the founding's
     // sentence. The run is written by the write that needs it now (`ensureRun`), after the
@@ -473,7 +473,7 @@ describe('the server says it where the agent reads', () => {
     expect(said.join('\n')).not.toMatch(/nothing was recorded/i);
   });
 
-  it('in the hook’s additionalContext — the path nobody asked for, whose prose the host drops', async () => {
+  it('in the hook’s additionalContext: the path nobody asked for, whose prose the host drops', async () => {
     // A rule in force at a path, so the hook speaks and writes; the first key's session writes
     // there before the second one's does.
     expect(mnema(homeA, 'init').status).toBe(0);
@@ -584,7 +584,7 @@ describe('accountability names it, whenever somebody asks', () => {
         .map(({ who, foundedBeside }) => ({ who, foundedBeside }))
         .sort((a, b) => a.who.localeCompare(b.who));
 
-    // One author founded beside the other — and the agent is told so, not only the person.
+    // One author founded beside the other, and the agent is told so, not only the person.
     expect(agents.filter((one) => one.foundedBeside.length > 0)).toHaveLength(1);
     expect(agents.filter((one) => one.foundedBeside.length === 0)).toHaveLength(1);
     expect(marks(agents)).toEqual(marks(printed));

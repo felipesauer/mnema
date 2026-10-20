@@ -1,12 +1,12 @@
 /**
  * A session says what it wrote: at the end of a response that wrote a file, and before a
- * conversation is compacted, one line with two counts — the files its own tool calls wrote and
- * the decisions recorded since it opened.
+ * conversation is compacted, one line with two counts (the files its own tool calls wrote and
+ * the decisions recorded since it opened).
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half: that the counts are the ones the
  * transcript and the record hold, that the line says what each is a count OF, and that every
- * outcome that is not a count is the empty reply. What the host does with a `systemMessage` — which
- * host shows it, to whom — was not measured and is not asserted.
+ * outcome that is not a count is the empty reply. What the host does with a `systemMessage` (which
+ * host shows it, to whom) was not measured and is not asserted.
  *
  * THE TRANSCRIPTS ARE BUILT HERE in the shape the host writes them (one JSON object per line, a
  * `tool_use` block per tool call, tool results as `user` lines): every case that makes a claim
@@ -38,7 +38,7 @@ let originalCwd: string;
 let originalHome: string | undefined;
 let originalXdg: string | undefined;
 
-/** Runs `mnema <argv>` in process and refuses to continue if it failed — setup, not assertion. */
+/** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<void> {
   const err: string[] = [];
   let failed = false;
@@ -88,7 +88,7 @@ function result(at: string): string {
   });
 }
 
-/** A tool result the host marks as an error — what a refused tool call comes back as. */
+/** A tool result the host marks as an error: what a refused tool call comes back as. */
 function refusedResult(at: string): string {
   return JSON.stringify({
     type: 'user',

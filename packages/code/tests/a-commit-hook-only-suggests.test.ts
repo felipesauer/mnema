@@ -4,7 +4,7 @@
  *
  * WHAT IS HELD:
  *   - it is installed by `commit-hook install` and by nothing else (`init` does not), into the
- *     directory git reads hooks from — `core.hooksPath` when it is set — and `uninstall` takes
+ *     directory git reads hooks from (`core.hooksPath` when it is set) and `uninstall` takes
  *     it out;
  *   - a hook that is not its own, however it came to be there, is never overwritten or removed,
  *     and the refusal names the path;

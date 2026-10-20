@@ -3,7 +3,7 @@
  *
  * A first tree that refuses with the core's own refusal (a recorded identity that no longer
  * counts the key) stops the verb with that refusal's code. A first tree whose key of the person is
- * protected, with no passphrase to hand, stops it with `KEY_IS_PROTECTED` — in words for a person
+ * protected, with no passphrase to hand, stops it with `KEY_IS_PROTECTED`: in words for a person
  * at a terminal, not the advice a host that signs for an agent is given.
  */
 

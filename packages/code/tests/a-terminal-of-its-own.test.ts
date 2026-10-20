@@ -3,20 +3,20 @@
  *
  * `repl/session.test.ts` proves the gate can tell a read from a write from a word
  * nobody declared, on declarations it owns. This file is the other half: it asks the
- * REAL program what each verb declared and holds the session to it — every read
- * offered, every write refused — so a verb added tomorrow lands in one of the two
+ * REAL program what each verb declared and holds the session to it (every read
+ * offered, every write refused), so a verb added tomorrow lands in one of the two
  * enumerations without an edit here.
  *
  * AND IT MEASURES, because "it only reads" is a claim about a record and not about a
- * branch. The whole surface is typed into a session over a real project — every read,
- * every write — and what is counted before and after is the number of events in every
+ * branch. The whole surface is typed into a session over a real project (every read,
+ * every write) and what is counted before and after is the number of events in every
  * tail of every tree plus the key material on the machine, exactly as
  * `every-verb-says-if-it-writes.test.ts` counts them. That file cannot cover `repl`
  * itself: the session refuses without a terminal at both ends, so no row of its table
  * can reach the loop. This is where that row is paid.
  *
  * THE MEASUREMENT'S OWN TEETH are here too. A session that refused everything would
- * leave the record untouched and pass, saying nothing — so the reads are checked for
+ * leave the record untouched and pass, saying nothing, so the reads are checked for
  * having ANSWERED, and one write typed at the SHELL over the same fixture is checked
  * for moving the count that the same writes typed at the PROMPT do not move. Without
  * that pair, "the record did not change" is a sentence about a test that did nothing.
@@ -44,7 +44,7 @@ import { held } from './support/the-record-held.js';
 
 /** `packages/code/src`, for the guard that reads the session's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** One escape byte, written as an escape so no control byte enters this file. */
@@ -72,7 +72,7 @@ function verbsThat(effect: Declared['effect']): string[] {
 // ---------------------------------------------------------------------------
 
 // WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
-// written out in `every-verb-says-if-it-writes.test.ts`, and a third case needed it — so the
+// written out in `every-verb-says-if-it-writes.test.ts`, and a third case needed it, so the
 // counting of events and the hashing of key material moved to one place, where the argument for
 // what it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).
 
@@ -177,7 +177,7 @@ describe('the session offers the reads and refuses the writes', () => {
   it('refuses every verb that declared it writes, enumerated from the declaration', async () => {
     // THE CENTRAL GUARANTEE. Each write is TYPED, so what is checked is the session's
     // answer and not a predicate about it, and each refusal has to name the verb and
-    // say where to run it — a no that does not is a no a caller has to guess past.
+    // say where to run it: a no that does not is a no a caller has to guess past.
     const writes = verbsThat('mutates');
     expect(writes.length).toBeGreaterThanOrEqual(11);
     for (const verb of writes) {
@@ -193,7 +193,7 @@ describe('the session offers the reads and refuses the writes', () => {
   });
 
   it('refuses every member of a group that declared it writes, by its whole path, typed for real', async () => {
-    // The groups whose members differ run the members that read and refuse the others — and the
+    // The groups whose members differ run the members that read and refuse the others, and the
     // refusal names the path, and the line to type outside is the path too.
     const written = DECLARED.flatMap((verb) =>
       (verb.members ?? [])
@@ -218,8 +218,8 @@ describe('the session offers the reads and refuses the writes', () => {
   }, 60_000);
 
   it('leaves nothing in the record after the whole surface is typed at its prompt', async () => {
-    // The measurement. Every verb there is goes through the session — the reads for
-    // real, the writes to be refused — and the record is counted around all of it.
+    // The measurement. Every verb there is goes through the session (the reads for
+    // real, the writes to be refused) and the record is counted around all of it.
     const started = held(sandbox);
     const answers: string[] = [];
     for (const verb of verbsThat('mutates')) await prompt(verb);
@@ -253,7 +253,7 @@ describe('the session offers the reads and refuses the writes', () => {
     // that cannot see a write.
     await shell('memory', 'a fact the shell recorded');
     expect(held(sandbox).events).toBe(started.events + 1);
-    // And the exercise really produced answers — at least one line per read it ran,
+    // And the exercise really produced answers: at least one line per read it ran,
     // counted off the declaration so the floor cannot drift from the surface.
     expect(answers.length).toBeGreaterThanOrEqual(verbsThat('reads').length);
   }, 120_000);
@@ -279,7 +279,7 @@ describe('the session needs a terminal', () => {
 
   it('refuses in a real process whose streams are pipes, and exits non-zero', () => {
     // The in-process case drives an injected port; this one is the binary, with the
-    // streams a caller would actually give it — and it must COME BACK, because a
+    // streams a caller would actually give it, and it must COME BACK, because a
     // session that read a pipe would sit on it until the pipe closed.
     const done = spawnSync(process.execPath, [CLI, REPL_VERB], {
       cwd: repo,
@@ -331,7 +331,7 @@ describe('the session prints through the surface’s own renderer', () => {
   it('paints inside the session, and says exactly what the plain line says', async () => {
     // Inside a terminal stdout IS one, so this is the first place on this surface where
     // painting is the normal path rather than the exception. The promise the three
-    // colour deliveries made is that style adds nothing and drops nothing — asserted
+    // colour deliveries made is that style adds nothing and drops nothing: asserted
     // here against the same command run outside the session, which resolves to plain by
     // the rule and not by a fixture asking for it.
     let painted = 0;
@@ -350,7 +350,7 @@ describe('the session prints through the surface’s own renderer', () => {
     // Some of them come out IDENTICAL, and that is the renderer working rather than a
     // gap: a list of plain columns opens nothing, so its styled line is byte for byte
     // its plain one (`audit accountability` is one). What the case needs is that the
-    // comparison is not vacuous — that painting happened at all — and `verify`'s
+    // comparison is not vacuous, that painting happened at all, and `verify`'s
     // verdict is the shape that carries both a weight and a hue.
     expect(painted).toBeGreaterThan(0);
     const verdict = await prompt('verify', renderStyled);
@@ -389,13 +389,13 @@ describe('tab offers what the session runs, over the real tree', () => {
       seen.matching,
       membersOffered(DECLARED, REPL_VERB),
     );
-    // The WORDS of what is offered — each offer also carries what it is, which is what the
+    // The WORDS of what is offered: each offer also carries what it is, which is what the
     // palette draws its second column from and is asserted where the palette is
     // (`tests/a-palette-for-the-words.test.ts`).
     const hits = complete('')[0].map((hit) => hit.word);
     // AND IN THE ORDER A CALLER READS THEM IN: the verbs of this product first, the words the
     // session answers to itself after them, each group by its own spelling. It said
-    // `[...offered, ...SESSION_WORDS].sort()`, which is one comparison over the whole set —
+    // `[...offered, ...SESSION_WORDS].sort()`, which is one comparison over the whole set,
     // and a slash sorts ahead of every letter, so that put the session's word at the head of a
     // list whose first four rows are all a caller sees (`src/repl/complete.ts`, `theOrder`).
     expect(hits).toEqual([...[...offered].sort(), ...[...SESSION_WORDS].sort()]);
@@ -409,7 +409,7 @@ describe('tab offers what the session runs, over the real tree', () => {
     // session has named.
     expect(hits, 'the top level offered a record').not.toContain(task);
     // And it does not descend into a write either: the level under one is a level this
-    // session cannot reach, so offering its subcommands — or the records it has seen —
+    // session cannot reach, so offering its subcommands (or the records it has seen)
     // would be a menu of a place the next line refuses to go.
     expect(complete('tail ')).toEqual([[], '']);
     // A GROUP WHOSE MEMBERS DIFFER offers the members the gate runs, and not the others: the menu
@@ -434,8 +434,8 @@ describe('what answers a Tab reaches for no door onto the disk', () => {
    *
    * A Tab over a record is the one offer on this surface whose candidates are in no
    * declaration, and the objection written against it before it existed was that the only
-   * way to know one is to READ. That it does not is measured — the reads a Tab causes are
-   * counted in `tests/the-name-and-the-hints.test.ts` — and this is the other half: an
+   * way to know one is to READ. That it does not is measured (the reads a Tab causes are
+   * counted in `tests/the-name-and-the-hints.test.ts`) and this is the other half: an
    * absence in the source, so a door added here is refused before anybody has to notice a
    * counter moving.
    */
@@ -445,7 +445,7 @@ describe('what answers a Tab reaches for no door onto the disk', () => {
    * Every way a module of this workspace opens something.
    *
    * The chain is on the list because it is the door the SIBLING really uses: where the
-   * session is standing is a `readdir` and a small file, and neither is spelled here —
+   * session is standing is a `readdir` and a small file, and neither is spelled here;
    * `standing.ts` asks `@mnema/chain` for both. A ban that named only `node:fs` would
    * have missed the one module that proves it can accuse anything.
    *
@@ -474,7 +474,7 @@ describe('what answers a Tab reaches for no door onto the disk', () => {
 
   it('and the ban would accuse the line a careful author would write', () => {
     // NOT VACUOUS, IN BOTH DIRECTIONS. Each term is checked against the line somebody
-    // would really add — and a SIBLING of these two trips it, because reading is exactly
+    // would really add, and a SIBLING of these two trips it, because reading is exactly
     // what that one is for: where the session is standing is a `readdir` and a small file.
     expect(opening(`import { readdirSync } from 'node:fs';`)).toHaveLength(2);
     expect(opening(`import { withScopedCaches } from '../tree-sources.js';`)).toHaveLength(1);
@@ -489,7 +489,7 @@ describe('the session writes no history anywhere', () => {
    * What a module of the session may not reach, and the line each one would be.
    *
    * A ban list goes vacuous the day its terms stop matching anything anyone would
-   * write, so each is checked against the line a careful author WOULD write — the
+   * write, so each is checked against the line a careful author WOULD write: the
    * import and the call together, so the build would not have failed first and hidden
    * the accusation.
    */
@@ -516,7 +516,7 @@ describe('the session writes no history anywhere', () => {
    * quietly stop matching: a module written in another dialect of the same language
    * would be a module of the session this scan does not read, and the ban below would
    * pass over it saying nothing. The enumeration at the end of the case is what makes
-   * that visible — it names every file there is, so one this filter cannot see is one
+   * that visible: it names every file there is, so one this filter cannot see is one
    * the case reports missing.
    */
   const modules = (): readonly string[] =>

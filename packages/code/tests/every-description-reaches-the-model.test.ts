@@ -5,13 +5,13 @@
  * 4096 since 2.1.296, a change its changelog states), appends `… [truncated]`,
  * and tells nobody. Measured against the built `dist` by asking `tools/list` and
  * comparing the protocol's bytes with the bytes the host hands the model: `bootstrap`
- * was 4478 characters and lost 2430 of them — 54% — and `guard` was 2070 and lost 22.
+ * was 4478 characters and lost 2430 of them, 54%, and `guard` was 2070 and lost 22.
  *
  * WHAT A CUT TAKES IS THE END, and the end of a description in this repository is
  * where its limits are declared: what `unread` means, why a decision that does not
  * govern is left out, what a total larger than its own list says. Two deliveries wrote
  * their teaching into the tail of `bootstrap`'s description and it never reached a
- * model. The product's most careful habit — declaring what a read does NOT cover — was
+ * model. The product's most careful habit (declaring what a read does NOT cover) was
  * the first thing thrown away, because it is written last.
  *
  * SO THE CEILING IS A TEST AND NOT A HABIT. The gap it closes says so out loud: a
@@ -19,7 +19,7 @@
  * once and the recurrence is one sentence away, forever. This is that guard.
  *
  * WHAT IT DOES NOT KNOW, declared rather than guessed:
- *   - WHERE the cut happens — the client, the SDK, or the API. That decides whether
+ *   - WHERE the cut happens: the client, the SDK, or the API. That decides whether
  *     the fix is ours or a report upstream, and it is unmeasured.
  *   - WHETHER 2048 is fixed or configurable: it is configurable in Claude Code, with
  *     `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`, and the product keeps to the lower number.
@@ -47,7 +47,7 @@ import { buildMcpServer } from '../src/mcp/server.js';
  * MEASURED, not chosen: `tools/list` was compared against what the host forwards, and
  * the boundary was 2048 with `… [truncated]` appended past it (4096 since Claude Code 2.1.296; the
  * product keeps to the lower). It is written here
- * because this process cannot ask the host what its limit is — see the file's doc — and
+ * because this process cannot ask the host what its limit is, see the file's doc, and
  * a limit nobody can re-derive is a limit that has to be stated with its source.
  */
 const THE_HOSTS_CEILING = 2048;
@@ -57,7 +57,7 @@ const THE_HOSTS_CEILING = 2048;
  *
  * A mutation raised {@link THE_HOSTS_CEILING} to 8192 and the whole suite stayed green:
  * no description is anywhere near that, so the number that decides this guard was held
- * by nothing at all. Raising it is how this guard would be switched off — not by
+ * by nothing at all. Raising it is how this guard would be switched off, not by
  * deleting a case, which a reviewer sees, but by editing one constant, which reads as
  * tuning.
  *
@@ -66,7 +66,7 @@ const THE_HOSTS_CEILING = 2048;
  * and a probe of the running client is not available to a test. So the number is
  * external knowledge, and the only guard available for external knowledge is to state
  * it once, next to where it came from, and make changing it a red test that names it.
- * This is that statement — the FIRST one, not a third restatement of an invariant the
+ * This is that statement: the FIRST one, not a third restatement of an invariant the
  * code already keeps.
  */
 const CEILING_AS_MEASURED = 2048;
@@ -136,7 +136,7 @@ describe('every description reaches the model', () => {
 
   it('reads every tool, and no description is empty', async () => {
     // Non-vacuity. A harness whose client failed to connect, or whose server served no
-    // tool, would report an empty list and pass the case above in silence — and a tool
+    // tool, would report an empty list and pass the case above in silence, and a tool
     // registered with no description at all would satisfy a ceiling by having nothing to
     // cut, which is the other way to be under it for the wrong reason.
     const tools = await described();
@@ -154,7 +154,7 @@ describe('every description reaches the model', () => {
   it('accuses a description over the ceiling, and only that one', async () => {
     // The accuser's own case, on input this test owns, because the product gives it
     // nothing to accuse. Both directions: one character over is reported with its
-    // overage, and exactly at the ceiling is not reported — an off-by-one here would
+    // overage, and exactly at the ceiling is not reported; an off-by-one here would
     // make the guard either permanently red or permanently blind.
     const atTheEdge = 'x'.repeat(THE_HOSTS_CEILING);
     expect(
@@ -169,7 +169,7 @@ describe('every description reaches the model', () => {
     // The server's `instructions` meet the same ceiling, and for this field it was measured
     // on the text itself rather than inferred from the descriptions: a session's transcript
     // records what the host folded in (`mcp_instructions_delta`), and a server there that
-    // sent more arrived as exactly 2,048 characters followed by `… [truncated]` — host
+    // sent more arrived as exactly 2,048 characters followed by `… [truncated]`, host
     // 2.1.280, on 22/09/2026; since 2.1.296 the host keeps 4,096, and the product stays at 2,048. The host's own documentation says the same of both fields
     // ("truncates tool descriptions and server instructions at 2KB each"), which is why the
     // constant is shared rather than stated twice. What a cut takes is the end, and the end

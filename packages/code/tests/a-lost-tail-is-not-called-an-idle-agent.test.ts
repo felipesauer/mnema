@@ -2,7 +2,7 @@
  * A KEY WITHOUT A TAIL IS NOT CALLED AN IDLE AGENT BY A VERIFIER THAT CANNOT KNOW IT.
  *
  * The census says of a committed key with no tail what the record can say. For a key the record
- * enrols as an agent, the sentence names the agent — and says both readings, because an agent that
+ * enrols as an agent, the sentence names the agent, and says both readings, because an agent that
  * signed and whose tail was lost in a merge reads the same, on disk, as one that never wrote. For
  * the key of a person it is the chain's own sentence, agent in the record or not; and where a waiver
  * names the cut, it is the waiver's account and nothing else.

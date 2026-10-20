@@ -3,7 +3,7 @@
  *
  * Each case here starts the Claude Code binary the run names, unmodified, in a sandbox of its own:
  * a `HOME`, a project with a record in it, the plugin of this tree loaded from its directory, a
- * `mnema` shim on the PATH that runs this tree's build — and a model that is {@link startTheStandIn}.
+ * `mnema` shim on the PATH that runs this tree's build, and a model that is {@link startTheStandIn}.
  * What the case asserts on is what the host did: the file that was or was not written, and the
  * request it sent next.
  *
@@ -12,8 +12,8 @@
  * `unshare -rn`), and {@link refuseUnlessLoopbackOnly} refuses to start the host in any process
  * that can see another interface. The host is started under `strace` and every address it
  * connected or sent to is read back, so a destination that is not loopback fails the case that
- * caused it. And the host's own traffic that is not the model's — updates, telemetry, the
- * marketplace — is switched off. The stand-in is told by a key that is made up and is the host's
+ * caused it. And the host's own traffic that is not the model's (updates, telemetry, the
+ * marketplace) is switched off. The stand-in is told by a key that is made up and is the host's
  * own documented override.
  *
  * WHICH BINARY RAN IS ASKED OF THE DATA. The host's attribution block, in the system prompt of

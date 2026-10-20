@@ -1,15 +1,15 @@
 /**
- * ONE AUTHORITY OVER COLOUR — the whole page obeys the caller, or none of it does.
+ * ONE AUTHORITY OVER COLOUR: the whole page obeys the caller, or none of it does.
  *
  * The session draws two kinds of thing and they had two authorities. What it SAYS is
- * composed and rendered by this product's own rule — a flag, two conventional variables, a
- * terminal (`src/wiring/color.ts`) — and obeyed the caller. What the page IS — the rules
+ * composed and rendered by this product's own rule, a flag, two conventional variables, a
+ * terminal (`src/wiring/color.ts`), and obeyed the caller. What the page IS (the rules
  * that close its regions, the guide down its margin, the mark on a picked row, the
- * product's mark and its title — is drawn by the layout library and was coloured by the
+ * product's mark and its title) is drawn by the layout library and was coloured by the
  * library's own detection, which has no entry for `NO_COLOR` at all.
  *
  * MEASURED ON A REAL PSEUDO-TERMINAL, at a hundred by thirty, opening a session and asking
- * one verb — style sequences in the whole stream:
+ * one verb, style sequences in the whole stream:
  *
  *   | the caller asked                  | before | after |
  *   |-----------------------------------|-------:|------:|
@@ -21,7 +21,7 @@
  *   | `TERM=dumb`                       |    192 |     0 |
  *   | `TERM=dumb`, `--color=always`     |    312 |   312 |
  *
- * The hundred and twenty were sixty accents and sixty closers — every one of them the
+ * The hundred and twenty were sixty accents and sixty closers: every one of them the
  * library's, and not one byte from our renderer.
  *
  * THE FOURTH ROW IS WHY THE SECOND CASE BELOW SETS `FORCE_COLOR`. That library sniffs the
@@ -33,14 +33,14 @@
  * WHAT THE CASES BELOW ASK, and why each needs the instrument it uses:
  *
  *   - THE QUIET DIRECTION, on a real device, over the WHOLE stream: `NO_COLOR` and
- *     `--color=never` each leave not one style sequence anywhere — ours or the library's.
+ *     `--color=never` each leave not one style sequence anywhere, ours or the library's.
  *     A pseudo-terminal is the only instrument for it, because the library's own detection
  *     is about a device.
  *   - AND IT IS THE PRODUCT THAT DECIDES, not the variable the library reads: the flag is
  *     asked with `FORCE_COLOR=1` set, which is the library's own channel saying the
  *     opposite.
  *   - THE LOUD DIRECTION, which a fix that only knew how to turn colour OFF would leave
- *     behind. It is asked in a pipe — a pair of streams standing in for a device — because
+ *     behind. It is asked in a pipe, a pair of streams standing in for a device, because
  *     that is where the library, left alone, paints nothing at all: this process's stdout
  *     is not a terminal, nothing forces colour, and the flag sniff that library does over
  *     `process.argv` finds no `--color` on a test runner's command line. So the chrome on
@@ -48,7 +48,7 @@
  *     across it: **nought of the nine painted before, nine of the nine after**.
  *   - AND THE TERMINAL'S OWN WORD. `TERM=dumb` is where the two authorities disagreed in
  *     BOTH directions: the library honoured it and this product's precedence did not read
- *     `TERM` at all, so the page was half painted — and delivering our answer without
+ *     `TERM` at all, so the page was half painted, and delivering our answer without
  *     reading it painted the page whole on a device that had declared it cannot. The rung
  *     is in the precedence now, under both variables, and the page is quiet. The pair-by-
  *     pair ordering is `src/chosen-once.test.ts`; what is asked here is the PAGE.
@@ -88,7 +88,7 @@ import {
 } from './support/pty.js';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** `packages/code/src`, for the scan that reads this product's own source. */
@@ -100,7 +100,7 @@ const PROMPT = 'mnema>';
 /** The verb the caller types, and the first words of what it answers. */
 const A_VERB = 'search';
 
-/** The glyph a rule is drawn out of, by code point — the page's own edge. */
+/** The glyph a rule is drawn out of, by code point: the page's own edge. */
 const RUN = '\u2500';
 
 /**
@@ -119,13 +119,13 @@ function sgrOf(text: string): string[] {
   return text.match(/\u001b\[[0-9;]*m/g) ?? [];
 }
 
-/** The same bytes with every style sequence taken out — what a pipe would have received. */
+/** The same bytes with every style sequence taken out: what a pipe would have received. */
 function stripped(text: string): string {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
   return text.replace(/\u001b\[[0-9;]*m/g, '');
 }
 
-/** Whether a row of a page is a rule and nothing else — the discriminant for a seam. */
+/** Whether a row of a page is a rule and nothing else: the discriminant for a seam. */
 function isRule(row: string): boolean {
   const drawn = stripped(row).replace(/ +$/, '');
   return drawn.length > 0 && [...drawn].every((glyph) => glyph === RUN);
@@ -162,7 +162,7 @@ beforeAll(async () => {
   await run(['task', 'create', 'the task the colour is measured over'], quiet);
 
   // TAKEN BEFORE ANY SESSION RUNS IN THIS PROCESS, because opening one writes the
-  // library's channel into this process's own environment — which is the whole subject.
+  // library's channel into this process's own environment, which is the whole subject.
   // A runner that inherited that would be a device told what to do by the last case.
   environment = {
     ...process.env,
@@ -188,7 +188,7 @@ async function inPty(options: {
   readonly rows: number;
   readonly steps: readonly Step[];
   readonly environment?: NodeJS.ProcessEnv;
-  /** What goes on the command line before the verb — a `--color`, when a case asks one. */
+  /** What goes on the command line before the verb: a `--color`, when a case asks one. */
   readonly asked?: string;
 }) {
   const fixture: Fixture = {
@@ -227,8 +227,8 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
     expect(ran.bytes, 'the session never answered the verb').toContain('record(s)');
     expect(ran.bytes, 'the page has no edges left').toContain(RUN);
 
-    // NOT VACUOUS: the same session, same size, same steps, with nothing asking for quiet
-    // — and the LIBRARY's own accent is in it. That sequence is the one this delivery
+    // NOT VACUOUS: the same session, same size, same steps, with nothing asking for quiet,
+    // and the LIBRARY's own accent is in it. That sequence is the one this delivery
     // silenced, so its presence here is what makes the zero above a measurement.
     const loud = await inPty(A_SESSION);
     expect(sgrOf(loud.bytes).length, 'nothing is painted even with colour on').toBeGreaterThan(0);
@@ -249,7 +249,7 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
     expect(ran.bytes, 'the session never answered the verb').toContain('record(s)');
 
     // NOT VACUOUS: the same environment WITHOUT the flag paints, and the accent in it is
-    // the library's — so what the flag turned off was the library and not the fixture.
+    // the library's, so what the flag turned off was the library and not the fixture.
     const loud = await inPty({ ...A_SESSION, environment: asked });
     expect(loud.bytes, 'the variable alone paints nothing').toContain(ACCENT);
   }, 300_000);
@@ -258,7 +258,7 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
     // THE RUNG THE OTHER TWO CASES DO NOT REACH, and the one where the two authorities used
     // to disagree in BOTH directions. `TERM=dumb` is a real terminal declaring it prints
     // text and nothing else. The layout library has always honoured it and this product's
-    // precedence did not, so the page came out half painted — a hundred and ninety-two
+    // precedence did not, so the page came out half painted: a hundred and ninety-two
     // style sequences from this renderer and none from the library. Handing our answer over
     // without reading `TERM` made it three hundred and twelve, which is the same
     // disagreement resolved to the other side. Reading it is the agreement.
@@ -276,7 +276,7 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
 
     // AND THE CALLER'S OWN REQUEST STILL OUTRANKS THE DEVICE, which is what keeps this a
     // rung and not a ban: `--color=always` on the same terminal paints, chrome included.
-    // It is also the non-vacuity of the zero above — the same fixture, one flag apart.
+    // It is also the non-vacuity of the zero above: the same fixture, one flag apart.
     const asked = await inPty({ ...A_SESSION, environment: dumb, asked: '--color=always' });
     expect(sgrOf(asked.bytes).length, 'the flag lost to the terminal').toBeGreaterThan(0);
     expect(asked.bytes, 'the chrome stayed bare where the caller asked for colour').toContain(
@@ -334,7 +334,7 @@ describe('the answer is measured off the renderer, so the two cannot disagree', 
     expect(paintsAtAll(renderStyled)).toBe(true);
     expect(paintsAtAll(renderPlain)).toBe(false);
     // AND A FOLD IS NOT A COLOUR. `chooseRenderer` wraps whichever painting it was handed
-    // in the one that folds, so a page on a terminal is answered by a folded renderer —
+    // in the one that folds, so a page on a terminal is answered by a folded renderer,
     // and a probe that read the fold as paint would tell the library the opposite thing on
     // every device that reported a width.
     expect(paintsAtAll(foldedAt(80, renderStyled))).toBe(true);
@@ -429,7 +429,7 @@ const THE_LIBRARY = 'ink';
 
 describe('what loads the library, and what tells it', () => {
   /**
-   * EVERY MODULE THAT LOADS THE LAYOUT LIBRARY — the ones that name it, plus everything
+   * EVERY MODULE THAT LOADS THE LAYOUT LIBRARY: the ones that name it, plus everything
    * that loads one of THOSE when its own file is loaded.
    *
    * A closure and not a list, which is what makes the answer survive a module added
@@ -475,13 +475,13 @@ describe('what loads the library, and what tells it', () => {
   it('is reached from the rest of the surface only by DYNAMIC imports, at every door', () => {
     // THE PROPERTY THE WHOLE DELIVERY RESTS ON. That library reads the channel once, while
     // its own module graph is being loaded, so the answer has to be written before the
-    // import that loads it — and a STATIC import of any of it from anywhere would run
+    // import that loads it, and a STATIC import of any of it from anywhere would run
     // before every line of every function, this one included.
     //
     // IT NAMED ONE DOOR AND THERE ARE TWO, which is a principle rather than a correction: a
     // rule that holds in N places with a guard that names one is exactly the class this
     // bench has paid for eight times. What is asserted is the SET, found by what each module
-    // imports — so a third door added tomorrow is named here the day it is written.
+    // imports, so a third door added tomorrow is named here the day it is written.
     const all = modules();
     const library = reachingTheLibrary(all);
     const doors = all
@@ -507,8 +507,8 @@ describe('what loads the library, and what tells it', () => {
   });
 
   it('would accuse the static import an author would reach for', () => {
-    // NOT VACUOUS: the same scan over the same surface with one line changed — the shape
-    // somebody adding a component would write — names the file that broke it.
+    // NOT VACUOUS: the same scan over the same surface with one line changed (the shape
+    // somebody adding a component would write) names the file that broke it.
     const all = modules();
     const relapse = all.map((module) =>
       module.where === 'repl/panel.ts'
@@ -527,7 +527,7 @@ describe('what loads the library, and what tells it', () => {
 
   it('tells the library before the line that loads it, at EVERY door', () => {
     // THE RULE, ASKED OF EACH DOOR RATHER THAN OF ONE FILE. Both of them load the library
-    // and both of them must have said what this product decided before that line runs — so
+    // and both of them must have said what this product decided before that line runs, so
     // the doors are found by the discriminant (the dynamic import of a module that reaches
     // the library) and each is then held to the same two things.
     const all = modules();
@@ -550,8 +550,8 @@ describe('what loads the library, and what tells it', () => {
   });
 
   it('names the channel in exactly the two places that read it and write it', () => {
-    // THE DISCRIMINANT IS THE CHANNEL'S OWN NAME, over the raw source — prose included,
-    // deliberately: a third module that so much as talks about this variable is a third
+    // THE DISCRIMINANT IS THE CHANNEL'S OWN NAME, over the raw source (prose included,
+    // deliberately): a third module that so much as talks about this variable is a third
     // opinion about colour waiting to be written.
     const naming = modules()
       .filter((module) => module.raw.includes(WHAT_THE_LIBRARY_READS))

@@ -2,11 +2,11 @@
  * GEMINI CLI OPENS WITH THE RECORD AND REFUSES THE WRITE, in the real Gemini CLI with the
  * extension of this tree installed: the opening is in the first turn of the conversation, the
  * server's tools are offered, a write under a rule that refuses is not made and the model is handed
- * the rule — for `write_file` and for `replace` — and a rule that only asks for a person is let
+ * the rule, for `write_file` and for `replace`, and a rule that only asks for a person is let
  * through, because the extension pauses nothing.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema before-a-write --host
- * gemini` answers, and what `mnema brief --hook` prints — is `a-rule-that-refuses-a-write.test.ts`
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema before-a-write --host
+ * gemini` answers, and what `mnema brief --hook` prints) is `a-rule-that-refuses-a-write.test.ts`
  * and the brief's own cases. What Gemini CLI does with them is the host's, read here off the
  * requests it sends a stand-in for the model and off the file that was or was not written.
  * NOT HELD: that the model reads what arrived; a ceiling Gemini CLI may put on the opening; the

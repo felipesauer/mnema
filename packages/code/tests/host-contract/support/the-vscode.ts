@@ -12,7 +12,7 @@
  * WHAT ISOLATES IT IS THE NAMESPACE, AND NOTHING READS BACK WHERE IT CONNECTED. The Claude Code
  * harness runs its host under `strace`; an Electron main process does not start under it here, so
  * this one has the construction of the namespace and not a log. The editor tries one address of its
- * own — GitHub's, for a sign-in it is not given — and fails there for want of a route.
+ * own (GitHub's, for a sign-in it is not given) and fails there for want of a route.
  *
  * WHICH EDITOR RAN IS ASKED OF THE EDITOR: the extension writes the version it was started in, and a
  * run that names another version is refused.

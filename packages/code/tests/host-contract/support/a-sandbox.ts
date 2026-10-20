@@ -3,8 +3,8 @@
  * with a mnema record in it, and a `mnema` shim that runs this tree's build.
  *
  * Whoever makes the sandbox removes it, here: {@link TheSandbox.remove}. The project is written
- * through the product's own verbs, in the sandbox's home, so nothing of the machine's — not its
- * key, not its global tree — is read or written.
+ * through the product's own verbs, in the sandbox's home, so nothing of the machine's (not its
+ * key, not its global tree) is read or written.
  */
 
 import { execFileSync } from 'node:child_process';

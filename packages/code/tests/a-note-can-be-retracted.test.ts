@@ -4,7 +4,7 @@
  * Driven the way the binary and an agent drive them, over a real project in a sandbox. Held:
  *   - a retracted memory leaves the opening read (`recall`) and the search, and `show` still
  *     prints it whole, saying when, by whom and why it was retracted;
- *   - the retraction follows the note to the tree it was written in — an agent's private note
+ *   - the retraction follows the note to the tree it was written in: an agent's private note
  *     is retracted in the private tree;
  *   - a decision, an unknown id and a note already retracted are refused, with the sentence
  *     that says what to do, and append nothing.

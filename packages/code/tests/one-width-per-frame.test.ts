@@ -1,20 +1,20 @@
 /**
- * ONE WIDTH PER FRAME — the fold follows the window, like every other number on the page.
+ * ONE WIDTH PER FRAME: the fold follows the window, like every other number on the page.
  *
  * IT CAME OUT OF A SCREENSHOT AND A SENTENCE: *the lines explaining the verbs are squeezed,
  * they do not fit the console's screen*. What was on it was a session opened in a small window
  * and then maximised: the rules ran corner to corner of the new terminal, the badge sat on its
- * last column, the arrangement had chosen itself against it — and the REPORT was a column of
+ * last column, the arrangement had chosen itself against it, and the REPORT was a column of
  * text down the left, folded to the width the process had opened at. Measured on a real
  * pseudo-terminal at 70×24 maximised to 200×50, before this delivery: eleven continuation rows
  * on a page whose every other edge was two hundred wide.
  *
  * THE CAUSE WAS ONE LINE AND IT WAS RIGHT WHERE IT WAS. `wiring/color.ts` resolves the renderer
  * once per invocation, out of the capability the entry reads, and folds to the width the stream
- * reported — which is exactly right for a verb that prints and exits and cannot be right for a
+ * reported, which is exactly right for a verb that prints and exits and cannot be right for a
  * SESSION, because a session outlives the window it opened in. So the rule stayed and grew a
- * door that takes a width, and the console — the one thing on this surface that asks the device
- * how wide the page is — answers it for the frame it is drawing.
+ * door that takes a width, and the console (the one thing on this surface that asks the device
+ * how wide the page is) answers it for the frame it is drawing.
  *
  * WHAT IS ASSERTED HERE, and each of them is a MEASUREMENT off a screen rather than a picture:
  *
@@ -34,7 +34,7 @@
  *     ordinary, and the frame's arithmetic was wrong about it in every terminal there is: the
  *     width was a count of CODE POINTS, so a row of eighty-eight cells was handed to the layout
  *     for a page of eighty columns. What that produces on a screen is
- *     not an overflow — the library wraps what our fold left too wide — it is the LIBRARY's break
+ *     not an overflow, the library wraps what our fold left too wide, it is the LIBRARY's break
  *     instead of the product's, at the margin, with the continuation at column zero. Measured at
  *     the floor, on the instrument.
  *   - AND ONE AUTHORITY OVER HOW WIDE TEXT IS, which is what makes the number above stay right:
@@ -44,7 +44,7 @@
  *
  * WHAT IS NOT ASSERTED, said out loud so a pass is not read as covering it: a line already on
  * the roll is NOT re-folded when the window changes. It was rendered for the terminal it was
- * printed on, and that is a true record of a page that really was that wide — the same posture
+ * printed on, and that is a true record of a page that really was that wide: the same posture
  * the screen model takes about a replay (`support/screen.ts`,
  * `theWidthIsTheOneItWasDrawnAt`). Every case below prints AFTER the resize and reads what it
  * printed.
@@ -85,7 +85,7 @@ import {
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { drewAt, everyWidthDrawnOn, type Screen, theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** `packages/code/src`, for the guard that reads this surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -96,8 +96,8 @@ const PROMPT = 'mnema>';
 /**
  * THE WIDEST THING THIS SESSION SAYS, and what makes it say it.
  *
- * IT WAS THE REPORT `/help` PRINTED — a table of every verb the session runs, whose rows were
- * the widest this console ever wrote — and that word is gone: the list under the prompt answers
+ * IT WAS THE REPORT `/help` PRINTED (a table of every verb the session runs, whose rows were
+ * the widest this console ever wrote) and that word is gone: the list under the prompt answers
  * it now, and a list is CUT to the terminal rather than folded by it (`src/repl/palette.ts`).
  * What is left that a fold has anything to do to is the REFUSAL of a write: it names the verb,
  * says why, and gives the line to run outside the session, which comes to well over a hundred
@@ -105,31 +105,31 @@ const PROMPT = 'mnema>';
  *
  * It is a better subject than the report was for the one reason this file cares about: it is
  * composed by the product out of a declaration (`src/repl/gate.ts`, `src/wiring/report.ts`), it
- * PAINTS — it is a refusal, so it carries a label and a severity — and its width is a function
+ * PAINTS (it is a refusal, so it carries a label and a severity) and its width is a function
  * of a verb's name rather than of anything written here.
  */
 const A_WRITE = 'task';
 /**
  * ONE WORD AND NOT A PHRASE, for the reason this whole file is about: the refusal is the widest
- * line the session says, so at the narrow end of every case here it is FOLDED — between words
- * (`src/presentation/folded.ts`) — and a phrase can arrive with a row break inside it.
+ * line the session says, so at the narrow end of every case here it is FOLDED, between words
+ * (`src/presentation/folded.ts`), and a phrase can arrive with a row break inside it.
  */
 const AND_IT_REFUSES = 'shell.';
 
 /**
- * A TASK TITLE IN JAPANESE — thirty-eight characters, seventy-six cells.
+ * A TASK TITLE IN JAPANESE: thirty-eight characters, seventy-six cells.
  *
  * *A record titled in a language whose characters take two columns each*, which is what it says.
  * Every one of its glyphs is East Asian WIDE, and Wide is not ambiguous: those are two cells in
  * every terminal there is, whatever the locale. So the number below is a fact about the
  * characters rather than an observation about a device, which is why it is written down.
  *
- * IT IS A VALUE A CALLER PRODUCES WITH THE PRODUCT'S OWN VERB — `mnema task <title>` — so
+ * IT IS A VALUE A CALLER PRODUCES WITH THE PRODUCT'S OWN VERB: `mnema task <title>`, so
  * the row it lands on is a row of an ordinary report and not a fixture nobody could have made.
  *
  * AND ITS LENGTH IS CHOSEN SO THAT THE OLD COUNT LET IT THROUGH. Measured on the built binary:
- * the row `search` prints for it is the continuation of a folded item — four columns of hanging
- * indent, the title, and ` (DRAFT)` — which is FIFTY code points and EIGHTY-EIGHT cells on a page
+ * the row `search` prints for it is the continuation of a folded item (four columns of hanging
+ * indent, the title, and ` (DRAFT)`), which is FIFTY code points and EIGHTY-EIGHT cells on a page
  * of eighty columns. So the fold this delivery replaced measured it as
  * fitting and handed the terminal a row fourteen columns wider than the page, while the fold that
  * measures cells breaks it. A shorter title would fit on both counts and this case would pass
@@ -141,7 +141,7 @@ const A_TITLE_IN_JAPANESE =
 /** How many cells that title takes: two per character, counted by hand. */
 const CELLS_OF_THE_TITLE = 2 * [...A_TITLE_IN_JAPANESE].length;
 
-/** The verb that lists what is recorded — a read, so the session runs it. */
+/** The verb that lists what is recorded: a read, so the session runs it. */
 const A_READ = 'search';
 
 /**
@@ -150,7 +150,7 @@ const A_READ = 'search';
  * IT WAS FORTY AND IT IS THE FLOOR'S. Forty was tall enough while the shortest window this
  * console drew a page on was twenty-four rows; the floor is the height the name is drawn whole
  * at now (`src/repl/floor.ts`), so a height written down here would hold the OTHER axis on the
- * screen that says the window is too small — which is a case about the width answered by a page
+ * screen that says the window is too small, which is a case about the width answered by a page
  * that has no width question in it.
  */
 const TALL_ENOUGH = THE_FLOOR.rows;
@@ -167,13 +167,13 @@ let project: string;
  * THE OPENING'S OWN SENTENCE USED TO BE THE SUBJECT, AND NO WINDOW CAN FOLD IT ANY MORE. It
  * is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
  * (`src/repl/floor.ts`), so the case that watched it fold at seventy is watching something no
- * caller can produce. What still folds — and what a caller really does have — is the row that
+ * caller can produce. What still folds (and what a caller really does have) is the row that
  * says where the session is standing: it is a PATH, so a directory a few levels down is wider
  * than the window, and it is part of the opening in exactly the way the sentence was.
  */
 let deep: string;
 /**
- * A PROJECT WHOSE ONE RECORD IS TITLED IN JAPANESE — the content the frame's arithmetic used to
+ * A PROJECT WHOSE ONE RECORD IS TITLED IN JAPANESE: the content the frame's arithmetic used to
  * be wrong about.
  *
  * Its own project rather than a second record in the one above, so that every case in this file
@@ -248,7 +248,7 @@ afterAll(() => {
 // ---------------------------------------------------------------------------
 
 /**
- * EVERY LINE THE SESSION PRINTS WHEN IT REFUSES A WRITE — the product's own, composed off the
+ * EVERY LINE THE SESSION PRINTS WHEN IT REFUSES A WRITE: the product's own, composed off the
  * same registration the session refuses by.
  *
  * Read rather than retyped, which is the property that matters here: a refusal reworded
@@ -268,7 +268,7 @@ function theWordsItPrints(): readonly Line[] {
  *
  * THE WIDTH IT FOLDS AT IS NOT THE TERMINAL'S, and that is what the page's own margin cost this
  * helper. What the session says is drawn inside a margin (`src/repl/inset.ts`), so the columns a
- * line really has are the terminal's less that — and the console folds to exactly this number
+ * line really has are the terminal's less that, and the console folds to exactly this number
  * (`src/repl/console.ts`, `renderOnTheRoll`). A case that folded at the terminal's width would be
  * asserting a break no window produces, which is the shape of red that says nothing about the
  * product.
@@ -294,23 +294,23 @@ function foldedInto(
 }
 
 /**
- * A row of the page with the margin taken off — what the row SAYS, without the page's own edge.
+ * A row of the page with the margin taken off: what the row SAYS, without the page's own edge.
  *
  * Every row of the roll begins after the same blank columns (`src/repl/inset.ts`; none now). They are
- * chrome and no part of the line, so a comparison against a composed line has to take them off —
+ * chrome and no part of the line, so a comparison against a composed line has to take them off,
  * and only off the rows that HAVE them, because a row of the input area never did.
  */
 function withoutTheMargin(row: string): string {
   return row.slice(0, THE_INSET).trim() === '' ? row.slice(THE_INSET) : row;
 }
 
-/** A screen's rows, margin off and trailing blanks off — what a reader sees on each. */
+/** A screen's rows, margin off and trailing blanks off: what a reader sees on each. */
 function rowsOf(screen: Screen): readonly string[] {
   return screen.rows.map((row) => withoutTheMargin(row).replace(/ +$/, ''));
 }
 
 /**
- * HOW MANY ROWS OF A PAGE ARE THE TAIL OF A LINE FOLDED AT `columns` — the measurement the
+ * HOW MANY ROWS OF A PAGE ARE THE TAIL OF A LINE FOLDED AT `columns`: the measurement the
  * complaint was made of.
  *
  * A continuation is not guessed at: it is what this product's own fold produces for a line this
@@ -338,7 +338,7 @@ function whereTheRowsAre(page: readonly string[], rows: readonly string[]): numb
   return -1;
 }
 
-/** The widest line the session prints — the one a fold has the most to do to. */
+/** The widest line the session prints: the one a fold has the most to do to. */
 function theWidestLine(): Line {
   return [...theWordsItPrints()].sort((one, other) => widthOf(other) - widthOf(one))[0] as Line;
 }
@@ -375,14 +375,14 @@ const leaves: Step = leavesTheSession;
  *
  * IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCED NO FRAME. The layout writes nothing at all
  * for a frame identical to the one on the screen, and a window filled by one copy of this report
- * is filled by the next copy in exactly the same rows — measured: the step that typed the word a
+ * is filled by the next copy in exactly the same rows. Measured: the step that typed the word a
  * second time waited out the whole budget and the session was fine. Starting the page over
  * empties the roll, so the frame that follows cannot be the frame that preceded it, and what is
  * on the page afterwards is only what was printed after the resize.
  *
  * THE FIRST HALF OF THAT IS NO LONGER TRUE, AND THE STEP STAYS FOR THE SECOND. The same word
- * twice does draw a frame now — a row at the foot saying the answer left the page as it was
- * (`src/repl/console.ts`, `judged`) — but that frame holds the rows the FIRST copy put there, folded
+ * twice does draw a frame now, a row at the foot saying the answer left the page as it was
+ * (`src/repl/console.ts`, `judged`), but that frame holds the rows the FIRST copy put there, folded
  * at whatever width it was printed at, and the page read after the resize has to hold only what was
  * printed at the new one. Emptying the roll is what guarantees that; a second copy never did.
  */
@@ -416,7 +416,7 @@ describe('the fold follows the window the caller is looking at', () => {
     // nothing but *narrow enough that the widest row folds*; under eighty by twenty-four the
     // frame is a screen saying the window is too small (`src/repl/floor.ts`), so a session driven
     // at seventy never draws a rule and the page cannot be found at all. The floor's own width is
-    // the narrowest one there is, and the widest row this session prints is ninety-nine columns —
+    // the narrowest one there is, and the widest row this session prints is ninety-nine columns,
     // so it still folds there, which is the only property the number ever had to have.
     const narrow = 80;
     const wide = 200;
@@ -441,7 +441,7 @@ describe('the fold follows the window the caller is looking at', () => {
     // THE AFTER: not one row of the maximised page is the tail of a line folded at seventy.
     const maximised = theSettledScreen(ran.bytes, wide, TALL_ENOUGH);
     expect(continuationsAt(maximised, narrow), 'the page still folds at the old width').toBe(0);
-    // And the report is on it WHOLE — the other half of the same fact, so a page that simply
+    // And the report is on it WHOLE: the other half of the same fact, so a page that simply
     // lost the lines would not pass. Every one of them fits two hundred columns.
     const page = rowsOf(maximised);
     for (const line of theWordsItPrints()) {
@@ -471,7 +471,7 @@ describe('the fold follows the window the caller is looking at', () => {
     // width" has to mean: the break is between words and the continuation is indented one level
     // under the row that generated it. A line still rendered for two hundred columns reaches the
     // terminal whole and comes back as a row of exactly seventy with the remainder at column
-    // zero — no indent, and a word cut in half.
+    // zero: no indent, and a word cut in half.
     const broken = foldedInto(widest, narrow);
     expect(broken.length, 'the widest line does not fold at this width').toBeGreaterThan(1);
     expect(
@@ -486,17 +486,17 @@ describe('the fold follows the window the caller is looking at', () => {
     // THE OPENING IS THE HALF A CASE ABOUT THE REPORT CANNOT SEE, and it went unnoticed once:
     // composing it with a renderer that was not the frame's left every case above green, because
     // what they read is what a VERB printed. The opening's own lines land on the roll like any
-    // other line and fold like any other line — they are just composed one layer up.
+    // other line and fold like any other line: they are just composed one layer up.
     //
     // THE LINE WAS THE OPENING'S SENTENCE AND IT IS THE ROW SAYING WHERE THE SESSION STANDS,
     // because the floor took the sentence out of reach: it is seventy-seven columns wide and no
     // console is drawn under eighty (`src/repl/floor.ts`), so nothing a caller can do folds it.
     // The row that says where they are standing is a PATH, and a project a few directories down
-    // is wider than any window ({@link deep}) — same half of the opening, same renderer, and a
+    // is wider than any window ({@link deep}): same half of the opening, same renderer, and a
     // shape a caller really has.
     //
     // AND THE LINE IS THE PRODUCT'S OWN, composed by the function the session composes it with
-    // over the directory the session will be opened in — never rebuilt here, for the reason every
+    // over the directory the session will be opened in, never rebuilt here, for the reason every
     // other subject on this bench is read rather than retyped (`repl/session.ts`, `standingLine`).
     const wide = 200;
     const narrow = 80;
@@ -519,14 +519,14 @@ describe('the fold follows the window the caller is looking at', () => {
       //
       // SOMETHING IS PRINTED FIRST, AND IT IS THE STEP RATHER THAN THE SUBJECT. Starting the
       // page over on a page that holds nothing but the opening was a frame identical to the one on
-      // the screen, and the library writes nothing at all for one of those — so the step would
+      // the screen, and the library writes nothing at all for one of those, so the step would
       // wait for ever and a mutation would come back as the driver's wall instead of as this
       // case's own accusation. Measured: exactly that, on the mutation that composes the opening
       // with a renderer which is not the frame's.
       //
       // IT IS NOT IDENTICAL ANY MORE, and the refusal still stands. A clear that leaves the page as
       // it was is an answer like any other, so it now raises the row that says so
-      // (`src/repl/console.ts`, `judged`) and the step would end on that row — a frame about the
+      // (`src/repl/console.ts`, `judged`) and the step would end on that row: a frame about the
       // clear, and not the page started over at the new width that this case reads. Printing
       // first is what makes the page the step ends on a page the clear really changed.
       steps: [opens, resizedTo(narrow), asksWhatItRuns, startsOver, leaves],
@@ -556,7 +556,7 @@ describe('no frame holds two widths, at any size the caller stops at', () => {
     // left it whole would be one assertion asked three times.
     // THE NARROWEST WAS SIXTY AND IT IS EIGHTY, and the two that follow moved with it: under
     // eighty by twenty-four no page is drawn at all (`src/repl/floor.ts`), so a size under the
-    // floor is a size the console never draws a rule at — and the rules are what a page is found
+    // floor is a size the console never draws a rule at, and the rules are what a page is found
     // by. The sizes are the floor and two above it, and the widest row (ninety-nine columns)
     // still folds at two of the three.
     const sizes = [80, 90, 140];
@@ -572,14 +572,14 @@ describe('no frame holds two widths, at any size the caller stops at', () => {
     });
 
     const widest = theWidestLine();
-    // How many rows this case actually REFUSED — a page of widths that never differ is a
+    // How many rows this case actually REFUSED: a page of widths that never differ is a
     // property satisfied for free, and this is what says it was not.
     let refused = 0;
     for (const columns of sizes) {
       const screen = theSettledScreen(ran.bytes, columns, TALL_ENOUGH);
       const page = rowsOf(screen);
       const at = `${columns} columns`;
-      // The rules of the input area really do measure this terminal — said out loud rather than
+      // The rules of the input area really do measure this terminal: said out loud rather than
       // left to the locator, because two halves that came from one reading are one thing
       // asserted twice.
       expect(everyWidthDrawnOn(page), `${at}: nothing on the page was drawn that wide`).toContain(
@@ -619,7 +619,7 @@ describe('the frame is composed for a size the device really answered with', () 
   it('asks the device ONCE for the size the first frame is built at', async () => {
     // THIS IS THE SITE THE SWEEP FOUND AND NO CASE COVERED. The console's own doc says a frame
     // built out of two readings of a device the caller can resize between them is a frame built
-    // out of two different terminals — and the line that seeds the size read it twice
+    // out of two different terminals, and the line that seeds the size read it twice
     // (`{ columns: theSize()[0], rows: theSize()[1] }`), which is the one line older than the
     // function that exists to stop it. Nothing was red when it was put back, so it is closed
     // here: the mutation is invisible on any device that answers the same pair twice, and this
@@ -627,7 +627,7 @@ describe('the frame is composed for a size the device really answered with', () 
     //
     // THE DEVICE ANSWERS A DIFFERENT PAIR ON THE SECOND ASK, which is a caller resizing between
     // two reads, made deterministic. What the case then asks is what the FIRST frame was composed
-    // for — the console hands the size to the opening, so the opening is where it is observable
+    // for: the console hands the size to the opening, so the opening is where it is observable
     // without reaching into the module.
     const answers: readonly (readonly [number, number])[] = [
       [120, 24],
@@ -671,7 +671,7 @@ describe('the frame is composed for a size the device really answered with', () 
     await page.closed;
 
     // THE FIRST FRAME IS ONE OF THE TERMINALS THE DEVICE NAMED, whole. With two readings it is
-    // the width of the first and the height of the second — a shape no terminal was ever.
+    // the width of the first and the height of the second: a shape no terminal was ever.
     expect(composed[0], 'the first frame is half one terminal and half another').toEqual(
       answers[0],
     );
@@ -746,8 +746,8 @@ describe('the colour is one answer per invocation and the width is not', () => {
   it('asked for no width at all, answers for the terminal this invocation is on', () => {
     // THE LINK between the two doors: the renderer every verb is handed is this rule asked with
     // nothing, so a verb that prints and exits folds to the width the entry read and nothing
-    // else. It is what keeps `chosen-once.test.ts` — the pipe, the file, the CI log and the
-    // recorded transcript — saying what it has always said.
+    // else. It is what keeps `chosen-once.test.ts` (the pipe, the file, the CI log and the
+    // recorded transcript) saying what it has always said.
     const long = theWidestLine();
     const at = rendererAtEachWidth(() => onATerminal(60));
     expect(at()(long)).toBe(at(60)(long));
@@ -772,7 +772,7 @@ describe('the colour is one answer per invocation and the width is not', () => {
 // ---------------------------------------------------------------------------
 
 /**
- * WHICH GLYPHS OF A ROW TAKE TWO CELLS — declared here, never asked of the product.
+ * WHICH GLYPHS OF A ROW TAKE TWO CELLS: declared here, never asked of the product.
  *
  * IT IS THE POINT OF THE CASE BELOW BEING A CASE. What the page is measured by has to be
  * INDEPENDENT of the thing under test, or the assertion is the product agreeing with itself:
@@ -798,7 +798,7 @@ describe('a record titled in two-cell characters is folded by the product', () =
     //
     // AND WHAT THAT PRODUCES ON THE SCREEN IS NOT AN OVERFLOW, WHICH IS THE FINDING THIS CASE WAS
     // REWRITTEN AROUND. The layout library measures correctly and wraps whatever our fold left
-    // too wide, so the row never runs past the page — it is broken by the LIBRARY instead of by
+    // too wide, so the row never runs past the page: it is broken by the LIBRARY instead of by
     // the product, at the margin, and the continuation lands at column zero of the region. So the
     // promise that breaks is the one this surface makes about a folded line: the continuation is
     // indented one level under the row that generated it (`src/presentation/folded.ts`), which is
@@ -810,7 +810,7 @@ describe('a record titled in two-cell characters is folded by the product', () =
     //
     // Four columns, and they are the difference between a list and a wall of text. Outside the
     // session there is no library to catch it and the TERMINAL breaks it the same way, with no
-    // indent at all — which is the half the goldens cannot see, because a pipe reports no width.
+    // indent at all, which is the half the goldens cannot see, because a pipe reports no width.
     const columns = THE_FLOOR.columns;
     const ran = await inPty({
       columns,
@@ -834,7 +834,7 @@ describe('a record titled in two-cell characters is folded by the product', () =
     // fitted on one row would have no continuation to be indented wrongly.
     expect(carrying.length, `the title landed on one row:\n${screen.text}`).toBeGreaterThan(1);
 
-    // EVERY ROW OF IT IS INDENTED AS A CONTINUATION OF AN ITEM — one level under the item's own
+    // EVERY ROW OF IT IS INDENTED AS A CONTINUATION OF AN ITEM: one level under the item's own
     // depth, which is the indent this product's fold adds and the library's wrap does not.
     const hanging = indentOf(2);
     for (const row of carrying) {
@@ -845,8 +845,8 @@ describe('a record titled in two-cell characters is folded by the product', () =
     }
 
     // AND NO ROW RUNS PAST THE PAGE, counted independently ({@link cellsOfRow}). It is the weaker
-    // half — the library would satisfy it on its own, which is exactly what the paragraph above
-    // says — and it is kept because it is the promise, and because outside a session nothing else
+    // half (the library would satisfy it on its own, which is exactly what the paragraph above
+    // says) and it is kept because it is the promise, and because outside a session nothing else
     // holds it.
     for (const row of page) {
       expect(
@@ -870,20 +870,20 @@ describe('a record titled in two-cell characters is folded by the product', () =
 /** The four directories that draw: everything that ever asks how wide something is. */
 const THE_SURFACE = ['presentation/', 'repl/', 'choice/', 'wiring/'];
 
-/** The authority over columns, by the path it lives at — the one module exempt from the rule. */
+/** The authority over columns, by the path it lives at: the one module exempt from the rule. */
 const THE_AUTHORITY = 'presentation/width.ts';
 
 /** The library the layout draws by, by the name a module has to write to load it. */
 const THE_LIBRARY = 'string-width';
 
 /**
- * WHAT WORKING OUT A WIDTH BY HAND LOOKS LIKE — the four shapes, and each is one somebody
+ * WHAT WORKING OUT A WIDTH BY HAND LOOKS LIKE: the four shapes, and each is one somebody
  * really wrote on this surface before the authority existed.
  *
  *   - SPREAD AND COUNT: `[...text].length`, which is what `widthOf` was, and what the mark of a
  *     picked row and the caret's column were counted with.
- *   - PAD: `padEnd`/`padStart`, which pads to a count of code UNITS — the table column that
- *     holds an agent's own name, and the block of words in the help.
+ *   - PAD: `padEnd`/`padStart`, which pads to a count of code UNITS (the table column that
+ *     holds an agent's own name, and the block of words in the help).
  *   - A LITERAL, MEASURED: `'decision'.length`, the width of one report's kind column. The
  *     literal is blanked before this runs (`support/reading-source.ts`), so what is left is a
  *     `.length` with nothing in front of it, which is exactly the shape.
@@ -894,8 +894,8 @@ const THE_LIBRARY = 'string-width';
  * WHAT IT DOES NOT REACH, said out loud so a pass is not read as more than it is: a bare
  * `text.length` on a variable that holds a string. Without types there is nothing to tell it
  * from `items.length` on an array, and half this surface counts arrays. The three sites of that
- * shape that existed — the widest word of the session's list, of the bare name's doors and of
- * the help — ask `widestOf` now, and what stands between them and a relapse is the link below
+ * shape that existed (the widest word of the session's list, of the bare name's doors and of
+ * the help) ask `widestOf` now, and what stands between them and a relapse is the link below
  * (every module of the surface that measures anything imports the authority) rather than this
  * pattern.
  */
@@ -922,7 +922,7 @@ function modulesOfTheSurface(): readonly { where: string; raw: string; code: str
 describe('one authority over how wide text is, and nothing on the surface counts for itself', () => {
   it('loads the layout library’s own measurement in exactly one module', () => {
     // THE DECISION THIS RESTS ON. The frame comes apart when OUR count and the RENDERER'S
-    // disagree, not when ours disagrees with the truth of some terminal — so the authority is the
+    // disagree, not when ours disagrees with the truth of some terminal, so the authority is the
     // one the layout draws by, and a second module reaching for it would be a second answer about
     // the same page. The discriminant is the library's own name over the RAW source, prose
     // included: a module that so much as talks about measuring text itself is the next opinion
@@ -937,7 +937,7 @@ describe('one authority over how wide text is, and nothing on the surface counts
 
   it('works out no width by hand anywhere on the surface', () => {
     // CODE AND NOT PROSE. The paragraphs that make this rule readable NAME the shapes it
-    // refuses — this file's own do — and a scanner that read a doc comment would accuse the
+    // refuses (this file's own do) and a scanner that read a doc comment would accuse the
     // documentation for existing (`support/reading-source.ts`).
     const modules = modulesOfTheSurface();
     // Read, rather than absent.
@@ -1015,7 +1015,7 @@ describe('two files ask a device for its size, and a third would be a third answ
     // line folds is part of the capability every verb is handed, resolved where the process is;
     // the console reads it because the frame IS the screen and every number on it comes out of
     // one reading. Those are two answers to two questions. A THIRD would be a number nobody
-    // reconciled — and the console's own doc has claimed for two deliveries that a third was
+    // reconciled, and the console's own doc has claimed for two deliveries that a third was
     // refused, with nothing anywhere refusing one.
     const asking = sourceFiles(SRC)
       // CODE AND NOT PROSE. Half this surface's files DISCUSS who reads the width, in the very
@@ -1031,7 +1031,7 @@ describe('two files ask a device for its size, and a third would be a third answ
 
   it('would accuse a module that reached for one', () => {
     // The vacuous form: a detector whose terms match nothing any more. Composed against the two
-    // lines a careful author would write — the stream's own property, and the call the layout
+    // lines a careful author would write: the stream's own property, and the call the layout
     // library makes.
     expect(ASKS_A_DEVICE.test(codeOnly('const wide = process.stdout.columns ?? 0;'))).toBe(true);
     expect(ASKS_A_DEVICE.test(codeOnly('const size = stdout.getWindowSize?.();'))).toBe(true);

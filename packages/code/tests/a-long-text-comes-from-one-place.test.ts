@@ -1,6 +1,6 @@
 /**
  * `mnema decision record`: the rationale typed on the line, read from standard input
- * (`--stdin`) or read from a file (`--body-file`) — one of the three, and a line that gives it
+ * (`--stdin`) or read from a file (`--body-file`), one of the three, and a line that gives it
  * from two places is refused with the places it named, writing nothing.
  */
 

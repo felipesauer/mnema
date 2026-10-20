@@ -1,5 +1,5 @@
 /**
- * A GROUP'S FLAG A SUBCOMMAND DOES NOT READ IS REFUSED BEFORE ANYTHING IS WRITTEN — on the binary.
+ * A GROUP'S FLAG A SUBCOMMAND DOES NOT READ IS REFUSED BEFORE ANYTHING IS WRITTEN: on the binary.
  *
  * WHAT WAS WRONG. `decision` declares `--alternatives` for the decision it records, and `skill`
  * declares `--body` for the pattern it proposes. commander hands a group those flags wherever they
@@ -10,13 +10,13 @@
  * skill and kept its old body. A caller had no way to know the flag had meant nothing.
  *
  * WHAT IS ASSERTED. Each of those lines, and its sibling on the other subcommands, is refused with
- * the sentence that says where the flag is read — and the record, the HOME and the project's own
+ * the sentence that says where the flag is read, and the record, the HOME and the project's own
  * files are left byte for byte as they were. And the same line without the flag goes through, so
  * the flag is the whole reason. The completion script the binary writes offers none of them there,
  * and still offers the group's `--which` on a move, which reads it.
  *
  * AND THE ONE A MOVE DOES READ ARRIVES. `--which` is the group's flag the moves take, written after
- * the move or before it, and it is the agent on the transition the record keeps — read back through
+ * the move or before it, and it is the agent on the transition the record keeps: read back through
  * `mnema export`, the product's own feed of who executed what. Nothing held that until this file: a
  * mutation that made `task move` stop taking it lit only the tables of what each subcommand reads,
  * and no case that runs a move.
@@ -41,7 +41,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;

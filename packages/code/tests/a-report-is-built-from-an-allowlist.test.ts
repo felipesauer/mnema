@@ -1,5 +1,5 @@
 /**
- * A REPORT OF AN INTERNAL ERROR IS BUILT FROM AN ALLOWLIST — the report carries a handful of
+ * A REPORT OF AN INTERNAL ERROR IS BUILT FROM AN ALLOWLIST: the report carries a handful of
  * typed facts and nothing of what the error said, what was typed, or where this machine keeps
  * things; what is shown is the text that would be sent; and it is offered once per kind of
  * error and three times a day, to a person who can refuse it, from a file outside the record.
