@@ -229,7 +229,7 @@ $ mnema audit antipatterns --json
 |   }
 | }
 $ mnema status --actor <anchor>
-| <anchor-short>: where things stand.
+| <anchor-short>, where things stand.
 |   No runs.
 |
 | No live tasks.
@@ -1499,7 +1499,7 @@ $ mnema audit antipatterns --json
 |   }
 | }
 $ mnema status --actor <anchor>
-| <anchor-short>: where things stand.
+| <anchor-short>, where things stand.
 |   last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 |

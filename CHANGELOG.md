@@ -178,8 +178,8 @@ with its own changelog.
   first request that carries a list of tools is read off what each real host sends its stand-in model, in the
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
-  definition of all 27 (49,902, 50,028, 50,955 and 56,728 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
-  a relative measure), against 54,230 bytes and 12,303 tokens for the server's own listing; Codex carries none and
+  definition of all 27 (49,903, 50,029, 50,956 and 56,729 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
+  a relative measure), against 54,231 bytes and 12,303 tokens for the server's own listing; Codex carries none and
   one `tool_search` entry that lists the server (2,882 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
@@ -187,6 +187,7 @@ with its own changelog.
 
 ### Changed
 
+- **Two more lines read as they mean.** The first line of `mnema status` is now `<identity>, where things stand.`, because the identity already carries a colon (`mnid:<hex>`); and the description of the `rules_before_an_edit` tool has a comma before "and the host holds the write", so that it is the host that holds the write and a person that cites the rule's id. No word changed; the description weighs one byte more.
 - **The text the program prints reads better where the sweep of the em dash left a chain of colons or an ambiguous
   comma.** Only the punctuation changed, and no word: the `--global` line of `--help` (the parenthesis
   "(left out by default)"), the line `mnema completion --help` prints about where the script goes, the lines of
@@ -212,7 +213,7 @@ with its own changelog.
   `ADR-2: Keep money as integer cents`, a colon where a dash stood, in the opening document, in what shows one record
   and in the lists. A link the program states reads `Linked A -refuses-a-write→ B` with a hyphen before the relation
   (the arrowhead is kept), and the line after a write says `Landed in the public tree: committed with the repository`.
-  The same holds for where things stand (the identity, then a colon), a count followed by what reads it
+  The same holds for where things stand (the identity, then a comma), a count followed by what reads it
   (`docs/adr (2): ...`), the last run and its goal, the way a rule is cited at an edit, the line about a backup key
   and the line of a project that already exists, the paragraphs of the opening document, the notes under a list of
   tails, runs, usage and references, the report of a problem (its title no longer has a dash before the

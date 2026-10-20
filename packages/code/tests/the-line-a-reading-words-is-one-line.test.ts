@@ -1653,7 +1653,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- status.ts: where things stand ---------------------------------------------
-  'status.ts «{}: where things stand.» actor #1': {
+  'status.ts «{}, where things stand.» actor #1': {
     verdict: 'minted',
     why: 'an anchor: the reading resolved the actor to one before this line',
   },
