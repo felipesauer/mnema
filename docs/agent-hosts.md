@@ -1,6 +1,6 @@
 # What a session is handed
 
-With the Claude Code plugin, the record reaches a session twice — as it opens, and
+With the Claude Code plugin, the record reaches a session twice: as it opens, and
 at each edit. The other hosts get as much of this as their hooks allow: Codex, Copilot CLI,
 Gemini CLI, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and how far
 each one goes is [the table of each host's rung](evidence.md#each-hosts-rung).
@@ -17,7 +17,7 @@ sequenceDiagram
     M-->>H: the rules addressed at src/billing, by title and id
     Note over H: they land beside the result of that write, and stay
     H->>M: record a decision, with the reasoning and what was turned down
-    M->>R: appended and signed — committing it is yours
+    M->>R: appended and signed: committing it is yours
 ```
 
 The opening text says what it is before it says anything else, so the agent reads
@@ -144,4 +144,4 @@ was not tried. On a CI runner, see [the Action's page](../packages/action/README
   Codex's or Gemini's MCP servers sit inside their sandbox; that the settings above, together, keep a shell from reading
   the key on any version.
 
-To integrate mnema with a new agent host, see [plugin/porting-to-a-host.md](../plugin/porting-to-a-host.md) — it describes how to connect the MCP server, measure hook behavior, and reuse existing host implementations.
+To integrate mnema with a new agent host, see [plugin/porting-to-a-host.md](../plugin/porting-to-a-host.md): it describes how to connect the MCP server, measure hook behavior, and reuse existing host implementations.

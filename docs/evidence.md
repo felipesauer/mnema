@@ -3,20 +3,20 @@
 Every claim the pages make about what the agent hosts do, what the plugin hands them, and what
 the verifiers agree on with vectors other people wrote, is held by one of three things: a file of this repository that fails when the claim stops
 being true, a result that was read once and is kept here as history, or nothing yet. The
-table says which, per claim, and the last column names the file — a test or a specification
+table says which, per claim, and the last column names the file: a test or a specification
 that is in the tree today. Every file named on this page is checked to exist.
 
 The words mean one thing each:
 
-- **held by a test** — a case in the suite fails when the claim stops being true. That is the
+- **held by a test**: a case in the suite fails when the claim stops being true. That is the
   product's half: what `mnema` answers, records and prints. For the hosts that run on a free
   runner with no model and no account, Claude Code and VS Code, it is the host's half too: the
   real host is started against a stand-in for its model, and the case reads what the host did.
   Those cases run on every pull request against one pinned release of the host, and every week
   against the newest ones, and a round that measured another release than the one it names is red.
-- **historical** — a result read on one day, with one host or model and one number of runs. It
+- **historical**: a result read on one day, with one host or model and one number of runs. It
   is stated with those and with no link, because nothing in the tree reruns it.
-- **not held yet** — nothing in the tree holds the claim. It is the host's behaviour, read
+- **not held yet**: nothing in the tree holds the claim. It is the host's behaviour, read
   once against a real host, and it expires with that host's version.
 
 What the verifier proves, and what it does not, is on
@@ -120,10 +120,10 @@ client.
 | GitHub Copilot CLI sends all 27 whole in the first request that lists tools, in the non-interactive run the contract starts (`copilot -p`): 50,318 bytes, 11,527 tokens | a test | [`the-tool-definitions-the-host-sends.copilot.test.ts`](../packages/code/tests/host-contract/the-tool-definitions-the-host-sends.copilot.test.ts) |
 | Gemini CLI sends all 27 whole in the first request that lists tools, in the non-interactive run the contract starts (`gemini -p`): 57,018 bytes, 12,718 tokens | a test | [`the-tool-definitions-the-host-sends.gemini.test.ts`](../packages/code/tests/host-contract/the-tool-definitions-the-host-sends.gemini.test.ts) |
 | OpenCode sends all 27 whole in the first request that lists tools (its first request is a title preflight with none), in the non-interactive run the contract starts (`opencode run`): 51,245 bytes, 11,501 tokens | a test | [`the-tool-definitions-the-host-sends.opencode.test.ts`](../packages/code/tests/host-contract/the-tool-definitions-the-host-sends.opencode.test.ts) |
-| The three verifiers of a record — the product on each Node the CI runs, the Python second reader and the page's verifier — give the verdict their publishers give on every Ed25519 vector of Wycheproof, CCTV, ed25519-speccheck and RFC 8032 §7.1, under the strict rule of `FORMAT.md` §6 | a test | [`every-verifier-gives-one-ed25519-verdict.test.ts`](../packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts) |
+| The three verifiers of a record (the product on each Node the CI runs, the Python second reader and the page's verifier) give the verdict their publishers give on every Ed25519 vector of Wycheproof, CCTV, ed25519-speccheck and RFC 8032 §7.1, under the strict rule of `FORMAT.md` §6 | a test | [`every-verifier-gives-one-ed25519-verdict.test.ts`](../packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts) |
 | Both readers of the format spell a number as RFC 8785's Appendix B does, and as the first 10,000 lines of cyberphone's `numgen.js` do, run unmodified and matched to the SHA-256 its author published | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
 | Both readers refuse every JSONTestSuite `n_` file as a stored line, and decide every `i_` file alike; every file whose bytes are not UTF-8 both refuse for that, naming the same byte | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
-| Each file of a record the readers decode — a segment line, a checkpoint, the tail proof, a committed key — is refused by the product and by the second reader, naming the same byte, when one byte in it is not UTF-8, and a torn final fragment, cut on any byte, is dropped by both | a test | [`every-reader-refuses-bytes-that-are-not-utf8.test.ts`](../packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts) |
+| Each file of a record the readers decode (a segment line, a checkpoint, the tail proof, a committed key) is refused by the product and by the second reader, naming the same byte, when one byte in it is not UTF-8, and a torn final fragment, cut on any byte, is dropped by both | a test | [`every-reader-refuses-bytes-that-are-not-utf8.test.ts`](../packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts) |
 | The vectors above are the files their publishers published: each is copied with its license and commit, and its SHA-256 is checked | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
 | An agent is never its own authority: a `which` equal to the `who`, even short or padded, is refused before anything is written | a test | [`authority.test.ts`](../packages/core/src/identity/authority.test.ts) (the refusal) · [`operations.test.ts`](../packages/core/src/knowledge/operations.test.ts) (nothing written, not even the founding) |
 | The step the Action's page publishes for an agent in CI, run as written on a clone with an empty home, installs the key the record enrols as the agent and nothing else; a server given only the agent's name then writes facts that both readers read as attested, founds no identity, and is refused a write to a tree the runner cannot enrol it in. A host passing the job's environment to the server it starts is not measured | a test | [`the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts`](../packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts) |
@@ -140,9 +140,9 @@ so they are stated as what they were: the day, the model, the number of runs.
   of 20 instrumented cells, and the arm scored what the arm with no record scored. A second round
   on 20 August, with the same model, had it false in 40 of 40.
 - **Handing the decision over moved the agent.** On 21 August 2026, in 160 cells with Claude
-  Haiku 4.5 — six tasks where the right move depends on a decision the code does not reveal, four
+  Haiku 4.5 (six tasks where the right move depends on a decision the code does not reveal, four
   runs of each in every arm, counting two negative controls and two development tasks that ran
-  beside them — the rate at which the agent followed the team's decision, over the six tasks, was:
+  beside them), the rate at which the agent followed the team's decision, over the six tasks, was:
 
   | arm | what the agent had | followed the team's decision |
   |---|---|---|
@@ -152,9 +152,9 @@ so they are stated as what they were: the day, the model, the number of runs.
   | `mnema+` | the same, and the rules for a file handed over at each edit | **100.0%** |
 
   Handing the decision over moved the agent from 33.3% to 100.0%, and the host's own memory
-  moved it just as far — so the difference mnema makes is not a higher score. The rules at each
+  moved it just as far, so the difference mnema makes is not a higher score. The rules at each
   edit added nothing measurable: in every cell they landed beside the result of the task's only
-  write. What mnema changes is where the decision lives — in the repository, shared by the team,
+  write. What mnema changes is where the decision lives: in the repository, shared by the team,
   in the diff of the pull request, superseded rather than overwritten, and checkable by anyone.
   And what was measured is conformance to a recorded decision, not whether the decision was
   right. In that round `mcp_asked` was true in 2 of 80 cells that had a server to ask, both on

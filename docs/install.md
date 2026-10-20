@@ -55,8 +55,8 @@ export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup
 
 ## Claude Code
 
-For the Claude Code plugin — the opening context, the notes beside it and the per-edit
-rules — add this repository as a marketplace and install from it:
+For the Claude Code plugin (the opening context, the notes beside it and the per-edit
+rules), add this repository as a marketplace and install from it:
 
 ```sh
 claude plugin marketplace add felipesauer/mnema
@@ -83,16 +83,16 @@ claude plugin install mnema-server-only@mnema
 It connects the same `mnema mcp` and runs no hook, so what the plugin's hooks hand over is
 not handed over: the record is not put into the session as it opens, no rule comes beside an
 edit, no pause for a person is asked at one, and no count or correction is taken at the end of
-a response — and its skills are not installed. The agent still has every tool of the server,
+a response, and its skills are not installed. The agent still has every tool of the server,
 and you still have every command. Do not install both: they declare the same server.
 
 ## VS Code and Cursor
 
 In VS Code and Cursor, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
-picks up a plugin installed in Claude Code on the same machine; the per-host details — what
+picks up a plugin installed in Claude Code on the same machine; the per-host details (what
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
-that reaches VS Code as well — are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
+that reaches VS Code as well) are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
 
 VS Code's agent loads the plugin only from a folder listed in its `chat.pluginLocations` setting,
 which VS Code marks as experimental. In order: install the plugin in Claude Code
@@ -136,7 +136,7 @@ curl -fsSL https://raw.githubusercontent.com/felipesauer/mnema/main/plugin/openc
 ```
 
 The module runs the first `mnema` on the `PATH`. It adds the document and the notes to each
-session's system prompt, and refuses a write — `write`, `edit` or `apply_patch` — where a rule
+session's system prompt, and refuses a write (`write`, `edit` or `apply_patch`) where a rule
 refuses it, handing the model the rule as the call's error, and every write while a line of the
 record is one this mnema cannot read: in that project, or in every project of the machine when the
 line is in the global tree ([the limit](features.md)). It pauses nothing, so a rule that only
@@ -146,7 +146,7 @@ opening goes through a hook OpenCode marks experimental, so it is held on one ve
 for every project. The module runs `mnema` as a process and waits for it: a call that does not answer
 holds OpenCode's own process for up to 15 seconds (the opening asks twice, `brief` and `recall`, after
 asking `mnema` who it is, so up to 45), and on Windows `mnema.cmd` may not be run at all, since Node
-does not start a `.cmd` without a shell — the module is then silent, as where `mnema` is missing; this
+does not start a `.cmd` without a shell: the module is then silent, as where `mnema` is missing; this
 last point was not run.
 
 ## GitHub Copilot CLI
@@ -181,14 +181,14 @@ to the first turn of each session (the host escapes the angle brackets of that t
 It pauses nothing, so a rule that only asks is let through, and it does nothing where `mnema` is
 missing or is another program. Its two hooks run one script that runs `mnema` as a process and waits
 for it, and the extension's hooks file gives each hook 15 seconds; on Windows `mnema.cmd` may not be
-run at all, since Node does not start a `.cmd` without a shell — the script is then silent; that was
+run at all, since Node does not start a `.cmd` without a shell: the script is then silent; that was
 not run. A run without a person (`gemini -p`) in a folder the host does not trust does not start
 unless it is told to trust it (`--skip-trust`).
 
 ## Any other host with an MCP client
 
-The hosts in the first rung of [the table](evidence.md#each-hosts-rung) — Cursor's editor,
-Antigravity's command line, Factory Droid, Qwen Code and Goose — get no plugin from this repository.
+The hosts in the first rung of [the table](evidence.md#each-hosts-rung) (Cursor's editor,
+Antigravity's command line, Factory Droid, Qwen Code and Goose) get no plugin from this repository.
 Their own documentation says they take an MCP server and read a rules file; that was read, not run
 with this product. Any other client that takes an MCP server is in the same place, and nothing about it
 was read. Declare the server the way the

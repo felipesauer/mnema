@@ -38,7 +38,7 @@ mnema search
 #> decision (1)
 #>   01a0af84-7eab-7000-8888-79c0dd5690e2  public  2026-09-17  Use SQLite for the projection cache (proposed)
 
-# And the chain says what it can prove about itself — one line for a record with nothing wrong in
+# And the chain says what it can prove about itself: one line for a record with nothing wrong in
 # it. The backup key `init` made, which signs nothing until you restore it, is counted in that
 # line; `mnema verify --verbose` also names it, and says the private tree holds nothing yet.
 mnema verify
