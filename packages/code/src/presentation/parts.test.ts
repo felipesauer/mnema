@@ -101,7 +101,7 @@ describe('every role has something that produces it', () => {
     // level's clause carrying the news, the rest qualifying it and carrying none.
     clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
     clauseStatement('public', [
-      { text: 'local integrity verified (T1 only) — no signature was checked', severity: 'warn' },
+      { text: 'local integrity verified (T1 only): no signature was checked', severity: 'warn' },
       { text: '1 tail(s)' },
       { text: '6 event(s) are hash-chained but NOT yet signature-covered' },
     ]),

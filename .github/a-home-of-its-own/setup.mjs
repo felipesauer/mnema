@@ -184,7 +184,7 @@ function guarded(starter, args) {
       .split('\n')
       .find((frame) => /\.test\.ts:\d+/.test(frame))
       ?.trim() ?? 'a line outside any test file';
-  caught.push(`${starter}(${String(args[0])}) — ${reasons.join('; ')} — ${line}`);
+  caught.push(`${starter}(${String(args[0])}): ${reasons.join('; ')}: ${line}`);
 
   /** @type {NodeJS.ProcessEnv} */
   const safe = { ...env, HOME: HOME_OF_ITS_OWN };

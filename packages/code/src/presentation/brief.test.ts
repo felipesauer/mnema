@@ -955,7 +955,7 @@ describe('the hook’s copy for a host that counts in its own unit', () => {
 
   it('reads Codex’s ceiling off the host table, and Claude Code’s for every host that names none', () => {
     expect(codex.most).toBe(10_000);
-    expect(codex.lengthOf('ç·—')).toBe(7);
+    expect(codex.lengthOf('ç·–')).toBe(7);
     expect(hookCeilingOf(undefined)).toBe(CLAUDE_CODE_CEILING);
     expect(hookCeilingOf(hookTextOf('cursor'))).toBe(CLAUDE_CODE_CEILING);
     expect(CLAUDE_CODE_CEILING.most).toBe(HOOK_TEXT_CEILING);

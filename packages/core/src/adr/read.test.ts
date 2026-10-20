@@ -38,7 +38,7 @@ status: proposed
 date: 2026-01-04
 ---
 
-# ADR-007 — Use UTC everywhere
+# ADR-007 \u2014 Use UTC everywhere
 
 ## Context and Problem Statement
 
@@ -76,8 +76,8 @@ describe('reading one decision document', () => {
     // the file name (which is the provenance), and keeping it in the title too
     // would put two numbers on one citation: the product freezes its own.
     for (const [heading, expected] of [
-      ['# ADR-002 — A vaga é opcional', 'A vaga é opcional'],
-      ['# ADR 0001 — SessionDB is multi-writer-safe', 'SessionDB is multi-writer-safe'],
+      ['# ADR-002 \u2014 A vaga é opcional', 'A vaga é opcional'],
+      ['# ADR 0001 \u2014 SessionDB is multi-writer-safe', 'SessionDB is multi-writer-safe'],
       ['# 1. Record architecture decisions', 'Record architecture decisions'],
       ['# ADR-12: Use UTC', 'Use UTC'],
     ] as const) {

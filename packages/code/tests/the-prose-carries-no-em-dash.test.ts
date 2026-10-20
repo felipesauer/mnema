@@ -65,22 +65,7 @@ const ESCAPES: readonly string[] = [
  * a sweep lowers its own line, or deletes it when the area holds none. Each line has a comment of
  * its own above it, so two sweeps that delete different lines never touch neighbouring ones.
  */
-const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-  // the CI scripts, their pages and the workflows
-  '.github/': 22,
-  // the manual
-  'docs/': 15,
-  // the source of @mnema/code outside the areas below
-  'packages/code/src/': 5,
-  // what it prints
-  'packages/code/src/presentation/': 5,
-  // the verifier page it builds
-  'packages/code/src/site/': 1,
-  // @mnema/core
-  'packages/core/': 5,
-  // the plugin for agent hosts
-  'plugin/': 2,
-};
+const NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * WHERE THE CHARACTER IS DATA: how many escapes each file holds, exactly, and why. A count that
@@ -94,6 +79,30 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
       'the Rekor checkpoint in this bundle is a C2SP signed note, whose signature line starts with ' +
       'U+2014 and a space; the bundle is JSON, so the character is written as its JSON escape, ' +
       'and `src/commands/stack-signature.test.ts` still verifies the checkpoint with it',
+  },
+  'packages/code/src/presentation/width.test.ts': {
+    times: 1,
+    why:
+      'the em dash is a character of Ambiguous width, and the case asks for it by its code point ' +
+      'to show the surface counts it as one column and not two',
+  },
+  'packages/code/src/user-corrections.ts': {
+    times: 1,
+    why:
+      'the pattern that reads the opening of a person\'s message accepts an em dash after "no", ' +
+      'as it did before; it is a character the reader matches, never one the program prints or records',
+  },
+  'packages/core/src/adr/read.ts': {
+    times: 1,
+    why:
+      'the importer of decision files written by others still accepts an em dash between the ' +
+      'number of a title and its words, so the pattern names it by its code point',
+  },
+  'packages/core/src/adr/read.test.ts': {
+    times: 3,
+    why:
+      'the cases hand the importer titles written the old way, with an em dash after the ADR ' +
+      'number, to show it still strips the number',
   },
 };
 

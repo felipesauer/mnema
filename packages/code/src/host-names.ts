@@ -279,9 +279,9 @@ export const HOSTS = {
       bytesPerTokenAt: `${CODEX_SOURCE}/codex-rs/utils/string/src/truncate.rs#L4`,
     },
     note:
-      'The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the ' +
+      'The refusal fails open, as on every host: a gate that cannot answer, no `mnema` on the ' +
       'PATH (held by its test) or a hook that errors (read in ' +
-      `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — ` +
+      `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)), ` +
       'lets the patch through. A record the gate cannot read is not a hook that errors: it is a ' +
       '`deny` (held by its test). The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
@@ -337,7 +337,7 @@ export const HOSTS = {
       'tool names (`Write`, `Edit`) and snake_case fields, with the path under `path`. A command ' +
       'hook that exits non-zero denies the call there (read in ' +
       `[the hooks reference](${COPILOT_DOCS}/reference/hooks-reference.md)), so the plugin's ends ` +
-      'in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past ' +
+      'in `exit 0` whatever happened: no `mnema` on the PATH is held by its test; a hook past ' +
       'its timeout is let through by the host (read, not measured: [read 14 October 2026](' +
       `${COPILOT_DOCS}/reference/hooks-reference.md#exit-codes-for-command-hooks)). The opening is the same ` +
       'text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates ' +
