@@ -154,48 +154,55 @@ function inkFoot(blocks) {
 const COS30 = Math.cos(Math.PI / 6);
 
 /**
- * An isometric cube of edge `a` whose middle vertex is (x, y), its three faces shaded.
+ * An isometric cube of edge `a` whose middle vertex is (x, y), its three faces shaded and its
+ * edges stroked in the accent. A solid one has faces in the accent itself and no stroke: each face
+ * is drawn in from its edges by the half of an edge's width, so the page parts them, on a cube
+ * grown by as much, so its outline reaches as far as a stroked one's.
  * @param {number} x
  * @param {number} y
  * @param {number} a
  * @param {string} accent
  * @param {readonly number[]} shade
- * @param {string} [edge] the colour of its edges: the accent, or the page's, for a cube whose faces
- *   are the accent itself, which is then drawn with only the three edges that part its faces
+ * @param {boolean} [solid]
  */
-function cube(x, y, a, accent, shade, edge = accent) {
-  const dx = a * COS30;
+function cube(x, y, a, accent, shade, solid = false) {
+  const half = 1.75 / 2;
+  const e = solid ? a + (2 * half) / COS30 : a;
+  const dx = e * COS30;
   const top = [
-    [x, y - a],
-    [x + dx, y - a / 2],
+    [x, y - e],
+    [x + dx, y - e / 2],
     [x, y],
-    [x - dx, y - a / 2],
+    [x - dx, y - e / 2],
   ];
   const left = [
-    [x - dx, y - a / 2],
+    [x - dx, y - e / 2],
     [x, y],
-    [x, y + a],
-    [x - dx, y + a / 2],
+    [x, y + e],
+    [x - dx, y + e / 2],
   ];
   const right = [
     [x, y],
-    [x + dx, y - a / 2],
-    [x + dx, y + a / 2],
-    [x, y + a],
+    [x + dx, y - e / 2],
+    [x + dx, y + e / 2],
+    [x, y + e],
   ];
+  // A face is a rhombus whose middle is dx / 2 from each of its sides.
+  const k = solid ? 1 - half / (dx / 2) : 1;
   /**
    * @param {number[][]} points
    * @param {number | undefined} opacity
    */
-  const face = (points, opacity) =>
-    `<path d="M${points.map(([px, py]) => `${n(px ?? 0)} ${n(py ?? 0)}`).join('L')}z" fill="${accent}" fill-opacity="${opacity}"/>`;
+  const face = (points, opacity) => {
+    const [mx = 0, my = 0] = [0, 1].map((j) => points.reduce((sum, p) => sum + (p[j] ?? 0), 0) / 4);
+    const drawn = points.map(([px = 0, py = 0]) => [mx + (px - mx) * k, my + (py - my) * k]);
+    return `<path d="M${drawn.map(([px, py]) => `${n(px ?? 0)} ${n(py ?? 0)}`).join('L')}z" fill="${accent}" fill-opacity="${opacity}"/>`;
+  };
+  const faces = [face(top, shade[0]), face(left, shade[1]), face(right, shade[2])];
+  if (solid) return faces;
   return [
-    face(top, shade[0]),
-    face(left, shade[1]),
-    face(right, shade[2]),
-    edge !== accent
-      ? `<path d="M${n(x - dx)} ${n(y - a / 2)}L${n(x)} ${n(y)}L${n(x + dx)} ${n(y - a / 2)}M${n(x)} ${n(y)}V${n(y + a)}" fill="none" stroke="${edge}" stroke-width="1.75" stroke-linejoin="round"/>`
-      : `<path d="M${n(x)} ${n(y - a)}L${n(x + dx)} ${n(y - a / 2)}L${n(x + dx)} ${n(y + a / 2)}L${n(x)} ${n(y + a)}L${n(x - dx)} ${n(y + a / 2)}L${n(x - dx)} ${n(y - a / 2)}zM${n(x - dx)} ${n(y - a / 2)}L${n(x)} ${n(y)}L${n(x + dx)} ${n(y - a / 2)}M${n(x)} ${n(y)}V${n(y + a)}" fill="none" stroke="${accent}" stroke-width="1.75" stroke-linejoin="round"/>`,
+    ...faces,
+    `<path d="M${n(x)} ${n(y - a)}L${n(x + dx)} ${n(y - a / 2)}L${n(x + dx)} ${n(y + a / 2)}L${n(x)} ${n(y + a)}L${n(x - dx)} ${n(y + a / 2)}L${n(x - dx)} ${n(y - a / 2)}zM${n(x - dx)} ${n(y - a / 2)}L${n(x)} ${n(y)}L${n(x + dx)} ${n(y - a / 2)}M${n(x)} ${n(y)}V${n(y + a)}" fill="none" stroke="${accent}" stroke-width="1.75" stroke-linejoin="round"/>`,
   ];
 }
 
@@ -205,7 +212,7 @@ function cube(x, y, a, accent, shade, edge = accent) {
  * @param {string} muted
  * @param {number} x0
  * @param {number} cy
- * @param {{ chain: readonly number[], newest: readonly number[], edge: string }} paint
+ * @param {{ chain: readonly number[], newest: readonly number[], solid: boolean }} paint
  */
 function chain(accent, muted, x0, cy, paint) {
   const a = 30;
@@ -226,7 +233,7 @@ function chain(accent, muted, x0, cy, paint) {
         `<circle cx="${n(to)}" cy="${n(cy)}" r="2.5" fill="${muted}"/>`,
       );
     }
-    parts.push(...cube(x, cy, a, accent, shades[i] ?? [], i === 3 ? paint.edge : accent));
+    parts.push(...cube(x, cy, a, accent, shades[i] ?? [], i === 3 && paint.solid));
   }
   return { parts, width: shades.length * 2 * dx + (shades.length - 1) * link };
 }
@@ -444,7 +451,7 @@ function howItWorks(theme) {
       ...step.lines.map((line, j) =>
         sans(s, line, x + 20, mid + TYPE.caption.centre + (j - 1) * 2 * HALF_ROW, 'caption'),
       ),
-      `<rect x="${chip.x + 0.5}" y="${chip.y + 0.5}" width="${chip.w - 1}" height="${chip.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
+      `<rect x="${chip.x + 0.5}" y="${chip.y + 0.5}" width="${chip.w - 1}" height="${chip.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"${s.paint.chip ? ` stroke-width="${s.paint.chip}"` : ''}/>`,
       s.sayIn([step.chip], chip.x + PAD, chip, 'code'),
     );
     if (i < STEPS.length - 1) {
@@ -1801,7 +1808,7 @@ function palette(theme) {
  * line, a dot or an edge in the accent lies on is fainter than the family's: the glow, a card's
  * tint, the inside of a number, a tab, a halo and the faces of a cube, laid one over the other,
  * stay at about a tenth of the accent or under, where the accent keeps three to one. What is
- * solid is the accent itself, edged in the page.
+ * solid is the accent itself, its faces parted by the page.
  * @param {'dark' | 'light'} theme
  */
 function frontPalette(theme) {
@@ -1814,7 +1821,8 @@ function frontPalette(theme) {
       shade: SHADE,
       chain: [0.16, 0.08, 0.03],
       newest: [0.85, 0.55, 0.3],
-      edge: ACCENT.dark,
+      solid: false,
+      chip: '',
       glows: '0.3',
     };
   const accent = ACCENT.light;
@@ -1827,14 +1835,16 @@ function frontPalette(theme) {
       '</defs>',
     ],
     tab: '0.03',
+    // A chip's edge, a hair heavier: one unit round its small corners is under three to one.
+    chip: '1.5',
     halo: '0.06',
     badge: '0.04',
     highlight: '0.04',
     shade: [0.05, 0.025, 0],
     chain: [0.04, 0.02, 0],
-    // The newest cube is the accent itself, its faces parted by the page's own colour.
+    // The newest cube is the accent itself, its faces parted by the page.
     newest: [1, 1, 1],
-    edge: PAGE.light,
+    solid: true,
     glows: '0.04',
   };
 }

@@ -50,7 +50,7 @@
 <text x="28" y="89.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">A decision, why it was</text>
 <text x="28" y="109.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">made, and the options</text>
 <text x="28" y="129.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">turned down.</text>
-<rect x="28.5" y="152.5" width="128" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf"/>
+<rect x="28.5" y="152.5" width="128" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf" stroke-width="1.5"/>
 <text x="42" y="169.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema decision</text>
 <path class="a" style="animation-name:k5" d="M208 106L232 106" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
 <path class="a" style="animation-name:k6" d="M225.86 102.64L232 106L225.86 109.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -66,7 +66,7 @@
 <text x="256" y="89.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">Accepted by a person,</text>
 <text x="256" y="109.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">then linked to the paths</text>
 <text x="256" y="129.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">it governs.</text>
-<rect x="256.5" y="152.5" width="99" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf"/>
+<rect x="256.5" y="152.5" width="99" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf" stroke-width="1.5"/>
 <text x="270" y="169.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema link</text>
 <path class="a" style="animation-name:k14" d="M436 106L460 106" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
 <path class="a" style="animation-name:k15" d="M453.86 102.64L460 106L453.86 109.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -82,7 +82,7 @@
 <text x="484" y="89.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">The plugin opens every</text>
 <text x="484" y="109.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">session with it, and each</text>
 <text x="484" y="129.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">edit meets its rules.</text>
-<rect x="484.5" y="152.5" width="135" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf"/>
+<rect x="484.5" y="152.5" width="135" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf" stroke-width="1.5"/>
 <text x="498" y="169.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">refuses-a-write</text>
 <path class="a" style="animation-name:k23" d="M664 106L688 106" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
 <path class="a" style="animation-name:k24" d="M681.86 102.64L688 106L681.86 109.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -98,6 +98,6 @@
 <text x="712" y="89.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">Every fact is signed and</text>
 <text x="712" y="109.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">hash-chained; anyone can</text>
 <text x="712" y="129.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">check it.</text>
-<rect x="712.5" y="152.5" width="114" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf"/>
+<rect x="712.5" y="152.5" width="114" height="27" rx="6" fill="#997dbf" fill-opacity="0.03" stroke="#997dbf" stroke-width="1.5"/>
 <text x="726" y="169.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema verify</text>
 </svg>

@@ -50,10 +50,9 @@
 <path d="M834.88 68H846.88" stroke="#59636e" stroke-width="1.75" stroke-linecap="round"/>
 <circle cx="831.88" cy="68" r="2.5" fill="#59636e"/>
 <circle cx="849.88" cy="68" r="2.5" fill="#59636e"/>
-<path d="M875.87 38L901.85 53L875.87 68L849.88 53z" fill="#997dbf" fill-opacity="1"/>
-<path d="M849.88 53L875.87 68L875.87 98L849.88 83z" fill="#997dbf" fill-opacity="1"/>
-<path d="M875.87 68L901.85 53L901.85 83L875.87 98z" fill="#997dbf" fill-opacity="1"/>
-<path d="M849.88 53L875.87 68L901.85 53M875.87 68V98" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linejoin="round"/>
+<path d="M875.87 36.99L901.85 51.99L875.87 66.99L849.88 51.99z" fill="#997dbf" fill-opacity="1"/>
+<path d="M849.01 53.51L874.99 68.51L874.99 98.51L849.01 83.51z" fill="#997dbf" fill-opacity="1"/>
+<path d="M876.74 68.51L902.72 53.51L902.72 83.51L876.74 98.51z" fill="#997dbf" fill-opacity="1"/>
 <rect class="a" style="animation-name:k0" opacity="0" x="8" y="8" width="48" height="135.5" fill="#1f2328" fill-opacity="0.16" clip-path="url(#letters)"/>
 <rect class="a" style="animation-name:k1" opacity="0" x="56" y="8" width="48" height="135.5" fill="#1f2328" fill-opacity="0.16" clip-path="url(#letters)"/>
 <rect class="a" style="animation-name:k2" opacity="0" x="104" y="8" width="48" height="135.5" fill="#1f2328" fill-opacity="0.16" clip-path="url(#letters)"/>
