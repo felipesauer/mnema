@@ -142,7 +142,7 @@ describe('createTask', () => {
         throw new Error('disk full');
       },
       append() {
-        throw new Error('should not be called — birth must be one atomic write');
+        throw new Error('should not be called: birth must be one atomic write');
       },
     } as unknown as ChainWriter;
     const brokenCtx: WriteContext = { writer: boom, layout, upcasters, clock };

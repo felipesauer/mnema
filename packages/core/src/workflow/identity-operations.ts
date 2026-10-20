@@ -361,7 +361,7 @@ function foundUnderTheLock(ctx: WriteContext): string {
     throw new IdentityUnavailableError(
       'A_CHECKER_KEY',
       `this machine's key ${ctx.writer.signerFingerprint} is enrolled in this record as a ` +
-        'checker, which signs check results only (`mnema check run`) — write from a key of your own',
+        'checker, which signs check results only (`mnema check run`): write from a key of your own',
     );
   }
   const at = (ctx.clock ?? systemClock)();

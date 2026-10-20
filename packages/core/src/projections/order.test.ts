@@ -465,7 +465,7 @@ describe('chainArrivals: a break planted at the boundary', () => {
     w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: '日本語'.repeat(200) }));
     w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: '漢字'.repeat(200) }));
     const before = chainReplay({ root: rootA }, upcasters);
-    w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'ação — ünïcodé' }));
+    w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'ação – ünïcodé' }));
 
     const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
     expect(arrived.suffix).toBe(true);

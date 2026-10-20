@@ -82,7 +82,7 @@ describe('the trees an agent request is about to be written into', () => {
 
     expect(conflict).toMatchObject({ ok: false, code: 'AGENT_UNDER_ANOTHER_NAME' });
     expect(conflict?.message).toBe(
-      `the key ${asClaude.fingerprint} is already ${holding.anchor}'s agent "claude" in the private tree — ` +
+      `the key ${asClaude.fingerprint} is already ${holding.anchor}'s agent "claude" in the private tree: ` +
         'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
     );
     // The same name is no conflict: that is "already", said by each tree's own enrolment.

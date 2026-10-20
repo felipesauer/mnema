@@ -79,11 +79,11 @@ describe('verify names a move the workflow does not allow, and its verdict stays
         seq: 4,
         detail:
           'a decision.transitioned of d-1: a move rejected → accepted by "accept", which the ' +
-          'workflow does not hold — the workflow does not allow it, so it is not applied',
+          'workflow does not hold: the workflow does not allow it, so it is not applied',
       },
     ]);
     expect(result.summary).toContain(
-      '1 move(s) the workflow does not allow, not applied (see census — informational, not a break)',
+      '1 move(s) the workflow does not allow, not applied (see census: informational, not a break)',
     );
   });
 

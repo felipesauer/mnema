@@ -173,7 +173,7 @@ describe('the forged record: the one the README used to promise a non-zero exit 
     // The honest limit, asserted as the VALUE the exit code carries and not as prose:
     // this is what a stranger's CI step gets over a record that was tampered with.
     expect(said.failed).toBe(false);
-    expect(said.out).toContain('local integrity verified (T1 only) — no signature was checked');
+    expect(said.out).toContain('local integrity verified (T1 only): no signature was checked');
 
     // And the reader downstream serves the forgery without a word, which is why the
     // exit code above is the whole of what a CI step learns.

@@ -417,7 +417,7 @@ const NAME_UNDER_EACH_PREFIX: Readonly<Record<string, NameProbe>> = {
   'slack-token': {
     text: 'xoxb-check-the-tenant-scope-first',
     verdict: ['slack-token'],
-    why: 'A DECLARED LIMIT. This shape DOES swallow a name — 191 of the 194 measured — and it is left that way on purpose: `xoxb` is nobody’s word, no name among the 194 begins with one, so relaxing it would give up a real issuer to rescue a name that does not exist',
+    why: 'A DECLARED LIMIT. This shape DOES swallow a name (191 of the 194 measured) and it is left that way on purpose: `xoxb` is nobody’s word, no name among the 194 begins with one, so relaxing it would give up a real issuer to rescue a name that does not exist',
   },
   'google-api-key': {
     text: 'AIza-check-the-tenant-scope-first-thing',

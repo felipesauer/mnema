@@ -186,7 +186,7 @@ describe('the second reader can be run at all', () => {
     const version = python(['--version']);
     expect(
       version.status,
-      'python3 is required by the second reader in packages/chain/verifier/ — it is standard ' +
+      'python3 is required by the second reader in packages/chain/verifier/: it is standard ' +
         `library only, so there is nothing to install. python3 --version said: ${version.stderr}`,
     ).toBe(0);
     expect(version.stdout + version.stderr).toMatch(/Python 3\./);
@@ -1600,7 +1600,7 @@ describe('a tail that holds no event, to both readers', () => {
       expect.objectContaining({ kind: 'empty-tail', tail: empty }),
     ]);
     expect(here.summary).toContain(
-      '1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+      '1 empty tail(s), which hold no event and are not counted (see census: informational, not a break)',
     );
   });
 
