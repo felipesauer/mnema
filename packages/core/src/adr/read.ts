@@ -292,7 +292,7 @@ function normalizeLabel(text: string): string {
  * this matches nothing.
  */
 function stripAdrNumbering(title: string): string {
-  return title.replace(/^(?:adr[-\s]?)?\d+\s*[—–\-:.]\s+/i, '').trim();
+  return title.replace(/^(?:adr[-\s]?)?\d+\s*[\u2014–\-:.]\s+/i, '').trim();
 }
 
 /** A `##` section: its normalized label and its body. */

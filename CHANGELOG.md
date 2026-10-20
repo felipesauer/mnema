@@ -199,7 +199,7 @@ with its own changelog.
   the older output, prints the same text. The rationale the correction hook writes into the proposals it records now
   reads `in these words: “...”, matched by the shape ...`; proposals recorded before keep their words. What
   the MCP server answers, the descriptions of its tools, the sentence under the title of the program and the
-  texts a plugin carries keep their dash for now.
+  texts a plugin carries lost their dash in the same way.
 
 - **The lines the program prints most no longer carry an em dash.** A decision's label now reads
   `ADR-2: Keep money as integer cents`, a colon where a dash stood, in the opening document, in what shows one record
@@ -213,7 +213,7 @@ with its own changelog.
   Nothing else in those lines changed: where a dash was a pair, commas or parentheses stand in; where it joined a
   label to its description, a colon does. A file generated before keeps its old characters until it is generated
   again, and the check that compares it with the record will say so. The importer of decision files written by others
-  still reads a dash in a title. The replies of the MCP server keep their dash for now.
+  still reads a dash in a title. The replies of the MCP server lost their dash in the same way.
   The recordings on the front page were made again with the binary, so they show the new lines.
 
 - **The lines `verify` prints, the Action's comment and the refusals of the core no longer carry an em dash.** The
@@ -227,6 +227,13 @@ with its own changelog.
   in a repository that was initialized before. The recordings `first-record`, `a-write-refused` and `console` were made
   again with the binary. The description of the tools `skills` and `search` lost its two dashes as well, so the
   `tools/list` is 12 bytes smaller (6 for `skills` and 6 for `search`), and the four weights above are the new ones.
+
+- **The text the CI scripts print, the manual's sample output and the notes on hosts no longer carry an em dash.** The
+  verdicts of the scripts that guard the trunk (`RULER BROKEN: ...`, `NO ATTRIBUTION FOOTER: ...`,
+  `LEFT BEHIND: ...`) and the notes `docs/evidence.md` keeps on Codex and the Copilot CLI use a colon or commas where
+  the dash stood, and the sample output in `docs/cli-reference.md` reads as the program prints it. A table cell the
+  red-run report left empty now reads `n/a`. The importer of decision files written by others still accepts a dash
+  after the number of a title.
 
 - **Every link in the body of a published package's README is a full address on `main`.** The five pages
   (`@mnema/chain`, `@mnema/core`, `@mnema/context`, `@mnema/stacks` and `@mnema/code`) had 22 relative links, such as
