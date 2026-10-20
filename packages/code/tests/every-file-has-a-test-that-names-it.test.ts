@@ -390,7 +390,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/presentation/witness.ts': {
     reached: 'nobody imports it',
-    why: 'The `mnema witness` listing: one assertion touches it: `not covered`, in a test about flags reaching the act: so `PENDING`, `covered` and the checkpoint column go unread.',
+    why: 'The `mnema witness` listing: one assertion touches it (`not covered`, in a test about flags reaching the act), so `PENDING`, `covered` and the checkpoint column go unread.',
   },
   'packages/code/src/record-effect.ts': {
     reached: 'nobody imports it',

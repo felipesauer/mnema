@@ -124,7 +124,7 @@ function headingText(raw: string): string {
 /**
  * A heading's anchor, the way GitHub makes it: lower case, every character that is not a
  * letter, a mark, a number, a connector, a hyphen or a space dropped, and each space a hyphen.
- * Two spaces around a dropped dash make two hyphens, which is why `A`, an em dash and `B` make
+ * Two spaces around a dropped dash make two hyphens, which is why `A`, an en dash and `B` make
  * `a--b`.
  */
 function slugOf(heading: string): string {

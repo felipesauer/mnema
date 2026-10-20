@@ -67,6 +67,18 @@ describe('renderComment', () => {
     expect(text).toContain('`verify --require=signed --since <base>`): passed');
   });
 
+  it('lists a decision whose title the record does not hold by its label and the states it moved to', () => {
+    const text = renderComment({
+      ...quiet,
+      record: {
+        total: 1,
+        byKind: [['decision.transitioned', 1]],
+        decisions: [{ id: 'd2', adr: undefined, title: undefined, to: ['accepted', 'superseded'] }],
+      },
+    });
+    expect(text).toContain('- d2: accepted, superseded\n');
+  });
+
   it('says so when nothing is added and nothing is governed', () => {
     const text = renderComment(quiet);
     expect(text).toContain('adds no events to the record');

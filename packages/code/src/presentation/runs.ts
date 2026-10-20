@@ -54,10 +54,10 @@ export const NO_RUNS_HINT: readonly Line[] = [
  * own (a uuid, a word of a closed pair, two durations this module words out of
  * numbers), so the goal is the one thing on the phrase there is anything to collapse.
  *
- * The em dash and spaces are a CHUNK of its own template rather than the head of the goal, which is
+ * The colon and the space after it are a CHUNK of its own template rather than the head of the goal, which is
  * the rule `wiring/on-one-line.ts` states and the reason the three halves are joined
  * rather than nested: a fragment carrying its own punctuation, collapsed, loses the
- * space it opens with, so the em dash lands against the word before it.
+ * space it opens with, so the colon would land against the word before it.
  *
  * WHAT WAS WRITTEN RIDES IT WHETHER THE RUN IS OPEN OR ENDED, which is the one part of
  * this phrase that is NOT under the age's rule. An age beside an ended run would read
