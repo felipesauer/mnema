@@ -180,6 +180,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path: local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. It restores a person's key and refuses an agent's, which `mnema key restore --agent <name> <file>` puts in that agent's folder instead. |
 | **Your machines are one author** | True for machines the record proves belong to one identity, which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means, and the write that founds it says so, once, naming the identities already there, while the public trees of your other projects can still be spared: by an enrollment made inside each of them, from a machine already in that identity, and pulled before the new key writes there, never in the project that split, where an enrollment alone joins nothing. `mnema audit accountability` names it afterwards, in `--json` too. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused, and the refusal names the ways out the record shows: the identity that should not have the key retires it (`mnema key revoke <fingerprint> --reason "<why>"` inside the project, from a machine that writes as that identity, then commit and share the record), and the key speaks for the other from then on. Where the key is that identity's last (as a key that founded an identity by writing is), another key joins it first, from the checkout that still writes as it: pull the record, `mnema key enroll <the line>` (where the other key is a copy this machine keeps, such as the backup key an `init` made, its line comes from `mnema key request --anchor <that identity> --key "<its file>"`), the revocation, then `mnema key restore "<the key file>"` in that checkout, which still records the identity the key has left, and until the restore, every write to the public tree there is refused rather than signed with a key that identity no longer counts. Where the record shows the key writing as neither identity, it names no checkout that could separate them, and the refusal says so rather than promise. |
 | **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost, deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id, never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
+| **How often an agent used a tool** | Only what this machine's MCP server answered. `mnema usage --tools` counts, per tool, the calls the server on this machine answered for this project, from a file kept outside the record: nothing is signed, `verify` does not read it, and the chain has no field for it. A call another host or another machine answered is not in it, nor is any use of mnema outside the MCP (the command line, a hook), nor a call made while `tool-call-count` was switched off or before the machine had a key of its own. It holds the tool's name, whether the tool writes, the instant and `ok` or the refusal's code, never an argument or a word an agent wrote. |
 | **A page's verdict is `mnema verify`'s** | For what it says: the page runs the chain's own verifier over the public tree's files it carries, in the browser, and prints the verifier's own sentence: the same one `mnema verify` prints in a fresh clone of the repository. It differs from the author's machine by at most one clause, the census note about a backup key, which only a machine holding that key can word. It checks the hash chain and every checkpoint signature against the public keys carried with the files, and nothing else: it does not say a key belongs to the person a list names, and it does **not** check the lists on the page against the files: `mnema site` wrote the lists from them, and the page does not derive them again. A reader who is handed the page by the party being checked is trusting the page itself; the verdict is worth most when the page is rebuilt from a clone. It publishes **every word of the committed tree** (rationales, notes, raw events), so what is in git is on the page, and a repository that must not be read should not publish one. |
 | **An exported skill is what the record proves** | The BODY is, byte for byte: `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves (a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face) and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only**: when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below: the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record (the subject, the original instant, and the tree), so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
@@ -633,6 +634,36 @@ can quietly age into a wrong figure.
 
 Which host session belongs to which run is the command's own inference from the two
 clocks: the record does not state it, and the last line of the output says so.
+
+### How often each tool was called, which the record does not hold either
+
+`mnema usage --tools` counts, per tool of the MCP server, how many times it was called, how many of those calls
+were refused, and the first and last date:
+
+```sh
+mnema usage --tools
+#> 3 tool(s) called:
+#>   search                    only reads   3 call(s)  0 refused  first 2026-10-20T22:57:06.349Z, last 2026-10-20T22:57:06.351Z
+#>   capture_memory            writes       2 call(s)  0 refused  first 2026-10-20T22:57:06.337Z, last 2026-10-20T22:57:06.348Z
+#>   read_record               only reads   1 call(s)  1 refused  first 2026-10-20T22:57:06.352Z, last 2026-10-20T22:57:06.352Z
+#>
+#> Read from /home/you/.mnema/tool-calls/01fe2ff055134f23.jsonl.
+#> This counts only the calls the MCP server on this machine answered for this project: …
+```
+
+**It is a file on this machine, and nothing else.** For each call the server answers it appends one line to
+`<data directory>/tool-calls/<digest of the project>.jsonl` (`~/.mnema`, or `$MNEMA_HOME`): the instant, the
+tool's name, whether the tool writes (`mutates`) or only reads, and `ok` or the code the refusal carried. Never an
+argument, never a word an agent wrote, never a record's id. It is not an event, it is not signed, `mnema verify` does
+not read it, it is in no tree of the record and never in the repository, and no format changed.
+
+**It counts only what this server on this machine answered.** A call another host or another machine answered is not
+in it, nor is any use of mnema outside the MCP, nor a call made before the machine had a key of its own (the count
+makes no directory of its own on a machine where nothing has signed yet). The output says so on its last lines.
+
+**It is on until you switch it off**, because what it keeps is local and holds names and nothing else:
+`mnema switch off tool-call-count` stops the count (a fact of the record like the other switches), and `mnema usage --tools`
+then says that the count is off and that what it shows was kept before.
 
 ### Bringing a second machine into your identity
 
@@ -1471,7 +1502,7 @@ accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 8 channel(s), looked in public, private, global:
+#> 11 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, …
@@ -1479,6 +1510,7 @@ mnema switch
 #>   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s …
 #>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on, and nobody has
 #>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on, and nobody has
+#>   tool-call-count        on   the local count of tool calls: with it off, the server keeps no line of the calls it answers …
 #>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```
 

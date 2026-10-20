@@ -805,6 +805,11 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
  *     measured: a read leaves every file and directory of the sandbox as it found them, not
  *     only the chain. The projection it rebuilds is held in memory, so there is no cache file for it
  *     to write, unless `$MNEMA_CACHE_DIR` names a directory (`core/src/projections/cache-home.ts`).
+ *     THE ONE EXCEPTION IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
+ *     appends a line to a file in the machine's data directory, outside the record, until
+ *     `tool-call-count` is switched off. It changes no fact and loses nothing, which is what a
+ *     client weighing whether to call a tool without asking needs to know, and the measurement
+ *     excuses that one place and no other.
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed
