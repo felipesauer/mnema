@@ -67,7 +67,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
- * A VITEST JSON REPORT AS IT ARRIVES — every field optional, because `tally` is what checks
+ * A VITEST JSON REPORT AS IT ARRIVES: every field optional, because `tally` is what checks
  * them. THIS TYPE STATES WHAT IS READ, NOT WHAT IS VERIFIED: `tally` checks that `testResults`
  * is an array and `numTotalTests` a number, and NOTHING checks the fields under them.
  *
@@ -94,7 +94,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
- * WHAT ONE NIGHT SAYS — TWO SHAPES, NOT ONE. A broken tally publishes no rate, and the type says
+ * WHAT ONE NIGHT SAYS: TWO SHAPES, NOT ONE. A broken tally publishes no rate, and the type says
  * so: `cases` is `null` when nothing readable was read, and the page returns before the table.
  *
  * @typedef {{

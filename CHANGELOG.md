@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Added
 
+- **A job after the merge asks the network for every image and link of the READMEs.** A new workflow runs on each push
+  to `main` (and by hand): it reads the front page's README and each package's README, asks every absolute address
+  (an image, a link, a `srcset`) up to three times, and, if one answers with an HTTP error, opens one issue under a
+  fixed title or adds a comment to the one already open. An address with no answer at all is listed and never opens an
+  issue, and a run where nothing answers is refused. It is not a pull request check, so a pull request still carries
+  the same checks, and it does not look at anchors, which a server never sees. It has run only in its tests so far.
 - **The front page's Features table is now "The mnema family".** The section shows the family's picture, then a short
   table: the product, what it is for, its status and a link. `@mnema/code` is the core; the Action, the SDK and the
   VS Code extension are the three packages around it, each not published and run from a clone; Stacks are commands of
