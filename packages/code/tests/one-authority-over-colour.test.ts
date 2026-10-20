@@ -2,14 +2,14 @@
  * ONE AUTHORITY OVER COLOUR: the whole page obeys the caller, or none of it does.
  *
  * The session draws two kinds of thing and they had two authorities. What it SAYS is
- * composed and rendered by this product's own rule — a flag, two conventional variables, a
- * terminal (`src/wiring/color.ts`) — and obeyed the caller. What the page IS (the rules
+ * composed and rendered by this product's own rule, a flag, two conventional variables, a
+ * terminal (`src/wiring/color.ts`), and obeyed the caller. What the page IS (the rules
  * that close its regions, the guide down its margin, the mark on a picked row, the
  * product's mark and its title) is drawn by the layout library and was coloured by the
  * library's own detection, which has no entry for `NO_COLOR` at all.
  *
  * MEASURED ON A REAL PSEUDO-TERMINAL, at a hundred by thirty, opening a session and asking
- * one verb — style sequences in the whole stream:
+ * one verb, style sequences in the whole stream:
  *
  *   | the caller asked                  | before | after |
  *   |-----------------------------------|-------:|------:|
@@ -33,7 +33,7 @@
  * WHAT THE CASES BELOW ASK, and why each needs the instrument it uses:
  *
  *   - THE QUIET DIRECTION, on a real device, over the WHOLE stream: `NO_COLOR` and
- *     `--color=never` each leave not one style sequence anywhere — ours or the library's.
+ *     `--color=never` each leave not one style sequence anywhere, ours or the library's.
  *     A pseudo-terminal is the only instrument for it, because the library's own detection
  *     is about a device.
  *   - AND IT IS THE PRODUCT THAT DECIDES, not the variable the library reads: the flag is
@@ -227,8 +227,8 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
     expect(ran.bytes, 'the session never answered the verb').toContain('record(s)');
     expect(ran.bytes, 'the page has no edges left').toContain(RUN);
 
-    // NOT VACUOUS: the same session, same size, same steps, with nothing asking for quiet
-    // — and the LIBRARY's own accent is in it. That sequence is the one this delivery
+    // NOT VACUOUS: the same session, same size, same steps, with nothing asking for quiet,
+    // and the LIBRARY's own accent is in it. That sequence is the one this delivery
     // silenced, so its presence here is what makes the zero above a measurement.
     const loud = await inPty(A_SESSION);
     expect(sgrOf(loud.bytes).length, 'nothing is painted even with colour on').toBeGreaterThan(0);
@@ -550,8 +550,8 @@ describe('what loads the library, and what tells it', () => {
   });
 
   it('names the channel in exactly the two places that read it and write it', () => {
-    // THE DISCRIMINANT IS THE CHANNEL'S OWN NAME, over the raw source — prose included,
-    // deliberately: a third module that so much as talks about this variable is a third
+    // THE DISCRIMINANT IS THE CHANNEL'S OWN NAME, over the raw source (prose included,
+    // deliberately): a third module that so much as talks about this variable is a third
     // opinion about colour waiting to be written.
     const naming = modules()
       .filter((module) => module.raw.includes(WHAT_THE_LIBRARY_READS))

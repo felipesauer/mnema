@@ -189,7 +189,7 @@ describe('a declaration lists the set it takes', () => {
   it('names every member of its own set, at every declaration that has one', () => {
     // The link between the two halves of a declaration: a description built from
     // another set, or a member dropped from the set after being typed into the
-    // sentence, is red here — at whichever of the sites it happens at, without this
+    // sentence, is red here, at whichever of the sites it happens at, without this
     // file knowing they exist.
     for (const declaration of DECLARED_SETS) {
       for (const value of declaration.values) {
@@ -456,8 +456,8 @@ interface Shape {
  * None of them depends on the literal being read, only on the vocabulary, so they are made
  * here rather than inside the walk. They used to be made inside it, per literal: 1550
  * literals against 1022 shapes is 1,584,100 `RegExp` objects for 1022 distinct patterns, and
- * compiling them was 82% of what the scan cost — 1029 ms against 181 ms for the same walk
- * over the same sources, returning the same hits.
+ * compiling them was 82% of what the scan cost (1029 ms against 181 ms for the same walk
+ * over the same sources, returning the same hits).
  *
  * Reusing one pattern across literals is safe because none of them is global: `test` on a
  * non-global pattern keeps no position between calls, so a literal cannot be searched from
@@ -469,7 +469,7 @@ const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([voca
       if (first === second) return [];
       return [
         // As WORDS: `stdout and installs` holds `out and in` and is a sentence
-        // about a stream, and `submit_review` holds `submit` — a scan without
+        // about a stream, and `submit_review` holds `submit`; a scan without
         // boundaries accuses the wrong lines and gets switched off.
         ...JOINS.map((join) => ({
           says: `[${vocabulary}] ${first}${join}${second}`,
@@ -493,7 +493,7 @@ const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([voca
 /**
  * Every place in `source` where somebody typed a vocabulary out instead of reading it.
  *
- * THREE SHAPES, and they were found in that order — each by a surface the one before it
+ * THREE SHAPES, and they were found in that order, each by a surface the one before it
  * did not cover:
  *
  *   - PAIRS IN ONE LITERAL: `'(submit, start, block)'`. The CLI's shape, and for a while
@@ -508,7 +508,7 @@ const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([voca
  *
  * A literal with an ELLIPSIS is not one, and the exclusion is the rule and not a
  * convenience: `mnema refs <id>` says "a task, decision, memory, skill, …", which names
- * examples of what an id can BE and does not claim to be a set — the words are entity
+ * examples of what an id can BE and does not claim to be a set; the words are entity
  * kinds in a sentence, and the `…` is what says so. A declaration that enumerates never
  * ends in one.
  */
@@ -541,7 +541,7 @@ describe('no declaration writes a vocabulary out by hand', () => {
   it('finds none in either surface', () => {
     // IT USED TO STOP AT `wiring/`, and said so out loud rather than passing quietly over
     // the other surface. What falsified that scope: `mcp/server.ts` was not merely
-    // re-typing prose there — it was re-typing the ARRAYS its `z.enum`s validate against,
+    // re-typing prose there; it was re-typing the ARRAYS its `z.enum`s validate against,
     // so the two doors could accept different words. A guard that names where it stops is
     // honest; it is still a guard that does not cover the case that matters most.
     const typed = SCANNED.flatMap((directory) =>
@@ -663,15 +663,15 @@ describe('the gate still owns the vocabulary', () => {
     // A legal action on the same task still moves it, so the case above is about the
     // WORD and not about a move that stopped working.
     expect(cli('task', 'move', 'submit', id).out).toContain('READY');
-    // FOUR PROCESSES OF THE REAL BINARY — the `init`, the task, the refusal and the legal
-    // move, and each pays node's start over again: 464 ms on a machine at rest, 1048 ms
+    // FOUR PROCESSES OF THE REAL BINARY (the `init`, the task, the refusal and the legal
+    // move), and each pays node's start over again: 464 ms on a machine at rest, 1048 ms
     // with the rest of the suite running beside it. The ceiling is here to NAME that, not
     // to tighten it: at the default five seconds a busy machine goes red saying only that
     // something timed out, which is the reading this line exists to prevent.
   }, 60_000);
 
   it('refuses a value outside a set in the product’s voice, naming the set', () => {
-    // The three flags whose set is now declared and whose refusal is unchanged — one per
+    // The three flags whose set is now declared and whose refusal is unchanged, one per
     // place the check lives: the shared parser, the verb's own, and the adapter's.
     expect(cli('init').status).toBe(0);
     expect(cli('task', 'create', 'a task', '--scope', 'nowhere').out).toContain(

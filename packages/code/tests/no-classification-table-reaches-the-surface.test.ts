@@ -18,7 +18,7 @@
  * IT WAS THE SECOND GUARD OF A PAIR THAT COULD NOT GO RED, and the last net below is what
  * changed that. THE ONE RED IT USED TO PROMISE HAD ALREADY GONE. The sentence here read: making a surface classify for itself
  * (`state === 'adopted'` instead of asking) leaves ONE red, and it comes from
- * `every-public-value-has-a-caller.test.ts` — the accessor loses its only consumer.
+ * `every-public-value-has-a-caller.test.ts` (the accessor loses its only consumer).
  * What falsified it is running that same mutation again over the whole suite.
  * Replacing `decisionDisposition(state)` in `presentation/state.ts` with the
  * comparison written out, output byte for byte the same, leaves 4376 of 4376
@@ -83,7 +83,7 @@
  *     other way round: a value called `state` in some other domain, compared against a word
  *     that happens to be a workflow state, would be accused. The first is declared: the
  *     `state` of an ECC Vault memory, read in `core/src/adr/bridges.ts` as
- *     `RETIRED_IN_THE_VAULT.test(memory.state)` — another tool's vocabulary, which the guard
+ *     `RETIRED_IN_THE_VAULT.test(memory.state)`, another tool's vocabulary, which the guard
  *     lets through by a spelling it does not read (a regex test, not a comparison). It is
  *     declared, not accidental; a second one would be the day to argue it in place.
  *
@@ -97,7 +97,7 @@
  *     THE NARROW SCAN CARRIES NO EXCEPTION AND NO POWER, which is the finding that
  *     keeps this limit written instead of closed. Restricted to the property a
  *     reimplementation actually compares
- * (    `grep -rnE "\bstate\s*(===|!==)\s*'<state>'"` over packages/*​/src, with the
+ *     (`grep -rnE "\bstate\s*(===|!==)\s*'<state>'"` over packages/*​/src, with the
  *     states taken from `DECISION_STATES`, `SKILL_STATES` and `TASK_STATES`) it
  *     finds ZERO, in
  *     production and in test code alike; the only three hits anywhere in the
@@ -356,7 +356,7 @@ function perStateTables(
  * IT USED TO BE TWO, and the missing one is the shape this guard was built for.
  * `decisionDisposition` did not exist: `decisions.ts` declared its table hidden AND
  * offered no way to ask, so a surface wanting to know what `proposed` means had exactly
- * one path left, `state === 'proposed'` written out for itself — the reimplementation
+ * one path left, `state === 'proposed'` written out for itself, the reimplementation
  * this file's own doc says nothing here can see. The gap showed on screen instead: a
  * decision's and a pattern's position came out white beside a painted task's.
  */
@@ -415,7 +415,7 @@ const A_STATE = String.raw`(?:[\w$]+\??\.)*state\b`;
 
 /**
  * Every place one file writes a classification out for itself: a value NAMED `state` compared
- * against a machine's state word — the question the accessors exist to be asked instead.
+ * against a machine's state word, the question the accessors exist to be asked instead.
  *
  * THE PROPERTY IS THE NARROW SCAN'S, AND THE READING IS WIDER. What is compared is always a
  * value called `state`, which is what keeps `decided.source === 'adopted'` (where an anchor came
@@ -623,7 +623,7 @@ describe('no classification table reaches the surface', () => {
     expect(reads("if (e.payload.to === 'adopted') x();")).toBe(0);
     expect(reads("const s = d.state;\nif (s === 'accepted') x();")).toBe(0);
     // And what must never be accused: a sentence quoting the shape, a word that is not a
-    // state, and the two innocents — read from the files that hold them, so a day they move
+    // state, and the two innocents, read from the files that hold them, so a day they move
     // is a failure here rather than a case that quietly tests nothing.
     expect(reads("// state === 'accepted' in prose\nconst y = 'state === \"accepted\"';")).toBe(0);
     expect(reads("if (d.state === 'accepting') x();")).toBe(0);

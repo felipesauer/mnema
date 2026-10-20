@@ -375,14 +375,14 @@ const leaves: Step = leavesTheSession;
  *
  * IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCED NO FRAME. The layout writes nothing at all
  * for a frame identical to the one on the screen, and a window filled by one copy of this report
- * is filled by the next copy in exactly the same rows — measured: the step that typed the word a
+ * is filled by the next copy in exactly the same rows. Measured: the step that typed the word a
  * second time waited out the whole budget and the session was fine. Starting the page over
  * empties the roll, so the frame that follows cannot be the frame that preceded it, and what is
  * on the page afterwards is only what was printed after the resize.
  *
  * THE FIRST HALF OF THAT IS NO LONGER TRUE, AND THE STEP STAYS FOR THE SECOND. The same word
- * twice does draw a frame now — a row at the foot saying the answer left the page as it was
- * (`src/repl/console.ts`, `judged`) — but that frame holds the rows the FIRST copy put there, folded
+ * twice does draw a frame now, a row at the foot saying the answer left the page as it was
+ * (`src/repl/console.ts`, `judged`), but that frame holds the rows the FIRST copy put there, folded
  * at whatever width it was printed at, and the page read after the resize has to hold only what was
  * printed at the new one. Emptying the roll is what guarantees that; a second copy never did.
  */
@@ -882,8 +882,8 @@ const THE_LIBRARY = 'string-width';
  *
  *   - SPREAD AND COUNT: `[...text].length`, which is what `widthOf` was, and what the mark of a
  *     picked row and the caret's column were counted with.
- *   - PAD: `padEnd`/`padStart`, which pads to a count of code UNITS — the table column that
- *     holds an agent's own name, and the block of words in the help.
+ *   - PAD: `padEnd`/`padStart`, which pads to a count of code UNITS (the table column that
+ *     holds an agent's own name, and the block of words in the help).
  *   - A LITERAL, MEASURED: `'decision'.length`, the width of one report's kind column. The
  *     literal is blanked before this runs (`support/reading-source.ts`), so what is left is a
  *     `.length` with nothing in front of it, which is exactly the shape.

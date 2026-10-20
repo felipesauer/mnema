@@ -536,7 +536,7 @@ describe('a workspace of one project is covered exactly as before', () => {
   it('the tree list is the session’s own record, and nothing else', () => {
     // The non-regression proven by the LIST, not by the intention: the coverage is one
     // function, and over one project it must produce the three trees the walk covered
-    // before it spanned anything — same trees, same order, and no write door on any of
+    // before it spanned anything, same trees, same order, and no write door on any of
     // them (they are reached through the session).
     const project = makeProject('only');
     const session = openOn(project);

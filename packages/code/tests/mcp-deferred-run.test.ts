@@ -521,7 +521,7 @@ describe('the session says how many projects it chose from', () => {
 
     // And it is beside the answer, never inside it: a caller parsing the first block
     // gets the context package's shape, as derived. The two totals are part of that shape
-    // — each cut list carries the count that says it was cut — and every key here
+    // (each cut list carries the count that says it was cut) and every key here
     // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;
     expect(Object.keys(payload).sort()).toEqual([
@@ -590,7 +590,7 @@ describe('the log never carries the announced name', () => {
     await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact' } });
 
     // And no run line is written at all, because no run opened. This case used to
-    // assert the other outcome ("once the run exists the agent IS named — as the
+    // assert the other outcome ("once the run exists the agent IS named, as the
     // chain recorded it", `which=agent-<SECRET:aws-access-key>`) and the premise
     // under that was that the chain would record such an agent. It no longer does:
     // `which` is a name, so the write that would have opened the run is refused and

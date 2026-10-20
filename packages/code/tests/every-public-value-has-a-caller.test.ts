@@ -543,7 +543,7 @@ describe('every public value has a caller', () => {
     for (const entry of SURFACE) expect(entry.source.endsWith('.ts')).toBe(true);
   });
 
-  it('never accuses a type, only values are subject to the rule', () => {
+  it('never accuses a type: only values are subject to the rule', () => {
     // Not one hand-picked example: EVERY name the barrels export as a type, checked
     // against the subject set. If a type ever entered, the rule would start asking
     // for a caller of something that cannot have one, the accusations would arrive

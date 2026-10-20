@@ -142,7 +142,7 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
  *
  * THE TREE LIST IS EMPTY HERE, and it used to be SAID as a list: outside a project the only tree
  * that resolves is this machine's global one, which every witness path leaves out unless asked,
- * so the sentence read `looked in .` — a list with no items and a full stop. It says why the list
+ * so the sentence read `looked in .`, a list with no items and a full stop. It says why the list
  * is empty now, and what asks for the one tree there is: `--global`, which the acts read off the
  * group (`wiring/from-the-group.ts`), and which `the-witness-acts-cover-the-tree-asked-for.test.ts`
  * runs on the binary.

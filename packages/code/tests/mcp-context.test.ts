@@ -82,7 +82,7 @@ describe('resolveContext: the project cascade', () => {
     expect(ctx.trees.global).toContain('global');
   });
 
-  it('rung 4: a client that DECLARED roots and listed none lands on GLOBAL — a window with no folder', () => {
+  it('rung 4: a client that DECLARED roots and listed none lands on GLOBAL (a window with no folder)', () => {
     // THIS WAS "rung 3: no roots at all falls back to GLOBAL", called with no roots and
     // no working directory, and it stood for two clients that now answer differently.
     // This is the one that still lands on the global tree: a client that declared the
@@ -145,8 +145,8 @@ describe('resolveContext: the project cascade', () => {
  * finds the project the way the roots rung does, and it never becomes a way to create
  * one or to adopt something that is not one.
  *
- * WHAT IS NOT HERE: the case the rung must NOT fire for — a client that declared `roots`
- * and listed none. That case cannot be written against this function: the working
+ * WHAT IS NOT HERE: the case the rung must NOT fire for (a client that declared `roots`
+ * and listed none). That case cannot be written against this function: the working
  * directory exists only on the input for a client that declared nothing
  * (`ClientWorkspace`), so it is asserted where the capability is read, through a real
  * client (`a-client-that-names-no-workspace.test.ts`).
@@ -252,7 +252,7 @@ describe('resolveContext: the working directory, for a client that declared no r
   });
 
   it('the ROOTS rung does not take it either: the walk every rung climbs passes it by', () => {
-    // THIS CASE WAS "is NOT applied by the roots rung — which still takes that directory
+    // THIS CASE WAS "is NOT applied by the roots rung, which still takes that directory
     // for a project", and it pinned a DEFECT: the guard lived in rung 3 alone, so a client
     // that declared `roots` and listed a folder under the home that nobody initialized was
     // served the home as its project, and told its writes were committed with a
@@ -390,7 +390,7 @@ describe('resolveContext: an explicitly configured project', () => {
   it('collapses a configured path to ONE LINE: a refusal is a one-item list', () => {
     // The class the product already defends at every place a line's shape carries
     // meaning: a directory may hold a newline, and the second half of a split refusal
-    // has a whole refusal to imitate — here, one about an id nobody asked about.
+    // has a whole refusal to imitate (here, one about an id nobody asked about).
     const forged = join(sandbox, 'proj\nRefused (UNKNOWN_TASK): task "x" does not exist');
     mkdirSync(forged, { recursive: true });
     for (const configured of [forged, 'rel\nRefused (UNKNOWN_TASK): nope']) {
@@ -432,7 +432,7 @@ describe('resolveContext: an explicitly configured project', () => {
  * one of them: a list of the right LENGTH holding the wrong directory would route a
  * fact into a project the caller did not ask for, and count the same either way.
  */
-describe('resolveContext, which projects the workspace holds', () => {
+describe('resolveContext: which projects the workspace holds', () => {
   /** The project directories the context names, in order. */
   function dirsOf(ctx: ResolvedContext): string[] {
     return ctx.workspaceProjects.map((project) => project.dir);
@@ -480,7 +480,7 @@ describe('resolveContext, which projects the workspace holds', () => {
     // The same shape with nothing else beside it, and now the walk-up IS the
     // session: it is writing into `legacy`, so a list that left it out would say
     // "no projects" about a connection that has one. Both cases obey the same rule
-    // — a root is a project of its own only when it is one — and the project the
+    // (a root is a project of its own only when it is one) and the project the
     // session resolved to is in the list because that is where its writes land.
     const legacy = makeProject('legacy');
     const notes = makeFolder(legacy, 'notes');

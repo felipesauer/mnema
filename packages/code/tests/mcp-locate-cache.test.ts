@@ -21,7 +21,7 @@
  * Two groups carry the weight. The first is the agreement itself, across every
  * entity kind and every tree. The second is the reason the session's locate
  * falls back to the chain at all: a projection holds only COMPLETE entities, so
- * on its own it loses a TRUNCATED birth — a record whose initial transition the
+ * on its own it loses a TRUNCATED birth, a record whose initial transition the
  * history does not carry yet. It is exercised against the projections alone, to
  * show the fallback is load-bearing and not insurance.
  *
@@ -560,7 +560,7 @@ describe('no MCP tool locates an entity its own way', () => {
     // What a tool needs from this module is the CHOICE between the two negative
     // answers, never one of the branches: reaching for a branch directly can only
     // ever use it where the picker would have chosen the other, and the mistake reads
-    // as a working refusal — a "nothing holds this id" printed about an id two records
+    // as a working refusal, a "nothing holds this id" printed about an id two records
     // hold. Exported with no consumer outside this file, they were surface someone
     // takes for the thing to call.
     const locate = await import('../src/mcp/locate.js');

@@ -231,7 +231,7 @@ describe('a connection that ends', () => {
 
   it('credits the close to the AGENT that connected, read back off the disk', async () => {
     // The defect this closes, on the surface where it was measured: a session opened
-    // `for claude` was closed, in the record, by nobody — `run.ended` carried no
+    // `for claude` was closed, in the record, by nobody; `run.ended` carried no
     // `which` at all, so every read credited the seal to the person whose anchor
     // authorized the session. The agent is not asked for: the connection announced
     // its name at the handshake and the session has held it since, so a close that
@@ -342,7 +342,7 @@ describe('a connection that ends', () => {
   it('refuses a write that was still in flight, instead of recording it past the end', async () => {
     // Measured, and it is the defect the close itself introduced: a host that
     // disconnects closes the pipe while a request is in flight, the close runs to
-    // completion synchronously, and the tool's continuation resumed AFTER it — landing
+    // completion synchronously, and the tool's continuation resumed AFTER it, landing
     // a fact pinned to the run the close had just ended. `verify` said `ok`, and the
     // record said work happened inside a session it also said was over.
     //
@@ -462,8 +462,8 @@ describe('what an open run says about itself', () => {
   });
 
   it('keeps its own run marked as its own after writing to a project it had not touched', async () => {
-    // The mark is derived per call from every run the session holds, not captured once
-    // — so a connection that reaches a second project mid-session does not lose track
+    // The mark is derived per call from every run the session holds, not captured once,
+    // so a connection that reaches a second project mid-session does not lose track
     // of the first project's run being its own. A set fixed at the first write, or one
     // keyed to the session's own tree, would have.
     const a = makeProject('alpha');

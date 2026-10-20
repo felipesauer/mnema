@@ -1,12 +1,12 @@
 /**
  * The MCP server, two ways.
  *
- * UNIT — the session and the tool adapters as plain functions over a sandbox,
- * the way the CLI tests drive the commands: `openSession` opens a run, the two
+ * UNIT (the session and the tool adapters as plain functions over a sandbox,
+ * the way the CLI tests drive the commands): `openSession` opens a run, the two
  * tools write and read, `closeSession` ends the run. No transport is spawned.
  *
- * END TO END — the real SDK `Client` talking to the real server over an
- * in-process transport pair: the handshake runs, the client exposes roots, and
+ * END TO END (the real SDK `Client` talking to the real server over an
+ * in-process transport pair): the handshake runs, the client exposes roots, and
  * the tools are called by name. This proves the wiring (the schema, the session
  * resolved from the client's roots, the response envelope), not just the
  * adapters. It is the handshake exercised for real, without a child process.
@@ -128,7 +128,7 @@ function aMachineWithAKey(): void {
  * `global` outside one.
  *
  * A session no longer carries a default scope: where a write goes is decided per call
- * from its KIND, and only two kinds (`memory`, `observation`) still read the author —
+ * from its KIND, and only two kinds (`memory`, `observation`) still read the author;
  * an MCP connection is always an agent, so those land private. Every other kind goes
  * where its kind says, which for all of them is the tree that travels. So a test that
  * means "where this connection's memory went" names that, and a test about a task or a
@@ -1376,8 +1376,8 @@ describe('MCP session + tools: unit', () => {
   }
 
   /**
-   * A content digest of every file under `dir` — the proof a `skills` call that
-   * serves nothing records nothing: not an event, not a checkpoint, not a byte.
+   * A content digest of every file under `dir` (the proof a `skills` call that
+   * serves nothing records nothing: not an event, not a checkpoint, not a byte).
    */
   function digest(dir: string): string {
     const hash = createHash('sha256');
@@ -1459,7 +1459,7 @@ describe('MCP session + tools: unit', () => {
     expect(consultations(publicRoot)).toEqual([[id, theRun(session)]]);
   });
 
-  it('skills records one fact per skill, which pattern, not just that one was read', () => {
+  it('skills records one fact per skill: which pattern, not just that one was read', () => {
     const project = makeProject('proj');
     const session = openSession({
       clientName: 'claude-code',
@@ -1672,7 +1672,7 @@ describe('MCP session + tools: unit', () => {
 
     // The branch that answers a caller-invented id is UNKNOWN_SKILL, and its sentence
     // already collapses the id. The tool's other refusal (a pattern the project
-    // closed) echoes an id too, and it now collapses it the same way — untested here
+    // closed) echoes an id too, and it now collapses it the same way, untested here
     // on purpose: reaching it needs an id the record HOLDS, and every id the product
     // mints is a UUID, so a fixture with a break in one would be a fixture of a world
     // this product cannot produce. It is applied for the rule, not for a case.
@@ -2156,7 +2156,7 @@ describe('MCP session + tools: unit', () => {
     // The session's own run is a real id in the record, and still not a record
     // to read: `focus`/`resume` serve a run. It takes a WRITE to have one: the run
     // opens at the first write, so a read-only session has none and this assertion
-    // was passing `undefined` — true of an absent id for a reason that has nothing
+    // was passing `undefined`, true of an absent id for a reason that has nothing
     // to do with a run.
     if (!runCaptureMemory(session, { content: 'so that a run exists' }).ok) {
       throw new Error('setup: capture refused');
@@ -2628,7 +2628,7 @@ describe('MCP server: end to end over a real client', () => {
     }
     // AND THE FACT IS ON THE CHAIN FOR EACH ONE, over the real transport. This is the
     // invariant that made `skills` the only door: a body is served, so the reading is
-    // recorded — otherwise the door is just a door. One per (run, skill).
+    // recorded; otherwise the door is just a door. One per (run, skill).
     const consultedIds = orderedEvents({ root: join(project, PROJECT_DIR) }, catalogUpcasters())
       .filter((e) => e.kind === 'skill.consulted')
       .map((e) => e.subject)
@@ -3327,7 +3327,7 @@ describe('MCP server: end to end over a real client', () => {
 
   it('governing_rules answers which rules address a path, over a real connection', async () => {
     // THE LINK OF THE ELBOW: the tool is declared, routed, and answers out of the
-    // same derivation the command line reads — a tool plumbed to the registration
+    // same derivation the command line reads; a tool plumbed to the registration
     // and to nothing else would list here and refuse to work.
     const project = makeProject('governed');
     mkdirSync(join(project, 'src', 'collate'), { recursive: true });
@@ -3468,7 +3468,7 @@ describe('MCP server: end to end over a real client', () => {
     expect(graph.nodes.every((n) => n.resolved)).toBe(true);
 
     // 3. The LINEAGE from the memory: two directed hops, the second reached only
-    //    through the supersede — the edge that was invisible before the index.
+    //    through the supersede, the edge that was invisible before the index.
     const lineage = await client.callTool({
       name: 'audit_refs',
       arguments: { id: noteId, direction: 'out', depth: 2 },
@@ -4002,7 +4002,7 @@ describe('MCP: what enters the record', () => {
  *
  * What the hole did instead: `which` vanished from every event (so the record
  * asserted a human had acted directly) and `resolveScope` read "no agent" and sent
- * the session's writes to the PUBLIC tree — the one that is committed and clones to
+ * the session's writes to the PUBLIC tree, the one that is committed and clones to
  * every machine. The only trace was three spaces in a payload field.
  */
 describe('MCP: who the record says acted', () => {

@@ -133,7 +133,7 @@ describe('the question it asks of an environment', () => {
     expect(reachesTheMachine({ ...env, [THE_VARIABLE]: '/srv/another' }, started)).toEqual([]);
   });
 
-  it('lets a sandbox under the machine’s home through, only the home itself is the machine’s', () => {
+  it('lets a sandbox under the machine’s home through: only the home itself is the machine’s', () => {
     const sandbox = join(THE_MACHINES_HOME, 'somewhere', 'sandbox');
     expect(reachesTheMachine({ HOME: sandbox }, undefined)).toEqual([]);
     expect(reachesTheMachine({ HOME: THE_MACHINES_HOME }, undefined)).toHaveLength(1);

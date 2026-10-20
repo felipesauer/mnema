@@ -5,7 +5,7 @@
  * choice, so the project came entirely from the workspace folders the host announced.
  * (This said the host spawns it "with an arbitrary cwd", and that no longer describes
  * the cascade: a client that announces NO folders is now served the project at the
- * working directory — `a-client-that-names-no-workspace.test.ts`. What follows is about
+ * working directory, `a-client-that-names-no-workspace.test.ts`. What follows is about
  * the clients that do announce them, which is where the originating case happened.)
  * The first real use of the surface found what
  * that costs: an agent that went to the record on its own was answered out of a

@@ -126,7 +126,7 @@ describe('a write is visible to the next read in the same session', () => {
   const cases: {
     readonly tool: string;
     /**
-     * The tree this tool's write lands in — stated per case, because the routing rule
+     * The tree this tool's write lands in, stated per case, because the routing rule
      * is per KIND: a memory and an observation still read the author (an MCP
      * connection is an agent, so private), and everything else goes to the tree that
      * travels. One shared "the session's tree" would have warmed and read a cache the
@@ -325,7 +325,7 @@ describe('one cache per tree: the trees do not mix', () => {
   it('a move follows the entity into another tree, and THAT tree’s read sees it', () => {
     // The cross-tree case the registry exists for: the session writes private,
     // but the task lives public, so the invalidation has to land on the public
-    // cache — the one the session never writes to by default.
+    // cache, the one the session never writes to by default.
     const session = openOn(makeProject('proj'));
     const created = runCreateTask(session, { title: 'lives in public', scope: 'public' });
     if (!created.ok) throw new Error('setup: create refused');
