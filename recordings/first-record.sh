@@ -88,7 +88,7 @@ typed "mnema brief | sed -n '/Decisions in force/,/^- /p'"
 mnema brief | sed -n '/Decisions in force/,/^- /p' | tilde
 pause 2.2
 
-say "and what the record can prove about itself — no key, no network"
+say "and what the record can prove about itself: no key, no network"
 typed "mnema verify"
 mnema verify | fold -s -w 94 | tilde
 pause 3

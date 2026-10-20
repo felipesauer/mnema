@@ -3,7 +3,7 @@ $ mnema
 ! Usage: mnema [options] [command]
 !
 ! Your decisions, handed to your agents' sessions and held at the edits they
-! govern — append-only and signed in the repository, and checkable by anyone.
+! govern: append-only and signed in the repository, and checkable by anyone.
 !
 ! Options:
 !   -V, --version   output the version number
@@ -115,7 +115,7 @@ $ mnema --help
 | Usage: mnema [options] [command]
 |
 | Your decisions, handed to your agents' sessions and held at the edits they
-| govern — append-only and signed in the repository, and checkable by anyone.
+| govern: append-only and signed in the repository, and checkable by anyone.
 |
 | Options:
 |   -V, --version   output the version number
@@ -254,7 +254,7 @@ $ mnema decision --help
 |   help [command]                         display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -292,7 +292,7 @@ $ mnema link --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -322,7 +322,7 @@ $ mnema unlink --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -357,7 +357,7 @@ $ mnema memory --help
 |   -h, --help          display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -395,7 +395,7 @@ $ mnema observe --help
 |   -h, --help          display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -422,7 +422,7 @@ $ mnema retract --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -469,7 +469,7 @@ $ mnema skill --help
 |   help [command]                display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -548,7 +548,7 @@ $ mnema task --help
 |   help [command]                        display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -591,7 +591,7 @@ $ mnema promote --help
 | that: a skill is its name and body, a decision its title and rationale.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -605,7 +605,7 @@ $ mnema status --help
 | show where things stand: the work, what governs, what awaits a ruling
 |
 | Options:
-|   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
+|   --actor <id>  the identity whose session to report: the `mnid:…` from `mnema
 |                 audit accountability`, or the short form the reads print (any
 |                 prefix that names one identity here). Omitted, it is the
 |                 identity this machine writes as in this project, and the report
@@ -627,7 +627,7 @@ $ mnema brief --help
 |                  codex; without it, Claude Code’s
 |   -h, --help     display help for command
 |
-| It prints to stdout and writes nothing — the redirection is yours, and `>`
+| It prints to stdout and writes nothing: the redirection is yours, and `>`
 | REPLACES the whole of the file it names:
 |   mnema brief > MNEMA.md          the record, in a file this document owns
 |   mnema brief | diff - MNEMA.md   whether that copy still matches the record
@@ -635,7 +635,7 @@ $ mnema brief --help
 | Any name works: the check is the same pipe, and it reads the name you give it.
 | Claude Code reads a `CLAUDE.md` at every session, and an `AGENTS.md` only from
 | 2.1.277 and only where no `CLAUDE.md` exists. Where one of those exists it is
-| somebody’s own method and this document would replace every word of it — the
+| somebody’s own method and this document would replace every word of it: the
 | line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a
 | sentence naming the file is read only if the agent chooses to open it.
 | The mnema plugin hands this document to a Claude Code session without writing a file,
@@ -644,7 +644,7 @@ $ mnema brief --help
 | left out. Without the flag nothing is cut. With it the copy also leaves out the
 | paragraph on regenerating the file, and counts, last, the
 | decision documents in this checkout the record has no decision for, as
-| `mnema status` does — a fact about one disk, so the file never carries it. It also
+| `mnema status` does, a fact about one disk, so the file never carries it. It also
 | names, there, the stacks the record has adopted and how many places their files part
 | from it (`mnema stack check`).
 |
@@ -654,16 +654,16 @@ $ mnema brief --help
 | pattern recorded with `--scope private`, or in your global tree, governs your own
 | work and is not in this file, which is written to be committed.
 | It carries the RULES and the NAMES: a decision by title and `ADR-<n>` label, a
-| pattern by name. Neither body is in it — a decision’s argument and a pattern’s
+| pattern by name. Neither body is in it: a decision’s argument and a pattern’s
 | text are both `mnema show <id>` (the file itself names the agent’s doors).
 | It carries no work list: a queue changes by the hour, and a copy of one in a
 | file regenerated by hand would be wrong between two runs. It does COUNT what is
-| recorded here and awaiting a judgement, under each heading — a count over the
+| recorded here and awaiting a judgement, under each heading: a count over the
 | record moves only when the record does, where the names in it move by the hour.
 | Read those names with `mnema status --actor <id>`; the document names the door
 | its own reader can open.
 | It can be switched off (`mnema switch off brief-document`), and then this verb
-| refuses instead of printing an empty file — a session that opens with nothing is
+| refuses instead of printing an empty file: a session that opens with nothing is
 | what switching it off asks for, and a truncated AGENTS.md is not.
 
 ### mnema recall --help
@@ -1024,7 +1024,7 @@ $ mnema export --help
 | Options:
 |   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
 |   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
-|   --who <id>       include only facts authorized by this identity — the `mnid:…`
+|   --who <id>       include only facts authorized by this identity: the `mnid:…`
 |                    from `mnema audit accountability`, or the short form the
 |                    reads print (any prefix that names one identity here)
 |   --which <agent>  include only facts executed by this agent
@@ -1061,7 +1061,7 @@ $ mnema resume --help
 | show where an actor left off, and the runs they still have open
 |
 | Options:
-|   --actor <id>  the identity whose last run and open runs to show — the `mnid:…`
+|   --actor <id>  the identity whose last run and open runs to show: the `mnid:…`
 |                 from `mnema audit accountability`, or the short form the reads
 |                 print (any prefix that names one identity here)
 |   --json        emit the faithful resume object as JSON
@@ -1263,11 +1263,11 @@ $ mnema report --help
 |   --on        switch reporting back on
 |   -h, --help  display help for command
 |
-| The report is built from a short list of facts — mnema’s version, Node’s, the platform, the name
-| of the verb, the kind of error, where in mnema it happened — and from nothing else: no record
+| The report is built from a short list of facts (mnema’s version, Node’s, the platform, the name
+| of the verb, the kind of error, where in mnema it happened), and from nothing else: no record
 | content, no path, no name, no address, no message. It is refused whole if it would carry any.
 | mnema makes no network request and opens no browser: the text is shown and saved to a file and,
-| at a terminal, a link is printed that opens GitHub’s form with the report in it — nothing is
+| at a terminal, a link is printed that opens GitHub’s form with the report in it: nothing is
 | sent until you press Submit there.
 | What was logged, what you declined and the switch live in the global tree’s directory, beside
 | the record and not in it.
@@ -1336,7 +1336,7 @@ $ mnema run --help
 |   help [command]      display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1479,7 +1479,7 @@ $ mnema decision record --help
 |   -h, --help             display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1508,7 +1508,7 @@ $ mnema decision move --help
 |                    the entity to the tree it was born in.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1536,7 +1536,7 @@ $ mnema decision supersede --help
 |                    the entity to the tree it was born in.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1604,7 +1604,7 @@ $ mnema decision import --help
 | have its source’s shape is named and nothing is read from it.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1640,7 +1640,7 @@ $ mnema skill create --help
 |   -h, --help          display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1669,7 +1669,7 @@ $ mnema skill move --help
 |                    the entity to the tree it was born in.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1940,7 +1940,7 @@ $ mnema task create --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -1972,7 +1972,7 @@ $ mnema task move --help
 |                    the entity to the tree it was born in.
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2005,7 +2005,7 @@ $ mnema task handoff --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2038,7 +2038,7 @@ $ mnema task guard --help
 |   id                 the task id (the value shown when it was created)
 |
 | Options:
-|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
+|   --actor <id>       the identity asking (the `who`): the `mnid:…` from `mnema
 |                      audit accountability`, or the short form the reads print
 |                      (any prefix that names one identity here)
 |   --reason <text>    simulate the reason (block, cancel, reopen)
@@ -2081,7 +2081,7 @@ $ mnema switch off --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2118,7 +2118,7 @@ $ mnema switch on --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2271,7 +2271,7 @@ $ mnema check declare --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2301,7 +2301,7 @@ $ mnema audit accountability --help
 | Options:
 |   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
 |   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
-|   --who <id>       count only facts authorized by this identity — the `mnid:…`
+|   --who <id>       count only facts authorized by this identity: the `mnid:…`
 |                    from `mnema audit accountability`, or the short form the
 |                    reads print (any prefix that names one identity here)
 |   --which <agent>  count only facts executed by this agent
@@ -2487,7 +2487,7 @@ $ mnema key revoke --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
@@ -2549,7 +2549,7 @@ $ mnema tail prune --help
 |   -h, --help       display help for command
 |
 | What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.

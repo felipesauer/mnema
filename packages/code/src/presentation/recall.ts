@@ -83,8 +83,8 @@ const WHAT_THIS_IS = recordFraming('recall-document');
  * both would otherwise take a note kept on this machine for something the team was told.
  */
 const WHERE_THEY_COME_FROM = [
-  'They come from every tree this machine holds for the project — the committed one, this',
-  'machine’s own and the personal one — one line each; `read_record` with an id serves the',
+  'They come from every tree this machine holds for the project: the committed one, this',
+  'machine’s own and the personal one, one line each; `read_record` with an id serves the',
   'whole of one.',
 ];
 
@@ -97,9 +97,9 @@ const WHERE_THEY_COME_FROM = [
  */
 function orderLine(touched: SessionTouch): string {
   if (touched.words.length === 0) {
-    return 'Newest first: nothing this session touches could be read here — no changed file, no task in progress, no branch name and no commit.';
+    return 'Newest first: nothing this session touches could be read here: no changed file, no task in progress, no branch name and no commit.';
   }
-  return `Nearest first: the ones that share a word with what this session touches — ${whereTheWordsCameFrom(touched)} — closest first, then the newest.`;
+  return `Nearest first: the ones that share a word with what this session touches (${whereTheWordsCameFrom(touched)}), closest first, then the newest.`;
 }
 
 /** The sources of the words, in the order they were read, joined as a sentence. */

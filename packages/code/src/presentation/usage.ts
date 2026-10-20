@@ -73,7 +73,7 @@ const NOT_THE_RECORD = [
 /** The lines `mnema usage` prints. */
 export function usageReport(render: Render, listing: UsageDone): string[] {
   if (listing.runs.length === 0) {
-    return [`No run is recorded here — looked in ${listing.trees.join(', ')}.`, '', NOT_THE_RECORD];
+    return [`No run is recorded here (looked in ${listing.trees.join(', ')}).`, '', NOT_THE_RECORD];
   }
   return [
     `${listing.runs.length} run(s):`,
@@ -93,7 +93,7 @@ export function usageReport(render: Render, listing: UsageDone): string[] {
     // The STORE is a path, and a path is the value this whole class was first measured
     // on: it is built from the machine's home and an environment this reading does not
     // own. Every other value on this report is an id, a count, an instant or a word.
-    `Read from ${oneLine(listing.store)} — ${listing.sessionsInStore} host session(s) there record work in this project.`,
+    `Read from ${oneLine(listing.store)}: ${listing.sessionsInStore} host session(s) there record work in this project.`,
     NOT_THE_RECORD,
   ];
 }

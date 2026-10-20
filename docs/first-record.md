@@ -10,12 +10,12 @@ cd your-repository
 mnema init
 #> Initialized mnema project at /path/to/repo/.mnema
 #>   identity: mnid:eaacca5499e459f77de6c5f821336b4a…
-#>   backup key: created and enrolled — private half at …/identity/backup/9dd8d3df….key
+#>   backup key: created and enrolled, private half at …/identity/backup/9dd8d3df….key
 #>   Move that file off this machine: a backup left on this disk is lost with it.
 #>
 #>   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
 #>   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
-#>   project in a file of its own — the `>` replaces the whole of the file it names — and
+#>   project in a file of its own (the `>` replaces the whole of the file it names), and
 #>   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
 #>   where no `CLAUDE.md` exists):
 #>     @MNEMA.md
@@ -27,7 +27,7 @@ mnema init
 mnema decision record "Use SQLite for the projection cache" \
   "It is embedded, it is fast enough at our sizes, and it needs no service."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
-#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   Landed in the public tree: committed with the repository, so it reaches every clone.
 # A long rationale can come from a file (`--body-file why.md`) or a pipe (`--stdin`) instead of
 # the line, which keeps it out of the shell history; from two places at once, it is refused.
 
@@ -38,7 +38,7 @@ mnema search
 #> decision (1)
 #>   01a0af84-7eab-7000-8888-79c0dd5690e2  public  2026-09-17  Use SQLite for the projection cache (proposed)
 
-# And the chain says what it can prove about itself — one line for a record with nothing wrong in
+# And the chain says what it can prove about itself: one line for a record with nothing wrong in
 # it. The backup key `init` made, which signs nothing until you restore it, is counted in that
 # line; `mnema verify --verbose` also names it, and says the private tree holds nothing yet.
 mnema verify

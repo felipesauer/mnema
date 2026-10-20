@@ -261,7 +261,7 @@ function closing(printed: readonly PushedRule[]): readonly string[] {
 function leftOut(left: number): readonly string[] {
   if (left === 0) return [];
   return [
-    `Left out of this text: ${left} ${left === 1 ? 'rule' : 'rules'} addressed at this path — the last ${left === 1 ? 'one' : 'ones'} in the order above.`,
+    `Left out of this text: ${left} ${left === 1 ? 'rule' : 'rules'} addressed at this path, the last ${left === 1 ? 'one' : 'ones'} in the order above.`,
     `A hook hands a session at most ${HOOK_CEILING_IN_WORDS} characters, and a file path in place of a longer text, so this one stops at a whole rule instead. \`governing_rules\` with this path serves every one of them.`,
   ];
 }
@@ -345,5 +345,5 @@ export function ruleLine(rule: PushedRule): string {
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
   const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
-  return `“${oneLine(rule.name)}” — governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
+  return `“${oneLine(rule.name)}”: governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
 }

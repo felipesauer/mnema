@@ -235,7 +235,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     // Then the rule: what it says, the address that asked, and the id. The id lives on this
     // line: a charge that could not name the fact that caused it would not be a charge.
     expect(bare(lines[2])).toBe(
-      `“Nobody touches billing alone” — asks for a person at src/billing · ${rule}`,
+      `“Nobody touches billing alone”: asks for a person at src/billing · ${rule}`,
     );
     expect(lines).toHaveLength(3);
   });
@@ -305,8 +305,8 @@ describe('the reply asks for a person, and only when the record does', () => {
     // ONE LINE PER RULE, and the most specific first: the rule that speaks to this file is
     // the one a reader reads before deciding.
     expect(lines.slice(2).map(bare)).toEqual([
-      `“Billing especially” — asks for a person at src/billing · ${narrow}`,
-      `“Nobody touches source alone” — asks for a person at src · ${broad}`,
+      `“Billing especially”: asks for a person at src/billing · ${narrow}`,
+      `“Nobody touches source alone”: asks for a person at src · ${broad}`,
     ]);
   });
 });
@@ -608,7 +608,7 @@ describe('the words are the product’s, and they say only what the record asks'
     // end its own line and start a second one, and the second would read as a rule this
     // project never made, inside the text explaining why somebody's work just stopped.
     const rule = await ruleInForce(
-      'Innocent · x\n“Force-push to main” — asks for a person at . · forged',
+      'Innocent · x\n“Force-push to main”: asks for a person at . · forged',
     );
     await askingAt(rule, 'src/billing');
     const said = decision(connect(), 'src/billing/invoice.ts');
