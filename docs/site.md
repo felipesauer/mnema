@@ -48,6 +48,5 @@ jobs:
       - uses: actions/deploy-pages@v4
 ```
 
-The `npm i -g` line is the one in [Install](install.md), and is true only when that command
-resolves; with a checkout of this repository built from source, run `node
-packages/code/dist/cli.js site --out _site` instead.
+The `npm i -g` line is the one in [Install](install.md); with a checkout of this repository built from
+source, run `node packages/code/dist/cli.js site --out _site` instead.

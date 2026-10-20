@@ -152,8 +152,8 @@ function binariesOnPath(processEnv: NodeJS.ProcessEnv): { path: string; real: st
 }
 
 /**
- * Where the install is written, until the packages are on npm. The page is the only place that
- * spells the steps, and `the-install-line-is-one.test.ts` holds this line to it.
+ * Where the install is written. The page is the only place that spells the steps, and
+ * `the-install-line-is-one.test.ts` holds this line, and the install line it carries, to it.
  */
 const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
@@ -167,7 +167,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         state: 'attention',
         line:
           'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it; ' +
-          `nothing is on npm yet, so \`npm i -g @mnema/code\` answers 404: build from the source (${INSTALL_PAGE}), or put the directory of this binary on the PATH.`,
+          `install it with \`npm i -g @mnema/code\` (${INSTALL_PAGE}), or put the directory of this binary on the PATH.`,
       },
     ];
   }

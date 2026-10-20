@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-Fixes are made on the default branch, `main`, and it is the supported version: there is no release
-and no tag, and nothing is on npm yet (`npm view @mnema/code version` says whether that is still so).
+Fixes are made on the default branch, `main`, and it is the supported version. The packages are on npm
+(`npm view @mnema/code version` says which version the registry serves); a fix reaches an install with
+the next version published.
 
 The 0.x alpha published earlier as `@felipesauer/mnema` is the previous line. It is
 deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives at

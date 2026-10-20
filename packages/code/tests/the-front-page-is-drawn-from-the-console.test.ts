@@ -906,11 +906,16 @@ describe('every package, and the family, draws what it is, in its own words', ()
       const images = [...line.matchAll(/<img alt="([^"]+)" src="https:\/\/img\.shields\.io\//g)];
       expect(images.map((m) => m[1]?.split(':')[0]?.split(' ')[0])).toEqual([
         'CI',
+        'npm',
         'License',
         'Node',
       ]);
       expect(line).toContain(
         '<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI"',
+      );
+      // The badge shows the version the registry serves for this package, and links to its page.
+      expect(line).toContain(
+        `<a href="https://www.npmjs.com/package/${name}"><img alt="npm: ${name}" src="https://img.shields.io/npm/v/${name}?`,
       );
       // The npm page does not rewrite a relative address written in raw HTML, so the licence
       // badge points at the file on `main` by the address of the repository the manifest names,
@@ -923,7 +928,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
         `<a href="https://github.com/${repo}/blob/main/LICENSE"><img alt="License: Apache-2.0"`,
       );
       const targets = [...line.matchAll(/\bhref="([^"]*)"/g)].map((m) => m[1] ?? '');
-      expect(targets).toHaveLength(2);
+      expect(targets).toHaveLength(3);
       expect(targets.filter((t) => !t.startsWith('https://'))).toEqual([]);
     },
   );

@@ -9,6 +9,7 @@
 
 <p align="center">
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://www.npmjs.com/package/@mnema/code"><img alt="npm: @mnema/code" src="https://img.shields.io/npm/v/@mnema/code?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
 <a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
@@ -63,9 +64,12 @@ long form of each row is in [the reference](https://github.com/felipesauer/mnema
 
 ## Install
 
-**Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, it is built from the source: [the install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)
-has the steps. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
+```sh
+npm i -g @mnema/code
+```
+
+[The install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the steps for a Node installed by
+the system. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
 ESM-only.
 
 ## Your first record

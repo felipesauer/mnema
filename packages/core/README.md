@@ -9,6 +9,7 @@
 
 <p align="center">
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://www.npmjs.com/package/@mnema/core"><img alt="npm: @mnema/core" src="https://img.shields.io/npm/v/@mnema/core?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
 <a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
@@ -61,7 +62,7 @@ offline: the projection is deterministic, but the merge policy is a separate con
 npm i @mnema/core
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the install from the source.
+It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)).
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that

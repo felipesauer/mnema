@@ -13,6 +13,7 @@ Your decisions, handed to your agents' sessions and held at the edits they gover
 
 <p>
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://www.npmjs.com/package/@mnema/code"><img alt="npm: @mnema/code" src="https://img.shields.io/npm/v/@mnema/code?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%E2%89%A526.0.0-997dbf?style=flat-square">
 </p>
@@ -58,13 +59,14 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 
 ## Status
 
-- **Nothing is on npm yet.** Installing means building from the source, and the exact lines are in [`docs/install.md`](docs/install.md).
+- **On npm.** `@mnema/code` is published: install it with `npm i -g @mnema/code` ([`docs/install.md`](docs/install.md)); to run the `main` branch instead, see [Build from source](docs/build-from-source.md).
 - **Node.** Requires Node 24.15.0 or a later 24, or 26.0.0 or later.
 - **From a checkout.** The GitHub Action, the SDK and the VS Code extension are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
 
 ## Quick start
 
 ```sh
+npm i -g @mnema/code                              # the binary
 claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
 claude plugin install mnema@mnema
 cd your-repository && mnema init
@@ -140,7 +142,7 @@ it. The detail of most of them is in [Features](docs/features.md); for the rest,
 
 | Product | What it is for | Status | Link |
 |---|---|---|---|
-| **`@mnema/code`**<br><sub>the core</sub> | The signed, append-only record, with the command line and the MCP server over it. | Not on npm yet; runs from the source ([Status](#status)). | [Package](packages/code/README.md) |
+| **`@mnema/code`**<br><sub>the core</sub> | The signed, append-only record, with the command line and the MCP server over it. | `npm i -g @mnema/code` ([Install](docs/install.md)). | [Package](packages/code/README.md) |
 | **GitHub Action** | On a pull request, comments what the change does to the record and fails the check when it is not signed. | Not published; runs from a clone of this repository. | [Package](packages/action/README.md) |
 | **SDK** | A library door to the record, for a program that records, reads and verifies. | Not published; runs from a clone of this repository. | [Package](packages/sdk/README.md) |
 | **VS Code extension** | Shows the rules in force over the open file and the decisions waiting for a judgment. | Not published; runs from a clone of this repository. | [Package](packages/vscode/README.md) |

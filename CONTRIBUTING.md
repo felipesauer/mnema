@@ -101,8 +101,8 @@ names how to run it.
 
 ## Releases
 
-**Publishing to npm is the maintainer's own act**, and the first publication is made by hand. After it, a
-workflow publishes, but only when a person approves it. A release needs no token and no secret in this
+**Publishing to npm is the maintainer's own act**: the first version was published by hand, and from then on
+a workflow publishes, but only when a person approves it. A release needs no token and no secret in this
 repository: npm trusts `.github/workflows/release.yml` (see below) and signs a provenance statement with
 each package.
 
@@ -121,8 +121,8 @@ pnpm build && bash .github/the-packed-install/run.sh
    proposes a number from the CHANGELOG, and today that would be 0.2.0. The pull request carries what the
    script writes: the number in every manifest, the CHANGELOG cut, the recording made again.
 2. Merge it.
-3. On the merged commit, build and pack the five, then publish them in this order, from your own login (the
-   packages are not on npm yet, so there is no trusted publisher to publish for you). The `@mnema` scope
+3. On the merged commit, build and pack the five, then publish them in this order, from your own login (a
+   package that is not on npm yet has no trusted publisher to publish for it). The `@mnema` scope
    has to exist on your npm account before this step: create the organization or the user scope first, or
    the first `npm publish` is refused.
 
@@ -168,8 +168,8 @@ the run that stopped: the packages already published came from the earlier commi
 the commit of the run that finishes. If `main` moved in between, the packages are not all from one commit,
 so before running again check that the commits since are not changes to the packages.
 
-While `@mnema/code` is not on npm, a push to `main` does not publish: the workflow says the first
-publication is by hand and ends green. The workflow has not run yet.
+A push to `main` whose root version is the one npm already serves publishes nothing and ends green.
+The workflow has not published a version yet: the first one was published by hand.
 
 ## A pull request
 

@@ -10,6 +10,13 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **The install is `npm i -g @mnema/code`.** The README, the install page, the package pages, `mnema doctor` and the
+  plugin's hand-over hook no longer say that nothing is on npm or that the install is from the source; the source build
+  moved to `docs/build-from-source.md`, for whoever wants the `main` branch. The five published packages' pages carry a
+  badge with the version npm serves, and one test holds the install line to the page.
+
 ## [0.1.0] - 2026-10-20
 
 ### Added

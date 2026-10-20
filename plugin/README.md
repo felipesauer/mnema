@@ -181,8 +181,8 @@ npm i -g @mnema/code
 pnpm add -g @mnema/code
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the
-[install page](../docs/install.md) has the install from the source, and `npm view @mnema/code version` says whether the publication has happened.
+The [install page](../docs/install.md) has the steps for a Node installed by the system, and `npm view @mnema/code version`
+says which version the registry serves.
 
 Then add this repository as a marketplace and install from it:
 

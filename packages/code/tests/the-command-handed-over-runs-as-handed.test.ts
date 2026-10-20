@@ -665,13 +665,13 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * names, 8 flags and 4 unwritten, are the sum of the rows. The history of each total is in the
  * version control of this file.
  *
- * THE INSTALL PAGE'S LINE ROW IS 3 NOW: its install block is the install from the
- * source, and the pre-release's tarball URLs it gave before are gone.
+ * THE INSTALL PAGE'S LINE ROW IS 3 NOW: its install blocks are the npm install and its
+ * home-prefix variant, and the tarball URLs it gave before are gone.
  */
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 30, name: 46, flag: 1 },
+  'CHANGELOG.md': { line: 30, name: 47, flag: 1 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
