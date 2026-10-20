@@ -117,6 +117,11 @@ pnpm build && bash .github/the-packed-install/run.sh
 
 ### The first version, 0.1.0
 
+Done for 0.1.0 on 20 October 2026: the five packages are on npm, each trusts `release.yml` in the `npm`
+environment, and each requires two-factor authentication and disallows tokens. The steps stay here for a
+package added later, whose first version is published by hand the same way before npm can trust the
+workflow for it.
+
 1. Open a pull request that runs `pnpm release:prepare 0.1.0`. **Write the number**: without one the script
    proposes a number from the CHANGELOG, and today that would be 0.2.0. The pull request carries what the
    script writes: the number in every manifest, the CHANGELOG cut, the recording made again.
