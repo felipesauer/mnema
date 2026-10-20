@@ -43,7 +43,7 @@ export function registerGuard(task: Command, wiring: Wiring): Declared {
     .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
     .addArgument(enumeratedArgument('<action>', 'the transition to test', TASK_ACTIONS))
     .argument('<id>', 'the task id (the value shown when it was created)')
-    .requiredOption('--actor <id>', `the identity asking (the \`who\`) — ${ACTOR_HELP}`)
+    .requiredOption('--actor <id>', `the identity asking (the \`who\`): ${ACTOR_HELP}`)
     .option(
       '--reason <text>',
       `simulate the reason (${listed(actionsRequiring('task', 'reason'))})`,

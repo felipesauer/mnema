@@ -613,7 +613,7 @@ function signedLines(signature: StackPlan['signature']): string[] {
   const more = (text: string): string => `           ${text}`;
   if (signature.kind === 'unsigned') {
     return [
-      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files —',
+      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files:',
       more('that they are exactly these, not who wrote them'),
     ];
   }

@@ -174,7 +174,7 @@ const ABSOLUTE_PATH = /(?<![\w@.:-])\/[\w.-]+\/|(?<![\w])[A-Za-z]:[\\/]|(?<![\w]
  * credential, an address, a path, or any of `withheld` (this machine's own places).
  */
 export function renderReport(diagnostic: Diagnostic, withheld: readonly string[] = []): Rendered {
-  const title = `[internal] ${diagnostic.code} \u2014 fp:${diagnostic.fingerprint}`;
+  const title = `[internal] ${diagnostic.code} (fp:${diagnostic.fingerprint})`;
   const body = [
     `mnema: ${diagnostic.version}`,
     `node: ${diagnostic.node}`,

@@ -116,9 +116,9 @@ Read the file once more as a stranger would before you commit it.
 
 For each case, one of:
 
-- `held` — the host did what the page says;
-- `did-not-hold` — it did something else, and `observed` says what;
-- `not-run` — the case was not read, and `observed` says why.
+- `held`: the host did what the page says;
+- `did-not-hold`: it did something else, and `observed` says what;
+- `not-run`: the case was not read, and `observed` says why.
 
 A `did-not-hold` is a finding about the page or the plugin, and it is a good capture. Commit the file
 as `plugin/captures/cursor-<date>.json`, and leave the script alone unless the script was wrong.

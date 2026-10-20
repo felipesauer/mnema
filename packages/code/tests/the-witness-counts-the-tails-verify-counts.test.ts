@@ -158,7 +158,7 @@ describe('witness and verify count the same tails', () => {
     const verified = await mnema('verify');
     const listed = await mnema('tail', 'list');
     expect(tailsVerified(verified)).toBe(1);
-    expect(listed.out[0]).toBe('1 tail(s) holding events — the ones a cut can name:');
+    expect(listed.out[0]).toBe('1 tail(s) holding events (the ones a cut can name):');
   });
 
   it('still refuses to stamp a tree whose only tail is empty: nothing is recorded there', async () => {
@@ -171,7 +171,7 @@ describe('witness and verify count the same tails', () => {
     anEmptyTail(resolveTrees(elsewhere, { home: join(sandbox, 'home') }).global);
     const listed = await mnema('witness', '--global');
     expect(listed.out[0], listed.out.join(' / ')).toBe(
-      'No tail holds events in any tree here — looked in global.',
+      'No tail holds events in any tree here (looked in global).',
     );
     const stamped = await mnema('witness', 'stamp', '--global');
     expect(stamped.failed).toBe(true);

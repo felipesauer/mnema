@@ -1,6 +1,6 @@
 # What the suite left behind
 
-A run of this suite makes sandboxes under the machine's temp directory — **187 distinct prefixes**,
+A run of this suite makes sandboxes under the machine's temp directory: **187 distinct prefixes**,
 every one of them beginning `mnema-`. When one outlives the run it costs nothing anybody looks at,
 which is how **47.237** of them accumulated before an audit counted them in August 2026.
 
@@ -16,8 +16,8 @@ This covers the other 186, from outside the suite.
 
 ## Why it is not a test
 
-The obvious test — list the temp directory before a call and after it, and require exactly one new
-entry — was written, shipped, and measured being a race. Vitest runs several files at once and
+The obvious test (list the temp directory before a call and after it, and require exactly one new
+entry) was written, shipped, and measured being a race. Vitest runs several files at once and
 every one of them builds under this same family, so another worker's sandbox appearing inside the
 window is attributed to this call: **six of six** runs of the context package package alone went red, and
 **two of three** full-suite runs.
@@ -38,7 +38,7 @@ pnpm what-the-suite-left-behind              # after the LAST run of the suite
 
 `--tmp <dir>`, `--prefix <p>`, `--baseline <path>`, `--summary <path>` and `--json <path>` are
 all optional; the defaults are the machine's temp directory, `mnema-`, and
-`what-the-suite-left-behind.json` (gitignored — it is a fact about one machine at one instant).
+`what-the-suite-left-behind.json` (gitignored: it is a fact about one machine at one instant).
 
 | it prints | it means | exit |
 |---|---|---|
@@ -47,7 +47,7 @@ all optional; the defaults are the machine's temp directory, `mnema-`, and
 | `RULER BROKEN` | it could not tell, and says which of the three reasons | 2 |
 
 The three refusals are a live suite, no recorded baseline, and an unreadable temp directory or
-process list. None of them is ever reported as a clean sweep — a ruler that cannot say it broke is
+process list. None of them is ever reported as a clean sweep: a ruler that cannot say it broke is
 worse than no ruler, which is the rule `.github/why-it-went-red/` was built on and this follows.
 
 ## In CI

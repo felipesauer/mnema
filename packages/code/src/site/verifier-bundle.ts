@@ -17,6 +17,6 @@ export function theSiteVerifier(): string {
   try {
     return readFileSync(BUNDLE, 'utf-8');
   } catch {
-    throw new Error(`the site verifier is not built (${BUNDLE}) — run \`pnpm build\``);
+    throw new Error(`the site verifier is not built (${BUNDLE}): run \`pnpm build\``);
   }
 }

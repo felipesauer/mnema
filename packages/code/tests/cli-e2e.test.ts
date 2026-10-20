@@ -376,7 +376,7 @@ describe('mnema CLI: init → task → verify, end to end', () => {
     // The one line the person must act on: where the private half is, and that it
     // has to leave this machine; a backup on this disk is lost with the disk.
     const backupLine = first.out.find((line) => line.includes('backup key:')) as string;
-    expect(backupLine).toContain('created and enrolled — private half at');
+    expect(backupLine).toContain('created and enrolled, private half at');
     const privateKeyPath = backupLine.slice(backupLine.indexOf('at ') + 3);
     expect(existsSync(privateKeyPath)).toBe(true);
     expect(privateKeyPath.startsWith(join(sandbox, 'home', '.mnema', 'identity'))).toBe(true);
@@ -632,7 +632,7 @@ describe('mnema CLI: decision, end to end', () => {
     // about the project, so it goes to the tree that travels, and nothing in the
     // command said so.
     expect(c.out.join('\n')).toMatch(
-      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
     );
 
     const root = resolveTrees(repo, {
@@ -902,7 +902,7 @@ describe('mnema CLI: skill, end to end', () => {
     expect(c.failed()).toBe(false);
     // The output is `"<name>" (<uuid>)`: the display name and the key, no alias.
     expect(c.out.join('\n')).toMatch(
-      /^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+      /^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
     );
 
     const root = resolveTrees(repo, {
@@ -1053,7 +1053,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     // person's capture is public, and the line is what makes that visible at the
     // moment it happens instead of afterwards, in the record.
     expect(c.out.join('\n')).toMatch(
-      /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree — committed with the repository, so it reaches every clone\.$/,
+      /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
     );
     const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
 
@@ -1119,7 +1119,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toBe(
       'Recorded handoff on a-task-id: claude-code → claude-code\n' +
-        '  Landed in the public tree — committed with the repository, so it reaches every clone.',
+        '  Landed in the public tree: committed with the repository, so it reaches every clone.',
     );
 
     const root = treesOf().projectPublic as string;
@@ -1150,8 +1150,8 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     // The override named the tree, and the reply names it back: the sentence is about
     // where the fact IS, not about who chose it.
     expect(c.out.join('\n')).toBe(
-      'Linked A —inspired-by→ 00000000-0000-7000-8000-000000000000\n' +
-        "  Landed in the private tree — this machine's own; it is not committed and does not travel.",
+      'Linked A -inspired-by→ 00000000-0000-7000-8000-000000000000\n' +
+        "  Landed in the private tree: this machine's own; it is not committed and does not travel.",
     );
 
     const trees = treesOf();
@@ -1442,7 +1442,7 @@ describe('mnema CLI: search and show (the record made readable), end to end', ()
     );
 
     const shownDecision = await output(['show', decision]);
-    expect(shownDecision).toContain('ADR-1 — Adopt SQLite (proposed)');
+    expect(shownDecision).toContain('ADR-1: Adopt SQLite (proposed)');
     expect(shownDecision).toContain('it is local-first');
 
     // A skill's body IS served here: this reader is curating patterns, and the
@@ -3715,7 +3715,7 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
 
     const document = await output(['brief']);
     // No label identifies two rules: the defect, stated as the property it broke.
-    const labels = [...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1]);
+    const labels = [...document.matchAll(/\*\*(ADR-\d+):/g)].map((m) => m[1]);
     expect([...labels].sort()).toEqual(['ADR-1', 'ADR-2']);
     // What is not in it: the private title, the private id, and the private pattern's
     // name. The body of neither pattern is in it either, but that is the other rule.
@@ -3773,7 +3773,7 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     const document = await output(['brief']);
     // Both rules are printed, both still labelled `ADR-1`: nothing was renumbered, which
     // is the half of the answer a reader has to be able to trust.
-    const labels = [...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1]);
+    const labels = [...document.matchAll(/\*\*(ADR-\d+):/g)].map((m) => m[1]);
     expect(labels).toEqual(['ADR-1', 'ADR-1']);
     // And the file says so, above the rules, naming the label and both ids.
     const declaration = document.slice(0, document.indexOf('- **'));
@@ -3800,7 +3800,7 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     await accept('Keep the runbook in the record');
     await accept('Rotate the credentials every quarter');
     const document = await output(['brief']);
-    expect([...document.matchAll(/\*\*(ADR-\d+) —/g)].map((m) => m[1])).toEqual(['ADR-2', 'ADR-1']);
+    expect([...document.matchAll(/\*\*(ADR-\d+):/g)].map((m) => m[1])).toEqual(['ADR-2', 'ADR-1']);
     for (const absent of ['more than one rule', 'Cite these by id', '- `ADR-']) {
       expect(document, `the document says ${absent}`).not.toContain(absent);
     }

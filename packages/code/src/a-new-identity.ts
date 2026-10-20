@@ -127,11 +127,11 @@ const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
     how: 'under another key',
     beyond:
       ', and so will every other tree this machine keeps to itself that the other key wrote in, ' +
-      'once this key writes there — no enrollment reaches a tree kept on one machine',
+      'once this key writes there: no enrollment reaches a tree kept on one machine',
     spared: 'the public trees of your projects, this one’s included,',
     vouching:
       'a machine already in that identity (this one, if it still holds the key that identity ' +
-      'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key is ' +
+      'wrote with here: run the enrollment with MNEMA_HOME naming the directory that key is ' +
       'kept under)',
     notHere: '',
   },
@@ -140,11 +140,11 @@ const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
     how: 'under another key',
     beyond:
       ', and so will every other tree this machine keeps to itself that the other key wrote in, ' +
-      'once this key writes there — no enrollment reaches a tree kept on one machine',
+      'once this key writes there: no enrollment reaches a tree kept on one machine',
     spared: 'the public trees of your projects',
     vouching:
       'a machine already in that identity (this one, if it still holds the key that identity ' +
-      'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key is ' +
+      'wrote with here: run the enrollment with MNEMA_HOME naming the directory that key is ' +
       'kept under)',
     notHere: '',
   },
@@ -166,7 +166,7 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   const more = founded.besides.length - shown.length;
   const which =
     more > 0
-      ? `${shown.join(', ')}, and ${more} more — \`mnema audit accountability\` names them`
+      ? `${shown.join(', ')}, and ${more} more: \`mnema audit accountability\` names them`
       : shown.join(', ');
   const one = founded.besides.length === 1;
   // With one identity beside it, the command is the one to copy: `key request` resolves a short
@@ -176,7 +176,7 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   return oneLine(
     `This key founded an identity of its own in the ${scope} tree, ${named(founded.anchor)}, ` +
       `beside ${founded.besides.length} already there (${which}). ${tree.who} ` +
-      `If ${one ? 'that identity' : 'one of them'} is you — ${tree.how} — this tree counts you ` +
+      `If ${one ? 'that identity' : 'one of them'} is you, ${tree.how}, this tree counts you ` +
       `twice from now on${tree.beyond}; ${tree.spared} can still count you once where this key ` +
       `has not written yet: run \`mnema key request --anchor ${target}\` here, hand the line it ` +
       `prints to ${tree.vouching}, which runs \`mnema key enroll <the line>\` inside each of ` +

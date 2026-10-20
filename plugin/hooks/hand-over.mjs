@@ -1,12 +1,12 @@
 /**
- * How a handler of this plugin hands a session what a verb prints — written once, for every
+ * How a handler of this plugin hands a session what a verb prints: written once, for every
  * handler that does it.
  *
  * THERE ARE TWO OF THEM NOW, AND THAT IS WHY THIS FILE EXISTS. `session-start.mjs` hands over
  * the document `mnema brief` prints and `session-recall.mjs` hands over the notes `mnema
  * recall` prints, at the same moment and by the same rule. The rule used to live inside the
  * first handler; a second handler written as a copy of it would be two readings of one rule,
- * which is the shape that comes to disagree in silence — one of them learning to keep the
+ * which is the shape that comes to disagree in silence: one of them learning to keep the
  * second stream, say, while the other went on dropping it. So the rule is here, and each
  * handler is its channel's declaration and one call.
  *
@@ -16,8 +16,8 @@
  * carries no channel and has none to name. The handlers do the writing.
  *
  * A HANDLER NEVER BLOCKS AND NEVER FAILS LOUD, AND THAT IS STILL TRUE. Every outcome that is
- * not a text is silence — no project here, no `mnema` on the PATH, a record that will not
- * read, a channel switched off — collapsed into one `null` ({@link whatTheVerbSays}), so there
+ * not a text is silence (no project here, no `mnema` on the PATH, a record that will not
+ * read, a channel switched off) collapsed into one `null` ({@link whatTheVerbSays}), so there
  * is ONE gate and a single place to remove if this plugin ever stopped being quiet. Asserted
  * in `packages/code/tests/the-record-arrives-unasked.test.ts` for every command `hooks.json`
  * declares ("says nothing at all where there is no project").
@@ -29,12 +29,12 @@
  * the built binary are what separate the two: outside a project a verb exits 1 with its
  * refusal on stderr; over a SOUND record it exits 0 with an empty stderr; over a record whose
  * tails stop chaining it exits 0 and the notice is on stderr. So with exit 0 the second
- * stream holds bytes only when there is something to say about the RECORD — the product's
- * own words, from `packages/code/src/record-integrity.ts` — and they go over under the text,
+ * stream holds bytes only when there is something to say about the RECORD (the product's
+ * own words, from `packages/code/src/record-integrity.ts`) and they go over under the text,
  * byte for byte, with a blank line between. The ORDER is the product's rule: the MCP puts the
  * answer first and the record's own state under it (`packages/code/src/mcp/server.ts`).
  *
- * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The text goes over BYTE FOR BYTE — no
+ * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The text goes over BYTE FOR BYTE: no
  * preamble of a handler's, no cut. A second place deciding what a session is told about the
  * record is a second place that can come to disagree with it. Asserted in the same test
  * ("hands over exactly what the verb prints").
@@ -42,14 +42,14 @@
  * IT ASKS THE VERB FOR THE COPY A HOOK CAN CARRY ({@link FOR_A_HOOK}), and that is not a cut
  * made here. The host hands a hook's text over whole only up to a ceiling, and past it swaps
  * ALL of it for a file path; so the verb, which knows where each rule and each note ends, stops
- * at a whole one inside the ceiling and says what it left out — the text and its measurement
+ * at a whole one inside the ceiling and says what it left out: the text and its measurement
  * are `packages/code/src/presentation/within-a-hook.ts`. What reaches the session is still
  * exactly what that verb printed. Asserted in `the-record-arrives-unasked.test.ts` ("stops at a
  * whole rule where a hook's text would be replaced, and says so").
  *
  * AND A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT. The plugin and the binary are
  * installed apart, so a new plugin can meet an old `mnema` on the PATH; that binary refuses
- * `--hook` with exit 1, and exit 1 is silence — a session that opened with no document and no
+ * `--hook` with exit 1, and exit 1 is silence: a session that opened with no document and no
  * notes and no word about why. So a refusal that names the flag ({@link refusesTheFlag}) runs
  * the verb once more with none, and the session is handed what that binary prints, as it was
  * before the flag existed: whole, and past the host's ceiling replaced by a file path. Any other
@@ -60,7 +60,7 @@
  * "No `mnema` on the PATH" was the one way the PATH could be wrong that this module knew, and it
  * is silence. Measured with Claude Code 2.1.281: a program NAMED `mnema` placed before the real
  * one was run at all three points the plugin declares (`brief --hook`, `recall --hook`, `mcp`),
- * the session opened without the record, and nothing said so — the silence above, earned by a
+ * the session opened without the record, and nothing said so: the silence above, earned by a
  * program that is not this product. So the handler that hands over the document asks first,
  * and a program that does not answer as this product is not run and is NAMED to the session,
  * with what it answered and where the right one comes from. The notes handler asks too and
@@ -75,7 +75,7 @@ import { spawnSync } from 'node:child_process';
  *
  * The `.cmd` on Windows is npm's own shim name, and it is INTENTION rather than an
  * assertion: nothing here has been run on Windows. If the guess is wrong the spawn
- * fails, and a failed spawn is silence — the plugin does nothing instead of doing
+ * fails, and a failed spawn is silence: the plugin does nothing instead of doing
  * something wrong.
  */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
@@ -124,7 +124,7 @@ const WHICH_PROGRAM = '--identify';
  * installed as (`packages/code/src/version.ts`, `PRODUCT_NAME`). A plain string for the reason
  * the handlers' channel names are: this file runs with no build and cannot import the surface.
  * The two are held together by every case of `the-record-arrives-unasked.test.ts` that runs the
- * real binary — a drift would leave all of them without a document.
+ * real binary: a drift would leave all of them without a document.
  */
 const THIS_PRODUCT = '@mnema/code';
 
@@ -135,15 +135,15 @@ const THIS_PRODUCT = '@mnema/code';
  */
 const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
-/** How much of what a stranger answered is quoted back — enough to recognize it. */
+/** How much of what a stranger answered is quoted back: enough to recognize it. */
 const QUOTED = 120;
 
 /**
  * Which program the `mnema` on the PATH is: this product, this product from before the
  * question existed, no program at all, or another program of the same name.
  *
- * ONE QUESTION, AND THE ANSWER IS A NAME AND A VERSION. A version alone tells nothing apart —
- * any program prints a number — so the answer starts with the package name, which one publisher
+ * ONE QUESTION, AND THE ANSWER IS A NAME AND A VERSION. A version alone tells nothing apart
+ * (any program prints a number), so the answer starts with the package name, which one publisher
  * holds on the registry. A build from before the question refuses it in this product's own words
  * for an option it does not take (`mnema does not take "--identify".`), and that is an answer
  * too: the verb is then run as before, and the flag fallback below still serves it.
@@ -210,15 +210,15 @@ export function aStranger(stranger) {
  *
  * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS. A refusal arrives with a non-zero
  * status, which is this function's `null`, so stderr is only ever read on the path where the
- * verb succeeded — and on that path it is empty unless the record itself has something to
+ * verb succeeded, and on that path it is empty unless the record itself has something to
  * say. A text that is empty is silence too: `mnema recall` over a project with no notes
  * prints nothing and exits 0, and a session there is handed nothing.
  *
- * @param {string} verb The verb to run — each handler names its own.
- * @param {string} cwd Where to run it — the host's project directory, or this process's own
+ * @param {string} verb The verb to run: each handler names its own.
+ * @param {string} cwd Where to run it: the host's project directory, or this process's own
  *   when the host announced none.
  * @param {{ readonly namesAStranger?: boolean }} [options] Whether a `mnema` that is another
- *   program is named to the session ({@link aStranger}) rather than met with silence — the one
+ *   program is named to the session ({@link aStranger}) rather than met with silence: the one
  *   handler that hands over the document says it, so a session is told once.
  * @param {readonly string[]} [handed] The handler's own arguments, from the hooks file: a
  *   `--host <name>` there is passed on, so the verb cuts to that host's ceiling rather than
@@ -248,13 +248,13 @@ export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, hand
  * handler needs no input, and for the two that hand over a document that is still so. The gate a
  * host runs before a write is different in kind: what it answers depends on WHICH file the host
  * is about to write, and the host says that on stdin. So the payload goes to the verb byte for
- * byte, and what the verb prints comes back byte for byte — it is already the host's reply.
+ * byte, and what the verb prints comes back byte for byte: it is already the host's reply.
  *
  * THE SAME GATE AS {@link whatTheVerbSays}: every non-zero outcome is silence, and so is an empty
- * answer — and so is `{}`, the verb's own spelling of having nothing to say, so that a handler that
+ * answer, and so is `{}`, the verb's own spelling of having nothing to say, so that a handler that
  * says nothing writes no byte, the way the other two do. Unlike them, the second stream is never
  * kept: what goes back is JSON the host parses, and a line under it would make the whole reply
- * unreadable — which a host reads as nothing to say, in the one place where saying nothing lets a
+ * unreadable, which a host reads as nothing to say, in the one place where saying nothing lets a
  * write through.
  *
  * @param {readonly string[]} argv The verb and its flags.
@@ -314,15 +314,15 @@ function answerOf(ran) {
 }
 
 /**
- * What the gate before a write answers, in a host whose hooks are processes — told by the hooks
+ * What the gate before a write answers, in a host whose hooks are processes: told by the hooks
  * file which host it is in and what starts it, or `null` when it starts nothing.
  *
  * THE HOOKS FILE SAYS IT, AND THE HANDLER DOES NOT GUESS. The file is generated from the host
  * table, and each command line names its host (`--host`) and one of two things that start it:
  * `--where <VARIABLE>`, for a host that applies the matcher Claude Code applies too and sets a
- * variable no other host sets — the gate starts nothing where it is unset, and reads no stdin
- * there — or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
- * the matcher says — the gate starts nothing for a tool the host does not write through. Either
+ * variable no other host sets (the gate starts nothing where it is unset, and reads no stdin
+ * there), or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
+ * the matcher says (the gate starts nothing for a tool the host does not write through). Either
  * way no `mnema` runs. It is the SECOND line: the hooks file puts a shell generated from the same
  * row in front of the handler, so where that shell turns a call away no process starts at all,
  * and this check holds only for a handler run some other way. Everything else is
@@ -346,7 +346,7 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
   const agent = flagValue(argv, '--agent-key');
   if (agent === undefined) return whatTheVerbAnswers(asked, cwd, input);
   // THE AGENT'S KEY IS ASKED FOR, NOT ASSUMED: a `mnema` older than the option refuses it by name
-  // and would answer nothing — a gate that stops gating — so it is asked again without, and signs
+  // and would answer nothing, a gate that stops gating, so it is asked again without, and signs
   // as it always did.
   const withAgent = [...asked, '--agent-key', agent];
   const ran = ranTheVerb(withAgent, cwd, input);
@@ -412,7 +412,7 @@ function running(verb, flags, cwd) {
 }
 
 /**
- * Whether a run was refused for the flag itself — what a `mnema` older than {@link FOR_A_HOOK}
+ * Whether a run was refused for the flag itself: what a `mnema` older than {@link FOR_A_HOOK}
  * answers.
  *
  * READ OFF THE REFUSAL, and only its naming of the flag: the binary's own words for an option it

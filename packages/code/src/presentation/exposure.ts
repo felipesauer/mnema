@@ -33,7 +33,7 @@ export function exposureReport(render: Render, report: Exposure): string[] {
     return [
       `Nothing recognizable in ${report.scanned} record(s).`,
       render(
-        fact('Read here: this project’s trees and the machine-global tree — no other project.'),
+        fact('Read here: this project’s trees and the machine-global tree (no other project).'),
       ),
       render(
         fact('That is not the same as nothing: only known credential formats are recognized.'),
@@ -61,7 +61,7 @@ export function exposureReport(render: Render, report: Exposure): string[] {
   }
   lines.push('');
   lines.push(
-    render(fact('These records are permanent — nothing deletes a fact. Rotate the credentials.')),
+    render(fact('These records are permanent: nothing deletes a fact. Rotate the credentials.')),
   );
   lines.push(
     render(fact('A public record is committed and on every machine that cloned the repository.')),

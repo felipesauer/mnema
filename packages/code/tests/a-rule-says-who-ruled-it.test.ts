@@ -143,7 +143,7 @@ function aTeamOfTwo() {
   return { a, b, atA, atB, remote };
 }
 
-const BRIEF_RULE = (title: string) => new RegExp(`^- \\*\\*ADR-\\d+ — ${title}\\*\\*.*$`, 'm');
+const BRIEF_RULE = (title: string) => new RegExp(`^- \\*\\*ADR-\\d+: ${title}\\*\\*.*$`, 'm');
 
 describe('the document names who accepted each rule', () => {
   it('shows the stranger’s rule with the stranger’s identity, marked, beside the team’s own', () => {

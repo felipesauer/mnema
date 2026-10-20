@@ -55,7 +55,7 @@ describe('foundingSentence: one sentence, both surfaces', () => {
       'If you are new to this record, this is how everyone after the first arrives, and there is ' +
         'nothing to do.',
     );
-    expect(said).toContain('If that identity is you — on another machine, or under another key —');
+    expect(said).toContain('If that identity is you, on another machine, or under another key,');
     expect(said).toContain('this tree counts you twice from now on;');
     expect(said).toContain(
       'the public trees of your other projects can still count you once where this key has not ' +
@@ -93,21 +93,21 @@ describe('foundingSentence: one sentence, both surfaces', () => {
       const said = foundingSentence(foundedBeside(1), scope);
       expect(said, scope).toContain(`in the ${scope} tree`);
       expect(said, scope).toContain('kept on this machine alone');
-      expect(said, scope).toContain('— under another key —');
+      expect(said, scope).toContain(', under another key,');
       expect(said, scope).not.toContain('on another machine');
       expect(said, scope).not.toContain('If you are new');
       // What no enrollment can reach, said as such: the old words promised "your other projects"
       // there, and a tree kept on one machine cannot be enrolled into at all.
       expect(said, scope).toContain(
         'and so will every other tree this machine keeps to itself that the other key wrote in, ' +
-          'once this key writes there — no enrollment reaches a tree kept on one machine;',
+          'once this key writes there: no enrollment reaches a tree kept on one machine;',
       );
       expect(said, scope).not.toContain('your other projects');
       // The machine that can vouch may be this very one, under the key it wrote with before,
       // and the words say how to sign with that key: it is under another data directory.
       expect(said, scope).toContain(
         'a machine already in that identity (this one, if it still holds the key that identity ' +
-          'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key ' +
+          'wrote with here: run the enrollment with MNEMA_HOME naming the directory that key ' +
           'is kept under)',
       );
       // Its enrollment goes to a PUBLIC tree, which this key may not have written, so nothing
@@ -128,7 +128,7 @@ describe('foundingSentence: one sentence, both surfaces', () => {
     const founded = foundedBeside(5);
     const said = foundingSentence(founded, 'public');
     expect(said).toContain('beside 5 already there (');
-    expect(said).toContain('and 2 more — `mnema audit accountability` names them');
+    expect(said).toContain('and 2 more: `mnema audit accountability` names them');
     expect(said).toContain('If one of them is you');
     expect(said).toContain('`mnema key request --anchor <that identity>` here');
   });

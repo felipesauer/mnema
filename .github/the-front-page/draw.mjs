@@ -456,7 +456,7 @@ function howItWorks(theme) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// How mnema fits: an agent session, mnema, the repository — animated
+// How mnema fits: an agent session, mnema, the repository, animated
 //
 // One loop of LOOP seconds, in CSS keyframes inside the SVG, which GitHub plays in an <img>
 // (it runs no script and the picture needs none). Every element that moves carries, as its own
@@ -471,7 +471,7 @@ const LOOP = 14;
 /**
  * What the picture tells, in order, each line a thing the product does:
  *   - a session opens with the decisions in force, by label and title (the opening document's
- *     own words: `## Decisions in force`, `ADR-2 — Keep money as integer cents`);
+ *     own words: `## Decisions in force`, then `ADR-2` and `Keep money as integer cents`);
  *   - a write under a path a rule addresses with `refuses-a-write` gets `deny` from the hook, and
  *     the refusal is itself a signed fact of the record (`recordings/a-write-refused.sh`);
  *   - a write no rule refuses lands;
@@ -1628,7 +1628,7 @@ export function withPicture(readme, block, title) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The family: `@mnema/code` in the middle, and what stands around it — animated
+// The family: `@mnema/code` in the middle, and what stands around it, animated
 //
 // The grammar of the pictures above, on the front page's width: the wordmark is the hub, the
 // record its chain of cubes, and the six around it are cards joined to it by a line whose head
@@ -1969,7 +1969,7 @@ function family(blocks, theme) {
   const out = [];
   const paint = s.paint;
 
-  // Scene 0: the hub — its card on a glow around the wordmark, the wordmark, the chain one cube
+  // Scene 0 (the hub): its card on a glow around the wordmark, the wordmark, the chain one cube
   // after the other, the two surfaces under it, and what they are.
   // The glow reaches the top of the frame and stops there: none of it is cut off.
   out.push(

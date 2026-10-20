@@ -106,6 +106,6 @@ function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string
     `switched off by ${oneLine(anchorText(anchors, row.state.by ?? ''))}`,
     asWhen(row.state.at ?? ''),
     ...(row.state.travels === false ? [NOT_COMMITTED] : []),
-    ...(row.state.reason !== undefined ? [`— ${oneLine(row.state.reason)}`] : []),
+    ...(row.state.reason !== undefined ? [`reason: ${oneLine(row.state.reason)}`] : []),
   ];
 }

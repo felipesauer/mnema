@@ -28,7 +28,7 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
     .option('--from <iso>', windowGloss('from', 'fact'))
     .option('--to <iso>', windowGloss('to', 'fact'))
     .addHelpText('after', windowHelp('fact'))
-    .option('--who <id>', `count only facts authorized by this identity — ${ACTOR_HELP}`)
+    .option('--who <id>', `count only facts authorized by this identity: ${ACTOR_HELP}`)
     // The one `--which` that is NOT a declaration of who acted but a FILTER over
     // who already did, so it carries no {@link declaredAgent}: nothing is being
     // attributed here, and a value that matches no recorded agent is an empty
