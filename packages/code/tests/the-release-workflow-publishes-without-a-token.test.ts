@@ -68,7 +68,9 @@ describe('the release workflow publishes without a token', () => {
 
   it('publishes each tarball with provenance, in dependency order', () => {
     const publish = job('publish');
-    expect(publish).toContain('npm publish "$tarballs/mnema-$p-$VERSION.tgz" --provenance --access public');
+    expect(publish).toContain(
+      'npm publish "$tarballs/mnema-$p-$VERSION.tgz" --provenance --access public',
+    );
     expect(publish).toContain('npm install --global npm@11.5.1');
     const order = [...publish.matchAll(/for p in ([a-z ]+); do/g)].map((m) => m[1]);
     expect(order).toEqual(['chain core context stacks code', 'chain core context stacks code']);
