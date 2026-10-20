@@ -63,7 +63,7 @@ const A_MOVE_FOLLOWS_THE_DECISION = 'a move follows the decision to the tree it 
  * decision, recorded at its birth, and a move records no decision.
  */
 const TURNED_DOWN_AT_BIRTH =
-  'what a decision turned down is recorded with the decision itself — pass it to ' +
+  'what a decision turned down is recorded with the decision itself: pass it to ' +
   '`mnema decision record` with the title and the rationale.';
 
 /** What `--alternatives` is, said once for the group and for `record`, which both declare it. */
@@ -165,7 +165,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .addArgument(enumeratedArgument('<action>', 'the transition', DECISION_MOVE_ACTIONS))
     .argument(
       '<id...>',
-      'the decision id (the value shown when it was recorded) — several, to move each one with the same verdict and note',
+      'the decision id (the value shown when it was recorded): several, to move each one with the same verdict and note',
     )
     .option(
       '--note <text>',
@@ -287,7 +287,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .description('propose the decisions already written in this repository’s decision files')
     .argument(
       '<source>',
-      'what to read: the directory holding the decision files (e.g. docs/adr), inside the project — ' +
+      'what to read: the directory holding the decision files (e.g. docs/adr), inside the project, ' +
         'or, with --format, the source of that format',
     )
     .addOption(
@@ -319,9 +319,9 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       '\nEvery proposal is born `proposed`, whatever the file says its status is: what\n' +
         'the file states is reported, never applied. Accepting one is a person’s move,\n' +
         'with a note, through `decision move accept`.\n\n' +
-        'One decision per file, a level-1 title and named `##` sections — the Nygard and\n' +
+        'One decision per file, a level-1 title and named `##` sections: the Nygard and\n' +
         'MADR shape. A file this cannot read that way is refused by name. A file it CAN\n' +
-        'is proposed — including one that is no decision at all: an index page or a\n' +
+        'is proposed, including one that is no decision at all: an index page or a\n' +
         'roadmap wears the same shape, and no fact of the document separates them. That\n' +
         'is why nothing is accepted on your behalf. Nothing here calls a model.\n\n' +
         'The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,\n' +
@@ -458,7 +458,7 @@ function importLines(
   );
   for (const proposal of result.proposals) {
     const name = proposal.adr !== undefined ? `${proposal.adr} (${proposal.id})` : 'proposed';
-    lines.push(`  ${name} — ${proposal.title}`);
+    lines.push(`  ${name}: ${proposal.title}`);
     const notes = [
       `from ${proposal.path}`,
       ...(proposal.status !== undefined ? [`the file says "${proposal.status}"`] : []),
@@ -474,21 +474,21 @@ function importLines(
   }
   if (result.already.length > 0) {
     lines.push(`${result.already.length} file(s) already in the record, unchanged:`);
-    for (const skipped of result.already) lines.push(`  ${skipped.path} — ${skipped.decision}`);
+    for (const skipped of result.already) lines.push(`  ${skipped.path}: ${skipped.decision}`);
   }
   if (result.refused.length > 0) {
     lines.push(`${result.refused.length} file(s) produced nothing:`);
     for (const refusal of result.refused) {
       const why = IMPORT_REFUSALS[refusal.code];
       const classes = refusal.classes !== undefined ? ` (${refusal.classes.join(', ')})` : '';
-      lines.push(`  ${refusal.path} — ${why}${classes}`);
+      lines.push(`  ${refusal.path}: ${why}${classes}`);
     }
   }
   if (result.stopped !== undefined) {
     lines.push(
       `Stopped at ${result.stopped.path} (${result.stopped.code}): ${result.stopped.message}`,
     );
-    lines.push('What was already recorded stays recorded — the record is append-only.');
+    lines.push('What was already recorded stays recorded: the record is append-only.');
   }
   if (!result.wrote) {
     lines.push('Nothing was written. Run it again with --write to record these as proposals.');
@@ -508,14 +508,14 @@ function importLines(
  * a bare code, or worse, reported with the wrong neighbour's sentence.
  */
 const IMPORT_REFUSALS: Record<ScanRefusalCode, string> = {
-  NO_TITLE: 'no level-1 title — nothing names the decision',
-  NO_RATIONALE: 'no context section and no lead — it states a decision and never states a why',
+  NO_TITLE: 'no level-1 title; nothing names the decision',
+  NO_RATIONALE: 'no context section and no lead; it states a decision and never states a why',
   TITLE_IS_A_MARKER:
-    'its title is only the marker a template leaves where the words go — nothing names the decision',
+    'its title is only the marker a template leaves where the words go; nothing names the decision',
   RATIONALE_IS_A_MARKER:
-    'its why is only the marker a template leaves where the words go — it never states a why',
+    'its why is only the marker a template leaves where the words go; it never states a why',
   ALTERNATIVES_ARE_A_MARKER:
-    'what it turned down is only the marker a template leaves where the words go — write what was turned down, or leave the section out',
+    'what it turned down is only the marker a template leaves where the words go: write what was turned down, or leave the section out',
   RETIRED: 'the document’s own status says it is no longer in force',
   HOLDS_A_SECRET: 'it holds something shaped like a credential, so nothing was read from it',
   FIELD_TOO_LARGE: 'a field is over the size a recorded field may hold',

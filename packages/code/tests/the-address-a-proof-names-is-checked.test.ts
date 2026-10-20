@@ -131,7 +131,7 @@ describe('the address a proof names, on the surface a person reads', () => {
     // will not contact resolves nothing: the eternal PENDING a fixed list of four hosts
     // was rejected for, arriving one branch further in.
     expect(said).not.toContain('ask again later');
-    expect(said).toContain('names could be asked — see below');
+    expect(said).toContain('names could be asked: see below');
   });
 
   it('leaves the proof it refused to work on exactly as it found it', () => {

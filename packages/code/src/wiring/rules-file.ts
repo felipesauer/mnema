@@ -52,20 +52,20 @@ export function registerRulesFile(program: Command, wiring: Wiring): Declared {
       const say = (line: string, depth = 0) => io.err(render(fact(line, depth)));
       if (done.text === undefined) {
         say(
-          'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed — a `>` would have left its file empty.',
+          'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed: a `>` would have left its file empty.',
         );
       } else {
         io.out(done.text.replace(/\n$/, ''));
         say(`Printed ${done.carried} rule(s) for ${host}. ${WHO_MATCHES[host]}`);
         say(
-          `It goes in ${WHERE_A_HOST_READS[host]}: mnema rules-file --host ${host} > ${WHERE_A_HOST_READS[host]} — the \`>\` replaces the whole of the file it names.`,
+          `It goes in ${WHERE_A_HOST_READS[host]}: mnema rules-file --host ${host} > ${WHERE_A_HOST_READS[host]}; the \`>\` replaces the whole of the file it names.`,
         );
       }
       say('A rule that asks for a person is never in it: a file a host reads cannot hold a write.');
       if (done.leftOut.length > 0) {
         say(`Left out (${done.leftOut.length}):`);
         for (const one of done.leftOut) {
-          say(`“${one.name}” — ${one.address} · ${one.id}: ${one.why}.`, 1);
+          say(`“${one.name}”, ${one.address} · ${one.id}: ${one.why}.`, 1);
         }
       }
     });

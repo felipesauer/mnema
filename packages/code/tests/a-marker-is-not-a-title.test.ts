@@ -168,7 +168,7 @@ describe('a decision file left where the words go', () => {
       const said = await mnema('decision', 'import', `docs/${name}`, '--write');
       expect(said.said, name).toContain('Recorded 0 decision(s)');
       expect(said.said, name).toContain(
-        `docs/${name}/${name}.md — ${sentence} only the marker a template leaves where the words go`,
+        `docs/${name}/${name}.md: ${sentence} only the marker a template leaves where the words go`,
       );
       expect(said.said, name).not.toContain('Stopped at');
     }

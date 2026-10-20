@@ -316,7 +316,7 @@ export function runAgentEnroll(
       reason: 'REFUSED',
       code: 'NOT_ON_THIS_MACHINE',
       message:
-        "the key is not on this machine, and the only tree this reaches that takes a key from elsewhere is a project's committed one — run it inside the project",
+        "the key is not on this machine, and the only tree this reaches that takes a key from elsewhere is a project's committed one: run it inside the project",
     };
   }
   const root =
@@ -363,7 +363,7 @@ function subjectOf(env: DiscoveryEnv, request: string): AgentSubject | KeyEnroll
         reason: 'REFUSED',
         code: 'NO_AGENT_KEY',
         message:
-          `this machine holds no key for the agent "${oneLine(request)}" — ` +
+          `this machine holds no key for the agent "${oneLine(request)}": ` +
           `\`mnema key request --agent ${oneLine(request)} --anchor <your identity>\` makes one, and ` +
           '`mnema key enroll --agent <the line it prints>` enrols it',
       };

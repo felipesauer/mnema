@@ -31,7 +31,7 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
       [
         '',
         'The page holds the committed (public) tree and nothing else: no private tree, no',
-        "machine-global tree — and all of that tree's text, so publish it only where the",
+        "machine-global tree, and all of that tree's text, so publish it only where the",
         'repository itself may be read. It lists the decisions in force (a control shows the',
         'rest), their history and who authorized them, and the stored events. It also carries',
         'the files the record is made of, and the browser runs the same verifier as',

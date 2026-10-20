@@ -84,7 +84,7 @@ export function runRunStart(
       ok: false,
       reason: 'REFUSED',
       code: 'NO_AGENT',
-      message: 'a run is a session for an agent — name the one this session is for',
+      message: 'a run is a session for an agent: name the one this session is for',
     };
   }
 

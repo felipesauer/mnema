@@ -187,6 +187,20 @@ with its own changelog.
 
 ### Changed
 
+- **The rest of what the program prints no longer carries an em dash.** The lines of `mnema doctor` (what it found
+  and what to do about it), of the key commands (the lines for an agent's or a checker's key, enrolling and retiring
+  one), of `mnema verify` (what each tree says, the notes about `--against-github` and `--against-sigstore`, and
+  the lines `--since` prints: `gone: <file> ...`, `rewritten: <file> ...`), of `mnema witness`, of the decision import
+  (`docs/adr/0002.md: no level-1 title; nothing names the decision`), of the task commands and `timeline`
+  (`Task <id>: 2 legal move(s):`), of the line after `run start` (`for <agent>: <goal>`), of `rules-file`, and the
+  help of every command now use a colon, a comma, a semicolon or parentheses where the dash stood. Where the dash
+  was a pair, commas or parentheses stand in; where it joined a label to what it says, a colon does. Nothing else in
+  those lines changed: a battery of 288 commands, run on the program before and after with the same swaps applied to
+  the older output, prints the same text. The rationale the correction hook writes into the proposals it records now
+  reads `in these words: “...”, matched by the shape ...`; proposals recorded before keep their words. What
+  the MCP server answers, the descriptions of its tools, the sentence under the title of the program and the
+  texts a plugin carries keep their dash for now.
+
 - **The lines the program prints most no longer carry an em dash.** A decision's label now reads
   `ADR-2: Keep money as integer cents`, a colon where a dash stood, in the opening document, in what shows one record
   and in the lists. A link the program states reads `Linked A -refuses-a-write→ B` with a hyphen before the relation

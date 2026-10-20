@@ -23,7 +23,7 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
  */
 const WHICH_ON_AN_UNLINK =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-  'mnema — omit it when you are acting directly. It names the executor only: a ' +
+  'mnema: omit it when you are acting directly. It names the executor only: a ' +
   'retraction follows the link to the tree it was recorded in. A value that names no ' +
   'agent (an unset variable) is refused, never credited to you.';
 

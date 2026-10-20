@@ -89,7 +89,7 @@ export function runRunEnd(
       ok: false,
       reason: 'REFUSED',
       code: 'NO_AGENT',
-      message: 'a run is a session for an agent — name the one closing this session',
+      message: 'a run is a session for an agent: name the one closing this session',
     };
   }
 

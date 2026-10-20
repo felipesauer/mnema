@@ -108,7 +108,7 @@ describe('the census of a retired agent key that never signed', () => {
     const lines = await censusLines(agentFp, '--global');
 
     const said = (tree: string) =>
-      `[key-without-tail] ${tree} ${agentFp}: the key of the agent "claude" of ${anchor}: the record retired it, and it has no tail on disk — it may have signed nothing here, or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`;
+      `[key-without-tail] ${tree} ${agentFp}: the key of the agent "claude" of ${anchor}: the record retired it, and it has no tail on disk; it may have signed nothing here, or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`;
     expect(lines.map((line) => line.replace(/^.*?(?=\[key-without-tail\])/, ''))).toEqual([
       said('public'),
       said('private'),

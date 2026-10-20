@@ -38,7 +38,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         '  the `mnema` executables on the PATH and which one is running; Claude Code’s list of',
         '  installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,',
         '  .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package',
-        '  named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user',
+        '  named `mnema` installed where the PATH points: the registry is not asked; VS Code’s user',
         '  settings.json, for whether its agent is told where the plugin is; and the projects of',
         '  ~/.claude.json that still declare the server; and, in a project inside a git repository,',
         '  each worktree’s .mnema/private/, where private notes lived before they moved into the',

@@ -377,7 +377,7 @@ describe('a named path that holds no record', () => {
     );
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(said.lines).toContain(
-      `${join(sandbox, 'not-a-project')}: no record here — no \`.mnema/\` is at this path ` +
+      `${join(sandbox, 'not-a-project')}: no record here: no \`.mnema/\` is at this path ` +
         'or above it, so there is nothing to rule on',
     );
     // It claims nothing: no level, no layer, and not the word a pass uses.

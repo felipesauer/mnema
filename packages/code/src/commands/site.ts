@@ -173,7 +173,7 @@ export function runSite(ctx: SiteContext, input: { readonly out: string }): Site
     return {
       ok: false,
       reason: 'UNREADABLE',
-      message: `the public tree cannot be read (${error instanceof Error ? error.message : String(error)}) — run \`mnema verify\``,
+      message: `the public tree cannot be read (${error instanceof Error ? error.message : String(error)}): run \`mnema verify\``,
     };
   }
   const tails = tailsOf(publicRoot, files);
