@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the security policy
   'SECURITY.md': 4,
   // the manual
-  'docs/': 387,
+  'docs/': 385,
   // @mnema/action
   'packages/action/': 28,
   // the page of @mnema/action
@@ -91,17 +91,17 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 755,
+  'packages/code/src/': 333,
   // what it prints
-  'packages/code/src/presentation/': 43,
+  'packages/code/src/presentation/': 40,
   // the console
   'packages/code/src/repl/': 4,
   // the Sigstore reader
-  'packages/code/src/sigstore/': 6,
+  'packages/code/src/sigstore/': 1,
   // the verifier page it builds
   'packages/code/src/site/': 7,
   // the cases beside @mnema/code
-  'packages/code/tests/': 905,
+  'packages/code/tests/': 807,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
@@ -136,12 +136,6 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
       'the Rekor checkpoint in this bundle is a C2SP signed note, whose signature line starts with ' +
       'U+2014 and a space; the bundle is JSON, so the character is written as its JSON escape, ' +
       'and `src/commands/stack-signature.test.ts` still verifies the checkpoint with it',
-  },
-  'packages/code/tests/the-ci-recipe-catches-what-verify-cannot.test.ts': {
-    times: 3,
-    why:
-      'the lines `verify --since` prints say `gone` or `rewritten`, a space, U+2014 and a space, ' +
-      'and the case matches them byte for byte, so the character is written as its escape',
   },
 };
 
