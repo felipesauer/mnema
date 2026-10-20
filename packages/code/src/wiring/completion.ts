@@ -52,7 +52,7 @@ export function registerCompletion(program: Command, wiring: Wiring): Declared {
       'after',
       [
         '',
-        'It prints to stdout and installs nothing — where the script goes is your choice:',
+        'It prints to stdout and installs nothing, where the script goes is your choice:',
         '  source <(mnema completion bash)                                this shell, now',
         '  mnema completion bash > /etc/bash_completion.d/mnema           every bash',
         `  mnema completion zsh > "\${fpath[1]}/_mnema"                    every zsh`,
@@ -61,7 +61,7 @@ export function registerCompletion(program: Command, wiring: Wiring): Declared {
         'It completes verbs, subcommands and option names, and the values of an option',
         'whose declaration enumerates them (--color, and this argument). It does NOT',
         'complete an id or a transition: neither is in any declaration, so answering',
-        'would mean running mnema on every Tab — more than the command itself costs.',
+        'would mean running mnema on every Tab: more than the command itself costs.',
         'The script is generated from this program, so a verb added to it is completed',
         'the same day. Print it again after an upgrade.',
       ].join('\n'),

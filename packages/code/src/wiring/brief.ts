@@ -191,7 +191,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         '',
         'Without `--hook` the output holds no clock, no session and no path, so the same',
         'record always prints the same bytes and a difference is a difference in the record.',
-        'It carries this project’s COMMITTED record — what a clone gets. A decision or a',
+        'It carries this project’s COMMITTED record: what a clone gets. A decision or a',
         'pattern recorded with `--scope private`, or in your global tree, governs your own',
         'work and is not in this file, which is written to be committed.',
         'It carries the RULES and the NAMES: a decision by title and `ADR-<n>` label, a',

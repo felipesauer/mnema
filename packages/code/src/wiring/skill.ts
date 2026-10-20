@@ -84,11 +84,11 @@ const DEFAULT_OUT = './skills';
 const SKILL_EXPORT_HELP = [
   '',
   'What it writes, and what it will not:',
-  '  <out>/<name>/SKILL.md — the frontmatter the skills specification defines, then the',
+  '  <out>/<name>/SKILL.md: the frontmatter the skills specification defines, then the',
   '  recorded body VERBATIM. Nothing summarizes, reformats or improves the body: it is',
   '  what was signed.',
   '  `description` is REQUIRED by the specification and the record holds none, so it is',
-  '  derived at export time — the first sentence of the body (or its first paragraph),',
+  '  derived at export time: the first sentence of the body (or its first paragraph),',
   '  collapsed to one line and cut to 1024 characters. `--description` overrides it. No',
   '  model is asked for one anywhere. A derived one with no "when", "whenever" or "quando"',
   '  in it is exported all the same, with a warning on the second stream.',
@@ -98,7 +98,7 @@ const SKILL_EXPORT_HELP = [
   '  Only an ADOPTED pattern is exported. A proposal put in a host’s skills directory is',
   '  read as how the work is done here; a deprecated one is a retired way of working',
   '  wearing the same face. There is no --force: adopt it, then export it.',
-  '  It records nothing — no event, no consultation — and it writes nowhere but --out.',
+  '  It records nothing (no event, no consultation) and it writes nowhere but --out.',
 ].join('\n');
 
 /** What `--body` is, said once for the group and for `create`, which both declare it. */
@@ -263,7 +263,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
   // reaches here is refused rather than accepted and ignored. A `--which` taken in
   // silence would let a caller believe the export was attributed to their agent.
   const nothingIsRecorded =
-    'it writes out a pattern the record already holds — nothing is born, nothing moves and ' +
+    'it writes out a pattern the record already holds: nothing is born, nothing moves and ' +
     'nothing is recorded.';
   takesFromItsGroup(skillExport, {
     refuses: {
@@ -313,9 +313,9 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
         '  This verb reads who put each one there. `mnema show <id>` reads a body.',
         '  Only an adopted pattern is served to an agent; the other states are not.',
         '  An act with no agent behind it was a person acting directly.',
-        '  A consultation is one run served the body — not that the work followed it,',
+        '  A consultation is one run served the body, not that the work followed it,',
         '  and counted in this project’s trees and the machine-global one, no other.',
-        '  It records nothing — no event, no consultation.',
+        '  It records nothing: no event, no consultation.',
       ].join('\n'),
     );
   takesFromItsGroup(provenance, {

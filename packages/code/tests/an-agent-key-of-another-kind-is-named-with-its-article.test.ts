@@ -24,7 +24,7 @@ describe('agentKeyAlgorithmRefusal', () => {
     ],
   ])('names the key as %s', (name, publicKey) => {
     expect(said(publicKey)).toBe(
-      `the key ${'f'.repeat(64)} is ${name}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`,
+      `the key ${'f'.repeat(64)} is ${name}, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`,
     );
   });
 

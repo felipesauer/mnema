@@ -676,7 +676,7 @@ beforeAll(async () => {
   mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
   writeFileSync(
     join(repo, 'docs', 'adr', '0001-keep-the-runbook.md'),
-    '# ADR-001 — Keep the runbook where the work is\n\n' +
+    '# ADR-001: Keep the runbook where the work is\n\n' +
       '- **Status:** Accepted\n\n' +
       '## Context\n\na wiki page nobody owns goes stale\n\n' +
       '## Considered Options\n\n* the runbook next to the code\n* a shared spreadsheet: it has no history\n\n' +
@@ -685,7 +685,7 @@ beforeAll(async () => {
   );
   writeFileSync(
     join(repo, 'docs', 'adr', '0002-replaced.md'),
-    '# ADR-002 — Page the on-call rota by hand\n\n' +
+    '# ADR-002: Page the on-call rota by hand\n\n' +
       '- **Status:** Superseded by ADR-004\n\n' +
       '## Context\n\nthe rota was short enough to read\n',
     'utf-8',
@@ -889,7 +889,7 @@ beforeAll(async () => {
   //    the declaration the help prints), then the line to type (the same `usage()`).
   //    `--help` and `--version` are not here and must not be: they arrive by the same
   //    door and they are the caller getting exactly what they asked for.
-  section('writes', 'refusals — what the parser turns down');
+  section('writes', 'refusals: what the parser turns down');
   await mnema('writes', 'decision', 'record', 'A decision with no rationale');
   await mnema('writes', 'task', 'create', 'A task', 'and one word too many');
   await mnema('writes', 'task', 'create', 'A task', '--bogus');
@@ -916,7 +916,7 @@ beforeAll(async () => {
   //    point, and the message names the field so the caller knows what to fix. One
   //    per kind the CLI can reach, plus both halves of an event (a payload field and
   //    the ENVELOPE's subject) and both classes (required, and optional-if-present).
-  section('writes', 'refusals — what no read could accept');
+  section('writes', 'refusals: what no read could accept');
   await mnema('writes', 'task', 'create', '');
   await mnema('writes', 'decision', 'record', '', 'a rationale with no title');
   await mnema('writes', 'skill', 'create', '', '--body', 'a body with no name');
@@ -930,7 +930,7 @@ beforeAll(async () => {
   // ── A why that says nothing: no letter and no digit, or the marker a recipe prints
   //    where the why goes. A read would accept both; the reader of decision files
   //    already refused the first, and the write door asks it the same question.
-  section('writes', 'refusals — a reason that says nothing');
+  section('writes', 'refusals: a reason that says nothing');
   await mnema('writes', 'decision', 'record', 'Use UTC', '***');
   await mnema('writes', 'decision', 'record', 'Use UTC', 'one clock', '--alternatives', '---');
   await mnema('writes', 'task', 'move', 'cancel', choreId, '--reason', '<why>');

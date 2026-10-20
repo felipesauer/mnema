@@ -1218,7 +1218,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     const terminal = capture();
     await run(['task', 'next', id], terminal.io);
     expect(terminal.failed()).toBe(false);
-    expect(terminal.out.join('\n')).toContain('terminal — no legal moves');
+    expect(terminal.out.join('\n')).toContain('terminal: no legal moves');
 
     // Unknown id: an honest refusal, distinct from terminal.
     const unknown = capture();
@@ -2273,7 +2273,7 @@ describe('mnema CLI: run (the session), end to end', () => {
     //    a shell to it: a process cannot export into its parent shell.
     const started = await startRun('claude-code', 'wire the run into the CLI');
     expect(started.out).toContain(`export MNEMA_RUN=${started.id}`);
-    expect(started.out).toContain('for claude-code — wire the run into the CLI');
+    expect(started.out).toContain('for claude-code: wire the run into the CLI');
 
     // 2. The person (or their script) evaluates that line. From here the shell is
     //    inside the session.

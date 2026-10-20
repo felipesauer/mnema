@@ -179,7 +179,7 @@ function commitOfCleanTree(
       ok: false,
       reason: 'REFUSED',
       code: 'NO_COMMIT',
-      message: 'this project is not at a commit — a check result names the commit it ran at',
+      message: 'this project is not at a commit: a check result names the commit it ran at',
     };
   }
   const record = relative(projectRoot, publicTree) || '.';
@@ -193,7 +193,7 @@ function commitOfCleanTree(
       reason: 'REFUSED',
       code: 'DIRTY_TREE',
       message:
-        'the working tree has changes outside the record — a check result names a commit, and ' +
+        'the working tree has changes outside the record: a check result names a commit, and ' +
         'what would be checked is not that commit. Commit or stash them, then run again',
     };
   }

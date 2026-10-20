@@ -126,7 +126,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     .addOption(enumeratedOption('--scope <scope>', SCOPE_HELP, SCOPES))
     .option('--to <folder>', TO_HELP)
     .option('--as <name>', 'install it under this name, when its own is taken')
-    .option('--expect <digest>', 'write it, if its digest is this one — the one the plan showed')
+    .option('--expect <digest>', 'write it, if its digest is this one: the one the plan showed')
     .option('--dry-run', 'show the plan and write nothing')
     .addHelpText(
       'after',

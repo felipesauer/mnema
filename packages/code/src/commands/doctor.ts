@@ -166,7 +166,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         topic: 'binary',
         state: 'attention',
         line:
-          'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it — ' +
+          'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it; ' +
           `nothing is on npm yet, so \`npm i -g @mnema/code\` answers 404: build from the source (${INSTALL_PAGE}), or put the directory of this binary on the PATH.`,
       },
     ];
@@ -177,7 +177,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'binary',
         state: 'fine',
-        line: `“mnema” on the PATH is ${oneLine(first.path)}, and it is the one running now (${ctx.running.version}) — nothing to do.`,
+        line: `“mnema” on the PATH is ${oneLine(first.path)}, and it is the one running now (${ctx.running.version}): nothing to do.`,
       },
     ];
   }
@@ -187,7 +187,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
       state: 'attention',
       line:
         `the first “mnema” on the PATH is ${oneLine(first.path)}, and the one running now is ${oneLine(running)} ` +
-        `(${ctx.running.version}) — a host that starts \`mnema mcp\` starts the first: put the one you mean first on the PATH.`,
+        `(${ctx.running.version}); a host that starts \`mnema mcp\` starts the first: put the one you mean first on the PATH.`,
     },
   ];
 }
@@ -204,7 +204,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
       ? `; it is a script, not a link into an install, so it is probably a wrapper an earlier install left: remove it (\`rm ${oneLine(first)}\`) so the other runs.`
       : '; keep the one you installed and remove the others, or reorder the PATH.';
     found.push(
-      `${distinct.size} different “mnema” executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}) — ${oneLine(first)} comes first and shadows ${rest.map(oneLine).join(', ')}${advice}`,
+      `${distinct.size} different “mnema” executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}): ${oneLine(first)} comes first and shadows ${rest.map(oneLine).join(', ')}${advice}`,
     );
   }
   const roots = new Set<string>([join(ctx.cwd, 'node_modules')]);
@@ -218,7 +218,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
     if (manifest === undefined || manifest.name !== 'mnema') continue;
     const version = typeof manifest.version === 'string' ? ` ${oneLine(manifest.version)}` : '';
     found.push(
-      `an npm package named “mnema”${version} is installed in ${oneLine(root)}, and it is not this product, whose package is \`@mnema/code\` — uninstall it if you did not mean to have it.`,
+      `an npm package named “mnema”${version} is installed in ${oneLine(root)}, and it is not this product, whose package is \`@mnema/code\`: uninstall it if you did not mean to have it.`,
     );
   }
   if (found.length === 0) {
@@ -226,7 +226,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'namesake',
         state: 'fine',
-        line: 'no second “mnema” on the PATH and no npm package named “mnema” installed where this machine looks — the registry was not asked, so one that is published and not installed is outside this.',
+        line: 'no second “mnema” on the PATH and no npm package named “mnema” installed where this machine looks: the registry was not asked, so one that is published and not installed is outside this.',
       },
     ];
   }
@@ -271,7 +271,7 @@ function pluginFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unread
       {
         topic: 'plugin',
         state: 'fine',
-        line: `Claude Code's list of installed plugins could not be read at ${oneLine(file)}, so whether the plugin is installed is unknown — nothing to do if you do not use Claude Code.`,
+        line: `Claude Code's list of installed plugins could not be read at ${oneLine(file)}, so whether the plugin is installed is unknown: nothing to do if you do not use Claude Code.`,
       },
     ];
   }
@@ -280,7 +280,7 @@ function pluginFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unread
       {
         topic: 'plugin',
         state: 'fine',
-        line: `no mnema plugin in Claude Code's list of installed plugins (${oneLine(file)}) — for the hooks, \`claude plugin install mnema@mnema\`; for the server alone, \`claude plugin install mnema-server-only@mnema\`.`,
+        line: `no mnema plugin in Claude Code's list of installed plugins (${oneLine(file)}): for the hooks, \`claude plugin install mnema@mnema\`; for the server alone, \`claude plugin install mnema-server-only@mnema\`.`,
       },
     ];
   }
@@ -289,12 +289,12 @@ function pluginFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unread
       ? {
           topic: 'plugin',
           state: 'fine',
-          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope), the version of this binary — nothing to do.`,
+          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope), the version of this binary: nothing to do.`,
         }
       : {
           topic: 'plugin',
           state: 'attention',
-          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope) and this binary is ${ctx.running.version} — update whichever is behind so the two agree.`,
+          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope) and this binary is ${ctx.running.version}: update whichever is behind so the two agree.`,
         },
   );
 }
@@ -361,7 +361,7 @@ function declaredFindings(
       {
         topic: 'mcp',
         state: 'attention',
-        line: `the mnema MCP server is declared ${declared.length} times — ${declared.join('; ')} — and a session is offered every tool once per declaration: keep one and remove the others.`,
+        line: `the mnema MCP server is declared ${declared.length} times (${declared.join('; ')}), and a session is offered every tool once per declaration: keep one and remove the others.`,
       },
     ];
   }
@@ -370,7 +370,7 @@ function declaredFindings(
       {
         topic: 'mcp',
         state: 'fine',
-        line: `the mnema MCP server is declared once — ${declared[0]} — nothing to do.`,
+        line: `the mnema MCP server is declared once (${declared[0]}): nothing to do.`,
       },
     ];
   }
@@ -378,7 +378,7 @@ function declaredFindings(
     {
       topic: 'mcp',
       state: 'fine',
-      line: `no mnema MCP server declared in ${[...new Set(looked)].map(oneLine).join(', ')} or by a plugin — an agent has the tools only if a host starts \`mnema mcp\`: \`claude mcp add mnema -- mnema mcp\`, or the plugin.`,
+      line: `no mnema MCP server declared in ${[...new Set(looked)].map(oneLine).join(', ')} or by a plugin; an agent has the tools only if a host starts \`mnema mcp\`: \`claude mcp add mnema -- mnema mcp\`, or the plugin.`,
     },
   ];
 }
@@ -399,14 +399,14 @@ function otherProjectFindings(ctx: DoctorContext, root: string): Finding[] {
     found.push({
       topic: 'mcp',
       state: 'attention',
-      line: `${oneLine(claudeJson)} still declares the mnema MCP server for ${gone.length} project ${gone.length === 1 ? 'directory' : 'directories'} that no longer exist (${gone.join(', ')}) — \`claude mcp remove\` cannot reach those: open the file and, under "projects", delete the mnema entry of "mcpServers" at each of those paths.`,
+      line: `${oneLine(claudeJson)} still declares the mnema MCP server for ${gone.length} project ${gone.length === 1 ? 'directory' : 'directories'} that no longer exist (${gone.join(', ')}); \`claude mcp remove\` cannot reach those: open the file and, under "projects", delete the mnema entry of "mcpServers" at each of those paths.`,
     });
   }
   if (there.length > 0) {
     found.push({
       topic: 'mcp',
       state: 'fine',
-      line: `the mnema MCP server is also declared for ${there.length} other ${there.length === 1 ? 'project' : 'projects'} in ${oneLine(claudeJson)} (${there.join(', ')}) — nothing to do if you meant that; otherwise run \`claude mcp remove mnema\` inside each.`,
+      line: `the mnema MCP server is also declared for ${there.length} other ${there.length === 1 ? 'project' : 'projects'} in ${oneLine(claudeJson)} (${there.join(', ')}): nothing to do if you meant that; otherwise run \`claude mcp remove mnema\` inside each.`,
     });
   }
   return found;
@@ -485,7 +485,7 @@ function vscodeFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'vscode',
         state: 'fine',
-        line: "no VS Code user settings.json found where this machine looks (the places of this platform, snap and Flatpak included) — nothing to do if you do not use VS Code's agent.",
+        line: "no VS Code user settings.json found where this machine looks (the places of this platform, snap and Flatpak included): nothing to do if you do not use VS Code's agent.",
       },
     ];
   }
@@ -500,7 +500,7 @@ function vscodeFindings(ctx: DoctorContext): Finding[] {
     if (read.kind === 'unreadable') {
       say(
         'attention',
-        `could not be read safely (${read.why}), so whether VS Code's agent loads the plugin is unknown — add ${SETTING} by hand (the plugin's page says how); ${FIX} refuses this file too.`,
+        `could not be read safely (${read.why}), so whether VS Code's agent loads the plugin is unknown: add ${SETTING} by hand (the plugin's page says how); ${FIX} refuses this file too.`,
       );
       continue;
     }
@@ -512,7 +512,7 @@ function vscodeFindings(ctx: DoctorContext): Finding[] {
     if (off !== undefined && !steady && versioned === undefined) {
       say(
         'fine',
-        `lists ${SETTING} at ${oneLine(off.key)} set to false — you turned it off, so VS Code's agent loads no mnema plugin; ${FIX} leaves it off, and setting it to true is yours to do.`,
+        `lists ${SETTING} at ${oneLine(off.key)} set to false: you turned it off, so VS Code's agent loads no mnema plugin; ${FIX} leaves it off, and setting it to true is yours to do.`,
       );
     } else if (versioned !== undefined) {
       const what =
@@ -521,24 +521,24 @@ function vscodeFindings(ctx: DoctorContext): Finding[] {
           : versioned.version === undefined
             ? 'a plugin folder that is not there'
             : `the plugin ${oneLine(versioned.version)}, not the ${oneLine(ctx.running.version)} of this binary`;
-      say('attention', `lists ${SETTING} at ${oneLine(versioned.key)}, ${what} — ${how} ${FIX}.`);
+      say('attention', `lists ${SETTING} at ${oneLine(versioned.key)}, ${what}: ${how} ${FIX}.`);
     } else if (steady) {
       const behind = stable.version !== ctx.running.version;
       say(
         behind ? 'attention' : 'fine',
         behind
-          ? `lists ${SETTING} at ${oneLine(stable.dir)}, which holds the plugin ${oneLine(stable.version ?? 'unknown')} while this binary is ${oneLine(ctx.running.version)} — update the marketplace (\`claude plugin marketplace update mnema\`) so the two agree.`
-          : `lists ${SETTING} at ${oneLine(stable.dir)}, the plugin ${oneLine(ctx.running.version)} at a path that does not change when it updates — nothing to do (the setting is experimental in VS Code).`,
+          ? `lists ${SETTING} at ${oneLine(stable.dir)}, which holds the plugin ${oneLine(stable.version ?? 'unknown')} while this binary is ${oneLine(ctx.running.version)}: update the marketplace (\`claude plugin marketplace update mnema\`) so the two agree.`
+          : `lists ${SETTING} at ${oneLine(stable.dir)}, the plugin ${oneLine(ctx.running.version)} at a path that does not change when it updates: nothing to do (the setting is experimental in VS Code).`,
       );
     } else if (other?.version === ctx.running.version) {
       say(
         'fine',
-        `lists ${SETTING} at ${oneLine(other.key)}, the plugin ${oneLine(ctx.running.version)} — nothing to do.`,
+        `lists ${SETTING} at ${oneLine(other.key)}, the plugin ${oneLine(ctx.running.version)}: nothing to do.`,
       );
     } else {
       say(
         'attention',
-        `${read.kind === 'setting' ? `lists ${SETTING} with no mnema plugin on in it` : `does not set ${SETTING}`}, so VS Code's agent loads no mnema plugin and no hook runs there — ${how} ${FIX}.`,
+        `${read.kind === 'setting' ? `lists ${SETTING} with no mnema plugin on in it` : `does not set ${SETTING}`}, so VS Code's agent loads no mnema plugin and no hook runs there: ${how} ${FIX}.`,
       );
     }
   }
@@ -565,7 +565,7 @@ export function fixVscode(
     return {
       refused: true,
       lines: [
-        `nothing changed: the plugin is not at ${oneLine(stable.dir)}, so there is no path to put in ${SETTING} — ${INSTALL_FIRST} run ${FIX} again.`,
+        `nothing changed: the plugin is not at ${oneLine(stable.dir)}, so there is no path to put in ${SETTING}: ${INSTALL_FIRST} run ${FIX} again.`,
       ],
     };
   }
@@ -590,7 +590,7 @@ export function fixVscode(
     const off = known.find((one) => one.kind !== 'other' && one.on === false);
     if (off !== undefined) {
       lines.push(
-        `${where}: ${oneLine(off.key)} is set to false — you turned it off, so nothing was changed; set it to true yourself if you want VS Code's agent to load the plugin.`,
+        `${where}: ${oneLine(off.key)} is set to false: you turned it off, so nothing was changed; set it to true yourself if you want VS Code's agent to load the plugin.`,
       );
       continue;
     }
@@ -599,10 +599,10 @@ export function fixVscode(
     if (plan.kind === 'refused') {
       refused = true;
       lines.push(
-        `${where}: refused, nothing changed — ${oneLine(plan.why)}. Add ${SETTING} by hand; the plugin's page says how.`,
+        `${where}: refused, nothing changed: ${oneLine(plan.why)}. Add ${SETTING} by hand; the plugin's page says how.`,
       );
     } else if (plan.kind === 'unchanged') {
-      lines.push(`${where}: already lists ${oneLine(stable.dir)} — nothing to change.`);
+      lines.push(`${where}: already lists ${oneLine(stable.dir)}: nothing to change.`);
     } else if (options.dryRun) {
       lines.push(
         `${where}: would ${plan.steps.map(oneLine).join(', ')}, after keeping a copy; nothing was written.`,
@@ -638,7 +638,7 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
   return found.left.map((left) => ({
     topic: 'private-tree' as const,
     state: 'attention' as const,
-    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them — run ${FIX_PRIVATE} to move them.`,
+    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them: run ${FIX_PRIVATE} to move them.`,
   }));
 }
 
@@ -662,7 +662,7 @@ function stackFindings(ctx: DoctorContext): Finding[] {
   return departures.map((departure) => ({
     topic: 'stack' as const,
     state: 'attention' as const,
-    line: `${departure} — \`mnema stack check\` lists every departure and \`mnema stack diff <name>\` shows one.`,
+    line: `${departure}: \`mnema stack check\` lists every departure and \`mnema stack diff <name>\` shows one.`,
   }));
 }
 
@@ -729,7 +729,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}${ambiguous.length > 0 ? `, and the record of ${treesSaid(ambiguous)} proves it a member of more than one identity` : ''}: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
+          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}${ambiguous.length > 0 ? `, and the record of ${treesSaid(ambiguous)} proves it a member of more than one identity` : ''}: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused; \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
         ),
       );
     } else if (ambiguous.length > 0) {
@@ -757,7 +757,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. \`mnema key enroll --agent ${quoted}\` enrols it in every tree this reaches.`,
+          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. \`mnema key enroll --agent ${quoted}\` enrols it in every tree this reaches.`,
         ),
       );
     }
@@ -769,7 +769,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'fine',
-          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
+          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
         ),
       );
     }
@@ -785,7 +785,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
     out.push(
       finding(
         'attention',
-        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: this process, and a command run with it, signs as you — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
+        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: this process, and a command run with it, signs as you, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
       ),
     );
   }

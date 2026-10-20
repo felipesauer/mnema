@@ -50,7 +50,7 @@ _mnema_described() {
       'rules-file:print the rules addressed at a file as another host’s rules file, and why the rest are not' \
       'switch:turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision' \
       'inherit:read another repository’s decisions, pinned to one of its commits' \
-      'verify:verify this project'\''s record — its committed tree and its private one' \
+      'verify:verify this project'\''s record: its committed tree and its private one' \
       'witness:ask an outside witness to date this record, and read where that stands' \
       'check:give a rule a program that checks it, and record whether it held at a commit' \
       'site:write the project'\''s committed record as one HTML page that verifies itself in the browser (records nothing)' \
@@ -60,7 +60,7 @@ _mnema_described() {
       'refs:show what an entity is connected to across the trees' \
       'audit:ask the record who authorized what, what recurs, and what looks like a credential' \
       'diagram:print a state machine, or an entity’s history or connections, as mermaid' \
-      'export:emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)' \
+      'export:emit the record as an OCSF audit feed (NDJSON, envelope only, never a body)' \
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'resume:show where an actor left off, and the runs they still have open' \
       'repl:open an interactive session that reads this project' \
@@ -122,7 +122,7 @@ _mnema_described() {
     'witness') printf '%s\n' \
       'stamp:ask an outside witness to date each tail'\''s last checkpoint (T3)' \
       'upgrade:go back for every attestation this record is waiting on (T3)' \
-      'sigstore:countersign each tail'\''s last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it' ;;
+      'sigstore:countersign each tail'\''s last checkpoint with a Sigstore certificate: who signed in, and when Rekor logged it' ;;
     'check') printf '%s\n' \
       'declare:declare the program that checks a rule (no shell: the program and its arguments)' \
       'run:run the check of every rule in force and record each result (run by a checker key, in CI)' \
@@ -148,7 +148,7 @@ _mnema_described() {
       'unprotect:write this machine'\''s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)' \
       'help:display help for command' ;;
     'tail') printf '%s\n' \
-      'list:list the tails that hold events here — the ones a cut can name — with the id `prune` takes' \
+      'list:list the tails that hold events here, the ones a cut can name, with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
     'run') printf '%s\n' \

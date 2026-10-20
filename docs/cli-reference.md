@@ -264,7 +264,7 @@ mnema task move complete "$TASK" --note "parser ships"
 
 # Ask what the workflow allows next.
 mnema task next "$TASK"
-#> Task 0198f3c1-… — 1 legal move(s):
+#> Task 0198f3c1-…: 1 legal move(s):
 #>   reopen → IN_PROGRESS (needs reason)
 
 # Or dry-run a move without writing anything. The actor is an anchor id — the

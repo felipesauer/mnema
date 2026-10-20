@@ -556,7 +556,7 @@ describe('a key that is the only key of both identities: the other key being a c
     const { b, atB, fp, founded } = withABackup();
     pull(atB);
     const enrolled = mnema(atB, b, 'key', 'enroll', requestFrom(b, founded));
-    expect(enrolled.stdout).toContain(`Key ${fp} is already in ${founded} — nothing recorded.`);
+    expect(enrolled.stdout).toContain(`Key ${fp} is already in ${founded}: nothing recorded.`);
     const revoked = mnema(atB, b, 'key', 'revoke', fp, '--reason', 'leave the one I founded');
     expect(revoked.stderr).toContain('Refused (LAST_KEY)');
   }, 120_000);

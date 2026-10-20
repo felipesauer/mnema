@@ -351,9 +351,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -909,7 +909,7 @@ $ mnema audit exposure --json
 |   "scanned": 49
 | }
 $ mnema timeline <task-runbook>
-| <task-runbook> — 13 event(s):
+| <task-runbook>: 13 event(s):
 |   <at:02>  task.created  [subject]  <anchor-short>
 |   <at:02>  task.transitioned  → DRAFT  [subject]  <anchor-short>
 |   <at:09>  observation.recorded  [about]  <anchor-short>
@@ -1616,11 +1616,11 @@ $ mnema status --actor <anchor> --json
 $ mnema resume --actor <anchor-short>
 | <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
+|   <run-second>  agent-beta: read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor>
 | <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
+|   <run-second>  agent-beta: read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor> --json
 | {
 |   "actor": "<anchor>",
@@ -1650,7 +1650,7 @@ $ mnema resume --actor <anchor> --json
 |   }
 | }
 $ mnema task next <task-runbook>
-| Task <task-runbook> — 4 legal move(s):
+| Task <task-runbook>: 4 legal move(s):
 |   block → BLOCKED (needs reason)
 |   submit_review → IN_REVIEW
 |   complete → DONE (needs note)
@@ -1817,9 +1817,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin

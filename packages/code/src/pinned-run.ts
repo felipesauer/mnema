@@ -98,7 +98,7 @@ export function resolvePinnedRun(
       code: 'UNPROVEN_RUN',
       message:
         `MNEMA_RUN names run "${raw}", but there is no mnema project here to prove it ` +
-        'against — a run belongs to the project it was opened in. Work inside that ' +
+        'against: a run belongs to the project it was opened in. Work inside that ' +
         'project, or unset MNEMA_RUN',
     };
   }
@@ -112,14 +112,14 @@ export function resolvePinnedRun(
     return {
       ok: false,
       code: 'UNKNOWN_RUN',
-      message: `MNEMA_RUN names run "${raw}", which this project has no record of — ${HOW_TO_OPEN}`,
+      message: `MNEMA_RUN names run "${raw}", which this project has no record of: ${HOW_TO_OPEN}`,
     };
   }
   if (!found.open) {
     return {
       ok: false,
       code: 'RUN_ENDED',
-      message: `MNEMA_RUN names run "${raw}", whose session already ended — ${HOW_TO_OPEN}`,
+      message: `MNEMA_RUN names run "${raw}", whose session already ended: ${HOW_TO_OPEN}`,
     };
   }
   return { ok: true, run: found.id };

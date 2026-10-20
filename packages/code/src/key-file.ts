@@ -32,7 +32,7 @@ export function keyFileLine(keyFile: string, mnemaHome: string | undefined): str
   const where =
     mnemaHome !== undefined && mnemaHome !== ''
       ? `under ${oneLine(mnemaHome)}, the directory MNEMA_HOME names`
-      : 'under ~/.mnema, since MNEMA_HOME is not set — a key kept under another directory ' +
+      : 'under ~/.mnema, since MNEMA_HOME is not set: a key kept under another directory ' +
         'signs when MNEMA_HOME names that directory';
   return `this machine keeps the key file at ${oneLine(keyFile)}, ${where}`;
 }

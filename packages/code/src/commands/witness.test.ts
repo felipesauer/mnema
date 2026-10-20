@@ -438,7 +438,7 @@ describe('going back for what has not confirmed', () => {
     // that; repeating it over an address this machine will not contact resolves nothing,
     // which is the eternal PENDING a fixed list of four hosts was rejected for.
     expect(act.outcomes.map((one) => one.detail)).toEqual([
-      `no address checkpoint ${checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))} names could be asked — see below`,
+      `no address checkpoint ${checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))} names could be asked: see below`,
     ]);
     expect(act.outcomes.map((one) => one.detail).join(' ')).not.toContain('ask again later');
   });

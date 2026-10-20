@@ -75,8 +75,8 @@ export function registerInherit(program: Command, wiring: Wiring): Declared {
     'after',
     [
       '',
-      'A project points at a repository of decisions — any git repository with a mnema',
-      'record — by its location and one commit, in `.mnema/inherit.json`, which is committed.',
+      'A project points at a repository of decisions (any git repository with a mnema',
+      'record) by its location and one commit, in `.mnema/inherit.json`, which is committed.',
       '`mnema brief` then prints that record’s decisions in force in a section of their own,',
       'naming the origin and the commit. They are read, never written: this project does not',
       'sign them and its `verify` does not count them. A record that does not verify at the',

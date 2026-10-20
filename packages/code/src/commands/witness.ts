@@ -339,7 +339,7 @@ export async function runWitnessStamp(
     return {
       ok: false,
       reason: 'NO_TAIL',
-      message: 'there is no tail here to witness — nothing has been recorded in these trees',
+      message: 'there is no tail here to witness: nothing has been recorded in these trees',
     };
   }
   // WHAT EACH TAIL WOULD STAMP IS READ BEFORE ANY TREE IS JUDGED, and the order is the
@@ -377,7 +377,7 @@ export async function runWitnessStamp(
         skipped(
           chain,
           `the tree is ${level}, and a witness is only filed under a checkpoint the verifier ` +
-            `proves — stamp it once it reaches ${STAMPABLE}`,
+            `proves: stamp it once it reaches ${STAMPABLE}`,
         ),
       );
       continue;
@@ -512,8 +512,8 @@ async function upgradeTail(
             ? // `ask again later` IS ADVICE, and advice about an address this machine
               // will not contact is advice that never comes true. When nothing was put
               // to anybody the line says so, and the addresses are named underneath.
-              `no address checkpoint ${at} names could be asked — see below`
-            : `no calendar has a block for checkpoint ${at} yet — ask again later`,
+              `no address checkpoint ${at} names could be asked: see below`
+            : `no calendar has a block for checkpoint ${at} yet: ask again later`,
         after,
       ),
       refusals: done.refusals,
@@ -592,7 +592,7 @@ export async function runWitnessSigstore(
     return {
       ok: false,
       reason: 'NO_TAIL',
-      message: 'there is no tail here to witness — nothing has been recorded in these trees',
+      message: 'there is no tail here to witness: nothing has been recorded in these trees',
     };
   }
   // Read before any tree is judged, for the reason `stamp` gives.
@@ -620,7 +620,7 @@ export async function runWitnessSigstore(
         said(
           'skipped',
           `the tree is ${level}, and a witness is only filed under a checkpoint the verifier ` +
-            `proves — sign it once it reaches ${STAMPABLE}`,
+            `proves: sign it once it reaches ${STAMPABLE}`,
         ),
       );
       continue;
@@ -663,7 +663,7 @@ export async function runWitnessSigstore(
       scope: chain.scope,
       tail: chain.tail,
       did: 'signed',
-      detail: `countersigned checkpoint ${signed.digest} — Rekor entry ${logIndex}`,
+      detail: `countersigned checkpoint ${signed.digest}, Rekor entry ${logIndex}`,
     });
   });
   return {

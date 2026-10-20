@@ -288,7 +288,7 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
       {
         topic: 'stack',
         state: 'attention',
-        line: 'hello-stack (public): .claude/agents/greeter.md is gone — `mnema stack check` lists every departure and `mnema stack diff <name>` shows one.',
+        line: 'hello-stack (public): .claude/agents/greeter.md is gone: `mnema stack check` lists every departure and `mnema stack diff <name>` shows one.',
       },
     ]);
   });

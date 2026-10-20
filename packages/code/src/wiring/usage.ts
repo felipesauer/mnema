@@ -41,10 +41,10 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
       [
         '',
         'What each line says, and what it does not:',
-        '  Tokens and the model id. Never dollars — no price table is carried here.',
+        '  Tokens and the model id. Never dollars: no price table is carried here.',
         "  One host session in the run's window is attributed and named, so you can check it.",
         '  More than one is named and NOT attributed: there is no tie-break that is not invented.',
-        '  None says `no transcript`, never `0` — no record of the cost is not a cost of zero.',
+        '  None says `no transcript`, never `0`: no record of the cost is not a cost of zero.',
         '  Nothing is recorded: the chain has no field for this, and reading writes nothing.',
       ].join('\n'),
     )

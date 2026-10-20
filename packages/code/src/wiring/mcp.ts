@@ -56,7 +56,7 @@ export function registerMcp(program: Command, wiring: Wiring): Declared {
     // same effect is a channel nobody looks at when the answer is surprising.
     .option(
       '--project <dir>',
-      'the project to serve — an ABSOLUTE path; omitted, the project comes from the host workspace roots, or from the working directory when the host declares none',
+      'the project to serve: an ABSOLUTE path; omitted, the project comes from the host workspace roots, or from the working directory when the host declares none',
     )
     // The agent whose key this server signs with, where the record enrols it. A flag, and the
     // environment for the host files that cannot carry one (`MNEMA_AGENT_KEY`, which a `mnema`

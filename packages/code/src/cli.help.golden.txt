@@ -47,7 +47,7 @@ $ mnema
 !                   commits
 !
 ! Verify:
-!   verify          verify this project's record — its committed tree and its
+!   verify          verify this project's record: its committed tree and its
 !                   private one
 !   witness         ask an outside witness to date this record, and read where
 !                   that stands
@@ -67,7 +67,7 @@ $ mnema
 !                   looks like a credential
 !   diagram         print a state machine, or an entity’s history or connections,
 !                   as mermaid
-!   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
+!   export          emit the record as an OCSF audit feed (NDJSON, envelope only,
 !                   never a body)
 !   usage           what each run cost, read from this machine's Claude Code
 !                   transcripts
@@ -159,7 +159,7 @@ $ mnema --help
 |                   commits
 |
 | Verify:
-|   verify          verify this project's record — its committed tree and its
+|   verify          verify this project's record: its committed tree and its
 |                   private one
 |   witness         ask an outside witness to date this record, and read where
 |                   that stands
@@ -179,7 +179,7 @@ $ mnema --help
 |                   looks like a credential
 |   diagram         print a state machine, or an entity’s history or connections,
 |                   as mermaid
-|   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
+|   export          emit the record as an OCSF audit feed (NDJSON, envelope only,
 |                   never a body)
 |   usage           what each run cost, read from this machine's Claude Code
 |                   transcripts
@@ -241,7 +241,7 @@ $ mnema decision --help
 | Options:
 |   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
 |   --scope <scope>                        where the decision is born: public (team-visible), private (this machine, this project), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
-|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared — by this flag, or by MNEMA_AGENT_KEY — never assumed; where that agent’s key signs, the fact names the agent as the record does. It names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema: omit it when you are acting directly. Declared (by this flag, or by MNEMA_AGENT_KEY), never assumed; where that agent’s key signs, the fact names the agent as the record does. It names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
 |   --stdin                                read the rationale from standard input instead of the line
 |   --body-file <path>                     read the rationale from this file instead of the line
 |   -h, --help                             display help for command
@@ -283,12 +283,12 @@ $ mnema link --help
 |                    Omitted, a link lands in the public tree (an assertion about
 |                    the project’s records).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
-|                    never assumed; where that agent’s key signs, the fact names
-|                    the agent as the record does. It names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
+|                    assumed; where that agent’s key signs, the fact names the
+|                    agent as the record does. It names the executor. See --scope
+|                    for where the fact lands. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -314,11 +314,10 @@ $ mnema unlink --help
 |   --rel <label>    the relation, as it was linked
 |   --reason <text>  why it is taken back
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a retraction follows
-|                    the link to the tree it was recorded in. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    It names the executor only: a retraction follows the link to
+|                    the tree it was recorded in. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -345,8 +344,8 @@ $ mnema memory --help
 |                       cross-project). Defaults to public; an agent that declares
 |                       itself with --which defaults to private.
 |   --which <agent>     the agent that executed this, when an agent (a script, a
-|                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       CI step) is driving mnema: omit it when you are acting
+|                       directly. Declared (by this flag, or by MNEMA_AGENT_KEY),
 |                       never assumed; where that agent’s key signs, the fact
 |                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
@@ -382,8 +381,8 @@ $ mnema observe --help
 |                       cross-project). Defaults to public; an agent that declares
 |                       itself with --which defaults to private.
 |   --which <agent>     the agent that executed this, when an agent (a script, a
-|                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       CI step) is driving mnema: omit it when you are acting
+|                       directly. Declared (by this flag, or by MNEMA_AGENT_KEY),
 |                       never assumed; where that agent’s key signs, the fact
 |                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
@@ -415,10 +414,10 @@ $ mnema retract --help
 | Options:
 |   --reason <text>  why it is taken back
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a retraction follows
-|                    the note to the tree it was written in. A value that names no
-|                    agent (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    It names the executor only: a retraction follows the note to
+|                    the tree it was written in. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -444,9 +443,9 @@ $ mnema skill --help
 |                                 lands in the public tree (a declaration about
 |                                 the project).
 |   --which <agent>               the agent that executed this, when an agent (a
-|                                 script, a CI step) is driving mnema — omit it
-|                                 when you are acting directly. Declared — by this
-|                                 flag, or by MNEMA_AGENT_KEY — never assumed;
+|                                 script, a CI step) is driving mnema: omit it
+|                                 when you are acting directly. Declared (by this
+|                                 flag, or by MNEMA_AGENT_KEY), never assumed;
 |                                 where that agent’s key signs, the fact names the
 |                                 agent as the record does. It names the executor.
 |                                 See --scope for where the fact lands. A value
@@ -524,9 +523,9 @@ $ mnema task --help
 |                                         the public tree (the team’s work board).
 |   --which <agent>                       the agent that executed this, when an
 |                                         agent (a script, a CI step) is driving
-|                                         mnema — omit it when you are acting
-|                                         directly. Declared — by this flag, or by
-|                                         MNEMA_AGENT_KEY — never assumed; where
+|                                         mnema: omit it when you are acting
+|                                         directly. Declared (by this flag, or by
+|                                         MNEMA_AGENT_KEY), never assumed; where
 |                                         that agent’s key signs, the fact names
 |                                         the agent as the record does. It names
 |                                         the executor. See --scope for where the
@@ -578,7 +577,7 @@ $ mnema promote --help
 |       lists what is in force, with the same words, in the committed record of two or
 |       more of the projects you name. It writes nothing. The set is what you name and is
 |       never searched for; a pattern or decision counts only if it is in force (adopted,
-|       accepted) and only through the committed tree — a project’s private tree is
+|       accepted) and only through the committed tree: a project’s private tree is
 |       neither counted nor cited, because the copy goes where every project reads.
 |   mnema promote <id> --evidence <path>:<id>
 |       copies <id>, which is in the project you stand in, to this machine’s global tree;
@@ -650,7 +649,7 @@ $ mnema brief --help
 |
 | Without `--hook` the output holds no clock, no session and no path, so the same
 | record always prints the same bytes and a difference is a difference in the record.
-| It carries this project’s COMMITTED record — what a clone gets. A decision or a
+| It carries this project’s COMMITTED record: what a clone gets. A decision or a
 | pattern recorded with `--scope private`, or in your global tree, governs your own
 | work and is not in this file, which is written to be committed.
 | It carries the RULES and the NAMES: a decision by title and `ADR-<n>` label, a
@@ -681,13 +680,13 @@ $ mnema recall --help
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
 | document `mnema brief` prints: the memories and the observations recorded for this
-| project, one line each — out of EVERY tree this machine holds for it, the committed
+| project, one line each: out of EVERY tree this machine holds for it, the committed
 | one, this machine’s own and your personal one.
 | So it is NOT a file to commit: `mnema brief` carries the committed record and is
 | written to be redirected into one; this carries what was kept on this machine too.
 |
-| Each line is the one the record already knows a note by — an observation’s topic,
-| the start of a memory — with the id `mnema show <id>` reads whole. Cut where
+| Each line is the one the record already knows a note by (an observation’s topic,
+| the start of a memory), with the id `mnema show <id>` reads whole. Cut where
 | `mnema search` cuts, and it says how many there are in all when there are more.
 |
 | The notes that share a word with what this session touches come first, ranked
@@ -741,7 +740,7 @@ $ mnema switch --help
 |   The name is what `switch off` and `switch on` take.
 |   What it carries is what stops arriving when it is off.
 |   An off switch says who made it and when, and whether a clone of this
-|   repository holds it — a switch recorded privately governs only this machine.
+|   repository holds it: a switch recorded privately governs only this machine.
 |   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
 
 ### mnema inherit --help
@@ -760,8 +759,8 @@ $ mnema inherit --help
 |                           changes first
 |   help [command]          display help for command
 |
-| A project points at a repository of decisions — any git repository with a mnema
-| record — by its location and one commit, in `.mnema/inherit.json`, which is committed.
+| A project points at a repository of decisions (any git repository with a mnema
+| record) by its location and one commit, in `.mnema/inherit.json`, which is committed.
 | `mnema brief` then prints that record’s decisions in force in a section of their own,
 | naming the origin and the commit. They are read, never written: this project does not
 | sign them and its `verify` does not count them. A record that does not verify at the
@@ -774,47 +773,47 @@ $ mnema inherit --help
 $ mnema verify --help
 | Usage: mnema verify [options]
 |
-| verify this project's record — its committed tree and its private one
+| verify this project's record: its committed tree and its private one
 |
 | Options:
-|   --global               also cover this machine's global tree — left out by
+|   --global               also cover this machine's global tree: left out by
 |                          default: it belongs to no project and is present in
 |                          every one, so a weakness in it would lower the verdict
 |                          of every project on this disk
 |   --workspace <path...>  verify the projects at these paths instead of this one,
-|                          and give ONE verdict over all of them — the aggregate
-|                          is the weakest, so no project passes on another's
-|                          proof. The set is what you name and is never searched
-|                          for: two names of one record count once, and a path
-|                          holding no record is reported, left out of the level,
-|                          counted at the end, and makes the exit non-zero unless
+|                          and give ONE verdict over all of them: the aggregate is
+|                          the weakest, so no project passes on another's proof.
+|                          The set is what you name and is never searched for: two
+|                          names of one record count once, and a path holding no
+|                          record is reported, left out of the level, counted at
+|                          the end, and makes the exit non-zero unless
 |                          --allow-no-record says otherwise. Costs one full replay
 |                          per project
 |   --allow-no-record      for --workspace: accept a named path that holds no
 |                          record, and rule on the projects that do. Off by
 |                          default, because naming a path is asserting that it is
-|                          a project — so a mistyped path in a CI step is news
+|                          a project, so a mistyped path in a CI step is news
 |                          rather than a silent pass. It tolerates ABSENCE and
 |                          never a BREAK: a covered project that fails still exits
 |                          non-zero
 |   --require <level>      the least this invocation accepts, for a script or a CI
-|                          step: chained (the default — fail only on a break,
-|                          which is what a bare `verify` has always done), signed
-|                          (also fail unless every event is covered by a verified
-|                          signature — every write here signs what it wrote, so it
+|                          step: chained (the default: fail only on a break, which
+|                          is what a bare `verify` has always done), signed (also
+|                          fail unless every event is covered by a verified
+|                          signature: every write here signs what it wrote, so it
 |                          passes whenever nothing is mid-write, and what it
 |                          catches is checkpoints that did not verify or were
-|                          taken out from under the events they signed — not a cut
+|                          taken out from under the events they signed, not a cut
 |                          that took the newest events with their checkpoint),
 |                          witnessed (also fail unless an external witness dates
-|                          the record — `mnema witness stamp` asks for one, and it
+|                          the record: `mnema witness stamp` asks for one, and it
 |                          passes once a Bitcoin block carries it, never while it
 |                          is pending)
 |   --since <rev>          also fail unless the committed record is the one <rev>
 |                          held, grown at the end: every file it held under tails/
 |                          and keys/ is still here, and every segment and
 |                          checkpoints.jsonl still begins with the bytes it held.
-|                          Catches what no --require can — a cut that took events
+|                          Catches what no --require can: a cut that took events
 |                          with their checkpoint, a record founded again, a
 |                          rewrite signed again. Reads git, never the network, so
 |                          <rev> must be in this clone
@@ -822,14 +821,14 @@ $ mnema verify --help
 |                          signed with against the SSH keys the GitHub account it
 |                          named (`mnema key github`) publishes at
 |                          github.com/<name>.keys. It proves the account publishes
-|                          that key TODAY — not that it was the account’s when it
-|                          signed — and it takes github.com’s word for it. Goes to
+|                          that key TODAY (not that it was the account’s when it
+|                          signed), and it takes github.com’s word for it. Goes to
 |                          the network only when given; what it finds is noted per
 |                          identity and never moves the verdict or the exit
 |   --against-sigstore     also read the Sigstore bundles `mnema witness sigstore`
 |                          filed beside the checkpoints: who signed in to Sigstore
 |                          to countersign each one, and when Rekor logged it.
-|                          Reads no network — it checks against the Sigstore trust
+|                          Reads no network: it checks against the Sigstore trust
 |                          root this binary carries. A bundle speaks for an
 |                          identity of this record only where that identity named
 |                          the same e-mail or workflow (`mnema key sigstore`).
@@ -841,7 +840,7 @@ $ mnema verify --help
 |                          private tree when it holds no record. A break, an
 |                          issue, a warning and the exit are the same with and
 |                          without it
-|   --json                 emit the verdict as JSON instead of prose — the whole
+|   --json                 emit the verdict as JSON instead of prose: the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the
 |                          shape of the answer, never the answer
@@ -854,11 +853,11 @@ $ mnema witness --help
 | ask an outside witness to date this record, and read where that stands
 |
 | Options:
-|   --global            also cover this machine's global tree — left out by
+|   --global            also cover this machine's global tree: left out by
 |                       default: it belongs to no project and is present in every
 |                       one, and a witness over a tree no verdict reads is work
 |                       with no reader (default: false)
-|   --json              emit where the proof stands as JSON instead of prose — one
+|   --json              emit where the proof stands as JSON instead of prose: one
 |                       entry per tail, with the reading as the verifier derived
 |                       it
 |   -h, --help          display help for command
@@ -869,7 +868,7 @@ $ mnema witness --help
 |   upgrade [options]   go back for every attestation this record is waiting on
 |                       (T3)
 |   sigstore [options]  countersign each tail's last checkpoint with a Sigstore
-|                       certificate — who signed in, and when Rekor logged it
+|                       certificate: who signed in, and when Rekor logged it
 
 ### mnema check --help
 $ mnema check --help
@@ -897,7 +896,7 @@ $ mnema site --help
 |   -h, --help   display help for command
 |
 | The page holds the committed (public) tree and nothing else: no private tree, no
-| machine-global tree — and all of that tree's text, so publish it only where the
+| machine-global tree, and all of that tree's text, so publish it only where the
 | repository itself may be read. It lists the decisions in force (a control shows the
 | rest), their history and who authorized them, and the stored events. It also carries
 | the files the record is made of, and the browser runs the same verifier as
@@ -1007,7 +1006,7 @@ $ mnema diagram --help
 | Options:
 |   -h, --help  display help for command
 |
-| It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:
+| It prints mermaid text to stdout and writes nothing: GitHub and most editors draw it:
 |   mnema diagram decision                 the states a decision moves through
 |   mnema diagram task > task-states.md    the redirection is yours
 |   mnema diagram timeline <id>            one entity’s events, in order
@@ -1019,7 +1018,7 @@ $ mnema diagram --help
 $ mnema export --help
 | Usage: mnema export [options]
 |
-| emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
+| emit the record as an OCSF audit feed (NDJSON, envelope only, never a body)
 |
 | Options:
 |   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
@@ -1028,7 +1027,7 @@ $ mnema export --help
 |                    from `mnema audit accountability`, or the short form the
 |                    reads print (any prefix that names one identity here)
 |   --which <agent>  include only facts executed by this agent
-|   --global         also cover this machine's global tree — left out by default:
+|   --global         also cover this machine's global tree: left out by default:
 |                    it belongs to no project and is present in every one, and
 |                    this is the only read that leaves the machine (default:
 |                    false)
@@ -1048,10 +1047,10 @@ $ mnema usage --help
 |   -h, --help  display help for command
 |
 | What each line says, and what it does not:
-|   Tokens and the model id. Never dollars — no price table is carried here.
+|   Tokens and the model id. Never dollars: no price table is carried here.
 |   One host session in the run's window is attributed and named, so you can check it.
 |   More than one is named and NOT attributed: there is no tie-break that is not invented.
-|   None says `no transcript`, never `0` — no record of the cost is not a cost of zero.
+|   None says `no transcript`, never `0`: no record of the cost is not a cost of zero.
 |   Nothing is recorded: the chain has no field for this, and reading writes nothing.
 
 ### mnema resume --help
@@ -1081,7 +1080,7 @@ $ mnema repl --help
 | the first costs only the work.
 |
 | It reads and never writes. A verb that can change the record is refused by name,
-| with the line to run outside the session — and it is refused because the verb
+| with the line to run outside the session, and it is refused because the verb
 | itself declares what it can do, so one added tomorrow is refused too.
 |
 |   /clear   start the page over (what was on it stays in the scrollback)
@@ -1090,8 +1089,8 @@ $ mnema repl --help
 |
 | It needs a terminal at both ends and refuses without one: reading commands from a
 | pipe would be a second way to run the same verbs. The history lives in this
-| process and is written to no file. Style is decided when the session opens — from
-| `mnema --color`, the environment and the terminal — so a `--color` typed on a line
+| process and is written to no file. Style is decided when the session opens (from
+| `mnema --color`, the environment and the terminal), so a `--color` typed on a line
 | inside it changes nothing.
 
 ### mnema why --help
@@ -1212,8 +1211,8 @@ $ mnema tail --help
 |   -h, --help              display help for command
 |
 | Commands:
-|   list                    list the tails that hold events here — the ones a cut
-|                           can name — with the id `prune` takes
+|   list                    list the tails that hold events here, the ones a cut
+|                           can name, with the id `prune` takes
 |   prune [options] <tail>  record that one whole tail was authorized to be cut
 |                           (it removes nothing)
 |   help [command]          display help for command
@@ -1238,7 +1237,7 @@ $ mnema doctor --help
 |   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
 |   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
 |   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
-|   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
+|   named `mnema` installed where the PATH points: the registry is not asked; VS Code’s user
 |   settings.json, for whether its agent is told where the plugin is; and the projects of
 |   ~/.claude.json that still declare the server; and, in a project inside a git repository,
 |   each worktree’s .mnema/private/, where private notes lived before they moved into the
@@ -1284,7 +1283,7 @@ $ mnema completion --help
 | Options:
 |   -h, --help  display help for command
 |
-| It prints to stdout and installs nothing — where the script goes is your choice:
+| It prints to stdout and installs nothing, where the script goes is your choice:
 |   source <(mnema completion bash)                                this shell, now
 |   mnema completion bash > /etc/bash_completion.d/mnema           every bash
 |   mnema completion zsh > "${fpath[1]}/_mnema"                    every zsh
@@ -1293,7 +1292,7 @@ $ mnema completion --help
 | It completes verbs, subcommands and option names, and the values of an option
 | whose declaration enumerates them (--color, and this argument). It does NOT
 | complete an id or a transition: neither is in any declaration, so answering
-| would mean running mnema on every Tab — more than the command itself costs.
+| would mean running mnema on every Tab: more than the command itself costs.
 | The script is generated from this program, so a verb added to it is completed
 | the same day. Print it again after an upgrade.
 
@@ -1304,7 +1303,7 @@ $ mnema mcp --help
 | run the mnema MCP server over stdio (for an agent host)
 |
 | Options:
-|   --project <dir>     the project to serve — an ABSOLUTE path; omitted, the
+|   --project <dir>     the project to serve: an ABSOLUTE path; omitted, the
 |                       project comes from the host workspace roots, or from the
 |                       working directory when the host declares none
 |   --agent-key <name>  sign as the agent of that name in each tree whose record
@@ -1366,9 +1365,9 @@ $ mnema before-a-write --help
 |
 | What it reads and what it prints:
 |   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
-|   host reads: {} unless a rule of this project addresses a path the write touches —
+|   host reads: {} unless a rule of this project addresses a path the write touches:
 |   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
-|   linked with `asks-for-a-person` — citing the rules. For --host cursor, codex,
+|   linked with `asks-for-a-person`, citing the rules. For --host cursor, codex,
 |   opencode and gemini only `deny` is answered: those hosts do not hold a write for a
 |   person, and gemini reads the refusal as {"decision":"deny","reason":…} at the top
 |   of the reply. Each refusal or asking is recorded as a fact before the reply is
@@ -1412,8 +1411,8 @@ $ mnema corrections --help
 |
 | What it reads and what it does:
 |   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
-|   prompts that open by correcting the agent — "no, …", "stop …", "do not …", "that is
-|   wrong", "use … instead", in English and Portuguese — and records each as a proposed
+|   prompts that open by correcting the agent ("no, …", "stop …", "do not …", "that is
+|   wrong", "use … instead", in English and Portuguese) and records each as a proposed
 |   decision in this machine’s private tree, citing the session and the line, at most five
 |   at a time and never the same line twice. No model is called; a match is a guess that a
 |   person accepts or rejects.
@@ -1466,9 +1465,9 @@ $ mnema decision record --help
 |                          (personal, cross-project). Omitted, a decision lands in
 |                          the public tree (a declaration about the project).
 |   --which <agent>        the agent that executed this, when an agent (a script,
-|                          a CI step) is driving mnema — omit it when you are
-|                          acting directly. Declared — by this flag, or by
-|                          MNEMA_AGENT_KEY — never assumed; where that agent’s key
+|                          a CI step) is driving mnema: omit it when you are
+|                          acting directly. Declared (by this flag, or by
+|                          MNEMA_AGENT_KEY), never assumed; where that agent’s key
 |                          signs, the fact names the agent as the record does. It
 |                          names the executor. See --scope for where the fact
 |                          lands. A value that names no agent (an unset variable)
@@ -1494,7 +1493,7 @@ $ mnema decision move --help
 |
 | Arguments:
 |   action         the transition (accept, reject)
-|   id             the decision id (the value shown when it was recorded) —
+|   id             the decision id (the value shown when it was recorded):
 |                  several, to move each one with the same verdict and note
 |
 | Options:
@@ -1503,7 +1502,7 @@ $ mnema decision move --help
 |
 | Also accepted here (declared on the parent group):
 |   --which <agent>  the agent that executed this move, when an agent (a script,
-|                    a CI step) is driving mnema — omit it when you are acting
+|                    a CI step) is driving mnema: omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
 |
@@ -1531,7 +1530,7 @@ $ mnema decision supersede --help
 |
 | Also accepted here (declared on the parent group):
 |   --which <agent>  the agent that executed this move, when an agent (a script,
-|                    a CI step) is driving mnema — omit it when you are acting
+|                    a CI step) is driving mnema: omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
 |
@@ -1551,8 +1550,8 @@ $ mnema decision import --help
 |
 | Arguments:
 |   source             what to read: the directory holding the decision files
-|                      (e.g. docs/adr), inside the project — or, with --format,
-|                      the source of that format
+|                      (e.g. docs/adr), inside the project, or, with --format, the
+|                      source of that format
 |
 | Options:
 |   --format <format>  what <source> holds: ecc-vault, rulings, claude-memory.
@@ -1570,8 +1569,8 @@ $ mnema decision import --help
 |                      inside this project, and every project reads the global
 |                      tree.
 |   --which <agent>    the agent that executed this, when an agent (a script, a CI
-|                      step) is driving mnema — omit it when you are acting
-|                      directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                      step) is driving mnema: omit it when you are acting
+|                      directly. Declared (by this flag, or by MNEMA_AGENT_KEY),
 |                      never assumed; where that agent’s key signs, the fact names
 |                      the agent as the record does. It names the executor. See
 |                      --scope for where the fact lands. A value that names no
@@ -1583,9 +1582,9 @@ $ mnema decision import --help
 | the file states is reported, never applied. Accepting one is a person’s move,
 | with a note, through `decision move accept`.
 |
-| One decision per file, a level-1 title and named `##` sections — the Nygard and
+| One decision per file, a level-1 title and named `##` sections: the Nygard and
 | MADR shape. A file this cannot read that way is refused by name. A file it CAN
-| is proposed — including one that is no decision at all: an index page or a
+| is proposed, including one that is no decision at all: an index page or a
 | roadmap wears the same shape, and no fact of the document separates them. That
 | is why nothing is accepted on your behalf. Nothing here calls a model.
 |
@@ -1628,8 +1627,8 @@ $ mnema skill create --help
 |                       cross-project). Omitted, a skill lands in the public tree
 |                       (a declaration about the project).
 |   --which <agent>     the agent that executed this, when an agent (a script, a
-|                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       CI step) is driving mnema: omit it when you are acting
+|                       directly. Declared (by this flag, or by MNEMA_AGENT_KEY),
 |                       never assumed; where that agent’s key signs, the fact
 |                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
@@ -1664,7 +1663,7 @@ $ mnema skill move --help
 |
 | Also accepted here (declared on the parent group):
 |   --which <agent>  the agent that executed this move, when an agent (a script,
-|                    a CI step) is driving mnema — omit it when you are acting
+|                    a CI step) is driving mnema: omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
 |
@@ -1693,11 +1692,11 @@ $ mnema skill export --help
 |   -h, --help            display help for command
 |
 | What it writes, and what it will not:
-|   <out>/<name>/SKILL.md — the frontmatter the skills specification defines, then the
+|   <out>/<name>/SKILL.md: the frontmatter the skills specification defines, then the
 |   recorded body VERBATIM. Nothing summarizes, reformats or improves the body: it is
 |   what was signed.
 |   `description` is REQUIRED by the specification and the record holds none, so it is
-|   derived at export time — the first sentence of the body (or its first paragraph),
+|   derived at export time: the first sentence of the body (or its first paragraph),
 |   collapsed to one line and cut to 1024 characters. `--description` overrides it. No
 |   model is asked for one anywhere. A derived one with no "when", "whenever" or "quando"
 |   in it is exported all the same, with a warning on the second stream.
@@ -1707,7 +1706,7 @@ $ mnema skill export --help
 |   Only an ADOPTED pattern is exported. A proposal put in a host’s skills directory is
 |   read as how the work is done here; a deprecated one is a retired way of working
 |   wearing the same face. There is no --force: adopt it, then export it.
-|   It records nothing — no event, no consultation — and it writes nowhere but --out.
+|   It records nothing (no event, no consultation) and it writes nowhere but --out.
 
 ### mnema skill provenance --help
 $ mnema skill provenance --help
@@ -1724,9 +1723,9 @@ $ mnema skill provenance --help
 |   This verb reads who put each one there. `mnema show <id>` reads a body.
 |   Only an adopted pattern is served to an agent; the other states are not.
 |   An act with no agent behind it was a person acting directly.
-|   A consultation is one run served the body — not that the work followed it,
+|   A consultation is one run served the body, not that the work followed it,
 |   and counted in this project’s trees and the machine-global one, no other.
-|   It records nothing — no event, no consultation.
+|   It records nothing: no event, no consultation.
 
 ### mnema stack add --help
 $ mnema stack add --help
@@ -1747,7 +1746,7 @@ $ mnema stack add --help
 |   --to <folder>      write the files into this folder instead, and record
 |                      nothing
 |   --as <name>        install it under this name, when its own is taken
-|   --expect <digest>  write it, if its digest is this one — the one the plan
+|   --expect <digest>  write it, if its digest is this one: the one the plan
 |                      showed
 |   --dry-run          show the plan and write nothing
 |   -h, --help         display help for command
@@ -1931,12 +1930,12 @@ $ mnema task create --help
 |                    Omitted, a task lands in the public tree (the team’s work
 |                    board).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
-|                    never assumed; where that agent’s key signs, the fact names
-|                    the agent as the record does. It names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
+|                    assumed; where that agent’s key signs, the fact names the
+|                    agent as the record does. It names the executor. See --scope
+|                    for where the fact lands. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -1967,7 +1966,7 @@ $ mnema task move --help
 |
 | Also accepted here (declared on the parent group):
 |   --which <agent>  the agent that executed this move, when an agent (a script,
-|                    a CI step) is driving mnema — omit it when you are acting
+|                    a CI step) is driving mnema: omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
 |
@@ -1996,12 +1995,12 @@ $ mnema task handoff --help
 |                    cross-project). Omitted, a handoff lands in the public tree
 |                    (coordination between actors).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
-|                    never assumed; where that agent’s key signs, the fact names
-|                    the agent as the record does. It names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
+|                    assumed; where that agent’s key signs, the fact names the
+|                    agent as the record does. It names the executor. See --scope
+|                    for where the fact lands. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -2067,17 +2066,17 @@ $ mnema switch off --help
 |   --reason <text>  why (recorded in the fact; never required)
 |   --scope <scope>  where the switch is born: public (team-visible), private
 |                    (this machine, this project), or global (personal,
-|                    cross-project). Defaults to public — the switch travels with
+|                    cross-project). Defaults to public: the switch travels with
 |                    the repository, so the team reads it and the document a
 |                    session opens with says so. A private switch governs only
 |                    this machine and no committed file can report it.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
-|                    never assumed; where that agent’s key signs, the fact names
-|                    the agent as the record does. It names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
+|                    assumed; where that agent’s key signs, the fact names the
+|                    agent as the record does. It names the executor. See --scope
+|                    for where the fact lands. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -2104,17 +2103,17 @@ $ mnema switch on --help
 |   --reason <text>  why (recorded in the fact; never required)
 |   --scope <scope>  where the switch is born: public (team-visible), private
 |                    (this machine, this project), or global (personal,
-|                    cross-project). Defaults to public — the switch travels with
+|                    cross-project). Defaults to public: the switch travels with
 |                    the repository, so the team reads it and the document a
 |                    session opens with says so. A private switch governs only
 |                    this machine and no committed file can report it.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
-|                    never assumed; where that agent’s key signs, the fact names
-|                    the agent as the record does. It names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
+|                    assumed; where that agent’s key signs, the fact names the
+|                    agent as the record does. It names the executor. See --scope
+|                    for where the fact lands. A value that names no agent (an
+|                    unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -2160,18 +2159,18 @@ $ mnema witness stamp --help
 | ask an outside witness to date each tail's last checkpoint (T3)
 |
 | Options:
-|   --calendar <url...>  the timestamp calendars to ask — several, because any one
+|   --calendar <url...>  the timestamp calendars to ask: several, because any one
 |                        of them is enough and a proof asked of one server is a
 |                        proof that stops completing when that server does.
 |                        Defaults to the public OpenTimestamps calendars.
-|   --global             also cover this machine's global tree — left out by
+|   --global             also cover this machine's global tree: left out by
 |                        default: it belongs to no project and is present in every
 |                        one, and a witness over a tree no verdict reads is work
 |                        with no reader (default: false)
 |   -h, --help           display help for command
 |
 | What leaves this machine: the SHA-256 of one checkpoint's signed message, and
-| nothing else — no id, no title, no body, no count. Each calendar is handed a hash
+| nothing else: no id, no title, no body, no count. Each calendar is handed a hash
 | of that digest with a nonce of its own, so no two of them see the same value.
 |
 | It refuses a tree that is not fully signed: an attestation is filed under the
@@ -2193,8 +2192,8 @@ $ mnema witness upgrade --help
 |                   confirms. Asked ONCE per block: the 80 bytes are then part of
 |                   the record, and every verification after that is arithmetic on
 |                   this machine. Defaults to a public block explorer.
-|   --global        also cover this machine's global tree — left out by default:
-|                   it belongs to no project and is present in every one, and a
+|   --global        also cover this machine's global tree: left out by default: it
+|                   belongs to no project and is present in every one, and a
 |                   witness over a tree no verdict reads is work with no reader
 |                   (default: false)
 |   -h, --help      display help for command
@@ -2208,7 +2207,7 @@ $ mnema witness upgrade --help
 |
 | Safe to repeat: a calendar with nothing yet answers so, and the proof comes back
 | as it went in. A header this fetches is checked against the block it claims to be
-| — it hashes to that block's id — so a substituted one is not a matter of trust.
+| (it hashes to that block's id), so a substituted one is not a matter of trust.
 |
 | There is no --calendar here, and the reason is that there is nothing to choose:
 | every request the walk finds NAMES the calendar that took it. Only `stamp` picks,
@@ -2217,7 +2216,7 @@ $ mnema witness upgrade --help
 | The address a request names is checked before it is asked, because it was read off
 | a FILE and a proof can arrive from anywhere: it has to be an https address at one
 | of the public timestamp operators, and a redirect is followed only while it stays
-| on the same host. Anything else is reported by name and not contacted — a separate
+| on the same host. Anything else is reported by name and not contacted: a separate
 | line from the one a calendar that is down gets, because they call for opposite
 | responses.
 
@@ -2225,11 +2224,11 @@ $ mnema witness upgrade --help
 $ mnema witness sigstore --help
 | Usage: mnema witness sigstore [options]
 |
-| countersign each tail's last checkpoint with a Sigstore certificate — who signed
+| countersign each tail's last checkpoint with a Sigstore certificate: who signed
 | in, and when Rekor logged it
 |
 | Options:
-|   --global    also cover this machine's global tree — left out by default: it
+|   --global    also cover this machine's global tree: left out by default: it
 |               belongs to no project and is present in every one, and a witness
 |               over a tree no verdict reads is work with no reader (default:
 |               false)
@@ -2237,7 +2236,7 @@ $ mnema witness sigstore --help
 |
 | What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made
 | for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a
-| signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the
+| signature over it, never the record's events. AND YOUR IDENTITY: the certificate names the
 | e-mail you sign in with or, in GitHub Actions, the repository, the workflow, the commit and
 | the run, and it goes
 | into a public log that does not forget, and into the bundle the record commits.
@@ -2263,7 +2262,7 @@ $ mnema check declare --help
 | Arguments:
 |   rule             the id of the decision the check is for
 |   program          the program to run, from the project root
-|   args             its arguments, one by one — put `--` before any that starts
+|   args             its arguments, one by one: put `--` before any that starts
 |                    with a dash
 |
 | Options:
@@ -2392,7 +2391,7 @@ $ mnema key request --help
 | ask to bring this machine into an identity (run this on the joining machine)
 |
 | Options:
-|   --anchor <id>   the identity to join (the `mnid:…` its machine prints) — a
+|   --anchor <id>   the identity to join (the `mnid:…` its machine prints): a
 |                   prefix of one this record knows also names it; the request is
 |                   signed over the whole value either way
 |   --key <file>    a private key to speak for instead of this machine's own
@@ -2422,7 +2421,7 @@ $ mnema key enroll --help
 | Options:
 |   --checker   enroll a key that signs check results only (the line `mnema key
 |               request --checker --anchor <id>` printed)
-|   --agent     enroll a key as an agent of this identity — in the project's
+|   --agent     enroll a key as an agent of this identity: in the project's
 |               committed tree and, where the key lives on this machine, its
 |               private tree and the machine's global one (the line `mnema key
 |               request --agent <name> --anchor <id>` printed, or the agent's name
@@ -2517,14 +2516,14 @@ $ mnema key unprotect --help
 $ mnema tail list --help
 | Usage: mnema tail list [options]
 |
-| list the tails that hold events here — the ones a cut can name — with the id
+| list the tails that hold events here, the ones a cut can name, with the id
 | `prune` takes
 |
 | Options:
 |   -h, --help  display help for command
 |
 | What each line says, and why it is on it:
-|   The id is whole — it is what `mnema tail prune` takes.
+|   The id is whole: it is what `mnema tail prune` takes.
 |   The tree is where a waiver over that tail has to land, so `prune` writes there.
 |   The events and the head are what a waiver would claim; `prune` reads them again.
 |   `cut authorized` means a waiver in that same tree already authorizes the cut.
@@ -2543,9 +2542,9 @@ $ mnema tail prune --help
 | Options:
 |   --reason <text>  why it is being cut (recorded in the fact)
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a waiver always follows
-|                    the tail to the tree that holds it.
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    It names the executor only: a waiver always follows the tail
+|                    to the tree that holds it.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -2563,7 +2562,7 @@ $ mnema run start --help
 | open a session for an agent (facts written in it are pinned to it)
 |
 | Options:
-|   --which <agent>  the agent this session is for — required: a run with no agent
+|   --which <agent>  the agent this session is for; required: a run with no agent
 |                    authorizes nothing
 |   --goal <text>    what this session sets out to do
 |   -h, --help       display help for command
@@ -2578,7 +2577,7 @@ $ mnema run end --help
 |   id                the run to close; omitted, the one MNEMA_RUN names
 |
 | Options:
-|   --which <agent>   the agent closing this session — required: a close with no
+|   --which <agent>   the agent closing this session; required: a close with no
 |                     agent is credited to you
 |   --outcome <text>  a short note on how the session went
 |   -h, --help        display help for command
