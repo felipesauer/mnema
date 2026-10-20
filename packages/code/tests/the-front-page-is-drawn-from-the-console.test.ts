@@ -431,6 +431,58 @@ describe('the front page is drawn from the console', () => {
       (s: string) => s.replace('</svg>', `<a ${OFF}><path d="M0 48H880"/></a></svg>`),
       /^the <a> at character \d+ is an element this does not read$/,
     ],
+    [
+      'a translate in the style of the outer <svg>',
+      (s: string) =>
+        s
+          .replace('<svg ', '<svg style="translate:0 0.5px" ')
+          .replace('</svg>', `<path d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <svg> at character 0 sets in its style what this does not read: translate:/,
+    ],
+    [
+      'an animation that moves the outer <svg>',
+      (s: string) =>
+        s
+          .replace('</style>', '@keyframes zz{0%{transform:translate(0px,0.5px)}}</style>')
+          .replace('<svg ', '<svg style="animation-name:zz" ')
+          .replace('</svg>', `<path d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <svg> at character 0 sets animation-name, which this does not read$/,
+    ],
+    [
+      'a path drawn by the style of a shape',
+      (s: string) =>
+        s.replace('</svg>', `<path style="d:path('M0 48H880')" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <path> at character \d+ sets in its style d, which this does not read$/,
+    ],
+    [
+      'a path the stylesheet draws for a class',
+      (s: string) =>
+        s
+          .replace('</style>', '.q{d:path("M0 48H880")}</style>')
+          .replace('</svg>', `<path class="q" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the stylesheet sets d, which this does not read$/,
+    ],
+    [
+      'an offset path in the style of a shape',
+      (s: string) =>
+        s.replace(
+          '</svg>',
+          `<path style="offset-path:path('M0 0.5H1')" d="M0 48.5H880" ${OFF}/></svg>`,
+        ),
+      /^the <path> at character \d+ sets in its style offset-path, which this does not read$/,
+    ],
+    [
+      'a property the script does not write, in the style of a shape',
+      (s: string) => s.replace('</svg>', `<path style="inset:0" d="M0 48.5H880" ${OFF}/></svg>`),
+      /^the <path> at character \d+ sets in its style inset, which this does not read$/,
+    ],
+    [
+      'a </defs> without a <defs>',
+      (s: string) =>
+        s
+          .replace(/<defs>[\s\S]*?<\/defs>/, `<path d="M0 48H880" ${OFF}/></defs>`),
+      /^the picture opens <defs> 0 times and closes it 1 times$/,
+    ],
   ])('refuses a picture with %s, and names it', (_, change, named) => {
     const found = offTheGrid(change(drawn['how-it-works-light.svg'] ?? ''));
     expect(found).toHaveLength(1);
@@ -1103,22 +1155,54 @@ const READ_ELEMENTS = new Set([
 /** A CSS declaration that moves a shape: a transform (or its origin or box), a translate, a rotate or a scale. */
 const MOVES = /(?:^|[^-\w])(?:transform(?:-\w+)?|translate|rotate|scale)\s*:/;
 
+/** The CSS properties the script writes, in a `style` and in its stylesheets: no other is read. */
+const CSS_THE_SCRIPT_WRITES = new Set([
+  'animation',
+  'animation-name',
+  'animation-duration',
+  'animation-iteration-count',
+  'animation-timing-function',
+  'opacity',
+  'transform',
+  'stroke-dashoffset',
+]);
+
+/**
+ * The property each declaration of a run of them sets (`a:1;b:2`), or the whole declaration when it
+ * does not start with a property's name (a comment, an escape, a stray word).
+ */
+function propertiesOf(declarations: string): string[] {
+  return declarations
+    .split(';')
+    .filter((d) => d.trim() !== '')
+    .map((d) => /^\s*([A-Za-z][\w-]*)\s*:/.exec(d)?.[1] ?? d.trim());
+}
+
 /**
  * What in a picture `offTheGrid` does not read, each named; empty when it reads all of it. The
- * picture must have a `</defs>`; every opening tag must write its attributes as `name="value"`, with
- * no `<` or `>` in a value; nothing but a title, a description and a stylesheet may come before the
- * first `<defs>`; every element but the outer `<svg>` must be one of `READ_ELEMENTS` (so a `<use>`,
- * a `<symbol>` and an `<svg>` inside the picture are refused); the outer `<svg>` must not set a
- * stroke, a stroke width, a transform or `vector-effect`, by attribute or in its style, and its
- * `viewBox`, when it has one, must start at 0 0; no element may set `vector-effect`,
- * `transform-origin` or `transform-box` as an attribute, nor in its style a transform, a translate,
- * a rotate, a scale, `vector-effect` or the `animation` shorthand; and the stylesheets (every
- * `<style>`) must not set a stroke, a stroke width or `vector-effect`, nor move a shape or name an
- * animation outside a keyframes, and each of their keyframes must be one this reads.
+ * picture must have a `</defs>`, and as many `<defs>` as `</defs>`; every opening tag must write its
+ * attributes as `name="value"`, with no `<` or `>` in a value; nothing but a title, a description and
+ * a stylesheet may come before the first `<defs>`; every element but the outer `<svg>` must be one of
+ * `READ_ELEMENTS` (so a `<use>`, a `<symbol>` and an `<svg>` inside the picture are refused); the
+ * outer `<svg>` must not set a stroke, a stroke width, a transform, `vector-effect` or
+ * `animation-name`, by attribute or in its style, and its `viewBox`, when it has one, must start at
+ * 0 0; no element, the outer `<svg>` included, may set `vector-effect`, `transform-origin` or
+ * `transform-box` as an attribute, nor in its style a transform, a translate, a rotate, a scale,
+ * `vector-effect` or the `animation` shorthand, nor in its style any property but those of
+ * `CSS_THE_SCRIPT_WRITES`, a stroke and a stroke width (a shape's are read); and the stylesheets
+ * (every `<style>`) must not set a stroke, a stroke width or `vector-effect`, nor move a shape or name
+ * an animation outside a keyframes, nor set, in any rule or keyframe, a property outside
+ * `CSS_THE_SCRIPT_WRITES`, and each of their keyframes must be one this reads. Not read: the
+ * selectors of a stylesheet (a rule of allowed properties applies to whatever it selects), the
+ * condition of an `@media`, and what a stylesheet writes outside braces.
  */
 function unreadIn(svg: string): string[] {
   if (!svg.includes('</defs>')) return ['the picture has no </defs>, after which this reads'];
   const out: string[] = [];
+  const opens = (svg.match(/<defs\b/g) ?? []).length;
+  const closes = (svg.match(/<\/defs>/g) ?? []).length;
+  if (opens !== closes)
+    out.push(`the picture opens <defs> ${opens} times and closes it ${closes} times`);
   const firstDefs = svg.indexOf('<defs');
   const rootAt = svg.indexOf('<svg');
   const tag = /<[A-Za-z][\w:-]*(?:\s+[\w:-]+="[^"<>]*")*\s*\/?>/y;
@@ -1134,7 +1218,7 @@ function unreadIn(svg: string): string[] {
     const at = attributesOf(written);
     const style = at.style ?? '';
     if (m.index === rootAt) {
-      for (const k of ['stroke', 'stroke-width', 'transform', 'vector-effect'])
+      for (const k of ['stroke', 'stroke-width', 'transform', 'vector-effect', 'animation-name'])
         if (k in at || new RegExp(`(?:^|;)\\s*${k}\\s*:`).test(style))
           out.push(`${where} sets ${k}, which this does not read`);
       const box = at.viewBox
@@ -1143,18 +1227,21 @@ function unreadIn(svg: string): string[] {
         .map(Number);
       if (box && (box.length !== 4 || box[0] !== 0 || box[1] !== 0))
         out.push(`${where} has a viewBox that does not start at 0 0: ${at.viewBox}`);
-      continue;
-    }
-    if (!READ_ELEMENTS.has(name)) {
+    } else if (!READ_ELEMENTS.has(name)) {
       out.push(`${where} is an element this does not read`);
       continue;
-    }
-    if (m.index < firstDefs && !['title', 'desc', 'style', 'defs'].includes(name))
+    } else if (m.index < firstDefs && !['title', 'desc', 'style', 'defs'].includes(name))
       out.push(`${where} comes before the <defs>, where this does not read`);
     for (const k of ['vector-effect', 'transform-origin', 'transform-box'])
-      if (k in at) out.push(`${where} sets ${k}, which this does not read`);
+      if (k in at && !(m.index === rootAt && k === 'vector-effect'))
+        out.push(`${where} sets ${k}, which this does not read`);
+    const unlisted = propertiesOf(style).filter(
+      (p) => !CSS_THE_SCRIPT_WRITES.has(p) && p !== 'stroke' && p !== 'stroke-width',
+    );
     if (MOVES.test(style) || /(?:^|;)\s*(?:vector-effect|animation)\s*:/.test(style))
       out.push(`${where} sets in its style what this does not read: ${style}`);
+    else if (unlisted.length > 0)
+      out.push(`${where} sets in its style ${unlisted.join(', ')}, which this does not read`);
   }
   const sheet = [...svg.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((s) => s[1]).join('\n');
   if (/(?:^|[^-\w])(?:stroke(?:-width)?|vector-effect)\s*:/.test(sheet))
@@ -1166,6 +1253,10 @@ function unreadIn(svg: string): string[] {
     out.push('the stylesheet gives a shape an animation, which this does not read');
   if ((sheet.match(/@keyframes\b/g) ?? []).length !== keyframesOf(svg).size)
     out.push('the stylesheet has a keyframes this does not read');
+  const declared = [...sheet.matchAll(/\{([^{}]*)\}/g)].flatMap((b) => propertiesOf(b[1] ?? ''));
+  for (const p of new Set(declared))
+    if (!CSS_THE_SCRIPT_WRITES.has(p) && !['stroke', 'stroke-width', 'vector-effect'].includes(p))
+      out.push(`the stylesheet sets ${p}, which this does not read`);
   return out;
 }
 
