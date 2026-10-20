@@ -1,7 +1,7 @@
 /**
  * The `mnema task handoff` wiring: what it declares, and what it prints.
  *
- * `mnema task handoff <task> <from> <to>` — record a handoff on a task. Three
+ * `mnema task handoff <task> <from> <to>`: record a handoff on a task. Three
  * positionals: all short ids/labels, none a body of text. It mints no id (the
  * subject IS the task), so the report echoes the fact. `from == to` is
  * legitimate (a chat restart) and the `task` reference is not validated.
@@ -38,7 +38,7 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
       ),
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
-    // agents it is about — `<from>`/`<to>` are the subject, `--which` is the author.
+    // agents it is about: `<from>`/`<to>` are the subject, `--which` is the author.
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(async (taskId: string, from: string, to: string) => {
@@ -61,10 +61,10 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
         ...(run !== undefined ? { run } : {}),
       });
       if (result.ok) {
-        // No id to report — a handoff has no standalone identity. Echo the fact.
+        // No id to report: a handoff has no standalone identity. Echo the fact.
         //
         // Three positionals, all the caller's: the task and the two agents. The two
-        // agents are the sharpest of them — they are NAMES rather than ids, so a
+        // agents are the sharpest of them: they are NAMES rather than ids, so a
         // reader has nothing to check a forged second line against (see
         // {@link onOneLine}).
         io.out(

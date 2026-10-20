@@ -1,10 +1,10 @@
 /**
- * `mnema refs <id>` — what an entity is connected to, and how far that reaches.
+ * `mnema refs <id>`: what an entity is connected to, and how far that reaches.
  *
  * The read that turns a search hit into a thread to pull. `search` answers "what
  * exists", `show` answers "what does it say", and this answers the question that
- * follows both: "what else is this tied to?" — the observations about it, the
- * links into and out of it, the decision that superseded it.
+ * follows both: "what else is this tied to?" (the observations about it, the
+ * links into and out of it, the decision that superseded it).
  *
  * One verb covers both shapes, because they are one walk with different bounds.
  * The default (`--depth 1`, both directions) is the NEIGHBOURHOOD: everything one
@@ -16,7 +16,7 @@
  * written to and its far end may live in another. Read-only in the strict sense:
  * a cache per tree, brought forward from the one the tree keeps (`CacheOptions.persist`), and the
  * context package's pure `references`. No
- * writer, no key, no event — so no `--actor`.
+ * writer, no key, no event, so no `--actor`.
  *
  * Like the other intelligence reads it refuses `NO_PROJECT` outside a project: a
  * graph of references is a property of a project's record.
@@ -33,7 +33,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the refs command needs — injected so it is testable. */
+/** What the refs command needs: injected so it is testable. */
 export interface ReferencesContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -47,7 +47,7 @@ export interface ReferencesDone {
   /** The nodes, the edges, and whether the depth cap cut the answer. */
   readonly graph: ReferenceGraph;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -57,14 +57,14 @@ export interface ReferencesDone {
 
 /** The read was refused before it ran. */
 export type ReferencesRefused =
-  /** There is no project here — a graph of references is a project's record. */
+  /** There is no project here: a graph of references is a project's record. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** `--direction` named something that is not a direction. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_DIRECTION'; readonly direction: string };
 
 /**
  * Reports what `id` is connected to across every present tree. An id nothing
- * references yields a graph holding only the id itself — a legitimate answer
+ * references yields a graph holding only the id itself: a legitimate answer
  * ("nothing is tied to this"), not a refusal, and the same reason `timeline`
  * has no UNKNOWN_ID. An id no tree ever authored is reported as unresolved
  * rather than rejected: the record can legitimately point at what it cannot see.

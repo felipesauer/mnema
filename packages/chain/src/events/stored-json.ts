@@ -5,7 +5,7 @@
  * reads a line the format refuses. The danger is not an error in the proof: a false
  * `"title"` placed BEFORE the true one leaves the value `JSON.parse` returns exactly as
  * signed, the recomputed bytes equal the signed bytes, and every hash and signature
- * still verifies — while a reader that keeps the FIRST of two keys (or a person reading
+ * still verifies, while a reader that keeps the FIRST of two keys (or a person reading
  * the diff) sees the false title on a line the record calls signed. The bytes on disk
  * must be the bytes the signature covers (FORMAT.md section 4), and a duplicate is
  * content that one reader sees and the other does not; no honest reformatting produces
@@ -18,7 +18,7 @@
  * left as it was. The decision was taken the other way (01/10/2026): `FORMAT.md` section 4
  * says each line IS the canonical serialization of what it holds, the second reader refused
  * every such line while this product verified it, and nothing this product writes produces
- * one — so the two readers disagreed about bytes no honest writer of the format makes.
+ * one, so the two readers disagreed about bytes no honest writer of the format makes.
  * `parseStoredJson` itself stays tolerant, for the three documents that are not lines of the
  * record (see `both-readers-read-the-same-bytes.test.ts`, which names them).
  */
@@ -59,7 +59,7 @@ function firstByteNotUtf8(bytes: Uint8Array): number {
       i += 1;
       continue;
     }
-    // How many bytes follow the lead, and the range the FIRST of them must fall in — the
+    // How many bytes follow the lead, and the range the FIRST of them must fall in: the
     // narrowed ranges are what refuse an overlong form, a surrogate and a code point too large.
     let follow = 0;
     let low = 0x80;
@@ -178,14 +178,14 @@ export function parseStoredJson(text: string): unknown {
 }
 
 /**
- * Parses one LINE OF THE RECORD — an entry, a checkpoint, a tail proof, a stored block
- * header — refusing a duplicate key (as {@link parseStoredJson} does) AND a line that is not
+ * Parses one LINE OF THE RECORD (an entry, a checkpoint, a tail proof, a stored block
+ * header) refusing a duplicate key (as {@link parseStoredJson} does) AND a line that is not
  * the canonical serialization (`FORMAT.md` section 1) of the value it holds: whitespace, key
  * order, Unicode composition, an escape or a number spelled another way. The bytes on disk
  * are then the bytes every hash and signature was taken over, which is what section 4
  * promises and what the second reader checks (`is_canonical_line` in its `canonical.py`).
  *
- * A value with no canonical bytes at all — a lone surrogate — is refused here too, with the
+ * A value with no canonical bytes at all, a lone surrogate, is refused here too, with the
  * canonicalizer's own words, rather than later when a proof first asks for the bytes.
  *
  * IT COSTS ONE SERIALIZATION PER LINE READ, and that is not free: measured on 01/10/2026,
@@ -217,7 +217,7 @@ export function parseCanonicalLine(text: string): unknown {
 
 /**
  * The refusal when a carriage return at the end is ALL that stands between a line and its
- * canonical bytes — what a checkout that rewrites line ends leaves on every line (git with
+ * canonical bytes: what a checkout that rewrites line ends leaves on every line (git with
  * `core.autocrlf=true`, the Git for Windows default). Still a refusal: the bytes on disk are
  * not the bytes that were signed, and tolerating the `\r` would make them so for good. It
  * names the cause instead of the sentence a tampered line gets. The second reader says the

@@ -11,13 +11,13 @@
  *
  * The rule this feeds is single and total: an event is authentic only if its
  * `signerFp` is valid for its `who` AT THAT POINT in the fold. There is no
- * degenerate "the anchor is my own key" shortcut — a lone key still founds its
+ * degenerate "the anchor is my own key" shortcut: a lone key still founds its
  * anchor with an `identity.founded`, so one key is just a one-member set. That
  * one rule replaces the old `who == deriveAnchor(signerFp)` check: identity is
  * membership, proven on the chain, nothing else.
  *
  * Why the fold runs across ALL tails in one order: enrollment is an identity
- * concern, not a per-tail one — a key enrolled on one machine's tail authorizes
+ * concern, not a per-tail one; a key enrolled on one machine's tail authorizes
  * events on another's. The order is the SAME merge a projection uses
  * ({@link causalOrder}: `seq` inviolable within a tail, and across tails the
  * smallest `at` among the heads whose citations have been taken), so
@@ -27,7 +27,7 @@
  * A key's first event must fall AFTER its enrollment in that order, or the fold
  * sees the event before the key is valid and rejects it. `at` alone does not
  * give that: it is the wall clock of each machine, and a second machine whose
- * clock is behind the enroller's stamps its first event before the enrolment —
+ * clock is behind the enroller's stamps its first event before the enrolment,
  * an honest record the fold used to refuse. What gives it is the citation: the
  * new machine's first event cites the head of the enroller's tail it had read,
  * which is at or after the enrolment, so the event cannot be taken before it
@@ -39,7 +39,7 @@
  * What this fold does and does not decide, stated plainly: it judges whether an
  * event's `signerFp` is a member of its `who`, not whether the tail the event
  * sits in is genuine. A keyless party who fabricates a tail under a real
- * enrolled fingerprint would name a valid signer and pass THIS check — but that
+ * enrolled fingerprint would name a valid signer and pass THIS check, but that
  * tail is refused earlier by the verifier, which requires every tail to carry a
  * proof that its key signed its own id (see tailproof.ts and verify.ts). So the
  * fold only ever runs over tails whose key owns them; a fabricated sibling never
@@ -49,10 +49,10 @@
  *
  * Which enrollment facts the fold trusts from that residual window turns on one
  * question: can the fact alter the validity of SIGNED history? A `key.revoked`
- * plainly can — it removes a key that judges OTHER, possibly checkpointed,
+ * plainly can: it removes a key that judges OTHER, possibly checkpointed,
  * events. So a residual `key.revoked` could let a keyless party fabricate a tail
  * under a real enrolled fingerprint (permitted in the residual), revoke a member
- * from it, and flip an HONEST, fully-signed chain to failing — a
+ * from it, and flip an HONEST, fully-signed chain to failing: a
  * denial-of-authenticity with no key. To close that, a `key.revoked` takes
  * effect ONLY when it is itself signature-covered (within a verified checkpoint
  * range): a keyless party cannot checkpoint a fabricated tail (a checkpoint needs
@@ -60,19 +60,19 @@
  * key. A legitimate revocation is made effective by its owner checkpointing it
  * (the identity operation does so at once).
  *
- * An ADDITION (`identity.founded`, `key.enrolled`) is USUALLY safe ungated — it
+ * An ADDITION (`identity.founded`, `key.enrolled`) is USUALLY safe ungated: it
  * only empowers events that name the added key, so a keyless residual enroll of
  * a genuine key just recreates that key's own (already-untrusted) window, no
  * different from a benign second install. There is ONE exception, and it is the
  * mirror of the revoke gate: an addition ordered AFTER a signature-covered
  * revoke of the SAME key RESTORES it, re-authorizing that key's later
- * (checkpointed) work — the addition thereby undoes a signed removal. So an
+ * (checkpointed) work; the addition thereby undoes a signed removal. So an
  * addition that would restore a covered-revoked key is gated exactly as the
  * revoke was: it takes effect only when it is itself signature-covered
  * (`addKeyGated`). A first enrollment, or any addition that restores nothing
  * covered, stays ungated. The invariant that keeps this honest is not "forged
- * events stay residual" — a forged event's authorship is signature-checked
- * elsewhere — it is that neither a revoke nor a restoring add can be forged INTO
+ * events stay residual" (a forged event's authorship is signature-checked
+ * elsewhere) it is that neither a revoke nor a restoring add can be forged INTO
  * a signature-covered range without the tail's key; consumers must therefore
  * gate trust on whole-chain `fullySigned`, never on a per-tail checkpoint cursor
  * or an event's mere absence from `issues`.
@@ -102,7 +102,7 @@ export interface IdentityIssue {
 export interface IdentityResolution {
   readonly issues: readonly IdentityIssue[];
   /**
-   * The keys valid for each anchor once the whole chain is folded — what the record proves a
+   * The keys valid for each anchor once the whole chain is folded: what the record proves a
    * member of an identity now, founded or enrolled and not revoked under coverage. The census
    * asks it before calling a key a backup: a registration says what a key was made FOR, and
    * only the record says whether the identity took it in.
@@ -110,14 +110,14 @@ export interface IdentityResolution {
   readonly members: ReadonlyMap<string, ReadonlySet<string>>;
   /**
    * Every checker key a signature-covered `checker.retired` took out of the role, by
-   * fingerprint: who retired it, where, and how many results it signed BEFORE — results the
+   * fingerprint: who retired it, where, and how many results it signed BEFORE, results the
    * fold accepted, because the key held the role when it signed, and which the census names,
    * because "before" is placed by the `at` the key itself wrote.
    */
   readonly retiredCheckers: ReadonlyMap<string, RetiredChecker>;
   /**
    * Every agent key a signature-covered `agent.retired` took out of the role, by fingerprint: who
-   * retired it, where, and how many facts it signed BEFORE — facts the fold accepted, because the
+   * retired it, where, and how many facts it signed BEFORE, facts the fold accepted, because the
    * key held the role when it signed, and which the census names for the reason it names a
    * checker's results: "before" is placed by the `at` the key itself wrote.
    */
@@ -133,7 +133,7 @@ export interface IdentityResolution {
   readonly citations: CitationsRead;
   /**
    * Who the accepted facts name as their agent (FORMAT.md section 6.2, "What a reader learns from
-   * it") — informational, for the census: nothing here makes an event more or less authentic.
+   * it"), informational, for the census: nothing here makes an event more or less authentic.
    */
   readonly agents: AgentsNamed;
 }
@@ -142,7 +142,7 @@ export interface IdentityResolution {
 export interface AgentsNamed {
   /**
    * Every agent key that signed at least one accepted fact, in the order the fold met its first:
-   * its agent is ATTESTED — the key was enrolled as `name` by `anchor`, and every fact it signed
+   * its agent is ATTESTED; the key was enrolled as `name` by `anchor`, and every fact it signed
    * carries `name` as its `which`.
    */
   readonly attested: readonly {
@@ -153,7 +153,7 @@ export interface AgentsNamed {
   }[];
   /**
    * Every `which` an accepted fact carries that a key without the agent role signed, in the order
-   * the fold met it: DECLARED — the key that signed stated it, and nothing in the record holds it.
+   * the fold met it: DECLARED; the key that signed stated it, and nothing in the record holds it.
    */
   readonly declared: readonly { readonly which: string; readonly events: number }[];
 }
@@ -181,7 +181,7 @@ export interface RetiredAgent {
 }
 
 /**
- * What the order made of the citations a record carries (FORMAT.md, "Reading many tails") —
+ * What the order made of the citations a record carries (FORMAT.md, "Reading many tails"),
  * informational, for the census: neither list ever makes an event less authentic.
  */
 export interface CitationsRead {
@@ -192,8 +192,8 @@ export interface CitationsRead {
     readonly hash: string;
   }[];
   /**
-   * Every event whose `at` is earlier than the `at` of an entry it cites — a writer's clock
-   * that ran behind what it had read — with the largest such gap, in milliseconds.
+   * Every event whose `at` is earlier than the `at` of an entry it cites (a writer's clock
+   * that ran behind what it had read) with the largest such gap, in milliseconds.
    */
   readonly behind: readonly {
     readonly tail: string;
@@ -214,13 +214,13 @@ export interface CitationsRead {
  * (-1 if none). It gates any mutation that could alter signed history: a
  * `key.revoked` (removes a key that judges other events), and an addition that
  * would RESTORE a key already revoked under coverage (`addKeyGated`). A first
- * enrollment — restoring nothing covered — is not gated. See the module doc.
+ * enrollment, restoring nothing covered, is not gated. See the module doc.
  *
  * `keys` is who reads those committed keys, and the verifier hands in its own: the key
  * that proves an enrolment is the key the checkpoints of that machine's tail are checked
  * against, and with a reader of its own this fold opened that file a second time for every
  * `key.enrolled` naming it. Handed the verifier's, it opens nothing the verification has
- * already read — `verify-costs-what-the-record-holds.test.ts` counts one read per key
+ * already read: `verify-costs-what-the-record-holds.test.ts` counts one read per key
  * across both. Left out, the fold reads each key itself, once.
  */
 export function resolveIdentity(
@@ -246,7 +246,7 @@ export function resolveIdentity(
 
   // Keys removed by a signature-covered revocation, as `<anchor>|<fp>`. An
   // addition (founded/enrolled) that would restore such a key takes effect only
-  // when it is ITSELF signature-covered — otherwise a keyless party could plant
+  // when it is ITSELF signature-covered: otherwise a keyless party could plant
   // a residual re-enroll ordered after a covered revoke and silently undo it,
   // re-authorizing the removed key's later (checkpointed) work. This mirrors the
   // revoke gate: a mutation that alters the validity of signed history must be
@@ -274,7 +274,7 @@ export function resolveIdentity(
 
   // The keys enrolled as CHECKERS at this point: they sign check results and nothing else.
   const checkers = new Set<string>();
-  // How many results each checker key signed that this fold accepted — what a later
+  // How many results each checker key signed that this fold accepted: what a later
   // retirement reports as signed before it.
   const resultsSigned = new Map<string, number>();
   // The keys a signature-covered `checker.retired` took out of the role. A retired key signs
@@ -283,7 +283,7 @@ export function resolveIdentity(
   // The keys a covered `backup.declared` names, with the identity that declared them.
   const backups = new Map<string, string>();
   // The keys enrolled as AGENTS, with the anchor that enrolled each and the name it was enrolled
-  // under. A key keeps the role from its `agent.enrolled` on — a `key.revoked` takes it out of the
+  // under. A key keeps the role from its `agent.enrolled` on: a `key.revoked` takes it out of the
   // set like any key, and the role stays with it.
   const agents = new Map<string, { readonly anchor: string; readonly name: string }>();
   // The agent keys a signature-covered `agent.retired` took out: they sign nothing from then on.
@@ -297,7 +297,7 @@ export function resolveIdentity(
     const seq = entry.link.seq;
     const before = issues.length;
     // The role, both ways. A checker key that signs anything but a check result is refused
-    // before the kind is even looked at — its own founding, an enrolment, a decision — so a
+    // before the kind is even looked at (its own founding, an enrolment, a decision), so a
     // leaked runner secret can say a check passed and nothing more.
     const isCheckResult = event.kind === 'check.passed' || event.kind === 'check.failed';
     if (retired.has(event.signerFp)) {
@@ -326,7 +326,7 @@ export function resolveIdentity(
     }
     // The agent's role: a member of the identity that enrolled it, narrowed three ways and judged
     // before the kind's own conditions. Its facts speak for that identity alone, under the name it
-    // was enrolled as — compared byte for byte, both being canonical — and never change who may
+    // was enrolled as (compared byte for byte, both being canonical) and never change who may
     // sign or what a key may sign.
     const role = agents.get(event.signerFp);
     if (role !== undefined && event.who !== role.anchor) {
@@ -356,7 +356,7 @@ export function resolveIdentity(
     switch (event.kind) {
       case 'identity.founded': {
         // The anchor must derive from the founding key, and the founding key
-        // must sign its own founding — no one founds an identity onto a key they
+        // must sign its own founding: no one founds an identity onto a key they
         // do not hold, and no one invents an anchor unmoored from a key.
         const { foundingFp } = event.payload;
         if (event.signerFp !== foundingFp) {
@@ -413,7 +413,7 @@ export function resolveIdentity(
         break;
       }
       case 'agent.enrolled': {
-        // A member (`signerFp`, valid for the anchor now and not itself an agent key — the role
+        // A member (`signerFp`, valid for the anchor now and not itself an agent key: the role
         // clause above refused that already) makes a key an agent of its own identity, under a
         // name, and the key consents to exactly that over `agent-enroll:<anchor>:<agentFp>:<name>`.
         const anchor = event.subject;
@@ -496,7 +496,7 @@ export function resolveIdentity(
           });
           break;
         }
-        // It refuses the key's LATER facts, which are other, possibly checkpointed, events — so,
+        // It refuses the key's LATER facts, which are other, possibly checkpointed, events, so,
         // like a revocation, it takes effect only when signature-covered.
         if (!isCheckpointed(tail, seq)) break;
         keysOf(anchor).delete(agentFp);
@@ -528,7 +528,7 @@ export function resolveIdentity(
         }
         // A revocation removes a key that judges OTHER events, so it is trusted
         // to take effect only when signature-covered. A residual (uncheckpointed)
-        // revoke is ignored — a keyless party cannot sign a checkpoint over a
+        // revoke is ignored: a keyless party cannot sign a checkpoint over a
         // fabricated tail, so this forecloses their revoking a member to flip an
         // honest signed chain to failing. A legitimate revoker checkpoints it.
         if (!isCheckpointed(tail, seq)) break;
@@ -541,7 +541,7 @@ export function resolveIdentity(
       case 'backup.declared': {
         // An identity says one of its OWN keys is kept off the machine, so that key's having no
         // tail is expected. Who may say it is who may enrol: the anchor, by a key in its set now.
-        // And the key must be one the anchor holds now — a declaration about another identity's
+        // And the key must be one the anchor holds now: a declaration about another identity's
         // key, or a key never taken in, would silence a warning that is not the declarer's.
         const anchor = event.subject;
         if (event.who !== anchor) {
@@ -569,7 +569,7 @@ export function resolveIdentity(
           });
           break;
         }
-        // It quiets the one warning that a removed tail raises, so — like a revocation — it is
+        // It quiets the one warning that a removed tail raises, so, like a revocation, it is
         // honoured only when signature-covered: a party with no key can append above the last
         // checkpoint, and must not be able to declare away the tail it took out.
         if (!isCheckpointed(tail, seq)) break;
@@ -630,7 +630,7 @@ export function resolveIdentity(
       }
       case 'checker.retired': {
         // Any identity takes the role away, as any identity grants it: `who`, with a key valid
-        // for it now. The checker key is not asked — a leaked key is what this is for.
+        // for it now. The checker key is not asked: a leaked key is what this is for.
         const { checkerFp } = event.payload;
         if (event.subject !== deriveAnchor(checkerFp)) {
           issues.push({
@@ -648,7 +648,7 @@ export function resolveIdentity(
           });
           break;
         }
-        // It refuses the key's LATER results, which are other, possibly checkpointed, events —
+        // It refuses the key's LATER results, which are other, possibly checkpointed, events,
         // so, like a revocation, it takes effect only when signature-covered. A keyless party
         // cannot checkpoint, so an appended retirement cannot fail an honest runner's results.
         if (!isCheckpointed(tail, seq)) break;
@@ -688,7 +688,7 @@ export function resolveIdentity(
       }
       default: {
         // Every other event is authentic only if its signer is a key valid for
-        // its anchor at this point — the single identity rule.
+        // its anchor at this point: the single identity rule.
         if (!keysOf(event.who).has(event.signerFp)) {
           issues.push({
             tail,
@@ -749,7 +749,7 @@ function inAnyIdentity(validKeys: ReadonlyMap<string, ReadonlySet<string>>, fp: 
 }
 
 /**
- * Merges every tail into one total, deterministic order — the order every reader of many
+ * Merges every tail into one total, deterministic order, the order every reader of many
  * tails folds ({@link causalOrder}): `seq` within a tail, and across tails the smallest `at`
  * among the heads whose citations have been taken, ties broken by tail id.
  *
@@ -817,7 +817,7 @@ function eventAt(entry: Entry): string {
  * named by `newFp`; a key with no committed public key cannot be proven to have
  * consented, so the enrollment fails.
  *
- * The committed `.pub` is bound to `newFp` by re-deriving its fingerprint — the
+ * The committed `.pub` is bound to `newFp` by re-deriving its fingerprint: the
  * same fingerprint-binding the checkpoint verifier applies. Without it, swapping
  * `keys/<newFp>.pub` for an attacker's key would let a reverse signature they
  * made verify against the swapped file while the fold still records `newFp` as
@@ -835,7 +835,7 @@ function reverseSignatureOk(
 
 /**
  * Whether `reverseSig` is the signature of the committed key `fp` names over `message`, with
- * that key's fingerprint recomputed — the proof of possession both enrolments carry.
+ * that key's fingerprint recomputed: the proof of possession both enrolments carry.
  */
 function consentOk(
   keys: CommittedKeys,

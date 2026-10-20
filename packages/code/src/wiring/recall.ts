@@ -1,7 +1,7 @@
 /**
  * The `mnema recall` wiring: what it declares, and what it prints.
  *
- * `mnema recall` — the memories and observations recorded for this project, out of every
+ * `mnema recall`: the memories and observations recorded for this project, out of every
  * tree this machine holds for it, the ones near what the session touches first, as the
  * markdown a session opens with beside the document `mnema brief` prints. The plugin's second `SessionStart` handler runs it; a
  * person runs it to see what that session is handed.
@@ -11,24 +11,24 @@
  * past a ceiling it measures, and with the flag the text stops at a whole note inside it
  * (`presentation/within-a-hook.ts`). Without it nothing is cut. This said it takes NO options;
  * the other absences are still decided the way `brief`'s are. No `--scope`:
- * what it reads is every tree, and that is the point of it — a note an agent records lands
+ * what it reads is every tree, and that is the point of it; a note an agent records lands
  * in the tree that does not travel, and a scope flag would be a way to leave out exactly
  * the notes this verb exists to bring back. No `--limit`: the cut is the index's own, the
  * one `mnema search` cuts at. This said the cut kept this text and `mnema search --kind
  * memory` from disagreeing *"about which notes are the latest"*, and since the notes are
- * chosen by what the session touches the two lists are no longer the same list — the one
- * a session is handed puts the near notes first — so what the absent flag still buys is
+ * chosen by what the session touches the two lists are no longer the same list (the one
+ * a session is handed puts the near notes first), so what the absent flag still buys is
  * the one number, not the one list. No `--json`: `mnema search --json` is the index
  * itself, and a caller that wants it by term asks it.
  *
  * IT IS NOT A FILE, AND THE HELP SAYS SO BEFORE ANYTHING ELSE. It prints what was kept on
  * this machine as well as what was committed, so redirecting it into a tracked file would
- * put a machine's private notes into the repository — which is the defect `mnema brief` was
+ * put a machine's private notes into the repository, which is the defect `mnema brief` was
  * corrected for, and why this is a verb of its own and not a flag of that one.
  *
  * AND IT PRINTS NOTHING WHEN NOTHING IS RECORDED, with a zero exit: a session in a project
  * with no notes is handed no text, and a person who ran it has been told the same thing by
- * the empty answer. Its two refusals are `brief`'s — outside a project, and switched off —
+ * the empty answer. Its two refusals are `brief`'s (outside a project, and switched off)
  * in `brief`'s words ({@link switchedOff}), on stderr with a non-zero exit, which is what
  * the plugin's handler treats as silence.
  */

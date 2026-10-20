@@ -1,17 +1,17 @@
 /**
- * THE ACTS AND THE READING AGREE ABOUT WHICH CHECKPOINTS — which is the one thing these
+ * THE ACTS AND THE READING AGREE ABOUT WHICH CHECKPOINTS: which is the one thing these
  * verbs can get wrong in a way nothing else notices.
  *
  * IT EXISTS BECAUSE A MUTATION FOUND NOTHING. `checkpointToWitness` decides the digest
  * an attestation is FILED UNDER, and `verify` looks for one under the checkpoint IT
- * PROVED — two functions, one question, and one rule read in two places is the shape
+ * PROVED: two functions, one question, and one rule read in two places is the shape
  * that drifts. Bent so that the act files under a digest that is not this checkpoint's,
  * the whole suite stayed green: every case about the witness drove the reading
  * directly, and the act had no case at all. The mutation is red now, and the reason it
- * is red is the first test below — the act's own file, read back by the verifier.
+ * is red is the first test below: the act's own file, read back by the verifier.
  *
  * AND IT HAPPENED A SECOND TIME, one function over. `mnema witness upgrade` asked the
- * same `checkpointToWitness` and so went back for at most one attestation — the head's —
+ * same `checkpointToWitness` and so went back for at most one attestation, the head's,
  * while the reading walked the whole tail, so a record with a request under an older
  * checkpoint had `verify` reporting it in flight and `upgrade` reporting, in the same
  * minute, that nothing had been asked about it. The whole suite was green over that too:
@@ -19,7 +19,7 @@
  * whose head was the thing that had been stamped. The cases below drive it past one.
  *
  * NOTHING HERE REACHES THE NETWORK. The calendars and the block source are parameters
- * (`WitnessNetwork`), so what a calendar answers is this file's to choose — which is
+ * (`WitnessNetwork`), so what a calendar answers is this file's to choose, which is
  * also how the three states are driven: a promise, a block, and a refusal.
  */
 
@@ -74,7 +74,7 @@ function setup(): { cwd: string; env: DiscoveryEnv; global: boolean } {
 /** Where the project's committed tree lives. */
 const publicRoot = (ctx: { cwd: string }): string => join(ctx.cwd, '.mnema');
 
-/** The frozen record that was stamped and then written to — the third world, on a disk. */
+/** The frozen record that was stamped and then written to: the third world, on a disk. */
 const WITNESSED_THEN_WRITTEN = fileURLToPath(
   new URL('../../../chain/src/chain/__fixtures__/witnessed-then-written', import.meta.url),
 );
@@ -84,7 +84,7 @@ const FROZEN_TAIL =
   '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
 
 /**
- * The two checkpoints that record holds a real proof for — `19cd79b2…` covers seq 2..2
+ * The two checkpoints that record holds a real proof for: `19cd79b2…` covers seq 2..2
  * and is the NEWER of them; `797d1de8…` covers seq 0..1. The head, `f8439646…` (seq
  * 3..3), was never stamped, which is what makes the record the one the walk is about.
  */
@@ -97,7 +97,7 @@ function idOf(header: string): string {
   return Buffer.from(createHash('sha256').update(once).digest()).reverse().toString('hex');
 }
 
-/** Every request a case made — what left the machine, in order. */
+/** Every request a case made: what left the machine, in order. */
 interface Sent {
   readonly url: string;
   readonly body?: Buffer;
@@ -120,18 +120,18 @@ function network(answer: (url: string) => Response | Error): {
 }
 
 /**
- * The calendar every case here stamps with — an OPERATOR address, and that is the point.
+ * The calendar every case here stamps with: an OPERATOR address, and that is the point.
  *
  * It was `https://calendar.invalid` and nothing ever reached it, because the fetcher is a
  * parameter. Then the return visit began checking the address it reads off the proof, and
  * `.invalid` names no timestamp operator: four cases went red and THREE WENT ON PASSING
- * over a product that contacted nobody — the ones asserting what the record said rather
+ * over a product that contacted nobody, the ones asserting what the record said rather
  * than what left the machine. Each of those three now asserts the contact as well, which
  * is what stops this file from testing the SKIP while its names say `going back`.
  *
  * THE OTHER ADDRESSES IN THIS FILE STAY `.invalid` ON PURPOSE. `stamp` takes its
  * calendars from whoever owns the machine and checks nothing, so a case handing it
- * `https://down.invalid` is exercising the real path — and the pair, kept side by side,
+ * `https://down.invalid` is exercising the real path, and the pair, kept side by side,
  * is what says the check is on the DATA path and not on the configuration one.
  */
 const CALENDAR = 'https://alice.btc.calendar.opentimestamps.org';
@@ -143,7 +143,7 @@ const NOT_AN_OPERATOR = 'https://calendar.attacker.test';
  * What a calendar says when it has only just been asked, WRITTEN OUT IN BYTES.
  *
  * The wire form is somebody else's grammar, and this package has no business owning a
- * writer for it — `@mnema/chain` exports no serializer past its own surface, and
+ * writer for it: `@mnema/chain` exports no serializer past its own surface, and
  * exporting one so a test could call it would be a public function with no caller in
  * production (which is the shape four defects of this series took). So the answer is a
  * VECTOR, small enough to read here:
@@ -159,7 +159,7 @@ const NOT_AN_OPERATOR = 'https://calendar.attacker.test';
  * THE URI IN HERE IS THE ONE A RETURN VISIT GOES BACK TO, AND IT IS THE CALENDAR'S AND
  * NOT THE CALLER'S. It used to spell `https://calendar.invalid`, which is what made the
  * addresses in this file look like a detail: the value `stamp` is HANDED never reaches
- * the proof at all — what lands in the file is whatever the answer says, so the address
+ * the proof at all; what lands in the file is whatever the answer says, so the address
  * a later `upgrade` contacts is chosen by whoever answered. That is a second way in
  * beside a forged file, and neither the queue item nor the study for this named it.
  */
@@ -169,7 +169,7 @@ const CALENDAR_ANSWER = Buffer.from(
 );
 
 /**
- * The same answer, from a calendar that names somebody else — the byte-level version of
+ * The same answer, from a calendar that names somebody else: the byte-level version of
  * the way in the comment above describes.
  *
  *   1f 1e https://calendar.attacker.test    a length-prefixed URI of 30
@@ -200,7 +200,7 @@ describe('asking an outside witness to date the record', () => {
     });
   });
 
-  it('sends the checkpoint digest and nothing else — 32 bytes, once per calendar', async () => {
+  it('sends the checkpoint digest and nothing else: 32 bytes, once per calendar', async () => {
     const ctx = setup();
     const { fetch, sent } = network(() => promises());
     await runWitnessStamp(ctx, { calendars: [CALENDAR, 'https://second.invalid'], fetch });
@@ -309,13 +309,13 @@ describe('going back for what has not confirmed', () => {
     expect(verifyChainAt(publicRoot(ctx), catalogUpcasters()).level).toBe('fully-signed');
   });
 
-  it('goes back for a request filed under an OLDER checkpoint — the delivery’s case', async () => {
+  it('goes back for a request filed under an OLDER checkpoint: the delivery’s case', async () => {
     // THE DEFECT, in the words the two verbs printed about one disk in one minute:
     // `verify` said an attestation had been requested and had not confirmed, and this
-    // act said `nothing has been asked about this checkpoint yet` — and skipped. The
+    // act said `nothing has been asked about this checkpoint yet`, and skipped. The
     // window is a working day: the two stamps this package's own fixture carries were
     // asked for at 00:52 and served complete at 12:49, and ONE `mnema memory` is enough
-    // to put the head somewhere else — which is exactly what this case drives below.
+    // to put the head somewhere else, which is exactly what this case drives below.
     //
     // Built by the product: stamp, write, stamp, write. Nothing is placed by hand.
     const ctx = setup();
@@ -326,7 +326,7 @@ describe('going back for what has not confirmed', () => {
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
     const newer = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
     runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'and again while waiting' });
-    // Both requests are now BELOW the head — the only thing that makes this the case.
+    // Both requests are now BELOW the head: the only thing that makes this the case.
     const head = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
     expect(new Set([older, newer, head]).size).toBe(3);
 
@@ -348,7 +348,7 @@ describe('going back for what has not confirmed', () => {
   });
 
   it('says the tail has no checkpoint rather than saying nothing at all', async () => {
-    // A tail with nothing sealed used to fall out of this act with NO outcome — the one
+    // A tail with nothing sealed used to fall out of this act with NO outcome: the one
     // path here that produced no sentence. It is the listing's own words for the state.
     const ctx = setup();
     const root = publicRoot(ctx);
@@ -361,10 +361,10 @@ describe('going back for what has not confirmed', () => {
     ]);
   });
 
-  it('does not hand a calendar a proof this machine refuses — the act used to THROW', async () => {
+  it('does not hand a calendar a proof this machine refuses: the act used to THROW', async () => {
     // MEASURED ON THE BUILD BEFORE THIS ONE: over a record whose head carried an
     // unreadable proof, this verb threw `opentimestamps: ran off the end` and the act
-    // died — no line, no outcome, and the request under that head never asked about.
+    // died, no line, no outcome, and the request under that head never asked about.
     // `readWitness` catches a proof it cannot parse; `completeWitness` parses again and
     // the old act handed it the bytes because the reading was merely "not covered".
     // Selecting on INCOMPLETENESS rather than on not-coverage is what closes it: an
@@ -389,7 +389,7 @@ describe('going back for what has not confirmed', () => {
       `checkpoint ${head} holds nothing a calendar can complete: ` +
         'the stored proof is unreadable: opentimestamps: ran off the end',
     );
-    // The request UNDER the unreadable file still got its round — the refusal above it
+    // The request UNDER the unreadable file still got its round: the refusal above it
     // did not take it down.
     expect(act.outcomes[1]?.detail).toContain(older);
     expect(sent.filter((s) => s.url.includes('/timestamp/'))).toHaveLength(1);
@@ -399,7 +399,7 @@ describe('going back for what has not confirmed', () => {
 
   it('does not go to an address the ANSWER named, when the answer named a stranger', async () => {
     // THE TWO PATHS, IN ONE CASE, AND THE ADDRESS IS NEITHER OF THE OBVIOUS ONES. The
-    // calendar asked here is a real operator, typed by whoever owns the machine — that is
+    // calendar asked here is a real operator, typed by whoever owns the machine; that is
     // configuration, and this check is not its business. What the operator ANSWERS with
     // is a URI, it goes into the proof file verbatim, and it is the address the return
     // visit reads back later: so the pending attestation this stamp writes points at
@@ -410,7 +410,7 @@ describe('going back for what has not confirmed', () => {
     const asked = network(() => new Response(CALENDAR_ANSWER_NAMING_A_STRANGER, { status: 200 }));
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
     expect(asked.sent.map((one) => one.url)).toEqual([`${CALENDAR}/digest`]);
-    // The stranger is really in the file — otherwise the case below passes on a record
+    // The stranger is really in the file: otherwise the case below passes on a record
     // that simply has nothing open.
     expect(
       runWitnessList(ctx)
@@ -447,7 +447,7 @@ describe('going back for what has not confirmed', () => {
     // Network spent in silence is what this avoids, and the ecosystem's own client warns
     // about the other half: `ots upgrade` writes a `.bak` before it replaces a proof,
     // because overwriting one is a path with a trap in it. Driven on the frozen record
-    // because it is where a COMPLETE proof exists — nothing here can mine a block.
+    // because it is where a COMPLETE proof exists: nothing here can mine a block.
     const ctx = setup();
     cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
     const witness = join(publicRoot(ctx), 'tails', FROZEN_TAIL, 'witness');
@@ -474,7 +474,7 @@ describe('going back for what has not confirmed', () => {
  * WHAT A CALENDAR CAN SAY THAT ENDS ONE PROOF'S RETURN VISIT, written out in bytes.
  *
  * An `append` of 5000 bytes, then the ordinary "I am working on it". The reader accepts
- * it — it is well-formed — and the WALK does not: a path may fold a message of at most
+ * it (it is well-formed) and the WALK does not: a path may fold a message of at most
  * 4096 bytes, so completing this proof throws where nothing catches it. It is the shape
  * of any answer that parses and then cannot be carried through, and it is a calendar's
  * to send: nothing this side chooses it.
@@ -493,7 +493,7 @@ const CALENDAR_ANSWER_THAT_CANNOT_BE_CARRIED = Buffer.concat([
 describe('the two verbs, over one disk', () => {
   /**
    * Whether `verify` and `witness upgrade` can be made to contradict each other about
-   * whether anything was ever asked — which IS the defect, so it is a case and not a
+   * whether anything was ever asked, which IS the defect, so it is a case and not a
    * hope. The records are every shape this suite can build, plus the two frozen ones.
    */
   it('never says nothing was asked about a tail whose reading holds an attestation', async () => {
@@ -501,7 +501,7 @@ describe('the two verbs, over one disk', () => {
     const asked = network(() => promises());
     // Three shapes in one tree, and the third one was MISSING until a mutation said so:
     // bending the words of `nothing has been asked` lit one case where it should have
-    // lit two, because every tail this had was one somebody HAD asked about — so the
+    // lit two, because every tail this had was one somebody HAD asked about, so the
     // half of the property that guards the absence was never driven. The
     // machine-global tail is the one that holds nothing.
     const ctx = { ...bare, global: true };
@@ -550,7 +550,7 @@ describe('the two verbs, over one disk', () => {
   });
 
   it('does not move a reading it did not complete', async () => {
-    // Repeating the act over a calendar with nothing changes no sentence anywhere — the
+    // Repeating the act over a calendar with nothing changes no sentence anywhere: the
     // property the two verbs' agreement rests on between visits.
     const ctx = setup();
     const asked = network(() => promises());
@@ -569,7 +569,7 @@ describe('the two verbs, over one disk', () => {
     // THE PARTIAL ANSWER. The product is append-only and says what it did rather than
     // what it meant to: each proof is written the moment its own return visit is done,
     // so the ones that went through are on the disk before the one that did not is even
-    // attempted — and the one that did not is a LINE, not a thrown act.
+    // attempted, and the one that did not is a LINE, not a thrown act.
     const ctx = setup();
     const asked = network(() => promises());
     const stamps: string[] = [];
@@ -609,8 +609,8 @@ describe('the two verbs, over one disk', () => {
  * Coverage cannot be fabricated: reading `covered` means folding a checkpoint digest
  * along a merkle path into the merkle root of a block that was actually mined, and a
  * test that could build that pair is a test that found a SHA-256 pre-image. So the two
- * proofs are the frozen record's — asked of the public OpenTimestamps calendars by this
- * product's own `stampCheckpoint`, carried by Bitcoin block 963937 — and the block
+ * proofs are the frozen record's (asked of the public OpenTimestamps calendars by this
+ * product's own `stampCheckpoint`, carried by Bitcoin block 963937) and the block
  * source is replayed out of the very `.blocks` sidecars the fixture ships.
  *
  * The sidecars are removed IN A COPY, which is exactly the state a record is in between
@@ -648,7 +648,7 @@ describe('the return visit, over a record with two real proofs', () => {
       if (height !== null) {
         const known = headers.has(Number(height[1]));
         // The id a block is looked up by is the double-SHA-256 of its own header,
-        // reversed — computed here rather than invented, so nothing in this case is a
+        // reversed: computed here rather than invented, so nothing in this case is a
         // value the world could not have produced.
         return known
           ? new Response(idOf(headers.get(Number(height[1])) as string), { status: 200 })
@@ -665,7 +665,7 @@ describe('the return visit, over a record with two real proofs', () => {
   it('stops at the NEWEST proof that confirms, and never asks about the one below it', async () => {
     // THE ORDER AND THE LIMIT, in numbers. Everything under a confirmed attestation
     // dates a smaller prefix at a later instant, so no reading of this record would ever
-    // quote it — and a request for it is network spent on an answer nobody reads.
+    // quote it, and a request for it is network spent on an answer nobody reads.
     const { ctx, witness, heights, headers } = withoutHeaders();
     const { fetch, sent } = network(blocks(headers));
     const act = await runWitnessUpgrade(ctx, { fetch });
@@ -699,7 +699,7 @@ describe('the return visit, over a record with two real proofs', () => {
 
   it('carries every proof through when NONE of them confirms, and damages none', async () => {
     // The other end of the same decision: K open requests cost K rounds only in the
-    // world where none confirms — which is the world where none would have helped.
+    // world where none confirms, which is the world where none would have helped.
     const { ctx, witness } = withoutHeaders();
     const before = new Map(
       readdirSync(witness).map((n) => [n, readFileSync(join(witness, n))] as const),
@@ -723,8 +723,8 @@ describe('the return visit, over a record with two real proofs', () => {
 describe('the reading beside the two acts', () => {
   it('says the same thing about the same tail as the verdict does', () => {
     // The listing and `verify` read through the same two functions; a listing that
-    // could disagree with the verdict would be a person deciding to stamp — or not to
-    // — from a page the gate does not share.
+    // could disagree with the verdict would be a person deciding to stamp, or not to,
+    // from a page the gate does not share.
     const ctx = setup();
     const listing = runWitnessList(ctx);
     expect(listing.lines).toHaveLength(1);
@@ -742,10 +742,10 @@ describe('the reading beside the two acts', () => {
 
   it('names the SAME head the act that ASKS files under', () => {
     // The listing walks the tail's whole checkpoint file, because an attestation over an
-    // older checkpoint still dates what came before it — so it does not take its head
+    // older checkpoint still dates what came before it, so it does not take its head
     // from `checkpointToWitness`. `stamp` is the one act that still does, and it is the
     // only one that should: it is the act that files something NEW. (`upgrade` asked it
-    // too, once, and that was the defect — it completes proofs already on the disk, and
+    // too, once, and that was the defect: it completes proofs already on the disk, and
     // asking where a new one would go is how it came to miss every one of them.) The two
     // derivations have to agree or the act files a proof where the listing does not look,
     // and the person who just stamped is shown `not covered`. Asserted here rather than
@@ -759,9 +759,9 @@ describe('the reading beside the two acts', () => {
   it('says the date and the remainder for a record stamped and then written to', () => {
     // THE SECOND SITE, and it was found by grepping the SENTENCE rather than the
     // function: this listing and the verdict share no caller, so a `grep` for
-    // `witnessOfChain` finds one of them. It said the same false thing — `nothing
+    // `witnessOfChain` finds one of them. It said the same false thing (`nothing
     // outside this machine attests this record`, about a record holding two valid
-    // proofs — and it says what the verdict says now because the two read through one
+    // proofs) and it says what the verdict says now because the two read through one
     // function.
     //
     // The record is the frozen one, dropped into a project's committed tree beside
@@ -778,31 +778,31 @@ describe('the reading beside the two acts', () => {
         '2026-08-25T01:47:34.000Z, with 1 event(s) written after it',
     );
     expect(line?.reading.detail).not.toContain('nothing outside this machine attests this record');
-    // And the checkpoint on the line is still the tail's HEAD — the one `stamp` would
-    // file under — not the older one the sentence is about. The status is about the
+    // And the checkpoint on the line is still the tail's HEAD (the one `stamp` would
+    // file under) not the older one the sentence is about. The status is about the
     // head; the dating says where the record's proof actually reaches.
     expect(line?.checkpoint).toBe(
       'f84396462713a5fd1fefd3a043cddb2eed81c00f5fead86f0474bfaa551c42e2',
     );
   });
 
-  it('says a request is still in flight after the record was written to — the delivery’s case', () => {
+  it('says a request is still in flight after the record was written to: the delivery’s case', () => {
     // THE WHOLE WORLD, BUILT BY THE PRODUCT: stamp, then write, then read. The
     // proof under the older checkpoint is the one `runWitnessStamp` wrote from a
-    // calendar's own answer, and the checkpoint above it is the one `runMemory` sealed
-    // — nothing here puts a byte on the disk by hand.
+    // calendar's own answer, and the checkpoint above it is the one `runMemory` sealed;
+    // nothing here puts a byte on the disk by hand.
     //
     // Before this delivery the reading met that proof, saw it was not coverage, and
     // dropped it, so this line said `nothing outside this machine attests this record`
     // about a record whose stamp was hours old. The two attestations this package's own
-    // fixture carries were asked for at 00:52 and served complete at 12:49 — most of a
+    // fixture carries were asked for at 00:52 and served complete at 12:49: most of a
     // day in the state this case drives.
     const ctx = setup();
     const { fetch } = network(() => promises());
     return runWitnessStamp(ctx, { calendars: [CALENDAR], fetch }).then(() => {
       const stamped = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
       runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
-      // The stamped checkpoint is no longer the head — which is the only thing that
+      // The stamped checkpoint is no longer the head, which is the only thing that
       // makes this the case and not the one that already worked.
       expect(checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))).not.toBe(
         stamped,
@@ -821,8 +821,8 @@ describe('the reading beside the two acts', () => {
   it('says it in the VERDICT too, at the level a record with no witness earns', () => {
     // The second surface, and the three places a promise must not count: the status,
     // the level, and the requirement an exit code is derived from. The listing and the
-    // verdict share no caller — that is how the same false sentence survived in two
-    // places once — so both are driven.
+    // verdict share no caller (that is how the same false sentence survived in two
+    // places once), so both are driven.
     const ctx = setup();
     const { fetch } = network(() => promises());
     return runWitnessStamp(ctx, { calendars: [CALENDAR], fetch }).then(() => {

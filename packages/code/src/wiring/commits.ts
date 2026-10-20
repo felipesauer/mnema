@@ -1,7 +1,7 @@
 /**
  * The `mnema commits` wiring: what it declares, and what it prints.
  *
- * `mnema commits <decision> [--json]` — the commits that cite a decision by trailer and, apart, the
+ * `mnema commits <decision> [--json]`: the commits that cite a decision by trailer and, apart, the
  * commits that touched the paths it addresses, read from git when asked. Nothing is written to the
  * record: a commit can vanish in a rebase, and a signed pointer at nothing cannot be checked. A
  * directory with no git work tree is answered with a sentence saying so, and exit 0.

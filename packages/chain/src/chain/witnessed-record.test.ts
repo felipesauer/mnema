@@ -1,5 +1,5 @@
 /**
- * THE TOP RUNG, REACHED BY A REAL RECORD — the case that was impossible to write
+ * THE TOP RUNG, REACHED BY A REAL RECORD: the case that was impossible to write
  * until this delivery, and impossible to FABRICATE at any point.
  *
  * WHY IT NEEDS A FIXTURE AND NOT A BUILDER. Every other case in this package builds
@@ -7,19 +7,19 @@
  * of the layer: to read `covered`, an attestation has to fold a checkpoint's digest
  * through a Merkle path into the merkle root of a block that was really mined. A test
  * that could construct that pair for a checkpoint it had just signed would be a test
- * that had found a SHA-256 preimage. So the record is frozen instead — founded by
+ * that had found a SHA-256 preimage. So the record is frozen instead: founded by
  * this product's own CLI, stamped through the public OpenTimestamps calendars on
- * 2026-08-23, and confirmed in Bitcoin blocks 963688, 963689 and 963690 the same morning
- * — three calendars, three attestations, and the record is dated from the lowest.
+ * 2026-08-23, and confirmed in Bitcoin blocks 963688, 963689 and 963690 the same morning,
+ * three calendars, three attestations, and the record is dated from the lowest.
  *
  * WHAT A STRANGER CAN CHECK, WITHOUT THIS PRODUCT. The `.ots` in the fixture is the
  * ecosystem's own file: `ots verify` against a Bitcoin node answers the same question
  * this file asks, from the same bytes. The `.blocks` sidecar beside it is what lets
- * the answer be reached OFFLINE — the 80-byte headers, which hash to block ids any
+ * the answer be reached OFFLINE: the 80-byte headers, which hash to block ids any
  * explorer will confirm.
  *
  * IT IS FROZEN, so it never needs the network again and it never expires: a block
- * mined in the past stays mined. What it cannot do is grow — a record this test
+ * mined in the past stays mined. What it cannot do is grow: a record this test
  * appended to would have a new last checkpoint, which nothing has attested. That is
  * not a limitation of the fixture, it is the layer working: an attestation dates the
  * checkpoints below it and says nothing about what comes after.
@@ -27,7 +27,7 @@
  * WHAT THAT DID NOT MEAN, corrected here because this file's own words carried the
  * mistake: *says nothing about what comes after* was read as *says nothing at all*.
  * The product asked only the last checkpoint, so a record that was stamped and then
- * written to answered `nothing outside this machine attests this record` — false
+ * written to answered `nothing outside this machine attests this record`: false
  * about a record whose proof is in its own tree. `witnessed-then-written` is the
  * frozen record for that state, and it is this same one with the head left unstamped.
  */
@@ -44,7 +44,7 @@ import { witnessBlocksPath, witnessProofPath } from './layout.js';
 import { meetsRequirement } from './level.js';
 import { readWitness } from './witness.js';
 
-/** This directory — where the modules the closure walk reads live. */
+/** This directory, where the modules the closure walk reads live. */
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 /**
@@ -73,27 +73,27 @@ function modulesUnder(entry: string): readonly string[] {
   return [...seen];
 }
 
-/** A file's code with its comments taken out — so a guard reads what RUNS. */
+/** A file's code with its comments taken out, so a guard reads what RUNS. */
 function withoutComments(code: string): string {
   return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 }
 
-/** The record as it was frozen — copied per case, never verified in place. */
+/** The record as it was frozen: copied per case, never verified in place. */
 const FIXTURE = fileURLToPath(new URL('./__fixtures__/witnessed-record', import.meta.url));
 
 /** The one tail the frozen record holds. */
 const TAIL =
   '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
 
-/** The checkpoint the attestation is filed under — the last one the record sealed. */
+/** The checkpoint the attestation is filed under: the last one the record sealed. */
 const CHECKPOINT = 'f84396462713a5fd1fefd3a043cddb2eed81c00f5fead86f0474bfaa551c42e2';
 
 /**
  * The block this record is DATED FROM, and the instant that block claims.
  *
  * The lowest of the three the proof reaches, which is the rule `FORMAT.md` §8 names.
- * It was 963690 and 1787466198 here — the first attestation a walk of the proof reached
- * that had a header — and the product read the frozen record twenty minutes later than
+ * It was 963690 and 1787466198 here (the first attestation a walk of the proof reached
+ * that had a header) and the product read the frozen record twenty minutes later than
  * the reference verifier did over the same bytes.
  */
 const BLOCK = 963688;
@@ -111,7 +111,7 @@ afterEach(() => {
 });
 
 describe('a record an outside witness has dated', () => {
-  it('reaches externally-witnessed — the top of the tuple, by a record on a disk', () => {
+  it('reaches externally-witnessed: the top of the tuple, by a record on a disk', () => {
     const result = verify(root, catalogUpcasters());
     expect(result.level).toBe('externally-witnessed');
     expect(result.witness).toBe('covered');
@@ -139,10 +139,10 @@ describe('a record an outside witness has dated', () => {
     expect(result.uncheckpointedEvents).toBe(0);
   });
 
-  it('reaches it with no network of any kind — the whole answer is these files', () => {
+  it('reaches it with no network of any kind: the whole answer is these files', () => {
     // SAID OF THE CLOSURE, NOT OF A FILE, AND NOT OF A MENTION. The first draft of this
     // grepped `witness.ts` for the string `witness-request` and went red on its own
-    // doc-comment, which NAMES the module in order to say it does not import it — a
+    // doc-comment, which NAMES the module in order to say it does not import it: a
     // guard on a mention, which the record has learned to distrust. And a guard on the
     // two files alone would be satisfied by an import three modules down. So the whole
     // static graph under the verifier is walked, and the module that speaks to a
@@ -162,8 +162,8 @@ describe('a record an outside witness has dated', () => {
 describe('which of the three attestations dates it, and what that still depends on', () => {
   it('applies the rule the published document states, and the document states it', () => {
     // THE PAIR, and neither half is worth much alone. A mutation that rewrote §8's rule
-    // — from "the earliest confirmed block among them, which is the one of lowest
-    // height" to "the confirmed block a walk of the proof reaches first" — reddened
+    // (from "the earliest confirmed block among them, which is the one of lowest
+    // height" to "the confirmed block a walk of the proof reaches first") reddened
     // NOTHING: measured by mutation. The document could say
     // one thing and the code do another, which is precisely the state this whole
     // delivery found and fixed, and nothing would have noticed the next time.
@@ -183,7 +183,7 @@ describe('which of the three attestations dates it, and what that still depends 
   it('takes the lowest confirmed block, and the higher one is still proven', () => {
     // The proof reaches 963688, 963689 and 963690; the sidecar carries headers for the
     // first and the last. The verdict quotes the LOWEST of the two it can fold, which is
-    // the rule `FORMAT.md` §8 names — and the other one is not unproven, it is simply not
+    // the rule `FORMAT.md` §8 names, and the other one is not unproven, it is simply not
     // the one elected. Without this second half the case would pass over a reader that had
     // stopped folding 963690 at all.
     const result = verify(root, catalogUpcasters());
@@ -192,7 +192,7 @@ describe('which of the three attestations dates it, and what that still depends 
     expect(result.witness).toBe('covered');
   });
 
-  it('moves the published date when a header leaves the sidecar — the limit, measured', () => {
+  it('moves the published date when a header leaves the sidecar: the limit, measured', () => {
     // THE ELECTION DOES NOT MAKE THE DATE INDEPENDENT OF THE WRITER'S SIDECAR, and the
     // delivery that changed the rule was partly sold on the claim that it would. Measured
     // here rather than argued: drop the lowest block's header and the verdict dates the
@@ -263,7 +263,7 @@ describe('what the attestation is, and is not, evidence of', () => {
 describe('the file a stranger checks', () => {
   it('is the ecosystem’s own detached proof, and carries nothing of ours', () => {
     // The `.ots` is what `ots verify` reads. Anything of this product mixed into it
-    // would turn the one file somebody else can check into a file only we can — which
+    // would turn the one file somebody else can check into a file only we can, which
     // is why the block headers live in a sidecar and not inside the proof. The magic
     // is asserted in hex, because it opens with a byte no source file may hold.
     const proof = readFileSync(witnessProofPath({ root }, TAIL, CHECKPOINT));
@@ -274,10 +274,10 @@ describe('the file a stranger checks', () => {
   it('commits to the checkpoint digest and to no other value of the record', () => {
     // What left the machine, checked from the bytes that left it: the proof's subject
     // is the digest of a checkpoint's signed message and there is nothing else in the
-    // file that came from this record — no id, no title, no body, no count.
+    // file that came from this record (no id, no title, no body, no count).
     const proof = readFileSync(witnessProofPath({ root }, TAIL, CHECKPOINT));
     expect(proof.includes(Buffer.from(CHECKPOINT, 'hex'))).toBe(true);
-    // EVERY VALUE THE STORED EVENTS HOLD, asked of the bytes that left — rather than a
+    // EVERY VALUE THE STORED EVENTS HOLD, asked of the bytes that left, rather than a
     // list of field names, which is the ADDRESS-LIST shape that carries the writer's
     // blind spot. The first draft grepped `"id":` and found none, because this record's
     // envelope calls it `subject`; the non-vacuity line below is what caught that.
@@ -286,7 +286,7 @@ describe('the file a stranger checks', () => {
     expect(values.length).toBeGreaterThan(10);
     for (const value of new Set(values)) {
       expect(proof.includes(Buffer.from(value, 'utf-8')), value).toBe(false);
-      // And not as raw bytes either, for the values that are hex — a digest smuggled
+      // And not as raw bytes either, for the values that are hex: a digest smuggled
       // in binary would pass a search for its text.
       if (/^[0-9a-f]+$/.test(value) && value.length % 2 === 0) {
         expect(proof.includes(Buffer.from(value, 'hex')), value).toBe(false);

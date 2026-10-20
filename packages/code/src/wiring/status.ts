@@ -1,12 +1,12 @@
 /**
  * The `mnema status` wiring: what it declares, and what it prints.
  *
- * `mnema status [--actor <id>] [--json]` — where things stand: where the actor left off,
+ * `mnema status [--actor <id>] [--json]`, where things stand: where the actor left off,
  * the live work, the adopted patterns, the decisions in force, and what is waiting
  * on somebody to rule on it. With no `--actor` it is the identity this machine writes as in
  * the project, and the report says so (`tests/the-first-use-says-what-it-did.test.ts`).
  *
- * It is the OPENING read, and it is the same one the agent surface has always had — the
+ * It is the OPENING read, and it is the same one the agent surface has always had: the
  * MCP's `bootstrap` tool and this verb call one derivation (`commands/status.ts`). The
  * name differs because the reader does: `bootstrap` is what an agent's opening call is
  * called, and `status` is what a person types when they want to know where things stand.
@@ -44,12 +44,12 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       }
       // BEFORE the answer, and on the other stream. The opening read is where a
       // person finds out where things stand, so it is where they have to find out
-      // that what follows came off a record whose proof is broken — and it goes
+      // that what follows came off a record whose proof is broken, and it goes
       // first because a notice under a screenful of status is a notice nobody reads.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         // The faithful object, the same one the agent surface serves (indented here, not
-        // there) — which is the property that keeps one derivation from becoming two.
+        // there), which is the property that keeps one derivation from becoming two.
         io.out(JSON.stringify(result.status, null, 2));
         return;
       }

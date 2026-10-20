@@ -4,7 +4,7 @@
  * They are CAPTURED, not constructed, and that is the whole reason they exist. A
  * test that builds an OpenTimestamps proof with this package's own writer and then
  * reads it back with this package's own reader proves the two agree with each other
- * and nothing about whether either agrees with the format — and the format is
+ * and nothing about whether either agrees with the format, and the format is
  * somebody else's, which is the point of choosing it. The same goes for the block
  * header: a header this package fabricated would meet whatever rule this package
  * happened to implement.
@@ -19,7 +19,7 @@
  * A real detached proof: what the calendars answered on 2026-08-23T05:44:31Z when
  * asked to attest the digest below.
  *
- * It is INCOMPLETE by nature — three calendars promising to aggregate it — which is
+ * It is INCOMPLETE by nature, three calendars promising to aggregate it, which is
  * exactly the state `pending` exists for, and the state every proof is in for its
  * first hour of life.
  */
@@ -30,7 +30,7 @@ export const PENDING_PROOF_BASE64 =
  * The digest {@link PENDING_PROOF_BASE64} is over: the SHA-256 of the signed message
  * of the third checkpoint of a real record founded for the purpose.
  *
- * A checkpoint digest and nothing else — which is the claim this layer makes about
+ * A checkpoint digest and nothing else, which is the claim this layer makes about
  * what leaves the machine, written down here as a value anybody can check against
  * the proof's own bytes.
  */
@@ -47,7 +47,7 @@ export const PENDING_PROOF_CALENDARS: readonly string[] = [
 /**
  * A real Bitcoin block header: block 800000, 80 bytes as it is serialized.
  *
- * Chosen because it is old, famous and trivially checkable from outside — it hashes
+ * Chosen because it is old, famous and trivially checkable from outside: it hashes
  * to `00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054`, which any
  * explorer will confirm, and it was mined at a difficulty far above this package's
  * floor.

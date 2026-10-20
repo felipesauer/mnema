@@ -1,6 +1,6 @@
 /**
  * A CALENDAR THAT SAYS NOTHING, OR NEVER STOPS SAYING IT, ENDS THE WITNESS ACTS WITH A NAMED
- * REFUSAL — and ends them in bounded time and memory.
+ * REFUSAL, and ends them in bounded time and memory.
  *
  * WHAT WAS WRONG. `fetch` has no deadline, and the acts handed it none: a calendar that accepted
  * the connection and stayed mute held `witness stamp` for as long as the operating system kept the
@@ -9,7 +9,7 @@
  * `.invalid` calendars its cases hand the act took more than five seconds each to be refused on a
  * runner.
  *
- * WHAT IS RUN. One local server per way a peer misbehaves, and the REAL `fetch` against it — a
+ * WHAT IS RUN. One local server per way a peer misbehaves, and the REAL `fetch` against it: a
  * stub would be bounded by the wrapper's race and prove nothing about the socket. The deadline is
  * crossed with fake timers (`setTimeout` and `clearTimeout` only), so the case waits for what the
  * code does and not for ten seconds of wall clock; the assertion that it did not wait is the
@@ -17,7 +17,7 @@
  *
  * THE ACTS HAVE TWO ENTRANCES and each has its own case: `stampCheckpoint` (the stamp) and
  * `completeWitness` (the return visit, which asks the addresses a proof NAMES), and the second one
- * is the N+1 of this rule — the handoff named `witness stamp`, and the upgrade shares the defect.
+ * is the N+1 of this rule; the handoff named `witness stamp`, and the upgrade shares the defect.
  */
 
 import { readFileSync } from 'node:fs';
@@ -135,7 +135,7 @@ describe('witness stamp, against a calendar that misbehaves', () => {
   it('refuses a DECLARED oversize at once, without waiting for a body that is not coming', async () => {
     // The declared length is believed only to refuse EARLY. The case above reads a body that
     // arrives in full, which the byte bound catches on its own, so it cannot tell the early
-    // refusal from its absence; this one declares a megabyte, sends ten bytes and goes quiet — a
+    // refusal from its absence; this one declares a megabyte, sends ten bytes and goes quiet: a
     // peer that has not finished is answered by the declaration, not by the deadline.
     await serving((_request, response) => {
       response.writeHead(200, { 'content-length': String(1_048_576) });
@@ -198,7 +198,7 @@ describe('every request the witness acts make goes through the bounded fetcher',
 
   it('chooses a fetcher in two places only, and wraps it in both', () => {
     // `network.fetch ?? fetch` is where an act picks what it asks through. Every request below
-    // goes through the value chosen there, so wrapping the choice bounds the whole act — and a
+    // goes through the value chosen there, so wrapping the choice bounds the whole act, and a
     // third place that picks a fetcher unwrapped would be a request with no deadline.
     const choices = source.match(/network\.fetch \?\? fetch/g) ?? [];
     const wrapped = source.match(/bounded\(network\.fetch \?\? fetch\)/g) ?? [];

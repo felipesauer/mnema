@@ -3,13 +3,13 @@
  *
  * The act refuses to stamp a tree that is not fully signed, and it used to ask that of the
  * WHOLE tree once per TAIL: a tree two machines write to was verified twice, one written
- * by ten machines ten times — and a verification is a pass over every event of the tree.
+ * by ten machines ten times, and a verification is a pass over every event of the tree.
  * The level is the tree's, so every one of those passes gave the answer the first one
  * gave. It is asked once per tree now, after every tail's checkpoint has been read, so what
  * each tail stamps is still a checkpoint the verification that follows its read proved.
  *
  * Counted where it is paid: the verifier the act calls is wrapped, and every root it is
- * handed is written down. Nothing here reaches the network — the calendar is this file's.
+ * handed is written down. Nothing here reaches the network: the calendar is this file's.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -48,7 +48,7 @@ afterEach(() => {
 });
 
 /**
- * What a calendar says when it has only just been asked — the promise `witness.test.ts`
+ * What a calendar says when it has only just been asked: the promise `witness.test.ts`
  * spells out byte by byte, for the operator address it stamps with.
  */
 const CALENDAR = 'https://alice.btc.calendar.opentimestamps.org';
@@ -68,7 +68,7 @@ describe('stamping a tree two machines write to', () => {
     runMemory({ cwd: repo, env: first }, { content: 'written on the first machine' });
     runMemory({ cwd: repo, env: second }, { content: 'written on the second machine' });
     const root = join(repo, '.mnema');
-    // The world the case is about: ONE tree, TWO tails, fully signed — a stamp is only
+    // The world the case is about: ONE tree, TWO tails, fully signed; a stamp is only
     // ever asked of a tree that is.
     const held = tailsHeld(resolveTrees(repo, first), catalogUpcasters()).filter(
       (tail) => tail.scope === 'public',

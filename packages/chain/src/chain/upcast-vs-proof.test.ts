@@ -6,11 +6,11 @@
  * proofs, and it exists because that mechanism is otherwise DORMANT. The catalog
  * has a single version of every kind, so `catalogUpcasters()` is empty, every
  * event reaches "the latest" in zero steps, and the written event and the read
- * event are the same value — which means every other test in this repository
+ * event are the same value, which means every other test in this repository
  * passes identically whether a digest is taken over the record or over a lifted
  * reading of it. A registry that lifts nothing can testify to nothing about the
  * code that runs when one does. So the ladder here is SYNTHETIC: a `latest`
- * taller than the catalog's, plus real single-step upcasters — the exact use
+ * taller than the catalog's, plus real single-step upcasters, the exact use
  * `UpcasterRegistry`'s constructor parameter exists for.
  *
  * Three shapes of lift are loaded, because the failure looks different for each
@@ -19,7 +19,7 @@
  *
  * What a chain written before the bump must do once that ladder is loaded: verify
  * green at T1 AND at T2/T4, keep handing the lifted event to whatever wants
- * meaning, and still refuse a line it cannot read at all — as a VERDICT naming the
+ * meaning, and still refuse a line it cannot read at all, as a VERDICT naming the
  * tail, which is what it refuses with now rather than an exception.
  */
 
@@ -63,7 +63,7 @@ const ADDED_ALTERNATIVES = 'the alternatives only v2 records';
 
 /**
  * A catalog three kinds taller than the real one. Every other kind stays at 1,
- * so the chain also carries an event that does NOT lift (`identity.founded`) —
+ * so the chain also carries an event that does NOT lift (`identity.founded`):
  * a mixed tail is the honest case, and it keeps the assertions from passing on
  * a registry that happens to lift everything.
  */
@@ -77,14 +77,14 @@ const TALLER_CATALOG: LatestVersions = {
 /** The minimum any version bump costs: the same fact, one higher `v`. */
 const bumpsTheVersion: Upcaster = (event) => ({ ...event, v: 2 });
 
-/** A lift that REMOVES a field — v2 of `run.started` stopped carrying the goal. */
+/** A lift that REMOVES a field: v2 of `run.started` stopped carrying the goal. */
 const dropsTheGoal: Upcaster = (event) => {
   const payload = { ...(event.payload as Record<string, unknown>) };
   delete payload.goal;
   return { ...event, v: 2, payload };
 };
 
-/** A lift that ADDS a field — v2 of `decision.recorded` records alternatives. */
+/** A lift that ADDS a field: v2 of `decision.recorded` records alternatives. */
 const addsAlternatives: Upcaster = (event) => ({
   ...event,
   v: 2,
@@ -103,7 +103,7 @@ function afterTheBump(): UpcasterRegistry {
 }
 
 /**
- * A version that announces the taller catalog but ships no rung to reach it —
+ * A version that announces the taller catalog but ships no rung to reach it:
  * a broken ladder, the shape of a genuinely unreadable line.
  */
 function withAMissingRung(): UpcasterRegistry {
@@ -118,7 +118,7 @@ const env = (w: ChainWriter, subject: string) => ({
 });
 
 /**
- * Writes a tail with the registry of TODAY — everything at v1, nothing lifted —
+ * Writes a tail with the registry of TODAY (everything at v1, nothing lifted)
  * which is what "a chain written before the bump" means. One event of each kind
  * the synthetic ladder touches, plus the founding that does not lift.
  */
@@ -150,8 +150,8 @@ function writtenVersionsOf(registry: UpcasterRegistry): number[] {
 
 /**
  * The one entry of a kind, or a loud failure. A `find` that returns undefined
- * would make the assertions below pass over nothing — the shape of an emptied
- * guard — so absence is an error with a name, never a skipped check.
+ * would make the assertions below pass over nothing, the shape of an emptied
+ * guard, so absence is an error with a name, never a skipped check.
  */
 function theOnly(entries: readonly Entry[], kind: string): Entry {
   const found = entries.filter((e) => e.event.kind === kind);
@@ -161,7 +161,7 @@ function theOnly(entries: readonly Entry[], kind: string): Entry {
   return found[0] as Entry;
 }
 
-/** The payload as it sits on the LINE — the record, not the reading. */
+/** The payload as it sits on the LINE: the record, not the reading. */
 function payloadOfRecord(entry: Entry): Record<string, string | undefined> {
   return (entry.written.value as { payload: Record<string, string | undefined> }).payload;
 }
@@ -172,7 +172,7 @@ describe('a chain written before a version bump still proves itself', () => {
     const registry = afterTheBump();
 
     // Non-vacuity FIRST: the ladder has to actually fire on this tail, or the
-    // green below would be the green of an empty registry — which is exactly the
+    // green below would be the green of an empty registry, which is exactly the
     // green this defect hid behind. The reading climbs to v2; the record does not
     // move, and `identity.founded` (no rung) stays where it was on both sides.
     const entries = readTailEntries({ root }, tailIdOf(), registry);
@@ -220,7 +220,7 @@ describe('a chain written before a version bump still proves itself', () => {
   it('is signed over the record by a writer that RESUMED it after the bump', () => {
     // The third site, and the one that is not in the verifier at all. A fresh
     // process refills the buffer the next checkpoint signs from the END of the
-    // tail, and those entries came off the disk — lifted. A checkpoint folded
+    // tail, and those entries came off the disk: lifted. A checkpoint folded
     // over them would be a real signature over bytes that are not on the tail:
     // undetectable as a forgery, and fatal to every later verification.
     writeChainBeforeTheBump({ checkpoint: false }); // 4 events, nothing signed yet
@@ -244,7 +244,7 @@ describe('a chain written before a version bump still proves itself', () => {
   });
 });
 
-describe('the lift still does its job — the proof was not bought with the reading', () => {
+describe('the lift still does its job: the proof was not bought with the reading', () => {
   it('serves the LIFTED event to a reader while the record keeps what was written', () => {
     // A fix that stopped upcasting would make every assertion above pass and
     // quietly destroy the reason upcasters exist. Both directions are checked:
@@ -265,13 +265,13 @@ describe('the lift still does its job — the proof was not bought with the read
 
   it('resolves identity from the LIFTED event while proving over the record', () => {
     // The other reader inside the verifier. The enrollment fold decides whose key
-    // may speak by asking an event for `foundingFp`, `subject`, `who` — by their
+    // may speak by asking an event for `foundingFp`, `subject`, `who`: by their
     // CURRENT names, which is exactly what a lift exists to keep answering. It is
     // right that it reads the lifted form: it recomputes no digest over those
     // bytes, and the one signature it checks is over `enroll:<anchor>:<fp>`,
     // identifiers a faithful upcaster carries across unchanged. So both readings
     // have to hold at once on the same tail, and `identity.founded` is where they
-    // meet — an identity break would surface here as an issue, not as a green.
+    // meet: an identity break would surface here as an issue, not as a green.
     writeChainBeforeTheBump({ checkpoint: true });
     const registry = new UpcasterRegistry({
       ...LATEST_VERSION,
@@ -289,14 +289,14 @@ describe('the lift still does its job — the proof was not bought with the read
   it('still refuses a chain it cannot READ, as a verdict, though every byte hashes perfectly', () => {
     // The guarantee that must not be traded for this one. Verifying over the
     // record without also reading it would be the cheaper fix, and it would make
-    // the verifier blind to a line nobody can interpret — a green verdict over an
+    // the verifier blind to a line nobody can interpret: a green verdict over an
     // event no reader can open, on an append-only log where that is permanent.
     // Nothing on disk differs between the two calls below: same bytes, same
     // hashes, same real signature. Only the ladder differs.
     //
     // HOW it refuses changed, and only that: the missing rung used to leave the
     // verifier as an EXCEPTION carrying the parser's message, so the caller got a
-    // string and no finding — no tail, no position, no `issues` to read. It is a
+    // string and no finding (no tail, no position, no `issues` to read). It is a
     // verdict now (`unreadable`), which is the same refusal with an address on it.
     writeChainBeforeTheBump({ checkpoint: true });
 
@@ -320,7 +320,7 @@ describe('why this stayed invisible', () => {
   it('with no upcaster registered, the record and the reading are the same bytes', () => {
     // The whole reason a defect at the centre of the proof survived: with the
     // real registry the two forms are one value, so every existing test is green
-    // either way and the mistake has no observable consequence — until the first
+    // either way and the mistake has no observable consequence, until the first
     // version bump makes it a chain-wide claim of tampering.
     writeChainBeforeTheBump({ checkpoint: true });
     const entries = readTailEntries({ root }, tailIdOf(), catalogUpcasters());

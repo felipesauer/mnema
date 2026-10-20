@@ -1,5 +1,5 @@
 /**
- * `mnema verify --since <rev>` — whether the record on disk is the record at `<rev>`, grown.
+ * `mnema verify --since <rev>`: whether the record on disk is the record at `<rev>`, grown.
  *
  * WHAT `verify` CANNOT SEE, AND WHY THIS ASKS GIT. A record that is honest in every byte can
  * still be shorter than it was, or a different record altogether: the newest events cut with
@@ -20,7 +20,7 @@
  *
  * WHAT IT DOES NOT DO. It reads git and never the network: `<rev>` must already be in the
  * clone (a shallow CI checkout has no base, and is refused by name rather than passed). It
- * rules on the COMMITTED tree only — the private tree never travels, so git holds nothing of
+ * rules on the COMMITTED tree only: the private tree never travels, so git holds nothing of
  * it. It does not tell an authorized cut from tampering: a tail removed after a `tail.pruned`
  * fails here as well, which is the one change a reviewer has to look at. And it changes
  * nothing about the verdict when it is not asked for.
@@ -46,7 +46,7 @@ export type SinceReading =
       readonly rev: string;
       /** The commit it named. */
       readonly commit: string;
-      /** How many files of the record the base held — what was compared. */
+      /** How many files of the record the base held: what was compared. */
       readonly held: number;
       readonly findings: readonly SinceFinding[];
     }

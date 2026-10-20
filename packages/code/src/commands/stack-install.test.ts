@@ -83,7 +83,7 @@ const kinds = (root: string): string[] =>
     .map((e) => e.kind)
     .filter((k) => k.startsWith('stack.'));
 
-/** Every file under a folder, relative to it — what a case holds the disk to. */
+/** Every file under a folder, relative to it: what a case holds the disk to. */
 function filesUnder(root: string, at = ''): string[] {
   if (!existsSync(join(root, at))) return [];
   return readdirSync(join(root, at)).flatMap((name) => {

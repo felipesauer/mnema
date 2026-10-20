@@ -5,7 +5,7 @@
  * WHAT THEY ARE FOR. The property tests next door prove canonicalization is
  * deterministic, key-sorted and Unicode-normalized. They do NOT pin the ACTUAL
  * bytes: a refactor could change the byte layout while keeping every property
- * intact, and every existing test would stay green — silently breaking the
+ * intact, and every existing test would stay green, silently breaking the
  * ability of an older clone (or a signed checkpoint) to reproduce the same
  * content root. The digests frozen against these events are that floor, and they
  * are published as data (`canonical-vectors.json`, described by `FORMAT.md`) so
@@ -13,12 +13,12 @@
  *
  * WHY THE TABLE IS IN `src` AND NOT IN THE TEST. It used to be a `const` inside
  * `canonical-vectors.test.ts`, and the doc-comment there claimed it held "a
- * representative event of every kind". It held nine of twenty — the nine oldest —
+ * representative event of every kind". It held nine of twenty, the nine oldest,
  * and nothing obliged a kind added later to gain one, so the regression floor
  * stopped following the catalog the moment the catalog grew. The fix has to be a
  * TYPE, because a hand-kept list is what failed; and the type has to live here,
  * because `tsc -b` excludes `src/**\/*.test.ts` and vitest strips types without
- * checking them — a mapped type declared in a test file is vacuous by
+ * checking them: a mapped type declared in a test file is vacuous by
  * construction. So the table is a module of the package, in the shape
  * `core/src/topology/routing.ts` uses for the same obligation: a member added to
  * {@link EventKind} does not compile until it has a row.
@@ -32,7 +32,7 @@
  * time. That is the price of the guard being a compile error instead of a hope,
  * and it is the same price `UNROUTED_KINDS` pays.
  *
- * THE ENVELOPE IS FIXED ON PURPOSE — one instant, one anchor, one fingerprint —
+ * THE ENVELOPE IS FIXED ON PURPOSE: one instant, one anchor, one fingerprint,
  * so the digests are reproducible by a reader who has neither our clock nor our
  * keys. Nothing here is random and nothing is derived from the machine.
  */
@@ -83,7 +83,7 @@ export interface CanonicalVector {
    * silent re-pairing.
    */
   readonly name: string;
-  /** The event, built through the builders — the shape a writer actually produces. */
+  /** The event, built through the builders: the shape a writer actually produces. */
   readonly event: CatalogEvent;
 }
 
@@ -92,7 +92,7 @@ export const VECTOR_AT = '2026-07-21T00:00:00.000Z';
 
 /**
  * The anchor that authorized every vector. `who` is an anchor id (`mnid:<hash>`)
- * and not a typed-in name, so the frozen digests pin the real envelope shape —
+ * and not a typed-in name, so the frozen digests pin the real envelope shape:
  * the one an operation derives from its key.
  */
 export const VECTOR_WHO = 'mnid:1111111111111111111111111111111111111111111111111111111111111111';
@@ -114,7 +114,7 @@ const VECTOR_INSTALLATION = '55555555555555555555555555555555';
 /**
  * The minted ids the vectors refer to.
  *
- * They are UUID v7 written the way `mintId` writes one — the 48-bit millisecond
+ * They are UUID v7 written the way `mintId` writes one: the 48-bit millisecond
  * prefix is {@link VECTOR_AT} itself, so an id in a vector and the instant of the
  * fact it belongs to agree, and the last group is a counter rather than entropy so
  * the file stays readable. The 12 bits after the version digit read as a counter here
@@ -136,7 +136,7 @@ const RULE_ID = '019f81f8-e400-7006-8000-000000000006';
  * The channels the four `channel.*` vectors name.
  *
  * They are the product's real channel names, spelled here as literals because
- * this package is the proof engine and knows nothing about the surfaces — the
+ * this package is the proof engine and knows nothing about the surfaces: the
  * vocabulary lives in `code/src/record-framing.ts`. That a literal here still
  * names a channel the product HAS is checked from the other side, where the
  * vocabulary is: `code/tests/the-vectors-hold-what-the-product-produces.test.ts`.
@@ -166,7 +166,7 @@ const agent = (
   ...(run === undefined ? {} : { run }),
 });
 
-/** The envelope of a fact no agent executed — a person's own, or an identity fact. */
+/** The envelope of a fact no agent executed: a person's own, or an identity fact. */
 const person = (
   subject: string,
 ): {
@@ -176,7 +176,7 @@ const person = (
   subject: string;
 } => ({ at: VECTOR_AT, who: VECTOR_WHO, signerFp: VECTOR_SIGNER_FP, subject });
 
-/** The anchor a checker key speaks under in the vectors — its own, never a person's. */
+/** The anchor a checker key speaks under in the vectors: its own, never a person's. */
 const VECTOR_CHECKER_WHO = 'mnid:6666666666666666666666666666666666666666666666666666666666666666';
 
 /** The commit a check result names in the vectors: a full object name. */
@@ -219,8 +219,8 @@ export const CANONICAL_VECTORS: {
   'task.created': [
     { name: 'task.created', event: taskCreated(agent('t-1'), { title: 'Ship the parser' }) },
     {
-      // A title written DECOMPOSED — "cafe" followed by U+0301, the combining
-      // acute — must canonicalize to the same bytes, and so the same digest, as
+      // A title written DECOMPOSED ("cafe" followed by U+0301, the combining
+      // acute) must canonicalize to the same bytes, and so the same digest, as
       // the composed form. The frozen hash pins the normalized result, so a change to
       // normalization is a change to the format and is caught here. The published
       // artifact carries the decomposed spelling, which is what makes the vector
@@ -248,7 +248,7 @@ export const CANONICAL_VECTORS: {
       // WRITE. Their states and action are `todo`, `done` and `finish`; the task
       // workflow's states are `DRAFT`, `READY`, `IN_PROGRESS`, `BLOCKED`,
       // `IN_REVIEW`, `DONE`, `CANCELED` and its moves are `submit`, `start`,
-      // `complete` and the rest — so a gate could never have produced either. The
+      // `complete` and the rest, so a gate could never have produced either. The
       // catalog permits it (a transition's `from`/`to`/`action` are open literal
       // strings on purpose, so a fact stays legible when the workflow changes), and
       // the bytes are legitimate bytes; what they are not is an example of a fact.
@@ -288,7 +288,7 @@ export const CANONICAL_VECTORS: {
     },
   ],
   // The enrollment kinds' subject is the anchor (`mnid:<hash>`), not a task or
-  // decision id, and they carry no `which` — they are identity facts, not agent
+  // decision id, and they carry no `which`: they are identity facts, not agent
   // work. Freezing their bytes pins that shape so an enrollment written now stays
   // reproducible by a clone that verifies the fold later.
   'identity.founded': [
@@ -354,8 +354,8 @@ export const CANONICAL_VECTORS: {
   ],
   'handoff.recorded': [
     {
-      // `fromAgent == toAgent` is the legitimate case the catalog names — a chat
-      // restart with the same agent — so it is the one worth freezing: a reader
+      // `fromAgent == toAgent` is the legitimate case the catalog names, a chat
+      // restart with the same agent, so it is the one worth freezing: a reader
       // that "helpfully" refused it would refuse a fact this product writes.
       name: 'handoff.recorded (a restart with the same agent)',
       event: handoffRecorded(agent(TASK_ID), { fromAgent: 'claude', toAgent: 'claude' }),
@@ -395,7 +395,7 @@ export const CANONICAL_VECTORS: {
     {
       // The payload is empty and that is the whole shape: the fact is entirely
       // envelope. It is the one vector that pins `payload: {}` canonicalizing to
-      // `{}` rather than being dropped, and — with `run` present — the optional
+      // `{}` rather than being dropped, and, with `run` present, the optional
       // envelope field that had no frozen bytes at all before.
       name: 'skill.consulted (empty payload, inside a run)',
       event: skillConsulted(agent(SKILL_ID, RUN_ID)),
@@ -430,7 +430,7 @@ export const CANONICAL_VECTORS: {
       // opening document's channel, and `@mnema/code` records `channel.served` only for the
       // two channels pushed at an edit (`CountedChannel`, in its `record-framing.ts`): the
       // opening texts are reads and append nothing. The vector pins the format, which takes
-      // any channel as subject — so it stays as it is, and its bytes with it.
+      // any channel as subject, so it stays as it is, and its bytes with it.
       name: 'channel.served (empty payload, inside a run)',
       event: channelServed(agent(DOCUMENT_CHANNEL, RUN_ID)),
     },
@@ -465,8 +465,8 @@ export const CANONICAL_VECTORS: {
   ],
   'link.retracted': [
     {
-      // The edge pinned above, named the way the link named it — its subject, target and
-      // relation — and why it is taken back.
+      // The edge pinned above, named the way the link named it (its subject, target and
+      // relation) and why it is taken back.
       name: 'link.retracted (the relates-to edge taken back, with its reason)',
       event: linkRetracted(agent(MEMORY_ID, RUN_ID), {
         target: TASK_ID,

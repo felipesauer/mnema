@@ -2,20 +2,20 @@
  * The one order every reader of many tails folds: `seq` inside a tail, and across tails the
  * head with the smallest `at` among those whose citations have already been taken.
  *
- * WHY ONE FUNCTION. The rule used to live in three copies — the projection's merge, the
- * enrolment fold's, and the second reader's — and a rule in three places is three chances to
+ * WHY ONE FUNCTION. The rule used to live in three copies (the projection's merge, the
+ * enrolment fold's, and the second reader's) and a rule in three places is three chances to
  * drift. The two in this language are this function now; the third is the second reader's,
  * held to this one by the differential tests.
  *
  * THE RULE (FORMAT.md, "Reading many tails"). Each tail is a queue read from `seq` 0. At every
- * step a tail's HEAD — its first unread entry — is READY when every entry it cites in `after`
+ * step a tail's HEAD, its first unread entry, is READY when every entry it cites in `after`
  * has already been taken. Among the ready heads the one with the smallest `at` goes next; a
  * tie goes to the smaller tree position, compared as a NUMBER, and then to the smaller tail
  * id, compared as text. Nothing here ever compares two entries of one tail: `seq` has put
  * them in order, and that order is never overridden.
  *
- * WHAT A CITATION CAN AND CANNOT DO. It only ever holds its own event back — and with it the
- * rest of its tail — until what it cites has been taken; it never moves anything of anyone
+ * WHAT A CITATION CAN AND CANNOT DO. It only ever holds its own event back, and with it the
+ * rest of its tail, until what it cites has been taken; it never moves anything of anyone
  * else earlier. The writer already controls its own `at`, which moves its events either way,
  * so a citation gives no capability a writer did not have.
  *
@@ -38,9 +38,9 @@
 
 /** One tail as the merge reads it: where it sorts in a tie, and how many entries it holds. */
 export interface TailToOrder {
-  /** The position of the tree the tail was read from — first in a tie, compared as a number. */
+  /** The position of the tree the tail was read from: first in a tie, compared as a number. */
   readonly tree: number;
-  /** The tail id — second in a tie, compared as text (by UTF-16 code unit). */
+  /** The tail id: second in a tie, compared as text (by UTF-16 code unit). */
   readonly tail: string;
   /** How many entries the tail holds, in `seq` order from position 0. */
   readonly length: number;
@@ -152,7 +152,7 @@ export function causalOrder(tails: readonly TailToOrder[], keys: OrderKeys): Cau
   };
 
   // Without a citation that resolves, every head is ready, and the walk is the selection of
-  // heads it always was — nothing asked per step that it did not ask before.
+  // heads it always was: nothing asked per step that it did not ask before.
   const waiting = waits.some((on) => on !== undefined);
   const steps: number[] = [];
   let forced = 0;

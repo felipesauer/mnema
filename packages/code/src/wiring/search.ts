@@ -5,7 +5,7 @@
  * The term is OPTIONAL: with one it is a search, without one the most recent
  * records. `--json` emits the faithful object (one flat list, as the agent's
  * surface serves it); the human summary GROUPS by kind, which is presentation
- * and nothing else — the read returns one ordered list either way.
+ * and nothing else: the read returns one ordered list either way.
  */
 
 import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
@@ -73,7 +73,7 @@ export function registerSearch(program: Command, wiring: Wiring): Declared {
         });
         if (!result.ok) {
           // Both refusals are about the QUERY rather than the record, and each
-          // carries the value it is about — so neither goes through the shared
+          // carries the value it is about, so neither goes through the shared
           // refusal: a bad `--kind` names the kinds there are, and a tree that is
           // not here names the one that was asked for.
           reportUsage(
@@ -84,7 +84,7 @@ export function registerSearch(program: Command, wiring: Wiring): Declared {
           );
           return;
         }
-        // BEFORE the hits, and on the other stream — so it survives a pipe into
+        // BEFORE the hits, and on the other stream, so it survives a pipe into
         // `head`, and so `--json` stays the machine-readable thing it promises to be.
         for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {

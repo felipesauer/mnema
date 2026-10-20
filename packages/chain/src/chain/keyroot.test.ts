@@ -1,9 +1,9 @@
 /**
  * The key root is separate from the chain: a person's private key lives in ONE
  * key root and is never copied; each chain it writes to only MATERIALIZES the
- * public half. This is the identity primitive the tree topology sits on — one
+ * public half. This is the identity primitive the tree topology sits on: one
  * identity, several chains (a project's public tree, its private one, a global
- * one), the same `who` across all — so it is pinned here, on the real API
+ * one), the same `who` across all, so it is pinned here, on the real API
  * (`openChainForWriting(chainRoot, { keyRoot })`), not the keyRoot == chainRoot
  * shorthand the other suites use.
  */
@@ -54,14 +54,14 @@ function foundAndWrite(w: ChainWriter, subject: string): void {
   w.checkpoint();
 }
 
-describe('key root separate from chain — materialization', () => {
+describe('key root separate from chain: materialization', () => {
   it('writes the private key ONLY under the key root, the public key into the chain', () => {
     const w = openChainForWriting(chainA, { keyRoot });
     const fp = w.signerFingerprint;
 
     // Opening publishes nothing: the public half reaches the chain with the tail it
     // verifies, at the first append. This case read it off the chain right after the
-    // open, when opening materialized it — the residue a refused write left behind.
+    // open, when opening materialized it: the residue a refused write left behind.
     // And a machine's first key is kept there too, so the key root is still empty.
     expect(existsSync(publicKeyPath({ root: chainA }, fp))).toBe(false);
     expect(existsSync(publicKeyPath({ root: keyRoot }, fp))).toBe(false);
@@ -92,7 +92,7 @@ describe('key root separate from chain — materialization', () => {
   });
 });
 
-describe('one key root, several chains — one identity', () => {
+describe('one key root, several chains: one identity', () => {
   it('gives the same anchor and fingerprint to every chain it backs', () => {
     const a = openChainForWriting(chainA, { keyRoot });
     const b = openChainForWriting(chainB, { keyRoot });
@@ -119,7 +119,7 @@ describe('one key root, several chains — one identity', () => {
     expect(tailB?.startsWith(b.signerFingerprint)).toBe(true);
   });
 
-  it('each chain verifies ANONYMOUSLY — with only its own root, no key root', () => {
+  it('each chain verifies ANONYMOUSLY: with only its own root, no key root', () => {
     foundAndWrite(openChainForWriting(chainA, { keyRoot }), 't-a');
     foundAndWrite(openChainForWriting(chainB, { keyRoot }), 't-b');
 
@@ -135,7 +135,7 @@ describe('one key root, several chains — one identity', () => {
   });
 });
 
-describe('lifecycle — add a second chain later, with zero migration', () => {
+describe('lifecycle: add a second chain later, with zero migration', () => {
   it('a solo chain, then a second one on the same key root, share one identity untouched', () => {
     // Solo: the person works in one chain first.
     const solo = openChainForWriting(chainA, { keyRoot });
@@ -145,7 +145,7 @@ describe('lifecycle — add a second chain later, with zero migration', () => {
     expect(verify(chainA).fullySigned).toBe(true);
 
     // Later: a second chain is added, referencing the SAME key root. Nothing in
-    // the first chain is moved or rewritten — the key never left the key root,
+    // the first chain is moved or rewritten: the key never left the key root,
     // so there is no migration. The second chain simply points at it.
     const second = openChainForWriting(chainB, { keyRoot });
     foundAndWrite(second, 't-second');
@@ -162,9 +162,9 @@ describe('lifecycle — add a second chain later, with zero migration', () => {
  * What the key root holds a private key FOR is the machine's one identity, and
  * the keystore picks it by taking the first one it finds. So "which private keys
  * are here?" is the question an operation that installs a key has to ask before
- * it creates a second — the hazard is the CHOICE, not the file.
+ * it creates a second: the hazard is the CHOICE, not the file.
  */
-describe('listPrivateKeyFingerprints — the candidates for this machine identity', () => {
+describe('listPrivateKeyFingerprints: the candidates for this machine identity', () => {
   it('is empty for a key root that does not exist yet (the first init path)', () => {
     expect(listPrivateKeyFingerprints({ root: join(keyRoot, 'not-created-yet') })).toEqual([]);
   });
@@ -181,7 +181,7 @@ describe('listPrivateKeyFingerprints — the candidates for this machine identit
     const backup = ensureBackupKey({ root: keyRoot }, w.anchor);
 
     expect(backup?.created).toBe(true);
-    // The backup registers a `.pub` and an `.enroll` in keys/ — public material.
+    // The backup registers a `.pub` and an `.enroll` in keys/: public material.
     // Its private half lives in backup/, so the machine still has exactly ONE
     // candidate identity and does not depend on directory order to find it.
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([w.signerFingerprint]);

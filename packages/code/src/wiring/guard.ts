@@ -2,19 +2,19 @@
  * The `mnema task guard` wiring: what it declares, and what it prints.
  *
  * `mnema task guard <action> <id> --actor <who> [--note/--reason/--feedback/--which]
- * [--json]` — a DRY-RUN of the gate: "would this move be allowed on this task,
+ * [--json]`, a DRY-RUN of the gate: "would this move be allowed on this task,
  * and if not, why?" It MIRRORS `task move` (the same action and id) but writes
  * nothing: it reads the task's current state, simulates the gate, and prints
  * the verdict. ALLOWED names the state the move would reach; REFUSED carries
- * the gate's own code and message — the same answer the real move would give.
+ * the gate's own code and message: the same answer the real move would give.
  *
  * The actor is a REQUIRED `--actor` for the reason focus/resume are: an invocation
  * has no session, and deriving the machine's `who` would mint a key (a write).
- * IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one — it fills this flag
+ * IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one: it fills this flag
  * in at its own prompt, from what it already resolved (`repl/asking.ts`), and the
  * declaration below is unchanged.
  * The proof flags (`--note`/`--reason`/`--feedback`) and `--which` are optional
- * and simulate the move faithfully — with the required proof it is ALLOWED,
+ * and simulate the move faithfully: with the required proof it is ALLOWED,
  * without it REFUSED (MISSING_PROOF), the useful "you are only missing the
  * note" answer. `--which` simulates an agent asking on a human's behalf, so a
  * `--which` equal to `--actor` reproduces the WHO_IS_WHICH refusal.
@@ -100,23 +100,23 @@ export function registerGuard(task: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.verdict, null, 2));
         return;
       }
-      // Human summary — the gate's verdict, one line. ALLOWED names the state
+      // Human summary: the gate's verdict, one line. ALLOWED names the state
       // the move would reach; REFUSED echoes the gate's own code and reason, so
       // the dry-run reads exactly as the real move's refusal would.
       //
       // THE ONLY TWO PLACES ON THE SURFACE THAT SAY GOOD OR BAD. This verb is a
       // question with a yes-or-no answer, so it is the one reading where a colour
-      // is a fact rather than a taste — and the words still carry it, which is what
+      // is a fact rather than a taste, and the words still carry it, which is what
       // makes `--color=never` and a monochrome terminal lose nothing.
       //
-      // The id is the positional and nothing narrows it — the action beside it is an
+      // The id is the positional and nothing narrows it: the action beside it is an
       // enumerated argument and the state after it is the table's own word, so the id
       // is the one value on this line that can hold a break (see {@link onOneLine}).
       io.out(

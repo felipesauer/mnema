@@ -1,38 +1,38 @@
 /**
- * WHAT A VERIFICATION COSTS, COUNTED — in operations over the record, never in seconds.
+ * WHAT A VERIFICATION COSTS, COUNTED: in operations over the record, never in seconds.
  *
  * THE SHAPE THIS EXISTS TO KEEP OUT. The verifier took each checkpoint's range with a
  * `filter` over every entry of the tail, and this product signs once per act, so the
  * checkpoints grow with the events: the verb that proves a record touched each entry once
- * per checkpoint, and cost the square of the history — 1.9 s at 10 thousand events, 8.0 to
+ * per checkpoint, and cost the square of the history (1.9 s at 10 thousand events, 8.0 to
  * 8.4 s at 31.6 thousand, 77 s at 100 thousand, measured over records the product's own
- * writer wrote. It read the committed key off the disk once per checkpoint, too. Three
+ * writer wrote). It read the committed key off the disk once per checkpoint, too. Three
  * comments in the console said the verb was linear; none of them had a test.
  *
  * SO THIS COUNTS, BECAUSE A CLOCK CANNOT BE A GUARD. A time is a property of the machine it
  * ran on and of whatever else ran beside it; a count of what the verifier touched is a
  * property of the verifier. What is counted:
  *
- *   - every read the verifier makes of an ENTRY or a CHECKPOINT — an index into what a
- *     tail's files held, or a field of one — over the same record at two sizes, four times
+ *   - every read the verifier makes of an ENTRY or a CHECKPOINT (an index into what a
+ *     tail's files held, or a field of one) over the same record at two sizes, four times
  *     apart. Linear work grows about four times; the old shape grew about fourteen. The
  *     bound between them is loose on purpose: it has to hold whatever linear pass is added
- *     later, and to fail for any pass repeated per checkpoint — over the entries, over the
- *     checkpoints themselves, over a copy of either.
+ *     later, and to fail for any pass repeated per checkpoint (over the entries, over the
+ *     checkpoints themselves, over a copy of either).
  *   - every read of a committed KEY off the disk, and every derivation of a key's
  *     fingerprint: once per key per verification, whatever number of checkpoints, tails and
  *     enrolments name it. The derivation is an export and a hash, and it was paid once per
  *     checkpoint for a value that cannot change.
  *
  * The record is the product's own writer's, signed once per act: two machines, two tails,
- * the second machine's key enrolled into the first one's identity — so the one key is
+ * the second machine's key enrolled into the first one's identity, so the one key is
  * asked for by all three checks that need a key (its checkpoints, its tail's ownership
  * proof, and the enrolment that brought it in).
  *
  * THE INSTRUMENT SAYS WHEN IT BROKE. Every counter sits on a path the verifier may stop
- * using — the entries and checkpoints are counted where `readTail` and
+ * using (the entries and checkpoints are counted where `readTail` and
  * `readTailCheckpoints` hand them over, the keys where
- * `readFileSync` opens them — and a count of zero from a counter nobody reaches would read
+ * `readFileSync` opens them) and a count of zero from a counter nobody reaches would read
  * as the cheapest verifier there ever was. So each count is first held to a floor it
  * cannot be under if it saw anything at all, and says `RULER BROKEN` when it is.
  */
@@ -55,7 +55,7 @@ import { publicKeyPath } from './layout.js';
 import type { ChainWriter } from './writer.js';
 
 /**
- * The counters, and the wrapping that feeds them — hoisted, because the module mocks
+ * The counters, and the wrapping that feeds them: hoisted, because the module mocks
  * below run before anything else in this file does. Nothing is counted while `on` is
  * false, so writing the record costs the count nothing.
  */
@@ -268,9 +268,9 @@ describe('what a verification costs', () => {
     expect(derivations).toBe(record.keys.length);
   });
 
-  it('lists the committed keys once — one roster for the whole verdict', () => {
+  it('lists the committed keys once: one roster for the whole verdict', () => {
     // It listed them twice: once to tie each tail's name to a committed key, and again for the
-    // census of keys with no tail — two reads of the roster in one verdict, so a key committed
+    // census of keys with no tail; two reads of the roster in one verdict, so a key committed
     // between them was seen by the census and not by the check.
     const record = twoMachines(3);
     const { result, rosterListings } = countedVerification(record.root);

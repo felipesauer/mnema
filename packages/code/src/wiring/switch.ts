@@ -2,15 +2,15 @@
  * The `mnema switch` wiring: what it declares, and what it prints.
  *
  * A group of three, and the shape is `tail`'s rather than `task`'s: its subject is not a
- * workflow entity but MNEMA — the places this product puts the record in front of a model
- * without being asked — so there is no birth, no state a gate moves and no `move`. There
+ * workflow entity but MNEMA, the places this product puts the record in front of a model
+ * without being asked, so there is no birth, no state a gate moves and no `move`. There
  * are two acts, off and on, and the reading that says which channels there are to act on.
  *
  * THE READING IS HERE BECAUSE THE ACTS TAKE A NAME NOTHING PRINTED, which is the argument
  * `tail list` was added for and it is stronger here: a channel name is an identifier this
  * product invented, it appears in no other reading, and a person who cannot see the list
- * cannot use the verb at all. So the bare group prints the listing — `mnema switch` with
- * no subcommand is the reading — and the two acts hang under it.
+ * cannot use the verb at all. So the bare group prints the listing (`mnema switch` with
+ * no subcommand is the reading) and the two acts hang under it.
  *
  * THE CHANNEL IS A POSITIONAL and the set is ENUMERATED, never `.choices()`. That is the
  * rule `enumerated.ts` states and the reason applies here in full: `.choices()` validates
@@ -20,7 +20,7 @@
  * there is in the product's voice.
  *
  * `--reason` IS OPTIONAL HERE AND REQUIRED ON `tail prune`, and the asymmetry is the tie
- * read exactly. What has to be recorded is the FACT — who switched what, and when — never
+ * read exactly. What has to be recorded is the FACT (who switched what, and when) never
  * a justification: a product that refused to be switched off until somebody composed prose
  * would be charging for the switch, and the field would fill with a full stop. A cut is
  * the opposite case, being destructive and unrepeatable.
@@ -28,7 +28,7 @@
  * `--scope` IS DECLARED AND ITS DEFAULT IS THE ONE A READER WILL COME HERE TO ARGUE WITH.
  * A switch travels: the ordinary one is committed, so the team reads it and the document
  * the next session opens with says so. `--scope private` is the switch that means one
- * machine, and the help says what that costs — a committed document cannot report it, so
+ * machine, and the help says what that costs: a committed document cannot report it, so
  * the only place it is written down is this listing.
  *
  * THE OUTPUT SAYS WHERE THE CHANNEL NOW STANDS, which is not always where the switch just
@@ -64,7 +64,7 @@ const NO_SUCH_CHANNEL = 'mnema pushes no channel by that name — `mnema switch`
  * It is the honest half of the act, and the moment to say it is the moment somebody
  * believes they have finished. Switching off stops what this product PUSHES; it does not
  * stop the record, it does not stop a tool an agent calls, and it does not remove the
- * rules — everything the record holds is still there and still answers whoever asks.
+ * rules: everything the record holds is still there and still answers whoever asks.
  */
 const OFF_LIMIT_OF_AN_ACT =
   'Nothing was removed: the record still holds what it held, and a person at the command line still accepts a decision. What stops is an agent ruling one in force.';
@@ -112,8 +112,8 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
 /**
  * One of the two acts, declared once for both.
  *
- * The two differ in a word and in nothing else — the same argument, the same three flags,
- * the same report — so they are written once. Two declarations would be two chances for
+ * The two differ in a word and in nothing else (the same argument, the same three flags,
+ * the same report), so they are written once. Two declarations would be two chances for
  * the flags to drift, and the flag that would drift first is `--scope`, whose default is
  * the whole of what a switch means to a team.
  */
@@ -165,7 +165,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
       io.out(`Switched ${result.channel} ${on ? 'on' : 'off'}`);
       reportRecorded(result, io);
       // Where it now stands, which is the switch's own answer unless another tree
-      // disagrees — and when one does, that is the line the caller came for. Both wordings
+      // disagrees, and when one does, that is the line the caller came for. Both wordings
       // are written HERE, inside the call, and not in a helper: the guard that classifies
       // every value this wiring puts on a success line reads the templates INSIDE an
       // `io.out`, so a sentence moved into a named function is a sentence it cannot see

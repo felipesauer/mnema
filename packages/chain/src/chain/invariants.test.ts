@@ -1,14 +1,14 @@
 /**
  * System invariants of the proof engine, checked over MANY generated chains
  * rather than a single hand-built one. The unit tests pin each piece; these pin
- * the properties that must hold for the whole verifier across shapes — the kind
+ * the properties that must hold for the whole verifier across shapes: the kind
  * of claim a one-off example can pass while a general truth quietly fails.
  *
  * The generator is deterministic (no wall clock, no randomness): chains vary by
  * event count and checkpoint cadence over a dense table, so a failure reproduces
  * exactly. The same invariants are asserted for a single tail AND for chains
  * aggregated from several tails (several machines merged into one chain) and
- * from tails spanning several segments — the shapes a real chain actually takes,
+ * from tails spanning several segments, the shapes a real chain actually takes,
  * where a per-tail truth can hold while its aggregate quietly does not:
  *
  *   - HONESTY: a chain written honestly always verifies (`ok`), and
@@ -16,11 +16,11 @@
  *     checkpoint (`uncheckpointedEvents === 0`). The verdict never overstates
  *     (fullySigned with a residual) nor understates (a broken honest chain).
  *   - RESIDUAL ACCOUNTING: `uncheckpointedEvents` equals the events written
- *     after the last checkpoint fired — summed across every tail — the declared,
+ *     after the last checkpoint fired, summed across every tail, the declared,
  *     honest keyless window.
  *   - ONE VERDICT, TWO RENDERINGS: `summary` is `clauses` joined, and the sentence
- *     splits back into exactly those clauses. The verdict is handed over both ways —
- *     as the parts it is made of, and as the one line it reads as — so this is the
+ *     splits back into exactly those clauses. The verdict is handed over both ways
+ *     (as the parts it is made of, and as the one line it reads as), so this is the
  *     property that says the two can never come apart, over every shape. A clause
  *     dropped, a clause invented, or a clause that swallowed the separator would each
  *     leave one of the two saying something the other does not.
@@ -141,7 +141,7 @@ function mergeInto(fromRoot: string, intoRoot: string): void {
   }
 }
 
-describe('invariant — an honestly written chain always verifies', () => {
+describe('invariant: an honestly written chain always verifies', () => {
   // A dense table of shapes: counts spanning empty/one/many, cadences that fire
   // never, exactly on boundaries, and mid-batch.
   const counts = [0, 1, 2, 3, 5, 8, 16, 33];
@@ -159,7 +159,7 @@ describe('invariant — an honestly written chain always verifies', () => {
   }
 });
 
-describe('invariant — fullySigned iff no residual, and residual accounting is exact', () => {
+describe('invariant: fullySigned iff no residual, and residual accounting is exact', () => {
   const counts = [0, 1, 2, 3, 5, 8, 16, 33];
   const cadences = [1, 2, 4, 1000];
 
@@ -215,7 +215,7 @@ const MULTI_TAIL_SHAPES: readonly (readonly TailSpec[])[] = [
   ],
 ];
 
-describe('invariant — an honestly written MULTI-TAIL chain always verifies', () => {
+describe('invariant: an honestly written MULTI-TAIL chain always verifies', () => {
   for (const [i, specs] of MULTI_TAIL_SHAPES.entries()) {
     const label = specs.map((s) => `${s.count}/${s.every}`).join('+');
     it(`ok is true for ${specs.length} tails [${label}] (shape ${i})`, () => {
@@ -223,7 +223,7 @@ describe('invariant — an honestly written MULTI-TAIL chain always verifies', (
       const r = verify(root);
       expect(r.ok).toBe(true);
       expect(r.issues).toEqual([]);
-      // Each spec becomes its own tail — none collided on merge.
+      // Each spec becomes its own tail: none collided on merge.
       expect(r.tails).toHaveLength(specs.length);
       // One committed key per tail, all accounted for: no orphan.
       expect(r.census).toEqual([]);
@@ -231,7 +231,7 @@ describe('invariant — an honestly written MULTI-TAIL chain always verifies', (
   }
 });
 
-describe('invariant — residual accounting sums across tails; fullySigned iff the SUM is zero', () => {
+describe('invariant: residual accounting sums across tails; fullySigned iff the SUM is zero', () => {
   for (const [i, specs] of MULTI_TAIL_SHAPES.entries()) {
     const label = specs.map((s) => `${s.count}/${s.every}`).join('+');
     it(`uncheckpointed == sum of per-tail residuals for [${label}] (shape ${i})`, () => {
@@ -258,7 +258,7 @@ describe('invariant — residual accounting sums across tails; fullySigned iff t
   });
 });
 
-describe('invariant — the invariants hold when a tail spans several segments', () => {
+describe('invariant: the invariants hold when a tail spans several segments', () => {
   // A small segment cap forces a single tail across many segment files; the
   // per-tail chain must still verify and account across the segment boundaries.
   const SMALL_CAP = 512;
@@ -303,13 +303,13 @@ describe('invariant — the invariants hold when a tail spans several segments',
  */
 const BETWEEN_CLAUSES = '; ';
 
-describe('invariant — the summary is the clauses, joined, and splits back into them', () => {
+describe('invariant: the summary is the clauses, joined, and splits back into them', () => {
   /** Both halves of the round trip, over whatever chain is on disk. */
   function assertOneVerdict(result: ReturnType<typeof verify>): void {
     // The join: one wording, and the string is derived from it.
     expect(result.summary).toBe(result.clauses.map((clause) => clause.text).join(BETWEEN_CLAUSES));
     // And the split: no clause holds the separator, so the sentence a reader is given
-    // takes apart into exactly the clauses it was built from — never more of them.
+    // takes apart into exactly the clauses it was built from, never more of them.
     expect(result.summary.split(BETWEEN_CLAUSES)).toHaveLength(result.clauses.length);
     // The level leads, always. It is the only clause that is good or bad news, and a
     // sentence that opened with a qualification would bury the answer mid-line.
@@ -318,7 +318,7 @@ describe('invariant — the summary is the clauses, joined, and splits back into
     // The external witness is reported whatever else was found: the honest last word on
     // a verdict that local crypto cannot give.
     expect(result.clauses.at(-1)?.of).toBe('witness');
-    // No clause is empty — a blank one would render as a stray separator on the line.
+    // No clause is empty: a blank one would render as a stray separator on the line.
     for (const clause of result.clauses) expect(clause.text.trim()).not.toBe('');
   }
 

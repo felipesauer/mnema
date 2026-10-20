@@ -4,7 +4,7 @@
  * What the search rests on is that every line a reader accepts is canonical, so the envelope's
  * `subject` is written there as exactly the bytes it looks for. The cases hold both halves: a line
  * that merely MENTIONS the id is not among what it returns, and a line that names it in a way the
- * search cannot see — an escape — is a line every reader refuses, so the record it is in reads as
+ * search cannot see, an escape, is a line every reader refuses, so the record it is in reads as
  * broken whatever the search returns. The order across tails is held against the replay in
  * `packages/core/src/projections/many-tails.properties.test.ts`.
  */
@@ -93,7 +93,7 @@ describe('the events about a subject on more than one tail', () => {
   it('are in the order of the merge, not tail by tail', () => {
     const a = machine();
     const b = machine();
-    // Either tail alone, then the other, would read 1 3 2 or 2 1 3 — never 1 2 3.
+    // Either tail alone, then the other, would read 1 3 2 or 2 1 3, never 1 2 3.
     a.say(RUN, T(1));
     b.say(RUN, T(2));
     a.say(RUN, T(3));
@@ -158,7 +158,7 @@ describe('the events about a subject, by the bytes that name it', () => {
     expect(found.get('nobody')).toEqual([]);
   });
 
-  it('a line that names the subject only by an escape is not found — and no reader accepts it', () => {
+  it('a line that names the subject only by an escape is not found, and no reader accepts it', () => {
     const tail = writeARun();
     const dir = tailDir({ root }, tail);
     const segment = join(dir, readdirSync(dir).find((name) => name.endsWith('.jsonl')) as string);
@@ -226,7 +226,7 @@ describe('the events about a subject, by the bytes that name it', () => {
   });
 
   it('a line it finds in another Unicode composition is refused, as every reader refuses it', () => {
-    // Valid JSON holding the same value — what a lenient parse would accept. It is not the
+    // Valid JSON holding the same value: what a lenient parse would accept. It is not the
     // canonical serialization of that value, so `parseCanonicalLine` refuses it.
     const writer = openChainForWriting(root, { keyRoot });
     writer.append(

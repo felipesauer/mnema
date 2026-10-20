@@ -6,7 +6,7 @@
  * claims had none: that re-serializing an entry read back from a line reproduces
  * that line, and that a checkpoint reader refuses a scheme it does not know.
  * `serializeEntry` was referred to by no test in the repository, `parseCheckpoint`
- * by none either, and `entry.ts` had no test file at all — both were exercised only
+ * by none either, and `entry.ts` had no test file at all: both were exercised only
  * through the writer-and-verify round trips in `chain.test.ts`, which is why
  * coverage never said anything was missing. Coverage answers "was the line run",
  * and a format needs "is this property true".
@@ -104,7 +104,7 @@ describe('the stored checkpoint', () => {
     const checkpoint = signed();
     // Ed25519 signatures are 64 bytes: 128 hex digits, lower case.
     expect(checkpoint.sig).toMatch(/^[0-9a-f]{128}$/);
-    // The signed message is the canonical bytes of the fields WITHOUT `sig` — which
+    // The signed message is the canonical bytes of the fields WITHOUT `sig`, which
     // the document shows as an object of seven keys. Signing over a value that
     // contained the signature would be impossible; showing the seven is what tells a
     // stranger which bytes to reconstruct.

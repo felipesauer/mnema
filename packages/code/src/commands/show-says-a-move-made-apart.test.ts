@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 /**
- * A clock that moves one second per reading, from `start` seconds into 2030 — after the
+ * A clock that moves one second per reading, from `start` seconds into 2030: after the
  * `init` that founded the tree on the real clock, so the merged order across the two tails is
  * the order the moves were made in.
  */

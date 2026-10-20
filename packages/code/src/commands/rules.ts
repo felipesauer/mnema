@@ -1,8 +1,8 @@
 /**
- * `mnema rules <path>` — which recorded rules govern a path, and which rules of
+ * `mnema rules <path>`: which recorded rules govern a path, and which rules of
  * this project address nothing at all.
  *
- * The reverse reading of the relations that carry an ADDRESS — `governs` and
+ * The reverse reading of the relations that carry an ADDRESS: `governs` and
  * `asks-for-a-person`, which is what `ADDRESS_RELATIONS` names. This line said "the
  * ONE relation" until the gate shipped as a second label of the same shape, and it said
  * "whose target is a path" until the decision import shipped a THIRD label with a path
@@ -14,7 +14,7 @@
  * an ADDRESS, and this is what finds it from the file rather than from the id.
  *
  * It charges nothing. Nothing here refuses a move, blocks a write or grades the
- * work — it reports, and the id it reports is what a later charge would have to
+ * work: it reports, and the id it reports is what a later charge would have to
  * cite. It does not decide which rules still hold either: a rule's state travels
  * out beside it, and reading it is the caller's.
  *
@@ -24,12 +24,12 @@
  * deleted stops governing in silence, and without a count of those a quiet answer
  * and an empty mechanism read the same.
  *
- * Like the other intelligence reads it refuses `NO_PROJECT` outside a project —
+ * Like the other intelligence reads it refuses `NO_PROJECT` outside a project:
  * an address is relative to a project root, so outside one there is no root to be
  * relative to. Read-only in the strict sense: a cache per tree brought forward from the one the tree
  * keeps (`CacheOptions.persist`),
  * the context package's pure derivation, and one `existsSync` per address. No writer, no
- * key, no event — so no `--actor`.
+ * key, no event, so no `--actor`.
  */
 
 import { dirname } from 'node:path';
@@ -43,7 +43,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the rules command needs — injected so it is testable. */
+/** What the rules command needs: injected so it is testable. */
 export interface RulesContext {
   /** The working directory: the project is resolved from it, and so is a relative path. */
   readonly cwd: string;
@@ -56,7 +56,7 @@ export interface RulesDone {
   readonly ok: true;
   readonly governed: GoverningRules;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -66,12 +66,12 @@ export interface RulesDone {
 
 /** The read was refused before it ran. */
 export type RulesRefused =
-  /** There is no project here — an address is relative to a project root. */
+  /** There is no project here: an address is relative to a project root. */
   { readonly ok: false; readonly reason: 'NO_PROJECT' };
 
 /**
  * Reports which rules govern `input.path`. A path nothing addresses yields an empty
- * list and three numbers — a legitimate answer ("nothing governs this"), never a
+ * list and three numbers: a legitimate answer ("nothing governs this"), never a
  * refusal, and the numbers beside it are what tell that answer from a project whose
  * record has no addresses at all. A path outside the project is answered too: the
  * reply carries no relative path, which is how it says the question was about
@@ -82,7 +82,7 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  // The project root is the PARENT of its `.mnema/` — the directory every address
+  // The project root is the PARENT of its `.mnema/`: the directory every address
   // in the record is written against.
   const root = dirname(trees.projectPublic);
   return withScopedCaches(trees, (sources) => ({

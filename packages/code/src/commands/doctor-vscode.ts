@@ -4,7 +4,7 @@
  *
  * VS Code's agent loads a plugin only from a folder listed in its `chat.pluginLocations`
  * setting, and the file that holds it is JSONC: comments and trailing commas are legal, and a
- * person's file has them. So the edit is TEXTUAL and small — it finds the one member it means
+ * person's file has them. So the edit is TEXTUAL and small: it finds the one member it means
  * to touch by scanning the file's tokens, splices the bytes of that member and leaves every
  * other byte where it was. It does not parse the file and write it back, which would drop the
  * comments. A file it cannot scan to the end, or whose shape it does not expect, is REFUSED

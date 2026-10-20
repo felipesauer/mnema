@@ -1,5 +1,5 @@
 /**
- * A WRITER SAW WHAT ITS TAIL HOLDS BEFORE A MOVE AND WHAT ITS TAIL CITES, AND NOTHING ELSE —
+ * A WRITER SAW WHAT ITS TAIL HOLDS BEFORE A MOVE AND WHAT ITS TAIL CITES, AND NOTHING ELSE:
  * and a successor is the birth of a DECISION, not any subject the record has heard of.
  *
  * The cases beside `moves.test.ts` pin the rulings. These pin the edges of the sight: that the

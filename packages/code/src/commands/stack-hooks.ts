@@ -7,7 +7,7 @@
  *
  * WHAT "ON" IS. The person's approval, kept with the script it was an approval of: the stack's
  * script is read again from a source whose digest is the digest the receipt keeps (so the bytes
- * are the ones installed), shown whole, and — once the person has typed the hook's name — written
+ * are the ones installed), shown whole, and (once the person has typed the hook's name) written
  * non-executable beside an approvals file in the person's own tree (the private tree for a project
  * stack, the global tree for a global one; never the public tree, which is committed and shared,
  * since an approval is one person's). MNEMA REGISTERS NOTHING WITH ANY HOST AND RUNS NOTHING: the

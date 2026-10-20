@@ -1,7 +1,7 @@
 /**
  * The `mnema rules` wiring: what it declares, and what it prints.
  *
- * `mnema rules <path> [--json]` — the reverse reading of the relations whose target
+ * `mnema rules <path> [--json]`: the reverse reading of the relations whose target
  * is a path (`ADDRESS_RELATIONS`: `governs` and `asks-for-a-person`). It said "the ONE
  * relation" until the gate shipped as a second label of the same shape, and this page
  * has reported both ever since. `refs` walks outward from an id; this walks inward from
@@ -9,8 +9,8 @@
  *
  * It CHARGES NOTHING. It refuses no move, blocks no write and grades no work; what
  * it reports is the id a later charge would have to cite. Three numbers ride on
- * every answer — how many rules cover the path, how many address the project at all,
- * and how many address something the working tree no longer holds — so an empty
+ * every answer (how many rules cover the path, how many address the project at all,
+ * and how many address something the working tree no longer holds), so an empty
  * list is an answer and never a silence.
  *
  * A relative path is resolved against the working directory, which is what a person
@@ -41,7 +41,7 @@ export function registerRules(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result, {});
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {

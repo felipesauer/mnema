@@ -372,7 +372,7 @@ def _declarations(report: Report) -> None:
     well-formed `at`, and no mutation produced a malformed one, so a rule the document
     states and this reader implements was exercised by nothing at all. A rule with no input
     is a rule nobody has checked, and the same was true of `boolean`, `count` and
-    `string|null` on the REFUSING side — the accepting side is covered by rebuilding the 23
+    `string|null` on the REFUSING side: the accepting side is covered by rebuilding the 23
     vectors, which is exactly the half that cannot go wrong quietly.
 
     It is total over the vocabulary by construction: the loop is over KNOWN_RULES, so a

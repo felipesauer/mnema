@@ -1,20 +1,20 @@
 /**
- * `mnema tail prune <tail> --reason <text>` — authorize the cut of one whole tail.
+ * `mnema tail prune <tail> --reason <text>`: authorize the cut of one whole tail.
  *
  * The same adapter shape as every other write here (resolve which tree the write
  * belongs to, open its writer, call ONE core operation, report what it returned),
  * and the difference is what it does NOT do: it removes nothing. It appends the
  * signed `tail.pruned` that names the tail, how many events it held and the head it
- * held them through — read off the disk by the operation, never supplied — and hands
+ * held them through (read off the disk by the operation, never supplied) and hands
  * back the path of the directory, which is still there.
  *
  * THAT IS NOT A HALF-BUILT VERB, it is the measurement. On a real project with the
- * chain committed — which is how a record travels — deleting a tail's directory left
+ * chain committed (which is how a record travels) deleting a tail's directory left
  * `git status` reporting three deletions and `git show HEAD:<the segment>` printing
  * all twenty-two lines back. Deleting does not remove: the content is in the index,
  * on the remote and in every clone, and a command that ran `rm` would give a sense of
  * completion over work that had barely started. So this records the authorization
- * while the tail is still there — which is exactly what makes its claims checkable —
+ * while the tail is still there (which is exactly what makes its claims checkable)
  * and says where the files are and how far a cut reaches.
  *
  * THE WAIVER FOLLOWS THE TAIL, the way a transition follows its entity: the census
@@ -25,7 +25,7 @@
  * about a tree the caller never named.
  *
  * IT IS NOT PERMISSION. Anyone who can write to this record can authorize the cut of
- * any tail in it, exactly as anyone who can write can record any other fact — the
+ * any tail in it, exactly as anyone who can write can record any other fact: the
  * declaration is signed and attributed. What makes this verb the CLI's alone is the
  * other half: on the MCP surface a run opens by itself on the first write, with the
  * `who` derived from the key and nobody authorizing that session out loud, and a cut
@@ -38,7 +38,7 @@ import { authorizeTailPrune, openTreeForWriting } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the prune command needs — injected so it is testable. */
+/** What the prune command needs: injected so it is testable. */
 export interface TailPruneContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -51,16 +51,16 @@ export interface CutAuthorized extends Replacement, Landed {
   readonly ok: true;
   /** The tail the waiver names. */
   readonly tail: string;
-  /** The anchor that tail served — the identity the fact is filed under. */
+  /** The anchor that tail served: the identity the fact is filed under. */
   readonly anchor: string;
-  /** The identity that authorized the cut — the one that signed the waiver. */
+  /** The identity that authorized the cut: the one that signed the waiver. */
   readonly authorizedBy: string;
   /** How many events the tail held when the waiver was written. */
   readonly eventCount: number;
   /** The head it held them through. */
   readonly throughHash: string;
   /**
-   * Where the tail's files are — the directory a cut would remove.
+   * Where the tail's files are: the directory a cut would remove.
    *
    * It is reported because the verb does not touch it: whoever authorized the cut is
    * the one who carries it out, and the path is what they need to do it.
@@ -70,7 +70,7 @@ export interface CutAuthorized extends Replacement, Landed {
 
 /** The authorization was refused; nothing was written and nothing was touched. */
 export type CutRefused =
-  /** There is no project here — a tail belongs to a record. */
+  /** There is no project here: a tail belongs to a record. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** No visible tree holds that tail with events in it. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_TAIL' }
@@ -88,7 +88,7 @@ export type CutRefused =
  * With no `.mnema/` found from the cwd and no global tree holding the tail either,
  * this refuses `NO_PROJECT`; with a project present and no tree holding the tail, it
  * refuses `UNKNOWN_TAIL`. Everything the waiver claims is read by the core off the
- * disk — the caller says only WHICH tail and WHY.
+ * disk: the caller says only WHICH tail and WHY.
  */
 export function runTailPrune(
   ctx: TailPruneContext,
@@ -100,7 +100,7 @@ export function runTailPrune(
 
   // The tree that holds the tail; the waiver has to land THERE. When no tree does,
   // distinguish "you are not in a project" from "this record simply has no such
-  // tail" — the same distinction a move makes about an entity it cannot see.
+  // tail": the same distinction a move makes about an entity it cannot see.
   const scope = locateTailScope(trees, input.tail, upcasters);
   if (scope === undefined) {
     return trees.projectPublic === undefined

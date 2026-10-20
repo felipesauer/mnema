@@ -35,7 +35,7 @@ function treeOf(out: VerifyDone, scope: Scope): TreeReport | undefined {
   return out.trees.find((tree) => tree.scope === scope);
 }
 
-/** The verdict over one tree — fails the test if that tree got none. */
+/** The verdict over one tree: fails the test if that tree got none. */
 function verdictOf(out: VerifyDone, scope: Scope): TreeVerdict {
   const tree = treeOf(out, scope);
   if (tree === undefined || tree.kind !== 'verdict') {
@@ -54,7 +54,7 @@ function firstSegment(root: string): string {
 }
 
 /**
- * Edits a stored event so the hash chain — not a parse — is what catches it: rewrite
+ * Edits a stored event so the hash chain, not a parse, is what catches it: rewrite
  * the `at` of the first entry, and the recorded link no longer matches the recomputed
  * hash.
  */
@@ -67,7 +67,7 @@ function tamper(root: string): void {
   writeFileSync(path, `${lines.join('\n')}\n`, 'utf8');
 }
 
-/** Empties a tail's checkpoints — the signatures gone, the events left. */
+/** Empties a tail's checkpoints: the signatures gone, the events left. */
 function deleteSignatures(root: string): void {
   writeFileSync(join(firstSegment(root), '..', 'checkpoints.jsonl'), '', 'utf8');
 }
@@ -82,7 +82,7 @@ describe('mnema verify', () => {
       expect(out.record.ok).toBe(true);
       expect(verdictOf(out, 'public').result.fullySigned).toBe(true);
       // A founding is signed the moment it lands, so the level is the top one the
-      // product can reach — and the requirement the caller declared is met.
+      // product can reach, and the requirement the caller declared is met.
       expect(out.record.level).toBe('fully-signed');
       expect(out.requirement).toBe('chained');
       expect(out.requirementMet).toBe(true);
@@ -129,7 +129,7 @@ describe('mnema verify', () => {
     expect(out.ok).toBe(true);
     if (out.ok) {
       // The command must not upgrade the guarantee: nothing has stamped this record,
-      // so T3 is honestly uncovered and the summary says so — no "tamper-proof" gloss.
+      // so T3 is honestly uncovered and the summary says so, no "tamper-proof" gloss.
       // The adapter passes the chain's verdict through whatever it says, which is the
       // property this case is really about: it was written when `not-covered` was the
       // ONLY answer T3 had, and it holds unchanged now that there are three.
@@ -151,7 +151,7 @@ describe('mnema verify', () => {
     if (out.ok) {
       expect(out.record.ok).toBe(false);
       expect(verdictOf(out, 'public').result.issues.length).toBeGreaterThan(0);
-      // A break fails the DEFAULT minimum — which is what makes a bare `mnema
+      // A break fails the DEFAULT minimum, which is what makes a bare `mnema
       // verify` a gate at all, and it is the one exit this change had to leave
       // exactly where it was.
       expect(out.record.level).toBe('broken');
@@ -172,7 +172,7 @@ describe('mnema verify', () => {
 describe('the machine the verdict is asked from', () => {
   it('says the backup `init` made as one on every machine, because the record declares it', () => {
     // An honest clone: `init` declares the backup in the record, so a machine that never saw
-    // the key root reads the key the record says it is — and does not print the key made never
+    // the key root reads the key the record says it is, and does not print the key made never
     // to write as one whose tail may have gone.
     const { repo, env } = setup();
     const made = found({ cwd: repo, env });
@@ -242,7 +242,7 @@ describe('which trees the verdict covers', () => {
     const out = runVerify({ cwd: repo, env, requirement: 'chained', global: false });
     expect(out.ok).toBe(true);
     if (out.ok) {
-      // The committed tree is untouched and says so — the report does not smear one
+      // The committed tree is untouched and says so: the report does not smear one
       // tree's break over the other.
       expect(verdictOf(out, 'public').result.ok).toBe(true);
       expect(verdictOf(out, 'private').result.ok).toBe(false);
@@ -255,7 +255,7 @@ describe('which trees the verdict covers', () => {
 
   it('notes a private tree that holds nothing, and leaves the verdict alone', () => {
     // EVERY fresh clone is this case: the private tree is gitignored, so it is not
-    // there. A note, not a break — and not a tree at a lower level either, so the
+    // there. A note, not a break, and not a tree at a lower level either, so the
     // record stays fully signed and even the signature requirement passes.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
@@ -289,7 +289,7 @@ describe('which trees the verdict covers', () => {
     if (out.ok) {
       expect(verdictOf(out, 'public').result.level).toBe('fully-signed');
       expect(verdictOf(out, 'private').result.level).toBe('hash-chain-only');
-      // Nothing is BROKEN — there is no signed statement left to contradict — and
+      // Nothing is BROKEN (there is no signed statement left to contradict) and
       // that is exactly why the aggregate has to carry the level.
       expect(out.record.ok).toBe(true);
       expect(out.record.level).toBe('hash-chain-only');
@@ -298,7 +298,7 @@ describe('which trees the verdict covers', () => {
     }
   });
 
-  it('leaves the global tree out unless it is asked for — even when it is broken', () => {
+  it('leaves the global tree out unless it is asked for, even when it is broken', () => {
     // The global tree is always there, so folding it in by default would let it lower
     // the verdict of every project on this machine. Broken here, and the project is
     // still fully signed until `--global` asks.

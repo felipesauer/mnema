@@ -1,23 +1,23 @@
 /**
- * `mnema task handoff <task> <from> <to>` — record a handoff on a task.
+ * `mnema task handoff <task> <from> <to>`: record a handoff on a task.
  *
  * A sibling of `memory` and `observe`, differing in that it mints NO id: a
- * handoff has no standalone identity — its subject IS the task, and it is an
+ * handoff has no standalone identity; its subject IS the task, and it is an
  * entry in that task's history. So the command reports the FACT (the task and
  * the two agents), not an id there is none of.
  *
  * All three inputs are POSITIONAL (`<task> <from> <to>`): they are short
  * ids/labels, not a body of text, so none competes for the tail of the line the
  * way an observation's text would. `from == to` is legitimate (a chat restart
- * with the same agent) and is not refused — the core accepts it and so does the
+ * with the same agent) and is not refused: the core accepts it and so does the
  * surface.
  *
- * The `task` reference is NOT verified to exist — like an observation's `about`,
+ * The `task` reference is NOT verified to exist: like an observation's `about`,
  * it is a reference resolved on read, so a task in another tree is honest
  * dangling, never a refusal here.
  *
  * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the KIND decides — a handoff coordinates two actors,
+ * `scope` wins; when omitted, the KIND decides: a handoff coordinates two actors,
  * so it belongs to the tree both of them can read. The `which` is the agent that
  * RECORDED the handoff, distinct from the `from`/`to` agents it is about (the
  * recorder may be neither), and it names the agent without moving the tree.
@@ -34,7 +34,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the handoff command needs — injected so it is testable. */
+/** What the handoff command needs: injected so it is testable. */
 export interface HandoffContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -42,7 +42,7 @@ export interface HandoffContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   readonly env: DiscoveryEnv;
 }
 
-/** A handoff was recorded — the fact, with its references (there is no id). */
+/** A handoff was recorded: the fact, with its references (there is no id). */
 export interface HandoffRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The task the handoff is about (the event subject). */
@@ -55,7 +55,7 @@ export interface HandoffRecorded extends Replacement, Landed {
 
 /** The record was refused. */
 export type HandoffRefused =
-  /** There is no project here — a project-scoped handoff needs one. */
+  /** There is no project here: a project-scoped handoff needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused (e.g. the authority invariant). */
   | {
@@ -69,8 +69,8 @@ export type HandoffRefused =
  * Records a handoff, routing its birth to the resolved scope. The scope rule is
  * the one every birth follows: an explicit `scope` wins, else the tree the KIND
  * names (public). The `task` reference is forwarded to the core as-is and never
- * validated. On success it echoes the fact back (task, from, to) — there is no
- * minted id to return — plus the tree it landed in. A declared `which` is recorded
+ * validated. On success it echoes the fact back (task, from, to; there is no
+ * minted id to return) plus the tree it landed in. A declared `which` is recorded
  * on the event and does not move the tree.
  */
 export function runHandoff(

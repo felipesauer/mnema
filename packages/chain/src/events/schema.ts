@@ -1,11 +1,11 @@
 /**
- * The field declarations, as DATA — the one place a kind says which fields it
+ * The field declarations, as DATA: the one place a kind says which fields it
  * carries, and the only thing the reader rebuilds an event from.
  *
  * `FORMAT.md` section 4 has always promised that "a reader rebuilds the event
  * from the fields its kind declares and rejects any other". Until this module
  * existed, those declarations were a `switch` of twenty arms inside `parse.ts`
- * and a key list beside it — readable by this codebase and by nothing else. An
+ * and a key list beside it: readable by this codebase and by nothing else. An
  * independent verifier written from the document measured the consequence: an
  * event APPENDED above the last checkpoint with a field no kind declares was
  * read as verified by a stranger and as unreadable by this product. The entry
@@ -18,8 +18,8 @@
  * `event-schema.json` beside `FORMAT.md`, described by section 4.1.
  *
  * ONE SOURCE, AND WHY IT HAD TO BE THIS ONE. A hand-written schema beside a
- * hand-written reader is two places where the fields live, and two places drift
- * — silently, because the day they disagree is the day the second reader starts
+ * hand-written reader is two places where the fields live, and two places drift,
+ * silently, because the day they disagree is the day the second reader starts
  * accepting what this one refuses again, with nothing red. So the table below is
  * not a description of the reader: it IS the reader. `parse.ts` walks these rows
  * and has no per-kind branch left, and the published artifact is this table
@@ -51,24 +51,24 @@ import { WORKFLOWS, type Workflow } from './workflow.js';
 /**
  * The vocabulary a payload field rule is spelled in.
  *
- * Each name is a refusal as much as a shape — the point of a closed catalog is
+ * Each name is a refusal as much as a shape; the point of a closed catalog is
  * that a value which is ALMOST the right shape is a line two readers could
  * disagree about, so each rule below says exactly one thing and coerces nothing:
  *
- * - `string` — present, and a non-empty string.
- * - `string?` — absent, or a non-empty string. Absent is not `null` and not `""`.
- * - `string|null` — present, and either a non-empty string or an explicit `null`.
+ * - `string`: present, and a non-empty string.
+ * - `string?`: absent, or a non-empty string. Absent is not `null` and not `""`.
+ * - `string|null`: present, and either a non-empty string or an explicit `null`.
  *   The `null` is a VALUED absence (the state a birth transition left behind),
  *   which is why it is a spelling of its own rather than an optional.
- * - `boolean` — present, and exactly `true` or `false`. Nothing is coerced:
+ * - `boolean`: present, and exactly `true` or `false`. Nothing is coerced:
  *   `"false"`, `0` and `null` are all falsy in this language and none of them is
  *   the position of a switch.
- * - `count` — present, and a whole number of at least one. Every way a number can
+ * - `count`: present, and a whole number of at least one. Every way a number can
  *   be almost-a-number (a float, a `-0`, a `1e3`, a NaN) is a way two readers
  *   could disagree about the same line.
- * - `fields?` — absent, or the transition-proof object declared by
+ * - `fields?`: absent, or the transition-proof object declared by
  *   {@link TRANSITION_FIELDS_SCHEMA}, closed the same way and never empty.
- * - `string[]?` — absent, or a non-empty array of non-empty strings.
+ * - `string[]?`: absent, or a non-empty array of non-empty strings.
  */
 export type FieldRule =
   | 'string'
@@ -83,15 +83,15 @@ export type FieldRule =
  * The vocabulary an ENVELOPE field rule is spelled in: the payload vocabulary
  * plus the two shapes only the envelope has.
  *
- * - `version` — a whole number of at least one, selecting the payload contract
+ * - `version`: a whole number of at least one, selecting the payload contract
  *   together with `kind`.
- * - `kind` — the discriminator itself: a non-empty string naming a declared kind.
- * - `instant` — the exact spelling `Date.prototype.toISOString` produces (UTC,
+ * - `kind`: the discriminator itself, a non-empty string naming a declared kind.
+ * - `instant`: the exact spelling `Date.prototype.toISOString` produces (UTC,
  *   millisecond precision, trailing `Z`) AND a real date. Every producer stamps
  *   `at` through the clock, which IS `toISOString`, so a well-formed `at` is not
- *   merely "some ISO-8601 string" but this one canonical spelling — which is what
+ *   merely "some ISO-8601 string" but this one canonical spelling, which is what
  *   makes the ordering invariant enforceable rather than merely documented.
- * - `hashes?` — absent, or a non-empty array of entry hashes (64 lower-case hex
+ * - `hashes?`: absent, or a non-empty array of entry hashes (64 lower-case hex
  *   characters each) in ascending order with no repetition. The order is fixed so
  *   that one set of citations has one spelling: an array's order is part of its
  *   canonical bytes (section 1), so a free order would give one set two digests.
@@ -102,14 +102,14 @@ export type EnvelopeRule = FieldRule | 'version' | 'kind' | 'instant' | 'hashes?
  * The envelope every kind carries, and the rule on each field.
  *
  * Keyed by `keyof Required<Envelope>`, so a field added to the envelope does not
- * compile until it is declared here — and therefore until it is published.
+ * compile until it is declared here, and therefore until it is published.
  *
  * THE ORDER HERE IS OBSERVABLE, which is not obvious and was measured. Canonical
- * bytes sort their keys (§1), so the order cannot move a digest — but the rebuilt
+ * bytes sort their keys (§1), so the order cannot move a digest, but the rebuilt
  * event is what a surface prints, and `JSON.stringify` keeps insertion order. So
  * this is the order an agent reading `--json` sees, and it is pinned by
  * `packages/code/src/cli.golden.test.ts`. It is the six required fields, in the
- * order the reader validates them, and then the two optional ones — which is both
+ * order the reader validates them, and then the two optional ones, which is both
  * what the product has always emitted and the more legible half-and-half for
  * somebody reading the published file.
  */
@@ -151,7 +151,7 @@ type PayloadSchemaOf<K extends EventKind> = {
  * What each kind declares, and nothing else may ride along.
  *
  * The row order is the catalog's own kind order, and the field order within a row
- * is the order the reader validates in — which is what a reader's first refusal
+ * is the order the reader validates in, which is what a reader's first refusal
  * names when a line is wrong in more than one way.
  */
 export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } = {
@@ -167,7 +167,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // `alternatives` is declared OPTIONAL, and that is a fact about the past rather
   // than a convenience: a decision recorded before the field existed omits it,
   // parses, and canonicalizes to exactly the bytes it was signed as. A schema that
-  // published one exemplar per kind could never say this — which is the half of a
+  // published one exemplar per kind could never say this, which is the half of a
   // declaration a stranger cannot infer from an example.
   'decision.recorded': {
     title: 'string',
@@ -194,7 +194,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   'knowledge.linked': { target: 'string', rel: 'string' },
   'skill.created': { name: 'string', body: 'string' },
   // Mirrors task.transitioned: `from` is a state or the birth's null, and there is
-  // no `by` — a skill is not relational.
+  // no `by`; a skill is not relational.
   'skill.transitioned': {
     from: 'string|null',
     to: 'string',
@@ -214,7 +214,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
     // no events has no head to name either.
     // WHAT IS DELIBERATELY NOT DECLARED: whether the named tail is on disk. That is
     // the WRITE-side rule (see `unprovenWaiverReason`), and it must never become a
-    // read-side one — the waiver exists to survive the cut, so the moment the tail it
+    // read-side one: the waiver exists to survive the cut, so the moment the tail it
     // names is gone, a reader applying the write rule would refuse the waiver, and
     // refusing one line refuses the whole tail it lives on, permanently.
     eventCount: 'count',
@@ -236,7 +236,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // Required for the reason the fact exists: a retraction that cannot say why is a line this
   // reader refuses rather than one that quietly takes a note out of the reads.
   'note.retracted': { reason: 'string' },
-  // The edge as the link recorded it, and why — required for the same reason as a note's.
+  // The edge as the link recorded it, and why: required for the same reason as a note's.
   'link.retracted': { target: 'string', rel: 'string', reason: 'string' },
   // A program and its arguments, never a shell line: `args` is a list so that nothing in it
   // is split or interpreted on the way to the program.
@@ -277,7 +277,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
  *
  * The artifact is for a reader who has only the artifact and the document, so it
  * carries its own glossary rather than only rule names. The normative text is
- * `FORMAT.md` section 4.1 — this is the same sentence, travelling with the data,
+ * `FORMAT.md` section 4.1: this is the same sentence, travelling with the data,
  * so a file that arrives on its own is still readable. It is derived from one
  * table here for the same reason everything else in this module is: a glossary
  * that could disagree with the vocabulary is a second place the rules live.
@@ -373,7 +373,7 @@ export const SCHEMA_FILE = new URL(`../../${SCHEMA_FILE_NAME}`, import.meta.url)
  * trailing newline.
  *
  * Written out here rather than left to a test, because the file and the table are
- * checked BYTE for byte — a serializer that disagreed with the file's formatting
+ * checked BYTE for byte: a serializer that disagreed with the file's formatting
  * would make the guard fail for a reason that is not drift, and somebody would
  * "fix" it by loosening the comparison.
  */

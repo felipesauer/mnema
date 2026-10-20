@@ -1,24 +1,24 @@
 /**
- * `mnema skill provenance` — where each pattern came from.
+ * `mnema skill provenance`, where each pattern came from.
  *
  * The audit of the one thing mnema serves as INSTRUCTION. A skill's body is read
  * into the prompt of every session that reaches the tree it was adopted in, and
  * two acts put it there: someone proposed it and someone adopted it. This is the
- * reading that shows both, for every pattern the record holds — including the ones
+ * reading that shows both, for every pattern the record holds, including the ones
  * never adopted, because the curation backlog is part of where a pattern came from.
  *
  * And HOW OFTEN each was read, which until now nothing reported. The serving read
  * records a `skill.consulted` per session that opens a pattern, and those facts sat
  * in the record with no reader: a pattern every session leans on and one nobody has
  * ever opened looked identical on every surface. The count answers that and nothing
- * more — a pattern with none may be new, narrow or dead, and the reader has the
+ * more: a pattern with none may be new, narrow or dead, and the reader has the
  * context this verb exists to serve.
  *
  * IT HAS THE NAME OF AN MCP TOOL AND DOES SOMETHING ELSE, on purpose. The tool
  * serves the pattern to an agent that is about to work by it; this verb audits the
  * provenance for a person deciding whether it should be. That is the division the
- * product already draws — the MCP surface is the agent's, the command line is the
- * auditor's — and the `--help` says so out loud, because a reader has every reason
+ * product already draws (the MCP surface is the agent's, the command line is the
+ * auditor's) and the `--help` says so out loud, because a reader has every reason
  * to assume the two are the same thing under two transports.
  *
  * It does NOT refuse outside a project, for the same reason `search` does not: a
@@ -27,7 +27,7 @@
  *
  * Read-only in the strict sense: a cache per visible tree, brought forward from the one the tree keeps
  * (`CacheOptions.persist`), and
- * the context package's pure `patternProvenance`. No writer, no key, no event — so no
+ * the context package's pure `patternProvenance`. No writer, no key, no event, so no
  * `--actor`, and no consultation recorded (serving a body records one; auditing a
  * provenance is not serving it, and this read never touches a body at all).
  */
@@ -41,7 +41,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the skills audit needs — injected so it is testable. */
+/** What the skills audit needs: injected so it is testable. */
 export interface SkillsContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -52,7 +52,7 @@ export interface SkillsContext {
 /** Every pattern the visible trees hold, with the provenance of both acts. */
 export interface SkillsDone {
   readonly ok: true;
-  /** The patterns, ordered by name — empty when the record holds none. */
+  /** The patterns, ordered by name: empty when the record holds none. */
   readonly patterns: readonly PatternProvenance[];
   /**
    * How many runs consulted each pattern, keyed by id; absent from the map means
@@ -62,7 +62,7 @@ export interface SkillsDone {
    */
   readonly consultations: ReadonlyMap<string, number>;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -72,7 +72,7 @@ export interface SkillsDone {
 
 /**
  * Reports every skill across the visible trees with who proposed it and who
- * adopted it. An empty record yields an empty list — a legitimate answer, never a
+ * adopted it. An empty record yields an empty list: a legitimate answer, never a
  * refusal.
  */
 export function runSkills(ctx: SkillsContext): SkillsDone {

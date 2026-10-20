@@ -2,7 +2,7 @@
  * `mnema inherit` and the brief that carries what it points at: a decisions repository is
  * another git repository with a record, read at one commit.
  *
- * The origin here is a LOCAL repository built in the sandbox — no network anywhere — whose
+ * The origin here is a LOCAL repository built in the sandbox, no network anywhere, whose
  * `.mnema/` was written by the product itself, then committed. Every assertion is about what a
  * person or the document would see, or about what must NOT change in the project's own record.
  */

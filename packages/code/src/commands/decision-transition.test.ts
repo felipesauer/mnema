@@ -72,7 +72,7 @@ function stateOf(repo: string, env: DiscoveryEnv, id: string): string | undefine
   return projectDecisions(orderedEvents({ root }, catalogUpcasters())).get(id)?.state;
 }
 
-describe('mnema decision move — accept / reject', () => {
+describe('mnema decision move: accept / reject', () => {
   it('accepts a proposed decision with a note and reports ADR → accepted', () => {
     const { repo, env, id } = projectWithDecision();
     const result = runDecisionTransition(
@@ -120,7 +120,7 @@ describe('mnema decision move — accept / reject', () => {
   });
 
   it('refuses UNKNOWN_ACTION for an action the workflow does not define (no default op)', () => {
-    // The dispatch must not fall through to accept for an unknown verb — a bad
+    // The dispatch must not fall through to accept for an unknown verb: a bad
     // action is refused, nothing is written.
     const { repo, env, id } = projectWithDecision();
     const result = runDecisionTransition({ cwd: repo, env }, { id, action: 'frobnicate' });
@@ -130,7 +130,7 @@ describe('mnema decision move — accept / reject', () => {
 
   it('a `supersede` typed into the generic move still routes correctly (not a default op)', () => {
     // Even routed through the generic runner, supersede reaches its own op. With
-    // no `by`, it is MISSING_BY — never a silent accept.
+    // no `by`, it is MISSING_BY, never a silent accept.
     const { repo, env, id } = projectWithDecision();
     const result = runDecisionTransition(
       { cwd: repo, env },
@@ -241,7 +241,7 @@ describe('mnema decision supersede', () => {
   });
 });
 
-describe('mnema decision move — the transition follows the entity (coherence)', () => {
+describe('mnema decision move: the transition follows the entity (coherence)', () => {
   it('moves a decision born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     const { repo, env, id } = projectWithDecision();
     const moved = runDecisionTransition(
@@ -289,7 +289,7 @@ describe('mnema decision move — the transition follows the entity (coherence)'
     );
     w.checkpoint();
 
-    // The CLI move — following the entity, it moves it in private.
+    // The CLI move: following the entity, it moves it in private.
     const moved = runDecisionTransition(
       { cwd: repo, env },
       { id, action: 'accept', proof: { note: 'ok' } },
@@ -370,7 +370,7 @@ describe('mnema decision move — the transition follows the entity (coherence)'
   });
 });
 
-describe('mnema decision move / supersede --which — the agent that executed', () => {
+describe('mnema decision move / supersede --which: the agent that executed', () => {
   /**
    * The agent each `decision.transitioned` on a decision names, in chain order.
    * The FIRST entry is always the birth transition (`decision` record appends the

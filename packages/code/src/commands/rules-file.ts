@@ -1,8 +1,8 @@
 /**
- * `mnema rules-file --host <host>` — the committed rules that have an address, printed in the file
+ * `mnema rules-file --host <host>`: the committed rules that have an address, printed in the file
  * format another host reads its own rules from, for the addresses that become a glob exactly.
  *
- * It prints and writes nothing: the file is the person's, and `>` is how it gets written — with
+ * It prints and writes nothing: the file is the person's, and `>` is how it gets written, with
  * the `>` replacing the whole of the file it names, which the command says. What translated goes
  * to stdout; what did not, and why, goes to the second stream in the same run, so a redirect keeps
  * the file clean and the person still reads what was left out. The translation is
@@ -26,13 +26,13 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface RulesFileContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
 }
 
-/** One rule the file does not carry, and why — the address as the record compared it. */
+/** One rule the file does not carry, and why: the address as the record compared it. */
 export interface LeftOut {
   readonly id: string;
   readonly name: string;
@@ -47,7 +47,7 @@ export interface RulesFileDone {
   readonly carried: number;
   readonly leftOut: readonly LeftOut[];
   /**
-   * The tails among those read that do not chain — empty for a sound record. What the file
+   * The tails among those read that do not chain: empty for a sound record. What the file
    * carries came off a record whose proof this is the state of, and the wiring says so on the
    * second stream, where a redirect leaves the file clean.
    */

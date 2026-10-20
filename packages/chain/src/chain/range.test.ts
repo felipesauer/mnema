@@ -1,11 +1,11 @@
 /**
- * The route to a checkpoint's range, held to the `filter` it replaced — over tails of every
+ * The route to a checkpoint's range, held to the `filter` it replaced: over tails of every
  * shape a reader can meet.
  *
  * `entriesBetween` promises the filter's answer and nothing else: the entries whose seq lies
  * in the range, in the order the tail holds them. So the oracle here IS that filter, written
- * out beside every call, and what varies is the tail — sound, with an entry twice, with a
- * line gone, reordered, empty — and the range, including the ones no honest checkpoint names
+ * out beside every call, and what varies is the tail (sound, with an entry twice, with a
+ * line gone, reordered, empty) and the range, including the ones no honest checkpoint names
  * (past the end, reversed, over a seq nobody holds). The entries are sealed by the product
  * (`sealEntry`), each its own object even when two carry the same line, which is what two
  * reads of a duplicated line produce; the answer is compared by POSITION in the tail, so a
@@ -41,7 +41,7 @@ function entryAt(seq: number, nth = 0): Entry {
   });
 }
 
-/** A tail holding entries at these seqs, in this order — a fresh object for each. */
+/** A tail holding entries at these seqs, in this order: a fresh object for each. */
 function tailOf(seqs: readonly number[]): Entry[] {
   return seqs.map((seq, i) => entryAt(seq, i));
 }
@@ -129,7 +129,7 @@ describe('the entries a checkpoint covers', () => {
         compared += 1;
       }
     }
-    // The comparison ran — a loop that never entered would be a green over nothing.
+    // The comparison ran: a loop that never entered would be a green over nothing.
     expect(compared).toBe(400 * 25);
   });
 });

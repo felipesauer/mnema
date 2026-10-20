@@ -1,13 +1,14 @@
 /**
- * `mnema handback` — the format a subagent ends its work in, and the check a host runs when one
+ * `mnema handback`: the format a subagent ends its work in, and the check a host runs when one
  * stops.
  *
  * WHAT IT IS FOR. A subagent is told not to record: it hands the decisions it settled back in its
  * final reply, and whoever dispatched it records them (the `recording-decisions` skill). That
  * rule was prose, and nothing held it: a reply that said "done" and nothing else lost every
- * decision it carried, without a word. This gives the reply a shape that can be checked — one
- * fenced block, the info string `mnema-handback`, holding the JSON {@link HANDBACK_SCHEMA} describes
- * — and a host that fires an event when a subagent is about to stop can send it back for the block.
+ * decision it carried, without a word. This gives the reply a shape that can be checked (one
+ * fenced block, the info string `mnema-handback`, holding the JSON {@link HANDBACK_SCHEMA}
+ * describes) and a host that fires an event when a subagent is about to stop can send it back
+ * for the block.
  *
  * WHAT IS CHECKED IS THE SHAPE AND NOTHING ABOUT THE TRUTH. A block that says `"decisions": []`
  * passes, whatever the subagent did: whether it settled something is not something a reply
@@ -231,7 +232,7 @@ function reasonFor(lacks: readonly string[]): string {
   return bytes.length <= REASON_BYTES ? clean : bytes.subarray(0, REASON_BYTES).toString('utf-8');
 }
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface HandbackContext {
   /** Where the host started the hook: the project is resolved from it. */
   readonly cwd: string;

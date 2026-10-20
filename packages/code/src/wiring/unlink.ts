@@ -1,7 +1,7 @@
 /**
  * The `mnema unlink` wiring: what it declares, and what it prints.
  *
- * `mnema unlink <subject> <target> --rel <label> --reason "<why>"` — take a link back. The edge is
+ * `mnema unlink <subject> <target> --rel <label> --reason "<why>"`: take a link back. The edge is
  * named exactly as `mnema link` takes it; the reason is a required flag, since a retraction that
  * cannot say why is not recorded. It follows the link to the tree it was recorded in, so it takes
  * no `--scope`.
@@ -19,7 +19,7 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
  * The `--which` help of this verb: the shared one points at `--scope` for where the fact lands,
- * and a link's retraction has none — it lands where the link is.
+ * and a link's retraction has none; it lands where the link is.
  */
 const WHICH_ON_AN_UNLINK =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +

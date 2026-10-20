@@ -1,35 +1,35 @@
 /**
- * `mnema init` — establish a project at the working directory.
+ * `mnema init`: establish a project at the working directory.
  *
  * This is the command that CREATES a project's root: it makes the `.mnema/` tree
- * at the EXACT working directory (not by walking up — that is discovery, and
+ * at the EXACT working directory (not by walking up; that is discovery, and
  * this is establishment) and establishes this installation's identity into it, so
  * the chain is verifiable from its first event.
  *
  * It USED TO also record the project in a machine-local index (`registerProject`,
  * writing `<app data>/projects.json`) so a surface could find it later. Nothing
  * ever read it: what a read covers comes from the trees the client announces, and
- * a project is discovered by walking up from a working directory — so the index
+ * a project is discovered by walking up from a working directory, so the index
  * was written on every founding, read by nobody, and reported to the person as if
  * it mattered. It is gone, and this file is the record of why; `init.test.ts` holds
  * the absence, at the literal path the file used to take.
  *
  * It is a thin adapter: it observes whether a project already exists here, routes
  * to the core's own mechanisms (`ensureTree`, `establishIdentity`), and reports.
- * It holds no domain logic — establishing an identity (its anchor, its cold backup
+ * It holds no domain logic: establishing an identity (its anchor, its cold backup
  * key, its whole key roster) is the core's; init only decides WHERE (this cwd) and
  * refuses a double-init.
  *
- * AND IT REFUSES WHERE THE WALK WILL NEVER FIND A PROJECT — the home directory, and a
- * directory whose `.mnema/` is a machine's data directory — by asking the walk's own rule
+ * AND IT REFUSES WHERE THE WALK WILL NEVER FIND A PROJECT (the home directory, and a
+ * directory whose `.mnema/` is a machine's data directory) by asking the walk's own rule
  * (`whyNoProjectRootAt`, `@mnema/core`) before anything is made. It used to found a tree
  * anywhere it was run, and the home was where that went wrong: measured in a sandbox
  * home, `mnema init` there put the project tree in the same directory as the private key
- * (`~/.mnema` is the data directory — it was then with no `$XDG_DATA_HOME`, and always is now), and every folder under the home became that project. The
+ * (`~/.mnema` is the data directory: it was then with no `$XDG_DATA_HOME`, and always is now), and every folder under the home became that project. The
  * bare name offered it as its first door outside a project, the home included. Asked
  * AFTER the walk learned to pass those directories over, a founding there would go wrong
  * in two ways the lines below cannot see: in the home it makes the tree and then resolves
- * no project from it — a half-made `.mnema/` and a refusal about something else; at a data
+ * no project from it, a half-made `.mnema/` and a refusal about something else; at a data
  * directory it finds a `.mnema/` already there and answers "Already a mnema project",
  * about a directory that is none, with the anchor of whatever project lies above it.
  */
@@ -56,7 +56,7 @@ import {
 } from '@mnema/core/write';
 import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
 
-/** What init needs from its environment — injected so it is testable. */
+/** What init needs from its environment: injected so it is testable. */
 export interface InitContext {
   /** The directory to establish the project in (the CLI passes `process.cwd()`). */
   readonly cwd: string;
@@ -72,12 +72,12 @@ export interface InitResult {
   readonly root: string;
   /**
    * The identity anchor this installation founded, or the one it writes as in the public tree
-   * already here — or, where {@link writeRefused} is present, the one this checkout RECORDED,
+   * already here, or, where {@link writeRefused} is present, the one this checkout RECORDED,
    * which no write here signs as any more.
    */
   readonly anchor: string;
   /**
-   * What establishing the identity produced — the cold backup key and the keys
+   * What establishing the identity produced: the cold backup key and the keys
    * enrolled into the new tree. Present only when this run founded the tree: a
    * second init appends nothing, so there is nothing to report.
    */
@@ -87,7 +87,7 @@ export interface InitResult {
    * git repository it sits in (absent when there is none), whether that root is somewhere else
    * than where the project was founded, and the decision bases the record has never imported.
    * These are READS of the working tree, taken after the founding, and they decide what the
-   * surface says next — never what was written.
+   * surface says next, never what was written.
    */
   readonly around?: {
     /** The nearest directory above (or at) the project's that holds a `.git`, when there is one. */
@@ -100,7 +100,7 @@ export interface InitResult {
   /**
    * Present only in a project already here whose checkout recorded an identity that no longer
    * counts this machine's key: every write to its public tree is refused, and this is that
-   * refusal — the code and the words a write prints, asked of the same function the write asks
+   * refusal, the code and the words a write prints, asked of the same function the write asks
    * (`recordedAnchorOf`), and the file those words' restore takes, where they name one.
    */
   readonly writeRefused?: {
@@ -113,7 +113,7 @@ export interface InitResult {
 
 /** A project could not be established here: the directory can be no project's root. */
 export interface InitRefused {
-  /** Why — the core's rule, the same one the walk-up passes such a directory by. */
+  /** Why: the core's rule, the same one the walk-up passes such a directory by. */
   readonly refused: NoProjectRoot;
   /** The `.mnema/` a founding would have made. Nothing was made. */
   readonly root: string;
@@ -121,8 +121,8 @@ export interface InitRefused {
 
 /**
  * Establishes a project at `cwd`. If a `.mnema/` already exists at this exact
- * directory, init does NOT re-found — running it twice is a mistake, not a fresh
- * start — and answers with the anchor this machine writes as here, or, where the
+ * directory, init does NOT re-found (running it twice is a mistake, not a fresh
+ * start) and answers with the anchor this machine writes as here, or, where the
  * identity this checkout recorded no longer counts its key, with the refusal every
  * write to the public tree gets ({@link InitResult.writeRefused}). Otherwise it
  * creates the tree, establishes the identity into it (anchor, cold backup key, and
@@ -131,7 +131,7 @@ export interface InitRefused {
  *
  * A second init therefore WRITES NOTHING, anywhere: it reads an anchor, asks the record
  * whether that identity still counts the key, and returns. That is not a claim about
- * calls — `init.test.ts` digests every file of the project tree and of the app data
+ * calls: `init.test.ts` digests every file of the project tree and of the app data
  * directory before and after, and requires both maps to be unchanged, and
  * `the-init-says-a-write-is-refused.test.ts` does the same in a checkout the key left.
  *
@@ -140,34 +140,34 @@ export interface InitRefused {
  * purpose, and opening one touched the tree before anything was appended: for any other
  * key it materialized that key's public half, minted an installation id and gave its
  * tail a directory and a proof (opening mints only the id now, and only for a key the
- * machine already keeps — a key made in memory keeps its id with the pair; the rest waits
+ * machine already keeps: a key made in memory keeps its id with the pair; the rest waits
  * for the writer's first append). Measured on the binary, `mnema init` run by a second
  * machine in a cloned project answered "nothing to found" and left four new entries
  * under `.mnema/`, two of them untracked in git. The anchor is read from the SIGNER now
  * (`signerFor`), which opens nothing, and the writer is opened only on the path that
- * founds — `a-refusal-leaves-nothing.test.ts` runs it with the other key.
+ * founds: `a-refusal-leaves-nothing.test.ts` runs it with the other key.
  *
  * Nor does a REFUSED one: in a directory that can be no project's root it answers
  * {@link InitRefused} before any directory is made, and `init.test.ts` holds that the
- * same way — every file under the home, digested before and after.
+ * same way, every file under the home, digested before and after.
  */
 export function runInit(ctx: InitContext): InitResult | InitRefused {
   const root = join(ctx.cwd, PROJECT_DIR);
   // FIRST, before a directory is made: the walk's own rule. Asked of the same function
-  // the walk-up asks, so init cannot found a project the walk would pass over — see the
+  // the walk-up asks, so init cannot found a project the walk would pass over: see the
   // header for what each of the two would have done.
   const refused = whyNoProjectRootAt(ctx.cwd, ctx.env);
   if (refused !== undefined) return { refused, root };
   const alreadyHere = isDirectory(root);
 
   // Create the tree at the EXACT cwd (its own `.gitignore` comes with it) unless
-  // one is already here — a second init must not re-found.
+  // one is already here: a second init must not re-found.
   if (!alreadyHere) ensureTree({ root });
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
 
   if (alreadyHere) {
-    // The anchor this machine WILL write as here — not the one its key derives.
+    // The anchor this machine WILL write as here, not the one its key derives.
     // On a machine another has enrolled, those differ until its first write in
     // this tree: reading the derived one would report an identity that the very
     // next write corrects, and this is the command a person runs to check that
@@ -177,7 +177,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     //
     // AND WHETHER THE IDENTITY A CHECKOUT RECORDED STILL COUNTS ITS KEY. This said it did not
     // ask that: a write asks it before it appends, and refuses where the record retired the
-    // key from it, while this reported the recorded identity all the same — so in a checkout
+    // key from it, while this reported the recorded identity all the same, so in a checkout
     // the key had left, "the anchor it will write as" was the one its next write was refused
     // as. Measured on the binary: `identity: <that identity>` with exit 0, and the write
     // right after it refused `STALE_ANCHOR`. It asks now, through the function the write asks
@@ -199,7 +199,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       writeRefused: {
         code: refusal.code,
         message: refusal.message,
-        // The file is said where the words name the restore that takes it — the same path the
+        // The file is said where the words name the restore that takes it: the same path the
         // command line's catch builds for a refused write, from the same key root.
         ...(refusal.restores !== undefined
           ? { keyFile: privateKeyPath({ root: trees.keyRoot }, refusal.restores) }
@@ -220,7 +220,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       { keyRoot: trees.keyRoot },
     );
     // Checkpoint now so an anonymous verify sees the founding fully signed the
-    // moment init returns — the tree is born proven, not pending a later write.
+    // moment init returns: the tree is born proven, not pending a later write.
     // (An enrollment checkpoints itself, so this covers the founding when the
     // roster added nothing.)
     writer.checkpoint();

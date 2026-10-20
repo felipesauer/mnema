@@ -3,30 +3,30 @@
  *
  * `mnema completion <shell>` prints a completion script to stdout and does nothing else.
  * It installs NOTHING, writes to no file and touches no shell profile, because that is
- * the shape the market settled on — `gh completion -s bash`, `kubectl completion bash`,
- * `docker completion`, `rustup completions` — and because the alternative is a verb that
+ * the shape the market settled on (`gh completion -s bash`, `kubectl completion bash`,
+ * `docker completion`, `rustup completions`) and because the alternative is a verb that
  * edits a file it did not write. Where the script goes is the operator's choice, the way
- * `mnema brief > MNEMA.md` is — with the difference that every destination above is a file
+ * `mnema brief > MNEMA.md` is: with the difference that every destination above is a file
  * this product NAMES, so a redirection over one replaces something that was already ours.
  * `brief` publishes no such name, which is why its help says what the `>` does and this
  * one does not.
  *
  * IT DOES NOT DETECT THE SHELL EITHER. The shell is an ARGUMENT with `.choices()`, so a
  * typo earns the parser's own refusal naming the three, in the product's voice. Detection
- * would have to read `$SHELL` — which names the LOGIN shell and not the one running the
- * command — and a wrong guess here prints a file that loads silently into the wrong
+ * would have to read `$SHELL`, which names the LOGIN shell and not the one running the
+ * command, and a wrong guess here prints a file that loads silently into the wrong
  * dialect and completes nothing.
  *
  * THE SCRIPT IS GENERATED FROM THE PROGRAM IT IS REGISTERED ON, and that is why this
  * file receives `program` and passes it down: a script written by hand would list the
  * verbs a second time, and the first pull request to add one would leave it a version
  * behind with nothing failing. What the generator does with it is in `completion/`, and
- * it loads inside the action — the declaration is eager, the work is not (see
+ * it loads inside the action: the declaration is eager, the work is not (see
  * `verb.ts`).
  *
  * The three shells and their help live HERE rather than in `completion/`, next to the
  * flag that accepts them, the way `--color`'s three whens live in `color.ts`. It keeps
- * `completion/` — the whole generator — off the eager path with no exception to declare.
+ * `completion/`, the whole generator, off the eager path with no exception to declare.
  */
 
 import { Argument, type Command } from 'commander';

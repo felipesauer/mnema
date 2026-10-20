@@ -1,5 +1,5 @@
 /**
- * THE WHOLE VERDICT OVER A TAIL THAT DOES NOT CHAIN — pinned, for the shapes where a shorter
+ * THE WHOLE VERDICT OVER A TAIL THAT DOES NOT CHAIN: pinned, for the shapes where a shorter
  * route to a checkpoint's range could answer something else.
  *
  * The verifier finds the entries a checkpoint covers without walking the tail (`range.ts`).
@@ -7,7 +7,7 @@
  * part: an entry appended twice, at the end and in the middle; a line cut out; two lines
  * swapped. T1 refuses every one of them, and that is not what is asked here. What is asked
  * is what EVERY layer says, because the T2/T4 findings over those same bytes, the coverage
- * and the count left unsigned are all part of the verdict a reader is handed — and a slice
+ * and the count left unsigned are all part of the verdict a reader is handed, and a slice
  * taken by position would change each of them while T1 went on saying the same thing.
  *
  * Every expectation below is the verdict the verifier gave while it still took each range
@@ -36,7 +36,7 @@ afterEach(() => {
 });
 
 /**
- * A founded tail of six entries, seq 0 to 5, each its own act and each act signed — the
+ * A founded tail of six entries, seq 0 to 5, each its own act and each act signed: the
  * product's cadence, so checkpoint `i` covers exactly seq `i`. Returns the tail and the
  * stored lines of its one segment, in order, without the final newline.
  */

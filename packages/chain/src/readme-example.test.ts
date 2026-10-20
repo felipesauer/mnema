@@ -1,5 +1,5 @@
 /**
- * The README's usage example, RUN — and run as the very bytes the page publishes.
+ * The README's usage example, RUN, and run as the very bytes the page publishes.
  *
  * WHAT THIS FILE IS HALF OF. The region between the two markers below is compared, line
  * for line, against the ```ts block of `../README.md` by
@@ -11,14 +11,14 @@
  *
  * WHAT IT CAUGHT THE DAY IT WAS WRITTEN, AND WHAT NOW KEEPS CATCHING IT. The published
  * example did not compile. That was measured once, by hand, on 11/09/2026 by type-checking
- * the extracted block against the built `.d.ts`; it is a case now —
+ * the extracted block against the built `.d.ts`; it is a case now:
  * `code/tests/the-example-is-type-checked.test.ts` does that reading on every run, so an
  * error of this kind cannot come back the way it came. What it found:
  * `openChainForWriting('.mnema/chain')` was called with one argument where the signature
  * takes two (the key root has no default, deliberately), and the envelope literal was
  * missing `signerFp`, which every event carries. The page also said the key pair "is
  * loaded from the chain root, or created there on first use" and that `who` is "the human
- * who authorized the work" as a typed-in name — the first is contradicted by
+ * who authorized the work" as a typed-in name; the first is contradicted by
  * `openChainForWriting`'s own doc-comment ("the private key never lives inside a chain"),
  * and the second by `envelope.ts`, where `who` is an anchor derived from the key and
  * never supplied by a caller.

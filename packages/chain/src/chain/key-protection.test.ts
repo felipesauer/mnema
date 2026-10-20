@@ -91,7 +91,7 @@ describe('reading a private key file', () => {
     expect(readPrivateKeyPair(path, pem).fingerprint).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('refuses a protected file with no passphrase, and with the wrong one — each by its own code', () => {
+  it('refuses a protected file with no passphrase, and with the wrong one: each by its own code', () => {
     const pem = privateKeyToPem(generateKeyPair().privateKey);
     const path = join(root, 'protected.key');
     const text = protectPem(pem, 'right');

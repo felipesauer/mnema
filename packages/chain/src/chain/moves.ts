@@ -8,7 +8,7 @@
  * else.
  *
  * THE STANDING. The state a subject is in at a move is the fold, in the merged order, of the
- * moves before it that were legal — so an illegal move is not applied by anything after it
+ * moves before it that were legal, so an illegal move is not applied by anything after it
  * either. When that state does not admit the move, the move is asked about the state its
  * writer saw: the same fold over only the moves its writer had read, which are the ones its
  * own tail holds before it and, on every other tail, the ones up to the last entry its tail
@@ -18,7 +18,7 @@
  * been in before it: the moves applied so far, which this pass keeps anyway.
  *
  * THE COST is one step per event and one per move, plus a walk back over one subject's moves
- * for each move the merged state does not admit — a divergence, or an illegal move, both rare.
+ * for each move the merged state does not admit: a divergence, or an illegal move, both rare.
  */
 
 import type { CatalogEvent } from '../events/catalog.js';

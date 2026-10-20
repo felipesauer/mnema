@@ -1,9 +1,9 @@
 /**
- * `mnema skill move <action> <id>` — move a skill through its workflow.
+ * `mnema skill move <action> <id>`: move a skill through its workflow.
  *
  * The skill counterpart of `task move`: the same adapter shape (locate the tree
  * the entity lives in, open its writer, call ONE core operation through the gate,
- * report what it returned) applied to a skill. It holds no workflow logic — it
+ * report what it returned) applied to a skill. It holds no workflow logic: it
  * does not know the states or which action needs which proof; the gate inside the
  * operation decides, and an illegal move or missing proof comes back as the
  * gate's own typed refusal.
@@ -12,16 +12,16 @@
  * (the one it was proposed in); its move must land THERE, or the history would
  * split across the public/private boundary. So this LOCATES the skill's home tree
  * ({@link locateEntityScope}) and opens THAT writer, never a scope the caller
- * picks — a transition takes no `--scope`.
+ * picks: a transition takes no `--scope`.
  *
- * Unlike a task — where one generic `transitionTask(action)` lets the gate be the
- * sole validator — a skill's four moves are FOUR NAMED operations in the core
+ * Unlike a task, where one generic `transitionTask(action)` lets the gate be the
+ * sole validator, a skill's four moves are FOUR NAMED operations in the core
  * (reviewSkill/adoptSkill/rejectSkill/deprecateSkill), so the surface must
  * dispatch on the action to pick the right op. That dispatch needs the closed set
- * of verbs (`SKILL_ACTIONS`) — the vocabulary, NOT the transition table (from →
+ * of verbs (`SKILL_ACTIONS`): the vocabulary, NOT the transition table (from →
  * to → proof, which stays the gate's alone). An action outside that set is
  * refused `UNKNOWN_ACTION` here, before touching any op, rather than falling
- * through to a default — none of the four is a silent fallback. Unlike a
+ * through to a default: none of the four is a silent fallback. Unlike a
  * decision's supersede, NO action carries a `by`: a skill is not relational
  * (replacing one skill with another is a `knowledge.linked`, not a move here).
  *
@@ -32,7 +32,7 @@
  *
  * A move carries the executing agent (`which`) when the caller declares one, on
  * whichever of the four ops the action routes to. Unlike a birth, `which` has NO
- * say in where the event lands — the move follows the entity — so it is only what
+ * say in where the event lands (the move follows the entity) so it is only what
  * the event records, and the gate still refuses a `which` that IS the authorizing
  * identity.
  */
@@ -55,7 +55,7 @@ import { movedDisplay } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the transition command needs — injected so it is testable. */
+/** What the transition command needs: injected so it is testable. */
 export interface SkillTransitionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -65,9 +65,9 @@ export interface SkillTransitionContext extends Pick<AgentWrites, 'agentKey' | '
 
 /** The proof a caller may carry for a skill move. */
 export interface SkillTransitionProof {
-  /** Why this verdict — required by review, adopt, and reject. */
+  /** Why this verdict: required by review, adopt, and reject. */
   readonly note?: string;
-  /** Why the skill fell out of use — required by deprecate. */
+  /** Why the skill fell out of use: required by deprecate. */
   readonly reason?: string;
 }
 
@@ -84,9 +84,9 @@ export interface SkillTransitioned extends Replacement {
 
 /** The move was refused. */
 export type SkillTransitionRefused =
-  /** There is no project here — a skill lives in a project. */
+  /** There is no project here: a skill lives in a project. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
-  /** No visible tree holds this skill — it cannot be moved from here. */
+  /** No visible tree holds this skill: it cannot be moved from here. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_SKILL' }
   /** The core operation refused (an illegal move, missing proof, …). */
   | {
@@ -103,7 +103,7 @@ export type SkillTransitionRefused =
  * this refuses `NO_PROJECT`; with a project present but the skill in no visible
  * tree, `UNKNOWN_SKILL`.
  *
- * The action string routes to the named operation — review/adopt/reject carry a
+ * The action string routes to the named operation: review/adopt/reject carry a
  * `note`, deprecate carries a `reason`. An action outside `SKILL_ACTIONS` is
  * refused `UNKNOWN_ACTION` before any op is called; a legal verb the gate then
  * rejects (illegal move, missing proof) comes back as `REFUSED` with the gate's
@@ -128,7 +128,7 @@ export function runSkillTransition(
   }
 
   // Dispatch on the action to pick the right named op. An action outside the
-  // closed vocabulary is refused UNKNOWN_ACTION here — never a fall-through to a
+  // closed vocabulary is refused UNKNOWN_ACTION here, never a fall-through to a
   // default op. The transition table itself (which move is legal, which proof it
   // needs) stays the gate's.
   if (!(SKILL_ACTIONS as readonly string[]).includes(input.action)) {
@@ -146,7 +146,7 @@ export function runSkillTransition(
   const opCtx = { writer, layout: { root }, upcasters };
   const fields = proofToFields(input.proof);
   // The four ops take the same shape, so the executing agent is stamped once, in
-  // the shared args — no branch can be the one that forgets it.
+  // the shared args: no branch can be the one that forgets it.
   const args = {
     id: input.id,
     ...(fields !== undefined ? { fields } : {}),
@@ -170,7 +170,7 @@ export function runSkillTransition(
     return { ok: false, reason: 'REFUSED', code: moved.code, message: moved.message };
   }
 
-  // Resolve the name from the projection to orient the human — a skill has no
+  // Resolve the name from the projection to orient the human: a skill has no
   // alias, so its display handle is the name. Read after the append so the
   // projection reflects the move that just landed; fall back to the id if absent.
   const name = movedDisplay('skill', root, input.id, upcasters);

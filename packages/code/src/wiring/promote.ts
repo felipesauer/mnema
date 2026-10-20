@@ -9,7 +9,7 @@
  *
  * IT IS DECLARED A WRITE, because one of its two acts is, and a verb is classified by the
  * most it can do. So the console, which dispatches only to verbs that declare they read,
- * refuses it and says to run it outside — which is right for the second act and a small
+ * refuses it and says to run it outside, which is right for the second act and a small
  * cost for the first: what the console offers in its place is the sentence that says there
  * is something to list (`repl/promotable.ts`).
  *

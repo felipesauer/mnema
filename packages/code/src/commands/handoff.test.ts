@@ -126,7 +126,7 @@ describe('mnema task handoff', () => {
   });
 });
 
-describe('mnema task handoff --which — the agent that RECORDED it', () => {
+describe('mnema task handoff --which: the agent that RECORDED it', () => {
   /** Every `handoff.recorded` in a tree, with the agent each one names. */
   function handoffsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())
@@ -144,7 +144,7 @@ describe('mnema task handoff --which — the agent that RECORDED it', () => {
     );
     expect(result.ok).toBe(true);
     const root = resolveTrees(repo, env).projectPublic as string;
-    // The author is the recorder, not `from` or `to` — those are the subject.
+    // The author is the recorder, not `from` or `to`: those are the subject.
     expect(handoffsIn(root).find((e) => e.subject === 'T')?.which).toBe('ci-runner');
     expect(handoffsOf(root).get('T')?.[0]?.fromAgent).toBe('alpha');
   });

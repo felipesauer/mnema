@@ -1,9 +1,9 @@
 /**
- * `mnema check declare` and `mnema check run` — a rule carries a program that checks it, and a
+ * `mnema check declare` and `mnema check run`: a rule carries a program that checks it, and a
  * key that signs check results only records whether the rule held at a commit.
  *
  * Both work on the project's PUBLIC tree only. A check is declared beside a rule the team
- * shares, and it is run where the team's record is read — a CI runner holds the committed tree
+ * shares, and it is run where the team's record is read: a CI runner holds the committed tree
  * and nothing else.
  *
  * THE PROGRAM IS STARTED WITHOUT A SHELL. A declaration is a program and its arguments, and
@@ -38,7 +38,7 @@ import { forwardReplacement, type Landed, type Replacement } from '../recorded-c
 import { withCache } from '../tree-sources.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the check commands need — injected so they are testable. */
+/** What the check commands need: injected so they are testable. */
 export interface CheckContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -100,14 +100,14 @@ export interface ChecksRan {
   /** The checker's anchor the results were signed under. */
   readonly checker: string;
   readonly results: readonly CheckResult[];
-  /** The public tree the results were written to — to be committed or kept by the caller. */
+  /** The public tree the results were written to: to be committed or kept by the caller. */
   readonly root: string;
 }
 
 /**
  * Runs the declared check of every rule in force and records each result.
  *
- * `keyFile` names a private key to sign with INSTEAD of this machine's own — the form a CI
+ * `keyFile` names a private key to sign with INSTEAD of this machine's own: the form a CI
  * secret takes. It is staged in a key root of its own for the run and removed after, so it
  * is never installed; that key root's tail is new on every run, which is what keeps two runs
  * on two branches from writing one tail twice.

@@ -2,11 +2,11 @@
  * The cold backup key at the key root.
  *
  * Two properties carry this feature, and both are pinned here. The first is that
- * the backup exists AT ALL and proves its own consent — a registration that
+ * the backup exists AT ALL and proves its own consent: a registration that
  * cannot be proven is worse than none, so a fault is reported, never smoothed
  * over. The second is that generating it does not change WHO this machine is:
  * the private half stays out of `keys/`, where the keystore adopts the first
- * private key it finds. That second one is not a detail — a machine whose
+ * private key it finds. That second one is not a detail: a machine whose
  * identity depends on directory order would sign as a different key between two
  * runs.
  */
@@ -50,12 +50,12 @@ function machineIdentity(): { fingerprint: string; anchor: string } {
   return { fingerprint, anchor: deriveAnchor(fingerprint) };
 }
 
-/** The `.key` files inside `keys/` — the candidates for THIS machine's identity. */
+/** The `.key` files inside `keys/`: the candidates for THIS machine's identity. */
 function privateKeysInKeysDir(): string[] {
   return readdirSync(keysDir(keyRoot)).filter((name) => name.endsWith('.key'));
 }
 
-describe('ensureBackupKey — generating the identity’s cold second key', () => {
+describe('ensureBackupKey: generating the identity’s cold second key', () => {
   it('writes the public half and registration in keys/, and the private half in backup/', () => {
     const { anchor } = machineIdentity();
     const backup = ensureBackupKey(keyRoot, anchor);
@@ -71,7 +71,7 @@ describe('ensureBackupKey — generating the identity’s cold second key', () =
     expect(statSync(backupPrivateKeyPath(keyRoot, fingerprint)).mode & 0o777).toBe(0o600);
   });
 
-  it('NEVER leaves a second private key in keys/ — the machine’s identity is unchanged', () => {
+  it('NEVER leaves a second private key in keys/: the machine’s identity is unchanged', () => {
     // This is the test the feature exists around: `loadOrCreateKeyPair` adopts the
     // FIRST private key in `keys/`, so a second one there makes which key the
     // machine speaks as depend on directory order. Before: one private key, one
@@ -100,7 +100,7 @@ describe('ensureBackupKey — generating the identity’s cold second key', () =
   it('does not mint a second backup once the private half has left the machine', () => {
     // The intended end state: the person moved the file off this disk. The
     // REGISTRATION is what says "this machine has a backup", so a later init must
-    // not mint another one — that would silently make the copy they carry useless.
+    // not mint another one: that would silently make the copy they carry useless.
     const { anchor } = machineIdentity();
     const first = ensureBackupKey(keyRoot, anchor);
     rmSync((first as { privateKeyPath: string }).privateKeyPath);
@@ -116,8 +116,8 @@ describe('ensureBackupKey — generating the identity’s cold second key', () =
     const stranger = generateKeyPair();
     writeFileSync(registrationPath(keyRoot, stranger.fingerprint), 'not json at all\n', 'utf-8');
 
-    // Nothing is created — an unreadable registration might BE this identity's
-    // backup, and replacing it would strand the copy the person carries — and
+    // Nothing is created (an unreadable registration might BE this identity's
+    // backup, and replacing it would strand the copy the person carries) and
     // nothing is named as "the backup" either.
     expect(ensureBackupKey(keyRoot, anchor)).toBeNull();
     expect(existsSync(join(keyRoot.root, 'backup'))).toBe(false);
@@ -126,7 +126,7 @@ describe('ensureBackupKey — generating the identity’s cold second key', () =
   it('is per IDENTITY: a registration for another anchor does not stand in for one', () => {
     // The aftermath of a lost key: the machine mints a new key, so a new anchor.
     // The old registration proves membership in an identity nobody can speak for
-    // any more, so the new identity must get its own backup — otherwise the one
+    // any more, so the new identity must get its own backup: otherwise the one
     // protection mnema offers is missing exactly when the loss happened.
     const older = ensureBackupKey(keyRoot, deriveAnchor('an-identity-that-was-lost'));
     const { anchor } = machineIdentity();
@@ -143,7 +143,7 @@ describe('ensureBackupKey — generating the identity’s cold second key', () =
   });
 });
 
-describe('registrations — proven, or reported as a fault', () => {
+describe('registrations: proven, or reported as a fault', () => {
   it('reports the backup as usable, with the anchor and role it was registered for', () => {
     const { anchor } = machineIdentity();
     const backup = ensureBackupKey(keyRoot, anchor);
@@ -161,7 +161,7 @@ describe('registrations — proven, or reported as a fault', () => {
 
   it('is unusable for ANOTHER anchor: the signature covers the one it names', () => {
     // The reverse signature covers `enroll:<anchor>:<fp>`, so it proves consent
-    // for exactly one identity — which is also why one signature is replayable
+    // for exactly one identity, which is also why one signature is replayable
     // into every tree of THAT identity, forever.
     const { anchor } = machineIdentity();
     const backup = ensureBackupKey(keyRoot, anchor);

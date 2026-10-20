@@ -83,7 +83,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/action
   'packages/action/README.md': 9,
   // @mnema/chain, its reader in Python and its format
-  'packages/chain/': 2070,
+  'packages/chain/': 276,
   // the page of @mnema/chain
   'packages/chain/README.md': 58,
   // the manifest of @mnema/code, whose description the registry shows
@@ -91,7 +91,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 2558,
+  'packages/code/src/': 755,
   // what it prints
   'packages/code/src/presentation/': 43,
   // the console

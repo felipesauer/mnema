@@ -1,5 +1,5 @@
 /**
- * `mnema doctor` — what this machine says about how mnema is installed, and what to do about
+ * `mnema doctor`: what this machine says about how mnema is installed, and what to do about
  * each thing it finds. Asked alone it reads and writes NOTHING: not the record, not a
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
@@ -7,15 +7,15 @@
  * SEVEN QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
- *     installed plugins — a file of the host's that this product does not own, so a list that is
+ *     installed plugins: a file of the host's that this product does not own, so a list that is
  *     missing or does not read as expected is said, never guessed at);
  *   - is the mnema MCP server declared more than once in the places a host reads it from, the
- *     plugin counting as one declaration — a session is offered every tool once per declaration;
+ *     plugin counting as one declaration: a session is offered every tool once per declaration;
  *   - is there a namesake: a second “mnema” on the `PATH`, or an npm package named “mnema”
  *     installed where this machine's `PATH` points. THE REGISTRY IS NOT ASKED: a package that is
  *     published but not installed here is outside what this can know, and it says so;
  *   - in a project inside a git repository, does a worktree still hold a private tree where
- *     it lived before it moved into the repository's git directory — notes nothing reads there,
+ *     it lived before it moved into the repository's git directory: notes nothing reads there,
  *     and that removing the worktree deletes;
  *   - where the record has adopted a stack, are its files still what the receipt says it
  *     wrote and does the record still say the same (`mnema stack check`'s own comparison);
@@ -24,7 +24,7 @@
  *     unencrypted leave the whole separation to nothing.
  *
  * Each finding is ONE line: what was found, then what to do. A finding that needs nothing to be
- * done says so. The verb's exit status is 0 whatever it found — it reports, and a script that
+ * done says so. The verb's exit status is 0 whatever it found: it reports, and a script that
  * wants to act on a finding reads the line.
  */
 
@@ -67,7 +67,7 @@ import {
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
 
-/** What the doctor needs — injected so it is testable against a sandbox. */
+/** What the doctor needs: injected so it is testable against a sandbox. */
 export interface DoctorContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -684,7 +684,7 @@ function treesSaid(scopes: readonly Scope[]): string {
 /**
  * The agent keys this machine holds, against the record of EACH tree this process reaches: for
  * each, in which of the project's committed tree, its private tree and the machine's global one the
- * record enrols it under its name — a host asked to sign as it then does, in that tree — and in
+ * record enrols it under its name (a host asked to sign as it then does, in that tree) and in
  * which it does not, where that host signs as the person instead (declared, not attested), or is
  * refused when the person's key is protected. A key retired in any tree this reaches is retired in
  * all of them, and a key enrolled in one tree and retired in another is said as both.

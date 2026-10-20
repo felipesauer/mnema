@@ -130,7 +130,7 @@ describe('mnema task move', () => {
   });
 });
 
-describe('mnema task move — the transition follows the entity (coherence)', () => {
+describe('mnema task move: the transition follows the entity (coherence)', () => {
   it('moves a task born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     // The CLI create is born public; the move must follow it there. The private
     // tree must never receive the transition (that would split the history).
@@ -144,7 +144,7 @@ describe('mnema task move — the transition follows the entity (coherence)', ()
       catalogUpcasters(),
     ).filter((e) => e.subject === id);
     // Birth pair (created + birth transition) + the submit transition = 3 events,
-    // ALL in public: created and transitioned share one tree — history is whole.
+    // ALL in public: created and transitioned share one tree; history is whole.
     expect(publicEvents.map((e) => e.kind)).toEqual([
       'task.created',
       'task.transitioned',
@@ -162,7 +162,7 @@ describe('mnema task move — the transition follows the entity (coherence)', ()
 
   it('moves a task born in PRIVATE in the PRIVATE tree, never touching PUBLIC', () => {
     // A task born in the private tree (as an agent's write would be) must be
-    // moved in private — routing to public would split its history and leak a
+    // moved in private: routing to public would split its history and leak a
     // private task's move to the team. The CLI create only writes public today,
     // so the private birth is written directly, then the CLI move is exercised.
     const { repo, env } = setup();
@@ -183,7 +183,7 @@ describe('mnema task move — the transition follows the entity (coherence)', ()
     );
     w.checkpoint();
 
-    // The CLI move — with the old hardcoded 'public', this would refuse
+    // The CLI move: with the old hardcoded 'public', this would refuse
     // UNKNOWN_TASK (the task is not in public). Following the entity, it moves it
     // in private.
     const moved = runTaskTransition({ cwd: repo, env }, { id, action: 'submit' });
@@ -193,14 +193,14 @@ describe('mnema task move — the transition follows the entity (coherence)', ()
       { root: trees.projectPrivate as string },
       catalogUpcasters(),
     ).filter((e) => e.subject === id);
-    // created + birth transition + submit — all in private.
+    // created + birth transition + submit: all in private.
     expect(privateEvents.map((e) => e.kind)).toEqual([
       'task.created',
       'task.transitioned',
       'task.transitioned',
     ]);
 
-    // Public never received the transition — history not split.
+    // Public never received the transition: history not split.
     const publicEvents = orderedEvents(
       { root: trees.projectPublic as string },
       catalogUpcasters(),
@@ -209,12 +209,12 @@ describe('mnema task move — the transition follows the entity (coherence)', ()
   });
 });
 
-describe('mnema task move --which — the agent that executed the move', () => {
+describe('mnema task move --which: the agent that executed the move', () => {
   /**
    * The agent each `task.transitioned` on a task names, in chain order. The FIRST
    * entry is always the birth transition (`task` create appends the pair
    * created + `from: null` → DRAFT), so a human's create then an agent's move
-   * reads as `[undefined, 'ci-runner']` — the two are attributable apart.
+   * reads as `[undefined, 'ci-runner']`: the two are attributable apart.
    */
   function agentsOf(root: string, id: string): (string | undefined)[] {
     return orderedEvents({ root }, catalogUpcasters())
@@ -234,7 +234,7 @@ describe('mnema task move --which — the agent that executed the move', () => {
     expect(agentsOf(root, id)).toEqual([undefined, 'ci-runner']);
   });
 
-  it('a move with an agent still follows the entity — `which` never re-routes it', () => {
+  it('a move with an agent still follows the entity: `which` never re-routes it', () => {
     // A birth reads `which` to pick a tree; a move does not. A task born PUBLIC
     // stays public when an agent moves it, even though an agent's BIRTH would
     // have defaulted private.
@@ -266,7 +266,7 @@ describe('mnema task move --which — the agent that executed the move', () => {
       code: 'WHO_IS_WHICH',
       message: 'the authorizing human and the executing agent must be different identities',
     });
-    // Only the birth transition is there — the move appended nothing...
+    // Only the birth transition is there: the move appended nothing...
     const root = resolveTrees(repo, env).projectPublic as string;
     expect(agentsOf(root, created.id)).toEqual([undefined]);
     // ...and the task did not move.

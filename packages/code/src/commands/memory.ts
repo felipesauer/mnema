@@ -1,20 +1,20 @@
 /**
- * `mnema memory "<content>"` — capture a memory.
+ * `mnema memory "<content>"`: capture a memory.
  *
  * The first of the four knowledge verbs, and the simplest. A memory is a
  * point-in-time FACT, not a workflow entity: there is no gate, no state, no
- * `move`. So the adapter is a leaner sibling of the birth mold — resolve which
+ * `move`. So the adapter is a leaner sibling of the birth mold (resolve which
  * tree the write belongs to, open its writer, call ONE core operation, report
- * what it returned — with no transition to follow and nothing to judge.
+ * what it returned) with no transition to follow and nothing to judge.
  *
  * The content is a POSITIONAL argument (`mnema memory "<content>"`). This is
- * quick capture — jrnl / todo.txt / taskwarrior — where the content IS the
+ * quick capture, jrnl / todo.txt / taskwarrior, where the content IS the
  * command and competes with no label, so it needs no flag. (A skill puts its
  * body behind `--body` because a `name` positional competes with it; a memory
  * has no such competitor, and the asymmetry is deliberate.)
  *
  * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
- * this is one of the TWO kinds the routing rule still answers from the AUTHOR — a
+ * this is one of the TWO kinds the routing rule still answers from the AUTHOR: a
  * human capture goes public, an agent's goes private. It is not the kind-based
  * answer the other verbs get, and that is deliberate: the same kind holds a fact the
  * team needs and a note that is nobody's business but the writer's, so the kind does
@@ -34,7 +34,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the memory command needs — injected so it is testable. */
+/** What the memory command needs: injected so it is testable. */
 export interface MemoryContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -51,7 +51,7 @@ export interface MemoryCaptured extends Replacement, Landed {
 
 /** The capture was refused. */
 export type MemoryRefused =
-  /** There is no project here — a project-scoped memory needs one. */
+  /** There is no project here: a project-scoped memory needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core operation refused (e.g. the authority invariant). */
   | {
@@ -63,7 +63,7 @@ export type MemoryRefused =
 
 /**
  * Captures a memory, routing its birth to the resolved scope. The scope rule is
- * the one every birth follows: an explicit `scope` wins, else `resolveScope` — which
+ * the one every birth follows: an explicit `scope` wins, else `resolveScope`, which
  * for this kind reads the author (public for a person, private for an agent), the one
  * source of that rule. A PROJECT scope
  * (public/private) needs a project; with no `.mnema/` found from the cwd this
@@ -109,7 +109,7 @@ export function runMemory(
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );
-    // Checkpoint so the new memory is signature-covered at once — the tree stays
+    // Checkpoint so the new memory is signature-covered at once: the tree stays
     // fully signed after every command, the same posture init leaves it in.
     if (written.ok) writer.checkpoint();
     return written;

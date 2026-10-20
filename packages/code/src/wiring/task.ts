@@ -7,7 +7,7 @@
  * moves, `task guard` rehearses one). The group does nothing on its own: it used to
  * create with the title typed right after its name, and a group that takes a free
  * word cannot refuse a mistyped subcommand (`mnema task moveZZZ` created a task
- * called `moveZZZ`); `one-voice-for-a-no.test.ts` holds that no group does. Create takes an optional `--scope` — the
+ * called `moveZZZ`); `one-voice-for-a-no.test.ts` holds that no group does. Create takes an optional `--scope`: the
  * per-action override for where the task is born; omitted, the KIND decides, and a
  * task is the team's board, so it lands in the tree that travels. `move` takes NO
  * scope: a move follows the entity to the tree it was born in, never a scope the
@@ -17,7 +17,7 @@
  * move: commander hands a group's option to the group wherever it appears on the
  * line, so the move reads it off the parent (see {@link
  * WHICH_ON_SUBCOMMAND_HELP}). Unlike `--scope`, which the move rejects, `--which`
- * is honored on a move — the agent that executed a transition is exactly what the
+ * is honored on a move: the agent that executed a transition is exactly what the
  * record should name. Which of the two is which is declared once, beside the move,
  * and read by the move, its refusal and the completion (`from-the-group.ts`).
  */
@@ -61,7 +61,7 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
 
-  // `task create <title>` — the verb the agent's surface calls `create_task`. The group used
+  // `task create <title>`: the verb the agent's surface calls `create_task`. The group used
   // to create with the title typed right after its name, and a group that takes a free word
   // cannot refuse a mistyped subcommand: `mnema task moveZZZ` created a task called `moveZZZ`.
   // Its flags are its own, so its `--help` lists them; written after `create` they still land
@@ -104,14 +104,14 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
 
   // One generic move: the action is an argument the gate validates, not a
   // hardcoded per-action command. The surface knows nothing of the transition
-  // table — it forwards the action string and whichever proof flag was given,
+  // table: it forwards the action string and whichever proof flag was given,
   // and prints the gate's own verdict (the new state, or a typed refusal).
   //
   // A move takes NO `--scope`: a transition follows the entity to the tree it
-  // was born in, never a scope the caller picks — routing it elsewhere would
+  // was born in, never a scope the caller picks; routing it elsewhere would
   // split the task's history across the public/private boundary. Because `move`
   // sits under `task`, commander lets `task`'s `--scope` be parsed here too, so
-  // the move REJECTS it explicitly rather than silently ignoring it — and so every
+  // the move REJECTS it explicitly rather than silently ignoring it, and so every
   // flag of the group it does not read (`from-the-group.ts`).
   const move = task
     .command('move')
@@ -142,7 +142,7 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
       // Both `--scope` and `--which` on a move are parsed into `task`'s options
       // (the parent), because that is where they are declared. Their verdicts
       // differ: a `--scope` means the caller tried to scope a move, which the model
-      // forbids — the move follows the entity's home tree, not a chosen scope — so
+      // forbids (the move follows the entity's home tree, not a chosen scope), so
       // it is rejected; a `--which` is the agent that executed the move, which the
       // record should name, so it is forwarded.
       const given = await fromTheGroup<{ which?: string }>(move, wiring);

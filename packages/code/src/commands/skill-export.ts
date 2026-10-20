@@ -1,10 +1,10 @@
 /**
- * `mnema skill export <id> --out <dir>` — an adopted pattern written as the
+ * `mnema skill export <id> --out <dir>`: an adopted pattern written as the
  * `<name>/SKILL.md` an agent host reads on its own.
  *
  * IT IS AN OUTPUT AND NOTHING ELSE: no event, no field on the catalogue, no key, no
  * consultation. That is the whole condition under which this slice costs nothing in
- * proof — the record stays the record, and a file is produced from it. The one thing
+ * proof: the record stays the record, and a file is produced from it. The one thing
  * the specification needs and the record does not hold is the `description`, and it is
  * DERIVED at the moment of export (`agent-skill.ts`) rather than stored: a field on
  * `skill.created` would be a new kind of thing the product promises to prove, and this
@@ -18,7 +18,7 @@
  * ONLY A PATTERN IN FORCE LEAVES, and the two states this refuses are refused for two
  * different reasons that both land here:
  *   - a pattern AWAITING A JUDGEMENT, dropped into a host's skills directory, is used
- *     by an agent as though it were the team's standard — skipping exactly the review
+ *     by an agent as though it were the team's standard: skipping exactly the review
  *     this product exists to record. It is not "not ready to read": the `skills` tool
  *     serves such a body to a caller that names it, so it can be RULED on. Serving a
  *     candidate to whoever asked to judge it and publishing a candidate as a standard
@@ -35,20 +35,20 @@
  * machine, so a state added tomorrow does not compile until it is classified, and
  * {@link EXPORTED} is total over the three dispositions, so a fourth disposition does
  * not compile until it has an answer here. The classification is ASKED
- * (`skillDisposition`), never restated — the surface deciding for itself what `adopted`
+ * (`skillDisposition`), never restated: the surface deciding for itself what `adopted`
  * means is the shape `no-classification-table-reaches-the-surface.test.ts` names.
  *
  * WHAT GOES IN `metadata`, AND WHY IT IS THE ONE THING NOBODY ELSE CAN WRITE. The id
  * of the record and the ANCHOR that put the pattern in force. A third party holding the
- * repository can check both — `mnema show <id>` reads the pattern back, `mnema verify`
- * rules on the chain the two facts live in, `mnema timeline <id>` names the identity —
+ * repository can check both (`mnema show <id>` reads the pattern back, `mnema verify`
+ * rules on the chain the two facts live in, `mnema timeline <id>` names the identity)
  * and no competitor in the ecosystem study can produce that line: a lockfile hashes a
  * file that changes, and `metadata.author` is a free string. The anchor is written
  * WHOLE and never in the short form the reads print, because a short form only means
  * something against the record it was shortened in, and this file is leaving.
  *
  * The anchor comes from the LAST transition, which is the act that put the pattern in
- * the state it is being exported in — by construction, not by matching a word: the
+ * the state it is being exported in (by construction, not by matching a word): the
  * projection reads state off the last transition's `to`, so the last transition IS the
  * adoption of an adopted pattern. It is read through the context package's `timeline`, the
  * reading that already answers "what happened to this entity", rather than through a
@@ -89,7 +89,7 @@ import {
 } from '../tree-sources.js';
 
 /**
- * Whether a pattern in each disposition leaves the record as a file — the ONE place
+ * Whether a pattern in each disposition leaves the record as a file: the ONE place
  * that decision is written.
  *
  * A table and not a predicate for the reason the context package's `BODY_SERVED` is one: a
@@ -118,7 +118,7 @@ export type DescriptionSource =
   /** The mechanical cut of the body (`derivedDescription`). */
   | 'the body';
 
-/** What the export needs — injected so it is testable. */
+/** What the export needs: injected so it is testable. */
 export interface SkillExportContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -128,10 +128,10 @@ export interface SkillExportContext {
 
 /** What the caller asked for: which pattern, where it goes, and what it says. */
 export interface SkillExportInput {
-  /** The skill id — the value shown when it was proposed. */
+  /** The skill id: the value shown when it was proposed. */
   readonly id: string;
   /**
-   * The directory the `<name>/` directory is created in — REQUIRED here, with no
+   * The directory the `<name>/` directory is created in: REQUIRED here, with no
    * default of its own.
    *
    * The default belongs to the surface and is declared there (`wiring/skill.ts`), where
@@ -151,16 +151,16 @@ export interface SkillExportDone {
   readonly path: string;
   /** The `name` in the frontmatter, which is also the directory's name. */
   readonly name: string;
-  /** The `description` written — one line, within the specification's ceiling. */
+  /** The `description` written: one line, within the specification's ceiling. */
   readonly description: string;
   /** Which rule produced it, so the surface can say so. */
   readonly descriptionFrom: DescriptionSource;
   /** The id in `metadata`, which is the id of this skill. */
   readonly id: string;
-  /** The identity in `metadata`, WHOLE — the anchor that put the pattern in force. */
+  /** The identity in `metadata`, WHOLE: the anchor that put the pattern in force. */
   readonly adoptedBy: string;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -174,7 +174,7 @@ export type SkillExportRefused =
   | { readonly ok: false; readonly reason: 'UNKNOWN_SKILL' }
   /**
    * No visible tree holds it AND there is no project here: the global tree was read and does
-   * not have it, and the person is most likely in the wrong directory — which is the news, and
+   * not have it, and the person is most likely in the wrong directory, which is the news, and
    * not that a record they named is missing.
    */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
@@ -188,9 +188,9 @@ export type SkillExportRefused =
    * The record projects this pattern but this machine cannot read the act that put it
    * in force, so the provenance line cannot be written.
    *
-   * It is NOT REACHABLE over a cache that projected the skill at all — the projection
+   * It is NOT REACHABLE over a cache that projected the skill at all (the projection
    * needs a transition, and the reference index the history is read from holds the same
-   * events — and it exists because the two are two indexes. A code path that assumed
+   * events) and it exists because the two are two indexes. A code path that assumed
    * they agree would be that assumption written as a non-null assertion, and this bench
    * has paid for one of those.
    */
@@ -202,7 +202,7 @@ export type SkillExportRefused =
  *
  * NOTHING REACHES THE DISK UNTIL EVERY CHECK HAS PASSED. The document is composed
  * whole first and the directory is created after it, so a refusal never leaves a
- * directory, an empty file or half a file behind — asserted from the outside in
+ * directory, an empty file or half a file behind: asserted from the outside in
  * `the-pattern-leaves-in-the-hosts-shape.test.ts`, which counts the files under `--out`
  * after each refusal.
  *
@@ -249,7 +249,7 @@ export function runSkillExport(
       given === undefined ? derivedDescription(skill.body) : specDescription(given);
     if (description === undefined) return noDescription(given !== undefined);
 
-    // The act that put the pattern where it is — the last transition, which is the one
+    // The act that put the pattern where it is: the last transition, which is the one
     // the projection read its state from.
     const put = putInForce(sources, input.id);
     if (put === undefined) {
@@ -335,7 +335,7 @@ function noDescription(fromTheCaller: boolean): SkillExportRefused {
  * transition, or `undefined` when the history holds none.
  *
  * It reads the context package's `timeline`, whose entries come back in the union's proven
- * order — so the last transition in the list is the last transition there was, and
+ * order, so the last transition in the list is the last transition there was, and
  * nothing here re-sorts by `at`, which would move a fact whenever a clock stepped back.
  */
 function putInForce(sources: readonly ScopedCache[], id: string): string | undefined {

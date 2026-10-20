@@ -1,6 +1,6 @@
 /**
  * A stack's author signature, read offline: `stack.sigstore.json` at the stack's root, a Sigstore
- * bundle (v0.3, a message signature) over the stack's LISTING — the `path NUL sha256(file) LF`
+ * bundle (v0.3, a message signature) over the stack's LISTING, the `path NUL sha256(file) LF`
  * lines whose SHA-256 is the stack's digest. So the digest the bundle names, and the one Rekor
  * logged, is the stack's digest itself, and the listing is recomputed here from the files, never
  * taken from the bundle.
@@ -8,7 +8,7 @@
  * The checks are Sigstore's own, through the reader `verify --against-sigstore` uses
  * (`sigstore/read.ts`), against the trust root this binary carries. Nothing is asked of anybody.
  *
- * WHAT IT PROVES, AND WHAT IT DOES NOT. A signature that holds says WHO signed these bytes — the
+ * WHAT IT PROVES, AND WHAT IT DOES NOT. A signature that holds says WHO signed these bytes: the
  * identity Fulcio wrote into the certificate, vouched for by an OpenID issuer, and logged in
  * Rekor. It does not say the stack is SAFE: an author can sign a harmful skill, and nothing here
  * reads what a skill tells an agent to do.
@@ -26,7 +26,7 @@ export type StackSignature =
   | { readonly kind: 'unsigned' }
   | {
       readonly kind: 'signed';
-      /** The identity the certificate names — an e-mail, or a workflow URI. */
+      /** The identity the certificate names: an e-mail, or a workflow URI. */
       readonly identity: string;
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;

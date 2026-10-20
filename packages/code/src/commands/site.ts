@@ -1,9 +1,9 @@
 /**
- * `mnema site --out <dir>` — the committed record as one HTML file a stranger can open.
+ * `mnema site --out <dir>`: the committed record as one HTML file a stranger can open.
  *
  * THE PUBLIC TREE AND NOTHING ELSE. A page published to GitHub Pages is read by whoever has the
  * link, so what goes in it is what the repository already shows everyone: the committed tree.
- * The private tree and the machine-global tree are never opened here — no path to either is
+ * The private tree and the machine-global tree are never opened here: no path to either is
  * resolved, so there is nothing to filter out and nothing a note kept private could ride in on.
  * The record's files are taken by an allow-list (`tails/` and the committed `keys/*.pub`) and
  * not by "everything under the tree", because the tree's directory also holds the private
@@ -11,7 +11,7 @@
  *
  * IT CARRIES THE RECORD'S FILES SO THE PAGE CAN VERIFY THEM. The verdict is the chain's own,
  * computed in the reader's browser over those files (`site/browser/entry.ts`). What the page
- * lists — decisions, their history, the raw events — is written here from the same files.
+ * lists (decisions, their history, the raw events) is written here from the same files.
  *
  * IT RECORDS NOTHING. It reads the public tree and writes one file, `index.html`, under the
  * directory the caller named; nothing else is touched.
@@ -31,7 +31,7 @@ import {
 import { type DecisionMove, renderPage, type SiteDecision, type SiteTail } from '../site/page.js';
 import { theSiteVerifier } from '../site/verifier-bundle.js';
 
-/** What the site command needs — injected so it is testable. */
+/** What the site command needs: injected so it is testable. */
 export interface SiteContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -99,7 +99,7 @@ function recordFiles(publicRoot: string): Record<string, string> {
   return files;
 }
 
-/** Each tail's segment lines, verbatim — what the page lists as the raw events. */
+/** Each tail's segment lines, verbatim: what the page lists as the raw events. */
 function tailsOf(publicRoot: string, files: Readonly<Record<string, string>>): SiteTail[] {
   const tails = new Map<string, string[]>();
   for (const file of Object.keys(files)) {

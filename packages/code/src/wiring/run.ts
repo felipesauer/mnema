@@ -3,7 +3,7 @@
  *
  * `run` is a group, and the only one whose subject is a SESSION rather than a
  * piece of the record: `start` opens the session an agent works inside, `end`
- * seals it. A run is the unit of AUTHORIZATION — it records that a human opened
+ * seals it. A run is the unit of AUTHORIZATION: it records that a human opened
  * a session for an agent, and every fact written inside it inherits that chain.
  * The MCP server opens one per connection; these two verbs are how an agent
  * working through the CLI (a script, a CI step, an agent with no MCP) gets one.
@@ -11,7 +11,7 @@
  * Neither verb takes `--scope`: a run is born in this machine's PRIVATE tree,
  * where runs live and where `focus`/`resume` read them. A work session is local
  * by nature, and letting one land in the team's tree would fill it with
- * sessions. Neither stamps a `run` on its own envelope either — a run's birth
+ * sessions. Neither stamps a `run` on its own envelope either: a run's birth
  * and its close ARE the run (its subject), so they belong to no parent session.
  */
 
@@ -35,13 +35,13 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
 
   // `mnema run start --which <agent> [--goal <text>]`. The agent is REQUIRED, and
   // that is the model rather than strictness: a run with no agent proves no
-  // delegation — it degrades into a correlation id, which is what makes a run
+  // delegation; it degrades into a correlation id, which is what makes a run
   // worth writing in the first place.
   //
   // Declared on each SUBCOMMAND rather than on the group, though both now take it:
   // the two flags mean different things (the agent a session is FOR, the agent
   // CLOSING one) and so carry different help, and a group's declaration SHADOWS a
-  // subcommand's — one declaration up there would give both verbs one wording and
+  // subcommand's; one declaration up there would give both verbs one wording and
   // leave the second one to be discovered as wrong.
   runGroup
     .command('start')
@@ -66,7 +66,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       // Both halves AS RECORDED, never as typed: echoing `opts.goal` would print a
       // credential on the line directly above the one reporting it was replaced.
       //
-      // Both are also text somebody wrote — an agent's NAME and a sentence of goal —
+      // Both are also text somebody wrote, an agent's NAME and a sentence of goal,
       // and the dash between them is a chunk of its own template rather than the head
       // of an interpolated fragment: the collapse trims what it is given, and a
       // fragment beginning with a space would come back without it (see
@@ -91,13 +91,13 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
     });
 
   // `mnema run end [<id>] --which <agent> [--outcome <text>]`. The id is OPTIONAL
-  // and falls back to the open session in the environment — closing the session you
+  // and falls back to the open session in the environment: closing the session you
   // are in is the common case, and making it retype an id would be ceremony. With
   // neither, it says how to close one instead of guessing which.
   //
   // The agent is REQUIRED, as it is on `start`: this pair is how an agent driving
   // the command line gets a session, and a close that could omit its executor would
-  // record the session an agent worked in as sealed by the person — which it did,
+  // record the session an agent worked in as sealed by the person, which it did,
   // and which no read could tell apart from a person who really did close it.
   runGroup
     .command('end')
@@ -133,12 +133,12 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       io.out(`Ended run ${result.id}`);
       // The agent AS RECORDED, on its own line, the way the birth names the one the
       // session is for: `by` and not `for`, because this half says who did the
-      // closing and the other says who the session was opened for — the same two
+      // closing and the other says who the session was opened for, the same two
       // questions the envelope and the payload keep apart.
       if (result.agent !== undefined) io.out(render(fact(onOneLine`by ${result.agent}`)));
       reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write
-      // refused (the run is no longer open), so say how to let go of it — but
+      // refused (the run is no longer open), so say how to let go of it, but
       // only when the variable really names THIS run.
       if (fromEnv === target) {
         io.out('');

@@ -5,7 +5,7 @@
  * `openChainForWriting` gives a machine a writer for one chain's tail. The
  * signing key belongs to the PERSON, not the chain: it is loaded from a separate
  * key root (minting a fresh pair there on first use), and only its PUBLIC half is
- * materialized into the chain — so one identity can write to several chains with
+ * materialized into the chain, so one identity can write to several chains with
  * one private key, never copied, while each chain still carries the public key an
  * anonymous verifier needs. `verify` reads and checks the whole chain. These are
  * the two operations the surfaces need: emit an event, or ask "is this intact?".
@@ -29,7 +29,7 @@ import { ChainWriter, type WriterOptions } from './writer.js';
 export interface OpenOptions extends WriterOptions {
   /**
    * The key root: where this person's key pair lives, separate from the chain.
-   * Always explicit — the private key never lives inside a chain, so there is no
+   * Always explicit: the private key never lives inside a chain, so there is no
    * "same as the chain root" default. One key root can back several chains.
    */
   readonly keyRoot: string;
@@ -48,12 +48,12 @@ export interface OpenOptions extends WriterOptions {
  * key at `options.keyRoot`. Loads the person's pair from the key root, and reads
  * (or, on first use, mints) the per-chain installation id. A key root that holds
  * no key yet gets a pair made in memory, and that pair and its installation id are
- * kept by the writer's first append (`keyToSignWith`) — so a write refused before
+ * kept by the writer's first append (`keyToSignWith`), so a write refused before
  * it leaves the machine with no key, as it found it.
  *
  * NOTHING A CLONE RECEIVES IS WRITTEN HERE. This used to materialize the key's
  * public half "so the chain is anonymously verifiable", and the writer's
- * constructor gave the tail its directory and its proof of ownership — true of a
+ * constructor gave the tail its directory and its proof of ownership: true of a
  * chain once something is appended, and a residue for one whose writer opened
  * and appended nothing. The surfaces open a writer before an operation's own door
  * speaks (an oversize field, a name holding a credential, a move the gate
@@ -67,7 +67,7 @@ export interface OpenOptions extends WriterOptions {
  * keeps out, is the one thing opening writes into the chain, and only for a key the
  * machine already keeps (`writer.test.ts`, *leaves only the installation id in a chain
  * its writer opened and never wrote to*). A key made in memory keeps its id with the
- * pair, at the first append, so opening for it writes nothing at all — what the
+ * pair, at the first append, so opening for it writes nothing at all: what the
  * seventeen refused verbs of `code/tests/a-refusal-leaves-nothing.test.ts` hold, from a
  * HOME with no key.
  */
@@ -82,7 +82,7 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
     return new ChainWriter(chainLayout, key.keyPair, installationId, upcasters, options);
   }
   // A machine with no key yet: the key, and its installation id here, are kept at the writer's
-  // first append — so a write refused before it leaves the machine and the tree as they were.
+  // first append, so a write refused before it leaves the machine and the tree as they were.
   const installation = installationIdToKeep(installationLayout, key.keyPair.fingerprint);
   return new ChainWriter(chainLayout, key.keyPair, installation.id, upcasters, options, () => {
     keepKey();
@@ -91,16 +91,16 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
 }
 
 /**
- * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot` — read WITHOUT
+ * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot`: read WITHOUT
  * opening the chain for writing, so nothing inside the chain is touched.
  *
  * Opening a writer is not free even when nothing is appended: for a key already kept it makes the
  * key's installation id in the chain (a key not made yet is kept, with its id, only at the first
- * append). It USED TO do more — materialize the key's public half and give the tail its
- * directory and its proof of ownership — and those three moved to the first append (see
+ * append). It USED TO do more (materialize the key's public half and give the tail its
+ * directory and its proof of ownership), and those three moved to the first append (see
  * {@link openChainForWriting}), so what opening leaves now is one local file that git ignores.
- * A file all the same: a caller whose answer may turn out to write nothing — a refusal decided
- * from the record, or a question about who is writing — asks this first, opens a writer only
+ * A file all the same: a caller whose answer may turn out to write nothing (a refusal decided
+ * from the record, or a question about who is writing) asks this first, opens a writer only
  * once it knows it will write, and leaves the tree byte for byte as it found it.
  *
  * Nor the key root: a machine with no key yet is answered with the key this process would make

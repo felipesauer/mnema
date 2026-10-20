@@ -1,5 +1,5 @@
 /**
- * `mnema inherit` — point this project at another repository's record, at one commit.
+ * `mnema inherit`: point this project at another repository's record, at one commit.
  *
  * Two acts, both explicit: `set` names the where the first time, `update` moves the pointer to
  * a newer commit. Neither moves anything by itself: each prints what the project would inherit

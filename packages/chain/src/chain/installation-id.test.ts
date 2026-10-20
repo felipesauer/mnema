@@ -1,5 +1,5 @@
 /**
- * One key, one installation id per chain — even when two processes of that key reach for it at once.
+ * One key, one installation id per chain, even when two processes of that key reach for it at once.
  *
  * The id picks the tail a machine writes (`<fingerprint>-<installationId>`), so two ids minted for
  * one key in one chain are one machine writing two tails, and the one nothing opens again is an
@@ -11,13 +11,13 @@
  *
  * WHY THESE CASES ARE NOT A RACE, for the reason `tail-lock.test.ts` gives: two processes spawned
  * to hit a window are a probe with a probability. What the race PRODUCES is a state, and each case
- * plants it and asks the product what it does with it — a mint arriving after another process
+ * plants it and asks the product what it does with it: a mint arriving after another process
  * created the file, and a file created and not yet written. Rounds and rates, with a barrier
  * releasing two processes at one instant, are a measurement, not a case.
  *
  * A LINK TO NOTHING IN THE ID'S PLACE is a state of its own, and not a race: nobody created it
  * a moment ago and nobody will ever fill it, and the loop went round it forever. So the cases
- * about it — and about the two other states that reach the same branch of the loop — run the
+ * about it, and about the two other states that reach the same branch of the loop, run the
  * call in a thread of their own and stop it at a ceiling. A call that never returns holds the
  * thread its case's timer would have to run on, so the case's own timeout cannot end it and the
  * suite would hang instead of failing; stopped from here, a call that does not come back is a
@@ -56,7 +56,7 @@ import { type ChainLayout, installationIdPath } from './layout.js';
 
 let root: string;
 let layout: ChainLayout;
-/** A real key's fingerprint — the only kind the product ever files an id under. */
+/** A real key's fingerprint: the only kind the product ever files an id under. */
 let fingerprint: string;
 let path: string;
 
@@ -85,7 +85,7 @@ describe('two processes of one key get one installation id', () => {
 
   it('a mint that finds the id already created adopts it, and never writes over it', () => {
     // The state the first race leaves: another process minted and wrote a moment ago, and this
-    // one — which found nothing when it looked — is minting now.
+    // one, which found nothing when it looked, is minting now.
     const theirs = loadOrCreateInstallationId(layout, fingerprint);
     expect(mintInstallationId(path)).toBeUndefined();
     expect(readFileSync(path, 'utf-8')).toBe(`${theirs}\n`);
@@ -94,7 +94,7 @@ describe('two processes of one key get one installation id', () => {
 
   it('an id another process has created and not yet written is waited for, never minted over', async () => {
     // The state the second race leaves: the file exists and is empty, and the process that made
-    // it writes its id a moment later — here a thread, since this one is blocked reading.
+    // it writes its id a moment later; here a thread, since this one is blocked reading.
     writeFileSync(path, '', { mode: 0o600 });
     const theirs = anId();
     const writer = new Worker(
@@ -132,7 +132,7 @@ describe('two processes of one key get one installation id', () => {
 
 /**
  * The built module the thread loads. A thread started from here cannot load this TypeScript, and
- * what it loads is what ships — so these cases read the build, as every case that runs the binary
+ * what it loads is what ships, so these cases read the build, as every case that runs the binary
  * does, and `pnpm build` comes before them.
  */
 const BUILT = new URL('../../dist/chain/keystore.js', import.meta.url).href;
@@ -144,7 +144,7 @@ const BUILT = new URL('../../dist/chain/keystore.js', import.meta.url).href;
 const CEILING_MS = 4 * INSTALLATION_ID_WAIT_MS;
 
 /**
- * What the thread's filesystem answers differently at the id's place — the two states that reach
+ * What the thread's filesystem answers differently at the id's place: the two states that reach
  * the loop's second look and that no real filesystem holds still long enough to plant.
  */
 interface Plant {
@@ -164,10 +164,10 @@ interface Answer {
     readonly path?: string;
     readonly target?: string;
   };
-  /** How long the call took, on the fine clock — for what must come well inside the budget. */
+  /** How long the call took, on the fine clock: for what must come well inside the budget. */
   readonly ms: number;
   /**
-   * How long the call took on the clock the budget is kept by (`Date.now()`) — for what must wait
+   * How long the call took on the clock the budget is kept by (`Date.now()`): for what must wait
    * the budget out. The fine clock cannot say that: the deadline is a whole millisecond read at
    * the start, so the wait it bounds can end up to a millisecond short of it on any finer clock.
    */
@@ -263,7 +263,7 @@ async function inAThreadOfItsOwn(plant: Plant = {}): Promise<Answer> {
   }
 }
 
-/** Everything under the case's tree, by path — what a refusal must leave as it found it. */
+/** Everything under the case's tree, by path: what a refusal must leave as it found it. */
 const everythingUnder = (dir: string): string[] =>
   readdirSync(dir, { recursive: true, encoding: 'utf-8' }).sort();
 

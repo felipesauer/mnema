@@ -1,5 +1,5 @@
 /**
- * `mnema report` — what mnema would say about its own last internal error, shown whole.
+ * `mnema report`: what mnema would say about its own last internal error, shown whole.
  *
  * It shows the report, keeps it as a draft file beside the local log, and sends NOTHING: the
  * product makes no request, so there is no path from here to anyone but the person reading the
@@ -116,7 +116,7 @@ export function runReport(
  * The way to send the report, said only to a person. The link is the one thing that carries the
  * report toward anyone, so it is printed where standard input and error are a terminal, which is
  * the common case of a person. It is a signal and not a lock: a caller that fakes a terminal gets
- * the link too, and that sends nothing — the send is the person pressing Submit on GitHub.
+ * the link too, and that sends nothing; the send is the person pressing Submit on GitHub.
  */
 export function whereToSend(
   report: { readonly title: string; readonly body: string },

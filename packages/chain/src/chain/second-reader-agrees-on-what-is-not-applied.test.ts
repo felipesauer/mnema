@@ -265,7 +265,7 @@ describe('one record per rule of §6.7: both readers name the same move, by the 
 });
 
 describe('two machines on one record: what each had read decides', () => {
-  /** A decision born on A, accepted on B, and rejected on A — citing what each read, or not. */
+  /** A decision born on A, accepted on B, and rejected on A: citing what each read, or not. */
   function twoMachines(cite: boolean) {
     const record = fresh('mnema-moves-record-');
     const a = machine(record);
@@ -337,7 +337,7 @@ const TABLES = {
 
 /**
  * One drawn step. A move is drawn as a row of its table out of the state its writer last wrote
- * or read of the subject, most of the time — so most moves are legal and two machines diverge —
+ * or read of the subject, most of the time (so most moves are legal and two machines diverge)
  * and is bent the rest: out of a row picked blind, into a state the table does not hold, without
  * its proof, naming a successor it should not.
  */
@@ -500,7 +500,7 @@ function moveEvent(
 
 describe('drawn records on two machines, in both readers', () => {
   it(
-    'name the same moves, by the same rule, at the same place — and the draw reaches every rule',
+    'name the same moves, by the same rule, at the same place, and the draw reaches every rule',
     () => {
       const reached = new Map<string, number>();
       let unnamed = 0;
@@ -520,7 +520,7 @@ describe('drawn records on two machines, in both readers', () => {
         ),
         { seed: SEED, numRuns: 40 },
       );
-      // Not the answer — the reach of the draw: a property that only ever met one rule, or
+      // Not the answer, the reach of the draw: a property that only ever met one rule, or
       // only illegal moves, would agree over a corner of the section.
       expect([...reached.keys()].sort()).toEqual([
         'born-twice',
@@ -538,7 +538,7 @@ describe('drawn records on two machines, in both readers', () => {
 });
 
 describe('a note or a link taken back (§6.4): both readers name the same retraction not applied', () => {
-  /** A note and a link written on A, each taken back by `by` — A itself, or B. */
+  /** A note and a link written on A, each taken back by `by`: A itself, or B. */
   function takenBack(by: 'a' | 'b') {
     const record = fresh('mnema-retraction-record-');
     const machines = { a: machine(record), b: machine(record) };

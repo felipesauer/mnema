@@ -1,11 +1,11 @@
 /**
- * `mnema aging` — accepted decisions whose addressed paths have changed a lot since they were
+ * `mnema aging`: accepted decisions whose addressed paths have changed a lot since they were
  * accepted. It POINTS and never CONCLUDES.
  *
  * THE CRITERION IS ONE NUMBER, said on the page and settable by a flag: the commits made since
  * the decision was accepted that touched a path it addresses. A decision is listed when that
  * number reaches `--min-commits` (default {@link DEFAULT_MIN_COMMITS}). Nothing else is counted
- * — not lines, not authors — because a second criterion would be a second thing to disagree
+ * (not lines, not authors) because a second criterion would be a second thing to disagree
  * about, and this one can be re-run with `git log` by anyone who doubts it.
  *
  * WHAT A LISTED DECISION MEANS: that the code it speaks about moved a lot. Not that the decision
@@ -35,7 +35,7 @@ const ACCEPTED: DecisionState = 'accepted';
 /** How many commits on its addresses it takes to be listed, when the caller says nothing. */
 export const DEFAULT_MIN_COMMITS = 20;
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface AgingContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -55,7 +55,7 @@ export interface Aged {
   readonly all: number;
 }
 
-/** The reading. `git` is false when there is no work tree — then nothing is listed. */
+/** The reading. `git` is false when there is no work tree, then nothing is listed. */
 export interface AgingDone {
   readonly ok: true;
   readonly git: boolean;

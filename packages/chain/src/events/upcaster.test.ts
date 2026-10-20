@@ -5,7 +5,7 @@ import { UpcasterError, UpcasterRegistry, type VersionedEvent } from './upcaster
 /**
  * The catalog currently has only v1 of each kind, so its real upcaster ladder
  * is empty. The registry takes an injectable latest-version map, so these tests
- * drive the walk against a taller synthetic ladder — proving the multi-step
+ * drive the walk against a taller synthetic ladder: proving the multi-step
  * logic a future version bump will depend on, not just the zero-step path.
  */
 describe('UpcasterRegistry', () => {
