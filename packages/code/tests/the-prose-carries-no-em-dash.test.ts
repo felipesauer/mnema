@@ -67,11 +67,11 @@ const ESCAPES: readonly string[] = [
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
-  '.github/': 164,
+  '.github/': 49,
   // the headers mnema writes into its own tree
   '.mnema/': 2,
   // the manual
-  'docs/': 386,
+  'docs/': 384,
   // @mnema/action
   'packages/action/': 28,
   // @mnema/chain, its reader in Python and its format
@@ -95,9 +95,9 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // @mnema/vscode
   'packages/vscode/': 1,
   // the plugin for agent hosts
-  'plugin/': 167,
+  'plugin/': 87,
   // the recordings and the scripts that make them
-  'recordings/': 71,
+  'recordings/': 65,
 };
 
 /**

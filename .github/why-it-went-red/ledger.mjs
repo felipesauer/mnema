@@ -5,7 +5,7 @@
  * WHERE THIS COMES FROM. `the-ceiling-belongs-to-the-case` bans lifting the shared ceiling and
  * says, in its own words, what that ban does not cover: whether a case that WAITS actually has
  * a ceiling of its own is a question that "needs a DURATION, and a scan over source has none".
- * Two deliveries then had to discount reds by hand as machine contention — a human judgement
+ * Two deliveries then had to discount reds by hand as machine contention: a human judgement
  * dropped into the middle of the only evidence a mutation battery produces, since that battery
  * is worth something exactly because red means "the guard caught".
  *
@@ -31,7 +31,7 @@
  *   - the timer lag is THIS process's, and the main process is mostly idle while workers run.
  *     It under-reads worker starvation and over-reads nothing;
  *   - it holds the slow and the red, not the whole run. The recording floor below is a SIZE
- *     limit, never the rule — `verdict.mjs` owns every threshold that decides anything, and
+ *     limit, never the rule: `verdict.mjs` owns every threshold that decides anything, and
  *     refuses if its own budget ever sinks below this floor.
  */
 
@@ -47,7 +47,7 @@ import { relative, resolve } from 'node:path';
 /** @typedef {import('vitest/node').SerializedError} SerializedError */
 
 /**
- * WHAT A CASE SITS UNDER — VITEST'S OWN TWO, not a shape invented here. `type` is what separates
+ * WHAT A CASE SITS UNDER: VITEST'S OWN TWO, not a shape invented here. `type` is what separates
  * a suite from the module at the top of the chain, and the walk below stops at the first thing
  * that is not a suite. A module carries no `name`, which is exactly why the walk has to ask
  * before it reads one.
@@ -56,7 +56,7 @@ import { relative, resolve } from 'node:path';
  */
 
 /**
- * ONE ASK OF THE MACHINE. `runnable` is `null` where the platform will not say — never 0, which
+ * ONE ASK OF THE MACHINE. `runnable` is `null` where the platform will not say, never 0, which
  * would read as a calm machine rather than as an unreadable one.
  *
  * @typedef {{ at: number, runnable: number | null, lag: number }} Sample
@@ -80,7 +80,7 @@ import { relative, resolve } from 'node:path';
 
 /**
  * HOW THE MACHINE LOOKED ACROSS ONE CASE'S WINDOW. `runnableMost` and `runnableMean` are `null`
- * together, on a platform that will not say — never 0, which reads as a calm machine.
+ * together, on a platform that will not say, never 0, which reads as a calm machine.
  *
  * @typedef {{
  *   samples: number,
@@ -91,14 +91,14 @@ import { relative, resolve } from 'node:path';
  */
 
 /**
- * A FILE THAT FAILED WITH NO CASE UNDER IT — a collection or import error, which has no case to
+ * A FILE THAT FAILED WITH NO CASE UNDER IT: a collection or import error, which has no case to
  * attribute to.
  *
  * @typedef {{ file: string, errors: string[] }} ModuleError
  */
 
 /**
- * WHAT ONE RUN LEAVES BEHIND — the file `verdict.mjs` reads, declared HERE because this is what
+ * WHAT ONE RUN LEAVES BEHIND: the file `verdict.mjs` reads, declared HERE because this is what
  * writes it. The reader names this same typedef rather than a shape of its own: two definitions
  * of one file's contents is the form that produces two answers, and the ledger and the verdict
  * disagreeing about a field is precisely a broken ruler that cannot say it broke.
@@ -134,7 +134,7 @@ const TICK = 250;
  * THIS IS A SIZE LIMIT AND NOT A RULE. Writing all 4190 cases would make a ledger nobody reads
  * and a diff nobody can review; writing the slow ones keeps it to a few hundred lines. It is
  * deliberately far under any budget a reader could sensibly apply, and `verdict.mjs` REFUSES
- * rather than reads if its budget ever drops to meet it — so this number can never quietly
+ * rather than reads if its budget ever drops to meet it, so this number can never quietly
  * hide a case from the accusation. Pinned by `the-red-says-why-it-went-red`.
  */
 export const RECORDING_FLOOR = 500;
@@ -161,11 +161,11 @@ export function runnableNow(read = () => readFileSync('/proc/loadavg', 'utf-8'))
 }
 
 /**
- * The ceiling the MAJORITY of cases ran under — derived from the run rather than read out of a
+ * The ceiling the MAJORITY of cases ran under: derived from the run rather than read out of a
  * configuration.
  *
  * WHY DERIVED. Reading the workspace's configured default would mean naming, in this file, the
- * very key `the-ceiling-belongs-to-the-case` bans everywhere it can be written — and that guard
+ * very key `the-ceiling-belongs-to-the-case` bans everywhere it can be written, and that guard
  * scans `.github/` too, so this file is inside it. The mode over the run answers the same
  * question from the source of truth that actually ran, and it stays right if the shared ceiling
  * ever changes. Pinned by `the-red-says-why-it-went-red`.
@@ -256,7 +256,7 @@ export function shapeOf(message) {
  *
  * `@implements` is the point: the three handlers below are called by vitest and by nothing else,
  * so the only definition of what they receive that cannot drift is vitest's. A handler renamed
- * out of the interface, or one reading a field the runner does not hand it, stops compiling —
+ * out of the interface, or one reading a field the runner does not hand it, stops compiling,
  * which is what `pnpm typecheck` reaching this file buys.
  *
  * @implements {Reporter}
@@ -273,7 +273,7 @@ export default class Ledger {
   /**
    * THE SAMPLING TIMER, DECLARED AS WHAT IT CARRIES.
    *
-   * It read `null` — the initial value taken for the whole type — until this file was
+   * It read `null`, the initial value taken for the whole type, until this file was
    * type-checked. Nothing failed at runtime: `onTestRunEnd` already tests `!== null` before
    * clearing, and the `?.` on the line below guards the METHOD. What was wrong was the
    * declaration, and a field whose declared type cannot hold what is assigned to it is a

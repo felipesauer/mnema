@@ -17,7 +17,7 @@ name: Sigstore probe
 # exit, so the exit alone would be green over a bundle that does not hold; the notes are the
 # criterion, read from `--json`.
 #
-# WHAT LEAVES. This workflow's identity — the repository, the file and the ref — goes into
+# WHAT LEAVES. This workflow's identity (the repository, the file and the ref) goes into
 # Sigstore's public log, which does not forget. That is why it runs only by hand, and why the act
 # refuses a private repository (it is not worked around here).
 
