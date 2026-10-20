@@ -235,7 +235,7 @@ describe('nowhere names the section by another wording', () => {
     const corpus = [
       { file: 'prose.md', text: `What a table tolerates${THE_TAIL}.\n` },
       { file: 'other.md', text: `## 5. What a capture changes${THE_TAIL}\n` },
-      { file: 'tail.md', text: "## What it proves, and what it cannot\n" },
+      { file: 'tail.md', text: '## What it proves, and what it cannot\n' },
     ];
     expect(otherWordings(corpus)).toEqual([]);
   });
