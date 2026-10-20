@@ -101,7 +101,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 7,
   // the cases beside @mnema/code
-  'packages/code/tests/': 5722,
+  'packages/code/tests/': 3812,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
