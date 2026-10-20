@@ -1,10 +1,10 @@
 /**
- * The session learns that the workspace moved — the half nothing was listening for.
+ * The session learns that the workspace moved: the half nothing was listening for.
  *
  * `resolveContext` had exactly one caller, `openSession`, in `oninitialized`. The
  * trees, the project and the list of the workspace's projects were resolved once and
  * never again, and `setNotificationHandler` did not appear anywhere in
- * `packages/code/src` — so `notifications/roots/list_changed`, which is the client
+ * `packages/code/src`, so `notifications/roots/list_changed`, which is the client
  * saying "the workspace changed" and is in the protocol for exactly this, arrived and
  * was dropped. An agent that opened a second project went on being served, and
  * WRITING, out of the record the cascade happened to pick first. It is the class that
@@ -30,11 +30,11 @@
  *   - **a workspace that never changes pays nothing**, because the cost of fixing the
  *     case of some must not land on the hot path of everybody. That one is a
  *     measurement and lives in the report; what is asserted here is the mechanism it
- *     rests on — the re-read runs only when the client speaks.
+ *     rests on: the re-read runs only when the client speaks.
  *
  * WHAT IS DELIBERATELY NOT HERE: a root being RETIRED. The re-read is additive by
  * construction (see `refreshWorkspace`), and a tree leaving mid-session raises what
- * to do with a run open in it, with its caches and with a write in flight — product
+ * to do with a run open in it, with its caches and with a write in flight: product
  * design, not anything derivable from this defect. The case below that announces a
  * SHORTER list is what pins that decision: the retired root stays.
  */
@@ -57,8 +57,8 @@ import { openSession, refreshWorkspace } from '../src/mcp/session.js';
  *
  * It used to be read off a side effect: the anchor was decided through a WRITER opened over
  * the tree, and opening one materializes the tree, so the tree's EXISTENCE said it had been
- * asked. That side effect was a defect — a connection that only reads gave the private tree
- * a public half, an installation and a tail — and it is gone: asking opens nothing now, so a
+ * asked. That side effect was a defect (a connection that only reads gave the private tree
+ * a public half, an installation and a tail) and it is gone: asking opens nothing now, so a
  * tree nobody asked and a tree that was asked look the same on the disk. The question is
  * counted at `signerHeldFor`, which the session asks and nothing here stubs: the real function
  * answers every call. The machine holds a key (`beforeEach`), because a machine with none has no
@@ -95,7 +95,7 @@ function makeProject(name: string): string {
   return dir;
 }
 
-/** A directory that is NOT a project — until somebody founds one in it. */
+/** A directory that is NOT a project, until somebody founds one in it. */
 function makePlainDir(name: string): string {
   const dir = join(sandbox, name);
   mkdirSync(dir, { recursive: true });
@@ -106,7 +106,7 @@ function makePlainDir(name: string): string {
  * A connected client whose announced roots can be CHANGED, the way a host's are.
  *
  * The roots live in a box the caller writes to, and the `roots/list` handler reads
- * that box every time it is asked — which is the whole shape a re-read depends on. A
+ * that box every time it is asked, which is the whole shape a re-read depends on. A
  * handler that closed over a fixed array would answer the same list forever, and the
  * notification would then be tested against a client that has nothing new to say.
  */
@@ -177,7 +177,7 @@ describe('the workspace is re-read when the client says it changed', () => {
     const { client, announce } = await connect([pathToFileURL(alpha).href]);
 
     // BEFORE: one project, and `beta` is a name this session cannot route to. The
-    // refusal is the evidence, not the count — a list that merely omits it would look
+    // refusal is the evidence, not the count: a list that merely omits it would look
     // the same as a list that holds it and is never consulted.
     expect(whereItIs(await client.callTool({ name: 'bootstrap' }))).toContain('knows of 1 project');
     const refused = await client.callTool({
@@ -189,7 +189,7 @@ describe('the workspace is re-read when the client says it changed', () => {
 
     await announce([pathToFileURL(alpha).href, pathToFileURL(beta).href]);
 
-    // AFTER: the same call lands, in `beta`'s own tree. This is the defect closed —
+    // AFTER: the same call lands, in `beta`'s own tree. This is the defect closed:
     // the work of a project the session learned about goes into that project's record.
     const said = whereItIs(await client.callTool({ name: 'bootstrap' }));
     expect(said).toContain('knows of 2 projects');
@@ -206,7 +206,7 @@ describe('the workspace is re-read when the client says it changed', () => {
 
   it('KEEPS the project it landed on when the workspace gains another', async () => {
     // The property the whole slice's safety rests on. The union keeps the roots
-    // already seen in their places, so the cascade returns at the same first root —
+    // already seen in their places, so the cascade returns at the same first root,
     // and a session's own writes, its open run and its warm caches stay where they
     // were. If this ever walked, a write that named no project would silently change
     // records mid-connection.
@@ -255,7 +255,7 @@ describe('the workspace is re-read when the client says it changed', () => {
 
   it('learns a directory that BECAME a project, with no root new at all', async () => {
     // `mnema init` in a folder the client already announced. The list of roots comes
-    // back identical, and the client has no reason to renumber anything — so a re-read
+    // back identical, and the client has no reason to renumber anything, so a re-read
     // that only looked at which URIs are new would find none and answer with the old
     // world. The cascade runs on every notification for this.
     const plain = makePlainDir('becomes');
@@ -276,7 +276,7 @@ describe('the workspace is re-read when the client says it changed', () => {
 
   it('says that it ran even when nothing came of it', async () => {
     // A re-read that found nothing and a re-read that never happened are the same
-    // connection from the outside — which is the whole defect, applied to the fix.
+    // connection from the outside, which is the whole defect, applied to the fix.
     // The count is reported always, zero included.
     const alpha = makeProject('alpha');
     const { client, announce } = await connect([pathToFileURL(alpha).href]);
@@ -297,7 +297,7 @@ describe('the workspace is re-read when the client says it changed', () => {
     await client.close();
   });
 
-  it('KEEPS a root the client stopped announcing — additive, and declared as such', async () => {
+  it('KEEPS a root the client stopped announcing: additive, and declared as such', async () => {
     // The retired-root case, pinned rather than implemented. A client that drops a
     // folder gets the same list back, because the alternative is a tree leaving a
     // session that may hold an open run, warm caches and a write in flight in it.
@@ -323,7 +323,7 @@ describe('the workspace is re-read when the client says it changed', () => {
 
   it('leaves the record untouched when a re-read changes nothing', async () => {
     // The re-read reaches `resolveContext`, which walks the filesystem and writes
-    // nothing — and this connection only read. A notification must not be the thing
+    // nothing, and this connection only read. A notification must not be the thing
     // that founds an identity in a project nobody worked in.
     const alpha = makeProject('alpha');
     const { client, announce } = await connect([pathToFileURL(alpha).href]);
@@ -339,7 +339,7 @@ describe('the workspace is re-read when the client says it changed', () => {
   });
 });
 
-describe('refreshWorkspace — the rule itself', () => {
+describe('refreshWorkspace: the rule itself', () => {
   // The function beside the transport, for the two properties a protocol test can
   // only observe indirectly: what it REPORTS about a change, and that the roots it
   // resolves over are the union rather than the latest list.
@@ -403,7 +403,7 @@ describe('refreshWorkspace — the rule itself', () => {
     // ASSERTED BY WHICH TREE WAS ASKED, not by the value, and that is deliberate: in a
     // fresh sandbox both trees answer with the same machine key, so an equality on
     // `who` is satisfied by a session that never re-read at all. It is vacuous, and it
-    // was found that way — the mutation that drops the re-read left every other case in
+    // was found that way: the mutation that drops the re-read left every other case in
     // this file green.
     //
     // THE EVIDENCE USED TO BE THE PRIVATE TREE'S EXISTENCE, because asking opened a
@@ -421,7 +421,7 @@ describe('refreshWorkspace — the rule itself', () => {
       env,
     });
     // Not vacuous: on the global tree the session asked the global tree, and nothing of
-    // the project — so the assertion below is about this re-read rather than the fixture.
+    // the project, so the assertion below is about this re-read rather than the fixture.
     expect(asked.roots).toEqual([resolveTrees(plain, env).global]);
     expect(session.who).toMatch(/^mnid:/);
 
@@ -431,7 +431,7 @@ describe('refreshWorkspace — the rule itself', () => {
     expect(asked.roots).toEqual([priv]);
     // And asking left the tree it asked exactly as it was: absent.
     expect(existsSync(priv)).toBe(false);
-    // And the session says who it is out of that tree — the same answer a session
+    // And the session says who it is out of that tree: the same answer a session
     // opened there from the start gives, which is what "as if the root had arrived at
     // the handshake" means.
     expect(session.who).toBe(
@@ -462,7 +462,7 @@ describe('refreshWorkspace — the rule itself', () => {
     asked.roots = [];
     refreshWorkspace(session, [pathToFileURL(beta).href]);
 
-    // `beta` is in the list and can be written to — and nothing was asked of any tree.
+    // `beta` is in the list and can be written to, and nothing was asked of any tree.
     expect(session.workspaceProjects.map((project) => project.dir)).toContain(beta);
     expect(asked.roots).toEqual([]);
   });
@@ -494,7 +494,7 @@ describe('refreshWorkspace — the rule itself', () => {
     // The re-read's second input, carried for the reason the configured path is. A
     // session that landed by the working directory has no roots to resolve over, and a
     // re-read that rebuilt its input from the roots alone would find no project and put
-    // the session on the global tree in silence — the one move a re-read never makes.
+    // the session on the global tree in silence: the one move a re-read never makes.
     const project = makeProject('here');
     const session = openSession({ clientName: 'Cursor', cwd: project, env });
     expect(session.project).toBe(project);
@@ -520,8 +520,8 @@ describe('refreshWorkspace — the rule itself', () => {
   });
 
   it('LANDS by the working directory once somebody founds a project there', () => {
-    // The re-probe `refreshWorkspace` documents — `mnema init` in a directory already in
-    // hand turns it into a project — for the one input a client with no roots has.
+    // The re-probe `refreshWorkspace` documents, `mnema init` in a directory already in
+    // hand turns it into a project, for the one input a client with no roots has.
     const plain = makePlainDir('plain');
     const session = openSession({ clientName: 'Cursor', cwd: plain, env });
     expect(session.inProject).toBe(false);
@@ -546,8 +546,8 @@ describe('refreshWorkspace — the rule itself', () => {
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
 /**
- * The source with its comments removed, so a guard about CODE cannot be satisfied —
- * or accused — by prose.
+ * The source with its comments removed, so a guard about CODE cannot be satisfied,
+ * or accused, by prose.
  *
  * This bench has been bitten both ways: a scan that matched from one string literal
  * into another accused the file it was scanning, and a mutation planted inside a
@@ -567,7 +567,7 @@ describe('a re-read runs BETWEEN calls and never inside one', () => {
     // session in two states. It cannot, and the reason is not a lock: every adapter in
     // `mcp/tools.ts` is synchronous, so once one starts it runs to completion before
     // the event loop can deliver a notification. The `await` in each tool's wrapper is
-    // for `ensureSession()`, which is BEFORE the adapter is entered — a re-read that
+    // for `ensureSession()`, which is BEFORE the adapter is entered: a re-read that
     // arrives during it is seen whole by the read that follows.
     //
     // The day somebody makes an adapter async, that argument silently stops holding
@@ -589,7 +589,7 @@ describe('a re-read runs BETWEEN calls and never inside one', () => {
 
   it('reaches the cascade from exactly two places, and both are the same function', () => {
     // A rule with two readings is a rule that diverges. `resolveContext` answers
-    // "where is this session", and it is now asked twice — when the session opens and
+    // "where is this session", and it is now asked twice, when the session opens and
     // when the client says the workspace changed. Both go through the ONE function, so
     // a rung added to the cascade (or the one rung that REFUSES) cannot apply at the
     // handshake and be quietly skipped afterwards.

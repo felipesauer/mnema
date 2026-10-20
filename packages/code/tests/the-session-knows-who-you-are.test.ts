@@ -1,5 +1,5 @@
 /**
- * THE SESSION KNOWS WHO YOU ARE — a console that asks for what it has just printed, and
+ * THE SESSION KNOWS WHO YOU ARE: a console that asks for what it has just printed, and
  * the four things that had to stay true while it stopped.
  *
  * It came out of use: `status` typed at the prompt was answered with *needs `--actor`
@@ -8,19 +8,19 @@
  * the verb these cases were first written over no longer asks. The cases that need a verb that
  * still asks are written over `resume`, which does), two rows under a box naming `mnid:…`. The value the verb wanted was on the
  * screen, put there by the session itself, resolved from local material with no writer
- * opened (`repl/standing.ts`) — so the surface was asking a question it had already
+ * opened (`repl/standing.ts`), so the surface was asking a question it had already
  * answered.
  *
  * WHAT THE CASES ARE SHAPED AROUND is that a default is only honest if three other things
  * hold, and each of them is a different kind of measurement:
  *
- *   - IT ANSWERS, ON A DEVICE. The whole path — the panel's identity, the session's value,
- *     the line the parser receives — only exists inside a terminal, so the first case is
+ *   - IT ANSWERS, ON A DEVICE. The whole path (the panel's identity, the session's value,
+ *     the line the parser receives) only exists inside a terminal, so the first case is
  *     the built binary in a real pseudo-terminal, and what it asserts is that the answer
  *     is the identity THE PAGE IS SHOWING.
  *   - WHAT THE CALLER TYPED WINS. Asking about another identity is a legitimate thing to
- *     do at an audit prompt, so the case types one — a second identity this record really
- *     knows, written by a second installation — and the answer follows it.
+ *     do at an audit prompt, so the case types one (a second identity this record really
+ *     knows, written by a second installation) and the answer follows it.
  *   - A SESSION THAT KNOWS NOBODY ASKS. Outside a project, or on a machine whose key root
  *     names no single key, there is nothing to fill and the verb has to ask exactly as it
  *     did. Asserted BYTE FOR BYTE against the same verb at a shell, because "the same
@@ -30,8 +30,8 @@
  *     about an INVOCATION having no session, and it is untouched by a session having one.
  *
  * THE FIFTH IS THE RULE'S OWN REACH. Which verbs require an identity is read off the
- * registered program rather than listed here — by the tail every anchor-taking flag's help
- * carries, which is a discriminant the filling code does not share — and the two
+ * registered program rather than listed here (by the tail every anchor-taking flag's help
+ * carries, which is a discriminant the filling code does not share) and the two
  * enumerations are asserted EQUAL: everything that requires one is served, and nothing
  * else is touched. A fifth verb declared tomorrow is covered the day it exists, and a
  * flag renamed out from under the filler turns this red.
@@ -60,7 +60,7 @@ import {
   type Step,
 } from './support/pty.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
@@ -70,8 +70,8 @@ const PROMPT = 'mnema>';
  * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
- * was twenty-four rows. The floor is forty-two now — the height the name is drawn whole at,
- * worked out from the drawing rather than written down (`src/repl/floor.ts`) — so forty is under
+ * was twenty-four rows. The floor is forty-two now: the height the name is drawn whole at,
+ * worked out from the drawing rather than written down (`src/repl/floor.ts`), so forty is under
  * it, and a case that opened there would be driving
  * the screen that says the window is too small. Read off the product rather than retyped, so
  * the day the floor moves again these cases move with it.
@@ -94,7 +94,7 @@ let project: string;
 let environment: NodeJS.ProcessEnv;
 /** The identity this installation founded the project with, whole. */
 let mine: string;
-/** A second identity the record knows, whole — written by a second installation. */
+/** A second identity the record knows, whole: written by a second installation. */
 let other: string;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
@@ -132,11 +132,11 @@ const prompt = (line: string, identity: string | undefined): Promise<Said> =>
 
 /**
  * `mnema <argv>` run by a SECOND INSTALLATION on this machine: its own home, its own key
- * root, and therefore its own identity — in the same project.
+ * root, and therefore its own identity, in the same project.
  *
  * It is how the record comes to know two identities, which is what the case about a typed
  * `--actor` needs: a value that is not this session's and that the record can resolve. The
- * second identity is the PRODUCT'S, derived by the same code that derives the first —
+ * second identity is the PRODUCT'S, derived by the same code that derives the first:
  * nothing here writes an anchor into a fixture.
  */
 async function asAnotherMachine(...argv: string[]): Promise<Said> {
@@ -151,7 +151,7 @@ async function asAnotherMachine(...argv: string[]): Promise<Said> {
   }
 }
 
-/** Every identity the record knows, whole — read back through the verb that lists them. */
+/** Every identity the record knows, whole: read back through the verb that lists them. */
 async function identitiesOfTheRecord(): Promise<string[]> {
   const said = await shell('audit', 'accountability', '--json');
   const account = JSON.parse(said.out.join('\n')) as { byWho: { who: string }[] };
@@ -286,7 +286,7 @@ describe('a verb that asks for an identity is answered by the session that has o
     // the prompt is the row under the caller's fingers, and what they sent is kept as a band
     // (`presentation/echo.ts`, `sentLine`).
     expect(said).toContain('\u276f status');
-    // And the flag is nowhere on the page at all — not in the echo, not in a refusal.
+    // And the flag is nowhere on the page at all, not in the echo, not in a refusal.
     expect(ran.bytes).not.toContain('--actor');
   }, 180_000);
 });
@@ -309,7 +309,7 @@ describe('the identity the caller names is the one that is answered for', () => 
     // caller: the two identities are different, and the answer names only one of them.
     expect(mine).not.toBe(other);
     expect(headline.startsWith(mine.slice(0, 'mnid:'.length + 8))).toBe(false);
-    // The same session, asked with nothing typed, answers for ITSELF — so the case above
+    // The same session, asked with nothing typed, answers for ITSELF, so the case above
     // is about the flag winning rather than about a session that fills nothing.
     const own = await prompt('status', mine);
     expect((own.out[0] as string).startsWith(mine.slice(0, 'mnid:'.length + 8))).toBe(true);
@@ -337,7 +337,7 @@ describe('with no identity to speak as, the verb asks exactly as it did', () => 
     expect(atThePrompt.err).toEqual(atTheShell.err);
     expect(atThePrompt.out).toEqual(atTheShell.out);
     // NOT VACUOUS: it really is the refusal, and it still names where an identity comes
-    // from — the promise that sentence makes to a reader who has none.
+    // from, the promise that sentence makes to a reader who has none.
     expect(atThePrompt.err.join('\n')).toContain(ASKS_FOR_ONE);
     expect(atThePrompt.err.join('\n')).toContain('mnema audit accountability');
   }, 120_000);
@@ -367,7 +367,7 @@ describe('the command line still asks, in the very project where a session would
 // Every verb that requires an identity, and no other
 // ---------------------------------------------------------------------------
 
-/** The program, and what its verbs declared — one registration, read twice. */
+/** The program, and what its verbs declared: one registration, read twice. */
 function registered(): { program: Command; verbs: readonly Declared[] } {
   const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const built = buildProgram(quiet);
@@ -452,7 +452,7 @@ describe('every command that requires an identity is served, and nothing else is
   });
 
   it('none of them asks a session that knows itself, and every one asks one that does not', async () => {
-    // THE RULE IN N POINTS, TYPED AT N POINTS — the enumeration above is about the words a
+    // THE RULE IN N POINTS, TYPED AT N POINTS: the enumeration above is about the words a
     // parser receives, and this is about what a caller gets back. Each command that
     // requires an identity is really run at a prompt, with the arguments it declares, and
     // whatever it then says, it does not ask for the identity.
@@ -475,16 +475,16 @@ describe('every command that requires an identity is served, and nothing else is
 
   it('leaves the two shapes that look like it and are not', () => {
     const { verbs } = registered();
-    // A MANDATORY option that is not an identity — a question only the caller can answer.
+    // A MANDATORY option that is not an identity: a question only the caller can answer.
     // `link --rel <label>` is one, and a surface that filled it would invent an argument.
     expect(asTheSession(['link', 'a', 'b'], verbs, ME)).toEqual(['link', 'a', 'b']);
     // AND AN IDENTITY THAT IS NOT REQUIRED. `audit accountability --who` takes an anchor and its
     // default is EVERYBODY, so filling it would quietly turn "who authorized these facts"
-    // into "which of them are mine" — in the caller's name, with nothing on screen saying
+    // into "which of them are mine": in the caller's name, with nothing on screen saying
     // so. It is the shape closest to the rule and the one it must not touch.
     //
-    // IT IS HELD HERE BY BOTH HALVES AT ONCE — the flag is spelled `--who` AND it is
-    // optional — so this case cannot say which half is doing the work, and measured on a
+    // IT IS HELD HERE BY BOTH HALVES AT ONCE: the flag is spelled `--who` AND it is
+    // optional, so this case cannot say which half is doing the work, and measured on a
     // mutation that dropped the requirement it stayed green. The half about a flag that
     // asks for the ASKER and is merely optional is exercised where such a declaration can
     // exist at all: `repl/asking.test.ts`, on a verb of its own.

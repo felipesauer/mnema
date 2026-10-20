@@ -1,12 +1,12 @@
 /**
- * `mnema verify --workspace` — ONE verdict over the projects the caller names, and the
+ * `mnema verify --workspace`: ONE verdict over the projects the caller names, and the
  * three answers it has to keep apart.
  *
  * The verb covered the two trees of ONE project and stopped there, which is the worst
  * of the three states this question can be in: the product MODELS several projects
  * open at once (the MCP session carries them), and the verdict stopped at the one the
  * caller was standing in. An auditor with five projects ran five commands, got five
- * exit codes, and combined them by a rule they invented in a shell loop — and the rule
+ * exit codes, and combined them by a rule they invented in a shell loop, and the rule
  * a `for` loop invents is not this product's.
  *
  * THE SET IS NAMED, NEVER SEARCHED FOR. On the MCP surface the host announces the
@@ -16,18 +16,18 @@
  *
  * THE THREE ANSWERS, and every case here is about keeping them apart:
  *
- *   - a project whose record was replayed — it carries a level, and the aggregate is
+ *   - a project whose record was replayed: it carries a level, and the aggregate is
  *     the WEAKEST of them, so no project passes on another's proof;
- *   - a project with a break — it takes the aggregate down and the line says WHICH one,
+ *   - a project with a break: it takes the aggregate down and the line says WHICH one,
  *     because an aggregate alone hides the project that pulled it there;
- *   - a path that holds NO record — not a pass and not a break. Counting it as verified
+ *   - a path that holds NO record, not a pass and not a break. Counting it as verified
  *     would let an empty directory carry a CI gate, which is the no-op `verify` has
  *     already been once; counting it as broken would say a chain failed to replay when
  *     none was read. It is reported, left out of the LEVEL, and counted at the end.
  *
  * AND THE THIRD ANSWER USED TO STOP THERE, WHICH IS WHAT THESE CASES NOW SEPARATE. Out
  * of the level was read as out of the exit too, so `verify --workspace ./good ./typo`
- * came back zero over a project nobody verified — while the other two shapes of this
+ * came back zero over a project nobody verified, while the other two shapes of this
  * verb already refused (a lone unfounded directory says `No mnema project here`, and a
  * set where EVERY path holds none says `Nothing was verified`). One rule, three cases,
  * and one of them disagreed with the other two. Naming a path is asserting that it is a
@@ -35,7 +35,7 @@
  * is the caller declaring the gap is theirs. It tolerates ABSENCE and never a BREAK,
  * which is the case below that separates the two.
  *
- * Every fixture is built by the PRODUCT — `mnema init`, `mnema task` — and then edited
+ * Every fixture is built by the PRODUCT (`mnema init`, `mnema task`) and then edited
  * on disk the way an adversary or a `git clone` would. Nothing writes an event by hand.
  * Both channels are read on every case: the lines a person reads and the exit a CI step
  * reads.
@@ -116,7 +116,7 @@ function lineFor(said: Said, project: string, scope: 'public' | 'private'): stri
   return said.lines.find((line) => line.startsWith(`${join(sandbox, project)} ${scope}: `));
 }
 
-/** The closing statement — the one line that says what the reading covered. */
+/** The closing statement: the one line that says what the reading covered. */
 function closing(said: Said): string {
   return said.lines.find((line) => line.includes('path(s) named →')) as string;
 }
@@ -134,7 +134,7 @@ function lines(file: string): string[] {
 }
 
 /**
- * Edits a stored event so the HASH CHAIN is what catches it — the same tamper every
+ * Edits a stored event so the HASH CHAIN is what catches it: the same tamper every
  * other case of this verb is driven by.
  */
 function tamper(root: string): void {
@@ -153,7 +153,7 @@ function deleteSignatures(root: string): void {
 
 /**
  * A content digest of every file under `dir`, so a read that must write nothing can be
- * proven byte-identical — the shape `guard.test.ts` established and `tail list` reuses.
+ * proven byte-identical: the shape `guard.test.ts` established and `tail list` reuses.
  */
 function digest(dir: string): string {
   const hash = createHash('sha256');
@@ -220,7 +220,7 @@ afterEach(() => {
 
 describe('without the flag, nothing moved', () => {
   it('prints the same bytes it always has: the tree, a colon, the chain’s own summary', async () => {
-    // THE NON-REGRESSION, said explicitly rather than left to the golden — for the day
+    // THE NON-REGRESSION, said explicitly rather than left to the golden: for the day
     // somebody "improves" the sentence of a lone project while adding to the set. The
     // comparison is against a source this surface cannot influence (the chain's own
     // `summary`), which is the same assertion `the-verdict-is-parts.test.ts` carries.
@@ -266,7 +266,7 @@ describe('two sound projects', () => {
     expect(closing(said)).toContain('2 path(s) named → 2 distinct: 2 project(s) covered');
     // A SET WITH NO HOLE IN IT SAYS NOTHING ABOUT ONE. The rule about a path holding no
     // record is stated with the counts, as every rule under this closing statement is,
-    // but nothing here was tolerated and nothing was refused — so neither the escape's
+    // but nothing here was tolerated and nothing was refused, so neither the escape's
     // echo nor the coverage line appears, and stderr is empty.
     expect(closing(said)).not.toContain('did not move it');
     // The COUNT and not the rule: the rule sentence says the words "holding no record"
@@ -276,7 +276,7 @@ describe('two sound projects', () => {
 
     // The aggregate is a level, and it is the one the exit is decided by: everything
     // here is signature-covered, so the signature gate passes and the witness gate
-    // does not — over the WHOLE set, from one invocation.
+    // does not, over the WHOLE set, from one invocation.
     expect((await mnema('verify', '--workspace', 'alpha', 'beta', '--require=signed')).failed).toBe(
       false,
     );
@@ -300,12 +300,12 @@ describe('one sound and one broken', () => {
     // failed would send an auditor to open five projects by hand.
     expect(said.failed).toBe(true);
     expect(lineFor(said, 'beta', 'public')).toContain('local integrity FAILED');
-    // And the sound project keeps its own verdict — the break is not smeared over it.
+    // And the sound project keeps its own verdict: the break is not smeared over it.
     expect(lineFor(said, 'alpha', 'public')).toContain('local integrity verified (T1/T2/T4)');
     expect(lineFor(said, 'alpha', 'public')).not.toContain('FAILED');
 
     // stderr is read on its own by whatever redirected it, so the evidence names the
-    // PROJECT as well as the tree — otherwise a tail id sends a reader to the wrong
+    // PROJECT as well as the tree: otherwise a tail id sends a reader to the wrong
     // repository.
     const evidence = said.issues.join('\n');
     expect(evidence).toContain(`issue [T1] ${join(sandbox, 'beta')} public `);
@@ -337,7 +337,7 @@ describe('two names of one record', () => {
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(said.lines.filter((line) => / public: /.test(line))).toHaveLength(1);
     expect(closing(said)).toContain('2 path(s) named → 1 distinct: 1 project(s) covered');
-    // The line names the path the caller reached it BY — the first of the two.
+    // The line names the path the caller reached it BY: the first of the two.
     expect(lineFor(said, 'alpha', 'public')).toBeDefined();
   });
 
@@ -358,7 +358,7 @@ describe('two names of one record', () => {
 describe('a named path that holds no record', () => {
   it('gets its own line, is counted, and does NOT lower the LEVEL of the rest', async () => {
     // The half that discriminates. `verify` over an absent root answers green with no
-    // signature checked — so a path folded in as though it were a tree would drag the
+    // signature checked, so a path folded in as though it were a tree would drag the
     // set to `hash-chain-only` and fail the signature gate over projects that are all
     // fully signed. The escape is on here so this case rules on the LEVEL alone: what
     // the path does to the exit is the case below, and mixing the two would leave this
@@ -405,7 +405,7 @@ describe('a named path that holds no record', () => {
   it('does not RAISE it either: the aggregate stays the weakest COVERED project', async () => {
     // The other direction, with the two rules crossed in one fixture: one sound project,
     // one whose signatures are gone, and a path with no record between them. The level
-    // has to be the weak project's — not the sound one's (which would be the aggregate
+    // has to be the weak project's, not the sound one's (which would be the aggregate
     // read the wrong way round) and not the empty path's (which is in no fold at all).
     // The names beside the level are the discriminator: a path folded in as a verdict
     // would appear there, because `verify` over an absent root answers at exactly the
@@ -413,7 +413,7 @@ describe('a named path that holds no record', () => {
     //
     // THE ESCAPE IS ON, AND IT IS WHAT KEEPS THIS CASE FROM GOING BLIND. Without it the
     // set exits non-zero for the path as well as for the level, so `failed` would stay
-    // true with the requirement comparison deleted — the exit assertion would be true
+    // true with the requirement comparison deleted: the exit assertion would be true
     // of a fixture that proved nothing about a level at all.
     await found('alpha');
     await found('beta');
@@ -443,7 +443,7 @@ describe('naming a path is asserting that it is a project', () => {
   it('exits non-zero and NAMES the path, beside projects that verified', async () => {
     // The defect this rule closes, in the shape it was measured in: one sound project
     // and one path that is no project. It came back zero, so a CI gate went green over
-    // a repository nobody had verified — and in CI nobody reads the lines.
+    // a repository nobody had verified, and in CI nobody reads the lines.
     //
     // TWO ASSERTIONS, because the exit alone does not say WHICH path: a reader of a CI
     // log has one line to act on, and "one of the five paths you named" is not
@@ -458,7 +458,7 @@ describe('naming a path is asserting that it is a project', () => {
     expect(why).toContain(join(sandbox, 'typo'));
     // And it names the escape, so the caller who meant it can say so.
     expect(why).toContain('--allow-no-record');
-    // The project that DID verify still verified — the refusal is about the set, and it
+    // The project that DID verify still verified: the refusal is about the set, and it
     // is not smeared over the record that was read.
     expect(lineFor(said, 'alpha', 'public')).toContain('local integrity verified (T1/T2/T4)');
   });
@@ -466,7 +466,7 @@ describe('naming a path is asserting that it is a project', () => {
   it('is accepted when the caller declares it, and the report SAYS it was', async () => {
     // The escape gives back exactly what this set did before the rule: the path stays
     // out of the level, out of the exit, and counted. What it must not do is go quiet
-    // about it — an exit of zero over a set with a hole in it is the thing the reader
+    // about it: an exit of zero over a set with a hole in it is the thing the reader
     // has to be told, and stderr is empty by then.
     await found('alpha');
     bare('typo');
@@ -490,7 +490,7 @@ describe('naming a path is asserting that it is a project', () => {
     expect(said.lines.filter((line) => line.includes('no record here'))).toHaveLength(2);
   });
 
-  it('tolerates ABSENCE and never a BREAK — the two the flag could confuse', async () => {
+  it('tolerates ABSENCE and never a BREAK: the two the flag could confuse', async () => {
     // The case that separates the two things one flag could swallow. A set with the
     // escape on AND a project whose chain is tampered with must still exit non-zero:
     // a flag that turned `mnema verify` into a no-op over a forged record is the defect
@@ -547,7 +547,7 @@ describe('naming a path is asserting that it is a project', () => {
 
   it('is refused as a declaration with no subject when no set was named', async () => {
     // A bare `verify` names no paths, so there is nothing here for the flag to
-    // tolerate — and a caller who wrote it believes they relaxed something. Ignoring it
+    // tolerate, and a caller who wrote it believes they relaxed something. Ignoring it
     // silently is how a CI step ends up asking for a leniency it never got.
     await found('alpha');
     process.chdir(join(sandbox, 'alpha'));
@@ -563,7 +563,7 @@ describe('naming a path is asserting that it is a project', () => {
 });
 
 describe('every named path holds no record', () => {
-  it('is NOT verified and does NOT exit zero — the case that makes this a gate', async () => {
+  it('is NOT verified and does NOT exit zero: the case that makes this a gate', async () => {
     // The whole set outside the aggregate: there is nothing to fold, so there is no
     // verdict. A zero here would be `mnema verify` passing a CI gate over a set of
     // empty directories, which is the no-op this verb has already been once.
@@ -591,7 +591,7 @@ describe('every named path holds no record', () => {
   it('stays non-zero with the escape declared, and still says only that', async () => {
     // The escape accepts a gap in a set that was READ; it does not open the case where
     // there was nothing to read. A zero here would be the flag doing exactly what it
-    // was written not to do — passing a CI gate over a set of empty directories — and
+    // was written not to do, passing a CI gate over a set of empty directories, and
     // the closing statement must not claim the paths "did not move the exit" directly
     // above the line that exits on them.
     bare('nothing-here');
@@ -624,7 +624,7 @@ describe('every named path holds no record', () => {
 
 describe('a project directory is text from outside the record', () => {
   /**
-   * A directory whose NAME is a whole line of this report — the forgery this reading is
+   * A directory whose NAME is a whole line of this report: the forgery this reading is
    * the sharpest case of, since it prints one line per tree per project and then counts
    * the projects those lines are.
    */
@@ -634,9 +634,9 @@ describe('a project directory is text from outside the record', () => {
     // Four sites, one rule, and a fixture that drives all of them at once: the tree's
     // label (with the issues under it), the line of a path holding no record, the names
     // beside the level in the requirement line, and the paths named by the line that
-    // says not every named path holds a record. The fourth arrived with that line — it
+    // says not every named path holds a record. The fourth arrived with that line (it
     // is the shape this rule keeps taking, since every new sentence about a set is a
-    // new place a directory becomes text — so the invocation below deliberately does
+    // new place a directory becomes text), so the invocation below deliberately does
     // NOT declare the escape: with it, the fourth site would never be reached and this
     // case would be green over a site it never read.
     await found('alpha');
@@ -669,7 +669,7 @@ describe('a project directory is text from outside the record', () => {
       '3 path(s) named → 3 distinct: 2 project(s) covered, 1 holding no record',
     );
     // Counted by the PREFIX each project's own lines carry, never by searching for
-    // ` public: ` — the forged name holds that string, so a count by content would be
+    // ` public: `: the forged name holds that string, so a count by content would be
     // counting the forgery as evidence against itself.
     const flat = (text: string): string => text.replace(/\s+/g, ' ');
     for (const project of [forgedProject, join(sandbox, 'alpha')]) {
@@ -692,11 +692,11 @@ describe('a project directory is text from outside the record', () => {
 });
 
 describe('it is a READ, over every project of the set', () => {
-  it('leaves the whole sandbox byte-identical — chains, caches and keys', async () => {
+  it('leaves the whole sandbox byte-identical: chains, caches and keys', async () => {
     // The strongest form, the mould `tail list` and `usage` use: hash everything the
     // invocation could touch, in every project of the set and in the shared key root.
     // A verifier that opened a writer to answer would be caught here and by nothing
-    // lighter — and the set multiplies the exposure by the number of projects.
+    // lighter, and the set multiplies the exposure by the number of projects.
     await found('alpha');
     await found('beta', '--scope', 'private');
     bare('not-a-project');

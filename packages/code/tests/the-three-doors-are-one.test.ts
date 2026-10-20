@@ -5,7 +5,7 @@
  * WHAT IS COMPARED. Each scenario is run three times, from a project of its own each time, founded
  * the same way: once by typing the command (`dist/cli.js`), once by calling the tool over an
  * in-memory MCP connection, once by calling `@mnema/sdk`. After it, every event of every tree is
- * read off the disk — the kind, the tree it landed in, who it was attributed to and its payload —
+ * read off the disk (the kind, the tree it landed in, who it was attributed to and its payload)
  * with what a door cannot be expected to share taken out: the time, the key that signed, the run an
  * MCP connection pins (and the `run.*` events that open and close it), and the ids, which are
  * replaced by the order they first appear in, so a payload that cites a decision still has to cite
@@ -88,8 +88,8 @@ interface Door {
 }
 
 /**
- * The code a refusal carries, wherever it is printed: `Refused (CODE): …`, or — for the two the
- * command line says in a sentence of its own — that sentence, which the wiring owns.
+ * The code a refusal carries, wherever it is printed: `Refused (CODE): …`, or, for the two the
+ * command line says in a sentence of its own, that sentence, which the wiring owns.
  */
 function codeIn(text: string): string | undefined {
   const coded = /Refused \(([A-Z_]+)\)/.exec(text)?.[1];
@@ -109,7 +109,7 @@ function typed(repo: string, home: string, argv: readonly string[], stdin?: stri
   return { status: ran.status, out: ran.stdout, err: ran.stderr };
 }
 
-/** A founded project — `init` is the one step of the set-up that is the command line's alone. */
+/** A founded project: `init` is the one step of the set-up that is the command line's alone. */
 function founded(name: Door['name'], founding = true): Door {
   const repo = join(sandbox, name, 'repo');
   const home = join(sandbox, name, 'home');

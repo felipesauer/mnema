@@ -1,11 +1,11 @@
 /**
- * THE WORDS A SESSION ANSWERS TO ITSELF — one source, one spelling, and no site that
+ * THE WORDS A SESSION ANSWERS TO ITSELF: one source, one spelling, and no site that
  * types them.
  *
  * A session runs the verbs of this product and answers to a few words of its own, and
  * those words are the one vocabulary of this surface that has no declaration behind it:
  * commander knows nothing about them, so nothing of commander's can say whether the help
- * that lists them and the gate that answers to them agree. They did not — the verb's help
+ * that lists them and the gate that answers to them agree. They did not: the verb's help
  * SPELLED THEM OUT, and it did so for a reason that is still true (the declaration is
  * built before the session is loaded, and it may not reach it), which is why the fix is a
  * module above both rather than an import.
@@ -15,12 +15,12 @@
  *   - NOBODY TYPES ONE. Every word is built from the prefix, so a session word inside a
  *     string literal anywhere in `src` is a second spelling waiting to drift. The scan is
  *     over the SOURCE and it excludes nothing, because the module that owns the words
- *     does not hold one either — it composes them.
+ *     does not hold one either: it composes them.
  *   - THE OLD SPELLING IS GONE, EVERYWHERE. A rename that leaves a copy behind leaves a
  *     reader typing something the product refuses, and the copies were never all in
  *     `src`: they were in the tests that drive a terminal, in the fixtures of two
  *     renderers, and in the golden. The scan therefore covers the tests and the goldens
- *     too, and the discriminant is the SPELLING rather than the symbol — there is no
+ *     too, and the discriminant is the SPELLING rather than the symbol: there is no
  *     symbol to grep for at a site that typed the word.
  *   - THE HELP AND THE GATE SAY THE SAME LIST. The link, over the real `--help` of the
  *     real program and the real disposition: every word the session answers to is listed
@@ -50,7 +50,7 @@ const TESTS = fileURLToPath(new URL('.', import.meta.url));
  * ASSEMBLED RATHER THAN TYPED, and not out of tidiness: the scan below reads this file
  * too, so a case that spelled the old word out would be the one file in the corpus that
  * fails it. Derived from the words themselves, so a word added tomorrow is covered by the
- * same two lines — and one of them never had an old spelling at all, which is exactly
+ * same two lines, and one of them never had an old spelling at all, which is exactly
  * what makes deriving the right shape: the ban is on the PREFIX, applied to every word
  * there is.
  */
@@ -112,13 +112,13 @@ describe('the words the session answers to are composed, never typed', () => {
     for (const file of production()) {
       expect(typesAWord(readFileSync(file, 'utf-8')), file).toEqual([]);
     }
-    // The corpus is real, and it really holds the words — they are built from the prefix
+    // The corpus is real, and it really holds the words: they are built from the prefix
     // in the one module that owns them, which is why not one file above spells one.
     expect(production().length).toBeGreaterThan(50);
     // THERE WERE THREE OF THESE WORDS AND THERE IS ONE, which is what this line had to give
     // up: `/help` and `/exit` went to the two keys that already answered them (the list under
-    // the prompt, and the end of the input). What the scan is about is untouched — a word that
-    // exists is composed from the prefix and typed nowhere — and it is as strong over one word
+    // the prompt, and the end of the input). What the scan is about is untouched (a word that
+    // exists is composed from the prefix and typed nowhere) and it is as strong over one word
     // as over three, because the ban is on the PREFIX applied to every word there is.
     expect(SESSION_WORDS.length).toBeGreaterThan(0);
     for (const word of SESSION_WORDS) expect(word.startsWith(PREFIX)).toBe(true);
@@ -165,8 +165,8 @@ describe('the spelling these words used to have is gone', () => {
   });
 
   it('would accuse the spelling, and does not accuse the code that reads like it', () => {
-    // Each shape the old spelling really took in this repository — a help line, a
-    // keystroke a test typed, and a sentence about the word — for every word there is.
+    // Each shape the old spelling really took in this repository (a help line, a
+    // keystroke a test typed, and a sentence about the word) for every word there is.
     const pattern = theOldSpelling();
     for (const old of theOldSpellings()) {
       expect(pattern.test(`  ${old}   what this session runs`), old).toBe(true);
@@ -209,7 +209,7 @@ describe('the verb’s help lists the words the gate answers to, and says what e
   it('names every one of them, with a gloss, and nothing else that looks like one', async () => {
     const help = await helpOfTheVerb();
     // Every word is on a line of its own, with something said after it. A word listed
-    // bare is the defect the table this comes from cannot have — the words ARE its keys.
+    // bare is the defect the table this comes from cannot have: the words ARE its keys.
     for (const word of SESSION_WORDS) {
       const line = help.find((said) => said.trim().startsWith(word));
       expect(line, `${word} is not in the help`).toBeDefined();

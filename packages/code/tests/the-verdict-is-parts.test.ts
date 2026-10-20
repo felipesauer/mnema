@@ -4,7 +4,7 @@
  * The verdict is the product's most important reading and it was the one reading whose
  * answer had no colour. The reason was not the chain: it was a STRING. The verdict
  * arrived as one pre-joined sentence with the word `verified` or `FAILED` in the middle
- * of it, so painting the answer would have meant matching text on a verdict — reading
+ * of it, so painting the answer would have meant matching text on a verdict: reading
  * the ruling out of a rendering of itself, and breaking the day a level was reworded.
  * The chain hands over the CLAUSES now, and the surface lays them out.
  *
@@ -12,7 +12,7 @@
  * could compose something else: a clause of its own beside the chain's, a clause
  * dropped in the laying out, a guarantee quietly upgraded from "local integrity" to
  * "verified". So the assertion that carries this file is BYTES, and it is asserted
- * against a source the surface cannot influence — the chain's own `summary`, which is
+ * against a source the surface cannot influence, the chain's own `summary`, which is
  * the same clauses joined:
  *
  *     the unpainted line  ==  `<tree>: ` + the chain's summary
@@ -24,10 +24,10 @@
  *
  * THE OTHER HALF IS THAT IT REALLY PAINTS, and that the hue lands where it belongs.
  * Three hues appear across these fixtures, the level's clause is the only part of the
- * line wearing one, and the LABEL — a tree's name — wears none: a red `private` would
+ * line wearing one, and the LABEL, a tree's name, wears none: a red `private` would
  * say the tree was bad news rather than the verdict over it.
  *
- * Every fixture is built by the PRODUCT — `mnema init`, `mnema task` — and then edited
+ * Every fixture is built by the PRODUCT (`mnema init`, `mnema task`) and then edited
  * on disk the way an adversary would. Nothing writes an event by hand. The exit codes
  * and `--require` are not re-asserted here: `the-verdict-tells-the-truth.test.ts` and
  * `the-verdict-says-what-it-covered.test.ts` are the net under those, and this delivery
@@ -71,7 +71,7 @@ const NORMAL = `${ESC}[22m`;
 const DEFAULT_HUE = `${ESC}[39m`;
 
 /**
- * The sequences this renderer writes, and only those — assembled from a constant, never
+ * The sequences this renderer writes, and only those: assembled from a constant, never
  * written as a literal, because a regular expression holding a control character is a
  * byte a reader of this file cannot see, and the lint refuses it for that reason.
  */
@@ -128,14 +128,14 @@ function env(): { home: string } {
   return { home: join(sandbox, 'home') };
 }
 
-/** Every tree the command reported on — a verdict, or the note that a tree holds nothing. */
+/** Every tree the command reported on: a verdict, or the note that a tree holds nothing. */
 function reports(): readonly TreeReport[] {
   const done = runVerify({ cwd: repo, env: env(), requirement: 'chained', global: false });
   if (!done.ok) throw new Error('fixture: no project in the sandbox');
   return (done as VerifyDone).trees;
 }
 
-/** What the CHAIN said, per tree — the source the printed lines are compared against. */
+/** What the CHAIN said, per tree: the source the printed lines are compared against. */
 function verdicts(): readonly TreeVerdict[] {
   return reports().filter((tree): tree is TreeVerdict => tree.kind === 'verdict');
 }
@@ -158,7 +158,7 @@ function lines(file: string): string[] {
   return readFileSync(file, 'utf-8').split('\n').filter(Boolean);
 }
 
-/** Founds a project and records `count` tasks through the CLI — each one signed. */
+/** Founds a project and records `count` tasks through the CLI: each one signed. */
 async function record(count: number): Promise<void> {
   await run(['init'], capture().io);
   for (let i = 0; i < count; i += 1) {
@@ -256,7 +256,7 @@ const RECORDS: readonly (readonly [string, () => Promise<void>])[] = [
 
 describe('the surface says exactly what the chain said', () => {
   for (const [what, build] of RECORDS) {
-    it(`prints the label, a colon and the chain's own summary — ${what}`, async () => {
+    it(`prints the label, a colon and the chain's own summary: ${what}`, async () => {
       await build();
       const printed = await verifyLines('--color=never', '--verbose');
       const said = verdicts();
@@ -268,7 +268,7 @@ describe('the surface says exactly what the chain said', () => {
         expect(line, `${what} / ${tree.scope}`).toBe(`${tree.scope}: ${tree.result.summary}`);
       }
       // And there is no line the command did not account for: one per tree it reported
-      // on — a verdict, or the note that a tree holds nothing — so a sentence ADDED
+      // on (a verdict, or the note that a tree holds nothing), so a sentence ADDED
       // beside them is caught too. There are more reports than verdicts here: a sandbox
       // that never wrote privately has a private tree with nothing to rule on, and that
       // note is not a verdict and is deliberately not composed of clauses.
@@ -277,7 +277,7 @@ describe('the surface says exactly what the chain said', () => {
       expect(reports().length).toBeGreaterThan(said.length);
     });
 
-    it(`carries every clause the chain worded, and only those — ${what}`, async () => {
+    it(`carries every clause the chain worded, and only those: ${what}`, async () => {
       await build();
       await verifyLines('--color=never');
       for (const tree of verdicts()) {
@@ -296,11 +296,11 @@ describe('the surface says exactly what the chain said', () => {
 });
 
 describe('and it paints the clause that is the answer, and nothing else', () => {
-  /** Every hue seen through the CLI across the fixtures — the non-vacuity of the set. */
+  /** Every hue seen through the CLI across the fixtures: the non-vacuity of the set. */
   const seen = new Set<Severity>();
 
   for (const [what, build] of RECORDS) {
-    it(`wears the level's hue and leaves the tree's name unpainted — ${what}`, async () => {
+    it(`wears the level's hue and leaves the tree's name unpainted: ${what}`, async () => {
       await build();
       const painted = await verifyLines('--color=always');
       const plain = await verifyLines('--color=never');
@@ -351,7 +351,7 @@ describe('every level the chain declares reads as news, and the table is total',
    * an exported value with no production caller is the shape the workspace's own guard
    * exists to accuse, and the table below is total over the union BY TYPE in production,
    * so nothing in the product needs the tuple at run time. What this file needs is the
-   * enumeration, and the declaration is where it comes from — never a list kept here,
+   * enumeration, and the declaration is where it comes from, never a list kept here,
    * which is exactly what would go stale the day a rung is added.
    */
   function levelsTheChainDeclares(): readonly ProvenLevel[] {
@@ -369,7 +369,7 @@ describe('every level the chain declares reads as news, and the table is total',
   it('gives each of them the severity its own rank asks for', () => {
     // The expectation is DERIVED from the chain, never restated: `bad` is exactly what
     // fails the minimum a bare `verify` declares, `warn` is exactly the level that
-    // minimum asks for — the rung where the hash chain held and nothing was signed — and
+    // minimum asks for (the rung where the hash chain held and nothing was signed) and
     // `good` is everything above it. So a rung inserted tomorrow gets an answer from the
     // chain's own order rather than from a list somebody forgot to extend.
     const floor = requiredLevel('chained');
@@ -384,13 +384,13 @@ describe('every level the chain declares reads as news, and the table is total',
   });
 
   it('paints each of them, byte for byte, with the label left alone', () => {
-    // All six, INCLUDING THE RUNG THIS CASE USED TO CALL UNREACHABLE — *no witness
+    // All six, INCLUDING THE RUNG THIS CASE USED TO CALL UNREACHABLE: *no witness
     // exists, so `externally-witnessed` cannot be produced by any record on any disk*.
     // A witness landed (`chain/witness.ts`), so the sixth is now an ordinary answer and
     // the reason for asking about it has changed rather than gone: a table that only
     // ever answered for the levels a fixture happens to produce would be a table with an
     // unpainted entry nobody would find. The text is the level's name rather than its
-    // sentence — the wording is the chain's business and `levelHeadline` never leaves it;
+    // sentence: the wording is the chain's business and `levelHeadline` never leaves it;
     // what is asserted here is the wrapping.
     for (const level of levelsTheChainDeclares()) {
       const news = levelSeverity(level);

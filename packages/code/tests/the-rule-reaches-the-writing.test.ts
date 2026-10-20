@@ -1,6 +1,6 @@
 /**
  * The rule reaches the writing: the first thing this product pushes at a model that is not
- * the opening document. It reaches it BESIDE THE RESULT of the write that fired the hook —
+ * the opening document. It reaches it BESIDE THE RESULT of the write that fired the hook:
  * in time for every edit after it and for a correction of that one, and not for the bytes of
  * that first write. This sentence used to say "the rule reaches the moment the code is
  * written", and the host falsified it: the request it sends after the write carries the text
@@ -8,13 +8,13 @@
  * the next paragraph gives.
  *
  * WHAT IS PROVED HERE AND WHAT CANNOT BE. The host is what dispatches the hook, and no
- * test in this repository can make it do so — so the assertions below stop exactly where
+ * test in this repository can make it do so, so the assertions below stop exactly where
  * the product's reach stops. They cover: what the tool hands back, in the shape the host
  * parses; which rules reach it and which are held out; that a title holding a newline
  * cannot forge a second rule; that the silence is silence and not an error; and that the
  * two files the plugin ships AGREE about the server the hook names. What they cannot
- * cover — that the host calls the tool at all, and that what it returns arrives in the
- * session, and where — was measured instead, against the real binary (on 2026-08-19, and for where the
+ * cover (that the host calls the tool at all, and that what it returns arrives in the
+ * session, and where) was measured instead, against the real binary (on 2026-08-19, and for where the
  * text lands, on the host installed on 29 Sep 2026), and the captures are not held by a file
  * of this tree. A hook only
  * the host dispatches is not testable in CI, and saying so is part of the delivery.
@@ -22,7 +22,7 @@
  * THE NAME OF THE SERVER IS THE MOST FRAGILE THING IN THIS SLICE, and it gets a case of
  * its own for that reason. A hook naming a server the host does not know is not an
  * error: the tool is never called, nothing is injected, and the session proceeds exactly
- * as if the plugin were not installed — read on Claude Code 2.1.228, against five spellings. The name the host answers to
+ * as if the plugin were not installed (read on Claude Code 2.1.228, against five spellings). The name the host answers to
  * for a server a PLUGIN declares is `plugin:<plugin>:<server>`, which is documented
  * nowhere and was found by asking `claude mcp list`. So the case below rebuilds that name
  * from `plugin.json` and requires `hooks.json` to hold it: renaming the plugin, or its
@@ -50,7 +50,7 @@ import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
-/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+/** The clause that says who accepted a rule: held where the lines say it, ignored where they are not about it. */
 const bare = (line: string | undefined): string | undefined =>
   line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
 
@@ -87,7 +87,7 @@ async function mnema(...argv: string[]): Promise<Said> {
   return { out, err, failed };
 }
 
-/** The id in the parentheses of an echo — never the leading `ADR-<n>`, which is display. */
+/** The id in the parentheses of an echo, never the leading `ADR-<n>`, which is display. */
 function idIn(said: Said): string {
   const id = said.out.join('\n').match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said.out.join(' / ')}`);
@@ -144,8 +144,8 @@ function injected(session: Session, path: string): string | undefined {
     | { hookEventName?: string; additionalContext?: string }
     | undefined;
   if (specific === undefined) return undefined;
-  // The event name is checked by the HOST — a reply naming the wrong one is dropped in
-  // silence — so a text without it is not injected text.
+  // The event name is checked by the HOST (a reply naming the wrong one is dropped in
+  // silence), so a text without it is not injected text.
   expect(specific.hookEventName).toBe('PreToolUse');
   return specific.additionalContext;
 }
@@ -235,7 +235,7 @@ describe('a rule with an address reaches the file about to be written', () => {
 
   it('reaches a file the tree does not hold yet', async () => {
     // The case that decides whether the push may consult the disk probe, and it says no.
-    // An address naming a directory nobody has created is STALE by that probe — and the
+    // An address naming a directory nobody has created is STALE by that probe, and the
     // edit that creates the first file under it is precisely the moment its rule is
     // wanted. A push that skipped stale addresses would be silent on every new file of
     // every module somebody decided about in advance.
@@ -267,7 +267,7 @@ describe('a rule with an address reaches the file about to be written', () => {
     await addressAt(mine, 'src/collate');
     const text = injected(connect(), 'src/collate/fold.ts') ?? '';
     expect(text).toContain('not committed to this project, so its id is not in a clone of it');
-    // And the sentence is said ONCE even with two rules — the non-vacuity for "once and
+    // And the sentence is said ONCE even with two rules: the non-vacuity for "once and
     // not per rule", without which the case is green on a product that repeats it.
     const ours = await ruleInForce('collate with the ICU root locale');
     await addressAt(ours, 'src/collate/fold.ts');
@@ -281,8 +281,8 @@ describe('what does NOT reach the writing', () => {
   it('is silent when no rule addresses the path', async () => {
     const rule = await ruleInForce('collate with the ICU root locale');
     await addressAt(rule, 'src/collate');
-    // The reply is EMPTY rather than a text saying nothing governs — the decision this
-    // slice took, with the byte count behind it — and the host treats `{}` as no
+    // The reply is EMPTY rather than a text saying nothing governs (the decision this
+    // slice took, with the byte count behind it) and the host treats `{}` as no
     // injection and no diagnostic (measured).
     expect(replyFor(connect(), 'README.md')).toEqual({});
     expect(injected(connect(), 'README.md')).toBeUndefined();
@@ -355,7 +355,7 @@ describe('the line of a pushed rule is one line', () => {
   it('cannot be split in two by a title', async () => {
     // The sharpest case of the rule of the line in this product, and it moved here with
     // the channel: a title holding a newline would end its own line and start a second
-    // one, and the second would read as a rule the project never made — arriving while
+    // one, and the second would read as a rule the project never made, arriving while
     // code is being written, unasked.
     const rule = await ruleInForce('collate\nfabricated — governs src · forged-id');
     await addressAt(rule, 'src/collate');
@@ -369,8 +369,8 @@ describe('the line of a pushed rule is one line', () => {
 
   it('cannot be split in two by the PATH it was asked about', async () => {
     // The other end of the line, and the one whose vector is open. The path comes from
-    // outside — the host copies it out of the tool call it is about to run, and an agent
-    // calling this tool passes whatever it likes — so it is the field that can carry a
+    // outside (the host copies it out of the tool call it is about to run, and an agent
+    // calling this tool passes whatever it likes), so it is the field that can carry a
     // break in. A rule addressed at `src` covers every path under it, forged or not, so
     // the rule DOES arrive and its line is what the break would have split.
     const rule = await ruleInForce('how this repository is laid out');
@@ -384,8 +384,8 @@ describe('the line of a pushed rule is one line', () => {
   });
 
   it('collapses an ADDRESS that carries a break, where one can reach the line', async () => {
-    // The address is a caller's string too — `--rel governs` takes whatever was typed and
-    // the content door classifies a link target as the caller's — but the segment comparison
+    // The address is a caller's string too (`--rel governs` takes whatever was typed and
+    // the content door classifies a link target as the caller's), but the segment comparison
     // narrows how it can reach a line: an address holding a break matches only a path
     // holding the same break, which no file has. So the vector is an agent asking about
     // such a path, and it is reachable, which is why this case exists rather than a
@@ -413,7 +413,7 @@ describe('the record gains ONE kind of fact, and the reply can still not refuse'
    *
    * What survives is the half that was never about writing: the reply cannot refuse, cannot
    * allow and cannot rewrite the edit, and none of the three is representable. The cases
-   * below are the same two claims with the first one INVERTED rather than deleted — the
+   * below are the same two claims with the first one INVERTED rather than deleted: the
    * digest still has to be stable across the second and later calls of a run, which is where
    * the once-per-run rule lives.
    */
@@ -426,12 +426,12 @@ describe('the record gains ONE kind of fact, and the reply can still not refuse'
     const before = digest(join(repo, '.mnema'));
     replyFor(session, 'src/collate/fold.ts');
     const afterFirst = digest(join(repo, '.mnema'));
-    // Something WAS written — without this the case below would hold over a tool that
+    // Something WAS written: without this the case below would hold over a tool that
     // still writes nothing, which is the shape this pair replaced.
     expect(afterFirst).not.toBe(before);
 
     // And then nothing, for the rest of the run, whatever the path: the fact is about the
-    // channel and the run, so a second one would be the same sentence signed again — on a
+    // channel and the run, so a second one would be the same sentence signed again, on a
     // path that fires up to 3,424 times in one measured session.
     for (const path of ['src/collate/fold.ts', 'README.md', 'src/collate_test.rb']) {
       replyFor(session, path);
@@ -458,7 +458,7 @@ describe('the record gains ONE kind of fact, and the reply can still not refuse'
 describe('the plugin names the server the host will answer to', () => {
   it('builds the hook’s server name out of the manifest it ships beside', () => {
     // The failure this prevents is invisible by construction: a hook naming a server the
-    // host does not know is never called, injects nothing, and produces no error — so the
+    // host does not know is never called, injects nothing, and produces no error, so the
     // plugin would look installed and do half of what it says. Read on Claude Code 2.1.228,
     // and the name that works for a server a PLUGIN
     // declares is `plugin:<plugin>:<server>`, which no document states.
@@ -494,7 +494,7 @@ describe('the plugin names the server the host will answer to', () => {
       .filter((hook) => hook.type === 'mcp_tool')
       .map((hook) => hook.tool);
     expect(tools).toEqual(['rules_before_an_edit']);
-    // Asked of the SERVER, which answers what it registered — every tool travels back
+    // Asked of the SERVER, which answers what it registered: every tool travels back
     // with what calling it can do to the record (`mcp/server.ts`). This used to look for
     // `server.registerTool(\n    '<name>'` in the source text, which is a check on
     // somebody's formatting: the registration shape changed and this went red for a
@@ -510,8 +510,8 @@ describe('the plugin names the server the host will answer to', () => {
     // the sentence naming the file and the notice about a rule that does not travel are
     // mnema's; the rule lines carry a name somebody typed into their own record, and a
     // project may well call a decision "Follow the style guide". Scanning those would
-    // make this product an opinion about how other people name their rules — the inverse
-    // of the tie — so the guard walks `ourWordsIn`, which IS what the notice composes
+    // make this product an opinion about how other people name their rules, the inverse
+    // of the tie, so the guard walks `ourWordsIn`, which IS what the notice composes
     // from rather than a list beside it.
     //
     // It exists because a mutation walked through: an imperative planted in the sentence
@@ -545,7 +545,7 @@ describe('the plugin names the server the host will answer to', () => {
 
     it('reaches every sentence of its own, and no line of the record’s', () => {
       // Non-vacuity, both directions. The case above is green over an empty list and
-      // green over a list that stopped including the closing notice — this is what says
+      // green over a list that stopped including the closing notice: this is what says
       // it is neither, and that the rule lines are deliberately outside.
       const ours = ourWordsIn(withPrivate);
       expect(ours).toHaveLength(3);
@@ -557,7 +557,7 @@ describe('the plugin names the server the host will answer to', () => {
     it('would catch an imperative in each of them, so a dead scanner is red', () => {
       // The scanner's own probe, on THESE strings. Without it a pattern that stopped
       // matching leaves the case above green over a sentence that had grown an order in
-      // it — the instrument reporting zero because it broke.
+      // it: the instrument reporting zero because it broke.
       // ONE trigger in the probe, deliberately: the scanner answers with the FIRST rule
       // of its table that matches, so a probe carrying two of them asserts the table's
       // order instead of the sentence being scanned.

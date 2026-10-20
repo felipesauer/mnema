@@ -3,8 +3,8 @@
  *
  * ## What it was
  *
- * Over a tree `mnema verify` exits 1 on — `seq gap: expected 6, found 5`, which is
- * what two sessions appending to one tail at once used to leave — `mnema search
+ * Over a tree `mnema verify` exits 1 on (`seq gap: expected 6, found 5`, which is
+ * what two sessions appending to one tail at once used to leave) `mnema search
  * --kind decision` exited 0 with no word, and `mnema status` did the same. Every fact
  * was served and the one thing wrong with the record was never mentioned. A product
  * whose subject is proof may not hand somebody a broken proof in silence.
@@ -13,8 +13,8 @@
  *
  * The writing side of the same delivery stopped two writers from producing this. It is
  * NOT what makes these cases pass, and that separation is deliberate: a tail can stop
- * chaining for reasons no write lock knows about — a botched merge, a hand-edited
- * file, a restore from half a copy — so the corruption here is planted by hand rather
+ * chaining for reasons no write lock knows about (a botched merge, a hand-edited
+ * file, a restore from half a copy), so the corruption here is planted by hand rather
  * than raced for. Every case below would still be the right case if nothing had ever
  * raced.
  *
@@ -26,15 +26,15 @@
  * That the notice APPEARS over a broken record, that it appears in EVERY read that
  * serves the record rather than in the two that first said it, that it carries the tail
  * and the position rather than a vague unease, that it does NOT appear over an intact
- * one — the vacuity guard, and the case that would catch a notice printed
- * unconditionally — and that it goes to the stream that keeps `--json`
+ * one (the vacuity guard, and the case that would catch a notice printed
+ * unconditionally) and that it goes to the stream that keeps `--json`
  * machine-readable and keeps the `brief`'s document a function of the record alone.
  *
  * ## The reads, and why they are driven by a table
  *
  * It used to be two of them, named in prose. The table below is the same list the
  * command line actually has, and it is a table so that a read added to the surface is a
- * read somebody has to put here — the structural half of that obligation is
+ * read somebody has to put here: the structural half of that obligation is
  * `the-broken-link-reaches-every-reader.test.ts`, which walks the SOURCE for the doors;
  * this half proves that what the source promises is what the binary prints.
  */
@@ -76,7 +76,7 @@ let project: string;
 let who = '';
 let task = '';
 let skill = '';
-/** The document the `brief` prints over the INTACT fixture — the byte-for-byte base. */
+/** The document the `brief` prints over the INTACT fixture: the byte-for-byte base. */
 let intactBrief = '';
 const cwdBefore = process.cwd();
 const envBefore = { ...process.env };
@@ -101,7 +101,7 @@ beforeAll(async () => {
   await invoke('decision', 'record', 'The first', 'because');
   // A task and an adopted pattern, because three of the reads take one: `task next`
   // and `task guard` are about a task, and `show` is about a record with a body. Every value
-  // here is one the PRODUCT produced — the ids are read back out of what it printed, so
+  // here is one the PRODUCT produced: the ids are read back out of what it printed, so
   // no case runs over a state no write can reach.
   const made = await invoke('task', 'create', 'The work');
   task = /\(([^)]+)\)/.exec(made.out.join(LF))?.[1] ?? '';
@@ -110,7 +110,7 @@ beforeAll(async () => {
   skill = /\(([^)]+)\)/.exec(skilled.out.join(LF))?.[1] ?? '';
   if (skill === '') throw new Error(`fixture: no skill in ${skilled.out.join(LF)}`);
   // Carried to ADOPTED through the product's own transitions, because `skill export`
-  // only writes a pattern in force — a fixture that wrote the state directly would be a
+  // only writes a pattern in force: a fixture that wrote the state directly would be a
   // fixture about a record no write can produce.
   await invoke('skill', 'move', 'review', skill, '--note', 'read it');
   await invoke('skill', 'move', 'adopt', skill, '--note', 'this is how');
@@ -136,12 +136,12 @@ const notices = (err: readonly string[]): string[] =>
  *
  * The argv is a THUNK and not a value, and that is not style: `it.each` evaluates its
  * table while the suite is being COLLECTED, before any `beforeAll` has run, so a table
- * holding the ids directly holds empty strings — seven of these cases were green over
+ * holding the ids directly holds empty strings; seven of these cases were green over
  * `mnema show ""` before the thunk went in. It takes ids because three of them are
  * about a task and one about a body, and an id nobody minted is a case about a record
  * that cannot exist.
  * `decision import` is here and it WRITES: it is the one read whose answer decides what
- * gets appended — the set of files already derived is what stops a duplicate — so a
+ * gets appended (the set of files already derived is what stops a duplicate), so a
  * broken proof under it is the worst moment on this surface to be silent about. It is
  * driven as a PLAN (no `--write`), which reads everything and appends nothing.
  */
@@ -198,14 +198,14 @@ describe('over a record that chains, a read says nothing about the chain', () =>
 
 describe('over a record that does not chain, a read says so', () => {
   beforeAll(() => {
-    // The plant: the tail's last entry again. Same seq, same prev — what two writers
+    // The plant: the tail's last entry again. Same seq, same prev: what two writers
     // appending at once used to leave.
     const file = segment();
     const lines = readFileSync(file, 'utf-8').trimEnd().split(LF);
     appendFileSync(file, `${lines[lines.length - 1] as string}${LF}`, 'utf-8');
   });
 
-  it('is a record `verify` refuses — so there is something to be silent about', async () => {
+  it('is a record `verify` refuses, so there is something to be silent about', async () => {
     const ruled = await invoke('verify');
     expect(ruled.failed).toBe(true);
   });

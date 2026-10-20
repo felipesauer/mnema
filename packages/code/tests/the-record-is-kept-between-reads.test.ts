@@ -10,12 +10,12 @@
  *
  * WHAT HAS TO STAY TRUE, over the real binary and not over the classes that make it:
  *
- *   - THE ONLY THING A READ ADDS IS THE CACHE, by the shape `isTheDerivedCache` names — not a tail,
+ *   - THE ONLY THING A READ ADDS IS THE CACHE, by the shape `isTheDerivedCache` names, not a tail,
  *     not a key, not a line of any file that was there;
  *   - GIT NEVER SEES IT. It lives where the tree's own `.gitignore` already looks away, so `git
  *     add` of the whole tree takes nothing of it;
  *   - DELETING IT CHANGES NO ANSWER: every read prints the same bytes cold, warm, and after the
- *     file is deleted — and after a write that landed between two reads, which is the case a cache
+ *     file is deleted, and after a write that landed between two reads, which is the case a cache
  *     that served what it knew would get wrong.
  */
 
@@ -60,7 +60,7 @@ function ok(...argv: string[]): string {
   return ran.stdout;
 }
 
-/** Every path under `dir`, relative to it — the tree as a list of what exists. */
+/** Every path under `dir`, relative to it: the tree as a list of what exists. */
 function pathsUnder(dir: string): string[] {
   const out: string[] = [];
   const walk = (current: string): void => {

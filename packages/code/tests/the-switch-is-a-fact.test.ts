@@ -3,7 +3,7 @@
  * who, when and what.
  *
  * WHAT THIS SLICE IS FOR, and it arrives after the surface that needs it. The tie reads:
- * every charge mnema makes is switchable, and the switching is RECORDED — switching off is
+ * every charge mnema makes is switchable, and the switching is RECORDED; switching off is
  * legitimate, switching off in SILENCE is not. Two channels push text at a model without
  * anybody asking (the document a session opens with, the rules handed over as a file is
  * written) and until this slice there was no way to stop either short of uninstalling the
@@ -13,22 +13,22 @@
  * configuration file answers "can I turn it off" and defeats the second half of the tie:
  * nothing attributes it, nothing dates it, it does not travel, and a reader of the record
  * can never tell "no rule addressed that file" from "somebody had turned the push off that
- * week". As an event it inherits the whole envelope — the authorizing `who`, the executing
- * `which`, the run, the instant, the signature, the chain link — and it inherits the SCOPE,
+ * week". As an event it inherits the whole envelope (the authorizing `who`, the executing
+ * `which`, the run, the instant, the signature, the chain link) and it inherits the SCOPE,
  * which is what makes a switch that travels with the repository and a switch kept on one
  * machine the same mechanism in two trees.
  *
  * THE FOUR THINGS ASSERTED HERE, and each fails in its own direction:
  *
  *   - THE FACT. A switch is one `channel.switched` whose subject is the channel, attributed
- *     and dated, and it lands in the tree the KIND decides — public, so the team reads it.
+ *     and dated, and it lands in the tree the KIND decides: public, so the team reads it.
  *   - THE EFFECT. The channel stops. The push replies with the same empty object it replies
  *     with when no rule addresses the path, and `mnema brief` refuses instead of printing an
- *     empty document — which is what makes the plugin's handler silent by the rule it
+ *     empty document, which is what makes the plugin's handler silent by the rule it
  *     already had.
  *   - THE HONESTY. A silence that means "switched off" says so where a silence can be paid
  *     for once: the document a session opens with. Without this half the slice would open a
- *     hole rather than close one — three different silences in one channel.
+ *     hole rather than close one: three different silences in one channel.
  *   - THE DEFAULT. No channel arrives switched off except the two that start off, and there is no birth event to make it so.
  *
  * WHAT IS TOTAL AND WHAT IS A LIST. The set of switchable channels is derived from the union
@@ -108,21 +108,21 @@ async function mnema(...argv: string[]): Promise<Said> {
   return { out, err, failed };
 }
 
-/** Runs a verb and refuses to continue if it was refused — the fixture's own floor. */
+/** Runs a verb and refuses to continue if it was refused: the fixture's own floor. */
 async function did(...argv: string[]): Promise<Said> {
   const said = await mnema(...argv);
   expect(said.failed, `mnema ${argv.join(' ')}: ${said.err.join(' / ')}`).toBe(false);
   return said;
 }
 
-/** The id in the parentheses of an echo — never the leading `ADR-<n>`, which is display. */
+/** The id in the parentheses of an echo, never the leading `ADR-<n>`, which is display. */
 function idIn(said: Said): string {
   const id = said.out.join('\n').match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said.out.join(' / ')}`);
   return id;
 }
 
-/** A decision in force, addressed at a path — the one thing the push has to say. */
+/** A decision in force, addressed at a path: the one thing the push has to say. */
 async function ruleAddressedAt(title: string, path: string): Promise<string> {
   const id = idIn(await did('decision', 'record', title, `why ${title}`));
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
@@ -243,8 +243,8 @@ describe('switching a channel is a fact of the chain', () => {
     expect(fact.subject).toBe(EDIT_PUSH_CHANNEL);
     expect(fact.payload).toEqual({ on: false, reason: 'noisy while porting' });
     // The whole point of the fact rather than a setting: it is attributed, dated and
-    // signed. Nothing here asserts the VALUES — a `who` is derived from a key and an `at`
-    // from the clock — only that the fact carries them, which a config file cannot.
+    // signed. Nothing here asserts the VALUES (a `who` is derived from a key and an `at`
+    // from the clock) only that the fact carries them, which a config file cannot.
     expect(fact.who).toMatch(/^mnid:/);
     expect(fact.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(fact.signerFp).toMatch(/^[0-9a-f]{64}$/);
@@ -253,7 +253,7 @@ describe('switching a channel is a fact of the chain', () => {
   it('omits the reason rather than storing a blank one, because a switch never needs one', async () => {
     // The tie asks for the FACT and never for a justification: a product that refused to be
     // switched off until somebody composed prose would be charging for the switch. Absent is
-    // how the record says there was none — never an empty string, which the reader refuses.
+    // how the record says there was none, never an empty string, which the reader refuses.
     await did('switch', 'off', EDIT_PUSH_CHANNEL);
     const fact = switchesIn('public')[0] as CatalogEvent & { kind: 'channel.switched' };
     expect(fact.payload).toEqual({ on: false });
@@ -348,7 +348,7 @@ const HONOURED: Readonly<
 > = {
   [DOCUMENT_CHANNEL]: {
     // The document is the whole of a verb's output, so "does it speak" is "did the verb
-    // print one" — and the refusal is what the plugin's handler reads as silence.
+    // print one", and the refusal is what the plugin's handler reads as silence.
     setUp: async () => {
       await did('decision', 'record', 'A call the document would carry', 'because it was made');
     },
@@ -358,7 +358,7 @@ const HONOURED: Readonly<
     },
   },
   [RECALL_CHANNEL]: {
-    // The notes: a verb whose whole output is what a session is handed, like the document —
+    // The notes: a verb whose whole output is what a session is handed, like the document,
     // and silent over a record with no notes, so the note set up here is what lets the case
     // see it speak before it is switched off.
     setUp: async () => {
@@ -376,7 +376,7 @@ const HONOURED: Readonly<
     speaks: async () => injected(connect(), 'src/billing/invoice.ts') !== undefined,
   },
   [ASKS_A_PERSON_CHANNEL]: {
-    // The GATE, driven by the relation that asks rather than the one that governs — which
+    // The GATE, driven by the relation that asks rather than the one that governs, which
     // is what keeps this case from passing on the strength of the other channel's switch.
     setUp: async () => {
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
@@ -386,7 +386,7 @@ const HONOURED: Readonly<
   [REFUSES_A_WRITE_CHANNEL]: {
     // THE REFUSAL, driven through the one function every host's hook asks what a write meets
     // (`what-a-write-meets.ts`), over the trees the process-hook door assembles. "Speaks" is a
-    // refusal — a refusal switched off falls to whatever else the path meets, here nothing.
+    // refusal: a refusal switched off falls to whatever else the path meets, here nothing.
     setUp: async () => {
       await ruleRefusingAt('Nobody writes billing by hand', 'src/billing');
     },
@@ -530,7 +530,7 @@ describe('a channel that is switched off stops', () => {
     });
   }
 
-  it('says WHY every channel it does not switch is not one — one sentence each', () => {
+  it('says WHY every channel it does not switch is not one: one sentence each', () => {
     // The other half of the totality. `Exclude<ModelChannel, SwitchableChannel>` is what
     // makes a channel added to the union fail to COMPILE until it is classified; this is
     // what keeps a classification from being the empty string.
@@ -583,7 +583,7 @@ describe('a channel that is switched off stops', () => {
   it('reaches the OTHER surface as well: a switch is not a fact about the CLI', async () => {
     // The switch is read from the record, so the door a caller came through cannot change
     // the answer. Here the write is the command line's and the reading is the MCP server's,
-    // over a session opened after it — which is the pair the plugin actually runs.
+    // over a session opened after it, which is the pair the plugin actually runs.
     await ruleAddressedAt('Round money at the boundary', 'src/billing');
     await did('switch', 'off', EDIT_PUSH_CHANNEL, '--which', 'agent-alpha');
     expect(injected(connect(), 'src/billing/invoice.ts')).toBeUndefined();
@@ -592,9 +592,9 @@ describe('a channel that is switched off stops', () => {
 
 describe('a switch of a tree that does not travel still governs this machine', () => {
   it('goes quiet on an OFF recorded privately, over an ON in the committed tree', async () => {
-    // OFF WINS, and it is not a preference. There is no total order across trees — an
-    // event's `at` is a clock on the machine that wrote it, and two trees share no sequence
-    // — so "the most recent switch across the trees" is a comparison of two unordered
+    // OFF WINS, and it is not a preference. There is no total order across trees (an
+    // event's `at` is a clock on the machine that wrote it, and two trees share no sequence)
+    // so "the most recent switch across the trees" is a comparison of two unordered
     // things, and a product deciding whether to speak by it would decide differently on two
     // machines whose clocks disagree. What is left is a rule that needs no order, and the
     // direction is the one that cannot mislead: a switch somebody flipped that did not take
@@ -607,9 +607,9 @@ describe('a switch of a tree that does not travel still governs this machine', (
   });
 
   it('says in the listing that such a switch is not committed', async () => {
-    // The one place a private switch is ever spelled. The document cannot carry it — it is
+    // The one place a private switch is ever spelled. The document cannot carry it (it is
     // committed and compared with `diff`, so a fact about one machine in it would make the
-    // staleness check report a difference that is not the record's — which is exactly why
+    // staleness check report a difference that is not the record's), which is exactly why
     // this row has to say it.
     await did('switch', 'off', EDIT_PUSH_CHANNEL, '--scope', 'private', '--reason', 'my machine');
     const listed = await did('switch');
@@ -639,8 +639,8 @@ describe('the document says when the push is switched off', () => {
     // THE HALF WITHOUT WHICH THIS SLICE OPENS A HOLE. The document explains a silence: the
     // reader is told how many rules have an address, so nothing arriving at an edit reads as
     // "none of them names this file". A switched-off push produces the identical silence and
-    // means something else, so the claim about what arrives is REPLACED rather than decorated
-    // — a document carrying both sentences would leave a model to pick.
+    // means something else, so the claim about what arrives is REPLACED rather than decorated;
+    // a document carrying both sentences would leave a model to pick.
     await ruleAddressedAt('Round money at the boundary', 'src/billing');
     const on = await document();
     expect(on.join('\n')).toContain('the rules');
@@ -679,8 +679,8 @@ describe('the document says when the push is switched off', () => {
 
   it('cannot report a switch recorded privately, and this is the hole it leaves', async () => {
     // SAID OUT LOUD BECAUSE THE GUARD CANNOT SAY IT. The document carries the committed
-    // record — every private rule is absent from it for the same reason, declared to the
-    // reader in the same words — so a switch kept on one machine is invisible here while it
+    // record (every private rule is absent from it for the same reason, declared to the
+    // reader in the same words), so a switch kept on one machine is invisible here while it
     // silences the push on that machine. The third silence ("the hook did not run") stays
     // open with it. Closing either would put a fact about ONE MACHINE into a file that is
     // committed and compared with `diff`.
@@ -702,7 +702,7 @@ describe('a reading already counts the window the switch was off for', () => {
   it('answers `timeline <channel>` with every switch, who made it and when', async () => {
     // THE DECISION THIS SLICE HAD TO TAKE, and the answer is that it was already taken. The
     // question was whether a reading that counts what governed a period of work should say
-    // the push was off over it — and whether that needs a reading of its own. It does not:
+    // the push was off over it, and whether that needs a reading of its own. It does not:
     // a switch is a FACT whose SUBJECT is the channel, so the history reading that walks a
     // subject's events answers it with nothing added, over the union of trees, in the order
     // the record holds. That is the whole argument for a fact over a setting, arriving as a
@@ -710,7 +710,7 @@ describe('a reading already counts the window the switch was off for', () => {
     //
     // What the READINGS THAT COUNT RULES do is unchanged, and deliberately: `mnema rules`
     // and `governing_rules` answer which rules govern a path, and that answer is the same
-    // whether or not the product is pushing it at anybody. `verify` is untouched — a switch
+    // whether or not the product is pushing it at anybody. `verify` is untouched: a switch
     // is a fact like any other and the proof covers it without a field or a level of its
     // own.
     await did('switch', 'off', EDIT_PUSH_CHANNEL, '--reason', 'the porting week');
@@ -748,7 +748,7 @@ describe('the door is the command line’s alone', () => {
   it('serves no MCP tool that switches a channel', () => {
     // NOT a claim that it cannot be done: anyone who can write to the record can append any
     // fact, and a switch appended some other way is a signed fact pointing at whoever
-    // appended it. It is a claim about which doors this product OPENS — the same one `tail
+    // appended it. It is a claim about which doors this product OPENS, the same one `tail
     // prune` makes, and here the reason is sharper: an agent that could switch off what
     // governs its own work through the door built for agents would be an agent that opts
     // out of the record.
@@ -756,7 +756,7 @@ describe('the door is the command line’s alone', () => {
     // Read off the SERVER ITSELF, which now answers what it registered: every tool is
     // hung with a declaration of what it can do to the record, and those declarations
     // travel back (`mcp/server.ts`). THIS USED TO MATCH THE SOURCE TEXT for
-    // `server.registerTool(\n    '<name>'`, and the registration shape changed under it —
+    // `server.registerTool(\n    '<name>'`, and the registration shape changed under it:
     // caught only because the count below is asserted, which is the whole argument for
     // asserting it. A pattern over somebody's formatting is not an enumeration.
     const { tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });

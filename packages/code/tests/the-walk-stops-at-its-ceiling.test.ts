@@ -2,13 +2,13 @@
  * The ceiling STOPS the walk, and not merely the counting.
  *
  * A file of its own because it counts `readdirSync` calls, which takes mocking
- * `node:fs` for the whole module graph — and the reach's other cases run the real CLI,
+ * `node:fs` for the whole module graph, and the reach's other cases run the real CLI,
  * which needs the real one.
  *
  * IT EXISTS BECAUSE THE FIRST WRITING OF THE CEILING DID NOT STOP ANYTHING. It returned
  * from the loop of the directory it was in, which left every sibling above still opened
  * and read: the counts came back identical, `truncated` came back true, and every case
- * that asserted the two of them stayed GREEN. Measured — that mutation lit nothing. A
+ * that asserted the two of them stayed GREEN. Measured: that mutation lit nothing. A
  * bound that only bounds the number is not a bound on the work, and the work is the
  * whole reason a ceiling is here: an unbounded recursive `readdir` inside a verb a
  * person is waiting on.

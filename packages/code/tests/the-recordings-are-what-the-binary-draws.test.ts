@@ -1,10 +1,10 @@
 /**
- * THE RECORDINGS ARE WHAT THE BINARY DRAWS — the animations the front page shows, each held to a
+ * THE RECORDINGS ARE WHAT THE BINARY DRAWS: the animations the front page shows, each held to a
  * run of the script it was made from, against the built binary, so none goes stale in silence.
  *
  * WHY THIS EXISTS. An animation is the one kind of evidence on a page that a reader cannot check by
  * copying it, and it is the kind that rots quietest: it goes on showing the binary of the day it
- * was made. Measured on the command-line recording itself — its first take and the one committed
+ * was made. Measured on the command-line recording itself: its first take and the one committed
  * are four days apart, and in between the census line `verify` prints about a machine's own backup
  * key changed from *"the tail may have been dropped (a botched merge)…"* to *"a backup signs nothing
  * until it is restored"*. So each recording is made FROM a script that lives beside it in
@@ -13,16 +13,16 @@
  *
  * TWO WAYS OF BEING MADE, ONE RULE.
  *
- *   - THE COMMAND LINE. Each script in {@link COMMAND_LINE_RECORDINGS} — `first-record.sh`,
- *     `a-write-refused.sh`, `a-decision-superseded.sh` — is typed at a terminal by `asciinema`, which
+ *   - THE COMMAND LINE. Each script in {@link COMMAND_LINE_RECORDINGS} (`first-record.sh`,
+ *     `a-write-refused.sh`, `a-decision-superseded.sh`) is typed at a terminal by `asciinema`, which
  *     keeps every byte and when it came in its `.cast`; `agg` renders that into the GIF.
- *     Here the same script runs with `PACE=0` — no pause and no per-character delay, the text
- *     unchanged — and what it prints is held to the text of the committed cast, line for line:
+ *     Here the same script runs with `PACE=0` (no pause and no per-character delay, the text
+ *     unchanged) and what it prints is held to the text of the committed cast, line for line:
  *     the control sequences out, the carriage returns out, and what the machine mints read as what
  *     it is (`support/a-page-held-to-a-run.ts`).
  *   - THE CONSOLE. It is interactive, so no shell script can drive it: something has to wait for
- *     what each key did before pressing the next. `recordings/console.json` is its script — a record
- *     to open over, and steps that each end when their own frame brings a text onto the page — and
+ *     what each key did before pressing the next. `recordings/console.json` is its script (a record
+ *     to open over, and steps that each end when their own frame brings a text onto the page) and
  *     this file is what drives it, through the project's own pseudo-terminal (`support/pty.ts`).
  *     Asked to record (`RECORDING=console`), the drive WRITES `console.cast`; otherwise it holds
  *     the page every step leaves to the page the committed cast leaves at the same step.
@@ -39,8 +39,8 @@
  *     agg --theme github-dark --font-size 16 recordings/console.cast recordings/console.gif
  *
  * WHAT A RECORDING SHOWS THAT THE BINARY DID NOT WRITE, each said here:
- *   - the sandbox's home is spelled `~` — by the script for the command line, and by
- *     {@link spelledFromHome} for the console — so a path reads as it would on a reader's own
+ *   - the sandbox's home is spelled `~` (by the script for the command line, and by
+ *     {@link spelledFromHome} for the console), so a path reads as it would on a reader's own
  *     machine; a case below holds that the respelling changes nothing on any page but that path;
  *   - `verify`'s lines are folded at a space by the command-line script, to fit 96 columns;
  *   - the console's recording opens on `$ mnema` typed at a shell, which is what a person types
@@ -55,7 +55,7 @@
  * WHAT IT DOES NOT CHECK:
  *   - the GIFs. `agg` renders each from its cast and the suite has no `agg` to run; what ties a GIF
  *     to its cast is that one command makes both, and a reviewer sees both change in one diff;
- *   - a frame the console drew and replaced inside one step — a step is held by the page it
+ *   - a frame the console drew and replaced inside one step: a step is held by the page it
  *     LEAVES;
  *   - the times in a cast, beyond that they move forward.
  */
@@ -74,7 +74,7 @@ import { ROOT, read } from './support/published-examples.js';
 import { linesOf } from './support/reading-a-shell-line.js';
 import { screenOf } from './support/screen.js';
 
-/** The built binary — what a person runs, and what both recordings were made with. */
+/** The built binary: what a person runs, and what both recordings were made with. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** Where the recordings and their scripts live, beside the page that shows them. */
@@ -94,7 +94,7 @@ const THE_WAY_BACK = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// A cast — the asciicast v2 file a recording is kept in
+// A cast: the asciicast v2 file a recording is kept in
 // ---------------------------------------------------------------------------
 
 /** The first line of a cast: the terminal it was made at. */
@@ -105,7 +105,7 @@ interface CastHeader {
   readonly env?: Readonly<Record<string, string | null>>;
 }
 
-/** One event of a cast: when, what kind — `o` is output — and the bytes. */
+/** One event of a cast: when, what kind (`o` is output) and the bytes. */
 type CastEvent = readonly [number, string, string];
 
 /** A cast: the header, and every event in order. */
@@ -159,7 +159,7 @@ function readable(bytes: string): string {
   return text;
 }
 
-/** The commands the command-line script types, in order — the line after the prompt. */
+/** The commands the command-line script types, in order: the line after the prompt. */
 function typedIn(lines: readonly string[]): string[] {
   return lines.filter((line) => line.startsWith('$ ')).map((line) => line.slice(2));
 }
@@ -171,7 +171,7 @@ function typedIn(lines: readonly string[]): string[] {
 /**
  * Each command-line recording: the script in `recordings/` it is made from, the first three words
  * of every command it types (what the machine mints read as what it is), and how many lines it
- * prints at the least — so a script that printed nothing cannot agree with a cast that holds nothing.
+ * prints at the least, so a script that printed nothing cannot agree with a cast that holds nothing.
  */
 const COMMAND_LINE_RECORDINGS: readonly {
   readonly name: string;
@@ -274,7 +274,7 @@ interface ScriptStep {
   readonly types?: string;
   /** Keys sent as they are. */
   readonly keys?: string;
-  /** The text the step's own frame brings onto the page — what says it happened. */
+  /** The text the step's own frame brings onto the page: what says it happened. */
   readonly waitsFor?: string;
   /** The step that leaves the session; what it waits for is the process to end. */
   readonly leaves?: boolean;
@@ -322,7 +322,7 @@ const CONSOLE_SCRIPT = 'recordings/console.json';
  * because the console prints the project's path in its panel and the page is arranged around it.
  * Measured with a temp directory 86 characters long: the panel folded the path over two lines,
  * the respelling of the home no longer found it whole in the bytes, and the taller panel moved the
- * drawing of the name into the roll — every page of the drive differed from the recording's. A
+ * drawing of the name into the roll; every page of the drive differed from the recording's. A
  * sandbox under `/tmp` is the same length on every machine this file can run on: the
  * pseudo-terminal it drives is Linux's (`script -qec`, `stty -F`), where `/tmp` always is.
  */
@@ -344,7 +344,7 @@ function pageHolds(bytes: string, text: string, columns: number, rows: number): 
 }
 
 /**
- * THE PAGE HOLDS `text` AT A FINISHED FRAME — what a step with no key waits for: the program
+ * THE PAGE HOLDS `text` AT A FINISHED FRAME, what a step with no key waits for: the program
  * opened, and drew.
  */
 function drawnWith(text: string, columns: number, rows: number): Step['until'] {
@@ -352,12 +352,12 @@ function drawnWith(text: string, columns: number, rows: number): Step['until'] {
 }
 
 /**
- * A FRAME THE STEP CAUSED, THAT BROUGHT `text` ONTO THE PAGE — on it now, and not on it when the
+ * A FRAME THE STEP CAUSED, THAT BROUGHT `text` ONTO THE PAGE: on it now, and not on it when the
  * step began.
  *
  * THE SECOND HALF IS THE SCRIPT'S RULE, NOT A NICETY. A step that waited for a text already on the
  * page would end on the frame before it did anything, and it would record a page nothing had
- * changed — the frame the console does not write at all when a read leaves the page as it was. So
+ * changed: the frame the console does not write at all when a read leaves the page as it was. So
  * a script whose step asks for a text that is already there never ends, and says so by name.
  */
 function bringsOnto(text: string, columns: number, rows: number): Step['until'] {
@@ -452,7 +452,7 @@ function slicesOf(ran: Ran, count: number): string[] {
 }
 
 /**
- * THE SANDBOX'S HOME, SPELLED `~` — so the path the console's panel prints reads the way it would
+ * THE SANDBOX'S HOME, SPELLED `~`: so the path the console's panel prints reads the way it would
  * on a reader's machine. The only respelling the recording makes of the console's own bytes; the
  * last case below holds that it changes nothing on any page but that path.
  */
@@ -539,7 +539,7 @@ describe('the console recording', () => {
   let made: Cast;
 
   beforeAll(async () => {
-    // ITS OWN SANDBOX, a home inside it, and the repository inside the home — so the one path the
+    // ITS OWN SANDBOX, a home inside it, and the repository inside the home, so the one path the
     // console prints is a path under the home, which the recording spells `~`.
     sandbox = mkdtempSync(UNDER_A_PATH_OF_ONE_LENGTH);
     home = join(sandbox, 'home');
@@ -612,7 +612,7 @@ describe('the console recording', () => {
 
   it('spells the home `~` and changes nothing else on any page', () => {
     // THE RESPELLING, HELD. Replayed without it, every page is the same page with the sandbox's
-    // path where the recording has `~` — so the one thing the recording does to the console's
+    // path where the recording has `~`, so the one thing the recording does to the console's
     // bytes moves no row and leaves no cell behind.
     const raw = slicesOf(ran, paced.length);
     const before = theShellLine(script.shell);
@@ -631,7 +631,7 @@ describe('the console recording', () => {
 
   it('opens where a person opens it, and every read changes the page', () => {
     // NON-VACUITY, read off the drive and not assumed: the bare name asked, the first door opened
-    // the console, and each read brought its own answer — which is what makes the recording look
+    // the console, and each read brought its own answer, which is what makes the recording look
     // like a console answering rather than a page that sat still.
     const pages = pagesOf(made, script, paced.length);
     expect(pages[0]).toContain('what would you like to do here?');
@@ -648,8 +648,8 @@ describe('the console recording', () => {
 
   it('is the record whose opening document the front page quotes, cut only where it says', () => {
     // THE PAGE QUOTES WHAT A SESSION IS HANDED, AND SAYS OVER WHICH RECORD: this one. So the
-    // block is held to `brief` over it, the way the first record's block is held to its commands
-    // — every line shown was printed, in order, and a line that is `…` alone stands for lines
+    // block is held to `brief` over it, the way the first record's block is held to its commands:
+    // every line shown was printed, in order, and a line that is `…` alone stands for lines
     // left out (`support/a-page-held-to-a-run.ts`).
     const quoted = theQuotedOpening(read(OPENING_PAGE));
     const printed = spawnSync(process.execPath, [CLI, 'brief'], {

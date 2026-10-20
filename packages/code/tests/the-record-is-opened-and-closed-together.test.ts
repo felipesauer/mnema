@@ -1,11 +1,11 @@
 /**
- * OPENING A CACHE AND CLOSING IT ARE ONE CALL — and the guard is that nothing else in this
+ * OPENING A CACHE AND CLOSING IT ARE ONE CALL: and the guard is that nothing else in this
  * package writes the open.
  *
  * WHAT WAS MEASURED. Six modules of `code/src` opened a `ProjectionCache` directly. Three
  * of them never closed it: `commands/guard.ts` and `commands/next-actions.ts` opened a
- * cache for the one tree a task lives in and returned the answer, and `pinned-run.ts` —
- * which runs on EVERY write that reads `MNEMA_RUN` — opened one and returned through four
+ * cache for the one tree a task lives in and returned the answer, and `pinned-run.ts`,
+ * which runs on EVERY write that reads `MNEMA_RUN`, opened one and returned through four
  * exits, none of them a close. The other three did close: `tree-sources.ts` in a `finally`,
  * `commands/show.ts` in its own, and `mcp/cache-registry.ts` deliberately not until the
  * session ends.
@@ -14,10 +14,10 @@
  * guard somebody deletes. When this was written `CacheOptions.dbPath` had no production
  * caller, so every one of these caches was IN MEMORY: what a missed close leaked was a SQLite
  * handle and the tables behind it, in a command-line process that exits within the second.
- * (The command line keeps its caches in the trees now — `CacheOptions.persist` — so what a
+ * (The command line keeps its caches in the trees now, `CacheOptions.persist`, so what a
  * missed close leaks is a handle on a file other processes read, which is the same shape with
  * a worse day.) The measurable bill on this machine was nothing. The defect is that three of six doors had no close and a
- * reader could not tell which three without opening all six — and that the day one of
+ * reader could not tell which three without opening all six, and that the day one of
  * those three is called from the MCP server, which stays up across a session, the same
  * code leaks a handle per request.
  *
@@ -27,8 +27,8 @@
  * way to check any of them; stated as "there is one place that opens", it is a sweep.
  *
  * THE ONE EXEMPTION IS NAMED AND IS THE OPPOSITE CASE. `mcp/cache-registry.ts` holds a
- * cache open past the call that made it ON PURPOSE — that is what a warm cache IS, and the
- * measurement behind it is in that file — so it closes in `closeAll()` at the end of a
+ * cache open past the call that made it ON PURPOSE (that is what a warm cache IS, and the
+ * measurement behind it is in that file), so it closes in `closeAll()` at the end of a
  * session instead. An exemption for a module that simply forgot would be the hole; this
  * one is for the module whose whole job is the other lifetime.
  *
@@ -46,14 +46,14 @@ import { codeOnly, sourceFiles } from './support/reading-source.js';
 
 const SRC = join(import.meta.dirname, '..', 'src');
 
-/** Opening a cache, as a CALL — the identifier alone is the import and the doc-comment. */
+/** Opening a cache, as a CALL: the identifier alone is the import and the doc-comment. */
 const OPENS_A_CACHE = 'ProjectionCache.open(';
 
 /**
  * The two modules that may write it, by path relative to `src`.
  *
  * `tree-sources.ts` is the pair itself. `mcp/cache-registry.ts` is the deliberate other
- * lifetime — a cache kept warm for a session and closed with the session.
+ * lifetime: a cache kept warm for a session and closed with the session.
  */
 const MAY_OPEN_A_CACHE = ['tree-sources.ts', 'mcp/cache-registry.ts'];
 
@@ -65,7 +65,7 @@ const shipped = sourceFiles(SRC).map((path) =>
     .join('/'),
 );
 
-/** Whether one module's CODE — prose and string literals blanked — opens a cache. */
+/** Whether one module's CODE, prose and string literals blanked, opens a cache. */
 function opensACache(relative: string): boolean {
   return codeOnly(readFileSync(join(SRC, relative), 'utf-8')).includes(OPENS_A_CACHE);
 }
@@ -93,7 +93,7 @@ describe('a cache is opened where it is closed, and nowhere else', () => {
     expect(MAY_OPEN_A_CACHE.filter((named) => !opensACache(named))).toEqual([]);
   });
 
-  it('would accuse the three that leaked — on the text they held', () => {
+  it('would accuse the three that leaked: on the text they held', () => {
     // THE TEETH, on the exact line each of the three carried before this delivery.
     const asItWas =
       '  const cache = ProjectionCache.open(root, { upcasters });\n  cache.rebuild();';

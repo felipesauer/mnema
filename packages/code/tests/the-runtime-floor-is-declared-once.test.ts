@@ -4,13 +4,13 @@
  * WHERE THIS COMES FROM. Both manifests said `"node": ">=20"`, and three of this workspace's
  * own direct dependencies say otherwise: `better-sqlite3` and `ink` require 22, and
  * `commander` requires 22.12.0. There is no `.npmrc` in the alpha, so `engine-strict` was off
- * and pnpm installed anyway — which means the declaration was not merely wrong, it was wrong
+ * and pnpm installed anyway, which means the declaration was not merely wrong, it was wrong
  * and unenforced. Run under node 20 in a container shaped like the runner, the suite came back
  * with twenty-three red cases across nine files, all of them screen and pty work, which is
  * exactly the surface `ink` moves. An adopter on node 20 got a package that said it supported
  * their runtime, installed without complaint, and then failed in a tree they had already built.
  *
- * SO THE FLOOR IS ONE NUMBER WITH ONE OWNER — `engines.node` — and this case is what makes the
+ * SO THE FLOOR IS ONE NUMBER WITH ONE OWNER (`engines.node`), and this case is what makes the
  * other eight places quote it rather than restate it:
  *
  *   - THE TWO MANIFESTS that declare it, which have to agree with each other.
@@ -29,16 +29,16 @@
  * AND IT IS CHECKED AGAINST THE DEPENDENCIES, not just against itself. The eight sites agreeing
  * on `>=20` is precisely the state this case was written to end, so agreement alone would have
  * been green on the defect. What makes it red is the floor being compared to what the installed
- * direct dependencies demand — which is the fact that was true all along and that nothing read.
+ * direct dependencies demand, which is the fact that was true all along and that nothing read.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered. Transitive
  * dependencies, deliberately: their floors are not our promise to keep, and a guard that
  * reddened when something four levels down bumped a caret would be a guard switched off. Nor
- * whether the floor is *too high* — over-declaring is safe, under-declaring is the defect, and
+ * whether the floor is *too high*: over-declaring is safe, under-declaring is the defect, and
  * only the defect is guarded. And it reads a dependency's range for its LOWEST accepted
  * runtime, not for holes above that: `vitest` says `^20 || ^22 || >=24`, which accepts 22 and
  * 24 and refuses 23, and nothing here would notice a floor landing in such a gap. Answering
- * that needs a semver resolver, and the matrix — which runs the real versions — answers it in
+ * that needs a semver resolver, and the matrix, which runs the real versions, answers it in
  * the only way that counts anyway.
  */
 
@@ -49,7 +49,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { acceptedBy } from '../src/node-floor.js';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -153,7 +153,7 @@ const FLOOR: Version = floorOf(DECLARING[0]?.read.engines?.node ?? '') ?? [0, 0,
 describe('the floor is at least what the dependencies demand', () => {
   /**
    * WHAT THE DIRECT DEPENDENCIES DEMAND, read from what is installed rather than from a list
-   * written here — a list would go stale the first time somebody added a dependency, and going
+   * written here: a list would go stale the first time somebody added a dependency, and going
    * stale silently is the failure mode this whole case exists to end.
    */
   const demanded = MANIFESTS.flatMap((m) =>
@@ -204,7 +204,7 @@ describe('the floor is at least what the dependencies demand', () => {
 
 describe('every place that repeats the floor repeats this number', () => {
   /**
-   * The sentence an adopter reads. The version, not the word `engines`, is the discriminant —
+   * The sentence an adopter reads. The version, not the word `engines`, is the discriminant,
    * and the sentence is the one the binary refuses with (`acceptedBy` in `src/node-floor.ts`),
    * so the page and the refusal cannot say two ranges. The shape the floor had while it was one
    * number, `Requires Node ≥ X`, is still read, so a page left behind is found rather than
@@ -246,8 +246,8 @@ describe('every place that repeats the floor repeats this number', () => {
 
   /**
    * THE BADGE ON LINE 3 OF EVERY PACKAGE README is the floor too, and the first one an adopter
-   * sees. The sentence above is not in it — its words are an image's alt text and its range is
-   * in a URL — so a floor raised everywhere else left all seven saying `22.12` and this case
+   * sees. The sentence above is not in it (its words are an image's alt text and its range is
+   * in a URL), so a floor raised everywhere else left all seven saying `22.12` and this case
    * green. Both halves are read: the alt in the refusal's words, and the image's message as the
    * declared range itself, once shields' own escaping (`--` for a dash, `__` for an underscore,
    * `_` for a space) and the URL's are undone.
@@ -302,7 +302,7 @@ describe('every place that repeats the floor repeats this number', () => {
 
   /**
    * EVERY WORKFLOW THAT PICKS A NODE, NOT `ci.yml` BY NAME. This read one file by its path until
-   * a second workflow arrived carrying a node matrix of its own — the flake sampler — and the
+   * a second workflow arrived carrying a node matrix of its own, the flake sampler, and the
    * premise underneath the sentence in this file's header, *"CI'S OWN MATRIX"*, turned out to be
    * an assumption that there was exactly one. There is not, and the next one will not announce
    * itself either. So the list comes from git, the same way the prose sites above do.
@@ -347,7 +347,7 @@ describe('every place that repeats the floor repeats this number', () => {
    * built binary under Nodes the floor refuses, because that is the only way to see what a person
    * on one is told (`.github/the-binary-runs/it-refuses-an-old-node.sh`). What is excused is ONE
    * LINE: the `node: [...]` of that job's matrix, in `ci.yml` and nowhere else. Every
-   * `node-version:` pin — the build step of that same job included — and every other matrix is
+   * `node-version:` pin, the build step of that same job included, and every other matrix is
    * still scanned, so a Node below the floor under the build still reddens. The job is checked to
    * exist and to run that script, so the excuse cannot outlive the thing it excuses.
    */

@@ -1,25 +1,25 @@
 /**
- * THE VERIFIER THE PAGE PUBLISHES IS A VERIFIER THAT RUNS — and prints what the page
+ * THE VERIFIER THE PAGE PUBLISHES IS A VERIFIER THAT RUNS: and prints what the page
  * says it prints.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT COST. `README.md` sells the second reader in its opening
  * sentence and `docs/verify-without-installing.md` publishes two lines to reach it: a `git clone`, and a `python3` invocation
  * whose last argument was `path/to/a/repo/.mnema`. A reader who copied both got
- * `THE VERIFIER BROKE: there is no record at …` and exit 3 — because the path is a
+ * `THE VERIFIER BROKE: there is no record at …` and exit 3, because the path is a
  * PLACEHOLDER and a fresh clone carries no record to aim it at. The output the page
  * publishes under those lines is real; the lines were not runnable as published.
  *
  * WHY NO EXISTING GUARD REACHED IT, which is the shape worth keeping.
  * `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` resolves every `mnema <verb>`
  * on every tracked page against the real command tree, and says in as many words that
- * "nothing is executed to find out" — it answers *does the verb exist?*. These two lines
+ * "nothing is executed to find out": it answers *does the verb exist?*. These two lines
  * are `git` and `python3`, somebody else's programs, so that guard correctly passes over
  * them. `the-converter-a-page-publishes-runs.test.ts` runs a published block, but only the
  * one on `docs/cli-reference.md` bounded by its markers. The one command this product
  * offers a stranger who does not want to install it was the one nothing ran.
  *
- * THE BROAD GUARD WAS CONSIDERED AND REFUSED, with its reason. The wide form — sweep every
- * published block for placeholder shapes (`path/to/`, `your-`, `<…>`) and accuse them — is
+ * THE BROAD GUARD WAS CONSIDERED AND REFUSED, with its reason. The wide form, sweep every
+ * published block for placeholder shapes (`path/to/`, `your-`, `<…>`) and accuse them, is
  * born with an exception: `docs/first-record.md` publishes `cd your-repository`
  * this block, deliberately and correctly, because there the placeholder IS the
  * instruction. A guard that must be taught which placeholders are allowed is a list of
@@ -29,8 +29,8 @@
  *
  * WHAT IS SUBSTITUTED, AND WHAT IS NOT. Exactly the two things a reader substitutes: the
  * clone's directory (this workspace IS the clone) and the placeholder path (a record this
- * test founds). Everything else — the script's location inside the tree, the `record`
- * subcommand, the argument order — runs as published. The expected lines are LIFTED from
+ * test founds). Everything else (the script's location inside the tree, the `record`
+ * subcommand, the argument order) runs as published. The expected lines are LIFTED from
  * the page rather than restated here, so a page that changes its promised output and a
  * verifier that changes its actual one cannot drift apart quietly.
  *
@@ -45,7 +45,7 @@
  * WHAT IT DOES NOT CHECK. The `git clone` line: it reaches the network, and a guard that
  * cloned would go red because GitHub was slow. What it stands on instead is that the path
  * under test is the same relative path inside the tree that a clone produces. Nor does it
- * check the verifier's own correctness — four cases under `packages/chain/src/chain/`
+ * check the verifier's own correctness: four cases under `packages/chain/src/chain/`
  * (`second-reader-agrees-on-the-record` and its siblings) own that. This one checks that
  * the PAGE and the verifier say the same thing.
  */
@@ -146,7 +146,7 @@ describe('the verifier the verify-without-installing page publishes', () => {
 
   it('is right to break on the placeholder, which is what the page now says it does', () => {
     // The other half, and the reason the prose beside the block was rewritten: copied with
-    // the placeholder still in it, the command is not silently wrong — it names the path it
+    // the placeholder still in it, the command is not silently wrong; it names the path it
     // could not find and exits 3. A page that went back to promising success here would
     // leave this red.
     const { out, status } = runPublished(join(sandbox, 'nothing-was-ever-here', '.mnema'));

@@ -1,5 +1,5 @@
 /**
- * THE SHELL A PAGE PUBLISHES IS THE SHELL THAT RUNS — every verb, every flag.
+ * THE SHELL A PAGE PUBLISHES IS THE SHELL THAT RUNS: every verb, every flag.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT COST. Three guards stand over published examples, and all
  * three read TYPESCRIPT: `the-example-is-read-from-the-page.test.ts` holds each page's ```ts
@@ -13,13 +13,13 @@
  * IT HAS ALREADY BEEN PAID FOR ONCE. `the-recipe-says-what-it-overwrites.test.ts` exists
  * because the first example on `mnema brief --help` was `mnema brief > AGENTS.md`, and on
  * the repository it was measured against that file held 126 lines of somebody's method.
- * Nothing caught it; a person did. That guard rules on ONE clause of ONE recipe — this one
+ * Nothing caught it; a person did. That guard rules on ONE clause of ONE recipe: this one
  * rules on whether the words themselves name anything the binary has.
  *
  * WHAT IS CHECKED, AND WHY IT IS CHECKABLE WITHOUT RUNNING ANYTHING. Two things, and they
  * are the two a reader discovers by typing:
  *   - THE VERB EXISTS. Every `mnema <words>` published resolves through the real command
- *     tree — `buildProgram`, the same program the binary builds — and a word that reaches a
+ *     tree (`buildProgram`, the same program the binary builds) and a word that reaches a
  *     command declaring no positional argument of its own is a verb this product has not
  *     got. `mnema verifyZZZ` is accused; nothing is executed to find out.
  *   - THE FLAG EXISTS. Every `--flag` is looked up on the command it was typed at and on
@@ -30,25 +30,25 @@
  *
  * WHETHER A LINE IS WHOLE IS NOT ASKED HERE, and it was the question that mattered: a block
  * on `packages/code/README.md` closed a session with `mnema run end --outcome …`, every verb
- * and every flag in it real, and the verb requires `--which <agent>`. That question — every
- * argument and option the verb requires, nothing it does not take — is
+ * and every flag in it real, and the verb requires `--which <agent>`. That question (every
+ * argument and option the verb requires, nothing it does not take) is
  * `the-command-handed-over-runs-as-handed.test.ts`'s, over these same blocks, over the pages'
  * prose, and over the sentences the product prints.
  *
  * THE DISCRIMINANT IS THE LINE, NOT THE FENCE LABEL. A guard keyed on ```sh would let a
- * page out by labelling its block `console`, `shell`, `bash` or nothing at all — and the
+ * page out by labelling its block `console`, `shell`, `bash` or nothing at all, and the
  * measurement says the risk is not hypothetical: of the 24 fenced blocks on
  * `packages/code/README.md`, 21 are ```sh, one is ```bash, one is ```json and one carries no
  * language. So every fenced block on every tracked page is swept, whatever it is called, and
  * a block is read for command lines rather than classified first. A block that carries none
- * — a JSON sample, a directory diagram — contributes nothing and needs no exemption.
+ * (a JSON sample, a directory diagram) contributes nothing and needs no exemption.
  *
  * AND THE PAGES ARE SWEPT, NOT LISTED. `git ls-files '*.md'` is the reach; a page published
  * tomorrow is read by CARRYING a command, not by being named here, which is the shape
  * `the-recipe-says-what-it-overwrites` settled on for the same reason. `PAGES` below is a
  * reconciliation and never a filter: it is compared with what the sweep found in BOTH
  * directions, so a page that grows a command is accused, and so is one whose commands
- * disappear — which is how a sweep that quietly stopped sweeping is told apart from a
+ * disappear, which is how a sweep that quietly stopped sweeping is told apart from a
  * workspace that quietly stopped publishing.
  *
  * WHAT IT DOES NOT CHECK IS WRITTEN DOWN, in {@link NOT_CHECKED}, one entry per class with
@@ -60,15 +60,15 @@
  * reddens it.
  *
  * ONE THING THIS READING SEES AND DOES NOT RULE ON, named because a number is better than a
- * shrug — and the reason it gave for not ruling was wrong. Measured on 16/09/2026: 147 inline
+ * shrug, and the reason it gave for not ruling was wrong. Measured on 16/09/2026: 147 inline
  * code spans in tracked Markdown open with `mnema`, outside any fence. Read as commands, five
- * would be accused, and four of those are prose a fence would never have held — `mnema ≈ base`,
+ * would be accused, and four of those are prose a fence would never have held: `mnema ≈ base`,
  * `mnema answers over MCP`. The fifth was real: a page of a frozen round's protocol, since removed from the tree, published
  * `mnema switch --off edit-rules-push`, and the program has no `--off`; the act is
  * `mnema switch off`. That page is a frozen round's protocol, not product documentation, and
  * it stays as it was measured. The premise for leaving spans out altogether was that a reader
  * copies a block and a span is only a reference inside a sentence. A span handed a person the
- * way out of an ambiguous key — `mnema key revoke <fingerprint>`, to be run — and it could not
+ * way out of an ambiguous key (`mnema key revoke <fingerprint>`, to be run) and it could not
  * run, because the verb requires `--reason`. Spans are read now, by the guard named above.
  */
 
@@ -101,7 +101,7 @@ export interface Resolution {
   readonly strays: readonly string[];
 }
 
-/** The commands from `command` up to the program — the scope a flag is looked up in. */
+/** The commands from `command` up to the program: the scope a flag is looked up in. */
 function chainTo(command: Command): readonly Command[] {
   const chain: Command[] = [];
   for (let at: Command | null = command; at !== null; at = at.parent) chain.push(at);
@@ -112,7 +112,7 @@ function chainTo(command: Command): readonly Command[] {
  * An invocation walked against the program, left to right, the way commander walks it.
  *
  * A word is a SUBCOMMAND while one matches; the first that does not is a positional argument,
- * and after a positional nothing descends again — `mnema task move submit` reaches
+ * and after a positional nothing descends again: `mnema task move submit` reaches
  * `task move` and hands it `submit`, which is that command's declared `<action>`.
  *
  * A word handed to a command that declares NO argument is the accusation this guard exists
@@ -121,7 +121,7 @@ function chainTo(command: Command): readonly Command[] {
  * unknown verb legal and this whole reading vacuous in silence.
  *
  * A FLAG'S VALUE IS NOT A WORD OF THE COMMAND. `--which release-bot` is one option and its
- * argument, so the value is stepped over — otherwise every published flag with a value would
+ * argument, so the value is stepped over; otherwise every published flag with a value would
  * be reported as an unknown verb, which is exactly what the first run of this reading did:
  * three false accusations, all of them option values.
  */
@@ -209,7 +209,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * NOT A FILTER. The sweep reaches every tracked Markdown page; this is compared with what it
  * found, in both directions, and the comparison is the only thing it does. A page that starts
  * publishing commands is accused here until somebody looks at it, and a page whose commands
- * vanish is accused too — which is what tells a sweep that broke apart from a workspace that
+ * vanish is accused too, which is what tells a sweep that broke apart from a workspace that
  * changed. The counts are exact rather than a floor, because a floor is a number anyone can
  * lower to swallow a block that stopped being read.
  */
@@ -333,7 +333,7 @@ describe('the reading FIRES', () => {
     expect(said('mnema memory "a # in the body"')).toEqual([['memory', '"a # in the body"']]);
   });
 
-  it('a sample output line yields nothing — it is a comment to the shell too', () => {
+  it('a sample output line yields nothing: it is a comment to the shell too', () => {
     expect(said('#> Initialized mnema project at /path/to/repo/.mnema')).toEqual([]);
   });
 
@@ -375,9 +375,9 @@ describe('the reading FIRES', () => {
     // And the argument of a command that declares one is not a stray: `task move` takes it.
     expect(resolve(program, ['task', 'move', 'submit', '"$TASK"']).strays).toEqual([]);
     // This was the limit, held as a case: `task` declared a `<title>`, so a misspelt
-    // subcommand under it became that title and nothing here could see it — the
+    // subcommand under it became that title and nothing here could see it (the
     // measurement behind an exemption, `A_TITLE_SWALLOWS_A_MISSPELLING`, that said to go
-    // when `task` stopped taking one. It stopped: creating is `task create`, no group takes
+    // when `task` stopped taking one). It stopped: creating is `task create`, no group takes
     // a word of its own, and the misspelling is accused under `task` as under `key`. The
     // title, typed after `create`, is that verb's argument and not a stray.
     expect(resolve(program, ['task', 'moveZZZ']).strays).toEqual(['moveZZZ']);
@@ -396,7 +396,7 @@ describe('the reading FIRES', () => {
     expect(flags(['--help'])).toEqual({ '--help': true });
   });
 
-  it("a flag's value is not read as a verb — including a variadic one", () => {
+  it("a flag's value is not read as a verb, including a variadic one", () => {
     expect(resolve(program, ['run', 'start', '--which', 'release-bot']).strays).toEqual([]);
     expect(resolve(program, ['verify', '--workspace', '~/work/api', '~/work/web']).strays).toEqual(
       [],
