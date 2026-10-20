@@ -24,11 +24,10 @@ import { VERSION } from '../src/version.js';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const SCRIPT = join(ROOT, '.github/release-prepare/prepare.mjs');
-const SOURCES = [
-  'packages/code/src/version.ts',
-  'packages/chain/src/version.ts',
-  'packages/code/src/cli.help.golden.txt',
-];
+const VERSION_TS = 'packages/code/src/version.ts';
+const READER_TS = 'packages/chain/src/version.ts';
+const GOLDEN = 'packages/code/src/cli.help.golden.txt';
+const SOURCES = [VERSION_TS, READER_TS, GOLDEN];
 /**
  * THE NUMBERS ARE DERIVED FROM THE ONE THE PRODUCT IS AT, never typed: a test file that spelled
  * the current number would be accused by `the-version-is-one-number.test.ts` on the day it is
@@ -119,11 +118,9 @@ describe('release:prepare with a number', () => {
       (where) => JSON.parse(readFileSync(join(dir, where), 'utf-8')).version !== TARGET,
     );
     expect(stale).toEqual([]);
-    expect(readFileSync(join(dir, SOURCES[0]), 'utf-8')).toContain(`VERSION = '${TARGET}'`);
-    expect(readFileSync(join(dir, SOURCES[1]), 'utf-8')).toContain(`READER_VERSION = '${TARGET}'`);
-    expect(readFileSync(join(dir, SOURCES[2]), 'utf-8')).toContain(
-      `$ mnema --version\n| ${TARGET}\n`,
-    );
+    expect(readFileSync(join(dir, VERSION_TS), 'utf-8')).toContain(`VERSION = '${TARGET}'`);
+    expect(readFileSync(join(dir, READER_TS), 'utf-8')).toContain(`READER_VERSION = '${TARGET}'`);
+    expect(readFileSync(join(dir, GOLDEN), 'utf-8')).toContain(`$ mnema --version\n| ${TARGET}\n`);
 
     const log = readFileSync(join(dir, 'CHANGELOG.md'), 'utf-8');
     expect(log).toContain(`## [Unreleased]\n\n## [${TARGET}] - 2030-01-02\n\n### Added`);
