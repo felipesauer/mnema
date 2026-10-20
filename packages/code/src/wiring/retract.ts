@@ -1,7 +1,7 @@
 /**
  * The `mnema retract` wiring: what it declares, and what it prints.
  *
- * `mnema retract <id> --reason "<why>"` — take a memory or an observation back. The id is a
+ * `mnema retract <id> --reason "<why>"`: take a memory or an observation back. The id is a
  * positional, the reason a required flag: a retraction that cannot say why is not recorded.
  * It follows the note to the tree it was written in, so it takes no `--scope`.
  */
@@ -17,7 +17,7 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
  * The `--which` help of this verb: the shared one points at `--scope` for where the fact
- * lands, and a retraction has none — it lands where the note is.
+ * lands, and a retraction has none; it lands where the note is.
  */
 const WHICH_ON_A_RETRACTION =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +

@@ -76,7 +76,7 @@ describe('mnema task', () => {
 
   it('refuses with NO_PROJECT when there is no project here', () => {
     const { repo, env } = setup();
-    // No init — the cwd has no .mnema up the tree.
+    // No init: the cwd has no .mnema up the tree.
     const orphan = join(repo, 'nowhere');
     mkdirSync(orphan, { recursive: true });
     const result = runTask({ cwd: orphan, env }, { title: 'homeless task' });
@@ -96,7 +96,7 @@ describe('mnema task', () => {
         orderedEvents({ root: trees.projectPrivate as string }, catalogUpcasters()),
       );
       expect(privateTasks.has(result.id)).toBe(true);
-      // and NOT in public — the override truly routed the birth.
+      // and NOT in public: the override truly routed the birth.
       const publicTasks = projectTasks(
         orderedEvents({ root: trees.projectPublic as string }, catalogUpcasters()),
       );
@@ -160,7 +160,7 @@ describe('mnema task', () => {
   });
 });
 
-describe('mnema task --which — the agent that executed', () => {
+describe('mnema task --which: the agent that executed', () => {
   /** Every `task.created` in a tree, with the agent each one names. */
   function creationsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())
@@ -199,7 +199,7 @@ describe('mnema task --which — the agent that executed', () => {
       const inPublic = creationsIn(trees.projectPublic as string).map((e) => e.subject);
       expect(inPublic).toContain(byAgent.id);
       expect(inPublic).toContain(byPerson.id);
-      // And the private tree holds neither — it has no tail at all.
+      // And the private tree holds neither: it has no tail at all.
       expect(creationsIn(trees.projectPrivate as string)).toEqual([]);
       // The reply says where each landed, since nothing in the call did.
       expect(byAgent.scope).toBe('public');
@@ -239,7 +239,7 @@ describe('mnema task --which — the agent that executed', () => {
     }
   });
 
-  it('an agent named only by whitespace is no agent — and cannot move a tree either', () => {
+  it('an agent named only by whitespace is no agent, and cannot move a tree either', () => {
     // The core reads a blank identity as absent, so the fact carries no agent. The
     // tree is a function of the kind now, so a blank `which` cannot make the two
     // disagree the way it once could: the class of defect is gone, not merely tested.
@@ -268,7 +268,7 @@ describe('mnema task --which — the agent that executed', () => {
       code: 'WHO_IS_WHICH',
       message: 'the authorizing human and the executing agent must be different identities',
     });
-    // Nothing was born, in any tree — the refusal is at the door.
+    // Nothing was born, in any tree: the refusal is at the door.
     expect(countCreations(repo, env)).toBe(before);
   });
 

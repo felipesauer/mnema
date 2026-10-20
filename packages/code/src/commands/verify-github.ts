@@ -1,5 +1,5 @@
 /**
- * `mnema verify --against-github` — whether the keys that signed this record are keys the
+ * `mnema verify --against-github`: whether the keys that signed this record are keys the
  * GitHub accounts its identities name publish today.
  *
  * WHAT IT ADDS. A signature proves which key made it, and the enrolment fold proves the key
@@ -8,17 +8,17 @@
  * somebody can look up. The identity names its account in a signed fact (`account.linked`,
  * written by `mnema key github <name>`); the account publishes its SSH keys at
  * `https://github.com/<name>.keys`; and where the key that signed is among them, both sides
- * said the same thing — the key's holder said "I am this account", and the account said "this
+ * said the same thing: the key's holder said "I am this account", and the account said "this
  * key is mine".
  *
  * WHAT IT DOES NOT PROVE, said wherever the answer is printed: that the key was the account's
- * WHEN it signed — the keys are read today, and an account can add or drop a key at any time —
+ * WHEN it signed (the keys are read today, and an account can add or drop a key at any time)
  * and anything at all without taking github.com's word for which keys an account has.
  *
  * IT CHANGES NOTHING ABOUT THE VERDICT. It runs only when asked, after the verification, over
  * the trees that verified; its answer is a set of notes and never moves the level or the exit.
  * An author with no account, an account with no Ed25519 key, a key the account does not
- * publish, and a github.com that could not be reached are each said by name, as NOT COVERED —
+ * publish, and a github.com that could not be reached are each said by name, as NOT COVERED:
  * the posture the external witness already takes.
  *
  * WHAT IS READ, AND WHY ONLY THE SIGNED PART. An author is the identity (`who`) of an event a
@@ -26,14 +26,14 @@
  * A link counts only when its `who` is its `subject` (an identity names only its own account)
  * and it is covered too: above the last checkpoint an event rests on the hash chain alone, and
  * a party holding no key could append a link there naming an account of their own, on which
- * they had published this identity's public key — the one forgery this reading could be made
+ * they had published this identity's public key, the one forgery this reading could be made
  * to say yes to. A later covered link for the same identity replaces an earlier one, in the
  * order the record is merged in: `seq` within a tail, and across tails the smallest `at` among
  * the heads whose citations (`after`) have been taken, then the tree, then the tail.
  *
  * THE COMPARISON IS BY THE RAW 32-BYTE KEY. A committed key is a PEM `spki`; a published one is
  * an OpenSSH line, `ssh-ed25519 <base64 of the wire blob> [comment]`. Each is decoded to the 32
- * bytes of the Ed25519 point and those are compared — never a fingerprint of one format against
+ * bytes of the Ed25519 point and those are compared, never a fingerprint of one format against
  * the other. Other key types, and security-key `sk-ssh-ed25519` lines (a different key, held in
  * a device), are not a key this record can be signed with and are skipped.
  */
@@ -61,7 +61,7 @@ export interface KeysResponse {
   text(): Promise<string>;
 }
 
-/** How an account's keys are fetched — `fetch`, handed in so no test goes to the network. */
+/** How an account's keys are fetched: `fetch`, handed in so no test goes to the network. */
 export type FetchKeys = (
   url: string,
   init: { readonly signal: AbortSignal },
@@ -112,8 +112,8 @@ const decodeBase64 = (text: string): Buffer => Buffer.from(text, 'base64');
 /**
  * The raw 32-byte Ed25519 keys an account's `.keys` text publishes, as lower-case hex.
  *
- * Every line that is not exactly an `ssh-ed25519` wire blob — the type string, then a 32-byte
- * key, and nothing after — is skipped rather than guessed at.
+ * Every line that is not exactly an `ssh-ed25519` wire blob (the type string, then a 32-byte
+ * key, and nothing after) is skipped rather than guessed at.
  */
 export function ed25519KeysIn(published: string): string[] {
   const keys: string[] = [];
@@ -126,7 +126,7 @@ export function ed25519KeysIn(published: string): string[] {
   return keys;
 }
 
-/** The 32-byte key inside an OpenSSH `ssh-ed25519` wire blob, as hex — or undefined. */
+/** The 32-byte key inside an OpenSSH `ssh-ed25519` wire blob, as hex, or undefined. */
 function sshEd25519Blob(wire: Buffer): string | undefined {
   const type = 'ssh-ed25519';
   if (wire.length !== 4 + type.length + 4 + 32) return undefined;
@@ -138,7 +138,7 @@ function sshEd25519Blob(wire: Buffer): string | undefined {
 }
 
 /**
- * The raw 32-byte Ed25519 key a committed PEM holds, as hex — undefined when it is not one, or
+ * The raw 32-byte Ed25519 key a committed PEM holds, as hex: undefined when it is not one, or
  * when its fingerprint is not the one it was asked for (a file that does not hold the key it is
  * named after compares as nothing).
  */
@@ -165,7 +165,7 @@ export function rawEd25519Of(pem: string, fingerprint?: string): string | undefi
 const platformFetch: FetchKeys = (url, init) => globalThis.fetch(url, init);
 
 /**
- * One signature-covered tail of a verified tree, and the position of that tree in the list —
+ * One signature-covered tail of a verified tree, and the position of that tree in the list:
  * what the merged order is taken over.
  */
 interface CoveredTail {
@@ -209,7 +209,7 @@ export async function compareWithGithub(
     }
   }
 
-  // THE ORDER THE RECORD IS MERGED IN — the chain's own (`causalOrder`): `seq` within a tail,
+  // THE ORDER THE RECORD IS MERGED IN, the chain's own (`causalOrder`): `seq` within a tail,
   // and across tails the smallest `at` among the heads whose citations have been taken, so the
   // last link of an identity in it is the one that stands, as the projection reads it. A sort
   // by `(at, tail, seq)` would let a machine whose clock is behind put a link it wrote on top
@@ -330,7 +330,7 @@ function committedRaw(layout: { readonly root: string }, fingerprint: string): s
   }
 }
 
-/** Two strings by code unit — the order ids and fingerprints are listed in. */
+/** Two strings by code unit: the order ids and fingerprints are listed in. */
 function byCodeUnit(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }

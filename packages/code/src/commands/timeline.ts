@@ -1,23 +1,23 @@
 /**
- * `mnema timeline <id>` — the history of one entity, across every tree.
+ * `mnema timeline <id>`: the history of one entity, across every tree.
  *
  * The first INTELLIGENCE read, and the auditor's counterpart of `next-actions`:
- * it takes an id and tells the entity's whole story — every event where it is
+ * it takes an id and tells the entity's whole story, every event where it is
  * the subject, plus the events that REFER to it (an observation `about` it, a
  * knowledge link whose `target` is it, a supersede whose successor it is). Those
  * referring facts live on other subjects in possibly other trees, so it reads
- * EVERY visible tree's reference index and merges them — a task's narrative
+ * EVERY visible tree's reference index and merges them: a task's narrative
  * crosses the public/private/global boundary and the read must too.
  *
  * Read-only in the strict sense: it opens a cache per tree, rebuilds it in
  * memory, and calls the context package's pure `timeline`. No writer is opened, no key
- * is minted — so it needs no `--actor` (the story is a property of the record,
+ * is minted, so it needs no `--actor` (the story is a property of the record,
  * not of who asks).
  *
- * An id no event touches yields an empty history — a legitimate answer ("nothing
+ * An id no event touches yields an empty history: a legitimate answer ("nothing
  * is recorded about this yet"), not a refusal. There is no UNKNOWN_ID: an entity
  * with no history is still a valid question, and the empty list IS the answer.
- * With no project at all it refuses `NO_PROJECT` — an intelligence read is about
+ * With no project at all it refuses `NO_PROJECT`: an intelligence read is about
  * a project's record, so it asks the caller to `init` first, exactly as the
  * context and guard reads do.
  */
@@ -33,7 +33,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the timeline command needs — injected so it is testable. */
+/** What the timeline command needs: injected so it is testable. */
 export interface TimelineContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -51,7 +51,7 @@ export interface TimelineDone {
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -59,7 +59,7 @@ export interface TimelineDone {
   readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
-/** The read was refused — there is no project to read a history from. */
+/** The read was refused: there is no project to read a history from. */
 export interface TimelineRefused {
   readonly ok: false;
   readonly reason: 'NO_PROJECT';

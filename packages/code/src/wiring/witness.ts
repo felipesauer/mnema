@@ -1,7 +1,7 @@
 /**
  * The `mnema witness` wiring: what it declares, and what it prints.
  *
- * A group of three in `tail`'s shape rather than `task`'s — its subject is the
+ * A group of three in `tail`'s shape rather than `task`'s: its subject is the
  * record's own material, so there is no birth, no state and no `move`. Like `switch`,
  * the BARE group is the reading: a person who cannot see where the witness stands
  * cannot decide whether to ask for one or to go back for one, and the two acts say
@@ -9,7 +9,7 @@
  *
  * THE READING AND `upgrade` WALK THE SAME TAIL, which is a property of this group and
  * not an accident of two implementations agreeing. They did not, once: the bare verb
- * showed a request in flight and `upgrade` — one line down the same help — reported
+ * showed a request in flight and `upgrade`, one line down the same help, reported
  * that nothing had been asked about it and skipped.
  *
  * IT IS THE ONE VERB OF THIS SURFACE THAT SPEAKS TO SOMEBODY ELSE. Every other verb
@@ -17,18 +17,18 @@
  * 32-byte digest to a public calendar and, on the way back, ask a block source for an
  * 80-byte header. That is declared out loud in the help rather than discovered by
  * somebody watching their firewall, and it is why both flags that name a remote are
- * on the acts and on nothing else — the reading and `verify` reach nobody, ever.
+ * on the acts and on nothing else: the reading and `verify` reach nobody, ever.
  *
  * WHAT TRAVELS IS SAID IN THE HELP because it is the question anybody sensible asks
  * first, and the answer is unusually good: the digest of a checkpoint's signed
- * message and nothing else. No id, no title, no body, no count — and the calendars
+ * message and nothing else. No id, no title, no body, no count; and the calendars
  * are handed a hash OF that digest with a per-calendar nonce, so they cannot even
  * tell that two of them were asked about the same thing.
  *
  * THERE IS NO `--which`, and the absence is the design rather than an omission. That
  * flag names the executor of a fact the record keeps, and these acts keep no fact:
  * they write an attestation file named by what it attests. Recording the act as an
- * EVENT was considered and is self-defeating — the event would seal a new checkpoint,
+ * EVENT was considered and is self-defeating: the event would seal a new checkpoint,
  * which would make the checkpoint just stamped no longer the last one.
  */
 
@@ -43,7 +43,7 @@ import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
- * What `--global` says here — the shared sentence, plus what covering it costs a
+ * What `--global` says here: the shared sentence, plus what covering it costs a
  * witness. It used to be typed out in this file; the shared half is
  * {@link globalTreeGloss} now, because `export` became the fourth verb to ask the same
  * question and a third spelling was one verb away.
@@ -60,7 +60,7 @@ const WHAT_TRAVELS = [
 ].join('\n');
 
 /**
- * What `sigstore` sends, and to whom — the identity half is the one a person has to decide on,
+ * What `sigstore` sends, and to whom: the identity half is the one a person has to decide on,
  * so it is said in the help and again in the act's own answer.
  */
 const WHAT_SIGSTORE_KEEPS = [
@@ -98,8 +98,8 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .action(async (opts: { global: boolean; json?: boolean }) => {
       const { runWitnessList } = await import('../commands/witness.js');
       const listing = runWitnessList({ ...here(), global: opts.global });
-      // AN ADAPTER, WORDING NOTHING. `runWitnessList` already answers as structure —
-      // per tail: which tree, which checkpoint, and the reading the verifier derived —
+      // AN ADAPTER, WORDING NOTHING. `runWitnessList` already answers as structure
+      // (per tail: which tree, which checkpoint, and the reading the verifier derived)
       // so this hands that over as it came. The prose reading is the same facts in
       // another shape, and neither is composed from the other's words.
       //
@@ -303,14 +303,14 @@ async function report(
   }
   for (const outcome of act.outcomes) {
     // THE TAIL ID IS A DIRECTORY NAME, so it is a value from outside on a line of a
-    // list — the same origin `verify`'s findings collapse for. The rest of this line
+    // list: the same origin `verify`'s findings collapse for. The rest of this line
     // is a word of a closed union or a sentence composed above, and the line is
     // collapsed WHOLE rather than value by value, which is what the tag is for.
     io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did} — ${outcome.detail}`);
     // The reading's own words are `@mnema/chain`'s, and one of them can quote a
     // calendar URI read off a file in the tree. That value goes through the chain's
     // one-line rule where it enters the sentence; this collapses again HERE for the
-    // reason the census line does — the layer that lays a line out does not get to
+    // reason the census line does: the layer that lays a line out does not get to
     // depend on another package's discipline for whether its list gains a row.
     io.out(
       render(
@@ -324,11 +324,11 @@ async function report(
     // matters needs to know which one it was.
     //
     // THE VERB IS THE KIND'S, AND THIS COMMENT USED TO GET THE ORIGIN WRONG. It said
-    // `both halves come from outside — a URL the caller typed, and somebody else's error
+    // `both halves come from outside: a URL the caller typed, and somebody else's error
     // message`, which is true of `stamp` and false of the act next to it: `upgrade` takes
     // no address at all, and every URL it names was read off a proof FILE. That is why
-    // there are two verbs now — `did not answer` for a calendar that is down, and the
-    // other for an address this machine declined to contact — and why the value is still
+    // there are two verbs now (`did not answer` for a calendar that is down, and the
+    // other for an address this machine declined to contact) and why the value is still
     // collapsed either way. The kind is a closed word of this package; the two ends are
     // still outside.
     for (const refusal of outcome.refusals) {

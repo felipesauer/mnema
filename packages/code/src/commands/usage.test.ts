@@ -14,8 +14,8 @@
  * machine.
  *
  * THE LINES ARE THE HOST'S OWN SHAPE. The fields are the ones measured in a real
- * transcript — `type`, `cwd`, `sessionId`, `timestamp`, and `message.{id,model,usage}`
- * with the four `*_tokens` names — because a fixture with an invented field would leave
+ * transcript (`type`, `cwd`, `sessionId`, `timestamp`, and `message.{id,model,usage}`
+ * with the four `*_tokens` names), because a fixture with an invented field would leave
  * this suite green over a format the host does not write.
  */
 
@@ -40,7 +40,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** A project, and the environment that discovers it — the host store is under `home`. */
+/** A project, and the environment that discovers it: the host store is under `home`. */
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
@@ -60,7 +60,7 @@ interface Claim {
 /**
  * One line of a transcript, in the host's own shape.
  *
- * `blocks` is how many lines this message is written across — the host writes one per
+ * `blocks` is how many lines this message is written across: the host writes one per
  * content block and repeats the same `usage` on each, which is the shape that makes a
  * per-line sum double-count.
  */
@@ -116,7 +116,7 @@ function writeTranscript(
   lastWritten: Date,
 ): string {
   // The directory name is the host's flattened path. It is deliberately NOT what the
-  // reading keys on — this fixture writes a name no rule would compose, and the read
+  // reading keys on: this fixture writes a name no rule would compose, and the read
   // still finds the session, because what it reads is the `cwd` on the line.
   const directory = join(store, 'a-directory-name-nothing-composes');
   mkdirSync(directory, { recursive: true });
@@ -133,7 +133,7 @@ function storeIn(env: DiscoveryEnv): string {
 
 /**
  * Opens two runs in the project's public tree at the SAME instant, through the core's
- * injectable clock — the only way to build the tie, since `mnema run start` takes no
+ * injectable clock: the only way to build the tie, since `mnema run start` takes no
  * clock and two of its invocations are milliseconds apart.
  *
  * Answers with the ids in the order they were opened.
@@ -188,7 +188,7 @@ function read(repo: string, env: DiscoveryEnv, atMs: number): UsageDone {
 describe('mnema usage', () => {
   it('puts the NEWER of two runs opened in one millisecond at the top of the table', () => {
     // The listing is newest-first and its tie-break used to be `id.localeCompare`
-    // ASCENDING, which is oldest-first — so a table headed "most recent at the top"
+    // ASCENDING, which is oldest-first, so a table headed "most recent at the top"
     // put the older of a tie there. Nothing here covered it: every other case in this
     // file opens one run, or opens them far enough apart that the instants differ, and
     // a mutation of the core's rule left the whole file green.
@@ -239,7 +239,7 @@ describe('mnema usage', () => {
     );
     // A session of this project that begins AFTER the window closes. It survives the
     // cheap prune (the host wrote it after the run started) and must still not be
-    // attributed — which is what makes this case about overlap and not about pruning.
+    // attributed, which is what makes this case about overlap and not about pruning.
     writeTranscript(
       store,
       'session-after-the-window',
@@ -344,7 +344,7 @@ describe('mnema usage', () => {
         }),
         '{this is not JSON',
         // An assistant message the host wrote with no `usage` on it. It is announced as
-        // one, so it is in the class this counts — unlike a user turn, which is not.
+        // one, so it is in the class this counts: unlike a user turn, which is not.
         JSON.stringify({
           type: 'assistant',
           cwd: repo,
@@ -365,13 +365,13 @@ describe('mnema usage', () => {
     );
 
     const spend = read(repo, env, startedMs + 60_000).runs.find((each) => each.run === id);
-    // The session still answers — an unreadable line does not take the reading down —
+    // The session still answers (an unreadable line does not take the reading down)
     // and what was not understood is a number rather than a silence.
     expect(spend?.numbers).toMatchObject({ input: 5, output: 6, messages: 1, passedOver: 2 });
   });
 
   it('looks where `CLAUDE_CONFIG_DIR` says, when the host was moved', () => {
-    // The environment variable is a public input, and this is the link — it does
+    // The environment variable is a public input, and this is the link: it does
     // not assert what the reading does with the store, only that it reaches the one the
     // host was told to use. Without it, a machine that moved its configuration would
     // report `no transcript` for every run, which looks exactly like an honest answer.

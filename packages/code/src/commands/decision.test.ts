@@ -49,7 +49,7 @@ describe('mnema decision', () => {
       expect(result.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
       );
-      // The human name is the ADR, not a `d-xxxx` alias — there is no alias.
+      // The human name is the ADR, not a `d-xxxx` alias: there is no alias.
       expect(result.adr).toBe('ADR-1');
       // The decision really landed in the public tree, as proposed.
       const root = resolveTrees(repo, env).projectPublic as string;
@@ -136,7 +136,7 @@ describe('mnema decision', () => {
     if (result.ok) {
       const trees = resolveTrees(repo, env);
       expect(decisionsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
-      // and NOT in public — the override truly routed the birth.
+      // and NOT in public: the override truly routed the birth.
       expect(decisionsOf(trees.projectPublic as string).has(result.id)).toBe(false);
     }
   });
@@ -179,7 +179,7 @@ describe('mnema decision', () => {
   });
 });
 
-describe('mnema decision --which — the agent that executed', () => {
+describe('mnema decision --which: the agent that executed', () => {
   /** Every `decision.recorded` in a tree, with the agent each one names. */
   function recordsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

@@ -1,11 +1,11 @@
 /**
  * The `mnema show` wiring: what it declares, and what it prints.
  *
- * `mnema show <id> [--json]` — the whole record behind an id from `search`.
+ * `mnema show <id> [--json]`: the whole record behind an id from `search`.
  * Serves a skill's body too, in EVERY state: on this surface the reader is CURATING
  * patterns, and refusing them the text of the thing they are reviewing would make the
  * curation impossible (the agent's surface serves a body through the `skills` tool,
- * which records the reading and refuses the two closed states — see `runShow`).
+ * which records the reading and refuses the two closed states: see `runShow`).
  */
 
 import type { Command } from 'commander';
@@ -34,7 +34,7 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result, { UNKNOWN_RECORD: noSuchRecord('record', id) });
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       // The same stream and the same place, for a fact about the record the answer hides:

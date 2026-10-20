@@ -1,9 +1,9 @@
 /**
- * `mnema audit antipatterns` — recurring shapes in the record, with their evidence.
+ * `mnema audit antipatterns`: recurring shapes in the record, with their evidence.
  *
  * The third INTELLIGENCE read: it folds the present trees ({@link recordEvents}) and
- * surfaces the shapes that recur — tasks reopened, decisions superseded, skills
- * deprecated — each with the exact events that make up the count, plus the `ADR-<n>`
+ * surfaces the shapes that recur (tasks reopened, decisions superseded, skills
+ * deprecated) each with the exact events that make up the count, plus the `ADR-<n>`
  * labels that name more than one rule. It POINTS, it does not CONCLUDE: nothing here
  * calls a count a problem, and the `skillCandidates` it names (tasks reopened more
  * than once) are a POINTER for a human who might distill a pattern, never a skill this
@@ -14,10 +14,10 @@
  * numbered inside one chain, so a public `ADR-1` beside a private one is two chains
  * doing what they should rather than a clash.
  *
- * ONE PROJECT's record, which is what a command run in a directory is about — `cwd`
+ * ONE PROJECT's record, which is what a command run in a directory is about: `cwd`
  * resolves one project, and nothing here is handed a second one. THE REASON GIVEN USED
  * TO BE WIDER AND IS NOW FALSE: it read *"there is no workspace here to span"*, and
- * `mnema verify --workspace` spans one — the caller NAMES the projects, so a CLI verb
+ * `mnema verify --workspace` spans one; the caller NAMES the projects, so a CLI verb
  * can cover several without a host to announce them. What survived is the shape of THIS
  * read: it is asked about the directory it was run in, and it is handed no set. The MCP
  * tool of the same name is opened over several projects at once, so it answers with one
@@ -25,13 +25,13 @@
  * was run in, which is the same fold over the same trees.
  *
  * AND IT CARRIES ONE READING THE TOOL DOES NOT, WHICH IS THE POINT OF SAYING SO HERE.
- * `moves` — whether the run that moved a pattern had been served its body — is the
+ * `moves` (whether the run that moved a pattern had been served its body) is the
  * command line's alone, and the temptation to unify the two answers is exactly what this
  * paragraph exists against. Handing an agent a tool for checking whether it consulted
  * before it moved inverts the axis: the MCP surface is the agent's and the command line
  * is the auditor's, and an auditor's finding that the audited party can query and clear
- * before anyone reads it is not a finding. It costs nothing to compute — the same fold,
- * already in hand — which is why it lives beside the shapes rather than in a verb of its
+ * before anyone reads it is not a finding. It costs nothing to compute (the same fold,
+ * already in hand), which is why it lives beside the shapes rather than in a verb of its
  * own opening the tails a second time.
  *
  * Read-only: it reads the present trees' tails and folds them with the context package's
@@ -51,7 +51,7 @@ import {
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { recordEvents } from '../intelligence-source.js';
 
-/** What the antipatterns command needs — injected so it is testable. */
+/** What the antipatterns command needs: injected so it is testable. */
 export interface AntipatternsContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -68,7 +68,7 @@ export interface AntipatternsDone {
    */
   readonly patterns: Antipatterns;
   /**
-   * Whether the run that moved a pattern had been served its body — and, where the
+   * Whether the run that moved a pattern had been served its body, and, where the
    * record cannot say, the fact that it cannot.
    *
    * It RIDES BESIDE the shapes rather than inside them, the way `runSkills` carries the
@@ -80,7 +80,7 @@ export interface AntipatternsDone {
   readonly moves: PatternMoveWitness;
 }
 
-/** The read was refused — there is no project to inspect. */
+/** The read was refused: there is no project to inspect. */
 export interface AntipatternsRefused {
   readonly ok: false;
   readonly reason: 'NO_PROJECT';

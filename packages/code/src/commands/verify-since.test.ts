@@ -1,10 +1,10 @@
 /**
- * `sinceBase` — the rule `mnema verify --since` applies, on its own, over a repository whose
+ * `sinceBase`: the rule `mnema verify --since` applies, on its own, over a repository whose
  * record files are written byte by byte so each case is exactly one change.
  *
  * The files carry bytes and not events on purpose: the rule is about bytes (presence, and a
  * prefix for the files that only grow), and the record's own reading is not part of it. The
- * end-to-end cases — a real record, the four forgeries, the binary and the flag — are in
+ * end-to-end cases (a real record, the four forgeries, the binary and the flag) are in
  * `tests/the-ci-recipe-catches-what-verify-cannot.test.ts`.
  */
 
@@ -105,7 +105,7 @@ describe('sinceBase', () => {
     ]);
   });
 
-  it('names every file the base held that is gone — a tail, its proof, a key', () => {
+  it('names every file the base held that is gone: a tail, its proof, a key', () => {
     rmSync(join(record, 'tails'), { recursive: true });
     rmSync(join(record, 'keys', 'ab.pub'));
     expect(

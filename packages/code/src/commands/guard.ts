@@ -1,12 +1,12 @@
 /**
- * `mnema task guard <action> <id>` — a DRY-RUN of the workflow gate: "would this move
- * be allowed on this task, and if not, why?" — asked, never done.
+ * `mnema task guard <action> <id>` (a DRY-RUN of the workflow gate: "would this move
+ * be allowed on this task, and if not, why?") asked, never done.
  *
  * The fourth read on the surface, and the sibling of `task move`: it takes the
  * SAME action and id and simulates exactly what a move would decide, having
  * written nothing. Read-only in the strict sense the boundary means it: it opens
  * the projection cache, rebuilds, reads the task's current state, and calls the
- * context's PURE `guard` (which delegates to the core's gate) — no writer, no
+ * context's PURE `guard` (which delegates to the core's gate), no writer, no
  * event, no key minted. The verdict is the gate's own, so a guard that says
  * ALLOWED and a `task move` that succeeds can never drift: they consult the same
  * function on the same inputs.
@@ -16,7 +16,7 @@
  * type that state. So the surface resolves it the way `next-actions` does: it
  * locates the task's home tree ({@link locateEntityScope}), opens that tree's
  * cache, and reads `getTask(id).state`. That is projection reading plus a pure
- * derivation, not domain logic — the transition table stays the gate's. An id no
+ * derivation, not domain logic: the transition table stays the gate's. An id no
  * visible tree holds is `UNKNOWN_TASK`; with no project at all, `NO_PROJECT`.
  *
  * WHY THE ACTOR IS EXPLICIT. Like every actor-bearing read on this surface,
@@ -27,19 +27,19 @@
  * required flag: passing it keeps the read truly read-only, and it doubles as
  * the `who` the gate checks against `--which` (an agent asking on a human's
  * behalf simulates the who != which invariant). It may be written whole or as a
- * prefix of an identity the record knows — and a whole one costs nothing, because
+ * prefix of an identity the record knows, and a whole one costs nothing, because
  * only a prefix makes this open the other trees to find out what it names.
  *
  * IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one. A session resolves the
  * identity this installation recorded from local material, with no writer opened, so it
- * fills this flag in at its own prompt (`repl/asking.ts`) — the `who` it fills is the
+ * fills this flag in at its own prompt (`repl/asking.ts`): the `who` it fills is the
  * one on its own panel, and a `--which` typed against it is checked exactly as one typed
  * against an actor a caller wrote out. The declaration is untouched.
  *
  * WHY IT SIMULATES THE PROOF. The dry-run must be FAITHFUL to what a move would
  * decide, so it accepts the same optional proof flags a move does (`--note`,
  * `--reason`, `--feedback`) and the same `--which`. With the required proof it
- * comes back ALLOWED; without it, REFUSED (MISSING_PROOF) — which is a USEFUL
+ * comes back ALLOWED; without it, REFUSED (MISSING_PROOF), which is a USEFUL
  * answer ("the move is legal, you are just missing the note"), not a failure.
  */
 
@@ -54,7 +54,7 @@ import {
   withCache,
 } from '../tree-sources.js';
 
-/** What the guard command needs — injected so it is testable. */
+/** What the guard command needs: injected so it is testable. */
 export interface GuardContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -62,7 +62,7 @@ export interface GuardContext {
   readonly env: DiscoveryEnv;
 }
 
-/** The proof a caller may simulate for a move — the surface's view of the fields. */
+/** The proof a caller may simulate for a move: the surface's view of the fields. */
 export interface GuardProof {
   /** Why a task was canceled, blocked, or reopened. */
   readonly reason?: string;
@@ -72,13 +72,13 @@ export interface GuardProof {
   readonly feedback?: string;
 }
 
-/** The gate rendered its verdict — ALLOWED or a typed refusal (the gate's own). */
+/** The gate rendered its verdict: ALLOWED or a typed refusal (the gate's own). */
 export interface GuardVerdict {
   readonly ok: true;
-  /** The gate's verdict, faithful — the same object a real move would act on. */
+  /** The gate's verdict, faithful: the same object a real move would act on. */
   readonly verdict: GateResult;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -86,9 +86,9 @@ export interface GuardVerdict {
   readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
-/** The dry-run could not be attempted — the task, project or actor was not found. */
+/** The dry-run could not be attempted: the task, project or actor was not found. */
 export type GuardRefused =
-  /** There is no project here — a task read needs one. */
+  /** There is no project here: a task read needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** No visible tree holds a task with this id. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_TASK' }
@@ -106,7 +106,7 @@ export type GuardRefused =
  * reads the task's current state as the `from`, and calls the context package's pure
  * `guard`. An ALLOWED verdict names the state the move would reach; a REFUSED one
  * carries the gate's own code and message (ILLEGAL_TRANSITION, MISSING_PROOF,
- * WHO_IS_WHICH, …) — the same answer a real `task move` would give. Read-only:
+ * WHO_IS_WHICH, …): the same answer a real `task move` would give. Read-only:
  * no writer, no event. With no project it refuses `NO_PROJECT`; with a project
  * but no tree holding the task, `UNKNOWN_TASK`.
  */
@@ -128,7 +128,7 @@ export function runGuard(
     return { ok: false, reason: 'REFUSED', code: actor.code, message: actor.message };
   }
   const upcasters = catalogUpcasters();
-  // Find the task's home tree the same way a move does — a task lives in exactly
+  // Find the task's home tree the same way a move does: a task lives in exactly
   // one tree, and its state must be read from there.
   const scope = locateEntityScope(trees, input.id, upcasters);
   if (scope === undefined) {
@@ -138,7 +138,7 @@ export function runGuard(
   return withCache(root, upcasters, (cache) => {
     const task = cache.getTask(input.id);
     // `locateEntityScope` found a birth, so a null here means the tail is truncated
-    // below it (the birth is not replayable) — report it as unknown rather than
+    // below it (the birth is not replayable): report it as unknown rather than
     // simulating a move from a state we cannot read.
     if (task === null) {
       return { ok: false, reason: 'UNKNOWN_TASK' };
@@ -151,7 +151,7 @@ export function runGuard(
       ...(fields !== undefined ? { fields } : {}),
       ...(input.which !== undefined ? { which: input.which } : {}),
     });
-    // OVER THE ONE TREE THE TASK LIVES IN — the tree whose state this verdict was
+    // OVER THE ONE TREE THE TASK LIVES IN: the tree whose state this verdict was
     // simulated against. A dry-run read off a tail that no longer chains is a verdict
     // about a state whose provenance cannot be proved.
     return {
@@ -165,7 +165,7 @@ export function runGuard(
 /**
  * Builds the chain's proof fields from the flags a caller supplied, dropping any
  * that were absent. Returns undefined when none were given, so a simulated move
- * that needs no proof carries no `fields` — the gate then requires nothing. Only
+ * that needs no proof carries no `fields`: the gate then requires nothing. Only
  * the three textual proof fields the gate can ever require are surfaced; this is
  * the same shape `task move` forwards, so the dry-run and the real move see the
  * identical request.

@@ -1,23 +1,23 @@
 /**
- * `mnema key restore <file>` — bring this identity back onto a machine from a
+ * `mnema key restore <file>`: bring this identity back onto a machine from a
  * copy of a key's private half.
  *
  * The command a person runs after the one loss mnema cannot undo: the signing key
  * is gone, and what they still have is the cold copy `mnema init` told them to
- * move off the machine. There is no service to ask — an entity able to hand an
- * identity back could forge one — so recovery is local and offline: one file they
+ * move off the machine. There is no service to ask (an entity able to hand an
+ * identity back could forge one), so recovery is local and offline: one file they
  * kept, plus the committed record, which carries the proof that the key is a
  * member.
  *
  * A thin adapter, like every other: it resolves the project from the cwd, turns
  * the path the person typed into an absolute one, and calls ONE core operation.
- * Every judgement — is this a private key, is another key already installed, does
- * this record prove membership — belongs to the core and reaches the person as the
+ * Every judgement (is this a private key, is another key already installed, does
+ * this record prove membership) belongs to the core and reaches the person as the
  * core worded it.
  *
  * Scope is the project's PUBLIC tree, and only it. That is where the proof of
  * membership lives (a committed tree survives the disk that died), and it is the
- * only tree an enrollment reaches — the private and global trees are born knowing
+ * only tree an enrollment reaches: the private and global trees are born knowing
  * one key, so there is nothing there for a restored key to be a member of.
  */
 
@@ -26,7 +26,7 @@ import { catalogUpcasters } from '@mnema/chain';
 import { agentKeyRoot, agentNameRefusal, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type RestoredMembership, restoreAgentKey, restoreKey } from '@mnema/core/write';
 
-/** What the restore needs — injected so it is testable. */
+/** What the restore needs: injected so it is testable. */
 export interface KeyRestoreContext {
   /** The working directory: the project it resolves, and what a relative path is relative to. */
   readonly cwd: string;
@@ -43,7 +43,7 @@ export interface KeyRestored {
   readonly anchor: string;
   /** How this project proves the key belongs to that anchor. */
   readonly membership: RestoredMembership;
-  /** Where the private half was installed — a copy; the file given is untouched. */
+  /** Where the private half was installed: a copy; the file given is untouched. */
   readonly installedAt: string;
   /** The project tree that proved the membership and adopted the key. */
   readonly root: string;
@@ -51,7 +51,7 @@ export interface KeyRestored {
 
 /** The restore was refused; nothing was written. */
 export type KeyRestoreRefused =
-  /** There is no project here — the proof of membership lives in one. */
+  /** There is no project here: the proof of membership lives in one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core refused: unreadable key, a key already present, no membership. */
   | {
@@ -65,7 +65,7 @@ export type KeyRestoreRefused =
  * Restores a key into the current project. With no project found from the cwd it
  * refuses `NO_PROJECT`: the anchor is read from a project's committed record, and
  * the case this exists for is a fresh clone of the team's repo with the vault copy
- * in hand — outside a project there is nothing to prove membership against and
+ * in hand; outside a project there is nothing to prove membership against and
  * nothing to adopt.
  *
  * The path is resolved against the injected cwd, so a relative path means what the
@@ -109,13 +109,13 @@ export interface AgentKeyRestored {
   readonly anchor: string;
   /** The name the record enrols the key under. */
   readonly name: string;
-  /** Where the private half was installed — a copy; the file given is untouched. */
+  /** Where the private half was installed: a copy; the file given is untouched. */
   readonly installedAt: string;
 }
 
 /**
  * Restores the key of an agent into the agent's folder of this machine's data directory
- * (`<data>/agents/<name>`) — what a CI runner, which begins every job with an empty one, does before
+ * (`<data>/agents/<name>`): what a CI runner, which begins every job with an empty one, does before
  * its agent works. The record of the project's public tree must enrol the key as that agent under
  * that name; nothing is written to the person's key root, to the tree or to the record.
  */

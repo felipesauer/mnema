@@ -1,11 +1,11 @@
 /**
  * The `mnema brief` wiring: what it declares, and what it prints.
  *
- * `mnema brief` — the decisions in force and the adopted patterns of the COMMITTED
+ * `mnema brief`: the decisions in force and the adopted patterns of the COMMITTED
  * record, as the markdown document a session opens with. It takes ONE option, and every
  * one it does not take was decided rather than skipped: no `--actor` (the answer is the
  * project's, not an asker's), no `--check` (a pipe into `diff` answers that, and does not
- * have to guess where the operator's file is), no `--json` — the document IS the contract,
+ * have to guess where the operator's file is), no `--json`; the document IS the contract,
  * and a second serialization of the same answer would be a second thing to keep byte-stable
  * for no consumer, since what reads this file reads markdown.
  *
@@ -14,7 +14,7 @@
  * document to a session: the host carries a hook's text whole only up to a ceiling it measures
  * (`presentation/within-a-hook.ts`), and past it replaces all of it by a file path. With the
  * flag the document stops at a whole rule and says how many it left out; without it, nothing
- * changes — a file has no ceiling, so `mnema brief > MNEMA.md` still prints every rule. It is
+ * changes: a file has no ceiling, so `mnema brief > MNEMA.md` still prints every rule. It is
  * a flag rather than something the verb works out, because nothing in the verb's environment
  * says a hook is reading, and guessing would make the same record print two documents
  * depending on where it ran. The plugin's handler is its caller, and
@@ -23,8 +23,8 @@
  * AND NO `--scope`, which is the one absence a reader of this list will look for now
  * that the document has a scope. It has ONE, and it is the point rather than a default
  * to override: the file is written to be committed, so what it carries is what a clone
- * gets. A flag would offer to put a private rule into a tracked file — the defect this
- * verb was corrected for — and the reader who wants the whole of what governs their
+ * gets. A flag would offer to put a private rule into a tracked file (the defect this
+ * verb was corrected for) and the reader who wants the whole of what governs their
  * own work has the agent's opening context, which spans every tree.
  *
  * The whole output goes to stdout and nothing else. The redirection is the operator's
@@ -33,13 +33,13 @@
  *
  * AND THE HELP NOW SAYS WHAT THE REDIRECTION DOES, which is a premise this module used to
  * publish and had wrong. The first example on this page was `mnema brief > AGENTS.md`,
- * offered as the destination an agent host reads on its own — true, and beside the point
+ * offered as the destination an agent host reads on its own: true, and beside the point
  * on any project that already has that file. Measured on one: 126 lines of the
  * repository's own method, and the line this page taught replaces every one of them.
  * `AGENTS.md` is a convention with tens of thousands of repositories behind it, so a
  * destination with content in it is the ordinary case. The example now names a file
  * nothing else claims, the page says the `>` replaces the whole of what it names, and it
- * says what to do where the host's own file already belongs to somebody — which is a line
+ * says what to do where the host's own file already belongs to somebody, which is a line
  * in THEIR file, because this verb cannot merge, cannot check and cannot refuse: it never
  * learns there was a file. `the-recipe-says-what-it-overwrites.test.ts` holds both halves,
  * over this page and over the copy of the recipe inside the generated document.
@@ -47,15 +47,15 @@
  * THAT LINE WAS A SENTENCE, AND THE PAGE SAID IT "REACHES THE SAME READER". For the host
  * this product ships a plugin for, a sentence naming a file reaches the reader only if the
  * agent decides to open that file; what brings the file in is an import, `@MNEMA.md`
- * (code.claude.com/docs/en/memory — a `CLAUDE.md` "that tells Claude in words" to read
+ * (code.claude.com/docs/en/memory: a `CLAUDE.md` "that tells Claude in words" to read
  * another file is seen "only if it decides to open the file"). And the page said that
  * `AGENTS.md` and `CLAUDE.md` are both read by a host on its own, when that host reads an
- * `AGENTS.md` only from 2.1.277 and only where no `CLAUDE.md` exists — 0 of 299 sessions
+ * `AGENTS.md` only from 2.1.277 and only where no `CLAUDE.md` exists: 0 of 299 sessions
  * on this machine, in two projects that keep both. Both sentences now say which host and
  * under what condition, and the page names the one route that needs no file: the plugin.
  *
  * IT CAN BE SWITCHED OFF, which is the one thing about this verb that is not a property of
- * the record. What it prints is a CHANNEL — the file a session opens with — and every
+ * the record. What it prints is a CHANNEL, the file a session opens with, and every
  * channel this product pushes unasked is switchable with the switching recorded. Off, this
  * verb refuses: nothing on stdout, a sentence on stderr naming the switch, a non-zero exit,
  * which is what makes the plugin's handler silent by the rule it already had. The verb is
@@ -70,14 +70,14 @@
  * THAT LIST SAID THREE AND THE DOCUMENT NAMED FOUR, which is worth leaving in view rather
  * than silently correcting: `governing_rules` had been in the file since the address
  * paragraph was written and never reached this sentence, because a list of names in a
- * comment is not read by anything. `record_decision` is the fifth and the only WRITE — a
- * decision of the reader's own enters the record through it — and it is the one addition
+ * comment is not read by anything. `record_decision` is the fifth and the only WRITE (a
+ * decision of the reader's own enters the record through it) and it is the one addition
  * that changes what the division means: the file now names a door its reader can open to
  * PUT something in, not only to read more.
  *
  * THAT DIVISION IS NOT WHAT THE DOCUMENT DOES IN EVERY STATE, and saying so here is the
- * honest form of it. When a channel is switched OFF the document names `mnema switch` —
- * a command line — because the fact it is reporting is one only a person can undo, and
+ * honest form of it. When a channel is switched OFF the document names `mnema switch`,
+ * a command line, because the fact it is reporting is one only a person can undo, and
  * there is no agent door onto a switch. So the rule is about the ORDINARY output and
  * about who can act: the reader is told the door onto what it was just told about.
  */

@@ -82,7 +82,7 @@ describe('mnema decision import', () => {
 
   it('records what it planned, and every one of them is PROPOSED', () => {
     // There is no path in this product that creates an accepted decision, and this
-    // verb adds none — no flag, no threshold, no confidence. A file that calls
+    // verb adds none: no flag, no threshold, no confidence. A file that calls
     // itself Accepted is proposed all the same.
     const { repo, env } = setup({
       '0001-utc.md': `# Use UTC everywhere\n\n- **Status:** Accepted\n\n## Context\n\nthe zone drifts\n`,
@@ -117,7 +117,7 @@ describe('mnema decision import', () => {
     expect(links.map((l) => [l.subject, l.rel, l.target])).toEqual(
       result.proposals.map((p) => [p.id, DERIVED_FROM_RELATION, p.path]),
     );
-    // The path is the project's own, so every clone can open it — never this
+    // The path is the project's own, so every clone can open it, never this
     // machine's absolute one.
     expect(links.map((l) => l.target)).toEqual(['docs/adr/0001-utc.md', 'docs/adr/0002-ledger.md']);
   });
@@ -138,7 +138,7 @@ describe('mnema decision import', () => {
       'docs/adr/0001-utc.md',
       'docs/adr/0002-ledger.md',
     ]);
-    // Two runs, two decisions — counted at the record and not at the report.
+    // Two runs, two decisions: counted at the record and not at the report.
     expect(publicTree(repo, env).decisions.size).toBe(2);
   });
 
@@ -171,7 +171,7 @@ describe('mnema decision import', () => {
     expect(result.refused.map((r) => r.code)).toEqual(['NO_TITLE']);
   });
 
-  it('names every file the way a reader of another clone can open it — BOTH paths', () => {
+  it('names every file the way a reader of another clone can open it: BOTH paths', () => {
     // The scanner walks in absolute paths and the plan relativizes what it READ, so
     // the refusals were being reported as `/home/…/repo/docs/adr/x.md` beside
     // proposals reported as `docs/adr/x.md`. The absolute one is this machine's, and
@@ -236,7 +236,7 @@ describe('mnema decision import', () => {
   });
 
   it('names the agent on every fact it writes', () => {
-    // A declared `which` names the agent on the fact and does not move the tree —
+    // A declared `which` names the agent on the fact and does not move the tree:
     // the same rule every other write follows. Both events it appends carry it.
     const { repo, env } = setup({ '0001-utc.md': decision('Use UTC everywhere') });
 

@@ -1,6 +1,6 @@
 /**
  * Where the long text of a write comes from: typed on the line, read from standard input
- * (`--stdin`), or read from a file (`--body-file <path>`) — one of the three, never two.
+ * (`--stdin`), or read from a file (`--body-file <path>`), one of the three, never two.
  *
  * A long text typed on the line is in the shell's history and in the process list while the verb
  * runs; the two other doors keep it out of both. A text that came from two places at once has no
@@ -28,7 +28,7 @@ export interface BodyGiven {
   readonly bodyFile?: string | undefined;
 }
 
-/** The text, from the one place it came from — or {@link REFUSED}, once the line was refused. */
+/** The text, from the one place it came from, or {@link REFUSED}, once the line was refused. */
 export async function bodyFrom(
   wiring: Wiring,
   what: string,

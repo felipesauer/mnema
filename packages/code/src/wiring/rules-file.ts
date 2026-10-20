@@ -2,11 +2,11 @@
  * The `mnema rules-file` wiring: what it declares, and what it prints.
  *
  * `mnema rules-file --host <host>` prints, on stdout, the file another host reads its own rules
- * from — VS Code's `.instructions.md` with `applyTo`, Cursor's `.mdc` with `globs` — carrying the
+ * from (VS Code's `.instructions.md` with `applyTo`, Cursor's `.mdc` with `globs`) carrying the
  * committed rules addressed at a file or a directory a glob can name; on stderr, in the same run, how many it
  * carried, what each host does with the pattern, where the file goes and that `>` replaces the
  * whole of it, and every rule left out with the reason. With nothing that translated it prints no
- * file — an empty pattern is read as every file by some matchers — and says so, exiting 0 the way
+ * file (an empty pattern is read as every file by some matchers) and says so, exiting 0 the way
  * `mnema recall` does over nothing noted: having nothing to print is an answer, not a failure.
  */
 
@@ -47,7 +47,7 @@ export function registerRulesFile(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, done, {});
         return;
       }
-      // BEFORE the file, and on the other stream — so it survives a redirect.
+      // BEFORE the file, and on the other stream, so it survives a redirect.
       for (const line of linkBreakNotice(done.linkBreaks)) io.err(render(line));
       const say = (line: string, depth = 0) => io.err(render(fact(line, depth)));
       if (done.text === undefined) {

@@ -1,8 +1,8 @@
 /**
  * `mnema site` as the adapter sees it: what reaches the page, and what never can.
  *
- * The page is published, so the guards here are about leaving things OUT — a note kept
- * private, a title that is markup — and about what the page carries for its own verification.
+ * The page is published, so the guards here are about leaving things OUT (a note kept
+ * private, a title that is markup) and about what the page carries for its own verification.
  * That the verdict a browser computes is the one `mnema verify` gives is pinned in
  * `site/the-verdict-in-the-browser.test.ts`.
  */

@@ -1,7 +1,7 @@
 /**
  * The `mnema site` wiring: what it declares, and what it writes.
  *
- * `mnema site --out <dir>` — the project's committed record as one HTML file, with the
+ * `mnema site --out <dir>`: the project's committed record as one HTML file, with the
  * verifier inside it.
  *
  * IT HAS NO `--private` OR `--global`. The page is meant to be published, and what is

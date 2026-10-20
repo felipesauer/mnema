@@ -64,7 +64,7 @@ describe('mnema run end', () => {
     expect(runsOf(repo, env).get(id)?.open).toBe(false);
   });
 
-  it('refuses ALREADY_ENDED on a second close — never silently', () => {
+  it('refuses ALREADY_ENDED on a second close, never silently', () => {
     // A duplicate `run.ended` on an append-only log cannot be retracted, and a
     // close that quietly does nothing would let a person believe the second one
     // took effect.
@@ -134,9 +134,9 @@ describe('mnema run end', () => {
     expect(ended?.which).toBe(AGENT);
   });
 
-  it('and the pair names ONE agent — the close credits whom the birth opened it for', () => {
+  it('and the pair names ONE agent: the close credits whom the birth opened it for', () => {
     // The defect this closes, at the surface: a session opened `for claude-code` used
-    // to be sealed, in the record, by the person — the close carried no agent at all.
+    // to be sealed, in the record, by the person; the close carried no agent at all.
     const { repo, env, id } = openedRun();
     expect(runRunEnd({ cwd: repo, env }, { run: id, which: AGENT }).ok).toBe(true);
 
@@ -148,7 +148,7 @@ describe('mnema run end', () => {
   it('refuses NO_AGENT for a `--which` that names nobody, and the run stays open', () => {
     // The same guard the half that OPENS a run applies, in the same place: this pair
     // is how an agent driving the command line gets a session, so a close with no
-    // executor would be recorded as the person's — the fiction naming it exists to
+    // executor would be recorded as the person's, the fiction naming it exists to
     // close. Reached with a variable that expanded to nothing, never typed.
     const { repo, env, id } = openedRun();
 

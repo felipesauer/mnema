@@ -1,26 +1,26 @@
 /**
- * `mnema search [term]` — find what has been recorded, or list what is recent.
+ * `mnema search [term]`: find what has been recorded, or list what is recent.
  *
  * The auditor's way into the record. Everything mnema holds was, until now,
  * reachable only by an id someone still had: a memory captured in March could be
- * proved but not found. This searches the words a person wrote — across the
- * team's tree, this machine's, and the personal one — and returns an INDEX: an
+ * proved but not found. This searches the words a person wrote (across the
+ * team's tree, this machine's, and the personal one) and returns an INDEX: an
  * id, a kind, the tree it lives in, when it was recorded, and one line each. The
  * body of any one of them is `mnema show <id>`.
  *
  * The term is OPTIONAL, so the same verb answers both "where did we write about
- * X" and "what has been going on here" — with an inverted index those are one
+ * X" and "what has been going on here": with an inverted index those are one
  * query and one clause apart.
  *
  * It needs NO `--actor`: what matches is a property of the record, not of who is
  * asking (the same reason `timeline` and `next-actions` take none). Read-only in
- * the strict sense — it opens a cache per tree, brought forward from the one the tree keeps
+ * the strict sense: it opens a cache per tree, brought forward from the one the tree keeps
  * (`CacheOptions.persist`), and calls
  * the context package's pure `searchRecords`; no writer, no key, no event.
  *
  * It does NOT refuse outside a project, and that is the one place it parts from
  * the intelligence reads. Those audit a PROJECT's record; this searches the
- * record the caller can see, and outside a project that is the global tree —
+ * record the caller can see, and outside a project that is the global tree:
  * a person's own notes, which are a legitimate thing to search from anywhere.
  */
 
@@ -39,7 +39,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the search command needs — injected so it is testable. */
+/** What the search command needs: injected so it is testable. */
 export interface SearchContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -53,7 +53,7 @@ export interface SearchDone {
   /** The hits, each marked with its tree, plus the true total. */
   readonly result: RecordSearch;
   /**
-   * The tails among those read that do not chain — empty for a sound record.
+   * The tails among those read that do not chain: empty for a sound record.
    *
    * It travels WITH the answer rather than instead of it, because nothing was lost:
    * every hit below is a fact somebody wrote and is still on the tail. What a break
@@ -74,7 +74,7 @@ export type SearchRefused =
 /**
  * Searches (or lists) the record across every visible tree. Opens a cache per
  * tree, rebuilds it from the chain, and merges the answers with the scope of
- * each hit attached. The caches are closed before returning — the read holds
+ * each hit attached. The caches are closed before returning: the read holds
  * nothing open.
  */
 export function runSearch(ctx: SearchContext, input: RecordQuery = {}): SearchDone | SearchRefused {

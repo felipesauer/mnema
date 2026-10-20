@@ -1,5 +1,5 @@
 /**
- * `mnema why <file|commit>` — under which decisions a file or a commit stands, read when asked.
+ * `mnema why <file|commit>`: under which decisions a file or a commit stands, read when asked.
  *
  * FOR A FILE: the rules in force that address it (the reading `mnema rules` and the per-edit push
  * share), and the commits that touched it and carry a `Mnema-Decision` trailer.
@@ -7,8 +7,8 @@
  * changed.
  *
  * WHAT THE WORD IS. A path that exists is a file. Otherwise a word that names a commit is a
- * commit. Otherwise it is read as a path anyway — a file that was deleted still had rules
- * addressing it — and the reading says the file is not there. A file wins over a commit of the
+ * commit. Otherwise it is read as a path anyway (a file that was deleted still had rules
+ * addressing it) and the reading says the file is not there. A file wins over a commit of the
  * same name because the person typed it at a prompt in a working tree; a commit is always
  * reachable by its full hash.
  *
@@ -39,7 +39,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface WhyContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -50,7 +50,7 @@ export interface WhyRule {
   readonly id: string;
   readonly name: string;
   readonly address: string;
-  /** How many of the changed files it covers — a commit's; absent for a file. */
+  /** How many of the changed files it covers: a commit's; absent for a file. */
   readonly files?: number;
 }
 

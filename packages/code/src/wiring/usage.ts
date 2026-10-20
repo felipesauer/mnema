@@ -5,8 +5,8 @@
  * `misuse.ts` now. That is not tidying: `every-refusal-is-red.test.ts` asserts that every
  * wiring module which can refuse hangs a command of its own NAME on the program, and it
  * went red the moment this verb arrived under any other file name. The name it took was
- * already held by the parser's no — the module that gives every command one voice for a
- * usage ERROR — which never declared a verb, so nothing had made the collision visible
+ * already held by the parser's no, the module that gives every command one voice for a
+ * usage ERROR, which never declared a verb, so nothing had made the collision visible
  * before. The half that moved is the one whose subject the new name says better: what
  * lives there is a {@link Misuse}, and it was called `Misuse` already.
  *
@@ -14,13 +14,13 @@
  * accounting for what work cost, the agent surface has no tool for it and will not get
  * one, and a public option with no production caller is a defect. Not `--which` either, and
  * that one is worth stating: every write carries it so an agent can name itself, and
- * this writes nothing — there is no executor to record, because there is no record.
+ * this writes nothing; there is no executor to record, because there is no record.
  *
  * IT IS DECLARED AMONG THE READS AND IT IS THE ONLY ONE THAT LEAVES THE RECORD. Every
  * other read on this surface answers out of the chain and could be checked by anyone
  * holding a clone; this one opens a file the host wrote, on this machine, which no
- * clone has and which the host will delete. That is not a reason to hide it — the
- * number is real and somebody has to account for it — it is the reason the output ends
+ * clone has and which the host will delete. That is not a reason to hide it (the
+ * number is real and somebody has to account for it) it is the reason the output ends
  * by saying what it is.
  */
 
@@ -60,7 +60,7 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result);
         return;
       }
-      // BEFORE the answer, and on the other stream — the runs below were derived from
+      // BEFORE the answer, and on the other stream: the runs below were derived from
       // the record this is the proof-state of.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, usageReport(render, result));

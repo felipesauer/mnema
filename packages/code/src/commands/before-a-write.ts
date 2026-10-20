@@ -1,5 +1,5 @@
 /**
- * `mnema before-a-write --host <host>` — the per-edit gate, for a host whose hooks are processes.
+ * `mnema before-a-write --host <host>`: the per-edit gate, for a host whose hooks are processes.
  *
  * WHAT IT IS FOR. A rule of the record linked to a path with `asks-for-a-person` holds a write
  * under that path until a person decides, and one linked with `refuses-a-write` does not let it
@@ -23,11 +23,11 @@
  * a `channel.asked` would say a person was asked ({@link asksAPerson}).
  *
  * WHAT IT DOES NOT CARRY, AND WHY: the rules that only `govern` a path. The MCP tool hands those
- * over beside the result of the write, and records that the push served ONCE PER RUN — its
+ * over beside the result of the write, and records that the push served ONCE PER RUN: its
  * connection remembers the run. A process started per write remembers nothing, so it would record
  * one `channel.served` on every edit of a governed file, the thousands-of-writes shape the fact's
  * own declaration refuses (`channel.served`, `@mnema/chain`). So this door carries the gate alone,
- * and the service it records rides with each asking — askings are discrete, and each one is the
+ * and the service it records rides with each asking: askings are discrete, and each one is the
  * gate having spoken. A refusal records no service: each `channel.refused` is the refusal itself.
  * VS Code puts a hook's text inside the tool result (measured), so the push could travel this way
  * the day a run can be remembered across processes.
@@ -83,14 +83,14 @@ import {
 } from '../what-a-write-meets.js';
 import { CHARGING_CHANNELS, withWhoIsHere } from '../who-is-here.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface BeforeAWriteContext {
   /** Where the host started the hook: the project is resolved from it, and a relative path too. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /**
-   * The agent whose key signs what this hook records, where the project's record enrols it —
+   * The agent whose key signs what this hook records, where the project's record enrols it:
    * `--agent-key`. Where it does, the facts' `which` is the name the record gives that key,
    * not the host's name; anywhere else the person's key signs and `which` is the host.
    */
@@ -102,12 +102,12 @@ export interface BeforeAWriteContext {
  *
  * There is no failure arm, and that is the contract rather than an omission: this runs inside
  * somebody else's session, on every tool call of it, and every way of not asking or refusing
- * answers the same empty reply — except a record that cannot be read, which refuses. What went
+ * answers the same empty reply, except a record that cannot be read, which refuses. What went
  * wrong, when something did, is a note.
  */
 export interface BeforeAWriteDone {
   readonly ok: true;
-  /** The JSON the host reads on stdout — `{}` unless the record asks or refuses. */
+  /** The JSON the host reads on stdout: `{}` unless the record asks or refuses. */
   readonly reply: object;
   /** Lines for the second stream: why a write that should have been read was not. */
   readonly notes: readonly string[];
@@ -150,7 +150,7 @@ export function runBeforeAWrite(
 
 /**
  * What a write at `input.paths` meets in this project's record, answered in the reply `input.reply`
- * shapes — the half of {@link runBeforeAWrite} that does not depend on how a host spells a payload,
+ * shapes: the half of {@link runBeforeAWrite} that does not depend on how a host spells a payload,
  * so a caller that already holds the paths (a program's own hook) asks the same question and gets
  * the same facts appended. `which` is the name the facts are recorded under; `asks` is whether the
  * caller can hold a write for a person (where it cannot, an asking is silence, and nothing is
@@ -205,7 +205,7 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
   if (met === undefined) return silent();
 
   // THE ORDER IS THE MCP TOOL'S: the facts are appended, and only then does the reply carry the
-  // charge. What the write founded, if it was this key's first in the tree, rides in the reason —
+  // charge. What the write founded, if it was this key's first in the tree, rides in the reason:
   // the one field of the reply anybody reads; the line on the second stream would be dropped.
   // THE CHARGE STANDS WHETHER ITS FACTS LAND OR NOT ({@link recordTheCharge}): decided by reading,
   // it is answered whatever the append does, and a fact that could not be written is said in the
@@ -223,8 +223,8 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
 }
 
 /**
- * Appends one `channel.refused` or `channel.asked` per rule per path the write met, and — for an
- * asking only — the one `channel.served` of this asking, under one checkpoint: the facts the MCP
+ * Appends one `channel.refused` or `channel.asked` per rule per path the write met, and, for an
+ * asking only, the one `channel.served` of this asking, under one checkpoint: the facts the MCP
  * tool appends, in the tree they are routed to. The facts decide the answer; the service fact is
  * attempted and never un-asks. A refusal has no service fact, because it is itself the fact.
  */
@@ -263,7 +263,7 @@ function recordWhatItMet(
       }
     }
     // A SERVICE FACT THAT DID NOT LAND IS A GAP IN THE EVIDENCE, NOT AN UN-ASKING: the askings are
-    // on the chain, so the charge rides — the MCP tool's rule for the same two facts.
+    // on the chain, so the charge rides, the MCP tool's rule for the same two facts.
     if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which: named });
     writer.checkpoint();
     return { ok: true };
@@ -273,8 +273,8 @@ function recordWhatItMet(
 /**
  * The other runs of this machine charged at the first path the write met (`runsHere`), or none.
  *
- * THIS PROCESS HAS NO RUN OF ITS OWN to leave out, so a run of the agent that is writing — one it
- * opened through the server — is named like any other, and the sentence names the agent so that
+ * THIS PROCESS HAS NO RUN OF ITS OWN to leave out, so a run of the agent that is writing, one it
+ * opened through the server, is named like any other, and the sentence names the agent so that
  * its reader can tell. The identity asked for is the machine's own, decided as a write decides
  * it; a key the record cannot place says no one rather than fail a hook that has to answer.
  */

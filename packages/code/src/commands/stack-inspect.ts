@@ -76,7 +76,7 @@ export function entriesOf(ctx: StackContext, target: StackTarget): Entry[] | und
   });
 }
 
-/** Every entry of the targets named — the three trees when none is. */
+/** Every entry of the targets named: the three trees when none is. */
 export function allEntries(ctx: StackContext, target: StackTarget | undefined): Entry[] {
   const targets: StackTarget[] =
     target === undefined ? SCOPES_IN_ORDER.map((scope) => ({ scope })) : [target];
@@ -134,7 +134,7 @@ export interface Approvals {
 
 const HEX64 = /^[0-9a-f]{64}$/;
 
-/** The approvals file of a stack, as written by `stack enable` — or `refused` when it is not. */
+/** The approvals file of a stack, as written by `stack enable`, or `refused` when it is not. */
 export function readApprovals(dir: string, name: string): Approvals | 'refused' | undefined {
   let value: unknown;
   try {
@@ -392,7 +392,7 @@ export function problemsOf(i: Inspection): string[] {
 }
 
 /**
- * The adoptions a tree's record stands on that no receipt answers for — a clone that has the
+ * The adoptions a tree's record stands on that no receipt answers for: a clone that has the
  * record and not the files, or a receipt deleted by hand.
  */
 export function unreceipted(ctx: StackContext, target: StackTarget | undefined): string[] {

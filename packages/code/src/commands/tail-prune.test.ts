@@ -3,8 +3,8 @@
  * and what it hands back.
  *
  * The two things this file exists for are the two the wiring cannot check. The
- * WAIVER FOLLOWS THE TAIL — a waiver in a tree other than the tail's is a signed fact
- * the per-tree census never meets — and every OPTION REACHES THE EVENT, which is the
+ * WAIVER FOLLOWS THE TAIL (a waiver in a tree other than the tail's is a signed fact
+ * the per-tree census never meets) and every OPTION REACHES THE EVENT, which is the
  * defect class this workspace has paid for four times: an option plumbed to the end
  * with nothing feeding it passes every test of the code under the gap.
  */
@@ -49,8 +49,8 @@ function rootOf(repo: string, env: DiscoveryEnv, scope: Scope): string {
  * A second machine's tail, merged into the tree at `into` the way an offline copy is:
  * its files, and the public half of the key that signed them.
  *
- * The tail a waiver names is always somebody else's — the door refuses one naming the
- * tail it is written to — so this is the only fixture that can reach the happy path.
+ * The tail a waiver names is always somebody else's (the door refuses one naming the
+ * tail it is written to), so this is the only fixture that can reach the happy path.
  */
 function mergeAForeignTail(into: string, label: string): { tail: string; anchor: string } {
   const machine = join(sandbox, label);
@@ -97,7 +97,7 @@ describe('mnema tail prune', () => {
     expect(result.scope).toBe('public');
     expect(result.tail).toBe(foreign.tail);
     // The claim came off the disk: the founding, the task's two events, and the
-    // anchor that tail served — none of them supplied by this caller.
+    // anchor that tail served, none of them supplied by this caller.
     expect(result.eventCount).toBe(3);
     expect(result.anchor).toBe(foreign.anchor);
     // WHO AUTHORIZED IS NOT WHOSE TAIL IT WAS, and the case the verb exists for is
@@ -117,7 +117,7 @@ describe('mnema tail prune', () => {
   it('follows the tail into the PRIVATE tree rather than defaulting to the public one', () => {
     // The rule this adapter carries. A waiver is read by a per-tree census, so one
     // written to the public tree about a private tail is a signed fact nobody looking
-    // at that tree will ever meet — and the tail it names would be gone by then.
+    // at that tree will ever meet, and the tail it names would be gone by then.
     const { repo, env } = setup();
     const privateRoot = rootOf(repo, env, 'private');
     mkdirSync(join(privateRoot, 'tails'), { recursive: true });
@@ -132,7 +132,7 @@ describe('mnema tail prune', () => {
     if (!result.ok) return;
     expect(result.scope).toBe('private');
     expect(waiverOn(privateRoot).payload.tail).toBe(foreign.tail);
-    // And the public tree holds no waiver at all — asked by the reader that would
+    // And the public tree holds no waiver at all: asked by the reader that would
     // find one, rather than by counting files.
     expect(
       orderedEvents({ root: rootOf(repo, env, 'public') }, catalogUpcasters()).some(

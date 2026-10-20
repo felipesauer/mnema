@@ -1,5 +1,5 @@
 /**
- * `from-the-group.ts` over programs of this file's own — the shapes the product does not have.
+ * `from-the-group.ts` over programs of this file's own: the shapes the product does not have.
  *
  * The product's subcommands are run pair by pair in `tests/every-group-flag-is-read-or-refused.test.ts`,
  * and every one of their refusals declares its own reason, so the DEFAULT sentence is said by nothing
@@ -157,7 +157,7 @@ describe('fromTheGroup', () => {
 });
 
 describe('optionsTakenFromTheGroup', () => {
-  it('is what the act declares too and what it declares it takes — nothing of the program', () => {
+  it('is what the act declares too and what it declares it takes: nothing of the program', () => {
     const { root, group, act } = program();
     takesFromItsGroup(act, { takes: ['--mine'] });
     expect(optionsTakenFromTheGroup(act).map((option) => option.long)).toEqual([

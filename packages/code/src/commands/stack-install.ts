@@ -5,12 +5,12 @@
  * WHERE THE FILES GO IS READ OFF THE HOST TABLE (`host-names.ts`, `places`), never off a list of
  * this module's: a skill is copied byte for byte into every folder a host of the table documents
  * for skills, and an agent into every folder documented for agents in the format the stack's
- * `agents/<name>.md` already is — so compiling it is copying it. Folders two hosts share are
+ * `agents/<name>.md` already is, so compiling it is copying it. Folders two hosts share are
  * written once. A host with no folder for one kind is NAMED in the plan as receiving nothing of
  * that kind; nothing is pretended.
  *
  * WHAT IS NEVER DONE: run anything of the stack (the bytes are copied, nothing is opened, nothing
- * is made executable — every file is written without the execute bit, whatever it had, since the
+ * is made executable: every file is written without the execute bit, whatever it had, since the
  * digest does not cover the mode and the installer's mode is the only one that is known); turn a
  * hook on (the plan lists the hooks a stack declares, apart, and none is written at all: turning
  * one on is a separate act of a person); write over anything (a destination that exists, a link,
@@ -121,12 +121,12 @@ export interface StackPlan {
   readonly files: readonly PlannedFile[];
   /** The hosts that receive no skill, and no agent, of this stack. */
   readonly unserved: { readonly skills: readonly string[]; readonly agents: readonly string[] };
-  /** The hooks the stack declares — listed, never written, never on. */
+  /** The hooks the stack declares: listed, never written, never on. */
   readonly hooks: readonly StackHook[];
-  /** The SHA-256 of each declared hook's script, by hook name — what the receipt keeps. */
+  /** The SHA-256 of each declared hook's script, by hook name: what the receipt keeps. */
   readonly hookHashes: Readonly<Record<string, string>>;
   /**
-   * The tools each skill's `allowed-tools` asks a host to let it use without asking — not run at
+   * The tools each skill's `allowed-tools` asks a host to let it use without asking, not run at
    * installation, but a permission the stack brings, so the plan shows it.
    */
   readonly tools: readonly { readonly skill: string; readonly tools: string }[];
@@ -171,7 +171,7 @@ export interface Where {
   readonly base: string;
   readonly side: 'project' | 'user';
   readonly receipts: string;
-  /** Every receipt folder whose files land under the same base — a project's two trees. */
+  /** Every receipt folder whose files land under the same base: a project's two trees. */
   readonly neighbours: readonly string[];
   readonly trees?: ResolvedTrees;
   /** The `which` the adoption or the removal is written with: the agent's, where its key signs. */
@@ -229,8 +229,8 @@ function whichOf(writing: Writing, scope: StackScope): { readonly which?: string
 }
 
 /**
- * Whether the target can be written at all from here — a project scope with no project is the
- * one way it cannot — asked before a source is read, so that is what is said first.
+ * Whether the target can be written at all from here (a project scope with no project is the
+ * one way it cannot) asked before a source is read, so that is what is said first.
  */
 export function targetRefusal(ctx: StackContext, target: StackTarget): StackRefused | undefined {
   const where = whereOf(ctx, target);
@@ -265,7 +265,7 @@ const HEX64 = /^[0-9a-f]{64}$/;
 /**
  * The receipt kept as `<name>.json`, held to every form the record's door holds an adoption to:
  * `undefined` when there is none, a reason when the file is not a receipt OF THAT NAME. A receipt
- * of the public tree is committed, so it is read as a claim somebody may have written by hand —
+ * of the public tree is committed, so it is read as a claim somebody may have written by hand:
  * one whose `installedAs` is not its own file name would make a removal speak for another stack.
  */
 export function readReceipt(
@@ -404,7 +404,7 @@ const excludeLine = (file: PlannedFile): string =>
 /**
  * Works out an installation from a stack's files, writing nothing: validates the stack, holds its
  * version to the record's form and its text to the credential screen, maps every file to the
- * folders each host reads, and refuses every collision — a name already installed in the target
+ * folders each host reads, and refuses every collision: a name already installed in the target
  * (with `--as` offered), a destination that is anything at all, a file git would place on the
  * wrong side of a commit.
  */
@@ -787,7 +787,7 @@ function writePlan(plan: StackPlan, where: Where): void {
 }
 
 /**
- * Writes a plan, if its digest is the one the person expects — the digest the plan showed them,
+ * Writes a plan, if its digest is the one the person expects: the digest the plan showed them,
  * so what is written is what was shown even when the source was fetched again. For a tree, the
  * name and the destinations are checked again, the files written and the adoption appended in one
  * hold of the tree's lock; a refused adoption takes the files back.
@@ -874,7 +874,7 @@ export function standingAdoption(root: string, name: string): { digest: string }
   return standing;
 }
 
-/** Every folder a target may hold a stack's files in — what a receipt's path has to sit under. */
+/** Every folder a target may hold a stack's files in: what a receipt's path has to sit under. */
 export function placeFolders(side: 'project' | 'user'): string[] {
   return [...folders('skills', side).folders.keys(), ...folders('agents', side).folders.keys()];
 }
@@ -900,7 +900,7 @@ export function badReceiptPaths(where: Where, receipt: Receipt): string[] {
 
 /**
  * Removes an installed stack: deletes every file whose bytes are still the ones written, keeps and
- * names every other, removes the folders that end up empty, and — for a tree — appends one
+ * names every other, removes the folders that end up empty, and, for a tree, appends one
  * `stack.removed` first, in the same hold. A receipt is read as a claim, not as an order: a path
  * that is not under a host's folder, that climbs out, or that reaches through a link is refused
  * whole, so a receipt edited in a commit cannot point the removal at anything else.

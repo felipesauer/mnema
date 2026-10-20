@@ -1,10 +1,10 @@
 /**
- * The parser's no, said in the product's voice — one wording, for every verb there
+ * The parser's no, said in the product's voice: one wording, for every verb there
  * is and every verb there will be.
  *
  * The surface used to answer with TWO VOICES. Its own is a sentence about this
  * project ("No mnema project here. Run `mnema init` first."); commander's is
- * `error: missing required argument 'rationale'` — the internal name of a parameter,
+ * `error: missing required argument 'rationale'`: the internal name of a parameter,
  * lowercase, saying neither what the argument means nor what to type, and it is
  * exactly the one a person meets on their first command. Both exit non-zero and both
  * are a no, so a reader has no reason to be told them by two different products.
@@ -14,12 +14,12 @@
  * `option('--which <agent>', WHICH_HELP)`. The wording below is that description put
  * after a sentence naming what is missing, and under it the line to type, which is
  * the `usage()` commander composes for the same help. So the message cannot drift
- * from the help — there is one text and it is the declaration's — and a verb whose
+ * from the help (there is one text and it is the declaration's) and a verb whose
  * help improves says the better thing here on the same day.
  *
  * IT IS INSTALLED BY WALKING THE COMMAND TREE, once, after every verb is registered.
- * commander reports a usage error from the command that FAILED — that is the only
- * object that knows which argument was missing — and `configureOutput` is per-command
+ * commander reports a usage error from the command that FAILED (that is the only
+ * object that knows which argument was missing) and `configureOutput` is per-command
  * too, so a translation wired verb by verb would be FORTY-THREE sites today and the
  * forty-fourth command added tomorrow would come out in the other voice. The walk is
  * one site, and the verb added tomorrow is covered by construction.
@@ -33,12 +33,12 @@
  * passing while quietly matching nothing after an upgrade, which is the failure this
  * product refuses by principle. What is read here is {@link CommanderError.code} and
  * the command's own declarations. The codes are STRINGS and not a union, so the
- * compiler cannot check the table is total — `one-voice-for-a-no.test.ts` enumerates
+ * compiler cannot check the table is total: `one-voice-for-a-no.test.ts` enumerates
  * what is worded, and the code nobody worded still comes out through the product's
  * funnel, in the shape the surface already uses for a refusal it has no wording for.
  *
  * AND `--help` AND `--version` ARE NOT TOUCHED. They arrive here as a `CommanderError`
- * like everything else — commander throws to leave, and the entry catches it — but
+ * like everything else (commander throws to leave, and the entry catches it), but
  * they are the caller getting exactly what they asked for. Rewriting or painting them
  * would turn a success into bad news, so the three codes that mean "already answered"
  * are named and skipped. The discriminant is the code and not the exit status: a
@@ -65,7 +65,7 @@ export const ALREADY_ANSWERED: readonly string[] = [
 
 /** A usage error, and everything there is to know about it that is not English. */
 export interface Misuse {
-  /** The command that refused — the only thing that knows what it declared. */
+  /** The command that refused: the only thing that knows what it declared. */
   readonly command: Command;
   /** What commander threw: its code, and the sentence this file does not read. */
   readonly error: CommanderError;
@@ -81,7 +81,7 @@ type Wording = (misuse: Misuse) => Line | undefined;
  *
  * Keyed by commander's code, which is the one part of a `CommanderError` that is an
  * identifier rather than prose. A wording returns `undefined` when it cannot derive
- * what it needs from the declarations — an honest failure that falls through to the
+ * what it needs from the declarations: an honest failure that falls through to the
  * shape below rather than guessing at which flag or which argument the caller meant.
  */
 const SAID: Readonly<Record<string, Wording>> = {
@@ -100,20 +100,20 @@ export const WORDED: readonly string[] = Object.keys(SAID).sort();
 /**
  * What the surface says about one usage error: the sentence, then the line to type.
  *
- * The second line is the `usage()` the help prints, indented — the shape `git` and
+ * The second line is the `usage()` the help prints, indented: the shape `git` and
  * `gh` answer a misuse with, and the half a reader acts on. It is composed HERE and
  * not by each wording, so the form cannot differ between two codes.
  *
  * A code with no wording falls back to the shape the surface already uses for a
  * refusal nobody worded: the code, then the message it came with. That is the
- * product's own honest default (see `report.ts`) — it never invents a sentence for a
+ * product's own honest default (see `report.ts`): it never invents a sentence for a
  * no it does not understand, and it never lets one out unframed either.
  */
 export function misuseReport(misuse: Misuse): readonly Line[] {
   const said = SAID[misuse.error.code]?.(misuse);
   if (said === undefined) return [refusalLine(misuse.error.code, misuse.error.message)];
   // A word a group has no command for, where the group creates by a subcommand, is most often
-  // the form that group used to take — a title right after the group's name — so the line to
+  // the form that group used to take, a title right after the group's name, so the line to
   // type is the creating verb's, not the group's.
   const creating = isAWordNoCommandTakes(misuse) ? CREATES_BY.get(misuse.command) : undefined;
   return [said, fact(usageOf(creating ?? misuse.command))];
@@ -125,7 +125,7 @@ export function misuseReport(misuse: Misuse): readonly Line[] {
  *
  * WHY IT IS DECLARED. Those three groups used to create with a title typed right after their
  * name (`mnema task "Fix the login"`), and a group that takes a free positional cannot refuse a
- * mistyped subcommand — `mnema task moveZZZ` created a task called `moveZZZ`. Creating is a
+ * mistyped subcommand: `mnema task moveZZZ` created a task called `moveZZZ`. Creating is a
  * subcommand now and the group takes no positional, so a title typed the old way is a word the
  * group has no command for; this is what lets that refusal name the way that works.
  */
@@ -147,7 +147,7 @@ function isAWordNoCommandTakes({ error, command }: Misuse): boolean {
 /**
  * A group that does nothing with a word of its own: it has subcommands and declares no
  * positional. Whether it also declares an action (`witness`, `switch` run on their own) is how
- * commander tells the two apart — `excessArguments` for one, `unknownCommand` for the other — and
+ * commander tells the two apart (`excessArguments` for one, `unknownCommand` for the other) and
  * not a difference the person typing can see, so both are said one way.
  */
 function isAGroupThatTakesNoWord(command: Command): boolean {
@@ -163,8 +163,8 @@ function isAGroupThatTakesNoWord(command: Command): boolean {
  * exit callback is where the CODE finally exists. Swallowing the first and wording
  * the second is what replaces the voice instead of adding a second one.
  *
- * The callback rethrows, so the entry still turns the error into an honest exit code
- * — nothing here decides the exit, and `--help` leaves by the same door it always
+ * The callback rethrows, so the entry still turns the error into an honest exit code;
+ * nothing here decides the exit, and `--help` leaves by the same door it always
  * did.
  */
 export function speakUsageErrors(
@@ -200,8 +200,8 @@ export function everyCommandOf(program: Command): readonly Command[] {
  * The words a caller types to reach a command, without the program's own name:
  * `['task', 'move']`, and `[]` for the program itself.
  *
- * IT LIVES BESIDE {@link everyCommandOf} BECAUSE THE TWO ARE ONE QUESTION — which pages
- * this surface has — and the answer was being read in five places, each with its own
+ * IT LIVES BESIDE {@link everyCommandOf} BECAUSE THE TWO ARE ONE QUESTION (which pages
+ * this surface has) and the answer was being read in five places, each with its own
  * climb up `parent`. Two of them were production (this module's own {@link spoken}, the
  * completion tree's) and the drift they could have had is not hypothetical: one of the
  * two includes the program's name in what it returns and the other does not, which is
@@ -221,14 +221,14 @@ function chainTo(command: Command): readonly Command[] {
 }
 
 // ---------------------------------------------------------------------------
-// The wordings — each one reads a declaration, and none reads a message
+// The wordings: each one reads a declaration, and none reads a message
 // ---------------------------------------------------------------------------
 
 /**
  * A required argument was not given: which one, and what the declaration says it is.
  *
- * The missing one is found the way commander finds it — the first required argument
- * with nothing in its position — rather than by reading the name out of the sentence
+ * The missing one is found the way commander finds it, the first required argument
+ * with nothing in its position, rather than by reading the name out of the sentence
  * it wrote.
  */
 function missingArgument({ command }: Misuse): Line | undefined {
@@ -252,7 +252,7 @@ function missingOption({ command }: Misuse): Line | undefined {
  * A flag that takes a value was given none.
  *
  * commander raises this only when NOTHING followed the flag, so the flag is the last
- * thing on the line — which is what makes it derivable without reading the sentence.
+ * thing on the line, which is what makes it derivable without reading the sentence.
  */
 function optionNeedsValue({ command, typed }: Misuse): Line | undefined {
   const last = typed.at(-1);
@@ -283,7 +283,7 @@ function unknownCommand({ command }: Misuse): Line | undefined {
 }
 
 /**
- * The one sentence for a word a group has no command for — whichever of commander's two codes
+ * The one sentence for a word a group has no command for: whichever of commander's two codes
  * carried it. When the group creates by a subcommand, it says how: the word was most likely a
  * title, typed where the group used to take one.
  */
@@ -300,7 +300,7 @@ function noSuchCommand(command: Command, asked: string): Line {
 }
 
 /**
- * More arguments than the command declares. The extra ones are the news — except on a group
+ * More arguments than the command declares. The extra ones are the news, except on a group
  * that takes no word of its own, where the first is a command it does not have, and is said the
  * way every other group says it.
  */
@@ -317,7 +317,7 @@ function excessArguments({ command }: Misuse): Line | undefined {
  * One code, two shapes, and the second only became reachable when a verb declared an
  * argument with `.choices()` (`mnema completion <shell>`). Until then the fall-through
  * was invisible, and what came out of it was commander's own sentence with `error:` still
- * on it — the second voice this file exists to remove, on a brand new verb's only
+ * on it: the second voice this file exists to remove, on a brand new verb's only
  * refusal.
  */
 function invalidValue(misuse: Misuse): Line | undefined {
@@ -325,7 +325,7 @@ function invalidValue(misuse: Misuse): Line | undefined {
 }
 
 /**
- * A value an OPTION's parser refused — and the parser's own reason for refusing it.
+ * A value an OPTION's parser refused, and the parser's own reason for refusing it.
  *
  * This is the one shape whose message the PRODUCT wrote: `--which " "` is refused by
  * `declaredAgent`, which throws a paragraph explaining that an unset variable would
@@ -337,7 +337,7 @@ function invalidValue(misuse: Misuse): Line | undefined {
  * option's parser is a pure function hanging off the option, and calling it again with
  * the value the caller typed produces the same refusal it produced during the parse.
  * That is also what identifies WHICH option failed when more than one on the line has
- * a parser — the one that throws is the one that threw.
+ * a parser: the one that throws is the one that threw.
  */
 function refusedOptionValue({ command, typed }: Misuse): Line | undefined {
   for (const option of unsetParsers(command)) {
@@ -356,9 +356,9 @@ function refusedOptionValue({ command, typed }: Misuse): Line | undefined {
 /**
  * A value a positional ARGUMENT's parser refused, and what the help says that argument is.
  *
- * The failing argument is identified the way the option above is — the parser is a pure
+ * The failing argument is identified the way the option above is (the parser is a pure
  * function on the declaration, so calling it again with what the caller typed reproduces
- * the refusal — but the DETAIL is the declaration's text rather than the thrown message,
+ * the refusal), but the DETAIL is the declaration's text rather than the thrown message,
  * and that is the one difference. An option's parser here is the product's own and throws
  * a paragraph worth keeping; a `.choices()` parser is commander's and throws commander's
  * English. What the caller has already read is `--help`, which prints the description with
@@ -388,7 +388,7 @@ function refusedArgumentValue({ command }: Misuse): Line | undefined {
  *
  * The description is the detail after the colon because that is where the evidence
  * for a statement goes on this surface, and it is omitted where a declaration carries
- * none — an empty half after a colon would be the surface saying it knows something
+ * none: an empty half after a colon would be the surface saying it knows something
  * it does not.
  */
 function needs(command: Command, what: string, description: string): Line {
@@ -400,8 +400,8 @@ function needs(command: Command, what: string, description: string): Line {
  * How the command line spells an argument: `<id>` when it is required, `[id]` when it is
  * not.
  *
- * One site, because two wordings say it — the argument that was missing and the value one
- * refused — and commander's own formatter for it is not public. It is the spelling of the
+ * One site, because two wordings say it (the argument that was missing and the value one
+ * refused) and commander's own formatter for it is not public. It is the spelling of the
  * `usage()` printed under both of them, so a reader sees the same token twice.
  */
 function spelledArgument(argument: Argument): string {
@@ -419,9 +419,9 @@ function spoken(command: Command): string {
  * The line to type, exactly as this command's own `--help` prints it.
  *
  * EXPORTED BECAUSE A GUARD READS IT TO TELL THE TWO VOICES APART, and it has to be this
- * function rather than a copy. Both of the parser's answers carry this line — the help
+ * function rather than a copy. Both of the parser's answers carry this line (the help
  * heads it with commander's `Usage: `, and the second line of a misuse above is it,
- * indented — and a verb's own refusal never carries it, so it is what says the PARSER
+ * indented) and a verb's own refusal never carries it, so it is what says the PARSER
  * answered a line and not the path it names. A guard that retyped the text would go on
  * passing while matching nothing the day the shape changed, which is what happened:
  * `the-refused-run-is-refused-everywhere.test.ts` looked for `Usage: mnema` and therefore
@@ -454,7 +454,7 @@ function undeclaredFlag(command: Command, typed: readonly string[]): string | un
 }
 
 /**
- * The options in scope that HAVE a parser and never got a value from the line — the
+ * The options in scope that HAVE a parser and never got a value from the line: the
  * candidates for a value the parser threw on.
  */
 function unsetParsers(command: Command): readonly Option[] {
@@ -490,7 +490,7 @@ function flagOf(token: string): string {
  * What an option and an argument have in common here: a parser that may refuse.
  *
  * Structural rather than a union of the two classes, because the only thing read is the
- * parser — and a rule written over what is actually used cannot drift from what it needs.
+ * parser, and a rule written over what is actually used cannot drift from what it needs.
  */
 interface Parses {
   readonly parseArg?: <T>(value: string, previous: T) => T;
@@ -513,7 +513,7 @@ function whyRefused(declared: Parses, value: string): string | undefined {
  *
  * Not decoration: it is JSON and not a pair of quotes because a token arrives from
  * a shell and may hold anything. A newline in it would end the refusal and start a
- * line of the reader's own, and an escape byte would style the rest of the report —
+ * line of the reader's own, and an escape byte would style the rest of the report:
  * both of which a no is exactly the wrong line to be exposed to. JSON escapes every
  * control byte, so the value is shown as written and stays on one line.
  */

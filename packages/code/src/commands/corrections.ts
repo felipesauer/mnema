@@ -1,12 +1,12 @@
 /**
- * `mnema corrections` — what a person corrected in the session a `Stop` hook fires in, recorded as
+ * `mnema corrections`: what a person corrected in the session a `Stop` hook fires in, recorded as
  * decisions awaiting a judgement.
  *
  * WHAT IT IS FOR. The moments a person says "no, use Y" are decisions made by the one with the
  * authority to make them, and they are the ones an agent least often records
  * (`user-corrections.ts` says how they are found, and what that does not claim). This reads the
  * transcript the host names, finds the openings that correct, and records each as a `proposed`
- * decision — the state that exists for a person to accept or reject — citing the transcript line it
+ * decision, the state that exists for a person to accept or reject, citing the transcript line it
  * came from. No model is called.
  *
  * IT IS OFF UNTIL SOMEBODY SWITCHES IT ON (`mnema switch on user-corrections`), because it is the
@@ -33,7 +33,7 @@ import { type Correction, correctionsIn } from '../user-corrections.js';
 import { whatThePersonSaid } from '../what-the-session-did.js';
 import { runDecision } from './decision.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface CorrectionsContext {
   /** Where the host started the hook: the project is resolved from it. */
   readonly cwd: string;
@@ -44,7 +44,7 @@ export interface CorrectionsContext {
 /** The reply for the host, and what the run has to say beside it. */
 export interface CorrectionsDone {
   readonly ok: true;
-  /** The JSON the host reads on stdout — `{}` unless something was recorded. */
+  /** The JSON the host reads on stdout: `{}` unless something was recorded. */
   readonly reply: object;
   /** Lines for the second stream: what was found and not recorded, and why. */
   readonly notes: readonly string[];

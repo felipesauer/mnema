@@ -3,7 +3,7 @@
  * it agrees with the enumeration.
  *
  * The two things this file exists for are the two a reader of the output cannot
- * check. THE SET IS `prune`'S — a tail listed here and refused there would be an
+ * check. THE SET IS `prune`'S: a tail listed here and refused there would be an
  * offer the record turns down, and a tail hidden here and accepted there a cut
  * nobody could have decided on. And EVERY TREE OF THE TOPOLOGY IS IN IT: a project
  * whose committed and private trees both hold a tail shows both, each saying its
@@ -56,7 +56,7 @@ function rootOf(repo: string, env: DiscoveryEnv, scope: Scope): string {
 
 /**
  * A second machine's tail, merged into the tree at `into` the way an offline copy
- * is — the fixture `tail-prune.test.ts` uses, for the same reason: the tail a waiver
+ * is, the fixture `tail-prune.test.ts` uses, for the same reason: the tail a waiver
  * names is always somebody else's, so it is the only one a happy path can reach.
  */
 function mergeAForeignTail(into: string, label: string): { tail: string; anchor: string } {
@@ -85,7 +85,7 @@ describe('mnema tail list', () => {
     // The case a simple fixture never reaches: this machine writes to all three
     // trees, so ONE tail id exists three times over with a different history in
     // each. A listing that read the committed tree alone would look perfectly
-    // healthy here — and would hide two of the three tails a cut can be authorized
+    // healthy here, and would hide two of the three tails a cut can be authorized
     // for.
     const { repo, env } = setup();
     const ctx = { cwd: repo, env };
@@ -95,13 +95,13 @@ describe('mnema tail list', () => {
     const listing = runTailList(ctx);
     expect(listing.tails.map((held) => held.scope)).toEqual(['public', 'private', 'global']);
     // ONE PERSON, THREE TAILS: the installation suffix is minted per chain, so one
-    // person writing to three trees leaves three distinct tail ids — all of them
+    // person writing to three trees leaves three distinct tail ids, all of them
     // serving the same anchor. Each is its own thing to authorize a cut of, and a
     // reading that showed one would be hiding two whole histories.
     expect(new Set(listing.tails.map((held) => held.tail)).size).toBe(3);
     expect(new Set(listing.tails.map((held) => held.standing.who)).size).toBe(1);
     // And each row says ITS OWN standing, checked against what that tree holds read
-    // by a different path — the replay every projection is built on. One tail per
+    // by a different path: the replay every projection is built on. One tail per
     // tree here, so the tail's count is the tree's.
     for (const held of listing.tails) {
       const events = orderedEvents({ root: rootOf(repo, env, held.scope) }, catalogUpcasters());
@@ -122,7 +122,7 @@ describe('mnema tail list', () => {
     const listing = runTailList(ctx);
     expect(listing.tails.length).toBe(3);
     for (const held of listing.tails) {
-      // Locatable, and located in the tree the FIRST row for that id names — which
+      // Locatable, and located in the tree the FIRST row for that id names, which
       // is the tree `prune` opens a writer on.
       const first = listing.tails.find(
         (row) => row.tail === held.tail,
@@ -132,8 +132,8 @@ describe('mnema tail list', () => {
     expect(locateTailScope(trees, foreign.tail, upcasters)).toBe('global');
 
     // The other direction, over the two shapes that are not in the list: a tail from
-    // another world, and a tail DIRECTORY with nothing in it — what older writers left
-    // when they opened, and records committed then still carry — which neither reading
+    // another world, and a tail DIRECTORY with nothing in it (what older writers left
+    // when they opened, and records committed then still carry), which neither reading
     // counts as held.
     const absent = `${'a'.repeat(64)}-nowhere`;
     expect(listing.tails.some((held) => held.tail === absent)).toBe(false);
@@ -145,7 +145,7 @@ describe('mnema tail list', () => {
     expect(locateTailScope(trees, hollow, upcasters)).toBeUndefined();
   });
 
-  it('says which tails a waiver already authorizes the cut of — and which it does not', () => {
+  it('says which tails a waiver already authorizes the cut of, and which it does not', () => {
     // Two assertions and they are the point: an implementation that answered
     // `authorized` for every tail would pass the first one alone, and somebody
     // reading the list would authorize a cut that is already on the record twice.
@@ -165,7 +165,7 @@ describe('mnema tail list', () => {
     const after = runTailList(ctx);
     const byTail = new Map(after.tails.map((held) => [held.tail, held]));
     expect(byTail.get(foreign.tail)?.authorized).toBe(true);
-    // This machine's own tail is in the same tree and carries the waiver — carrying
+    // This machine's own tail is in the same tree and carries the waiver: carrying
     // one is not being named by one.
     const own = [...byTail.keys()].find((tail) => tail !== foreign.tail) as string;
     expect(byTail.get(own)?.authorized).toBe(false);
@@ -174,7 +174,7 @@ describe('mnema tail list', () => {
   it('counts a waiver only in the tree that holds the tail', () => {
     // The rule `prune` follows when it picks a tree, asked from the other end. A
     // waiver about a tail lives with that tail, so one found in another tree is a
-    // signed fact the census that reads it never meets — and reporting it here would
+    // signed fact the census that reads it never meets, and reporting it here would
     // tell a reader a cut is accounted for when the record it lands in says nothing.
     const { repo, env } = setup();
     const ctx = { cwd: repo, env };

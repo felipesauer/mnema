@@ -1,5 +1,5 @@
 /**
- * `mnema key github <name>` — record that this machine's identity is that GitHub account.
+ * `mnema key github <name>`: record that this machine's identity is that GitHub account.
  *
  * It writes one signed claim (`account.linked`) and asks nothing of github.com: whether the
  * account agrees is the question `mnema verify --against-github` asks, at the time it is asked,
@@ -20,7 +20,7 @@ import {
 import { linkAccount, openTreeForWriting } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
-/** What the link needs — injected so it is testable. */
+/** What the link needs: injected so it is testable. */
 export interface KeyGithubContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;

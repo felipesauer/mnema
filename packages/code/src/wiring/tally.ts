@@ -2,7 +2,7 @@
  * The `mnema tally` wiring: what it declares, and what it prints.
  *
  * `mnema tally` reads the payload a host hands a `Stop` or a `PreCompact` hook, on stdin,
- * and prints the reply that host reads, on stdout — one line saying how many files the session's
+ * and prints the reply that host reads, on stdout: one line saying how many files the session's
  * own tool calls wrote and how many decisions were recorded since it opened, and `{}` when there is
  * nothing to count. The command is `commands/tally.ts`; the plugin's handler runs it.
  *

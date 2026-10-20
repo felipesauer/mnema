@@ -1,22 +1,22 @@
 /**
- * `mnema decision import <source>` — propose the decisions this repository already
+ * `mnema decision import <source>`: propose the decisions this repository already
  * wrote down.
  *
  * THE GAP IT CLOSES. Reading the record is discoverable and writing to it is not:
  * an agent finds the read tools on the server and uses them unasked, while a write
  * happens only when somebody remembers to write. So a real project's record starts
- * empty and stays empty — while the same project's decisions are already written,
+ * empty and stays empty, while the same project's decisions are already written,
  * in markdown, committed, and being read. This verb reads THOSE and proposes them.
  * It is worth saying which measurement says the knowledge is already there: the
  * `prosa` arm of the P1 protocol is *"the same decision, verbatim, in a
  * `DECISIONS.md` committed at the repository root"*, and in the second round it
  * scored 62.5% against the floor's 25%. Decisions in markdown in a repository are
- * not a hypothesis — they are the practice, and it works. What was missing is them
+ * not a hypothesis: they are the practice, and it works. What was missing is them
  * entering the record with an id, a state and a proof, without anyone retyping.
  *
  * WHAT COMES OUT IS A PROPOSAL, AND ONLY A PROPOSAL. Every decision this product
- * records is born `proposed` — there is no path in it that creates an accepted one
- * — and this verb neither adds one nor wants one. A decision the file itself calls
+ * records is born `proposed` (there is no path in it that creates an accepted
+ * one) and this verb neither adds one nor wants one. A decision the file itself calls
  * `Accepted` is proposed all the same: the person who accepts it here does so with
  * a note, through the move that already exists, and their acceptance is a fact of
  * THIS record rather than an assertion inherited from a file. The file's own status
@@ -29,7 +29,7 @@
  * than not having this verb at all. The guard is one branch, and
  * `the-plan-writes-nothing.test.ts` is what holds it.
  *
- * IT CALLS NO MODEL. The whole read is deterministic — headings and labels — and
+ * IT CALLS NO MODEL. The whole read is deterministic, headings and labels, and
  * the product it belongs to has never made a network call. Extraction by model is
  * this project's second stated refusal (a fact summarized by a model entering as a
  * recorded entry), and even stopping at `proposed` it would be the first model call
@@ -37,8 +37,8 @@
  * one.
  *
  * THE PROVENANCE IS A FACT OF THE RECORD, not a sentence inside the rationale. Each
- * proposal is linked to the file it came from, under {@link DERIVED_FROM_RELATION} —
- * a label the catalog already recommended — so this needed no new field, no version
+ * proposal is linked to the file it came from, under {@link DERIVED_FROM_RELATION},
+ * a label the catalog already recommended, so this needed no new field, no version
  * and no upcaster, and none of the published canonical vectors move. That link is
  * ALSO what makes a second run idempotent: a file already on the far end of a
  * `derived-from` edge is a file already imported, whatever its title says now.
@@ -92,7 +92,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the import needs — injected so it is testable. */
+/** What the import needs: injected so it is testable. */
 export interface DecisionImportContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -100,7 +100,7 @@ export interface DecisionImportContext extends Pick<AgentWrites, 'agentKey' | 's
   readonly env: DiscoveryEnv;
 }
 
-/** One decision that would be — or was — proposed, and where it came from. */
+/** One decision that would be (or was) proposed, and where it came from. */
 export interface ImportedProposal {
   /** The file it was read from, relative to the project root: the provenance. */
   readonly path: string;
@@ -116,9 +116,9 @@ export interface ImportedProposal {
   readonly optionsUnclear: boolean;
   /** The status the FILE states, verbatim; absent when it states none. */
   readonly status?: string;
-  /** The minted id — present only once it was actually written. */
+  /** The minted id: present only once it was actually written. */
   readonly id?: string;
-  /** The frozen `ADR-<n>` label — present only once it was actually written. */
+  /** The frozen `ADR-<n>` label: present only once it was actually written. */
   readonly adr?: string;
   /**
    * What the content door replaced on the way in. The triage refuses a file that
@@ -139,7 +139,7 @@ export interface AlreadyImported {
 /** The import ran. */
 export interface ImportDone {
   readonly ok: true;
-  /** Whether anything was written. False on a plan — which is the default. */
+  /** Whether anything was written. False on a plan, which is the default. */
   readonly wrote: boolean;
   /** The directory that was read, relative to the project root. */
   readonly from: string;
@@ -154,7 +154,7 @@ export interface ImportDone {
   /** A gate refusal that stopped the write partway; absent when nothing stopped it. */
   readonly stopped?: { readonly path: string; readonly code: string; readonly message: string };
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -164,19 +164,19 @@ export interface ImportDone {
 
 /** The import was refused before it read anything. */
 export type ImportRefused =
-  /** There is no project here — decisions are project work and need one. */
+  /** There is no project here: decisions are project work and need one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /**
    * The directory is not inside the project. The provenance a proposal records has
    * to be citable by every clone, and an absolute path on one machine is citable by
-   * none of them — so a directory outside the project is refused rather than
+   * none of them, so a directory outside the project is refused rather than
    * recorded as a path nobody else can open.
    */
   | { readonly ok: false; readonly reason: 'OUTSIDE_PROJECT'; readonly from: string }
   /**
    * The proposals would be born in the machine-global tree. Each one records the file it came
    * from as a path inside THIS project, and the global tree is read in every project, where
-   * that path names another project's file — so the import writes only into the trees of the
+   * that path names another project's file, so the import writes only into the trees of the
    * project it read ({@link IMPORT_SCOPES} carries what was measured).
    */
   | { readonly ok: false; readonly reason: 'GLOBAL_TREE' };
@@ -245,7 +245,7 @@ function plan(
  * relative to the project root.
  *
  * The scanner works in absolute paths because it walks a directory, and the plan
- * relativizes what it read — so this half was reporting `/home/…/repo/docs/adr/x.md`
+ * relativizes what it read, so this half was reporting `/home/…/repo/docs/adr/x.md`
  * beside proposals reporting `docs/adr/x.md`. Two spellings of one file in one report
  * is bad enough on its own; the half that made it a defect is that the absolute one is
  * THIS MACHINE'S, and every other path this verb prints is one a reader of a pasted
@@ -276,7 +276,7 @@ type Imported =
   | { readonly stopped: NonNullable<ImportDone['stopped']> };
 
 /**
- * Reads a directory of decision documents and proposes what it finds — printing the
+ * Reads a directory of decision documents and proposes what it finds: printing the
  * plan, or, with `write`, recording it.
  *
  * Every proposal is born `proposed`, because that is the only state this product's
@@ -285,7 +285,7 @@ type Imported =
  *
  * On `write`, the whole directory goes through ONE open writer and ONE checkpoint at
  * the end. A gate refusal stops the run at the file that earned it, and what was
- * already appended stays appended — an append-only record cannot take it back, and
+ * already appended stays appended: an append-only record cannot take it back, and
  * pretending otherwise by reporting nothing would be worse than saying where it
  * stopped.
  */
@@ -349,9 +349,9 @@ export function runDecisionImport(
     };
   }
 
-  // NOTHING NEW TO RECORD OPENS NO WRITER. Every file already derived, or refused by name:
+  // NOTHING NEW TO RECORD OPENS NO WRITER. Every file already derived, or refused by name;
   // the plan is complete and nothing will be appended, and opening one anyway touches the
-  // tree — for a key that never wrote here, an installation id; and its public half and an
+  // tree: for a key that never wrote here, an installation id; and its public half and an
   // empty tail too, which a run that recorded 0 decisions used to leave behind (measured on
   // the binary), until a tail came to be born at its writer's first append.
   if (fresh.length === 0) {
@@ -431,7 +431,7 @@ export function runDecisionImport(
     // read the record before either wrote, both found every file new, and the record came out
     // holding each decision twice. Whether a file is already derived is judged again under the
     // lock when anything landed since the plan was read ({@link onTheRecordAsItStands}), and
-    // the decision and the edge that names its file are appended in that same hold — so the
+    // the decision and the edge that names its file are appended in that same hold, so the
     // second import finds the first one's edge, and reports the file as already there.
     const outcome = onTheRecordAsItStands(context, derivedNow, (byTarget): Judged<Imported> => {
       const decision = byTarget.get(document.path);

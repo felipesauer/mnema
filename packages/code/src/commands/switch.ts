@@ -1,9 +1,9 @@
 /**
- * `mnema switch` — turn off, or back on, one of the places this product puts the record
+ * `mnema switch`: turn off, or back on, one of the places this product puts the record
  * in front of a model without being asked.
  *
  * WHAT IT IS FOR. Every charge mnema makes is switchable, and the switching is RECORDED.
- * Switching off is legitimate; switching off in silence is not — because a reader of the
+ * Switching off is legitimate; switching off in silence is not, because a reader of the
  * record would have no way to tell "no rule addressed that file" from "somebody had
  * turned the push off that week", and the whole worth of the record is that it says what
  * governed the work. So the switch is a signed, attributed, dated fact of the chain, and
@@ -14,7 +14,7 @@
  * this surface pushes (`record-framing.ts`) and never written out again here: what makes
  * a channel switchable is that its text arrives WITHOUT anybody asking. The `skills`
  * answer is a reply to a caller that asked for a pattern by id, and an exported skill is
- * a file somebody asked to have written — switching either off would break a tool rather
+ * a file somebody asked to have written: switching either off would break a tool rather
  * than stop a charge, and both say so in a table of their own.
  *
  * THE UNKNOWN CHANNEL IS THIS SURFACE'S REFUSAL and not commander's, which is the
@@ -25,7 +25,7 @@
  *
  * IT IS THE CLI'S ALONE, and that is the sharpest thing about it. The MCP server serves
  * no tool for switching a channel, so an agent cannot switch off what governs its own
- * work through the door built for agents. That is not a claim that it CANNOT be done —
+ * work through the door built for agents. That is not a claim that it CANNOT be done:
  * anyone who can write to the record can append any fact, and a switch appended some
  * other way is a signed fact pointing at whoever appended it. It is a claim about which
  * doors this product opens, and it is the same one `tail prune` makes for the same shape
@@ -63,7 +63,7 @@ import {
   whichOfTheWrite,
 } from './write-as-the-agent.js';
 
-/** What the switch commands need — injected so they are testable. */
+/** What the switch commands need: injected so they are testable. */
 export interface SwitchContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -82,7 +82,7 @@ export interface SwitchContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
 export interface SwitchRow {
   /** Where the channel stands, folded across the trees that were read. */
   readonly state: ChannelState;
-  /** What stops arriving when it is off — the declaring table's own sentence. */
+  /** What stops arriving when it is off: the declaring table's own sentence. */
   readonly carries: string;
 }
 
@@ -91,20 +91,20 @@ export interface SwitchListing {
   readonly ok: true;
   /** One row per switchable channel, in the order the product declares them. */
   readonly rows: readonly SwitchRow[];
-  /** The trees that were read — so an answer of all-on says where it looked. */
+  /** The trees that were read, so an answer of all-on says where it looked. */
   readonly trees: readonly Scope[];
   /**
    * How the identities of those trees are written on a line.
    *
    * The switch that turned a channel off is attributed to an ANCHOR, which is `mnid:` and 64
-   * hex — a width at which nobody reads it — so it is printed in the short form the record
+   * hex, a width at which nobody reads it, so it is printed in the short form the record
    * knows, resolved against every identity the trees hold rather than against the one or two
    * this listing prints. That is the surface's own rule (`anchors.ts`): a short form is only
    * honest where the same value can be typed back.
    */
   readonly anchors: AnchorForms;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -117,7 +117,7 @@ export interface SwitchListing {
  *
  * It refuses nothing. Outside a project there is still a global tree, a switch can be
  * recorded in it, and a reader asking where their switches stand is asking a legitimate
- * question about whatever record they have — the same posture `search` takes. What the
+ * question about whatever record they have: the same posture `search` takes. What the
  * answer carries instead is WHICH trees it read, so "everything is on" cannot be
  * mistaken for "there was nothing here to read".
  */
@@ -128,8 +128,8 @@ export function runSwitchList(ctx: SwitchContext): SwitchListing {
     return {
       ok: true,
       rows: SWITCHABLE_CHANNELS.map((channel, at) => ({
-        // The two lists are the same list read twice — `channelStates` answers in the
-        // order it was asked — so the index is the pairing and no name is matched.
+        // The two lists are the same list read twice (`channelStates` answers in the
+        // order it was asked), so the index is the pairing and no name is matched.
         state: states[at] as ChannelState,
         carries: WHAT_STOPS[channel],
       })),
@@ -157,10 +157,10 @@ export interface SwitchRecorded extends Replacement, Landed {
    * rather than composed, so what is reported is what the next push will do.
    */
   readonly effective: ChannelState;
-  /** How the identity in {@link effective} is written on a line — see the listing's own. */
+  /** How the identity in {@link effective} is written on a line: see the listing's own. */
   readonly anchors: AnchorForms;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -174,7 +174,7 @@ export interface SwitchRecorded extends Replacement, Landed {
  * that open mints its installation id, a local file the tree's `.gitignore` keeps out.)
  */
 export type SwitchRefused =
-  /** There is no project here — a project-scoped switch needs one. */
+  /** There is no project here: a project-scoped switch needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** No channel of this product answers to that name. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_CHANNEL'; readonly channel: string }
@@ -194,7 +194,7 @@ export type SwitchRefused =
  * not a fact the record should carry, and refusing it after opening a writer would leave
  * the refusal describing a tree the caller never named.
  *
- * The scope rule is every birth's: an explicit `scope` wins, else the kind decides — and
+ * The scope rule is every birth's: an explicit `scope` wins, else the kind decides, and
  * for this kind the kind says PUBLIC, so the ordinary switch travels with the repository
  * and the team reads it. A project scope needs a project; `--scope global` works
  * anywhere, and the guard is on the RESOLVED scope rather than on the flag.

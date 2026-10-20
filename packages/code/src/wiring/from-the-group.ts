@@ -1,5 +1,5 @@
 /**
- * Which of its group's flags a subcommand READS — declared once, beside the subcommand, and asked
+ * Which of its group's flags a subcommand READS, declared once, beside the subcommand, and asked
  * by the three places that have to agree about it: the action, for the values; the refusal, for
  * every other flag the line gave the group; and the completion, for what to offer.
  *
@@ -10,8 +10,8 @@
  * runs is `decision move`, not the group's own action, which is the one that reads it. Every flag of
  * a group that its subcommand did not read was accepted with exit 0 and dropped without a word:
  * `--alternatives` on the three subcommands of `decision`, `--body` on `skill move`, `--json` on
- * both `witness` acts. Two had a check of their own for part of it — the moves for `--scope`, `skill
- * export` for its group's three flags — each a copy of one rule, and the rest had none.
+ * both `witness` acts. Two had a check of their own for part of it (the moves for `--scope`, `skill
+ * export` for its group's three flags) each a copy of one rule, and the rest had none.
  *
  * A FLAG THE SUBCOMMAND DECLARES TOO LANDS ON THE GROUP AS WELL, and the subcommand's own copy is
  * never filled. The two `witness` acts read their own `--global`, and so never saw one: outside a
@@ -35,7 +35,7 @@ import { type Reporter, reportUsage } from './report.js';
 /** What one subcommand declares about its group's flags. */
 export interface FromItsGroup {
   /**
-   * The group's flags it reads besides the ones it declares itself, by long spelling — the moves'
+   * The group's flags it reads besides the ones it declares itself, by long spelling: the moves'
    * `--which`. A flag it declares itself is read without being listed.
    */
   readonly takes?: readonly string[];
@@ -55,8 +55,8 @@ export const REFUSED = Symbol('refused-group-flag');
 
 /**
  * The options of the groups above `sub` that `sub` reads: the ones it declares itself too, and the
- * ones it declares it takes. The program is not a group here — its own flags are read by the
- * program, for every verb — so a verb of the program takes nothing, and needs nothing.
+ * ones it declares it takes. The program is not a group here (its own flags are read by the
+ * program, for every verb), so a verb of the program takes nothing, and needs nothing.
  */
 export function optionsTakenFromTheGroup(sub: Command): readonly Option[] {
   const takes = DECLARED.get(sub)?.takes ?? [];
@@ -69,7 +69,7 @@ export function optionsTakenFromTheGroup(sub: Command): readonly Option[] {
 }
 
 /**
- * The values of the group flags `sub` takes, by attribute — or {@link REFUSED}, once it has said
+ * The values of the group flags `sub` takes, by attribute, or {@link REFUSED}, once it has said
  * why, when the line gave the group a flag `sub` does not read, or one of `sub`'s own written
  * before its name.
  *
@@ -114,14 +114,14 @@ export async function fromTheGroup<Values extends object>(
 
 /**
  * Why a subcommand refuses a flag of its group that it declares nothing particular about. The
- * group is named by its path, as the subcommand is — the way every refusal of this kind names them.
+ * group is named by its path, as the subcommand is: the way every refusal of this kind names them.
  */
 function notRead(group: Command, path: string): string {
   const owner = pathOf(group).join(' ');
   return `it is an option of \`${owner}\` itself, which \`${path}\` does not read.`;
 }
 
-/** The commands above `sub` that hand it a line, nearest first — every ancestor but the program. */
+/** The commands above `sub` that hand it a line, nearest first: every ancestor but the program. */
 function groupsAbove(sub: Command): readonly Command[] {
   const groups: Command[] = [];
   for (let at = sub.parent; at !== null && at.parent !== null; at = at.parent) groups.push(at);
