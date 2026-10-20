@@ -131,14 +131,14 @@ function connect(): Session {
 /** Proposes a pattern through the agent's surface and returns its id. */
 function propose(session: Session, name: string): string {
   const created = runCreateSkill(session, { name, body: `the body of ${name}` });
-  if (!created.ok) throw new Error(`setup: propose refused — ${created.message}`);
+  if (!created.ok) throw new Error(`setup: propose refused: ${created.message}`);
   return created.id;
 }
 
 /** Has the connection served a body: the only thing that writes a consultation. */
 function consult(session: Session, id: string): void {
   const served = runSkillsTool(session, { id });
-  if (!served.ok) throw new Error(`setup: skills refused — ${served.message}`);
+  if (!served.ok) throw new Error(`setup: skills refused: ${served.message}`);
   // Non-vacuity: a call answered in NAMES records nothing, and this whole file would
   // then be measuring a run with no consultation in it under three different labels.
   expect(served.served).toBe('bodies');
@@ -152,7 +152,7 @@ function move(session: Session, id: string, action: 'review' | 'adopt' | 'deprec
       ? { id, action, reason: 'it fell out of use' }
       : { id, action, note: `a verdict on ${action}` },
   );
-  if (!moved.ok) throw new Error(`setup: move refused — ${moved.message}`);
+  if (!moved.ok) throw new Error(`setup: move refused: ${moved.message}`);
 }
 
 /**
@@ -352,7 +352,7 @@ describe('the three answers the record can give about a pattern move', () => {
     move(session, moved, 'review');
 
     const answered = runAntipatternsTool(session);
-    if (!answered.ok) throw new Error(`the tool refused — ${answered.message}`);
+    if (!answered.ok) throw new Error(`the tool refused: ${answered.message}`);
     const said = JSON.stringify(answered.value);
     // Non-vacuity FIRST: the tool really did answer about THIS record, with a shape in
     // it. Without this the checks below would pass over a refusal or an empty object.

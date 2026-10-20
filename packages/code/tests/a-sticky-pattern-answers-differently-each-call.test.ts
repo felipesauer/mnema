@@ -151,7 +151,7 @@ describe('no pattern that remembers is asked a yes-or-no question', () => {
     expect(sticky('if (/a/.test(line)) return;')).toEqual([]);
     expect(sticky(`const SEEN = /a/${g};\nconst all = line.match(SEEN);`)).toEqual([]);
     expect(sticky(`const SEEN = /a/${g};\nline.replace(SEEN, '');`)).toEqual([]);
-    expect(sticky(` * never write /x/${g}.test(source) — it remembers.`)).toEqual([]);
+    expect(sticky(` * never write /x/${g}.test(source), it remembers.`)).toEqual([]);
     expect(sticky(`  // /x/${g}.test(source) is banned here.`)).toEqual([]);
   });
 });

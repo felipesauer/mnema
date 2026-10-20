@@ -150,7 +150,7 @@ describe('what this repository publishes cites only what this repository publish
 
   it('holds no citation of anything a stranger cannot open', () => {
     const accused = PUBLISHED.flatMap((where) =>
-      citationsIn(textOf(where)).map(({ line, spelling }) => `${where}:${line} — ${spelling}`),
+      citationsIn(textOf(where)).map(({ line, spelling }) => `${where}:${line}: ${spelling}`),
     );
     expect(accused).toEqual([]);
   });

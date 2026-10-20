@@ -280,7 +280,7 @@ describe('nothing travels that is a fact about this machine', () => {
     const empty = [...PACKED]
       .filter(([, files]) => !files.some((path) => path.startsWith('dist/')))
       .map(([name]) => name);
-    expect(empty, 'a package packed no dist/ — is the workspace built?').toEqual([]);
+    expect(empty, 'a package packed no dist/: is the workspace built?').toEqual([]);
   });
 
   it('shows its pictures from the repository and carries none of them', () => {
@@ -524,7 +524,7 @@ describe('the second reader runs out of what the package publishes', () => {
     // string" is a fallback that hides which of the two happened.
     const tarball = TARBALLS.get('@mnema/chain');
     if (tarball === undefined) {
-      throw new Error('@mnema/chain was not packed — it is `private` again, or it is gone');
+      throw new Error('@mnema/chain was not packed: it is `private` again, or it is gone');
     }
     const into = join(SANDBOX, 'extracted');
     mkdirSync(into, { recursive: true });

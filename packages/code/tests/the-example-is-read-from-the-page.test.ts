@@ -13,7 +13,7 @@
  * AND THE DRIFT WAS ALREADY THERE. Extracting the page's block and the case's body on
  * that same commit, the two disagreed on five lines: three comment rewraps, and two places
  * where the page said more than the code that ran (`// { kind: 'decision', record: … }`
- * against `// { kind: 'decision', … }`, and `// names only — one line each` against
+ * against `// { kind: 'decision', … }`, and `// names only: one line each` against
  * `// names only`). Nobody had changed anything wrongly; the two copies simply aged apart,
  * which is what two copies do.
  *

@@ -203,7 +203,7 @@ describe('the convention for Ambiguous is the authority’s, and it is declared'
     // NOT VACUOUS: the case above is about a CHOICE, so it has to be able to see the other one.
     // The em dash is Ambiguous and this asserts what the surface would look like under the wide
     // convention (one glyph, two cells) by asking about a character that is Wide outright.
-    expect(widthOfText('—')).toBe(1);
+    expect(widthOfText('\u2014')).toBe(1);
     expect(widthOfText('決')).toBe(2);
   });
 });

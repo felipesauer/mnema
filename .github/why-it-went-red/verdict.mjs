@@ -381,7 +381,7 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
     });
   }
   for (const red of reds) {
-    if (red.says === UNREADABLE) broken.push(`a red could not be re-run: ${red.name} — ${red.why}`);
+    if (red.says === UNREADABLE) broken.push(`a red could not be re-run: ${red.name}: ${red.why}`);
   }
 
   const candidates = ledger.cases.filter(
@@ -390,7 +390,7 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
   );
   if (candidates.length > limit) {
     broken.push(
-      `${candidates.length} cases that inherit the shared ceiling ran over ${budget} ms in this run, past the ${limit} this will re-time — the machine was too busy for any reading off it`,
+      `${candidates.length} cases that inherit the shared ceiling ran over ${budget} ms in this run, past the ${limit} this will re-time: the machine was too busy for any reading off it`,
     );
   }
 
@@ -401,7 +401,7 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
       const again = alone({ root: ledger.root, file: one.file, titles: one.titles });
       if (again.ran === false) {
         broken.push(
-          `a slow case could not be re-timed: ${namesOf(one.titles).shown} — ${again.why}`,
+          `a slow case could not be re-timed: ${namesOf(one.titles).shown}: ${again.why}`,
         );
         continue;
       }
@@ -495,7 +495,7 @@ export function render(result, cores = 0) {
     out.push('|---|---|---:|---:|---:|---|---|');
     for (const red of result.reds) {
       const name = red.name.replaceAll('|', '\\|');
-      const alone = red.alone === null ? '—' : `${red.alone} ms`;
+      const alone = red.alone === null ? 'n/a' : `${red.alone} ms`;
       out.push(
         `| ${name} | \`${red.file}\` | ${red.duration} ms | ${alone} | ${red.ceiling} ms | **${red.says}** | ${loadSaid(red.load, cores)} |`,
       );
@@ -533,7 +533,7 @@ export function render(result, cores = 0) {
     }
     out.push('');
     out.push(
-      'The repair is a ceiling at that case, saying what it waits on — never a ceiling lifted for everybody.',
+      'The repair is a ceiling at that case, saying what it waits on, never a ceiling lifted for everybody.',
     );
     out.push('');
   }

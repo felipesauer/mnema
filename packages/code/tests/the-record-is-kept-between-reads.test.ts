@@ -2,7 +2,7 @@
  * A read of the command line leaves ONE new file in the tree, and deleting it changes nothing.
  *
  * It said, in the doc of `withCache` and in the doc-comments of the guards that digest a whole
- * sandbox around a read, that a command "opens it, rebuilds from the chain, reads, and closes —
+ * sandbox around a read, that a command "opens it, rebuilds from the chain, reads, and closes,
  * every time", the price of "not leaving a derived database behind between runs". At 100 thousand
  * events that price was 3.3 s and 548 MB for a question a warm cache answers in a millisecond, and
  * the two hooks that open a session are such reads. A read now keeps the projection in the tree it

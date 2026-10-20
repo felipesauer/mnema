@@ -270,13 +270,13 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
   'one-line.ts @mnema/chain/one-line':
     'THE RULE OF THE LINE, and the one edge here that is a leaf. `oneLine` is what makes ' +
     'a report line one line, and it moved into `@mnema/chain` because the sentences that ' +
-    'need it are written in three packages — the verifier’s findings, the domain’s ' +
-    'refusals, this surface’s readings — and a surface cannot apply a rule to the inside ' +
+    'need it are written in three packages (the verifier’s findings, the domain’s ' +
+    'refusals, this surface’s readings) and a surface cannot apply a rule to the inside ' +
     'of a sentence another package already joined. This file re-exports the SUBPATH, ' +
     'whose module imports nothing at all (`chain/src/one-line.test.ts` asserts it over ' +
     'the source); reaching it is not reaching the proof engine. It is eager because the ' +
-    'two modules that want it here — `wiring/no-such-record.ts` and ' +
-    '`presentation/runs.ts` — are on this floor, and a curative at their call sites is ' +
+    'two modules that want it here, `wiring/no-such-record.ts` and ' +
+    '`presentation/runs.ts`, are on this floor, and a curative at their call sites is ' +
     'exactly what two earlier slices paid and this one removed.',
   'program.ts @mnema/core':
     'the last-resort catch recognizes the domain’s own refusal by its class, and resolves ' +
@@ -289,12 +289,12 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'the discovery environment hands `$MNEMA_CACHE_DIR` to the core (`keepReadCacheIn`), which ' +
     'decides what the value means and refuses one that cannot serve. NOT a declaration: it is ' +
     'a sync call every door makes while building its environment, so deferring it means ' +
-    'awaiting it at each of them — and it costs nothing TODAY because the declarations above ' +
+    'awaiting it at each of them, and it costs nothing TODAY because the declarations above ' +
     'already hold `@mnema/core` open.',
   'pinned-run.ts @mnema/chain':
     'the entry builds the pinned-run resolver, and resolving a run reads its lines off the chain. ' +
     'NOT a declaration: the resolver is memoized and sync, so deferring it means ' +
-    'awaiting it at thirteen call sites — mechanical, type-checked, and worth nothing ' +
+    'awaiting it at thirteen call sites: mechanical, type-checked, and worth nothing ' +
     'until the declarations stop holding the domain open.',
   'pinned-run.ts @mnema/core':
     'the same resolver, for the trees it resolves the run in and the fold it reads the run by. ' +
@@ -308,7 +308,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
   'wiring/options.ts @mnema/core':
     '`--which` is validated by commander’s own argument parser, which is synchronous ' +
     'and runs during the parse. What counts as naming an agent is `canonicalIdentity` ' +
-    'and never a trim of our own — a second reading of blank would disagree with the ' +
+    'and never a trim of our own: a second reading of blank would disagree with the ' +
     'one that decides what the chain records. THIS is the edge that holds the floor: ' +
     'it is the only one that needs behaviour rather than a constant.',
   'wiring/refs.ts @mnema/context': '`--depth` states its default and its cap in its help.',
@@ -316,11 +316,11 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
   'vocabulary.ts @mnema/chain':
     '`--require` lists the three levels, so the chain’s own tuple of them is read while ' +
     'commander is being configured. A CONSTANT, and the tuple the flag’s refusal words ' +
-    'itself from — one set, or the help and the no can disagree.',
+    'itself from: one set, or the help and the no can disagree.',
   'vocabulary.ts @mnema/core':
     'the closed sets of domain words BOTH surfaces take: the workflow actions and the ' +
     'tables that say which proof each needs, the scopes, the kinds of record. CONSTANTS, ' +
-    'and they are what the help prints — a declaration commander is handed before it has ' +
+    'and they are what the help prints: a declaration commander is handed before it has ' +
     'parsed a word. The alternative was each surface re-typing them, which is the defect ' +
     'this module closed.',
   'wiring/enumerated.ts @mnema/core':
@@ -346,7 +346,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
  */
 const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
   'program.ts commander':
-    'the entry BUILDS the program with it. It is the floor by definition — commander is ' +
+    'the entry BUILDS the program with it. It is the floor by definition: commander is ' +
     'what routes the word, so nothing can be decided before it is loaded.',
   'wiring/completion.ts commander':
     'the completion FLAG is declared on the program while it is being built; what the ' +

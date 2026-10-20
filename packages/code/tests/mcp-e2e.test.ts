@@ -4018,7 +4018,7 @@ describe('MCP: who the record says acted', () => {
     ['a space', '   ', 'unknown-agent'],
     ['a tab', '\t', 'unknown-agent'],
     ['a non-breaking space (U+00A0)', ' ', 'unknown-agent'],
-    ['a zero-width non-joiner — a NAME, invisible but present', '‌', '‌'],
+    ['a zero-width non-joiner: a NAME, invisible but present', '‌', '‌'],
     ['an ordinary name (the non-regression)', 'claude-code', 'claude-code'],
   ];
 

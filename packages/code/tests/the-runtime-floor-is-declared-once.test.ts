@@ -180,7 +180,7 @@ describe('the floor is at least what the dependencies demand', () => {
     expect(demanded.length, 'no direct dependencies were found in any manifest').toBeGreaterThan(5);
     expect(
       installed.filter((d) => d.range !== null).length,
-      'not one installed dependency declared engines.node — is the tree installed?',
+      'not one installed dependency declared engines.node: is the tree installed?',
     ).toBeGreaterThan(2);
   });
 

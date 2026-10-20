@@ -732,7 +732,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(asked) #1':
     {
       verdict: 'collapsed',
-      why: 'the move asked — for a task, the caller’s own word, read before the gate judged it',
+      why: 'the move asked: for a task, the caller’s own word, read before the gate judged it',
     },
   '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(now) #1':
     {
@@ -783,7 +783,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/enrollment.ts «re-adds {} revoked under signature coverage without being checkpointed itself» oneLine(fp) #1':
     {
       verdict: 'collapsed',
-      why: 'a fingerprint a stored `key.enrolled` names — bytes in a tail, not a value this run made',
+      why: 'a fingerprint a stored `key.enrolled` names: bytes in a tail, not a value this run made',
     },
   '@mnema/chain chain/enrollment.ts «event signer {} is not a key enrolled for {} at this point» oneLine(event.signerFp) #1':
     {
@@ -1035,17 +1035,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «tail {} ends in a partial line that was dropped: the mark of a write » oneLine(tail) #1':
     {
       verdict: 'collapsed',
-      why: 'a directory name under `tails/` — anybody who can write the tree can choose it',
+      why: 'a directory name under `tails/`: anybody who can write the tree can choose it',
     },
   '@mnema/chain chain/verify.ts «tail {} holds no event and no checkpoint, so it asserts nothing and is not » oneLine(tail) #1':
     {
       verdict: 'collapsed',
-      why: 'a directory name under `tails/` — anybody who can write the tree can choose it',
+      why: 'a directory name under `tails/`: anybody who can write the tree can choose it',
     },
   '@mnema/chain chain/verify.ts «tail {} has no committed key fingerprint (fabricated or relocated tail)» oneLine(tail) #1':
     {
       verdict: 'collapsed',
-      why: 'the same directory name, and this is the finding a fabricated tail EARNS — the one measured',
+      why: 'the same directory name, and this is the finding a fabricated tail EARNS: the one measured',
     },
   '@mnema/chain chain/verify.ts «UNREADABLE: {}: {}» oneLine(withinChain(layout, error.locus)) #1':
     {
@@ -1066,7 +1066,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // and the values are the same four, so the verdicts below are the ones they had.
   '@mnema/chain chain/entry.ts «entry names tail {}, stored under {}» oneLine(broke.named) #1': {
     verdict: 'collapsed',
-    why: 'the tail a stored entry NAMES — the very field this finding exists to disagree with',
+    why: 'the tail a stored entry NAMES: the very field this finding exists to disagree with',
   },
   '@mnema/chain chain/entry.ts «entry names tail {}, stored under {}» oneLine(broke.storedUnder) #1':
     {
@@ -1079,7 +1079,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain chain/entry.ts «seq gap: expected {}, found {}» broke.found #1': {
     verdict: 'minted',
-    why: 'a whole number — the catalog refuses the entry before this if it is not one',
+    why: 'a whole number: the catalog refuses the entry before this if it is not one',
   },
   '@mnema/chain chain/verify.ts «checkpoint names tail {}, stored under {}» oneLine(checkpoint.tail) #1':
     {
@@ -1093,7 +1093,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «checkpoint coverage gap: expected to start at {}, starts at {}» covered + 1 #1':
     {
       verdict: 'minted',
-      why: 'one past the seq this walk has covered so far — arithmetic, not text',
+      why: 'one past the seq this walk has covered so far: arithmetic, not text',
     },
   '@mnema/chain chain/verify.ts «checkpoint coverage gap: expected to start at {}, starts at {}» checkpoint.fromSeq #1':
     {
@@ -1103,7 +1103,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «external witness (T3): PENDING, which is not coverage: {}» witness.detail #1':
     {
       verdict: 'composed',
-      why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
+      why: 'the reading `witness.ts` composed: every value in it is a site of its own below',
     },
   '@mnema/chain chain/verify.ts «external witness (T3): covered, {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
     {
@@ -1116,36 +1116,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain chain/witness.ts «Bitcoin block {} at {}» attestation.height #1': {
     verdict: 'minted',
-    why: 'a block height read as a NUMBER out of the proof’s own varuint — no byte of it is text',
+    why: 'a block height read as a NUMBER out of the proof’s own varuint: no byte of it is text',
   },
   '@mnema/chain chain/witness.ts «Bitcoin block {} at {}» new Date(header.time * 1000).toISOString() #1':
     {
       verdict: 'minted',
-      why: 'the instant, formatted from a 32-bit field of an 80-byte header — a number, whoever wrote the file',
+      why: 'the instant, formatted from a 32-bit field of an 80-byte header: a number, whoever wrote the file',
     },
   '@mnema/chain chain/witness.ts «an attestation was requested from {} and has not confirmed» oneLine(attestation.uri) #1':
     {
       verdict: 'collapsed',
-      why: 'a calendar URI read out of a file in the tree — anybody who can write the tree chooses it',
+      why: 'a calendar URI read out of a file in the tree: anybody who can write the tree chooses it',
     },
   '@mnema/chain chain/witness.ts «anchored in Bitcoin block {}, whose header this record does not carry» height #1':
     {
       verdict: 'minted',
-      why: 'the same height, in the state where the record has the anchor and not the header — the LOWEST such height, chosen by the caller rather than by the order the proof lists its attestations in',
+      why: 'the same height, in the state where the record has the anchor and not the header: the LOWEST such height, chosen by the caller rather than by the order the proof lists its attestations in',
     },
   '@mnema/chain chain/witness.ts «tail {} holds no attestation» oneLine(weakest.tail) #1': {
     verdict: 'collapsed',
-    why: 'a tail DIRECTORY name, read off the disk — whoever writes the tree chooses it',
+    why: 'a tail DIRECTORY name, read off the disk: whoever writes the tree chooses it',
   },
   '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» facts.dated.after #1':
     {
       verdict: 'minted',
-      why: 'a count of events, arrived at by subtracting two seqs — arithmetic, not text',
+      why: 'a count of events, arrived at by subtracting two seqs: arithmetic, not text',
     },
   '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» facts.dated.attested.detail #1':
     {
       verdict: 'composed',
-      why: 'the covered reading `witness.ts` composed — its height and its instant are sites above',
+      why: 'the covered reading `witness.ts` composed: its height and its instant are sites above',
     },
   '@mnema/chain chain/witness.ts «the stored header for Bitcoin block {} carries another merkle root» attestation.height #1':
     {
@@ -1159,11 +1159,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   '@mnema/chain chain/witness.ts «{}, and {}» all #1': {
     verdict: 'composed',
-    why: 'the clauses of a tail’s sentence joined so far — the head’s own finding, and the dating',
+    why: 'the clauses of a tail’s sentence joined so far: the head’s own finding, and the dating',
   },
   '@mnema/chain chain/witness.ts «{}, and {}» one #1': {
     verdict: 'composed',
-    why: 'the next clause of the same sentence — the dating above, or a request still in flight',
+    why: 'the next clause of the same sentence: the dating above, or a request still in flight',
   },
   '@mnema/chain chain/witness.ts «the stored proof is unreadable: {}» oneLine(String((error as Error).message)) #1':
     {
@@ -1182,7 +1182,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   '@mnema/chain chain/verify.ts «checkpoint failed: {}» verdict.reason #1': {
     verdict: 'minted',
-    why: 'one of `verifyCheckpoint`’s three words — a closed union, so there is nothing to collapse',
+    why: 'one of `verifyCheckpoint`’s three words: a closed union, so there is nothing to collapse',
   },
   '@mnema/chain chain/verify.ts «{} tail(s)» facts.tailCount #1': {
     verdict: 'minted',
@@ -1191,7 +1191,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «tail {} has no ownership proof (fabricated or relocated tail)» oneLine(tail) #1':
     {
       verdict: 'collapsed',
-      why: 'the directory name again, in the ownership check — worded through a local `push`',
+      why: 'the directory name again, in the ownership check: worded through a local `push`',
     },
   '@mnema/chain chain/verify.ts «tail {} has a malformed ownership proof: {}» oneLine(tail) #1': {
     verdict: 'collapsed',
@@ -1200,7 +1200,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «tail {} has a malformed ownership proof: {}» oneLine((error as Error).message) #1':
     {
       verdict: 'collapsed',
-      why: 'the JSON reader’s message over a WHOLE FILE, which quotes it — the second measured forgery',
+      why: 'the JSON reader’s message over a WHOLE FILE, which quotes it: the second measured forgery',
     },
   '@mnema/chain chain/verify.ts «tail {} ownership proof cannot be checked: no committed public key» oneLine(tail) #1':
     {
@@ -1213,11 +1213,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain chain/verify.ts «tail {} ownership proof is invalid ({})» verdict.reason #1': {
     verdict: 'minted',
-    why: 'one of `verifyTailProof`’s three words — a closed union, like the checkpoint’s',
+    why: 'one of `verifyTailProof`’s three words: a closed union, like the checkpoint’s',
   },
   '@mnema/chain chain/verify.ts «{} ({} event(s) through {}), » oneLine(waiver.tail) #1': {
     verdict: 'collapsed',
-    why: 'the tail a stored waiver names as cut — a field of an event, chosen by whoever wrote it',
+    why: 'the tail a stored waiver names as cut: a field of an event, chosen by whoever wrote it',
   },
   '@mnema/chain chain/verify.ts «{} ({} event(s) through {}), » waiver.eventCount #1': {
     verdict: 'minted',
@@ -1225,7 +1225,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain chain/verify.ts «{} ({} event(s) through {}), » oneLine(waiver.throughHash) #1': {
     verdict: 'collapsed',
-    why: 'the head the waiver claims the tail ended at — a string field of a stored event',
+    why: 'the head the waiver claims the tail ended at: a string field of a stored event',
   },
   '@mnema/chain chain/verify.ts «a retraction of {} signed by {}, which did not » oneLine(event.subject) #1':
     {
@@ -1244,17 +1244,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain chain/verify.ts «a {} of {}: {}: » oneLine(event.subject) #1': {
     verdict: 'collapsed',
-    why: 'the subject a stored move names — bytes in a tail, not a value this run made',
+    why: 'the subject a stored move names: bytes in a tail, not a value this run made',
   },
   '@mnema/chain chain/verify.ts «a {} of {}: {}: » ruling.detail #1': {
     verdict: 'composed',
-    why: 'the ruling `events/workflow.ts` words — every value in it is a site of its own there',
+    why: 'the ruling `events/workflow.ts` words: every value in it is a site of its own there',
   },
   '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» from === null ? \'null\' : oneLine(from) #1':
     { verdict: 'collapsed', why: 'the state a stored move says it left, out of the record' },
   '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» oneLine(to) #1': {
     verdict: 'collapsed',
-    why: 'the state a stored move says it reached, out of the record — a hand may write any',
+    why: 'the state a stored move says it reached, out of the record: a hand may write any',
   },
   '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» oneLine(action) #1': {
     verdict: 'collapsed',
@@ -1262,7 +1262,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» detail #1': {
     verdict: 'composed',
-    why: 'what the rule found, worded at each call of the same function — every value a site there',
+    why: 'what the rule found, worded at each call of the same function: every value a site there',
   },
   '@mnema/chain events/workflow.ts «, where a birth is null → {} by "{}"» machine.birth.to #1': {
     verdict: 'minted',
@@ -1297,22 +1297,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/chain chain/verify.ts «the backup key this machine registered for {}» oneLine(backup.anchor) #1':
     {
       verdict: 'collapsed',
-      why: 'the identity a registration file at this machine’s key root names — a string nothing signs',
+      why: 'the identity a registration file at this machine’s key root names: a string nothing signs',
     },
   '@mnema/chain chain/verify.ts «the backup key of {}, as the record declares it» oneLine(backup.anchor) #1':
     {
       verdict: 'collapsed',
-      why: 'the subject of a `backup.declared` read from the record — a string whoever wrote the file chose',
+      why: 'the subject of a `backup.declared` read from the record: a string whoever wrote the file chose',
     },
   '@mnema/chain chain/verify.ts «{}, and that identity has since revoked it, so the absence is no » oneLine(declaredFor) #1':
     {
       verdict: 'collapsed',
-      why: 'the subject of a `backup.declared` read from the record — a string whoever wrote the file chose',
+      why: 'the subject of a `backup.declared` read from the record: a string whoever wrote the file chose',
     },
   "@mnema/chain chain/verify.ts «committed public key has no tail on disk, and the record names the cut: {}» accounts.join('; ') #1":
     {
       verdict: 'composed',
-      why: 'the four values above, joined — every one of them is a site of its own already',
+      why: 'the four values above, joined: every one of them is a site of its own already',
     },
   '@mnema/chain chain/verify.ts «{} event(s) are hash-chained but NOT yet signature-covered» facts.uncheckpointed #1':
     {
@@ -1328,7 +1328,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- @mnema/core: the content door ----------------------------------------------
   '@mnema/core content/screen.ts «"{}" is {} bytes; a single field holds at most {}. » field #1': {
     verdict: 'minted',
-    why: 'a field path of the content contract — `content/fields.ts` names them, not a caller',
+    why: 'a field path of the content contract: `content/fields.ts` names them, not a caller',
   },
   '@mnema/core content/screen.ts «"{}" is {} bytes; a single field holds at most {}. » bytes #1': {
     verdict: 'minted',
@@ -1342,12 +1342,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by: » field #1':
     {
       verdict: 'minted',
-      why: 'a field key of the content contract — `content/fields.ts` names them, not a caller',
+      why: 'a field key of the content contract: `content/fields.ts` names them, not a caller',
     },
   '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by: » classes #1':
     {
       verdict: 'minted',
-      why: 'the credential classes `content/secrets.ts` declares, joined here — never the value',
+      why: 'the credential classes `content/secrets.ts` declares, joined here: never the value',
     },
 
   // --- @mnema/core: identity --------------------------------------------------------
@@ -1359,12 +1359,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/handshake.ts «{}<64 hex>, as printed when a project is founded» ANCHOR_PREFIX #1':
     {
       verdict: 'minted',
-      why: 'the `mnid:` prefix this product mints anchors with — a constant',
+      why: 'the `mnid:` prefix this product mints anchors with: a constant',
     },
   '@mnema/core identity/handshake.ts «{} could not be read as a private key» oneLine(input.privateKeyPath) #1':
     {
       verdict: 'collapsed',
-      why: 'a path a caller typed — nothing has opened it, which is what the refusal says',
+      why: 'a path a caller typed: nothing has opened it, which is what the refusal says',
     },
   "@mnema/core identity/membership.ts «this key belongs to more than one identity in that record ({}): which one it should speak for here is not a choice to make on its behalf» oneLine(anchors.join(', ')) #1":
     {
@@ -1381,7 +1381,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/core identity/membership.ts «It can leave {}, {}: {}» through(left, rest) #1': {
     verdict: 'composed',
-    why: 'the way out this same function worded from the anchors above — a site of its own',
+    why: 'the way out this same function worded from the anchors above: a site of its own',
   },
   "@mnema/core identity/membership.ts «It is the only key {} {}, and an identity's last key cannot be retired, so it leaves {} only once another key has joined that one» last.length === 1 ? 'has' : 'have' #1":
     {
@@ -1436,7 +1436,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» opening #1':
     {
       verdict: 'composed',
-      why: 'the refusal’s opening, worded by this same function — said before the way out either identity can take',
+      why: 'the refusal’s opening, worded by this same function: said before the way out either identity can take',
     },
   '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» revoke #1':
     {
@@ -1451,7 +1451,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» letsGo.length === 1 ? oneLine(letsGo.join(' and ')) : 'each of them' #1":
     {
       verdict: 'collapsed',
-      why: 'the one anchor that can retire the key, out of stored events — or a constant when there are more',
+      why: 'the one anchor that can retire the key, out of stored events: or a constant when there are more',
     },
   '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» oneLine(kept) #1':
     {
@@ -1471,12 +1471,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» revoke #1':
     {
       verdict: 'composed',
-      why: 'the command this function composed from the fingerprint — a site of its own',
+      why: 'the command this function composed from the fingerprint: a site of its own',
     },
   '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» first #1':
     {
       verdict: 'composed',
-      why: 'the first way out, worded by this same function just above — a site of its own',
+      why: 'the first way out, worded by this same function just above: a site of its own',
     },
   '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» how(kept) #1':
     {
@@ -1491,7 +1491,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» through(kept, other) #1':
     {
       verdict: 'composed',
-      why: 'the way out this same function worded from the anchors above — a site of its own',
+      why: 'the way out this same function worded from the anchors above: a site of its own',
     },
   '@mnema/core identity/membership.ts «{}. {}» opening #1': {
     verdict: 'composed',
@@ -1509,22 +1509,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
     {
       verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+      why: 'the identity the way out leaves, out of stored events: named four times in the recipe',
     },
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
     {
       verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+      why: 'the identity the way out leaves, out of stored events: named four times in the recipe',
     },
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
     {
       verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+      why: 'the identity the way out leaves, out of stored events: named four times in the recipe',
     },
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #4':
     {
       verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+      why: 'the identity the way out leaves, out of stored events: named four times in the recipe',
     },
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
     {
@@ -1534,7 +1534,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
     {
       verdict: 'composed',
-      why: 'the revocation this function composed from the fingerprint — a site of its own',
+      why: 'the revocation this function composed from the fingerprint: a site of its own',
     },
   '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
     {
@@ -1579,7 +1579,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys; {}» proven.message #1":
     {
       verdict: 'composed',
-      why: 'the ambiguity `ambiguityOf` words for the same key — a site of its own',
+      why: 'the ambiguity `ambiguityOf` words for the same key: a site of its own',
     },
   '@mnema/core identity/membership.ts «this key was revoked from {}: a retired key that writes again » oneLine(retiredFrom) #1':
     {
@@ -1662,7 +1662,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {}: » oneLine(other) #1':
     {
       verdict: 'collapsed',
-      why: 'a FILE NAME in the agent’s key root, stripped of its suffix — whatever the directory holds',
+      why: 'a FILE NAME in the agent’s key root, stripped of its suffix: whatever the directory holds',
     },
   '@mnema/core identity/restore.ts «\\`mnema key restore --agent {} <file>\\` installs it there. Nothing was written» oneLine(name) #1':
     {
@@ -1672,7 +1672,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/restore.ts «this machine already holds the private key {}: » oneLine(other) #1':
     {
       verdict: 'collapsed',
-      why: 'a FILE NAME in the key root, stripped of its suffix — whatever the directory holds',
+      why: 'a FILE NAME in the key root, stripped of its suffix: whatever the directory holds',
     },
   '@mnema/core identity/restore.ts «the key {} is an agent key of {}: it signs » oneLine(keyPair.fingerprint) #1':
     {
@@ -1692,12 +1692,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/handshake.ts «{} could not be read as a private key» oneLine(input.privateKeyPath) #2':
     {
       verdict: 'collapsed',
-      why: 'a path a caller typed — nothing has opened it, which is what the refusal says',
+      why: 'a path a caller typed: nothing has opened it, which is what the refusal says',
     },
   '@mnema/core identity/handshake.ts «{}<64 hex>, as printed when a project is founded» ANCHOR_PREFIX #2':
     {
       verdict: 'minted',
-      why: 'the `mnid:` prefix this product mints anchors with — a constant',
+      why: 'the `mnid:` prefix this product mints anchors with: a constant',
     },
   '@mnema/core identity/roster.ts «"{}" for {}: an agent request is made for ONE » oneLine(anchor) #1':
     {
@@ -1845,7 +1845,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "@mnema/core identity/roster.ts «this machine's key is not currently valid for {}: the record retired it, » oneLine(anchor) #2":
     {
       verdict: 'collapsed',
-      why: 'the same sentence again, worded for `key revoke` — the two differ after the dash',
+      why: 'the same sentence again, worded for `key revoke`: the two differ after the comma',
     },
   '@mnema/core identity/roster.ts «the record does not count {} as a key of {}: » oneLine(input.fingerprint) #1':
     {
@@ -1877,11 +1877,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core workflow/decision-gate.ts «"{}" requires a non-empty "{}"» oneLine(request.action) #1':
     {
       verdict: 'collapsed',
-      why: 'the action word a caller typed — this gate refuses it without validating it first',
+      why: 'the action word a caller typed: this gate refuses it without validating it first',
     },
   '@mnema/core workflow/decision-gate.ts «"{}" requires a non-empty "{}"» field #1': {
     verdict: 'minted',
-    why: 'the proof field the transition table requires — one of a closed set this package owns',
+    why: 'the proof field the transition table requires: one of a closed set this package owns',
   },
   '@mnema/core workflow/decision-gate.ts «"{}" is not a decision state» oneLine(request.from) #1': {
     verdict: 'collapsed',
@@ -1922,7 +1922,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   '@mnema/core workflow/gate.ts «"{}" requires a non-empty "{}"» field #1': {
     verdict: 'minted',
-    why: 'the proof field the task transition requires — the closed set again',
+    why: 'the proof field the task transition requires: the closed set again',
   },
   '@mnema/core workflow/gate.ts «"{}" is not a workflow state» oneLine(request.from) #1': {
     verdict: 'collapsed',
@@ -1943,7 +1943,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core workflow/identity-operations.ts «it is registered for another identity ({})» oneLine(registration.anchor) #1':
     {
       verdict: 'collapsed',
-      why: 'the anchor read out of a `.enroll` file in the key root — a file, not a value this run made',
+      why: 'the anchor read out of a `.enroll` file in the key root: a file, not a value this run made',
     },
   '@mnema/core workflow/operations.ts «task "{}" does not exist» oneLine(input.id) #1': {
     verdict: 'collapsed',
@@ -1952,7 +1952,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core workflow/prune-operations.ts «Tail {} is the one this write lands on. A waiver has to outlive the » oneLine(input.tail) #1':
     {
       verdict: 'collapsed',
-      why: 'the tail `--tail` named — the refusal `a-refusal-is-one-line.test.ts` named as this slice’s',
+      why: 'the tail `--tail` named: the refusal `a-refusal-is-one-line.test.ts` named as this slice’s',
     },
   '@mnema/core workflow/prune-operations.ts «No tail {} holds events in this tree. A waiver is written BEFORE the » oneLine(input.tail) #1':
     {
@@ -1974,7 +1974,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   '@mnema/core workflow/skill-gate.ts «"{}" requires a non-empty "{}"» field #1': {
     verdict: 'minted',
-    why: 'the proof field the skill transition requires — the closed set again',
+    why: 'the proof field the skill transition requires: the closed set again',
   },
   '@mnema/core workflow/skill-gate.ts «"{}" is not a skill state» oneLine(request.from) #1': {
     verdict: 'collapsed',
@@ -2026,7 +2026,7 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'the pattern of a WHOLE marker, built from the shape a marker takes so the two cannot ' +
     'drift apart. It is a regular expression, never printed.',
   '@mnema/chain chain/enrollment.ts «{}|{}» anchor':
-    'half a key of a `Set`, not a sentence — `restoreKey` pairs an anchor with a fingerprint',
+    'half a key of a `Set`, not a sentence: `restoreKey` pairs an anchor with a fingerprint',
   '@mnema/chain chain/enrollment.ts «{}|{}» fp': 'the other half of that same Set key',
   '@mnema/chain chain/verify.ts «{} committed key(s) without a tail (see census: informational, not a break)» count':
     'a clause of the verdict sentence, worded through a table of wordings per kind of note ' +
@@ -2055,12 +2055,12 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
   '@mnema/chain chain/verify.ts «{} agent key(s) attesting the agent their facts name (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
-    'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
+    'the prefix `withinChain` STRIPS: what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
   '@mnema/core workflow/decision-operations.ts «ADR-{}» decisions.size + 1':
     'the alias a decision is minted with, from a count of the decisions already recorded',
   '@mnema/chain chain/witness.ts «{}\\n» serializeStoredHeader(height, header)':
-    'a LINE OF A FILE this package writes — the canonical form of one stored block ' +
+    'a LINE OF A FILE this package writes: the canonical form of one stored block ' +
     'header, terminated. Nobody reads it as a sentence; the reader that opens it ' +
     'refuses a line it cannot parse rather than quoting one.',
 };

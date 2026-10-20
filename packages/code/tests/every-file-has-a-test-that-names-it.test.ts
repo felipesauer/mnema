@@ -251,21 +251,23 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
   'packages/code/tests/a-home-of-its-own.test.ts -> ../../../.github/a-home-of-its-own/setup.mjs':
     'The setup file every test process runs under, which gives each one a HOME of its own and stands in front of every process a test starts. The case importing it reads what the guard caught, so the specifier is the proof of the guard and not a dependency the scanner could follow.',
   'packages/code/tests/the-red-says-why-it-went-red.test.ts -> ../../../.github/why-it-went-red/ledger.mjs':
-    'The vitest reporter that writes the ledger a red run is explained from. It is plain ESM under .github/, outside the packages/ walk either corpus makes, and this resolver only ever names a .ts — so the specifier is right and unfollowable at once.',
+    'The vitest reporter that writes the ledger a red run is explained from. It is plain ESM under .github/, outside the packages/ walk either corpus makes, and this resolver only ever names a .ts, so the specifier is right and unfollowable at once.',
   'packages/code/tests/the-red-says-why-it-went-red.test.ts -> ../../../.github/why-it-went-red/verdict.mjs':
     'The script that re-runs one red case alone and prints the verdict. Same tree and same extension as the reporter beside it, and the same consequence: nothing about this file is asserted THROUGH the scanner, only by the cases that import it directly.',
   'packages/code/tests/the-sampler-counts-or-refuses.test.ts -> ../../../.github/flake-sampler/summarize.mjs':
-    'The summariser the flake sampler folds N runs with. It lives under .github/ beside the workflow that calls it rather than in a package, because nothing the product ships imports it — which is exactly why the scanner cannot reach it.',
+    'The summariser the flake sampler folds N runs with. It lives under .github/ beside the workflow that calls it rather than in a package, because nothing the product ships imports it, which is exactly why the scanner cannot reach it.',
   'packages/code/tests/a-broken-link-after-the-merge-opens-one-issue.test.ts -> ../../../.github/the-links-after-the-merge/check.mjs':
     'The scan that asks the network for every image and absolute link of the READMEs once a change is on main, and the issue it opens or adds to. It runs on a runner after the merge, with the network and the issue book handed in here, and it sits under .github/ where no walk of packages/ can reach it.',
   'packages/code/tests/the-link-cannot-come-back.test.ts -> ../../../.github/the-link-cannot-come-back/scan.mjs':
     'The scan that refuses an attribution footer in a commit message or a pull request description before either reaches the trunk. It runs on a runner against the event payload rather than inside the suite, so like the three .mjs rows above it sits under .github/ where no walk of packages/ can reach it.',
+  'packages/code/tests/the-pull-request-text.test.ts -> ../../../.github/the-pull-request-text/check.mjs':
+    'The check that refuses a pull request whose title, description or commit message carries the em dash, and names where. It runs on a runner against the event payload, so like the .mjs rows above it sits under .github/ where no walk of packages/ can reach it.',
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
-    'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race — so it can be neither a package nor reachable by a walk of one.',
+    'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
   'packages/chain/src/readme-example.test.ts -> ./index.js':
     "The chain package's barrel, named by the case that runs its README example from inside src/. Excluded by the same glob as the two below, and reached by the shortest specifier of the three because this package keeps its cases beside its sources rather than under tests/.",
   'packages/core/tests/readme-example.test.ts -> ../src/index.js':
-    "The core package's barrel, named by the case that runs its README example. It is the third file to reach a barrel and the second to reach THIS one, and it is listed separately from the case that sits inside src/ because the two land on the same file through different specifiers — a row is about the specifier, not about the module it fails to reach.",
+    "The core package's barrel, named by the case that runs its README example. It is the third file to reach a barrel and the second to reach THIS one, and it is listed separately from the case that sits inside src/ because the two land on the same file through different specifiers: a row is about the specifier, not about the module it fails to reach.",
   'packages/context/tests/readme-example.test.ts -> ../src/index.js':
     "The context package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
@@ -334,7 +336,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/completion/text.ts': {
     reached: 'nobody imports it',
-    why: "The renderers' shared quoting helpers; nothing imports them, and every program the shell test names — mnema, later, odd — is word-safe, so `functionNameOf`'s sanitiser never fires.",
+    why: "The renderers' shared quoting helpers; nothing imports them, and every program the shell test names (mnema, later, odd) is word-safe, so `functionNameOf`'s sanitiser never fires.",
   },
   'packages/code/src/completion/zsh.ts': {
     reached: 'nobody imports it',
@@ -342,7 +344,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/mcp/route.ts': {
     reached: 'nobody imports it',
-    why: "The MCP's one write-destination resolver; mcp-write-routing.test.ts reaches it two hops via tools.ts and asserts which disk a write hit — its wording is only ever a substring.",
+    why: "The MCP's one write-destination resolver; mcp-write-routing.test.ts reaches it two hops via tools.ts and asserts which disk a write hit: its wording is only ever a substring.",
   },
   'packages/code/src/presentation/consultation.ts': {
     reached: 'nobody imports it',
@@ -390,7 +392,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/presentation/witness.ts': {
     reached: 'nobody imports it',
-    why: 'The `mnema witness` listing: one assertion touches it — `not covered`, in a test about flags reaching the act — so `PENDING`, `covered` and the checkpoint column go unread.',
+    why: 'The `mnema witness` listing: one assertion touches it: `not covered`, in a test about flags reaching the act: so `PENDING`, `covered` and the checkpoint column go unread.',
   },
   'packages/code/src/record-effect.ts': {
     reached: 'nobody imports it',
@@ -594,7 +596,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/witness.ts': {
     reached: 'nobody imports it',
-    why: 'Declares the `witness` group and prints its outcomes; one suite proves --calendar reaches `stamp` and --global the bare reading, another runs both acts over the global tail on the binary — each reads --global off the group now, where it used to reach nothing — and no golden ever invokes the verb.',
+    why: 'Declares the `witness` group and prints its outcomes; one suite proves --calendar reaches `stamp` and --global the bare reading, another runs both acts over the global tail on the binary (each reads --global off the group now, where it used to reach nothing) and no golden ever invokes the verb.',
   },
   'packages/context/src/intelligence/events.ts': {
     reached: 'nobody imports it',
@@ -1214,6 +1216,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-proof-answers-a-machine.test.ts': 7,
   'packages/code/tests/the-prose-carries-its-own-emphasis.test.ts': 5,
   'packages/code/tests/the-prose-carries-no-em-dash.test.ts': 5,
+  'packages/code/tests/the-pull-request-text.test.ts': 5,
   'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
   'packages/code/tests/the-read-says-the-record-does-not-chain.test.ts': 6,
   'packages/code/tests/the-reads-follow-a-link-to-where-it-lands.test.ts': 10,
@@ -2013,8 +2016,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(11);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(11);
+    expect(unresolved.length).toBe(12);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(12);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
