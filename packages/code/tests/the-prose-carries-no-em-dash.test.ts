@@ -67,7 +67,7 @@ const ESCAPES: readonly string[] = [
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
-  '.github/': 26,
+  '.github/': 22,
   // the manual
   'docs/': 15,
   // the source of @mnema/code outside the areas below
