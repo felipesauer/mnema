@@ -26,7 +26,7 @@ describe("what the Copilot CLI sends of the plugin's tools", () => {
     }
     expect({ count: mine.names.length, ...mine.all }).toEqual({
       count: 27,
-      bytes: 50_330,
+      bytes: 50_324,
       tokens: 11_527,
     });
   }, 180_000);

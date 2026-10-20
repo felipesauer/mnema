@@ -105,7 +105,7 @@ single machine's in one count, the second tail:
 
 ```sh
 mnema verify
-#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
+#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record
 ```
 
 Bob's machine, which pulled Ana's, prints the same `show`, `brief` and `verify` (the page's example

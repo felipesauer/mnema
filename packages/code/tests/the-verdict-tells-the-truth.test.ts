@@ -150,7 +150,7 @@ describe('the six probes, as the verdict answers them now', () => {
     writeFileSync(checkpoints, '', 'utf-8');
 
     const said = await verify();
-    expect(said.summary).toContain('local integrity verified (T1 only) — no signature was checked');
+    expect(said.summary).toContain('local integrity verified (T1 only): no signature was checked');
     expect(said.summary).toMatch(/\d+ event\(s\) are hash-chained but NOT yet signature-covered/);
     expect(said.summary).not.toContain('above the last checkpoint');
     // Exit stays 0 by default: nothing verifiable is broken. THE SECOND HALF OF THIS
@@ -196,7 +196,7 @@ describe('the six probes, as the verdict answers them now', () => {
     );
 
     const said = await verify();
-    expect(said.summary).toContain('local integrity FAILED — part of the record is UNREADABLE');
+    expect(said.summary).toContain('local integrity FAILED: part of the record is UNREADABLE');
     expect(said.failed).toBe(true);
   });
 
@@ -211,7 +211,7 @@ describe('the six probes, as the verdict answers them now', () => {
     writeFileSync(segment, `${stored.join('\n')}\n`, 'utf-8');
 
     const said = await verify();
-    expect(said.summary).toContain('local integrity FAILED — part of the record is UNREADABLE');
+    expect(said.summary).toContain('local integrity FAILED: part of the record is UNREADABLE');
     expect(said.summary).toContain('the event count is INCOMPLETE');
     expect(said.failed).toBe(true);
     // The evidence names the tail, the file INSIDE the chain, and the line.
@@ -234,7 +234,7 @@ describe('the six probes, as the verdict answers them now', () => {
     writeFileSync(segment, `${stored.slice(0, -2).join('\n')}\n`, 'utf-8');
 
     const said = await verify();
-    expect(said.summary).toContain('local integrity FAILED — see issues');
+    expect(said.summary).toContain('local integrity FAILED: see issues');
     expect(said.summary).not.toContain('T1 only');
     expect(said.failed).toBe(true);
     expect(said.issues.join('\n')).toContain('issue [T2/T4]');
@@ -269,7 +269,7 @@ describe('the six probes, as the verdict answers them now', () => {
 
     const said = await verify();
     expect(said.summary).not.toContain('verified (T1/T2/T4)');
-    expect(said.summary).toContain('local integrity verified (T1 only) — no signature was checked');
+    expect(said.summary).toContain('local integrity verified (T1 only): no signature was checked');
     // The honest residual: the default exit stays 0 (there is no break to point at,
     // that is the gap a copy from before the edit closes, such as a git remote), and
     // the caller who cannot live with that says `--require=signed` and gets a non-zero

@@ -238,7 +238,7 @@ describe('a line in the SECOND tree that will not parse', () => {
 
     const said = await verify();
     expect(lineFor(said, 'private')).toContain(
-      'local integrity FAILED — part of the record is UNREADABLE',
+      'local integrity FAILED: part of the record is UNREADABLE',
     );
     expect(lineFor(said, 'public')).toContain('local integrity verified (T1/T2/T4)');
     const evidence = said.issues.join('\n');

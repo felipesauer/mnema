@@ -666,7 +666,7 @@ describe('the guard asks the key this machine would sign with, and answers the r
   it('says the person’s key is protected where no passphrase is at hand', async () => {
     const { task } = await theTeamsRecord();
     const file = await protectThePersonsKey();
-    const refusal = `Refused (KEY_IS_PROTECTED): the private key at ${file} is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not set, and there is no terminal to ask at. Run the command in a terminal, which asks. A host that signs for an agent has no terminal, and is not given the passphrase: it is given a key of its own — \`mnema key request --agent <name> --anchor <your identity>\` makes one, and \`mnema key enroll --agent <the line it prints>\` puts it in force, then tell the host to sign with it (\`mnema mcp --agent-key <name>\`, the plugin's \`agent_key\` option).`;
+    const refusal = `Refused (KEY_IS_PROTECTED): the private key at ${file} is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not set, and there is no terminal to ask at. Run the command in a terminal, which asks. A host that signs for an agent has no terminal, and is not given the passphrase: it is given a key of its own: \`mnema key request --agent <name> --anchor <your identity>\` makes one, and \`mnema key enroll --agent <the line it prints>\` puts it in force, then tell the host to sign with it (\`mnema mcp --agent-key <name>\`, the plugin's \`agent_key\` option).`;
 
     const seen: Seen[] = [];
     await connected([repo], undefined, async (client) => {

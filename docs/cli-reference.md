@@ -166,7 +166,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
 | Claim | What actually holds |
 |---|---|
-| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
+| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only): no signature was checked`), and only the first of those means every event is covered. |
 | **`verify` covered the record** | Both trees of the project: the committed one and this machine's private one, each with its own verdict under its own name. The exit code is the **weakest** of them, so a gate cannot pass because one tree is healthy. It used to cover the committed tree alone, which said nothing about signed facts written `--scope private`. This machine's **global** tree is a third record, shared by every project on the disk; `mnema verify --global` covers it, and nothing does by default. |
 | **`verify` covered every project** | Only the ones you **named**: `mnema verify --workspace <path...>` gives one verdict over the projects at those paths, and a bare `verify` covers the project you are standing in. The set is never searched for — nothing walks the disk looking for a `.mnema/`, so no verdict of yours covers a project you did not name. Two names of one record (the same path twice, a subdirectory of one already named, a symlink) count **once**; a named path with no record is reported, left **out** of the level, counted at the end, and makes the exit non-zero — naming a path is asserting that it is a project, so a typo in a CI step is news rather than a silent pass, and `--allow-no-record` is how a caller declares otherwise. The aggregate is the weakest project's, so nothing passes on another project's proof — and a set in which no path holds a record exits non-zero rather than reading as a pass over nothing. Costs one full replay per project. |
 | **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree never travels with a clone, so a fresh clone has none — and *absent* is not *broken*. |
@@ -287,7 +287,7 @@ mnema verify
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
 #> /home/you/work/api public: local integrity verified (T1/T2/T4); …
-#> /home/you/work/web public: local integrity FAILED — see issues; …
+#> /home/you/work/web public: local integrity FAILED: see issues; …
 #> …
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
