@@ -22,8 +22,8 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
 - **`verify --require=signed --since <base>` as the check.** The Action fails when
   `mnema verify --require=signed --since <base>` exits non-zero, `<base>` being the pull request's
   base commit. Both are flags of `verify`; nothing is added to them here. `--since` is what catches
-  a record cut back to an earlier state that is honest in every byte — the newest events taken
-  with the checkpoint that covered them — which a reading of the record alone cannot see; it also
+  a record cut back to an earlier state that is honest in every byte (the newest events taken
+  with the checkpoint that covered them), which a reading of the record alone cannot see; it also
   fails a tail removed after a `tail.pruned`, which is the one change a reviewer has to look at.
 - **Optional, off by default: approval for rules that ask for a person.** With
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
@@ -87,7 +87,7 @@ results and nothing else.
    `MNEMA_HOME=<a new directory> mnema key request --checker --anchor <your identity>`.
 2. In the project, enroll the line it printed: `mnema key enroll --checker <the line>`, then commit
    and push the record.
-3. Store the private half — the `.key` file under `<that directory>/identity/keys/` — as a
+3. Store the private half (the `.key` file under `<that directory>/identity/keys/`) as a
    repository secret, for example `MNEMA_CHECKER_KEY`, and delete the file.
 4. Hand it to the Action, and keep the results:
 
@@ -113,8 +113,8 @@ commit that exists only on the runner, which is why the example checks out the p
 Committing the results, or uploading them as above, is a step of your workflow: the Action pushes
 nothing.
 
-If the secret leaks, retire the key — `mnema key revoke --checker <fingerprint> --reason "<why>"`,
-from a machine that writes as a member — commit and push the retirement, and enroll a new key. From
+If the secret leaks, retire the key: `mnema key revoke --checker <fingerprint> --reason "<why>"`,
+from a machine that writes as a member, commit and push the retirement, and enroll a new key. From
 the retirement on, `mnema verify` refuses a result the old key signs, and it names the results that
 key signed before in its census: they were signed while the key held the role, and a leaked key can
 date a result before its own retirement, so the record no longer vouches for them.
@@ -248,7 +248,7 @@ repository, `mnema` and GitHub handed in. GitHub is reached in `github.ts` over 
 token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as child processes;
 `run.ts` is the entry `action.yml` runs.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 - It proves what `mnema verify --require=signed --since <base>` proves and nothing beyond it: every
   event of the record is covered by a verified signature, and every file of the record the base
@@ -279,7 +279,7 @@ token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as
   a declaration can make the runner start that program.
 - The checker key is written to a file readable by the runner's user only, under `RUNNER_TEMP`,
   for the length of the run, and removed after it. A declared program is started without the
-  Action's inputs in its environment — the key and the token among them — and without `MNEMA_*`;
+  Action's inputs in its environment (the key and the token among them) and without `MNEMA_*`;
   it runs as the same user, so it can read the key file while it exists. Scope the secret to the
   job that runs the checks.
 - A pull request from a fork is not given the repository's secrets, so `checker-key` arrives empty

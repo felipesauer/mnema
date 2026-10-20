@@ -51,7 +51,7 @@ pins and the ids) and gets the same verdict, with the same code on a refusal. A 
 tool or a verb that writes, and is on one door and not the others without a reason written down,
 turns that test red.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 - It proves what the command line proves and nothing more: what it writes is signed with the key of
   the machine that runs it, and `verify` is `mnema verify`'s verdict. It does not add a verifier and
