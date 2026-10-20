@@ -65,7 +65,7 @@ ahead of the record:
 
 ```sh
 mnema show ADR-1
-#> this decision left proposed more than once: to rejected, then accepted — by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.
+#> this decision left proposed more than once: to rejected, then accepted, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.
 #> decision 01a14265-a017-7000-a83b-c9516d78ff90  ·  public
 #>   ADR-1: Use SQLite for the cache (accepted)
 #>   recorded by mnid:8072d8bf (a person)
@@ -105,7 +105,7 @@ single machine's in one count, the second tail:
 
 ```sh
 mnema verify
-#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
+#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record
 ```
 
 Bob's machine, which pulled Ana's, prints the same `show`, `brief` and `verify` (the page's example

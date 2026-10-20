@@ -136,7 +136,7 @@ export interface PatternMoveWitness {
 const WHAT_IT_CAN_WITNESS = [
   'What this can witness: a consultation is recorded when the AGENT surface serves a body, and',
   'nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no',
-  'consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case',
+  'consultation at all is NOT OBSERVABLE here: never a move made without consulting. The one case',
   'this asserts is a move whose own run recorded a consultation of some other pattern: there the',
   'record proves the witness was operating. Nothing was refused, and nothing was written to produce it.',
 ].join(' ');

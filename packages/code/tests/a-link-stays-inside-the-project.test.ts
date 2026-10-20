@@ -335,11 +335,11 @@ describe('what the link_knowledge tool says it linked', () => {
 
   it('names the target the tree holds: src for an absolute path under the root', async () => {
     const text = await said(join(repo, 'src'));
-    expect(text).toContain('Linked rule-1 —governs→ src');
+    expect(text).toContain('Linked rule-1 -governs→ src');
     expect(text).not.toContain(repo);
   });
 
   it('names . for the root itself', async () => {
-    expect(await said(repo)).toContain('Linked rule-1 —governs→ .');
+    expect(await said(repo)).toContain('Linked rule-1 -governs→ .');
   });
 });

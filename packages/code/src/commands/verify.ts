@@ -580,8 +580,8 @@ function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string
       if (agent === undefined) return note;
       const held = agentsOf({ tree: root, upcasters }, agent.anchor).has(note.fingerprint);
       const standing = held
-        ? 'the record enrols it, and it has no tail on disk — it may have signed nothing here yet,'
-        : 'the record retired it, and it has no tail on disk — it may have signed nothing here,';
+        ? 'the record enrols it, and it has no tail on disk; it may have signed nothing here yet,'
+        : 'the record retired it, and it has no tail on disk; it may have signed nothing here,';
       return {
         ...note,
         detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: ${standing} or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,

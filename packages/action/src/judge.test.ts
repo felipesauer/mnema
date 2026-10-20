@@ -112,7 +112,7 @@ describe('judge', () => {
     expect(body).toContain('**Checks the rules carry**');
     expect(body).toContain('1 passed · 1 failed at abc');
     expect(body).toContain('- passed `rule-ok`');
-    expect(body).toContain('- failed `rule-bad` — exited 1');
+    expect(body).toContain('- failed `rule-bad`: exited 1');
     expect(body).not.toContain('signed by');
   });
 
@@ -132,7 +132,7 @@ describe('judge', () => {
     expect(seen.asked).toEqual(['src/a.ts', 'src/b.ts']);
     expect(seen.comments).toHaveLength(1);
     expect(seen.comments[0]?.body).toContain('1 new event');
-    expect(seen.comments[0]?.body).toContain('`src/a.ts` — governed by rule d1');
+    expect(seen.comments[0]?.body).toContain('`src/a.ts`: governed by rule d1');
     expect(seen.comments[0]?.onlyIfThere).toBe(false);
   });
 

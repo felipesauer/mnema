@@ -212,7 +212,7 @@ $ mnema audit antipatterns
 | pattern moves with none, in a run that recorded others: 0
 | pattern moves in a run with no consultation at all: 0
 |
-| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
+| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here: never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
 $ mnema audit antipatterns --json
 | {
 |   "reopenedTasks": [],
@@ -222,7 +222,7 @@ $ mnema audit antipatterns --json
 |   "labelCollisions": [],
 |   "divergentMoves": [],
 |   "patternMoves": {
-|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
+|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here: never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
 |     "consulted": [],
 |     "movedWithoutConsulting": [],
 |     "notObservable": []
@@ -351,9 +351,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -363,7 +363,7 @@ $ mnema usage
 |
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
-| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
+| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record
 
 ### the run that did something
 $ mnema resume --actor <anchor>
@@ -909,7 +909,7 @@ $ mnema audit exposure --json
 |   "scanned": 49
 | }
 $ mnema timeline <task-runbook>
-| <task-runbook> — 13 event(s):
+| <task-runbook>: 13 event(s):
 |   <at:02>  task.created  [subject]  <anchor-short>
 |   <at:02>  task.transitioned  → DRAFT  [subject]  <anchor-short>
 |   <at:09>  observation.recorded  [about]  <anchor-short>
@@ -1326,7 +1326,7 @@ $ mnema audit antipatterns
 | pattern moves in a run with no consultation at all: 4
 | skill candidates (reopened >1×): <task-runbook>
 |
-| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
+| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here: never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
 $ mnema audit antipatterns --json
 | {
 |   "reopenedTasks": [
@@ -1467,7 +1467,7 @@ $ mnema audit antipatterns --json
 |   "labelCollisions": [],
 |   "divergentMoves": [],
 |   "patternMoves": {
-|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
+|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here: never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
 |     "consulted": [],
 |     "movedWithoutConsulting": [],
 |     "notObservable": [
@@ -1616,11 +1616,11 @@ $ mnema status --actor <anchor> --json
 $ mnema resume --actor <anchor-short>
 | <anchor-short> last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
+|   <run-second>  agent-beta: read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor>
 | <anchor-short> last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
+|   <run-second>  agent-beta: read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor> --json
 | {
 |   "actor": "<anchor>",
@@ -1650,7 +1650,7 @@ $ mnema resume --actor <anchor> --json
 |   }
 | }
 $ mnema task next <task-runbook>
-| Task <task-runbook> — 4 legal move(s):
+| Task <task-runbook>: 4 legal move(s):
 |   block → BLOCKED (needs reason)
 |   submit_review → IN_REVIEW
 |   complete → DONE (needs note)
@@ -1817,9 +1817,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -1832,8 +1832,8 @@ $ mnema usage
 | Read from <sandbox>/home/.claude/projects: 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
-| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
-| private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered — nothing outside this machine attests this record
+| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record
+| private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered, nothing outside this machine attests this record
 
 ### one whole record of each kind
 $ mnema show <task-runbook>

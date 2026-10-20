@@ -174,7 +174,7 @@ describe('a cut tail with a waiver: the note names the account', () => {
     // And the census clause still says INFORMATIONAL, in the same words: the count
     // of notes is what the sentence carries, never their content.
     expect(withWaiver.summary).toContain(
-      '1 committed key(s) without a tail (see census — informational, not a break)',
+      '1 committed key(s) without a tail (see census: informational, not a break)',
     );
   });
 });
@@ -193,7 +193,7 @@ describe('a cut tail with NO waiver: the note is what it always was', () => {
     // that the record declares no backup for the key, because a declared backup is the
     // one key whose missing tail is expected (FORMAT.md section 6.5).
     expect(note.detail).toBe(
-      'committed public key has no tail on disk, and the record declares no backup for it — ' +
+      'committed public key has no tail on disk, and the record declares no backup for it: ' +
         'the tail may have been dropped (a botched merge), never written (an empty tail is not ' +
         'versioned), or removed; a backup made before backups were declared in the record ' +
         'reads this way too',

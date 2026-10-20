@@ -223,7 +223,7 @@ export function membershipIn(
         ok: false,
         code: 'REVOKED_KEY',
         message:
-          `this key was revoked from ${oneLine(retiredFrom)} — a retired key that writes again ` +
+          `this key was revoked from ${oneLine(retiredFrom)}: a retired key that writes again ` +
           'leaves the whole record failing verification, so it is not brought back',
       };
     }
@@ -231,7 +231,7 @@ export function membershipIn(
       ok: false,
       code: 'NOT_A_MEMBER',
       message:
-        `nothing in that record proves the key ${key.fingerprint} belongs to an identity — ` +
+        `nothing in that record proves the key ${key.fingerprint} belongs to an identity: ` +
         'a key becomes a member where another member vouched for it, while that member still held its key',
     };
   }
@@ -310,7 +310,7 @@ function ambiguityOf(
   member: ReadonlyMap<string, Membership>,
 ): string {
   const anchors = [...member.keys()];
-  const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
+  const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}): which one it should speak for here is not a choice to make on its behalf`;
   // An identity can retire this key only where its roster counts the key and holds another: the
   // revocation refuses a key it does not count, and the last one.
   const rosters = new Map(
@@ -322,7 +322,7 @@ function ambiguityOf(
   );
   const revoke = `\`mnema key revoke ${key.fingerprint} --reason "<why>"\``;
   if (keeps.length === 0) {
-    return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} inside this project, and commits and shares the record — the key then speaks for the identity left`;
+    return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} inside this project, and commits and shares the record: the key then speaks for the identity left`;
   }
 
   // An identity whose only key this is has no installation writing as it but this key's own, so
@@ -338,7 +338,7 @@ function ambiguityOf(
   // The way out of `left` through the checkout that writes as it, when that leaves the key in
   // `rest` alone: the one shape where a restore there points the checkout somewhere.
   const through = (left: string, rest: string): string =>
-    `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from — which, if it is still there, goes on writing as ${oneLine(left)} — pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \`init\` made is, \`mnema key request --anchor ${oneLine(left)} --key "<its file>"\` on this machine), retire this one with ${revoke} — which, run there, prints where that machine keeps the key file — run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
+    `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from (which, if it is still there, goes on writing as ${oneLine(left)}): pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \`init\` made is, \`mnema key request --anchor ${oneLine(left)} --key "<its file>"\` on this machine), retire this one with ${revoke} (which, run there, prints where that machine keeps the key file), run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
 
   const [kept] = keeps;
   if (keeps.length === 1 && kept !== undefined) {
@@ -348,7 +348,7 @@ function ambiguityOf(
     if (letsGo.length !== 1 || other === undefined || !counts(kept) || !wroteAs.has(kept)) {
       return first;
     }
-    return `${first}. Or it can leave ${oneLine(kept)} instead — ${how(kept)}, whose only key it is, so another key joins it first: ${through(kept, other)}`;
+    return `${first}. Or it can leave ${oneLine(kept)} instead: ${how(kept)}, whose only key it is, so another key joins it first: ${through(kept, other)}`;
   }
 
   const last = keeps.filter(counts);
@@ -447,19 +447,19 @@ export function staleAnchorRefusal(
     );
   if (named) {
     return stale(
-      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half (${oneLine(publicKeyPath(layout, fingerprint))}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in`,
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half (${oneLine(publicKeyPath(layout, fingerprint))}), without which the record cannot prove which identity the key belongs to: it is committed beside the enrollment that brought the key in`,
     );
   }
   const proven = half === null ? undefined : membershipIn(query, half);
   if (proven?.ok === true) {
     return stale(
-      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of ${oneLine(proven.anchor)}: \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys: a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of ${oneLine(proven.anchor)}: \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
       fingerprint,
     );
   }
   if (proven?.code === 'REVOKED_KEY') {
     return stale(
-      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys, nor among the keys of any other identity here: it was retired — a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys, nor among the keys of any other identity here: it was retired: a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
       fingerprint,
     );
   }
@@ -470,7 +470,7 @@ export function staleAnchorRefusal(
   }
   // NOT_A_MEMBER, or no half and nothing that names the key: nothing in the record ever held it.
   return stale(
-    `this checkout records ${oneLine(anchor)} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete ${oneLine(anchorPath(layout, fingerprint))}, and the next write here decides again, from the record, as a first write does`,
+    `this checkout records ${oneLine(anchor)} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete ${oneLine(anchorPath(layout, fingerprint))}, and the next write here decides again, from the record, as a first write does`,
   );
 }
 

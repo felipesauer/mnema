@@ -41,7 +41,7 @@ export interface GitHub {
   /** The pull request's reviews, oldest first. */
   reviews(): Promise<Review[]>;
   /**
-   * Writes the one comment: replaces the one this Action wrote before, or adds it — unless
+   * Writes the one comment: replaces the one this Action wrote before, or adds it, unless
    * `onlyIfThere`, which refreshes a comment that exists and adds none.
    */
   upsertComment(body: string, onlyIfThere: boolean): Promise<'created' | 'updated' | 'left alone'>;

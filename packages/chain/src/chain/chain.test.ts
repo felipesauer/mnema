@@ -149,7 +149,7 @@ describe('chain: write then verify (happy path, T1/T2/T4)', () => {
     writeSome(3, { maxUnsignedEvents: 1 });
     const result = verify(root);
     expect(result.clauses.find((clause) => clause.of === 'witness')?.text).toBe(
-      'external witness (T3): not covered — nothing outside this machine attests this record',
+      'external witness (T3): not covered, nothing outside this machine attests this record',
     );
   });
 

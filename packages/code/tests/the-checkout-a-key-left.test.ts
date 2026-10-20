@@ -340,7 +340,7 @@ describe('an anchor recorded with no founding behind it', () => {
       const { words, keyFile } = refusedWrite(here, k, 'through the anchor nothing founded');
       const file = join(here, '.mnema', 'keys', `${fp}.anchor`);
       expect(words).toBe(
-        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete ${file}, and the next write here decides again, from the record, as a first write does`,
+        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete ${file}, and the next write here decides again, from the record, as a first write does`,
       );
       expect(keyFile).toBeUndefined();
 

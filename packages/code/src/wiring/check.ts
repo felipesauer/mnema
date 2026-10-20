@@ -44,10 +44,7 @@ export function registerCheck(program: Command, wiring: Wiring): Declared {
     .description('declare the program that checks a rule (no shell: the program and its arguments)')
     .argument('<rule>', 'the id of the decision the check is for')
     .argument('<program>', 'the program to run, from the project root')
-    .argument(
-      '[args...]',
-      'its arguments, one by one — put `--` before any that starts with a dash',
-    )
+    .argument('[args...]', 'its arguments, one by one: put `--` before any that starts with a dash')
     .option(
       '--which <agent>',
       'the agent that executed this, when an agent is driving mnema',
@@ -94,7 +91,7 @@ export function registerCheck(program: Command, wiring: Wiring): Declared {
         return;
       }
       if (result.results.length === 0) {
-        io.out('No rule in force carries a check — nothing ran, nothing recorded.');
+        io.out('No rule in force carries a check: nothing ran, nothing recorded.');
         return;
       }
       const failed = result.results.filter((r) => !r.passed);

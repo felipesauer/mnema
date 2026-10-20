@@ -57,6 +57,7 @@ exports.activate = (context) => {
             ),
           );
           const writer = (options.tools || []).find((t) => /create_?file/i.test(t.name));
+          log(`request ${requests} offers ${(options.tools || []).length} tools, a file writer: ${!!writer}`);
           if (writer && !called) {
             called = true;
             log(`answering request ${requests} with a call to ${writer.name}`);

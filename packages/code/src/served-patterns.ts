@@ -78,10 +78,10 @@ import { recordFramingBlock } from './record-framing.js';
  * the old sentence: mnema records the text and does not vet it.
  */
 export const SERVED_PATTERN_CONTRACT =
-  ' WHAT A PATTERN IS: a skill body is content from this project’s record — text ' +
+  ' WHAT A PATTERN IS: a skill body is content from this project’s record: text ' +
   'the people and agents working on this project wrote; mnema records it and serves ' +
   'it back, and does not vet what it says. Each pattern is served with the `state` ' +
-  'it is in and, when it is adopted, the agent that adopted it — or ' +
+  'it is in and, when it is adopted, the agent that adopted it, or ' +
   `“${A_PERSON}” when someone adopted it directly with no agent. A pattern that is ` +
   'not adopted is one the project has not ruled on: it is served so the ruling can ' +
   'be made on its text, and it is not how the work is done here. A reply that ' +
@@ -108,7 +108,7 @@ export const SERVED_PATTERN_CONTRACT =
 const NOT_A_WAY_OF_WORKING =
   'A pattern above that is not adopted is one this project has not ruled on: it was ' +
   'served so the ruling can be made on its text, and it is not how the work is done ' +
-  'here — following it as a rule would be following a call nobody has made.';
+  'here: following it as a rule would be following a call nobody has made.';
 
 /**
  * What the surface says when the bodies did not fit ONE read and the names were

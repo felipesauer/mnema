@@ -336,7 +336,7 @@ describe('the two reads answer about an entity of another project', () => {
     if (!created.ok) throw new Error('setup: create refused');
 
     const fresh = runNextActionsTool(session, { id: created.id });
-    if (!fresh.ok) throw new Error(`next_actions refused — ${fresh.message}`);
+    if (!fresh.ok) throw new Error(`next_actions refused: ${fresh.message}`);
     expect(fresh.actions.map((action) => action.action).sort()).toEqual(['cancel', 'submit']);
 
     // And it follows the entity through the move, out of the same tree.
@@ -356,7 +356,7 @@ describe('the two reads answer about an entity of another project', () => {
     if (!created.ok) throw new Error('setup: create refused');
 
     const allowed = runGuardTool(session, { id: created.id, action: 'submit' });
-    if (!allowed.ok) throw new Error(`guard refused — ${allowed.message}`);
+    if (!allowed.ok) throw new Error(`guard refused: ${allowed.message}`);
     expect(allowed.result.verdict.ok).toBe(true);
     // The guard is a dry run: it wrote nothing, and the move it promised then works.
     expect(factsIn(publicOf(there))).toEqual(['task.created', 'task.transitioned']);
@@ -380,7 +380,7 @@ describe('what the sentences may claim once the walk is wider', () => {
 
     const message =
       `task "${NOWHERE}" is in the public tree of "${there}", but has no readable ` +
-      'state there — this session sees its creation and nothing after it';
+      'state there: this session sees its creation and nothing after it';
     expect(runNextActionsTool(session, { id: NOWHERE })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',
@@ -405,7 +405,7 @@ describe('what the sentences may claim once the walk is wider', () => {
     if (refused.ok) throw new Error('expected a refusal');
     expect(refused.message).toBe(
       `task "${NOWHERE}" was not found in any tree of this workspace's projects ` +
-        `("${first}", "${second}", "${third}") or in the machine-global tree — ` +
+        `("${first}", "${second}", "${third}") or in the machine-global tree, ` +
         'the only trees this session sees',
     );
     closeSession(session);

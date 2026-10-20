@@ -167,7 +167,7 @@ const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
  * all: over a record holding a tail it would go out to a calendar.
  */
 const NO_TAIL_TO_WITNESS =
-  'Refused (NO_TAIL): there is no tail here to witness — nothing has been recorded in these trees';
+  'Refused (NO_TAIL): there is no tail here to witness: nothing has been recorded in these trees';
 
 /**
  * THE ONE REASON IN THAT TABLE THAT IS NOT PROSE, because it is the only one a guard can

@@ -237,7 +237,7 @@ export function runSkillExport(
         message:
           `the recorded name "${oneLine(skill.name)}" is not a name the skills ` +
           `specification takes, because ${name.why}. A name may hold only a-z, 0-9 and ` +
-          'hyphens, may not begin or end with one and may not hold two in a row — and it ' +
+          'hyphens, may not begin or end with one and may not hold two in a row, and it ' +
           'has to be the name of the directory the file goes in, or the host ignores the ' +
           'file without saying why. Nothing here rewrites it into one: the name is the ' +
           'key, and a key nobody recorded is not this pattern',
@@ -258,7 +258,7 @@ export function runSkillExport(
         reason: 'NO_ADOPTION_ACT',
         message:
           `the record projects ${input.id} as a pattern in force, and this machine cannot ` +
-          'read the act that put it there — so the file cannot say who adopted it. Run ' +
+          'read the act that put it there, so the file cannot say who adopted it. Run ' +
           '`mnema verify` on this project: a history that disagrees with a projection is a ' +
           'finding about the record, not about this export',
       } as const;
@@ -306,7 +306,7 @@ function notExported(state: string): SkillExportRefused {
         'reads is used as how the work is done here: published before the project ruled ' +
         'on it, it skips the review this record exists to hold, and published after the ' +
         'project retired it, it looks exactly like a live one. There is no flag that ' +
-        `overrides this — adopt the pattern (\`mnema skill move adopt <id>\`) and export ` +
+        `overrides this: adopt the pattern (\`mnema skill move adopt <id>\`) and export ` +
         'the adoption'
       : `this pattern is recorded in a state this product cannot classify (${said}), so ` +
         'nothing here can say whether it is how the work is done. Run `mnema verify` on ' +
@@ -325,7 +325,7 @@ function noDescription(fromTheCaller: boolean): SkillExportRefused {
         'chosen and a file that says less than the record does'
       : 'the description is derived from the first sentence of the body, and this body has ' +
         'no text in it to cut one from. It is the field the host chooses the skill by, so ' +
-        'nothing here invents one — pass --description with what this pattern is for and ' +
+        'nothing here invents one: pass --description with what this pattern is for and ' +
         'when to use it',
   };
 }

@@ -153,7 +153,7 @@ describe('a clean verify says the verdict and stops', () => {
     expect(verbose.out[0]).toBe(short.out[0]);
     // Two events: a task is born as a pair, the creation and its first move, and both carry it.
     expect(verbose.out).toContain(
-      '  census [declared-which] public claude: 2 event(s) name the agent "claude" — declared by the key that signed, not attested',
+      '  census [declared-which] public claude: 2 event(s) name the agent "claude": declared by the key that signed, not attested',
     );
   });
 
@@ -169,7 +169,7 @@ describe('a clean verify says the verdict and stops', () => {
     const short = await verify();
     expect(short.failed).toBe(false);
     expect(short.out[0]).toContain(
-      '1 retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)',
+      '1 retired agent key(s) whose earlier facts are no longer vouched for (see census: informational, not a break)',
     );
     const line = short.out.find((said) => said.startsWith('  census [retired-agent] public '));
     expect(line).toContain(`${agentFp}: 2 event(s) signed by the agent key ${agentFp} before `);

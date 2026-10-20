@@ -308,23 +308,23 @@ export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
   'user-corrections':
-    'what it carries is a count the product made and the ids of the proposals it recorded — no ' +
-    'sentence of the person’s and no record text — so there is nobody’s words to say whose they are',
+    'what it carries is a count the product made and the ids of the proposals it recorded (no ' +
+    'sentence of the person’s and no record text), so there is nobody’s words to say whose they are',
   'session-tally':
-    'what it carries is two counts the product made — files the session’s own tool calls wrote, ' +
-    'and decisions recorded since it opened — and no record text, so there is nobody’s words to ' +
+    'what it carries is two counts the product made (files the session’s own tool calls wrote, ' +
+    'and decisions recorded since it opened), and no record text, so there is nobody’s words to ' +
     'say whose they are',
   'subagent-handback':
     'what it carries is the product’s own sentence about the format a subagent’s final reply is to ' +
-    'end in, and what that reply lacked, said in the schema’s words and never in the reply’s — no ' +
+    'end in, and what that reply lacked, said in the schema’s words and never in the reply’s: no ' +
     'record text, so there is nobody’s words to say whose they are',
   'agent-accepts':
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
-    'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
+    'away from (that its acceptance was recorded as an agent’s, or that the switch is off) and ' +
     'no record text, so there is nobody’s words to say whose they are',
   'edit-refuses-a-write':
     'what it hands a host is the reason a write did not happen, and it opens with the rule and ' +
-    'the path it refuses rather than with a sentence about the record in general — the rule ' +
+    'the path it refuses rather than with a sentence about the record in general: the rule ' +
     'lines that follow carry the record’s words, each with its id',
   'exported-skill':
     'the file is the recorded body byte for byte, which is what the chain proves about ' +
@@ -524,31 +524,31 @@ export const NOT_COUNTED_AS_SERVED: {
   readonly [K in Exclude<SwitchableChannel, CountedChannel>]: string;
 } = {
   'brief-document':
-    'the document is printed by `mnema brief`, a read that writes nothing — no event, no ' +
-    'key, no run — so that printing it into a file or into a session never moves the record ' +
+    'the document is printed by `mnema brief`, a read that writes nothing (no event, no ' +
+    'key, no run), so that printing it into a file or into a session never moves the record ' +
     'it describes',
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
   'user-corrections':
-    'each proposal it records is itself the recorded fact — a decision awaiting a judgement, ' +
-    'with its own event and its own actor — so a second fact saying the channel served would ' +
+    'each proposal it records is itself the recorded fact (a decision awaiting a judgement, ' +
+    'with its own event and its own actor), so a second fact saying the channel served would ' +
     'repeat it',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
-    'writes nothing — no event, no key, no run — so a count of what a session did never moves the ' +
+    'writes nothing (no event, no key, no run), so a count of what a session did never moves the ' +
     'record it counts',
   'subagent-handback':
     'the reason it hands a subagent is printed by `mnema handback`, which reads the payload and the ' +
-    'record’s switches and writes nothing — no event, no key, no run — so a check of a reply never ' +
+    'record’s switches and writes nothing (no event, no key, no run), so a check of a reply never ' +
     'moves the record',
   'agent-accepts':
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
     'a second fact saying it was served would repeat the first',
   'edit-refuses-a-write':
-    'each refusal it hands a host is itself the recorded fact — one `channel.refused` per ' +
-    'rule, appended before the reply, or no refusal at all — so a second fact saying the ' +
+    'each refusal it hands a host is itself the recorded fact (one `channel.refused` per ' +
+    'rule, appended before the reply, or no refusal at all), so a second fact saying the ' +
     'channel was served would repeat the first',
 };
 
@@ -580,13 +580,13 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'that write',
   'edit-asks-a-person':
     'the pause before a file is written where the record asks that a person look ' +
-    'first — the rules go on arriving, and nothing stops',
+    'first: the rules go on arriving, and nothing stops',
   'edit-refuses-a-write':
-    'the refusal of a write where a rule of the record refuses one — such a write goes ' +
+    'the refusal of a write where a rule of the record refuses one: such a write goes ' +
     'through, the rules go on arriving, and a rule that asks for a person still asks',
   'agent-accepts':
     'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
-    'only a person at the command line can accept — a proposed decision waits, and nothing ' +
+    'only a person at the command line can accept: a proposed decision waits, and nothing ' +
     'else changes',
   'edit-first-write-gate':
     'the hold on the first write of a session to a file a rule addresses: with it on, that ' +
@@ -633,7 +633,7 @@ export const NOT_SWITCHABLE: {
 } = {
   'skills-answer':
     'it is the reply to a caller that asked for a pattern by id, so switching it off ' +
-    'would not stop a charge — it would make a tool answer nothing to whoever called it',
+    'would not stop a charge: it would make a tool answer nothing to whoever called it',
   'exported-skill':
     'it is a file somebody asked to have written, in somebody else’s directory and ' +
     'format; what governs whether it exists is the command that writes it',

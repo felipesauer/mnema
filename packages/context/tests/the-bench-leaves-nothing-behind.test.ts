@@ -142,11 +142,11 @@ describe('the bench leaves nothing behind', () => {
   it('removes it when the test that made it finishes', () => {
     expect(
       appeared,
-      'the case that names the sandbox did not run — this one cannot speak without it',
+      'the case that names the sandbox did not run: this one cannot speak without it',
     ).not.toBeNull();
     expect(
       existsSync(appeared as string),
-      `the sandbox ${appeared} outlived the test that made it — every run of the suite leaves one behind`,
+      `the sandbox ${appeared} outlived the test that made it: every run of the suite leaves one behind`,
     ).toBe(false);
   });
 });

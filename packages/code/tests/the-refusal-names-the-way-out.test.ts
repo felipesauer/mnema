@@ -419,7 +419,7 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
     expect(said).toContain(`It speaks for ${founded} again once ${theirs} lets it go`);
     expect(said).toContain(`a machine whose writes here speak for ${theirs} runs`);
     expect(said).toContain(
-      `Or it can leave ${founded} instead — the identity it founded here, whose only key it is, so another key joins it first`,
+      `Or it can leave ${founded} instead: the identity it founded here, whose only key it is, so another key joins it first`,
     );
     expect(said).not.toContain('can only go back');
     expect(theWayOutOf(said, founded).leftIn).toBe(theirs);
@@ -556,7 +556,7 @@ describe('a key that is the only key of both identities: the other key being a c
     const { b, atB, fp, founded } = withABackup();
     pull(atB);
     const enrolled = mnema(atB, b, 'key', 'enroll', requestFrom(b, founded));
-    expect(enrolled.stdout).toContain(`Key ${fp} is already in ${founded} — nothing recorded.`);
+    expect(enrolled.stdout).toContain(`Key ${fp} is already in ${founded}: nothing recorded.`);
     const revoked = mnema(atB, b, 'key', 'revoke', fp, '--reason', 'leave the one I founded');
     expect(revoked.stderr).toContain('Refused (LAST_KEY)');
   }, 120_000);

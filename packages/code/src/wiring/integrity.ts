@@ -56,7 +56,7 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
   return divergent.map((move) =>
     fact(
-      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')} — by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`,
+      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')}, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`,
       0,
     ),
   );
