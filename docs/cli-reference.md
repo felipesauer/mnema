@@ -743,7 +743,7 @@ the tree the waiver will land in, and whether a cut of it is already authorized:
 
 ```sh
 mnema tail list
-#> 2 tail(s) holding events — the ones a cut can name:
+#> 2 tail(s) holding events (the ones a cut can name):
 #>   8f21ab…-3c9d0e…  public   41 event(s) through 5e4391d8…  the tail of mnid:60a50d38…  ·  no waiver
 #>   4b90cd…-7ae112…  private  12 event(s) through 9c02f7a1…  the tail of mnid:c0fc3c71…  ·  no waiver
 ```
@@ -753,7 +753,7 @@ mnema tail prune 8f21ab…-3c9d0e… --reason "the person asked to be taken out"
 #> Authorized the cut of tail 8f21ab…-3c9d0e…
 #>   41 event(s) through 5e4391d8…, the tail of mnid:60a50d38…
 #>   authorized by mnid:c0fc3c71…
-#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   Landed in the public tree: committed with the repository, so it reaches every clone.
 #>   The tail is still on disk at /path/to/repo/.mnema/tails/8f21ab…-3c9d0e… — nothing was removed.
 #>   Git history, any remote and every clone still hold what that tail recorded: …
 ```
@@ -1156,7 +1156,7 @@ mnema audit exposure
 #> 1 of 4 record(s) hold a credential format:
 #>   public  2026-01-01  memory.captured  019fa8b7-0410-717b-9af2-cfeb013fc4ac  aws-access-key, url-password
 #>
-#>   These records are permanent — nothing deletes a fact. Rotate the credentials.
+#>   These records are permanent: nothing deletes a fact. Rotate the credentials.
 #>   A public record is committed and on every machine that cloned the repository.
 ```
 
@@ -1323,7 +1323,7 @@ mnema brief
 #>
 #> # What governs the work here
 #> …
-#> It carries what is COMMITTED to this project — the record a clone of the repository
+#> It carries what is COMMITTED to this project: the record a clone of the repository
 #> gets, and nothing kept privately on one machine or for one person. A rule recorded
 #> that way is not below, and each heading counts what is printed under it.
 #> …
@@ -1340,8 +1340,8 @@ mnema brief
 #> 241 more decisions are recorded here and awaiting a judgement, and none is below.
 #> Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 #>
-#> - **ADR-2 — Keep the runbook in the record** · `019faa06-30e1-7a41-9c05-3d8e6f2a1b44`
-#> - **ADR-1 — Rotate the credentials every quarter** · `019faa06-335f-7b02-8e11-6c2fa9d41e07`
+#> - **ADR-2: Keep the runbook in the record** · `019faa06-30e1-7a41-9c05-3d8e6f2a1b44`
+#> - **ADR-1: Rotate the credentials every quarter** · `019faa06-335f-7b02-8e11-6c2fa9d41e07`
 ```
 
 Each heading says how many are **awaiting a judgement**: recorded here, ruled on by
@@ -1488,7 +1488,7 @@ mnema switch
 ```sh
 mnema switch off edit-rules-push --reason "not while I am porting this"
 #> Switched edit-rules-push off
-#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   Landed in the public tree: committed with the repository, so it reaches every clone.
 #>   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it
 #>   was made by mnid:60a50d38… at 2026-08-19T11:04:07.512Z.
 #>   Nothing was removed and nothing else stopped: the record still holds what it held, …
