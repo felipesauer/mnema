@@ -296,7 +296,7 @@ describe('the sentence under the ceiling of a host that counts bytes', () => {
   }
 
   async function refusing(path: string, dashes: number): Promise<void> {
-    const id = idIn(await did('decision', 'record', `Frozen ${'—'.repeat(dashes)}`, 'Stop'));
+    const id = idIn(await did('decision', 'record', `Frozen ${'–'.repeat(dashes)}`, 'Stop'));
     await did('decision', 'move', 'accept', id, '--note', 'agreed');
     await did('link', id, path, '--rel', 'refuses-a-write');
   }

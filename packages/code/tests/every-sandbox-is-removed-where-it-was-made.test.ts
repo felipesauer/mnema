@@ -282,7 +282,7 @@ describe('the instrument reads what it claims to read', () => {
     ).toBeGreaterThan(100);
     expect(
       new Set(CREATORS.map((c) => c.where.split('/')[1])).size,
-      'sandboxes under tmpdir() were found in only one package — the sweep is too narrow',
+      'sandboxes under tmpdir() were found in only one package: the sweep is too narrow',
     ).toBeGreaterThan(1);
   });
 
@@ -333,7 +333,7 @@ describe('the instrument reads what it claims to read', () => {
     const pty = MAKINGS.filter((m) => m.where === 'packages/code/tests/support/pty.ts');
     expect(
       pty.length,
-      'support/pty.ts no longer makes a sandbox — pick another innocent file',
+      'support/pty.ts no longer makes a sandbox: pick another innocent file',
     ).toBe(1);
     expect(
       pty[0]?.onTheMachinesTemp,
@@ -352,7 +352,7 @@ describe('a sandbox under tmpdir() is removed by the file that made it', () => {
     const leaking = CREATORS.filter((c) => !c.removes).map((c) => c.where);
     expect(
       leaking,
-      'these files make a directory under tmpdir() and never remove one — every run of the suite leaves them in /tmp',
+      'these files make a directory under tmpdir() and never remove one: every run of the suite leaves them in /tmp',
     ).toEqual([]);
   });
 
@@ -362,7 +362,7 @@ describe('a sandbox under tmpdir() is removed by the file that made it', () => {
     );
     expect(
       astray,
-      'these files make a sandbox under tmpdir() whose name no removal in them reaches — the removal is aimed at something else',
+      'these files make a sandbox under tmpdir() whose name no removal in them reaches: the removal is aimed at something else',
     ).toEqual([]);
   });
 });

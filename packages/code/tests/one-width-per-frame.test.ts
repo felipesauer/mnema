@@ -946,7 +946,7 @@ describe('one authority over how wide text is, and nothing on the surface counts
       module.where === THE_AUTHORITY
         ? []
         : COUNTS_ITS_OWN_COLUMNS.filter((shape) => shape.term.test(module.code)).map(
-            (shape) => `${module.where} — ${shape.what}`,
+            (shape) => `${module.where}: ${shape.what}`,
           ),
     );
     expect(counting.sort()).toEqual([]);

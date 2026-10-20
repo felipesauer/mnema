@@ -236,11 +236,11 @@ beforeEach(async () => {
   mkdirSync(join(sandbox, 'home'), { recursive: true });
   writeFileSync(
     join(repo, 'docs', 'adr', GATEWAY),
-    ['# ADR-008 — The gateway is idempotent', '', '## Context', '', GATEWAY_BODY, ''].join('\n'),
+    ['# ADR-008: The gateway is idempotent', '', '## Context', '', GATEWAY_BODY, ''].join('\n'),
   );
   writeFileSync(
     join(repo, 'docs', 'adr', LEDGER),
-    ['# ADR-011 — The ledger is append-only', '', '## Context', '', LEDGER_BODY, ''].join('\n'),
+    ['# ADR-011: The ledger is append-only', '', '## Context', '', LEDGER_BODY, ''].join('\n'),
   );
   originalCwd = process.cwd();
   originalXdg = process.env.XDG_DATA_HOME;

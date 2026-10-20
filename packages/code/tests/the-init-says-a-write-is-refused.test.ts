@@ -344,7 +344,7 @@ const NEED_NOT_ASK: Readonly<Record<string, string>> = {
     'core’s `enrollAgentFromRequest`, which refuses a key the roster no longer counts ' +
     '(`CANNOT_VOUCH`) before it appends',
   'mcp/session.ts':
-    'the asker a session’s reads name, read from the private or the global tree — trees no ' +
+    'the asker a session’s reads name, read from the private or the global tree: trees no ' +
     'retirement of a person’s key reaches, since `key revoke` of one writes the public one ' +
     'alone; every write the session makes asks its own tree before it appends',
 };
