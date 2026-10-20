@@ -3,7 +3,7 @@ $ mnema
 ! Usage: mnema [options] [command]
 !
 ! Your decisions, handed to your agents' sessions and held at the edits they
-! govern — append-only and signed in the repository, and checkable by anyone.
+! govern: append-only and signed in the repository, and checkable by anyone.
 !
 ! Options:
 !   -V, --version   output the version number
@@ -115,7 +115,7 @@ $ mnema --help
 | Usage: mnema [options] [command]
 |
 | Your decisions, handed to your agents' sessions and held at the edits they
-| govern — append-only and signed in the repository, and checkable by anyone.
+| govern: append-only and signed in the repository, and checkable by anyone.
 |
 | Options:
 |   -V, --version   output the version number

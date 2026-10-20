@@ -118,21 +118,21 @@ function plantCredential(project: string, scope: Scope, subject: string): string
 /** Captures a clean memory in a project (or the session's own), returning its id. */
 function memoryIn(session: Session, content: string, where: { project?: string } = {}): string {
   const captured = runCaptureMemory(session, { content, ...where });
-  if (!captured.ok) throw new Error(`setup: capture refused — ${captured.message}`);
+  if (!captured.ok) throw new Error(`setup: capture refused: ${captured.message}`);
   return captured.id;
 }
 
 /** The exposure report, or a thrown setup error: `NO_PROJECT` has its own test. */
 function reportOn(session: Session) {
   const result = runExposureTool(session);
-  if (!result.ok) throw new Error(`exposure refused — ${result.message}`);
+  if (!result.ok) throw new Error(`exposure refused: ${result.message}`);
   return result.value;
 }
 
 /** The shapes per record, or a thrown setup error. */
 function shapesOn(session: Session) {
   const result = runAntipatternsTool(session);
-  if (!result.ok) throw new Error(`antipatterns refused — ${result.message}`);
+  if (!result.ok) throw new Error(`antipatterns refused: ${result.message}`);
   return result.value;
 }
 
@@ -147,14 +147,14 @@ function scannedIn(
 /** Drives a skill all the way to `deprecated` in whatever project a session adopted. */
 function deprecateASkill(session: Session, name: string): string {
   const created = runCreateSkill(session, { name, body: 'how it used to be done' });
-  if (!created.ok) throw new Error(`setup: create skill refused — ${created.message}`);
+  if (!created.ok) throw new Error(`setup: create skill refused: ${created.message}`);
   for (const [action, field] of [
     ['review', 'note'],
     ['adopt', 'note'],
     ['deprecate', 'reason'],
   ] as const) {
     const moved = runSkillTransition(session, { id: created.id, action, [field]: 'because' });
-    if (!moved.ok) throw new Error(`setup: ${action} refused — ${moved.message}`);
+    if (!moved.ok) throw new Error(`setup: ${action} refused: ${moved.message}`);
   }
   return created.id;
 }
@@ -455,7 +455,7 @@ describe('the door and the audit agree', () => {
     const session = openOn(only);
 
     const captured = runCaptureMemory(session, { content: `deploy with ${SECRET}` });
-    if (!captured.ok) throw new Error(`setup: capture refused — ${captured.message}`);
+    if (!captured.ok) throw new Error(`setup: capture refused: ${captured.message}`);
     expect(captured.replaced).toEqual(['aws-access-key']);
 
     // The record holds the placeholder, permanently: the value never arrived.

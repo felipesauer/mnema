@@ -68,24 +68,10 @@ const ESCAPES: readonly string[] = [
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
   '.github/': 26,
-  // the changelog
-  'CHANGELOG.md': 20,
-  // the front page
-  'README.md': 7,
-  // the security policy
-  'SECURITY.md': 4,
   // the manual
-  'docs/': 22,
-  // the page of @mnema/action
-  'packages/action/README.md': 9,
-  // the page of @mnema/chain
-  'packages/chain/README.md': 1,
-  // the manifest of @mnema/code, whose description the registry shows
-  'packages/code/package.json': 1,
-  // the page of @mnema/code
-  'packages/code/README.md': 2,
+  'docs/': 19,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 561,
+  'packages/code/src/': 427,
   // what it prints
   'packages/code/src/presentation/': 5,
   // the Sigstore reader
@@ -93,23 +79,11 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 637,
-  // @mnema/context
-  'packages/context/': 6,
-  // the page of @mnema/context
-  'packages/context/README.md': 41,
+  'packages/code/tests/': 585,
   // @mnema/core
-  'packages/core/': 10,
-  // the page of @mnema/core
-  'packages/core/README.md': 20,
-  // the page of @mnema/sdk
-  'packages/sdk/README.md': 1,
-  // the page of @mnema/stacks
-  'packages/stacks/README.md': 1,
-  // the page of @mnema/vscode
-  'packages/vscode/README.md': 1,
+  'packages/core/': 5,
   // the plugin for agent hosts
-  'plugin/': 10,
+  'plugin/': 2,
 };
 
 /**

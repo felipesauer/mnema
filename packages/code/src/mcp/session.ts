@@ -775,7 +775,7 @@ function sayWhereTheAgentIsNotInForce(
     log(
       choice.signs === 'nobody'
         ? oneLine(`agent key "${agentKey}" is not in force in ${where}: ${choice.refusal.message}`)
-        : `agent key "${agentKey}" is not in force in ${where} — this machine holds no key under that name, or the record there does not enrol it as "${agentKey}": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
+        : `agent key "${agentKey}" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "${agentKey}": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
     );
   }
 }
@@ -969,7 +969,7 @@ export class ReplacementsOwed {
     if (was.length === 0) return [];
     return [
       [
-        'What this connection recorded on its own — its session run, the edit hook’s facts:',
+        'What this connection recorded on its own (its session run, the edit hook’s facts):',
         ...replacementNotice(was),
       ].join('\n'),
     ];
@@ -1022,7 +1022,7 @@ function ensureRun(
   session.founding.opened(root, scope);
   const prepared = prepareRun(ctx, { agent: whichIn(trees, scope, session) });
   if (!prepared.ok) {
-    throw new Error(`could not open a session run: ${prepared.code} — ${prepared.message}`);
+    throw new Error(`could not open a session run: ${prepared.code}: ${prepared.message}`);
   }
   let started = false;
   const start = (): void => {
@@ -1032,7 +1032,7 @@ function ensureRun(
     session.writesBegun.add(root);
     const opened = prepared.start();
     if (!opened.ok) {
-      throw new Error(`could not open a session run: ${opened.code} — ${opened.message}`);
+      throw new Error(`could not open a session run: ${opened.code}: ${opened.message}`);
     }
     // SIGNED HERE, because opening a run is an act of writing and every act of writing
     // signs what it wrote. Nothing after this guarantees a later one: an operation whose

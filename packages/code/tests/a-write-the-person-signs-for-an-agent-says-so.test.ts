@@ -493,7 +493,7 @@ describe('a link taken back from the project that holds it', () => {
     await aSecondProject();
     const text = await retractedAs(join(repo, 'src'), repo);
 
-    expect(text.split('\n').slice(0, 2)).toEqual(['Retracted link rule-1 —governs→ src', LANDED]);
+    expect(text.split('\n').slice(0, 2)).toEqual(['Retracted link rule-1 -governs→ src', LANDED]);
     expect(text).not.toContain('In the project at');
     expect(noticesIn(text)).toEqual([]);
   });

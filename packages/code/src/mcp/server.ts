@@ -197,7 +197,7 @@ const PROJECT_ARG = z
   .min(1)
   .optional()
   .describe(
-    'Which project of this workspace the fact belongs to — its absolute path, as ' +
+    'Which project of this workspace the fact belongs to: its absolute path, as ' +
       'this server gave it; a bare name is refused. Omitted, it lands in the project this session ' +
       'resolved to (the one `bootstrap` names). Pass it whenever the work being ' +
       'recorded happened in a different project of this workspace.',
@@ -297,7 +297,7 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * by `every-description-reaches-the-model.test.ts`, which fails on the next word.
  */
 const OPEN_RUN_CONTRACT =
-  ' Runs: `thisSession` is true only when THIS connection opened it — false means ' +
+  ' Runs: `thisSession` is true only when THIS connection opened it: false means ' +
   'another session on this machine, live or abandoned, which the record cannot tell ' +
   'apart. An OPEN run carries `ageSeconds`, and `idleSeconds` only once it has ' +
   'recorded something, so NO `idleSeconds` means it recorded nothing; both compare ' +
@@ -510,11 +510,11 @@ export function buildMcpServer(options: McpServerOptions): {
       // holding a newline would otherwise write a second event nothing happened in.
       log(
         oneLine(
-          `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
+          `session opened: project=${opened.project ?? '(none: the global tree)'} ` +
             `(${landingOf(opened)}) ` +
             `workspaceProjects=${opened.workspaceProjects.length} ` +
-            `who=${opened.who ?? "(none yet — no key of this machine signs in this session's own trees)"} ` +
-            'runs=(none — the first write to a tree opens that tree’s run)',
+            `who=${opened.who ?? "(none yet: no key of this machine signs in this session's own trees)"} ` +
+            'runs=(none: the first write to a tree opens that tree’s run)',
         ),
       );
       // And what the walks PASSED OVER that still holds events: a home's `.mnema/`, a
@@ -558,7 +558,7 @@ export function buildMcpServer(options: McpServerOptions): {
     try {
       active = await ensureSession();
     } catch (error) {
-      log(`could not re-read the workspace: no session — ${messageOf(error)}`);
+      log(`could not re-read the workspace: no session: ${messageOf(error)}`);
       return;
     }
     try {
@@ -827,7 +827,7 @@ export function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefi
       const session = await ensureSession();
       const keyFile =
         error instanceof IdentityUnavailableError && error.restores !== undefined
-          ? ` — ${keyFileLineForAModel(error.restores, session.env.mnemaHome)}`
+          ? `: ${keyFileLineForAModel(error.restores, session.env.mnemaHome)}`
           : '';
       const unrecorded = effect === 'mutates' ? ` ${NOT_RECORDED}` : '';
       return refused(session, {
@@ -858,7 +858,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         'Record a point-in-time fact into the mnema chain, attributed to this ' +
         'agent and pinned to the current session. Optionally pick the scope it ' +
-        `lands in — ${SCOPE_CHOICES}; omitted, it follows the session ` +
+        `lands in: ${SCOPE_CHOICES}; omitted, it follows the session ` +
         'default (private for an agent in a project, global outside one). Optionally ' +
         'pick the project it lands in, when the workspace holds more than one. The ' +
         'reply says which tree it landed in.' +
@@ -893,7 +893,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'Record an observation ABOUT an entity (a task, decision, …) into the ' +
         'mnema chain, attributed to this agent and pinned to the current session. ' +
         'It carries the observed entity id (`about`), a short `topic`, and the ' +
-        'observation `text`. The `about` id is NOT checked to exist — a reference ' +
+        'observation `text`. The `about` id is NOT checked to exist: a reference ' +
         'to an entity in another tree is honest and resolved on read. Optionally ' +
         'pick the scope and the project it lands in; omitted, both follow the ' +
         'session default (private for an agent in a project, global outside one). ' +
@@ -957,7 +957,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     {
       title: 'Retract a link',
       description:
-        'Take back a link that was recorded by mistake — a `governs` on the wrong path, a ' +
+        'Take back a link that was recorded by mistake: a `governs` on the wrong path, a ' +
         'relation that does not hold. Name the edge exactly as `link_knowledge` took it. The ' +
         'link is NOT erased: a signed retraction carrying the `reason` is appended, and every ' +
         'read that applies a link stops seeing the edge when nobody else asserts it, so a rule ' +
@@ -981,7 +981,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       return recorded(
         active,
-        `Retracted link ${oneLine(result.subject)} —${oneLine(result.rel)}→ ${oneLine(result.target)}`,
+        `Retracted link ${oneLine(result.subject)} -${oneLine(result.rel)}→ ${oneLine(result.target)}`,
         result,
       );
     },
@@ -992,13 +992,13 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     {
       title: 'Record a handoff',
       description:
-        'Record a handoff on a task — work passed from one agent to another — into ' +
+        'Record a handoff on a task (work passed from one agent to another) into ' +
         'the mnema chain, attributed to this agent and pinned to the current ' +
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
         'to exist. Optionally pick the scope and the project; omitted, a handoff is ' +
-        'coordination between actors and lands PUBLIC — committed, so both of them ' +
-        'reach it (global outside a project). A handoff has no id of its own — its ' +
+        'coordination between actors and lands PUBLIC: committed, so both of them ' +
+        'reach it (global outside a project). A handoff has no id of its own: its ' +
         'subject is the task. The reply says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
@@ -1032,15 +1032,15 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     {
       title: 'Link knowledge',
       description:
-        'Link one piece of knowledge to another — a directed edge from a `subject` ' +
+        'Link one piece of knowledge to another: a directed edge from a `subject` ' +
         'entity to a `target` entity, labeled by a relation `rel`. The relation is ' +
         `an OPEN string (${RECOMMENDED_RELATIONS}). An \`ADR-<n>\` label ` +
         'is recorded as the id of the one decision it names, and refused when several carry it or ' +
-        'none does. Neither endpoint is checked to exist — a link is legitimately cross-tree, ' +
+        'none does. Neither endpoint is checked to exist: a link is legitimately cross-tree, ' +
         'resolved on read. Optionally ' +
         'pick the scope and the project the EDGE is recorded in; omitted, a link ' +
         'asserts a relation between the project’s records and lands PUBLIC (global ' +
-        'outside a project). A link has no id of its own — it is an edge. The reply ' +
+        'outside a project). A link has no id of its own: it is an edge. The reply ' +
         'says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
@@ -1049,7 +1049,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .string()
           .min(1)
           .describe(
-            'What the link points at: the id of another record, or — under `governs` — a ' +
+            'What the link points at: the id of another record, or, under `governs`, a ' +
               'path in the working tree, relative to the project root.',
           ),
         rel: z.string().min(1).describe('The relation label (an open string).'),
@@ -1077,7 +1077,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // recording a gate for somebody is exactly who most needs to see its reach.
       return recorded(
         active,
-        `Linked ${subject} —${result.recorded[0]}→ ${result.recordedTarget ?? target}`,
+        `Linked ${subject} -${result.recorded[0]}→ ${result.recordedTarget ?? target}`,
         result,
         {
           after: reachNotice(result.reach),
@@ -1094,8 +1094,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'Open a task in the mnema chain, attributed to this agent and pinned to ' +
         'the current session. A task needs a title; it starts in the workflow’s ' +
         'initial state and is moved from there with task_transition. Optionally ' +
-        `pick the scope it lands in — ${SCOPE_CHOICES}; omitted, a ` +
-        'task is the team’s work board and lands PUBLIC — committed, so a clone has ' +
+        `pick the scope it lands in: ${SCOPE_CHOICES}; omitted, a ` +
+        'task is the team’s work board and lands PUBLIC: committed, so a clone has ' +
         'the board (global outside a project). Optionally pick the project it lands ' +
         'in, when the workspace holds more than one. Returns the minted id (the key ' +
         'to move it), the short alias a human reads, and which tree it landed in.' +
@@ -1127,7 +1127,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         `Move an existing task to a new state (${listed(TASK_ACTIONS)}). The ` +
         'workflow gate decides whether the move is legal and carries the proof it ' +
-        `requires — ${slashed(actionsRequiring('task', 'reason'))} need a reason, ` +
+        `requires: ${slashed(actionsRequiring('task', 'reason'))} need a reason, ` +
         `${slashed(actionsRequiring('task', 'note'))} a note, ` +
         `${slashed(actionsRequiring('task', 'feedback'))} a feedback; an illegal move ` +
         'or missing proof is refused. ' +
@@ -1170,17 +1170,17 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'Record a decision into the mnema chain, attributed to this agent and ' +
         'pinned to the current session. A decision needs both a title and a ' +
         'rationale (why it was made). Optionally record what you considered and ' +
-        'turned down, and why not (`alternatives`) — the reasoning a later reader ' +
+        'turned down, and why not (`alternatives`): the reasoning a later reader ' +
         'needs when somebody proposes the thing you already rejected; it is ' +
         'searchable, so `search` answers "did we already turn this down?". A ' +
         'decision is immutable, so it is recorded now: an option rejected later is ' +
-        'a new decision, or supersedes this one. Optionally pick the scope it lands in — ' +
+        'a new decision, or supersedes this one. Optionally pick the scope it lands in: ' +
         `${SCOPE_CHOICES}; omitted, a decision is a declaration about the ` +
-        'project and lands PUBLIC — committed, so the team gets it on clone (global ' +
+        'project and lands PUBLIC: committed, so the team gets it on clone (global ' +
         'outside a project); it is born `proposed`, so recording one proposes it ' +
         'rather than settling it. Optionally pick the project it lands in, when the ' +
-        'workspace holds more than one. Returns the citable ADR-<n> label — a ' +
-        'decision has no short alias — and which tree it landed in.' +
+        'workspace holds more than one. Returns the citable ADR-<n> label (a ' +
+        'decision has no short alias) and which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('The decision title.'),
@@ -1190,7 +1190,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .min(1)
           .optional()
           .describe(
-            'What was considered and turned down, and WHY NOT — both halves; the ' +
+            'What was considered and turned down, and WHY NOT: both halves; the ' +
               'name of a rejected option without its reason loses most of the value. ' +
               'Omit it when there was no real alternative.',
           ),
@@ -1221,11 +1221,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         `Move an existing decision to a new state. ${DECISION_VERDICTS} a proposed ` +
         'decision (each needs a note); supersede a proposed or accepted decision ' +
-        'with a later one — supersede needs the successor decision id in `by` and ' +
+        'with a later one: supersede needs the successor decision id in `by` and ' +
         `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} REFUSE it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
-        'in the project that holds it — the id decides, so no `project` is taken. An ' +
+        'in the project that holds it: the id decides, so no `project` is taken. An ' +
         'acceptance made through this tool is recorded as an agent’s, says so in the ' +
         'reply, and is marked as such wherever the decision is read. The switch ' +
         '`agent-accepts` turns it off, and then an accept is refused.' +
@@ -1240,7 +1240,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .string()
           .optional()
           .describe(
-            'The successor decision id — required by supersede, refused with any other action.',
+            'The successor decision id: required by supersede, refused with any other action.',
           ),
         note: proofField('Why this verdict', 'decision', 'note'),
         reason: proofField('Why it is being replaced', 'decision', 'reason'),
@@ -1274,8 +1274,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'Propose a reusable pattern (a skill) into the mnema chain, attributed to ' +
         'this agent and pinned to the current session. A skill needs both a name ' +
         '(a short title) and a body (the reusable pattern itself). Optionally pick ' +
-        `the scope it lands in — ${SCOPE_CHOICES}; omitted, a pattern ` +
-        'states how the work is done here and lands PUBLIC — committed, so the team ' +
+        `the scope it lands in: ${SCOPE_CHOICES}; omitted, a pattern ` +
+        'states how the work is done here and lands PUBLIC: committed, so the team ' +
         'gets it on clone (global outside a project); it is born `proposed`, so ' +
         'creating one proposes it rather than adopting it. Optionally pick the ' +
         'project it lands in, when the workspace holds more than one. Returns the ' +
@@ -1313,7 +1313,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `deprecate an adopted one that fell out of use. ${slashed(actionsRequiring('skill', 'note'))} each ` +
         `need a note; ${slashed(actionsRequiring('skill', 'reason'))} needs a reason. An illegal move or missing proof ` +
         'is refused with the gate’s reason. The skill is looked for in EVERY project ' +
-        'of this workspace and the move lands in the project that holds it — the id ' +
+        'of this workspace and the move lands in the project that holds it: the id ' +
         'decides, so no `project` is taken.' +
         RECORD_CONTRACT,
       inputSchema: {
@@ -1364,14 +1364,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // the catalog's own word.
       description:
         "The opening context for this session's actor: where they left off, the LIVE work, " +
-        'the patterns, the DECISIONS IN FORCE — settled here and not replaced — and what ' +
+        'the patterns, the DECISIONS IN FORCE (settled here and not replaced) and what ' +
         'is AWAITING A JUDGEMENT. Derived from the chain. Every list is NAMES, never ' +
         'bodies: a task as id, title and state, a pattern as id and name, a decision as ' +
         'id, title and its ADR-<n> label. For the rest, by id: `next_actions` for a ' +
         'task’s moves, `skills` for a pattern (asking records the consultation), ' +
         '`read_record` for a decision’s argument and its label. Only a decision IN FORCE ' +
         'is listed: proposed, rejected or superseded is left out. `awaitingJudgement` is ' +
-        'one list of all three: `kind` says which, `state` what is owed — `proposed` the ' +
+        'one list of all three: `kind` says which, `state` what is owed: `proposed` the ' +
         'first ruling, `reviewed` the adoption call, `IN_REVIEW` the approve-or-send-back. ' +
         'A DONE or CANCELED task is on NEITHER list; ask `search` (kind `task`). Three ' +
         'lists are CUT to the freshest; `workTotal`, `decisionsTotal` and ' +
@@ -1399,27 +1399,27 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     mutatesTheRecord('skills'),
     {
-      title: 'Skills — the patterns to work by, and the ones awaiting a ruling',
+      title: 'Skills: the patterns to work by, and the ones awaiting a ruling',
       description:
-        'Read the patterns (skills) recorded here — the reusable recipe, checklist ' +
+        'Read the patterns (skills) recorded here: the reusable recipe, checklist ' +
         'or convention itself, not just its name. ' +
         'Call it with no `id` (an empty argument object) to get every ADOPTED ' +
         'pattern: those are the ways of working this project and ' +
         'machine have settled on, and nothing else arrives that way. That answer ' +
         'carries the BODIES when they fit in one read, and their NAMES when they do ' +
-        'not — it says which it did, and how many there are, so a list of names is ' +
+        'not: it says which it did, and how many there are, so a list of names is ' +
         'an invitation to ask for the one you need by `id` and never a record of ' +
         'empty patterns. Call it with an ' +
         '`id` to get that one, which is also how you read a pattern that is still ' +
-        '`proposed` or `reviewed` — every item `bootstrap` lists as awaiting a ' +
-        'judgement — because a pattern cannot be ruled on without being read. Each ' +
+        '`proposed` or `reviewed` (every item `bootstrap` lists as awaiting a ' +
+        'judgement), because a pattern cannot be ruled on without being read. Each ' +
         'answer says the `state` it served, and a pattern that is not `adopted` is ' +
         'not how the work is done here; it was served so the ruling can be made on ' +
         'its text. A `rejected` or `deprecated` pattern IS refused: a way of working ' +
         'the project retired is worse to hand over than nothing. Consulting a ' +
         'pattern is RECORDED against this ' +
         'session (once per skill), so the record shows which work was informed by ' +
-        'which pattern — it records that you read it, never that you followed it.' +
+        'which pattern: it records that you read it, never that you followed it.' +
         SERVED_PATTERN_CONTRACT,
       inputSchema: {
         id: z
@@ -1427,7 +1427,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .min(1)
           .optional()
           .describe(
-            'A single skill id to read — the only way to reach one awaiting a ' +
+            'A single skill id to read: the only way to reach one awaiting a ' +
               'ruling, and the way to a body the mass answer served only the name ' +
               'of; omitted, every adopted pattern.',
           ),
@@ -1465,9 +1465,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('focus'),
     {
-      title: 'Focus — what I am touching now',
+      title: 'Focus: what I am touching now',
       description:
-        'Show the open runs of THIS session’s actor — the work in flight right ' +
+        'Show the open runs of THIS session’s actor: the work in flight right ' +
         'now. Use it to answer "what am I in the middle of". Read-only: it derives ' +
         'from the chain and writes nothing. Reports only this machine’s own open ' +
         'runs (the actor is the session, never a supplied value).' +
@@ -1483,11 +1483,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('resume'),
     {
-      title: 'Resume — where I left off',
+      title: 'Resume: where I left off',
       description:
         'Show where THIS session’s actor left off: their most recent run (open OR ' +
         'already ended) plus their current focus. Use it at the start of a session ' +
-        'to answer "where was I" — even a run that ended carries the goal that ' +
+        'to answer "where was I": even a run that ended carries the goal that ' +
         'reminds you. When this session has a run of its own here, that is the one ' +
         'reported. Read-only: it derives from the chain and writes nothing.' +
         OPEN_RUN_CONTRACT,
@@ -1502,10 +1502,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('next_actions'),
     {
-      title: 'Next actions — what moves a task allows',
+      title: 'Next actions: what moves a task allows',
       description:
         'Show the transitions the workflow allows a task next, from its current ' +
-        'state. Use it to answer "what can I do to this task" — each suggestion is a ' +
+        'state. Use it to answer "what can I do to this task": each suggestion is a ' +
         'real move the gate would authorize. A terminal task returns an empty list ' +
         '(no legal moves). The task is looked for in EVERY project of this workspace; ' +
         'an id no tree of it holds is refused, naming the projects searched. Read-only.',
@@ -1529,14 +1529,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('guard'),
     {
-      title: 'Guard — would a move be allowed?',
+      title: 'Guard: would a move be allowed?',
       description:
-        'Simulate whether a task transition would be permitted BEFORE trying it — ' +
+        'Simulate whether a task transition would be permitted BEFORE trying it: ' +
         'a dry-run of the workflow gate that writes NOTHING. Use it to answer "may ' +
         'I approve/complete/… this task, and if not, why?" without making the move. ' +
         'It reads the task’s current state and returns the gate’s own verdict: ' +
         'ALLOWED (with the state the move would reach) or REFUSED (with the gate’s ' +
-        'reason — an illegal move, missing proof, or who == which). Pass the same ' +
+        'reason: an illegal move, missing proof, or who == which). Pass the same ' +
         'proof you would carry (note/reason/feedback) to see if that proof suffices. ' +
         'It also refuses, with the write’s own code and words, what this machine’s key would ' +
         'be refused in the task’s tree: a key protected by a passphrase that is not set, an ' +
@@ -1593,26 +1593,26 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('search'),
     {
-      title: 'Search — find what has been recorded',
+      title: 'Search: find what has been recorded',
       description:
         'Search everything recorded in EVERY project of this workspace and on this ' +
-        'machine — memories, observations, decisions, tasks and skills — by the words ' +
+        'machine (memories, observations, decisions, tasks and skills) by the words ' +
         'a person wrote in them. Use it to answer "have we written about X?" or ' +
         '"what did we decide about Y?" BEFORE assuming nothing is recorded. ' +
         'With NO term it lists the most recent records instead ("what has been ' +
-        'going on here" — call it with an empty argument object). Narrow with ' +
+        'going on here": call it with an empty argument object). Narrow with ' +
         'kind, scope, state or a time window. ' +
-        'Returns an INDEX — id, kind, tree, project, when, and one line each — not ' +
+        'Returns an INDEX (id, kind, tree, project, when, and one line each), not ' +
         'the bodies; take an id to `read_record` for the whole thing. It searches ' +
         'every tree it can see (the team’s, this machine’s, your own) in every ' +
         'project you have open, and each hit says which project and which tree hold ' +
         'it. Two limits worth knowing: each tree ranks its own matches against its ' +
         'own words, so the merged order is a good approximation and not one global ' +
-        'ranking; and `limit` can fill the answer from one project — when it leaves ' +
+        'ranking; and `limit` can fill the answer from one project: when it leaves ' +
         'another project’s matches out entirely, the reply names that project under ' +
         '`hidden`, and asking again with a larger limit reaches them. The order is ' +
         'when each was RECORDED, not when it last moved, and `kind` is the catalog’s ' +
-        'own name, taken verbatim — the one `unread` hands you. Read-only.',
+        'own name, taken verbatim, the one `unread` hands you. Read-only.',
       inputSchema: {
         term: z
           .string()
@@ -1664,16 +1664,16 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('read_record'),
     {
-      title: 'Read record — one whole record by id',
+      title: 'Read record: one whole record by id',
       description:
-        'Read ONE record in full — a memory’s content, a decision’s rationale and ' +
+        'Read ONE record in full (a memory’s content, a decision’s rationale and ' +
         'what it turned down, an ' +
-        'observation’s text, a task — by the id an index gave you: `search`, or the ' +
+        'observation’s text, a task) by the id an index gave you: `search`, or the ' +
         'decisions `bootstrap` lists (which carry the title and not the argument). ' +
         'This is the second ' +
         'half of a search: the index tells you what exists, this tells you what it ' +
         'says. It looks in EVERY project of this workspace, not only the one you are ' +
-        'working in — an id is minted once and lives in one place — and the answer ' +
+        'working in (an id is minted once and lives in one place) and the answer ' +
         'says which project and which tree hold it. A skill id is refused here and ' +
         'pointed at the `skills` tool, which serves a pattern’s body and records ' +
         'the consultation. An id no project holds is refused, in a reply that names ' +
@@ -1718,12 +1718,12 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('audit_timeline'),
     {
-      title: 'Audit — the full history of an entity',
+      title: 'Audit: the full history of an entity',
       description:
         'Show the complete history of one entity (a task, decision, skill, …) ' +
         'across ALL trees of ALL projects in this workspace: every event where it is ' +
         'the subject, plus events that refer to it (an observation about it, a link ' +
-        'whose target is it) — which may live in another tree, or in another project. ' +
+        'whose target is it), which may live in another tree, or in another project. ' +
         'Use it to answer "tell me the whole story of this entity", including the part ' +
         'that happened in a sibling codebase; each entry says which project it came ' +
         'from. An id no event touches returns an empty history (a valid answer). ' +
@@ -1745,19 +1745,19 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('audit_refs'),
     {
-      title: 'Audit — what an entity is connected to',
+      title: 'Audit: what an entity is connected to',
       description:
         'Show what one entity is connected to across ALL trees of ALL projects in ' +
         'this workspace: the observations about it, the links into and out of it, the ' +
-        'decision that superseded it. Use it after `search` to pull on a thread — ' +
+        'decision that superseded it. Use it after `search` to pull on a thread: ' +
         '"what else is tied to this?". By default it is the NEIGHBOURHOOD (one hop, ' +
         'either direction); set `direction` to "out" (what it points at) or "in" ' +
         '(what points at it) with a larger `depth` to follow a lineage, such as a ' +
         'decision’s supersede chain. `direction: "in"` is how you answer "have I ' +
-        'already applied this in my other projects?" — the things that point at it ' +
+        'already applied this in my other projects?": the things that point at it ' +
         'are in THEIR records, and every edge says which project asserts it. A far ' +
-        'end no visible tree holds comes back marked unresolved — that is legitimate, ' +
-        'not an error — and the answer says when the depth cut it. Read-only.',
+        'end no visible tree holds comes back marked unresolved (that is legitimate, ' +
+        'not an error), and the answer says when the depth cut it. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The entity id to walk from (from `search`).'),
         direction: z
@@ -1795,7 +1795,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     {
       title: 'Which recorded rules govern this path',
       description:
-        'Show which rules of THIS project\u2019s record are addressed at a path — a ' +
+        'Show which rules of THIS project\u2019s record are addressed at a path: a ' +
         'decision or a pattern linked to it with `rel: "governs"`, most specific ' +
         'first. Use it before changing a file, to find the decisions that already ' +
         'apply to it; the id it returns is what you cite when you follow one. An ' +
@@ -1803,7 +1803,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         '`src/collate/fold.ts` and does NOT govern `src/collate_test.rb`. Every ' +
         'answer carries three counts, zeroes included: how many rules cover this ' +
         'path, how many address this project at all, and how many address something ' +
-        'the working tree no longer holds — a rule whose file was moved or deleted ' +
+        'the working tree no longer holds: a rule whose file was moved or deleted ' +
         'has stopped governing, and the third count is how you find out. It reports ' +
         'each rule\u2019s state and decides nothing: it refuses nothing, blocks ' +
         'nothing, and does not judge whether a rule still holds. Addresses come from ' +
@@ -1837,18 +1837,18 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'The HOST calls this one, as a `PreToolUse` hook, before a file is written: it ' +
         'hands the session the rules of this project’s record that are addressed ' +
         'at that path AND still in force, as one short text that lands beside the ' +
-        'result of that write — each rule’s name, the address that matched, and the ' +
+        'result of that write: each rule’s name, the address that matched, and the ' +
         'id you cite. You may call it yourself; what ' +
         'you get back is a HOOK REPLY, because that is the only shape this host reads, ' +
         'and `{}` when there is nothing to say. Where a rule of the record is linked to ' +
         'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
         '`permissionDecision: "ask"` and the host holds the write until a PERSON ' +
-        'decides — citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
+        'decides, citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
         'input: none of the three is representable in what it returns. It WRITES: every ' +
         'asking is appended to the record as a fact citing the rule and the path you ' +
         'named, before the reply is composed, and the first service of a session is ' +
-        'appended too. For the whole answer — every address whatever its state, whose ' +
-        'file no longer exists, and the counts for each relation — ask ' +
+        'appended too. For the whole answer (every address whatever its state, whose ' +
+        'file no longer exists, and the counts for each relation) ask ' +
         '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
         'for on every edit.' +
         RECORD_CONTRACT,
@@ -1884,19 +1884,19 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('audit_accountability'),
     {
-      title: 'Audit — who authorized what',
+      title: 'Audit: who authorized what',
       description:
         'Show who authorized what and which agent executed it, across ALL trees of ' +
         'ALL projects in this workspace. Use it to answer "who did what" over the ' +
-        'whole record — with no filter it accounts for everything (like git ' +
+        'whole record: with no filter it accounts for everything (like git ' +
         'shortlog). Optionally narrow by a time window (from/to), a single author ' +
         '(who), or a single executing agent (which). The answer is ONE ACCOUNT PER ' +
-        'PROJECT (plus the machine-global tree, which belongs to none) — each with ' +
+        'PROJECT (plus the machine-global tree, which belongs to none), each with ' +
         'its own total and per-author breakdown (counts by kind and by executing ' +
         'agent) and, beside each author, `foundedBeside`: every tree of that record ' +
         'where the identity was founded after others already were, with when and ' +
-        'which identities were there — somebody new to the record, or one person ' +
-        'under a second key; empty when it founded first or was vouched for. ' +
+        'which identities were there (somebody new to the record, or one person ' +
+        'under a second key); empty when it founded first or was vouched for. ' +
         'There is deliberately no combined total: a count belongs to a ' +
         'record, and adding several projects up answers "how much have I written ' +
         'anywhere" under the name of "how much is in this record". Add them yourself ' +
@@ -1933,25 +1933,25 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('audit_exposure'),
     {
-      title: 'Audit — where a credential may already be recorded',
+      title: 'Audit: where a credential may already be recorded',
       description:
-        'Show which records hold something shaped like a credential — a cloud key, ' +
-        'an API token, a private key, a password inside a URL — across ALL trees of ' +
+        'Show which records hold something shaped like a credential (a cloud key, ' +
+        'an API token, a private key, a password inside a URL) across ALL trees of ' +
         'ALL projects in this workspace. Use it to answer "is a secret already in the ' +
         'record?", which writing can no longer cause but the past can: values in a ' +
-        'recognized format never reach the chain today — replaced in a body, and ' +
-        'REFUSING the whole write in a name — and ' +
+        'recognized format never reach the chain today (replaced in a body, and ' +
+        'REFUSING the whole write in a name), and ' +
         'everything recorded before that was not. It reports WHERE and never WHAT: ' +
-        'the id, the kind, the tree, the PROJECT and the instant, plus the CLASS — ' +
+        'the id, the kind, the tree, the PROJECT and the instant, plus the CLASS, ' +
         'never the value, so reading it cannot leak what it found. A record in a ' +
         'public tree is committed and clones to every machine; one in the global tree ' +
         'is on this disk alone; and the project says which repository to go and ' +
         'change a key in. The remedy is to ROTATE the credential: mnema is ' +
-        'append-only and nothing deletes a fact. `scanned` is ONE COUNT PER RECORD — ' +
-        'each project and the machine-global tree — so an empty `findings` says which ' +
+        'append-only and nothing deletes a fact. `scanned` is ONE COUNT PER RECORD (' +
+        'each project and the machine-global tree), so an empty `findings` says which ' +
         'records were read and how much of each. Two limits: it recognizes FORMATS, ' +
         'so an empty report means nothing recognizable rather than nothing (a ' +
-        'password in prose has no format); and it reports what is recorded — it does ' +
+        'password in prose has no format); and it reports what is recorded: it does ' +
         'not prevent a value from being read back by `search` or `read_record`, which ' +
         'serve the record as written. Read-only.',
     },
@@ -1970,22 +1970,22 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   tool(
     readsTheRecord('audit_antipatterns'),
     {
-      title: 'Audit — recurring shapes in the record',
+      title: 'Audit: recurring shapes in the record',
       description:
-        'Show recurring shapes across ALL trees of ALL projects in this workspace — ' +
-        'tasks reopened, decisions superseded, skills deprecated — each with the exact ' +
+        'Show recurring shapes across ALL trees of ALL projects in this workspace: ' +
+        'tasks reopened, decisions superseded, skills deprecated, each with the exact ' +
         'events that make up the count, plus the tasks reopened more than once as ' +
-        'skill CANDIDATES (a POINTER, not an action — this creates no skill). It also ' +
+        'skill CANDIDATES (a POINTER, not an action: this creates no skill). It also ' +
         'reports any ADR-<n> label that more than one decision of the SAME chain ' +
         'answers to, with every id that carries it: the number is frozen when a rule ' +
         'is recorded, so two people deciding while apart can mint the same one, and ' +
-        'from then on citing it by label names two rules. Nothing renumbers them — ' +
+        'from then on citing it by label names two rules. Nothing renumbers them: ' +
         'refer to those by id. It ' +
         'reports the shapes; it does NOT judge them good or bad. Use it to spot ' +
         'patterns a human might act on. The answer is ONE SET OF SHAPES PER PROJECT ' +
         '(plus the machine-global tree, which belongs to none): these are counts, and ' +
         'adding several projects up would answer a question about a workspace under ' +
-        'the name of a question about a record — a skill candidate especially, since ' +
+        'the name of a question about a record: a skill candidate especially, since ' +
         'the pattern is distilled by whoever is doing the work that kept reopening. A ' +
         'project with nothing recurring is listed with empty lists rather than left ' +
         'out. Read-only.',
@@ -2423,7 +2423,7 @@ function withRunState(
   // operation decides (`ensureRun`), so it opens on that call and nothing of the fact lands.
   return served(session, result, [
     ...also,
-    'This session has not opened a run of its own yet — one opens when it ' +
+    'This session has not opened a run of its own yet: one opens when it ' +
       'first writes, a write that is then refused included.',
   ]);
 }
@@ -2481,8 +2481,8 @@ function whereThisSessionIs(session: Session): string {
     return `Workspace: this session knows of ${known}; it is operating on ${where}.${reReads(session)}`;
   }
   return (
-    `Workspace: this session knows of ${projects.length} projects — ${namedProjects(projects)} ` +
-    `— and it is operating on ${where}. A write can name another of them with ` +
+    `Workspace: this session knows of ${projects.length} projects (${namedProjects(projects)}) ` +
+    `and it is operating on ${where}. A write can name another of them with ` +
     `\`project\`; one that names none lands here.${reReads(session)}`
   );
 }

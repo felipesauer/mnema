@@ -409,7 +409,7 @@ describe('what the projections alone would have got wrong', () => {
           : kind === 'decision'
             ? acceptDecision(ctx, { id, fields: { note: 'n' }, ...stamp })
             : reviewSkill(ctx, { id, fields: { note: 'n' }, ...stamp });
-      if (refused.ok) throw new Error('the operation did NOT refuse — the case is not live');
+      if (refused.ok) throw new Error('the operation did NOT refuse: the case is not live');
 
       expect(actual).toEqual({ ok: false, code: refused.code, message: refused.message });
       closeSession(session);
@@ -493,7 +493,7 @@ describe('what the projections alone would have got wrong', () => {
 
     const message =
       `task "${id}" is in the private tree of "${project}", but has no readable ` +
-      'state there — this session sees its creation and nothing after it';
+      'state there: this session sees its creation and nothing after it';
     expect(runNextActionsTool(session, { id })).toEqual({
       ok: false,
       code: 'UNKNOWN_TASK',

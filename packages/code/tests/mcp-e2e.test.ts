@@ -365,7 +365,7 @@ describe('MCP session + tools: unit', () => {
       code: 'UNKNOWN_TASK',
       message:
         `task "no-such-id" was not found in any tree of this workspace's projects ` +
-        `("${project}") or in the machine-global tree — the only trees this session sees`,
+        `("${project}") or in the machine-global tree, the only trees this session sees`,
     });
   });
 
@@ -412,7 +412,7 @@ describe('MCP session + tools: unit', () => {
       code: 'UNKNOWN_TASK',
       message:
         `task "no-such-id" was not found in any tree of this workspace's projects ` +
-        `("${project}") or in the machine-global tree — the only trees this session sees`,
+        `("${project}") or in the machine-global tree, the only trees this session sees`,
     });
 
     // The dry-run appended NOTHING: the chain is the same length as before.
@@ -3050,7 +3050,7 @@ describe('MCP server: end to end over a real client', () => {
     });
     expect(linked.isError).toBeFalsy();
     expect(textOf(linked)).toBe(
-      'Linked some-id —reminds-me-of→ ghost-id\n' +
+      'Linked some-id -reminds-me-of→ ghost-id\n' +
         '  Landed in the public tree: committed with the repository, so it reaches every clone.',
     );
 

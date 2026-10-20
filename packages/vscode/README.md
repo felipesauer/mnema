@@ -82,7 +82,7 @@ command line printed into what is shown, `cli.ts` starts the command, and `exten
 to the editor through a handed-in `vscode` module. The tests run `extension.ts` against a stand-in
 for that module; nothing downloads or starts an editor.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 - It proves nothing itself. Every verdict, every rule and every state shown is what the `mnema`
   command line printed, and the extension adds no second verifier: `mnema verify` is the check, and

@@ -78,7 +78,7 @@ with its own changelog.
   version.** `FORMAT.md` §7.1, from the first version published to the npm registry: every version reads every record
   an earlier one wrote, under the contract its `kind` and `v` selected, the proof taken over the line as written; a
   line whose `kind` and `v` a version's table does not declare is refused and never skipped; and a rule of
-  authenticity or legality is never loosened inside a `kind` and `v` that exist — a new permission, one between
+  authenticity or legality is never loosened inside a `kind` and `v` that exist: a new permission, one between
   records included, is a new `kind` or `v`, and the envelope gains no field inside an existing one. The section also
   says what is not covered: the rules changed before the first publication (the workflows, the retraction by its
   author, `after` in the envelope), a rule tightened inside an existing `kind` and `v` after it, which an older binary
@@ -153,7 +153,7 @@ with its own changelog.
   read from `MNEMA_AGENT_KEY`) and the verbs of the command line that write sign with the key in each tree whose record enrols it under
   that name, and the `which` of what they record is the name the record of that tree gave the key, not what the client
   announced; in a tree that does not enrol it the person's key signs, as before, and the server says so for each such
-  tree (and again when the session lands on a project; a name that is no agent's at all is said once, when it opens) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
+  tree (and again when the session lands on a project; a name that is no agent's at all is said once, when it opens), and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
   refused (`AGENT_NOT_ENROLLED`), naming the verb `key enroll --agent`, and nothing is signed or minted (in the hook
   what is not done is the recording of the fact: the reply to the host is unchanged and says why). The advice to put the passphrase in the environment of an agent's host is gone from the refusal of a
   protected key and from `key protect`. The hook files and manifests the host table generates pass the host's name, and the plugin has
@@ -178,9 +178,9 @@ with its own changelog.
   first request that carries a list of tools is read off what each real host sends its stand-in model, in the
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
-  definition of all 27 (50,192, 50,318, 51,245 and 57,018 bytes; 11,387, 11,527, 11,501 and 12,718 tokens in o200k,
-  a relative measure), against 54,556 bytes and 12,306 tokens for the server's own listing; Codex carries none and
-  one `tool_search` entry that lists the server (2,891 bytes, 672 tokens), and what its search returns for each tool
+  definition of all 27 (49,914, 50,040, 50,967 and 56,740 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
+  a relative measure), against 54,242 bytes and 12,303 tokens for the server's own listing; Codex carries none and
+  one `tool_search` entry that lists the server (2,882 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
   definition differently or a definition gains a word.
@@ -471,16 +471,16 @@ with its own changelog.
 - **A first write the operation refuses makes no key and founds nothing.** On a machine with no key, a write refused
   by the operation itself (`task move cancel` with no reason, `MISSING_PROOF`; a field over the size limit) made the
   machine's key and left an installation id in the project; through the server, whose session run opened before the
-  operation decided, it also founded an identity in the public record — a public key, an anchor and a tail holding
-  `identity.founded` and `run.started` — and the refusal said "This key founded an identity of its own". The key is
+  operation decided, it also founded an identity in the public record (a public key, an anchor and a tail holding
+  `identity.founded` and `run.started`), and the refusal said "This key founded an identity of its own". The key is
   made at the first write that lands now, as the entry above says: it is kept, with its installation id, at the first
   append, and the server writes its run after the operation's last refusal, in the hold of that write. Two processes
   making a machine's first write at one instant still make one key: the one that keeps second refuses
   (`KEY_MADE_MEANWHILE`), writes nothing, and its next write signs with the key that is there. The command line says it like every other refusal,
   `Refused (KEY_MADE_MEANWHILE): …`.
 - **A first write refused for what it says makes no key and founds nothing either.** The refusals that judge the fact
-  itself — `UNREADABLE_EVENT` (`task create ''`), `NOT_A_TITLE` (`<title>`), `NOT_A_REASON` (`***`) and
-  `NOT_A_REFERENCE` (`observe '<id>'`) — came after the founding. From an empty `HOME`, in a project another key
+  itself, `UNREADABLE_EVENT` (`task create ''`), `NOT_A_TITLE` (`<title>`), `NOT_A_REASON` (`***`) and
+  `NOT_A_REFERENCE` (`observe '<id>'`), came after the founding. From an empty `HOME`, in a project another key
   founded, each left the key (3 files under the `HOME`) and 5 files in the public tree, among them a tail holding only
   `identity.founded` and no checkpoint, so `verify --require=signed` failed for the whole project; through the server
   it left 6, with a signed `run.started`, and the refusal said "This key founded an identity of its own", and a refused
@@ -490,7 +490,7 @@ with its own changelog.
   first write that lands founds as before. The refusals' words, and what `verify`
   accepts, are unchanged.
 - **A client whose name is a marker (`<id>`) no longer founds on a first write the server then refuses.** The server's
-  session run carries the client's name, and the door refuses a name that is a marker (`NOT_A_REFERENCE`) — but it
+  session run carries the client's name, and the door refuses a name that is a marker (`NOT_A_REFERENCE`), but it
   asked the run only after the founding, so an otherwise accepted first write left a key, an anchor and a tail holding
   only `identity.founded`, and `verify --require=signed` failed for the whole project. The run is asked with the
   operation's own fact, before anything is founded: that write is refused with the same words, leaves no file in the
@@ -639,8 +639,8 @@ with its own changelog.
   bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
   a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
-  holds one row per host and one cell per rung — (a) the MCP server and a rules file, (b) the opening
-  of a session, (c) a refusal before a write, (d) a pause for a person — each saying how it is known:
+  holds one row per host and one cell per rung; (a) the MCP server and a rules file, (b) the opening
+  of a session, (c) a refusal before a write, (d) a pause for a person, each saying how it is known:
   held by a test, read once on the real host, or documented and not measured. The plugin's hooks
   files and manifests, a summary on the README and the whole table on `docs/evidence.md` are
   generated from it, and a test is red when one of them was edited by hand. Codex, GitHub Copilot
@@ -654,9 +654,9 @@ with its own changelog.
   Qwen Code, Goose, Continue's `cn` and Warp's agent are rows at the first rung, documented and not
   measured; the first two have a script to read them by hand in `plugin/captures/`.
 
-- **Stacks: the skills and agents a project adopts.** `@mnema/stacks` is the contract of a stack — a
+- **Stacks: the skills and agents a project adopts.** `@mnema/stacks` is the contract of a stack (a
   `stack.json`, skills in the open Agent Skills format, agents in a neutral format, declared hooks and
-  a licence — with its validator and a digest anyone reproduces with `digest.sh`; it is released with
+  a licence), with its validator and a digest anyone reproduces with `digest.sh`; it is released with
   the other four packages. `mnema stack add <source>` reads a folder, a tar archive or an `https://`
   git address, shows the plan whole and writes only when `--expect` names the digest it showed. It
   refuses a stack that brings an MCP server, writes skills and agents where the hosts that read them
@@ -672,9 +672,9 @@ with its own changelog.
 
 - **A fault in mnema is not a refusal, and `mnema report` shows what it would say about one.** The
   last-resort catch tells an internal error from a refusal and says which it was. An internal error is
-  logged on this machine, outside the record, and `mnema report` shows its report whole — mnema's
+  logged on this machine, outside the record, and `mnema report` shows its report whole (mnema's
   version, Node's, the platform, the verb, the kind of error and where in mnema it happened, and
-  nothing else — and keeps your answer: `--decline` for that kind of error, `--off` for all of them.
+  nothing else), and keeps your answer: `--decline` for that kind of error, `--off` for all of them.
   It sends nothing: at a terminal it prints a link that opens GitHub's issue form with the report in
   it. The MCP server's instructions tell an agent to leave the report to the person, and no tool sends
   or accepts one. The bug report on GitHub is a form.
@@ -735,8 +735,8 @@ with its own changelog.
   checkpoint digest leaves; the e-mail, or the repository, the workflow, the commit and the run, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
-  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record —
-  an e-mail as `sha256:` and the SHA-256 of the address, never the address; a workflow as it is —
+  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record,
+  an e-mail as `sha256:` and the SHA-256 of the address, never the address; a workflow as it is;
   and
   `mnema verify --against-sigstore` reads every bundle offline against the trust root the binary
   carries, in notes. The Python reader names each bundle as not checked (gap G26).
@@ -836,8 +836,8 @@ with its own changelog.
   is started without the Action's inputs in its environment.
 - **What each host hands the MCP server it starts is measured in the host jobs.** In place of
   the product's own server, each job starts one that writes down the name the client announced, the
-  executables above it and which of a closed list of variables exist in its environment — names
-  only, never a value or a path — and the case asserts them by value. Held for Claude Code, Codex,
+  executables above it and which of a closed list of variables exist in its environment (names
+  only, never a value or a path), and the case asserts them by value. Held for Claude Code, Codex,
   GitHub Copilot CLI, Gemini CLI and OpenCode; in VS Code's agent's job no handshake of the plugin's server
   is seen, and a case says so, without saying why. The table is in `docs/evidence.md`.
 
@@ -869,8 +869,8 @@ with its own changelog.
 - **A stored line that is not UTF-8 is refused** by every reader, naming the byte, where it used to be
   read with U+FFFD in place of the bad bytes. A torn last line cut inside a character is dropped, as
   any torn last line is.
-- **`mnema --help` is grouped by the flow of the work** — Record, Hand over, Verify, Read, The git log,
-  This machine, Called by a host — with only the name in the column.
+- **`mnema --help` is grouped by the flow of the work**: Record, Hand over, Verify, Read, The git log,
+  This machine, Called by a host, with only the name in the column.
 - **The console has a band behind each command sent and a dot before each answer**, with a faint line
   under an answer that names the verb, how long it took and the hour; the guide down the margin and
   the margin are gone.
@@ -1045,7 +1045,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   reaches the chain; a password written out in prose does, and nothing deletes a fact
   afterwards.
 - **A Claude Code plugin.** A session opens with the decisions in force, the adopted patterns
-  and the notes recorded for the project — first the ones that share a word with what the
+  and the notes recorded for the project: first the ones that share a word with what the
   session touches (the files changed in the working tree, the tasks in progress, the branch,
   the last three commits), read with no model, then the newest. At each edit, the rules addressed at that file land beside the result
   of the write, and a rule recorded as asking for a person holds the write until one decides.
