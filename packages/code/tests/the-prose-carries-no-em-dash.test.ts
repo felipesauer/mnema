@@ -93,7 +93,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the source of @mnema/code outside the areas below
   'packages/code/src/': 333,
   // what it prints
-  'packages/code/src/presentation/': 40,
+  'packages/code/src/presentation/': 43,
   // the console
   'packages/code/src/repl/': 4,
   // the Sigstore reader

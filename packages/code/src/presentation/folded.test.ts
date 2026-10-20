@@ -110,7 +110,7 @@ const corpus: readonly Line[] = [
   statement(column('REFUSED', 12), ' complete t-1 ', 'bad'),
   clauseStatement('public', [{ text: 'local integrity verified (T1/T2/T4)' }]),
   clauseStatement('public', [
-    { text: 'local integrity verified (T1 only); no signature was checked', severity: 'warn' },
+    { text: 'local integrity verified (T1 only) — no signature was checked', severity: 'warn' },
     { text: '1 tail(s)' },
     { text: `6 event(s) hash-chained ${ACTOR_ESCAPE}` },
   ]),
