@@ -23,4 +23,4 @@ vectors and the verifier, because the promise in its row is worth only what a
 stranger can check; the other three travel with their compiled code and their
 page (`@mnema/stacks` with its schema and `digest.sh` too), and say on it that
 their surface is this product's and not an API. Each of the five has a README of its own, each with its own
-*What it proves — and what it does not*.
+*What it proves, and what it does not*.

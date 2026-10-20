@@ -70,28 +70,14 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   '.github/': 26,
   // the headers mnema writes into its own tree
   '.mnema/': 2,
-  // the changelog
-  'CHANGELOG.md': 20,
-  // the front page
-  'README.md': 7,
-  // the security policy
-  'SECURITY.md': 4,
   // the manual
-  'docs/': 29,
+  'docs/': 26,
   // @mnema/action
   'packages/action/': 28,
-  // the page of @mnema/action
-  'packages/action/README.md': 9,
   // @mnema/chain, its reader in Python and its format
   'packages/chain/': 57,
-  // the page of @mnema/chain
-  'packages/chain/README.md': 1,
-  // the manifest of @mnema/code, whose description the registry shows
-  'packages/code/package.json': 1,
-  // the page of @mnema/code
-  'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 585,
+  'packages/code/src/': 582,
   // what it prints
   'packages/code/src/presentation/': 5,
   // the Sigstore reader
@@ -99,23 +85,13 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 782,
+  'packages/code/tests/': 774,
   // @mnema/context
-  'packages/context/': 10,
-  // the page of @mnema/context
-  'packages/context/README.md': 41,
+  'packages/context/': 4,
   // @mnema/core
-  'packages/core/': 106,
-  // the page of @mnema/core
-  'packages/core/README.md': 20,
-  // the page of @mnema/sdk
-  'packages/sdk/README.md': 1,
-  // the page of @mnema/stacks
-  'packages/stacks/README.md': 1,
-  // the page of @mnema/vscode
-  'packages/vscode/README.md': 1,
+  'packages/core/': 101,
   // the plugin for agent hosts
-  'plugin/': 10,
+  'plugin/': 8,
   // the recordings and the scripts that make them
   'recordings/': 6,
 };
