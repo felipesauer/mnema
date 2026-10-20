@@ -306,7 +306,7 @@ others.** This paragraph used to say `verify` exits non-zero "when the record is
 broken" and leave it there, which reads as a promise about forgery. It is not one.
 Measured, against a record forged by hand: rewrite one fact, recompute the hash
 links with this product's own function, empty that tail's `checkpoints.jsonl`, and
-`mnema verify` exits **0**, printing `local integrity verified (T1 only) — no
+`mnema verify` exits **0**, printing `local integrity verified (T1 only): no
 signature was checked`, while `mnema search` serves the forged fact. Nothing is
 broken there: the hash chain is consistent, and the signatures that would have
 contradicted it are gone. A crude edit (a `sed`, no rehash) *is* caught and exits
@@ -341,7 +341,7 @@ signature was checked` over the record it cannot vouch for.
 
 **And what neither value answers, said plainly.** One tail removed whole while another
 remains is reported but is not a break: `verify` crosses the committed keys against the tails on disk and prints
-`N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
+`N committed key(s) without a tail (see census: informational, not a break)`, exit 0.
 One key is said otherwise: the backup `mnema init` creates never signs until it is
 restored, and `init` declares it in the record (`backup.declared`), so every machine reads
 `N backup key(s), which sign nothing until restored`, and its census line (`--verbose`) still says that a backup
@@ -1748,7 +1748,7 @@ mnema witness upgrade
 
 mnema verify --require=witnessed
 #> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
-#> signature-covered; external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
+#> signature-covered; external witness (T3): covered, Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 #> (the work of its block header was checked here, not its place in the Bitcoin chain)
 ```
 
