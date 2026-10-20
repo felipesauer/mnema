@@ -25,7 +25,7 @@ describe('whether an agent may accept', () => {
     }
   });
 
-  it('may not, when it is off — and the refusal says who, how a person accepts, and how to turn it on', () => {
+  it('may not, when it is off, and the refusal says who, how a person accepts, and how to turn it on', () => {
     const turnedAway = agentMayAccept(sources('off'), { action: 'accept', agent: 'claude-code' });
     expect(turnedAway?.code).toBe(AGENT_ACCEPTS_IS_OFF);
     expect(turnedAway?.message).toContain('mnid:0123456789abcdef');

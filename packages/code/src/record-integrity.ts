@@ -1,11 +1,11 @@
 /**
- * What the product says about a record that does not chain — one wording, and one place
+ * What the product says about a record that does not chain: one wording, and one place
  * that holds it, for every door it answers through.
  *
  * THIS USED TO SAY "what a READ says about the record it just served", and the
  * restriction was real rather than loose phrasing: the reads got the rule and the MCP's
  * writes were left composing their own reply. That is false now, and what falsified it
- * is the case the restriction was weakest on — an append onto a tail that ALREADY does
+ * is the case the restriction was weakest on: an append onto a tail that ALREADY does
  * not chain, where the agent is answered `Recorded decision …`, walks away believing it
  * put a fact into an intact record, and is the reader who will cite that id later. The
  * command line had ruled the other way from the start (`decision import` and `switch`
@@ -13,8 +13,8 @@
  *
  * ## Why a reader says anything at all
  *
- * It used to say nothing. Over a tree `mnema verify` exits 1 on — `seq gap: expected
- * 6, found 4`, which is what two sessions writing one tail at once used to leave —
+ * It used to say nothing. Over a tree `mnema verify` exits 1 on (`seq gap: expected
+ * 6, found 4`, which is what two sessions writing one tail at once used to leave)
  * `mnema search --kind decision` exited 0 with no word, and so did `mnema status`.
  * Every fact was there and every fact was served; the only thing missing was that the
  * record could no longer prove nothing had been inserted between them. A product
@@ -25,7 +25,7 @@
  * Nothing is lost when a tail stops chaining, and that is not a consolation, it is the
  * shape of the damage: the entries are all on disk, all readable, all things somebody
  * wrote. Refusing the read would take a sound answer away over a broken proof, and the
- * exit stays zero for the same reason — the read DID answer, and ruling on the record
+ * exit stays zero for the same reason: the read DID answer, and ruling on the record
  * is a verb of its own. What changes is that nobody is left thinking the answer came
  * off an intact record.
  *
@@ -36,21 +36,21 @@
  * because that is where the shape it copies lives."* That premise held for exactly as
  * long as the command line was the only reader told anything. It is false now: the MCP
  * serves the same record to an agent, the agent is this product's principal reader, and
- * a module under `wiring/` is one the MCP may not import — the dependency runs
+ * a module under `wiring/` is one the MCP may not import; the dependency runs
  * surface-to-shared, never surface-to-surface. What falsified the premise is that the
  * notice got a SECOND door, which is the same thing that moved `record-framing.ts`,
  * `record-effect.ts` and `recorded-content.ts` out of both surfaces before it.
  *
  * What went with the move is only the WORDS. The `Line` form the command line prints
- * is still composed in `wiring/integrity.ts`, because the shape it copies — `verify`'s
- * issue line, out of `fact` and `onOneLine` — is still the wiring's. What that file no
+ * is still composed in `wiring/integrity.ts`, because the shape it copies (`verify`'s
+ * issue line, out of `fact` and `onOneLine`) is still the wiring's. What that file no
  * longer holds is a sentence, so the two doors cannot come to say different things
  * about the same bytes.
  *
  * ## Where it goes, and in whose voice
  *
- * On the command line, to `err`, in the same shape `verify` gives an issue — `issue
- * [T1] <scope> <tail>#<seq>: <detail>` — because it IS that issue, reached by a
+ * On the command line, to `err`, in the same shape `verify` gives an issue (`issue
+ * [T1] <scope> <tail>#<seq>: <detail>`), because it IS that issue, reached by a
  * different road: the sentence comes from the chain's own rule (`linkBreakAt`), which
  * the verifier and the reader now both ask. A second wording here would be a second
  * opinion about the same bytes. The stream matters: `--json` consumers take stdout, and
@@ -59,7 +59,7 @@
  *
  * Through the MCP, as its own text block BESIDE the payload or the acknowledgement
  * ({@link linkBreakBlock} for a read, {@link linkBreakBlockOnWrite} for a write), never
- * inside it — the same division `withRunState` already draws for what a read says about
+ * inside it: the same division `withRunState` already draws for what a read says about
  * the connection. Beside and not behind a second call: a channel that states half a fact
  * and points at a tool for the rest has stated nothing (`record-framing.ts` records the
  * measurement), and `verify` is not reachable from the MCP at all, so "call `verify`"
@@ -70,7 +70,7 @@
  * The same ruling the read made, for a reason of its own. The record is append-only and
  * the break is BEHIND: the new event chains from the last hash the tail held, so it is
  * sound from there forward and nothing about it is made worse by landing. Refusing would
- * turn a broken chain into a stopped product — and a record whose purpose is to survive
+ * turn a broken chain into a stopped product, and a record whose purpose is to survive
  * the accident cannot decline to work after one. The exit code and the `isError` flag
  * stay what they were, for the reason they do on a read: the act DID happen, and ruling
  * on the record is a verb of its own.
@@ -96,7 +96,7 @@ export interface ScopedLinkBreak {
 
 /**
  * What a reader who has never met a chain has to be told once, however many tails
- * broke — that the facts are all still there, and that there is a verb whose job is to
+ * broke: that the facts are all still there, and that there is a verb whose job is to
  * say how far the damage goes.
  *
  * It is a constant rather than a line built in {@link linkBreakSentences} so that the
@@ -133,7 +133,7 @@ function issueLines(breaks: readonly ScopedLinkBreak[]): readonly string[] {
 }
 
 /**
- * The sentences a read owes about the tails it served that do not chain — none at all
+ * The sentences a read owes about the tails it served that do not chain: none at all
  * for a sound record, which is every record this product wrote on its own.
  *
  * The last sentence is not decoration. The ones before it say what is wrong with each
@@ -150,7 +150,7 @@ export function linkBreakSentences(breaks: readonly ScopedLinkBreak[]): readonly
  * How a READ opens the block: the answer came OFF the record.
  *
  * It is a constant rather than a literal in {@link linkBreakBlock} for the reason
- * {@link STILL_ON_THE_TAIL} is one — the other opening has to be checkable against it,
+ * {@link STILL_ON_THE_TAIL} is one: the other opening has to be checkable against it,
  * and "the write says something different" is only assertable against the thing it
  * differs from.
  */
@@ -160,14 +160,14 @@ const CAME_OFF = 'The record this answer came off does not chain, so its proof i
  * How a WRITE opens the block, and the clause is the whole difference.
  *
  * A read's answer came off the record; a write's fact went ONTO it, and that is the
- * case where being told matters most — the agent is handed `Recorded decision …`,
+ * case where being told matters most: the agent is handed `Recorded decision …`,
  * takes it for a fact in an intact record, and is the one who will cite that id later.
  * "Came off" would be simply false there: nothing came off, something landed.
  *
  * WHAT IT DOES NOT CLAIM is that the break is in the tree this particular write landed
  * in. The breaks come from {@link ScopedLinkBreak}s the session has read, which is the
  * same honest over-report the read carries ({@link linkBreakBlock}), and each issue
- * line NAMES its tree — so a reader whose write went to a sound private tree while the
+ * line NAMES its tree, so a reader whose write went to a sound private tree while the
  * public one is broken reads which is which off the lines, one block below the
  * `landedNotice` that says where the fact went.
  *
@@ -185,7 +185,7 @@ function block(opening: string, breaks: readonly ScopedLinkBreak[]): readonly st
 }
 
 /**
- * The same fact as the text block an MCP read carries beside its payload — empty when
+ * The same fact as the text block an MCP read carries beside its payload: empty when
  * nothing broke, so a caller can splice it in without a branch of its own.
  *
  * ONE BLOCK AND NOT ONE PER TAIL, because a tool result is a list of blocks and a
@@ -199,7 +199,7 @@ export function linkBreakBlock(breaks: readonly ScopedLinkBreak[]): readonly str
 }
 
 /**
- * The same block as {@link linkBreakBlock}, for the reply to a WRITE — same issue
+ * The same block as {@link linkBreakBlock}, for the reply to a WRITE: same issue
  * lines, same closing sentence, and the opening of {@link LANDED_ON}.
  *
  * It is a door of its own rather than a flag on the read's, because the two are asked
@@ -211,7 +211,7 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
 }
 
 /**
- * The places that open the record and owe NO notice, each with the reason — because
+ * The places that open the record and owe NO notice, each with the reason, because
  * "this one owes nothing" is a claim that has to be answerable.
  *
  * It is a table and not an absence for the reason `record-framing.ts`'s
@@ -222,11 +222,11 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
  * does not pass, and the classification is written down rather than re-derived from the
  * silence.
  *
- * THE UNIVERSE THAT SWEEP DEFINES USED TO BE THE PROJECTION CACHE ALONE — four ways of
- * opening one — AND THAT IS WHERE THE CONSOLE FELL OUT OF IT. The REPL serves the record:
+ * THE UNIVERSE THAT SWEEP DEFINES USED TO BE THE PROJECTION CACHE ALONE: four ways of
+ * opening one, AND THAT IS WHERE THE CONSOLE FELL OUT OF IT. The REPL serves the record:
  * it prints a verdict in its opening panel, holds the proven level in the corner of every
  * frame, and shows what another process appended while it was up. It opens no cache to do
- * any of it — it reaches the chain through `runVerify`, `chainExtent` and `readTailTip` —
+ * any of it (it reaches the chain through `runVerify`, `chainExtent` and `readTailTip`)
  * so it was outside the guard's reach without being in this table with a reason, and the
  * corner went on saying `fully-signed` in the same frame whose body printed `seq gap`. The
  * sweep has a second discriminant now: the ways this package reads the CHAIN with no cache
@@ -325,13 +325,13 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
 };
 
 /**
- * The MCP tools that serve no record content, with the reason — the same claim as
+ * The MCP tools that serve no record content, with the reason: the same claim as
  * {@link SERVES_NO_RECORD_CONTENT}, asked of the other surface.
  *
  * ONE ENTRY, AND IT IS THERE BECAUSE OF A MEASUREMENT RATHER THAN AN OPINION.
  * `rules_before_an_edit` does not answer a caller: it answers the HOST, as a
  * `PreToolUse` hook, and the host's contract for that reply was measured against the
- * real binary — anything that is not the hook-reply
+ * real binary; anything that is not the hook-reply
  * JSON is discarded in silence, with no error and nothing reaching the model. A notice
  * spliced into that reply would be read by nobody. The same answer asked for rather than
  * pushed is `governing_rules`, and that one carries it.

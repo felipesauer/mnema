@@ -1,22 +1,22 @@
 /**
- * THE TWO READINGS OF THIS CHECKOUT'S DECISION DOCUMENTS — drift, and arrival.
+ * THE TWO READINGS OF THIS CHECKOUT'S DECISION DOCUMENTS: drift, and arrival.
  *
- * The end-to-end half — that `mnema status` prints each section, and that each is absent
- * when it has nothing to say — is `tests/where-things-stand.test.ts`, beside the
+ * The end-to-end half (that `mnema status` prints each section, and that each is absent
+ * when it has nothing to say) is `tests/where-things-stand.test.ts`, beside the
  * contrast cases that make them mean something. What is here is each reading's OWN rules,
  * and each of them is a way the answer can be wrong while looking right.
  *
- * `decisionsOutsideTheRecord` — DRIFT, in a base the record already names:
+ * `decisionsOutsideTheRecord` (DRIFT, in a base the record already names):
  *
  *   - THE DIRECTORIES COME OUT OF THE RECORD and are never guessed. A base nobody
  *     imported from is a base this reading says nothing about, whatever the repository
- *     holds — and that is unchanged by the second reading below, which is a separate
+ *     holds, and that is unchanged by the second reading below, which is a separate
  *     answer under a separate heading rather than a widening of this one.
  *   - EVERY TREE IS READ. A file imported into the private tree is imported, and
  *     reporting it as outside would send somebody to import it twice.
  *   - A `derived-from` TARGET IS WHATEVER SOMEBODY TYPED. The relation is open and
  *     `mnema link` writes any target at all, so this reading turns untrusted strings
- *     into a directory it then LISTS — and the filter that stands between the two is
+ *     into a directory it then LISTS, and the filter that stands between the two is
  *     the one thing here that is a door rather than a tidiness.
  *
  * The record is written by the PRODUCT in every case: the proposals come from
@@ -49,7 +49,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** A founded project of its own, with its own data home — nothing leaks between cases. */
+/** A founded project of its own, with its own data home: nothing leaks between cases. */
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
@@ -59,7 +59,7 @@ function setup(): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * One decision document in the shape the reader accepts — a level-1 title and a named
+ * One decision document in the shape the reader accepts: a level-1 title and a named
  * `##` section, which is what `adr-tools` and every published template write.
  */
 function adr(repo: string, path: string, title: string): void {
@@ -68,13 +68,13 @@ function adr(repo: string, path: string, title: string): void {
   writeFileSync(full, `# ${title}\n\n## Context\n\nwhy ${title}\n`);
 }
 
-/** The reading, over every tree the project can see — the shape `runStatus` takes. */
+/** The reading, over every tree the project can see: the shape `runStatus` takes. */
 function outside(repo: string, env: DiscoveryEnv) {
   const trees = resolveTrees(repo, env);
   return withScopedCaches(trees, (sources) => decisionsOutsideTheRecord(sources, repo));
 }
 
-/** The second reading, over the same trees — the shape `runStatus` takes for it. */
+/** The second reading, over the same trees: the shape `runStatus` takes for it. */
 function neverImported(repo: string, env: DiscoveryEnv) {
   const trees = resolveTrees(repo, env);
   return withScopedCaches(trees, (sources) => basesNeverImported(sources, repo));
@@ -90,8 +90,8 @@ describe('which decision documents this checkout holds that the record has none 
     adr(repo, 'docs/adr/0001-ids.md', 'Mint ids as uuidv7');
     expect(outside(repo, env)).toEqual([]);
 
-    // NOT VACUOUS: pointing the import at ONE of them makes that one — and only that
-    // one — a base this reading knows about.
+    // NOT VACUOUS: pointing the import at ONE of them makes that one, and only that
+    // one, a base this reading knows about.
     runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
     adr(repo, 'docs/decisions/0002-zones.md', 'Store zones as IANA names');
     adr(repo, 'docs/adr/0002-retries.md', 'Retry three times');
@@ -103,7 +103,7 @@ describe('which decision documents this checkout holds that the record has none 
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
     adr(repo, 'docs/decisions/0002-ids.md', 'Mint ids as uuidv7');
     runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
-    // Two in, nothing outside — and the entry is ABSENT rather than reported as zero,
+    // Two in, nothing outside, and the entry is ABSENT rather than reported as zero,
     // because a base with nothing outside has no fact to carry.
     expect(outside(repo, env)).toEqual([]);
 
@@ -115,7 +115,7 @@ describe('which decision documents this checkout holds that the record has none 
     expect(outside(repo, env)).toEqual([{ directory: 'docs/decisions', outside: 2 }]);
   });
 
-  it('reads EVERY tree — a file imported privately is imported', () => {
+  it('reads EVERY tree: a file imported privately is imported', () => {
     // The idempotency `decision import` already has, kept here. Asking only the tree
     // that travels would report a privately imported file as outside, and send
     // somebody to record a second decision from the same document.
@@ -137,7 +137,7 @@ describe('which decision documents this checkout holds that the record has none 
   it('skips the furniture, by the SAME rule the import skips it by', () => {
     // A `README.md` and a `template.md` are a decision base's own furniture, and the
     // scan excludes them by name. A second reading with its own list would count a
-    // README as a document outside the record — for ever, since the import will never
+    // README as a document outside the record: for ever, since the import will never
     // propose one and the count would never come down.
     const { repo, env } = setup();
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
@@ -154,14 +154,14 @@ describe('which decision documents this checkout holds that the record has none 
 
   it('drops a `derived-from` target that is not a path under this project', () => {
     // THE DOOR. The relation is open and `mnema link` writes whatever target somebody's
-    // command line sends — a record id, an absolute path, a `..` climbing out of the
-    // repository — and this reading turns a target into a directory it LISTS. Every one of
+    // command line sends (a record id, an absolute path, a `..` climbing out of the
+    // repository) and this reading turns a target into a directory it LISTS. Every one of
     // these is written by the product, through the verb a person would use.
     //
     // EVERY FORGED BASE HOLDS A REAL DOCUMENT, and that is the whole of what makes this
     // case worth running. The first version pointed at directories that do not exist, so
     // the door could be opened wide and the answer stayed empty for a reason that had
-    // nothing to do with the door — mutation said so: `insideRoot` made to return `true`
+    // nothing to do with the door; mutation said so: `insideRoot` made to return `true`
     // for everything left 4697 of 4697 green. With the directories PRESENT, the same
     // mutation makes this reading walk out of the repository and report what it finds
     // there, which is the defect the filter is for.
@@ -214,8 +214,8 @@ describe('which decision documents this checkout holds that the record has none 
   });
 
   it('takes the repository ROOT as a base when the record names it, and not before', () => {
-    // `mnema decision import .` is a legitimate run — a project that keeps its decisions at
-    // the top of the repository — and the provenance it records is a bare file name, with
+    // `mnema decision import .` is a legitimate run, a project that keeps its decisions at
+    // the top of the repository, and the provenance it records is a bare file name, with
     // no directory in it. So a target with no slash names the root, which is why the case
     // above can prove that a document lying there does NOT make the root a base on its own:
     // what decides is whether the record named it.
@@ -238,7 +238,7 @@ describe('which decision documents this checkout holds that the record has none 
     adr(repo, 'docs/decisions/0002-retry.md', 'Retry three times');
     adr(repo, 'docs/decisions/0003-locks.md', 'Take the lock before the write');
     // Directory order, which is a property of the CONTENT rather than of the order the
-    // edges happen to be read in — two trees rebuilt in either order answer the same.
+    // edges happen to be read in: two trees rebuilt in either order answer the same.
     expect(outside(repo, env)).toEqual([
       { directory: 'adr', outside: 1 },
       { directory: 'docs/decisions', outside: 2 },
@@ -247,14 +247,14 @@ describe('which decision documents this checkout holds that the record has none 
 });
 
 /**
- * `basesNeverImported` — ARRIVAL, in a repository where the gesture was never made.
+ * `basesNeverImported`: ARRIVAL, in a repository where the gesture was never made.
  *
  * WHAT IT IS ALLOWED TO DO, which is the one thing the reading above is not: NAME
  * directories nobody pointed it at. Every case here is about the edge of that permission,
  * because a reading that names directories is a reading that can name a wrong one.
  *
  *   - IT NAMES ONLY WHAT A PUBLISHED TOOL CREATES. A directory this project invented, or
- *     somebody else did, is a directory this says nothing about — including internal
+ *     somebody else did, is a directory this says nothing about, including internal
  *     decisions, which is the entry a reader of the source would most expect to find and
  *     the one that must not be there. THE FIXTURE BELOW SPELLS IT OUT AND THE SOURCE NO
  *     LONGER DOES, which is deliberate: this file does not ship, the module does, so the
@@ -262,7 +262,7 @@ describe('which decision documents this checkout holds that the record has none 
  *   - IT NEVER NAMES A BASE THE RECORD READS. One directory in two sections is one fact
  *     worded twice, and the weaker wording would be this one.
  *   - IT COUNTS BY FILE NAME and opens nothing, which is what makes it cost a `readdirSync`
- *     rather than an import — so a base's furniture is not counted and its contents are
+ *     rather than an import, so a base's furniture is not counted and its contents are
  *     not judged.
  */
 describe('which conventional decision bases this checkout holds that the record never read', () => {
@@ -296,7 +296,7 @@ describe('which conventional decision bases this checkout holds that the record 
     //
     // THIS USED TO SAY IT WAS ASSERTED HERE "because the source is the only other place it
     // is written", AND THAT PREMISE IS GONE: the module's own doc named the directory, and
-    // that doc ships inside the published package — so the module was doing, in the text a
+    // that doc ships inside the published package, so the module was doing, in the text a
     // stranger installs, the very thing it declines to do in the list. The module states
     // the RULE now and names no directory, which leaves this file as the only place the
     // name is written, and a list is exactly the thing somebody extends in passing.
@@ -334,7 +334,7 @@ describe('which conventional decision bases this checkout holds that the record 
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
     adr(repo, 'docs/adr/0001-ids.md', 'Mint ids as uuidv7');
     runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
-    // The imported one moves out of this reading entirely — including the documents added
+    // The imported one moves out of this reading entirely, including the documents added
     // to it afterwards, which are the OTHER reading's subject and are reported there.
     adr(repo, 'docs/decisions/0002-zones.md', 'Store zones as IANA names');
     expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
@@ -356,8 +356,8 @@ describe('which conventional decision bases this checkout holds that the record 
 
   it('opens no file, so a document it could never propose is still counted', () => {
     // The count is what a person would see on opening the directory, deliberately, and not
-    // what the import would accept. This document is refused by the reader — it states no
-    // why — and the line still names it, because a person who opens `docs/adr` sees a file
+    // what the import would accept. This document is refused by the reader (it states no
+    // why), and the line still names it, because a person who opens `docs/adr` sees a file
     // there and a count that skipped it would be a count they cannot reconcile.
     const { repo, env } = setup();
     mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
@@ -392,7 +392,7 @@ describe('what the copy of the opening document a hook carries says about them',
     };
   }
 
-  it('counts the documents with no decision here — drift and arrival — and names the import', () => {
+  it('counts the documents with no decision here, drift and arrival, and names the import', () => {
     const { repo, env } = setup();
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
     adr(repo, 'docs/decisions/0002-ids.md', 'Mint ids as uuidv7');
@@ -413,7 +413,7 @@ describe('what the copy of the opening document a hook carries says about them',
       '`mnema decision import <source>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
     ]);
     // Everything before it is the file, byte for byte: the paragraph is ADDED, and only to the
-    // copy a hook carries — the file a person commits carries no count of a disk.
+    // copy a hook carries; the file a person commits carries no count of a disk.
     expect(hook.slice(0, file.length)).toEqual(file);
     expect(file.join('\n')).not.toContain('Not in the record');
   });

@@ -3,15 +3,15 @@
  *
  * This is the half of the export that has nothing to do with the record: given a name,
  * a body and a description, what goes in the file. It is tested apart from the verb
- * because every case here is a value somebody could RECORD — a name with a space in it,
- * a body that is one word, a first sentence with a decimal in it — and reaching each of
+ * because every case here is a value somebody could RECORD (a name with a space in it,
+ * a body that is one word, a first sentence with a decimal in it) and reaching each of
  * them through a founded project and four transitions would hide the case in the
  * fixture.
  *
  * NO CONTROL CHARACTER IS WRITTEN AS AN ESCAPE SEQUENCE IN THIS FILE. Every one is
  * built with `String.fromCharCode`, for the reason the module under test gives: a
  * control byte typed into a source file is invisible in review, and a tool between an
- * author and the disk can turn it into a space — which would leave the escaping cases
+ * author and the disk can turn it into a space, which would leave the escaping cases
  * passing over ordinary text.
  */
 
@@ -29,7 +29,7 @@ import {
 /** One code point, without writing it as an escape sequence. */
 const char = (code: number): string => String.fromCharCode(code);
 
-/** The metadata every composed file here carries — the shape the verb always passes. */
+/** The metadata every composed file here carries: the shape the verb always passes. */
 const METADATA = [
   ['mnema-id', 'an-id'],
   ['mnema-adopted-by', 'mnid:abc'],

@@ -1,24 +1,24 @@
 /**
- * The run a command's writes are pinned to, taken from `MNEMA_RUN` — and proven
+ * The run a command's writes are pinned to, taken from `MNEMA_RUN`, and proven
  * before anything is written.
  *
  * A `run` on an envelope is a claim of AUTHORIZATION: "this fact belongs to the
  * session that human opened for that agent". The MCP surface fills it from the
  * session the server itself opened, so there is nothing to doubt. On the command
- * line it arrives from OUTSIDE, in an environment variable anyone can type — and
+ * line it arrives from OUTSIDE, in an environment variable anyone can type, and
  * a fact stamped with a run that does not exist is a broken chain of
  * authorization inside an append-only log, which no later command can retract.
  * So the value is checked against the record, once, before the write.
  *
  * WHY ONCE, HERE, AND NOT IN EVERY OPERATION. Validating per write would mean
- * replaying the run projection on every append — paid on the MCP path too, where
+ * replaying the run projection on every append: paid on the MCP path too, where
  * the run came from the server's own session and there is nothing to learn. What
  * needs a guard is the value that enters from outside, and it enters once per
  * command. With no variable set this returns before touching the disk at all, so
  * a person who never heard of runs pays nothing.
  *
  * WHICH TREE IT IS PROVEN AGAINST. The COMMITTED tree of the project the command is
- * run in — where a command-line run is born ({@link runRunStart}). The fact being
+ * run in, where a command-line run is born ({@link runRunStart}). The fact being
  * written may land in another tree (a private memory, a global one); the run is
  * still the machine's session in THIS project, and it lives in the one tree every
  * kind can cite. A run opened in another project is therefore unknown here, which
@@ -26,7 +26,7 @@
  * never saw.
  *
  * WHAT IT IS PROVEN BY. The run's own events on the chain (`subjectEvents`), folded by the run
- * projection's fold — not the projection the tree keeps, which is a file beside the record that
+ * projection's fold, not the projection the tree keeps, which is a file beside the record that
  * nothing signs: a row of it edited to say a closed run is open would have let a fact be pinned to
  * a session the record had closed.
  */
@@ -40,7 +40,7 @@ import {
   resolveTrees,
 } from '@mnema/core';
 
-/** What resolving a pinned run needs — injected so it is testable. */
+/** What resolving a pinned run needs: injected so it is testable. */
 export interface PinnedRunContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -55,13 +55,13 @@ export interface PinnedRunOk {
   readonly run?: string;
 }
 
-/** The pin names a run this project cannot vouch for — nothing may be written. */
+/** The pin names a run this project cannot vouch for: nothing may be written. */
 export interface PinnedRunRefused {
   readonly ok: false;
   /**
-   * `UNPROVEN_RUN` — there is no project here to prove the value against;
-   * `UNKNOWN_RUN` — no run by that id in this project;
-   * `RUN_ENDED` — the session it names is already closed.
+   * `UNPROVEN_RUN`: there is no project here to prove the value against;
+   * `UNKNOWN_RUN`: no run by that id in this project;
+   * `RUN_ENDED`: the session it names is already closed.
    */
   readonly code: 'UNPROVEN_RUN' | 'UNKNOWN_RUN' | 'RUN_ENDED';
   readonly message: string;
@@ -73,13 +73,13 @@ const HOW_TO_OPEN = 'open one with `mnema run start --which <agent>`, or unset M
 /**
  * Resolves the run a write should be pinned to from the raw `MNEMA_RUN` value.
  *
- * An absent, empty or whitespace-only value means UNPINNED — the reading a shell
+ * An absent, empty or whitespace-only value means UNPINNED: the reading a shell
  * gives `MNEMA_RUN=` (a partial unset), and the same reading `--which ""` gets.
  * It returns immediately, with no tree resolved and no projection replayed.
  *
  * A real value is proven against the project's committed tree: it must name a run
- * that EXISTS and is still OPEN. What comes back is the projection's own id — not
- * the text of the variable — so the value stamped on the event is always the key
+ * that EXISTS and is still OPEN. What comes back is the projection's own id, not
+ * the text of the variable, so the value stamped on the event is always the key
  * the record knows. Surrounding whitespace is trimmed before the lookup (an id
  * never carries any, and a stray space in an export is not worth a refusal).
  */

@@ -2,10 +2,10 @@
  * The host's own transcripts, read for NUMBERS and for nothing else.
  *
  * Claude Code writes one JSON object per line under `~/.claude/projects/`, and every
- * assistant message on it carries `message.usage` — the four token counts and the id
+ * assistant message on it carries `message.usage`: the four token counts and the id
  * of the model that produced them. That is the only reason this file exists: the
  * number a person is accountable for is obtainable, and it is obtainable WITHOUT the
- * record growing a field for it — `commands/usage.ts` states that decision and what it
+ * record growing a field for it; `commands/usage.ts` states that decision and what it
  * turns on, which is that these transcripts expire. The chain
  * gets nothing; the surface crosses and shows.
  *
@@ -14,7 +14,7 @@
  * transcript is the whole conversation, including whatever a person pasted into it,
  * and a reading that put any of it on a screen would have moved somebody's private
  * text into a report they ran for a token count. Nothing in this module's return
- * types can carry prose — the counts are numbers, the models are ids the host wrote,
+ * types can carry prose: the counts are numbers, the models are ids the host wrote,
  * and the instants are timestamps. `the-cost-comes-from-the-host.test.ts` puts a
  * sentence inside a fixture's `message.content` and asserts the output does not hold
  * it.
@@ -40,7 +40,7 @@
  *
  * So a transcript belongs to a project when the `cwd` THE HOST ITSELF RECORDED on it
  * is that project's root or under it. That is the host stating which directory the
- * work happened in, and it survives whatever the flattening rule becomes — the
+ * work happened in, and it survives whatever the flattening rule becomes: the
  * characters that would tell the four candidate rules apart (`_`, a space) appear in
  * no path on the machine this was measured on, so the rule is not knowable with
  * confidence and this module deliberately does not need to know it.
@@ -53,7 +53,7 @@
  *
  * A MESSAGE IS COUNTED ONCE, BY `message.id`, and skipping that is how a naive
  * reading over-reports by a factor of two. The host writes one line per content
- * BLOCK of an assistant message — a text block and a tool call are two lines — and
+ * BLOCK of an assistant message (a text block and a tool call are two lines) and
  * both carry the same `message.usage`. Measured on one 19.6 MiB transcript: 4013
  * assistant lines for 2143 distinct message ids. Summing per line would have claimed
  * roughly twice the tokens that were actually bought.
@@ -71,8 +71,8 @@ import { StringDecoder } from 'node:string_decoder';
 /**
  * Where the host keeps its transcripts, from the environment this process is in.
  *
- * `CLAUDE_CONFIG_DIR` is the host's own override for where its configuration lives —
- * it is what its container examples set (`ENV CLAUDE_CONFIG_DIR=/tmp/.claude`) — so a
+ * `CLAUDE_CONFIG_DIR` is the host's own override for where its configuration lives:
+ * it is what its container examples set (`ENV CLAUDE_CONFIG_DIR=/tmp/.claude`), so a
  * reading that only knew about `~/.claude` would report "no transcript" for every run
  * on a machine that moved it, which is a wrong answer wearing the shape of a right
  * one. The home directory arrives as an argument rather than being read here, because
@@ -90,7 +90,7 @@ export function hostTranscriptRoot(home: string, processEnv: NodeJS.ProcessEnv):
 export interface HostSession {
   /** The session id the host recorded on its own lines. */
   readonly id: string;
-  /** The transcript files that carry it — the main one and its subagents. */
+  /** The transcript files that carry it: the main one and its subagents. */
   readonly files: readonly string[];
   /** The earliest instant recorded on any of them, in the host's own spelling. */
   readonly firstAt: string;
@@ -99,12 +99,12 @@ export interface HostSession {
    *
    * It is the file's modification time and not a recorded instant, and it is used for
    * one thing only: deciding whether a session overlaps a run's window. Reading the
-   * true last instant would mean reading every transcript of the store — a gigabyte on
-   * the machine this was measured on — to answer a question about which few of them
+   * true last instant would mean reading every transcript of the store (a gigabyte on
+   * the machine this was measured on) to answer a question about which few of them
    * matter. It is never reported, so nothing a reader sees is derived from it.
    *
    * It fails in the safe direction. A copied file gets a NEWER mtime, so a session can
-   * only ever look like it lasted longer than it did — which turns an attribution into
+   * only ever look like it lasted longer than it did, which turns an attribution into
    * an ambiguity ("two sessions overlap"), and this reading refuses to attribute an
    * ambiguous one. It cannot turn an ambiguity into a confident wrong number.
    */
@@ -131,8 +131,8 @@ export interface SessionNumbers extends TokenCounts {
    *
    * It is COUNTED rather than swallowed because the two failures a reader has to be
    * able to tell apart are "this session cost little" and "this reading understood
-   * little of it". A line that is neither of those — a user turn, an attachment, a
-   * file snapshot — is not in the class and is not counted: it was never expected to
+   * little of it". A line that is neither of those (a user turn, an attachment, a
+   * file snapshot) is not in the class and is not counted: it was never expected to
    * carry a number, and counting it would put four figures of noise on every line.
    */
   readonly passedOver: number;
@@ -159,7 +159,7 @@ const MTIME_SLACK_MS = 2_000;
 
 /**
  * Whether a file the host last wrote at `lastWrittenMs` could still hold something at
- * or after `instantMs` — the one comparison this reading makes against a modification
+ * or after `instantMs`: the one comparison this reading makes against a modification
  * time.
  *
  * ONE function because two call sites make it: the cheap prune below, which decides
@@ -178,9 +178,9 @@ export function reachesAtOrAfter(lastWrittenMs: number, instantMs: number): bool
  * `notWrittenBeforeMs` drops a file the host has not touched since then WITHOUT
  * OPENING IT, which is the whole of what makes this affordable: a caller knows the
  * earliest window it could possibly attribute to, and a transcript last written before
- * it cannot hold a message inside any of them. The prune is one-sided on purpose — an
+ * it cannot hold a message inside any of them. The prune is one-sided on purpose: an
  * mtime that is wrong is wrong in the direction of reading MORE files (see
- * {@link reachesAtOrAfter}) — so it drops nothing that could have counted.
+ * {@link reachesAtOrAfter}), so it drops nothing that could have counted.
  *
  * Nothing is opened for writing and nothing is created: a missing store is an ordinary
  * answer (no host here, or a machine that moved it), and it comes back empty.
@@ -217,14 +217,14 @@ export function sessionsOfProject(
 }
 
 /**
- * Sessions oldest first, ties broken by id ascending — the ONE direction this listing
+ * Sessions oldest first, ties broken by id ascending: the ONE direction this listing
  * wants, and the opposite of the record's `newestFirst`.
  *
  * A host session is read as a span, and a span is served in the order it happened, so
  * the ascending tie-break is the one that AGREES with the instant here. Written as a
  * named comparator rather than inline at the call because
  * `one-rule-for-newest-first.test.ts` requires every ordering over an instant to carry
- * a name it can classify — an unnamed one cannot be told from a seventh writing of the
+ * a name it can classify: an unnamed one cannot be told from a seventh writing of the
  * newest-first rule.
  */
 function oldestSessionFirst(a: HostSession, b: HostSession): number {
@@ -264,7 +264,7 @@ export function numbersOf(session: HostSession): SessionNumbers {
       }
       // One line per content BLOCK, all of them carrying the same `usage`: the id is
       // what makes a message the unit. A line with usage and no id is counted alone,
-      // which is the honest reading of a shape this has not seen — it can over-count
+      // which is the honest reading of a shape this has not seen: it can over-count
       // one message, never a whole session.
       const id = typeof message?.id === 'string' ? message.id : undefined;
       if (id !== undefined) {
@@ -333,7 +333,7 @@ const IDENTIFYING_BYTES = 1_000_000;
  * What a transcript says about itself: which session it is, which directory the work
  * was done in, and when it starts.
  *
- * Read from the first line that carries a `cwd`, which is NOT always the first line —
+ * Read from the first line that carries a `cwd`, which is NOT always the first line:
  * a main transcript often opens with a summary or a title that carries none (measured:
  * 142 of 143 main transcripts, with the identifying line as far in as the fourth). It
  * gives up after {@link IDENTIFYING_BYTES} rather than reading a 92 MiB file to learn
@@ -366,8 +366,8 @@ function whatItSaysAboutItself(
  * Textual for the reason `resolveTrees` is: a symlink makes one directory answer to
  * two names, and following them here would be a second opinion about what a project is
  * (`core/src/topology/resolve.ts`). A session opened through an alias of this project
- * is not attributed, and that is a miss the reader can see — every run comes out with
- * no transcript — rather than a number quietly composed of somebody else's work.
+ * is not attributed, and that is a miss the reader can see (every run comes out with
+ * no transcript) rather than a number quietly composed of somebody else's work.
  */
 function isAtOrUnder(path: string, root: string): boolean {
   const inside = relative(root, path);
@@ -385,11 +385,11 @@ const CHUNK = 1 << 16;
  * Calls `visit` with each line of a file, stopping early when it answers `false`.
  *
  * Synchronous and chunked, because the caller is a command that runs once and exits
- * and because a transcript can be 92 MiB — reading one into a string to split it would
+ * and because a transcript can be 92 MiB: reading one into a string to split it would
  * hold the whole conversation in memory, which is exactly the thing this module is
  * careful never to hold. The decoder is per FILE and not per chunk: a 64 KiB boundary
  * lands in the middle of a multi-byte character often enough to matter, and decoding
- * each chunk on its own turns that character into two replacement bytes — which would
+ * each chunk on its own turns that character into two replacement bytes, which would
  * corrupt the very ids this reading groups by.
  */
 export function forEachLine(path: string, visit: (line: string) => boolean): void {
@@ -430,7 +430,7 @@ export function parsed(line: string): Record<string, unknown> | undefined {
   }
 }
 
-/** A value as an object, or `undefined` — the shape guard every read here goes through. */
+/** A value as an object, or `undefined`: the shape guard every read here goes through. */
 export function asObject(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -441,8 +441,8 @@ export function asObject(value: unknown): Record<string, unknown> | undefined {
  * One count off a `usage` object: the number it holds, or zero.
  *
  * Zero for anything that is not a finite number, INCLUDING a field that is not there.
- * The host has already changed the shape of this object once — `cache_creation` became
- * an object of its own beside the flat `cache_creation_input_tokens` — so a reading
+ * The host has already changed the shape of this object once: `cache_creation` became
+ * an object of its own beside the flat `cache_creation_input_tokens`, so a reading
  * that threw on an unexpected value would be a verb that stops working on a host
  * upgrade, and one that trusted it would sum a string.
  */

@@ -1,15 +1,15 @@
 /**
  * The golden: every line the CLI writes for a person, pinned byte for byte.
  *
- * The human format is the CLI's alone — the MCP surface answers in JSON and
- * never calls a printer — and until this file existed nothing pinned it. That is
+ * The human format is the CLI's alone (the MCP surface answers in JSON and
+ * never calls a printer), and until this file existed nothing pinned it. That is
  * why it could drift into five ad-hoc printers and a hundred inline `io.out`
  * calls: a shape nobody asserts is a shape nobody can change by accident, which
  * sounds safe and means the opposite. Each read invented its own summary because
  * there was no record of what the others had settled on.
  *
- * So this drives the WHOLE program the way a person does — one fixture, then every
- * verb over it, human output and `--json` alike — and compares the transcript to a
+ * So this drives the WHOLE program the way a person does (one fixture, then every
+ * verb over it, human output and `--json` alike) and compares the transcript to a
  * committed file. It asserts nothing about whether a line is good; it asserts only
  * that the line is the one that was there before. That makes it the acceptance test
  * for a pure move (nothing changed) and, afterwards, the diff that shows a
@@ -17,8 +17,8 @@
  *
  * WHAT IS NORMALIZED, AND WHY IT STILL PINS. A record's ids, instants, key
  * fingerprints and paths are minted fresh on every run, so they cannot be compared
- * literally. Each is replaced by a placeholder that NAMES it — `<task-runbook>`,
- * not `<id>` — and the name comes from the fixture that created it. Two columns
+ * literally. Each is replaced by a placeholder that NAMES it (`<task-runbook>`,
+ * not `<id>`) and the name comes from the fixture that created it. Two columns
  * swapped would put a different name in each place, so the substitution cannot hide
  * a reordering, and {@link assertNothingVolatile} refuses a transcript that still
  * holds a raw id, so nothing volatile can slip in unnamed.
@@ -31,8 +31,8 @@
  * AND IT IS PLAIN BECAUSE THE RULE SAYS SO. The surface has a renderer that paints
  * (`presentation/styled.ts`), chosen at the entry from the flag, the environment and
  * whether output is going to a terminal. Nothing here asks for plain: `io` is injected
- * and no flag is passed, so the resolution falls to its last rung — no terminal, no
- * style — which is what makes this file the proof that weight is optional. The two
+ * and no flag is passed, so the resolution falls to its last rung (no terminal, no
+ * style), which is what makes this file the proof that weight is optional. The two
  * conventional variables are cleared in the fixture for the same reason the ids are
  * normalized: a transcript whose bytes depended on the developer's shell could not be
  * compared to a committed one. `presentation/styled.test.ts` is where the other half
@@ -51,7 +51,7 @@ import { everyCommandOf, pathOf } from './wiring/misuse.js';
 
 /** Where the fixture lives for the length of this file. */
 let sandbox: string;
-/** The project the commands run in — `process.cwd()` for every invocation. */
+/** The project the commands run in: `process.cwd()` for every invocation. */
 let repo: string;
 const cwdBefore = process.cwd();
 const envBefore = { ...process.env };
@@ -90,7 +90,7 @@ function section(into: keyof typeof transcript, label: string): void {
 /**
  * EVERY PAGE OF `--help` THIS PROGRAM HAS, read off the program instead of listed here.
  *
- * IT WAS TWO ARRAYS WRITTEN BY HAND — one of verbs, one of `[verb, sub]` pairs — and what
+ * IT WAS TWO ARRAYS WRITTEN BY HAND (one of verbs, one of `[verb, sub]` pairs), and what
  * they held was 45 of the 52 pages the program answers on. Nothing in them was stale;
  * they were SHORT. `status`, `export`, `usage`, `witness`, `switch`, `switch off` and
  * `switch on` had no pinned help, and three of those seven are one feature: the switch
@@ -99,15 +99,15 @@ function section(into: keyof typeof transcript, label: string): void {
  * nobody pins is a page anybody can reword or delete with no test moving.
  *
  * AND WHAT WAS MISSING IS THE HALF A PERSON READS FIRST. The writes transcript already
- * pinned what `switch off` answers — the listing, and the sentence saying what did NOT
- * stop — so the report of the act was covered. What nothing held was the page somebody
+ * pinned what `switch off` answers (the listing, and the sentence saying what did NOT
+ * stop), so the report of the act was covered. What nothing held was the page somebody
  * reads BEFORE acting: what `--scope` decides, that its default commits the switch to
  * every clone, and what a private one costs. A surface can have its answer pinned and
  * its instructions not, and counting sections would not have shown it.
  *
  * A LIST CANNOT CATCH THAT, because the failure of a hand-kept list is that it is not
  * written to, and nothing is red when it is not. So the walk is `everyCommandOf`, the
- * same function the completion tree reads the surface with, and the root is dropped —
+ * same function the completion tree reads the surface with, and the root is dropped:
  * `mnema --help` is already pinned above, under its own label.
  *
  * ORDERED BY DEPTH, and the reason is what the file is for rather than taste: the walk is
@@ -115,7 +115,7 @@ function section(into: keyof typeof transcript, label: string): void {
  * after the first group would MOVE. A golden whose diff is a reordering cannot be read,
  * and the seven pages arriving here had to be read one at a time before their bytes were
  * accepted. Depth-first within each depth, so the order inside a depth is still the
- * program's own — which is what the two arrays already held, verb for verb.
+ * program's own, which is what the two arrays already held, verb for verb.
  */
 const EVERY_PAGE: readonly (readonly string[])[] = everyCommandOf(
   buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).program,
@@ -128,7 +128,7 @@ const EVERY_PAGE: readonly (readonly string[])[] = everyCommandOf(
  * Runs `mnema <argv>` in the fixture and appends the encoded transcript to `into`.
  *
  * The invocation goes through {@link run}, the same entry the binary uses, with the
- * output injected — so what is captured is what the streams would have received,
+ * output injected, so what is captured is what the streams would have received,
  * in the order they would have received it. Returns the stdout lines, which is how
  * the fixture learns the ids it then gives names to.
  */
@@ -154,7 +154,7 @@ async function mnema(into: keyof typeof transcript, ...argv: string[]): Promise<
   };
   transcript[into].push(['$ mnema', ...argv.map(quoted)].join(' '));
   // The instant this invocation claims. The value is the CLI's own to read, from its
-  // own clock, inside {@link run} — what is taken here is the turn of the millisecond
+  // own clock, inside {@link run}: what is taken here is the turn of the millisecond
   // in front of it, so that whatever it reads is later than everything already
   // recorded.
   ownInstant();
@@ -178,7 +178,7 @@ async function mnema(into: keyof typeof transcript, ...argv: string[]): Promise<
  * as a guard over every step and was one over every step that goes through the CLI:
  * {@link appendUnscreenedMemory} writes straight to the tree, took its instant with
  * nothing in front of it, and landed a millisecond after the invocation before it.
- * The two merged in 6 of 180 runs of the sampler — the golden differing from itself,
+ * The two merged in 6 of 180 runs of the sampler: the golden differing from itself,
  * exactly as the paragraph above says it would. A step that wants an instant comes
  * here for it now, and `every-instant-is-its-own.test.ts` refuses a clock read in
  * this file anywhere else.
@@ -209,7 +209,7 @@ function inParens(lines: readonly string[], head: string): string {
   return found[1];
 }
 
-/** The rest of the line that starts with `head` — the value it reports. */
+/** The rest of the line that starts with `head`: the value it reports. */
 function after(lines: readonly string[], head: string): string {
   const line = lines.find((l) => l.startsWith(head));
   if (line === undefined) throw new Error(`fixture: no "${head}" in ${lines.join(' / ')}`);
@@ -222,7 +222,7 @@ function after(lines: readonly string[], head: string): string {
  * Named values go first, longest first: an id can appear inside a longer string
  * (a path, a request line), and replacing the short one first would leave the
  * longer one half-substituted. What is left volatile is an INSTANT, and those are
- * ranked in chronological order rather than order of appearance — a rank is a
+ * ranked in chronological order rather than order of appearance: a rank is a
  * property of the value, so two events printed in the wrong order come out with
  * their ranks crossed instead of quietly renumbered.
  */
@@ -255,12 +255,12 @@ function scrub(lines: readonly string[]): string {
   // THE SAME MEASUREMENT IN THE FORM `--json` CARRIES IT, and it is the one that escaped.
   // The line above catches the words a person reads; under them `--json` prints the count
   // itself, so a round that reads a second later than the one that wrote the golden answers
-  // `1` where the committed file says `0` — a transcript that differs from itself, with no
+  // `1` where the committed file says `0`: a transcript that differs from itself, with no
   // change to the product behind it and nothing a reader can act on.
   //
   // MATCHED ON THE SHAPE OF THE NAME rather than on the two that exist. Both are measured
   // against the ASKER's clock (`@mnema/context`, `context/focus.ts`), which is exactly what
-  // makes them unpinnable, and the pair is that file's to grow — a list written here would be
+  // makes them unpinnable, and the pair is that file's to grow: a list written here would be
   // a second idea of which numbers move. The sign is kept in the pattern because one of them
   // is allowed to be negative: two clocks disagreeing is a fact, and a scrub that missed the
   // minus would leave it in the golden as a literal.
@@ -284,11 +284,11 @@ function assertNothingVolatile(text: string): void {
     // Anything key-shaped: a base64url run that long is a public half or a
     // signature, and neither is the same twice.
     /[A-Za-z0-9_-]{44,}/g,
-    // An INSTALLATION id — the half of a tail id after the fingerprint. It is added
+    // An INSTALLATION id: the half of a tail id after the fingerprint. It is added
     // because it is the one volatile shape that got through: `tail list` prints tail
     // ids of trees the fixture had not named, the fingerprint in front of each was
     // ranked, and what reached the golden looked half-substituted rather than
-    // volatile. Nothing else in a transcript is a bare 32-hex run — a fingerprint is
+    // volatile. Nothing else in a transcript is a bare 32-hex run: a fingerprint is
     // 64 and is ranked before this runs.
     /\b[0-9a-f]{32}\b/g,
   ];
@@ -298,12 +298,12 @@ function assertNothingVolatile(text: string): void {
 }
 
 /**
- * Appends a memory the content door never saw — one credential-shaped value in a
+ * Appends a memory the content door never saw: one credential-shaped value in a
  * record, written straight to the tree.
  *
  * It is the only fixture step that does not go through the CLI, and it has to be:
  * every field the surface writes is screened, so a finding is UNREACHABLE from
- * here. That is not a gap in the fixture, it is what `audit exposure` is for — the read
+ * here. That is not a gap in the fixture, it is what `audit exposure` is for: the read
  * exists for the record's past, when there was no door, and this is the only way
  * to reproduce that past in a fixture built today.
  *
@@ -336,7 +336,7 @@ function appendUnscreenedMemory(anchor: string): string {
 }
 
 /**
- * Every read over whatever the fixture holds when it runs — human and JSON alike,
+ * Every read over whatever the fixture holds when it runs: human and JSON alike,
  * for the ones that have both. `brief` has one form only: its markdown IS the
  * contract, so there is no second serialization of it to pin.
  */
@@ -356,7 +356,7 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'refs', ids.task ?? 'no-such-id', '--depth', '2');
   await mnema('reads', 'refs', ids.task ?? 'no-such-id', '--direction', 'out', '--depth', '1');
   // WHICH RULES GOVERN A PATH: one under an address that exists, one at the project
-  // root (which nothing addresses here), and one outside the project altogether —
+  // root (which nothing addresses here), and one outside the project altogether,
   // the three shapes the three counts have to tell apart.
   await mnema('reads', 'rules', 'docs/runbook/rollback.md');
   await mnema('reads', 'rules', 'docs/runbook/rollback.md', '--json');
@@ -391,8 +391,8 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'audit', 'antipatterns', '--json');
   // The OPENING read, over both records the fixture reaches: the empty one, where
   // every half has to say it is empty rather than print a heading with nothing under
-  // it, and the populated one. What it cannot reach here is a full FIVE cells — the
-  // fixture rules on everything it proposes — so the record that leaves a decision and
+  // it, and the populated one. What it cannot reach here is a full FIVE cells; the
+  // fixture rules on everything it proposes, so the record that leaves a decision and
   // a pattern waiting is `where-things-stand.test.ts`'s.
   await mnema('reads', 'status', '--actor', ids.anchor as string);
   await mnema('reads', 'status', '--actor', ids.anchor as string, '--json');
@@ -446,21 +446,21 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'skill', 'provenance');
   await mnema('reads', 'skill', 'provenance', '--json');
   // The one read whose whole output is meant to become a file, so the golden is where
-  // its bytes are pinned for a person to read as a document — over an empty record and
+  // its bytes are pinned for a person to read as a document: over an empty record and
   // over a full one, which are the two things it has to say honestly.
   await mnema('reads', 'brief');
-  // And the text a session is handed beside it — the notes, out of every tree. Over the
+  // And the text a session is handed beside it: the notes, out of every tree. Over the
   // empty record it prints NOTHING, and the transcript pinning that absence is the point:
   // a session in a project with no notes is handed no text at all.
   await mnema('reads', 'recall');
-  // The tails the record holds here, with the id `tail prune` takes — the read that
+  // The tails the record holds here, with the id `tail prune` takes: the read that
   // exists because nothing else in the product ever printed one.
   //
   // THE HEADS IT PRINTS ARE NAMED OFF THE LINES THAT PRINT THEM. A head is the hash
   // of a tail's last entry, so every write mints a new one and a round of this
   // fixture cannot know them in advance; unnamed, the second one is what `scrub`
   // refuses as a second fingerprint. The name carries the round and the line, so two
-  // rows swapped would put a different name in each place — the property every other
+  // rows swapped would put a different name in each place: the property every other
   // substitution in this file has. Matched on ` through `, never on the bare shape:
   // the tail id on the same line LEADS with a fingerprint, and naming that would
   // rewrite the machine's key everywhere else in the transcript.
@@ -471,10 +471,10 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
     }
   }
   // What the runs of this project cost, from OUTSIDE the record. It is pinned here
-  // like every other read, and the sandbox has no host transcripts at all — so what the
+  // like every other read, and the sandbox has no host transcripts at all, so what the
   // golden holds is the answer a person gets on a machine whose transcripts have
   // expired, which is the one this verb must not report as a zero.
-  // Where the product's own switches stand — the reading that exists because a channel
+  // Where the product's own switches stand: the reading that exists because a channel
   // name appears nowhere else, and the one whose subject is mnema rather than the work.
   await mnema('reads', 'switch');
   await mnema('reads', 'usage');
@@ -486,12 +486,12 @@ beforeAll(async () => {
   repo = join(sandbox, 'project');
   mkdirSync(repo, { recursive: true });
   // A directory a rule can be ADDRESSED at. `rules` asks the working tree whether an
-  // address still names something, so the fixture has to hold one — and it holds only
+  // address still names something, so the fixture has to hold one, and it holds only
   // this one, which is what lets the second address be stale on purpose.
   mkdirSync(join(repo, 'docs', 'runbook'), { recursive: true });
   // A file, and not only the directory it sits in. The transcript asks `rules` about
   // this very path and records an address at its directory, and both readings said
-  // something about a file that did not exist — while the reach of that address would
+  // something about a file that did not exist, while the reach of that address would
   // print "0 of 0", a fraction that shows nothing of what a fraction is for.
   writeFileSync(join(repo, 'docs', 'runbook', 'rollback.md'), '# rollback\n');
   mkdirSync(join(sandbox, 'home'), { recursive: true });
@@ -500,7 +500,7 @@ beforeAll(async () => {
   delete process.env.MNEMA_RUN;
   // What the transcript may not depend on: a shell that turns style on or off. Cleared
   // rather than set, so what is recorded is the rule's own answer for output that is
-  // not a terminal — a fixture that set NO_COLOR would pin plain even if the rule had
+  // not a terminal: a fixture that set NO_COLOR would pin plain even if the rule had
   // stopped falling back to it (see `wiring/color.ts`).
   delete process.env.NO_COLOR;
   delete process.env.FORCE_COLOR;
@@ -525,7 +525,7 @@ beforeAll(async () => {
   const initiated = await mnema('writes', 'init');
   anchor = name(after(initiated, '  identity:'), 'anchor');
   // The form the READS print, named by computing it here rather than by reading it
-  // out of the output — which makes the name a CHECK. The short form is defined as
+  // out of the output, which makes the name a CHECK. The short form is defined as
   // the anchor's own leading hex, so if a read ever printed something that is not a
   // prefix of the value (a hashed label, say) this substitution would miss it and
   // `assertNothingVolatile` would refuse the transcript rather than pin the lie.
@@ -535,8 +535,8 @@ beforeAll(async () => {
     'backup-key-path',
   );
   // The backup key's own fingerprint, which the census names on its own. `init`
-  // commits its public half and that key never writes a tail — it is meant to leave
-  // the machine — so `verify` has counted it as a key without a tail since the day
+  // commits its public half and that key never writes a tail (it is meant to leave
+  // the machine), so `verify` has counted it as a key without a tail since the day
   // the note existed. Now that the census SAYS which key, the value reaches the
   // transcript outside the path it used to hide in, and a second unnamed fingerprint
   // is what the fixture refuses. Taken from the path rather than looked up, so it
@@ -659,7 +659,7 @@ beforeAll(async () => {
   await mnema('writes', 'task', 'handoff', taskId, 'agent-alpha', 'agent-beta');
   await mnema('writes', 'link', decisionId, taskId, '--rel', 'relates-to');
   await mnema('writes', 'link', taskId, choreId, '--rel', 'derived-from');
-  // THE RELATIONS THAT CARRY AN ADDRESS — a decision given an address, and a second
+  // THE RELATIONS THAT CARRY AN ADDRESS: a decision given an address, and a second
   // address that names nothing in the working tree. (A path target alone is not an
   // address: `derived-from` takes one and covers nothing, which `decision import`
   // records below.) The two are what make `rules`
@@ -668,7 +668,7 @@ beforeAll(async () => {
   await mnema('writes', 'link', decisionId, 'docs/gone-away', '--rel', 'governs');
 
   // ── What the repository already decided: a directory of decision files read as
-  //    proposals. Three invocations pin the whole shape of the verb — the PLAN that
+  //    proposals. Three invocations pin the whole shape of the verb: the PLAN that
   //    writes nothing, the write, and the second run that writes nothing because the
   //    record already holds every one of them. The last is the idempotence, proved
   //    here on the surface rather than only at the adapter.
@@ -699,7 +699,7 @@ beforeAll(async () => {
   await mnema('writes', 'decision', 'import', 'docs/adr');
   const imported = await mnema('writes', 'decision', 'import', 'docs/adr', '--write');
   // The report indents each proposal, so the id is found by the `(…)` on the ADR line
-  // rather than by a line HEAD — the one place in this fixture where that is true.
+  // rather than by a line HEAD: the one place in this fixture where that is true.
   name(
     inParens(
       imported.map((l) => l.trim()),
@@ -783,13 +783,13 @@ beforeAll(async () => {
   // ── The run that DID something, read while it is still the latest one.
   //
   // Every other reading of a run in this transcript lands on the second one, which is
-  // opened below and stays empty — so without this pair the file would pin `wrote` in
+  // opened below and stays empty, so without this pair the file would pin `wrote` in
   // its empty case only, and a clause that never shows a value is a clause a change
   // could empty without moving a byte here. Read HERE, between the two runs, because
   // `resume` answers with the latest and the second one is a line away.
   //
-  // Nothing volatile crosses: the run has ENDED, so it carries no age and no idleness
-  // — which is also the case the phrase treats differently, `wrote` riding an ended run
+  // Nothing volatile crosses: the run has ENDED, so it carries no age and no idleness,
+  // which is also the case the phrase treats differently, `wrote` riding an ended run
   // where the durations do not.
   section('reads', 'the run that did something');
   await mnema('reads', 'resume', '--actor', anchor);
@@ -826,7 +826,7 @@ beforeAll(async () => {
   await mnema('writes', 'skill', 'create', 'A skill with no body');
   // Two ways `run end` refuses: with an agent but no run to close, and with a run but
   // no agent to credit the close to. The second is commander's own, and it is the one
-  // that keeps the pair reading like the pair — `run start` refuses the same way.
+  // that keeps the pair reading like the pair: `run start` refuses the same way.
   await mnema('writes', 'run', 'end', '--which', 'agent-beta');
   await mnema('writes', 'run', 'end', 'no-such-run');
   await mnema('writes', 'search', '--limit', '0');
@@ -844,7 +844,7 @@ beforeAll(async () => {
   await mnema('writes', 'key', 'request', '--anchor', 'whoever');
 
   // The two nos authorizing a cut earns, each named by the id the record spells a
-  // tail with. The first is the tail a waiver may never name — this machine's own,
+  // tail with. The first is the tail a waiver may never name: this machine's own,
   // which the waiver would be cut along with. The second is a committed key that owns
   // no tail at all: the backup key `init` made, which is exactly the one a person
   // meets in the census and might try to account for.
@@ -852,7 +852,7 @@ beforeAll(async () => {
   // The tails of the two trees BESIDE the committed one, which `tail list` prints and
   // nothing else in this transcript ever did. One person, three tails: the
   // installation suffix is minted per chain, so each of these is a value of its own
-  // that has to be named — the fingerprint in front of it is this machine's key and
+  // that has to be named; the fingerprint in front of it is this machine's key and
   // is ranked, which is exactly what makes the leak easy to miss (the line reads as
   // half-substituted rather than as volatile).
   const beside = resolveTrees(repo, {
@@ -871,7 +871,7 @@ beforeAll(async () => {
   );
 
   // ── SWITCHING WHAT THE PRODUCT PUSHES, and back on again. The three lines a person
-  //    sees: the echo of the write, where the channel now stands, and — on an off — what
+  //    sees: the echo of the write, where the channel now stands, and, on an off, what
   //    switching it off does NOT stop. The listing is run between them so the OFF row is
   //    pinned with the attribution on it, which is the shape a private switch is read by
   //    too. It ends switched ON, so the reads below are the reads of a product nobody
@@ -883,7 +883,7 @@ beforeAll(async () => {
   await mnema('writes', 'switch', 'on', 'edit-rules-push');
   await mnema('writes', 'switch', 'off', 'no-such-channel');
 
-  // ── The PARSER's refusals — one invocation per code the surface words, because
+  // ── The PARSER's refusals: one invocation per code the surface words, because
   //    they are the lines a person meets on their FIRST command and nothing pinned
   //    them. Each is the product speaking: what is missing and what it means (from
   //    the declaration the help prints), then the line to type (the same `usage()`).
@@ -912,7 +912,7 @@ beforeAll(async () => {
 
   // ── What a read could not have accepted: an empty argument in a field the catalog
   //    requires. Each of these WROTE a signed event before this door existed, and
-  //    from then on every read of the project failed — so the refusal is the whole
+  //    from then on every read of the project failed, so the refusal is the whole
   //    point, and the message names the field so the caller knows what to fix. One
   //    per kind the CLI can reach, plus both halves of an event (a payload field and
   //    the ENVELOPE's subject) and both classes (required, and optional-if-present).
@@ -981,12 +981,12 @@ beforeAll(async () => {
   // ── The help of the program and of every verb, which is the other half of the
   //    surface: an option that quietly disappeared is a verb that lost a
   //    capability without a single output line changing.
-  // ── THE BARE NAME, WITH NO TERMINAL — the catalogue on stderr and a non-zero exit,
+  // ── THE BARE NAME, WITH NO TERMINAL. The catalogue on stderr and a non-zero exit,
   //    which is what every pipeline, script and CI job that has ever run this binary with
   //    no arguments receives. It is pinned HERE, and it is pinned because the answer
   //    MOVED on the other side of the same question: at a terminal the bare name asks
   //    what you want instead (`cli.ts`, `start`). These bytes are what says the move
-  //    stopped where the terminal stops — this file drives the whole program through
+  //    stopped where the terminal stops: this file drives the whole program through
   //    `run` with an injected port and no device, which is the pipe.
   section('help', 'the bare name, with no terminal');
   await mnema('help');
@@ -1013,7 +1013,7 @@ describe('the lines the CLI writes for a person', () => {
     await expect(text).toMatchFileSnapshot('./cli.writes.golden.txt');
   });
 
-  it('answers every read exactly as it did — human and JSON alike', async () => {
+  it('answers every read exactly as it did: human and JSON alike', async () => {
     const text = scrub(transcript.reads);
     assertNothingVolatile(text);
     await expect(text).toMatchFileSnapshot('./cli.reads.golden.txt');
@@ -1027,14 +1027,14 @@ describe('the lines the CLI writes for a person', () => {
 
   /**
    * THE ONE THING IN A TRANSCRIPT THAT MOVES WITHOUT THE RECORD MOVING: how long the open run
-   * has been open. Everything else a read prints is a function of what was written — so two
-   * rounds over the same fixture answer the same bytes — and this is a function of WHEN the
+   * has been open. Everything else a read prints is a function of what was written, so two
+   * rounds over the same fixture answer the same bytes, and this is a function of WHEN the
    * round ran.
    *
    * IT WAS RED IN THE SUITE AND GREEN ON ITS OWN FOR SEVERAL DELIVERIES, which is the worst
    * shape a case can have: the golden differed from itself whenever the fixture and the read
    * fell either side of a second, and what the diff said was `"ageSeconds": 0` against
-   * `"ageSeconds": 1` — a change nobody made, in a file whose whole job is to show changes
+   * `"ageSeconds": 1`, a change nobody made, in a file whose whole job is to show changes
    * somebody did.
    *
    * SO THE CROSSING IS FORCED RATHER THAN WAITED FOR. A case that ran the read twice and hoped
@@ -1056,7 +1056,7 @@ describe('the lines the CLI writes for a person', () => {
       const [first, second] = await twiceASecondApart(argv);
       // NOT VACUOUS: the read really did answer differently. Without this the case would pass
       // over a read that says nothing about the clock at all, which is what every OTHER read in
-      // this file is — so the assertion under it would be about nothing.
+      // this file is, so the assertion under it would be about nothing.
       expect(
         second.join('\n'),
         `mnema ${argv.join(' ')} answered the same bytes a second later, so nothing here moves ` +
@@ -1072,7 +1072,7 @@ describe('the lines the CLI writes for a person', () => {
 });
 
 /**
- * The same read, run twice with a whole second between the two rounds — and the lines each
+ * The same read, run twice with a whole second between the two rounds, and the lines each
  * round wrote.
  *
  * A SECOND AND A LITTLE, because what has to differ is a count of whole seconds against an

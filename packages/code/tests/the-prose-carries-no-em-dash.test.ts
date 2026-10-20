@@ -91,7 +91,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 4324,
+  'packages/code/src/': 2558,
   // what it prints
   'packages/code/src/presentation/': 43,
   // the console

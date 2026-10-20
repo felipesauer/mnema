@@ -1,5 +1,5 @@
 /**
- * The git log read for the decisions in it: trailers, touched paths, counts — over a real
+ * The git log read for the decisions in it: trailers, touched paths, counts, over a real
  * repository, and over a directory that is none.
  */
 

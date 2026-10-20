@@ -1,21 +1,21 @@
 /**
- * When a stdio connection ENDS — and how a server hears about it.
+ * When a stdio connection ENDS, and how a server hears about it.
  *
  * The SDK does not tell it. `StdioServerTransport.start()` registers `data` and
  * `error` on stdin and nothing else; its `onclose` fires only from inside its own
  * `close()`, which nothing on the server side ever calls. So a server that hung its
  * cleanup on `transport.onclose` had cleanup with no caller: measured over six exit
- * modes — SIGKILL, SIGTERM, SIGINT, the client's transport closing, the client
- * closing, and a plain EOF on stdin — the hook fired in none of them. It was not
+ * modes (SIGKILL, SIGTERM, SIGINT, the client's transport closing, the client
+ * closing, and a plain EOF on stdin) the hook fired in none of them. It was not
  * "a run leaks when the host kills us"; it was every session, always.
  *
  * The signals a stdio server actually gets are the PROCESS's, so that is where the
  * triggers go:
  *
- *   - `stdin` reaching `end` (or `close`) — the client hung up its pipe. This is the
+ *   - `stdin` reaching `end` (or `close`): the client hung up its pipe. This is the
  *     ordinary way a host disconnects, and the one the transport already reads bytes
  *     from without ever reporting the end of them.
- *   - `SIGTERM` / `SIGINT` — the host asked the process to stop. Installing a handler
+ *   - `SIGTERM` / `SIGINT`: the host asked the process to stop. Installing a handler
  *     for these SUPPRESSES the default termination, so the handler has to finish the
  *     job: it closes, removes itself, and re-raises the same signal, which lets the
  *     default action set the exit status the host expects (128 + n). Exiting 0
@@ -30,20 +30,20 @@
  * AND THE READER IS NOT LEFT WITH IT, which is the half this note used to delegate
  * without naming a delegate. A run left open is not an answer that has gone wrong: the
  * readings report it as open AND say how long it has been so, how long since it last
- * recorded anything, and what was written inside it — `context`'s `focus` sorts them
+ * recorded anything, and what was written inside it; `context`'s `focus` sorts them
  * newest first and prunes and ranks nothing, `code/src/wiring/resume.ts` prints one line
  * per run with those durations on it, and `tests/mcp-session-close.test.ts` ("what an
  * open run says about itself") holds all of it. A run somebody abandoned in July shows
  * up under this year's, worded as what it is.
  *
  * SO THE CLAIM THAT WOULD JUSTIFY A SWEEPER IS FALSE AS WELL AS UNPROVABLE. It runs: a
- * run that never closes makes the reading lie about the present. It does not lie — it
+ * run that never closes makes the reading lie about the present. It does not lie: it
  * says `open` and it says the age, which together are exactly the fact. What is missing
  * from the record is not the reading's to invent: whether the process behind that run
  * is still running is not something this record ever held.
  *
  * THE CLOSE IS SYNCHRONOUS, start to finish. It is the last chance to write, and a
- * process that has been asked to stop does not come back from an `await` — the
+ * process that has been asked to stop does not come back from an `await`: the
  * pending continuation dies with it, and the write dies in the continuation. So this
  * module takes a synchronous closer and never wraps it in a promise. (It is the same
  * reason `ensureRun` may not yield: the guarantee is that the function never cedes.)
@@ -56,7 +56,7 @@
  */
 
 /**
- * The process facilities the triggers attach to — injected, so the wiring can be
+ * The process facilities the triggers attach to: injected, so the wiring can be
  * exercised without signalling the test runner or closing its stdin.
  *
  * It is the narrowest surface that covers the job: subscribe, unsubscribe, deliver a
@@ -66,7 +66,7 @@
 export interface Lifecycle {
   /** Subscribe to a process event (a signal name). */
   readonly on: (event: string, handler: () => void) => void;
-  /** Unsubscribe — used before re-raising, so the default action can run. */
+  /** Unsubscribe: used before re-raising, so the default action can run. */
   readonly off: (event: string, handler: () => void) => void;
   /** Deliver a signal to this process. */
   readonly raise: (signal: NodeJS.Signals) => void;
@@ -98,7 +98,7 @@ const CATCHABLE_SIGNALS: readonly NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
  * guarded closer they all call.
  *
  * The returned function is safe to call any number of times and from anywhere else
- * that learns of the end first — the SDK's own `transport.onclose`, say, which stays
+ * that learns of the end first: the SDK's own `transport.onclose`, say, which stays
  * wired for the day it starts firing. Only the first call reaches `close`.
  *
  * A signal handler closes, unsubscribes itself, and re-raises: the connection's

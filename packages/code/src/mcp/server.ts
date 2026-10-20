@@ -1,31 +1,31 @@
 /**
  * The mnema MCP server: a thin transport over the session and the tool adapters.
  *
- * The SDK does the protocol — the handshake, the tool dispatch, the JSON-RPC
- * envelope; this file only wires. It builds the server — announcing, in the handshake, the
- * `instructions` a client reads before it has chosen any tool ({@link ./instructions.js})
- * — registers the tools
+ * The SDK does the protocol: the handshake, the tool dispatch, the JSON-RPC
+ * envelope; this file only wires. It builds the server (announcing, in the handshake, the
+ * `instructions` a client reads before it has chosen any tool, see {@link ./instructions.js}),
+ * registers the tools
  * (each delegating to a pure adapter in {@link ./tools.js}), opens a session
  * once the handshake has run (so `clientInfo` and the client's roots are
  * available), and closes that session's run when the connection ends. There is
- * no domain logic here and none in the tools — the logic is the core's gate and
+ * no domain logic here and none in the tools: the logic is the core's gate and
  * operations, reached through the session and the adapters. Every registered tool
  * delegates to a pure adapter in {@link ./tools.js}, and every one of them DECLARES what
  * calling it can do to the record, in the same two words a verb of the command line
  * declares in (`record-effect.ts`): the registrar takes the declaration where the SDK
  * takes a name, so a tool cannot be hung here without answering. The protocol's own four
- * hints — `readOnlyHint` and the three beside it — are read off that same declaration by
+ * hints, `readOnlyHint` and the three beside it, are read off that same declaration by
  * the registrar ({@link hintsOf}), so a client is told what a reviewer is told.
  *
  * THIS PARAGRAPH USED TO NAME THE TOOLS ONE BY ONE, and the list is gone because it was
- * WRONG. It spelled twenty-four names against twenty-five registrations —
- * `rules_before_an_edit` was never added to it — and the missing name is a tool that
+ * WRONG. It spelled twenty-four names against twenty-five registrations
+ * (`rules_before_an_edit` was never added to it) and the missing name is a tool that
  * WRITES, so the sentence under it ("`skills` is the one read that also writes") had
  * quietly become false as well: two tools answer a read's question and append while doing
  * it. A hand-kept list of what a file registers is the thing that goes stale the one time
  * it matters, and this one had. What enumerates the tools now is
- * `every-tool-says-if-it-writes.test.ts`, which reads them off `tools/list` — what the
- * protocol actually serves — and holds every one to its own declaration.
+ * `every-tool-says-if-it-writes.test.ts`, which reads them off `tools/list` (what the
+ * protocol actually serves) and holds every one to its own declaration.
  *
  * The reads derive from the session's projection cache or fold its tails; they open no
  * writer. `guard` is a dry-run of the gate: it simulates a move and returns the verdict,
@@ -39,12 +39,12 @@
  * rest; `audit_antipatterns` folds the raw event stream, because it asks which
  * events have a given SHAPE rather than which touch a given entity; and
  * `audit_exposure` folds the trees SEPARATELY, because its answer has to say which
- * tree a finding is in — a merge is exactly what would lose that.
+ * tree a finding is in: a merge is exactly what would lose that.
  *
  * HOW MANY PROJECTS a call covers is decided by the question, not by an argument.
- * Everything keyed by an ID reaches every project of the workspace — `read_record`,
+ * Everything keyed by an ID reaches every project of the workspace: `read_record`,
  * the five `audit_*` reads, and the five keyed by an ENTITY (the three transitions,
- * `next_actions`, `guard`) — because an id is minted once, so which project holds it
+ * `next_actions`, `guard`), because an id is minted once, so which project holds it
  * is a fact to be found rather than a filter the caller meant to apply; `search` and
  * `skills` reach every tree for the neighbouring reason (words and capabilities are
  * not scoped to a project); and what stays with the session's own project is where
@@ -54,7 +54,7 @@
  *
  * That is why the five entity-keyed tools take no `project` while every write verb
  * does. A birth is told where it belongs because there is no id yet to ask; a move
- * asks the id, and lands where the answer is — including in a sibling project, which
+ * asks the id, and lands where the answer is, including in a sibling project, which
  * a birth routed there could produce and a move could not follow.
  *
  * The session is OPENED lazily and once: `oninitialized` opens it as soon as
@@ -69,11 +69,11 @@
  * `openWrite`), so a connection that only reads leaves the project untouched, and
  * the reads say so rather than reporting an absent run as an idle one.
  *
- * A session holds live resources — the warm projection caches its reads share, and
- * a run once a write has opened one — so the connection ending has to release them.
+ * A session holds live resources (the warm projection caches its reads share, and
+ * a run once a write has opened one), so the connection ending has to release them.
  * `closeSession` does that, and what CALLS it is the process learning its connection
  * ended: stdin reaching its end, or a catchable signal (see {@link ./lifecycle.js}).
- * The transport's own `onclose` stays wired and is not the mechanism — the SDK's
+ * The transport's own `onclose` stays wired and is not the mechanism: the SDK's
  * server side never fires it.
  */
 
@@ -190,7 +190,7 @@ const SERVER_NAME = 'mnema';
  * It names the one accepted spelling (the path) and says what omitting it does, because the
  * silent default is the thing an agent has to be able to predict: a call that says
  * nothing lands where the session landed, which is right when the work is there and
- * wrong when it is not — and only the caller knows which.
+ * wrong when it is not, and only the caller knows which.
  */
 const PROJECT_ARG = z
   .string()
@@ -206,13 +206,13 @@ const PROJECT_ARG = z
 /**
  * The `scope` argument a WRITE carries: which of the three trees the fact lands in.
  *
- * ONE schema for all eight, and the set is the DOMAIN's — `SCOPES`, the same value the
+ * ONE schema for all eight, and the set is the DOMAIN's: `SCOPES`, the same value the
  * CLI's `--scope` declarations list, its Tab offers and its refusal words itself from. All
  * of them but `decision import`'s, a verb with no tool here, which leaves the machine-global
  * tree out (`IMPORT_SCOPES`); this said "the seven declarations" until then. It used to be `z.enum(['public', 'private', 'global'])` typed out at each of the
  * eight, and that is a different kind of duplication from a help string repeated: a
  * `z.enum` is what the tool ACCEPTS. A fourth tree added to the domain would have reached
- * the CLI everywhere and left this surface refusing a word its own product takes — in the
+ * the CLI everywhere and left this surface refusing a word its own product takes: in the
  * SDK's voice, not the product's, on the surface agents use.
  *
  * The description arrives per tool because it is not the same sentence: where an omitted
@@ -230,8 +230,8 @@ function scopeField(description: string) {
  *
  * `lead` is the field's own sentence ("Why", "What was done", "Simulate the note"); the
  * list in the parenthesis is read from the workflow's TABLE, which is the only thing that
- * knows. All ten of these used to name their actions from memory — `Why (cancel, block,
- * reopen)` — with nothing anywhere comparing that to the rows the gate enforces, on the
+ * knows. All ten of these used to name their actions from memory (`Why (cancel, block,
+ * reopen)`) with nothing anywhere comparing that to the rows the gate enforces, on the
  * surface where the description IS the whole contract an agent gets.
  *
  * The value stays `z.string().optional()`, unchanged: which proof a move needs is the
@@ -247,7 +247,7 @@ function proofField(lead: string, workflow: Workflow, field: ProofField) {
 }
 
 /**
- * The decision actions that are a VERDICT on a proposal — `accept and reject`, as the
+ * The decision actions that are a VERDICT on a proposal: `accept and reject`, as the
  * `decision_transition` description says them twice.
  *
  * Read from the table by what they REQUIRE (a note), which is what makes them one group:
@@ -257,14 +257,14 @@ function proofField(lead: string, workflow: Workflow, field: ProofField) {
 const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
 
 /**
- * What the fields on a reported run MEAN — appended to the description of every read
+ * What the fields on a reported run MEAN: appended to the description of every read
  * that lists one.
  *
  * One text, four uses, and for the same reason `PROJECT_ARG` is one schema: the agent
  * reads these descriptions and nothing else, so four spellings of one rule are four
  * chances for the rule it believes to drift from the rule the server applies. This
  * one has to be said somewhere an agent can read it, because the fields answer a
- * question the record cannot — whether an open run is still being worked in — and the
+ * question the record cannot (whether an open run is still being worked in) and the
  * answer is a comparison, not a verdict.
  *
  * The absence of `idleSeconds` is stated explicitly. It is the one field whose being
@@ -275,18 +275,18 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * of this text is about: it is on EVERY run reported, open or ended, and an agent that
  * does not know a field exists does not read it. It is the one thing here that says
  * what a session DID rather than how it stands, which is what "where was I" actually
- * asks — and the empty array is spelled out for the same reason the absent
+ * asks, and the empty array is spelled out for the same reason the absent
  * `idleSeconds` is, except that here the emptiness is the answer rather than a gap.
  *
  * And it says what none of this proves. An open run is not evidence of a live
  * session: nothing in the record says a process is running, so a run left behind by
  * a session that was killed is indistinguishable from one an agent is idle inside.
  * The reads report; the person or the agent decides, and `mnema run end <id> --which <agent>`
- * is how a decision gets recorded — whole, because the verb refuses a close that names no agent.
+ * is how a decision gets recorded: whole, because the verb refuses a close that names no agent.
  *
  * WHY IT IS SHORTER THAN THE RULES IT CARRIES. Claude Code truncated a tool description
  * at 2048 characters (up to 2.1.295; 4096 since 2.1.296) and appended `… [truncated]`, and nothing warned. This text is
- * appended to four descriptions, one of which — `bootstrap`, at 4478 — lost 54% of
+ * appended to four descriptions, one of which (`bootstrap`, at 4478) lost 54% of
  * itself that way, and what a cut takes is the END, where every limit this project
  * declares happens to be written. So what stayed on the wire is every DECLARATION an
  * agent acts on, and what moved up here is the REASONING behind them, which is for
@@ -311,8 +311,8 @@ const OPEN_RUN_CONTRACT =
  * The agent a connection is recorded as when the client's own name is no name.
  *
  * On this transport an agent exists BY CONSTRUCTION: a stdio connection is a
- * program talking to a program, and "a person acted directly" — what an absent
- * `which` means everywhere else in mnema — cannot be true here. So a client that
+ * program talking to a program, and "a person acted directly", what an absent
+ * `which` means everywhere else in mnema, cannot be true here. So a client that
  * announces nothing usable is recorded as an agent whose name we do not know, which
  * is honest, rather than as nobody, which is false.
  */
@@ -322,8 +322,8 @@ const UNKNOWN_AGENT = 'unknown-agent';
  * The agent this connection is for: the name the client announced, or
  * {@link UNKNOWN_AGENT} when that name is no identity at all.
  *
- * "No identity" is decided by {@link canonicalIdentity} — the rule that decides
- * what the chain records — and not by a check of our own, because a second reading
+ * "No identity" is decided by {@link canonicalIdentity}, the rule that decides
+ * what the chain records, and not by a check of our own, because a second reading
  * of "blank" could disagree with the first, and then a name would pass here and
  * vanish from the event. One call covers the absent name, a non-string from a
  * client that ignores the schema, whitespace of every kind, and a string the chain
@@ -339,7 +339,7 @@ const UNKNOWN_AGENT = 'unknown-agent';
  * {@link Session.which}).
  *
  * It is decided HERE, before the session opens, because the session derives three
- * things from this ONE value — the default scope a write lands in, the `agent` on
+ * things from this ONE value: the default scope a write lands in, the `agent` on
  * the run's own fact, and the `which` stamped on every event of the connection.
  * Deciding it later, or twice, is what lets them disagree: a blank name used to
  * announce an agent, record none, and route the session's writes to the team's
@@ -353,19 +353,19 @@ function connectingAgent(announced: string | undefined): string {
 /** What the server needs from its host, injected so it is testable. */
 export interface McpServerOptions {
   /**
-   * The discovery environment — REQUIRED, and read by the caller.
+   * The discovery environment: REQUIRED, and read by the caller.
    *
    * It defaulted to the real process environment, read here a second time, and nothing in
    * production ever took the default: the one caller, `mnema mcp` (`wiring/mcp.ts`), hands over
    * the environment it read at the entry. A second reading of where the key lives that no path
-   * exercises is the shape that comes to disagree in silence — measured when the key root
+   * exercises is the shape that comes to disagree in silence, measured when the key root
    * stopped following `$XDG_DATA_HOME`: a mutation that made this default drop `$MNEMA_HOME` left
    * every case green. So there is no default, as there is none for `cwd`, and the compiler asks
    * every caller for it.
    */
   readonly env: DiscoveryEnv;
   /**
-   * An explicit project directory to operate on, overriding the client's roots —
+   * An explicit project directory to operate on, overriding the client's roots:
    * what `mnema mcp --project` carries.
    *
    * It must be an ABSOLUTE path to a directory that IS a project; a value that is
@@ -374,7 +374,7 @@ export interface McpServerOptions {
    */
   readonly configProject?: string | undefined;
   /**
-   * The agent this server signs as, where the record enrols its key — what `mnema mcp
+   * The agent this server signs as, where the record enrols its key, what `mnema mcp
    * --agent-key` (or `MNEMA_AGENT_KEY`) carries: the name of the folder the agent's key lives in
    * under the data directory. Where the record enrols that key under that name, the `which` of
    * every fact of the connection is the name the record gives it, whatever the client announced
@@ -382,18 +382,18 @@ export interface McpServerOptions {
    */
   readonly agentKey?: string | undefined;
   /**
-   * The directory the host started this server in — what the cascade walks up from for
+   * The directory the host started this server in: what the cascade walks up from for
    * a client that declares no `roots` capability, and for no other (see
    * {@link ClientWorkspace}). `mnema mcp` passes its own working directory.
    *
    * REQUIRED, with no default, and the default is what it replaces. Defaulting to this
-   * process's directory would hand a server built anywhere but the command line — a test
-   * with a sandboxed environment, most of all — a directory under a real home, where a
+   * process's directory would hand a server built anywhere but the command line (a test
+   * with a sandboxed environment, most of all) a directory under a real home, where a
    * walk-up finds whatever `.mnema/` is there. A caller has to say which directory, and a
    * connection whose client declares `roots` never reads it.
    */
   readonly cwd: string;
-  /** Where to write diagnostics (never stdout — that carries the protocol). */
+  /** Where to write diagnostics (never stdout: that carries the protocol). */
   readonly log?: (line: string) => void;
 }
 
@@ -408,12 +408,12 @@ export interface McpServerOptions {
  * separate because it is the half of the close that CANNOT be exercised through a
  * transport: it attaches to the process, and a test that signalled the real process would
  * signal the test runner. `connect` calls it, so production wires itself; a test calls it
- * with a fake process and gets the whole path — trigger, close, the `run.ended` on disk.
+ * with a fake process and gets the whole path: trigger, close, the `run.ended` on disk.
  *
  * `tools` is not a function and answers a different kind of question: what this server
  * SERVES and what each of those can do. It travels for the reason `registerVerbs`'
- * answer travels on the other surface — a classification nothing can ask about is a
- * comment with a type annotation — and `every-tool-says-if-it-writes.test.ts` is what
+ * answer travels on the other surface (a classification nothing can ask about is a
+ * comment with a type annotation) and `every-tool-says-if-it-writes.test.ts` is what
  * asks it, against the tools the protocol actually lists.
  */
 export function buildMcpServer(options: McpServerOptions): {
@@ -426,22 +426,22 @@ export function buildMcpServer(options: McpServerOptions): {
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
 
   // The instructions go in the handshake, which is the one place a server can say what its
-  // tools are for before any of them is chosen — see `instructions.ts` for why that is the
+  // tools are for before any of them is chosen: see `instructions.ts` for why that is the
   // place this product had never used, and what the text may and may not claim.
   const server = new McpServer(
     { name: SERVER_NAME, version: VERSION },
     { instructions: SERVER_INSTRUCTIONS },
   );
 
-  // The one piece of per-connection state: the session. It is OPENED once — where
-  // it reads is re-resolved on notice, see the roots handler below — and the
+  // The one piece of per-connection state: the session. It is OPENED once (where
+  // it reads is re-resolved on notice, see the roots handler below) and the
   // in-flight PROMISE is what guards the opening, not the resolved value. The
   // initialized callback and a racing first tool call both await the SAME
   // promise, so exactly one `openSession` (one `startRun`) happens. Holding only
   // the resolved value would let a call that arrives during the `await` below
   // see no session yet and open a second run.
   let sessionPromise: Promise<Session> | undefined;
-  // The SAME session, readable without awaiting — which the close needs and the
+  // The SAME session, readable without awaiting, which the close needs and the
   // promise cannot give it. A process being asked to stop does not come back from
   // an `await`: the continuation that would record the end dies with the process,
   // which is how a close hung on `.then()` writes nothing however early it fires.
@@ -452,8 +452,8 @@ export function buildMcpServer(options: McpServerOptions): {
   /**
    * Opens the session if it is not open yet, from what the handshake exposed:
    * the client's name (the `which`, defaulted when the client announced no usable
-   * one — see {@link connectingAgent}) and what it said about its workspace (for the
-   * project cascade — see {@link clientWorkspace}). Idempotent under concurrency — the
+   * one: see {@link connectingAgent}) and what it said about its workspace (for the
+   * project cascade: see {@link clientWorkspace}). Idempotent under concurrency: the
    * first caller starts the open; every caller awaits the one result.
    */
   const ensureSession = (): Promise<Session> => {
@@ -474,8 +474,8 @@ export function buildMcpServer(options: McpServerOptions): {
       // could open a run the close cannot see.
       openedSession = opened;
       // WHERE this session landed, first. The project is chosen by a cascade over
-      // inputs the server never sees twice — a configured path, the roots the host
-      // announced, in the order it announced them — and the rule walks up, so the
+      // inputs the server never sees twice (a configured path, the roots the host
+      // announced, in the order it announced them) and the rule walks up, so the
       // project it settles on is regularly not the directory anybody named: a folder
       // opened inside another repository resolves to that repository, and a package
       // of a monorepo resolves to the monorepo. Both are right, and either can be a
@@ -484,25 +484,25 @@ export function buildMcpServer(options: McpServerOptions): {
       //
       // And HOW MANY it chose from, because the name alone does not say a choice was
       // made: one project and four look identical in a line that reports only the
-      // winner. It is a count, not a warning — the server has no way to know which
+      // winner. It is a count, not a warning: the server has no way to know which
       // project was meant, and a line that hedged would be hedging in every workspace
       // with two folders open.
       //
       // No agent name here. The name the chain records is the SCREENED one, and the
-      // only party that screens is the write — so at the handshake there is no
+      // only party that screens is the write, so at the handshake there is no
       // screened value to print, and printing the announced one would put a
       // credential in the host's log in a product that replaces one before writing
       // it. The agent is named when the run opens, from what the write recorded.
       //
       // And no scope, because a session no longer has one. Where a write lands is
       // decided per call, from what the write IS, so a line printed at the handshake
-      // could only state a default that does not exist — and the run line that follows
+      // could only state a default that does not exist, and the run line that follows
       // each first write already names the tree it opened in.
       //
       // And BY WHICH RUNG, in the parenthesis after the project. The same project can
-      // now arrive by two roads that rest on different things — what the client said
+      // now arrive by two roads that rest on different things, what the client said
       // (its roots) and where the host happened to start this process (the working
-      // directory, taken only when the client said nothing) — and a line that printed
+      // directory, taken only when the client said nothing), and a line that printed
       // the name alone would make a landing the server inferred read exactly like one
       // the client asked for.
       //
@@ -517,7 +517,7 @@ export function buildMcpServer(options: McpServerOptions): {
             'runs=(none — the first write to a tree opens that tree’s run)',
         ),
       );
-      // And what the walks PASSED OVER that still holds events — a home's `.mnema/`, a
+      // And what the walks PASSED OVER that still holds events: a home's `.mnema/`, a
       // machine's data directory with a project's tails in it (`not-a-project.ts`). The
       // line above says where the session landed; these say what it did not land on, for
       // the person who will otherwise never learn those events stopped being read. One
@@ -529,7 +529,7 @@ export function buildMcpServer(options: McpServerOptions): {
   };
 
   // Resolve the session as soon as the client is known: the trees, the scope, the
-  // anchor. This APPENDS NOTHING — the run waits for the first write — so a client
+  // anchor. This APPENDS NOTHING (the run waits for the first write), so a client
   // that attaches and calls nothing leaves the project as it found it. It is done
   // here anyway, rather than on first use, so the line above declares where the
   // session landed even for a connection that never asks anything.
@@ -541,12 +541,12 @@ export function buildMcpServer(options: McpServerOptions): {
 
   // AND THE WORKSPACE IS NOT SETTLED BY THAT CALLBACK. `roots/list` was asked once,
   // at the handshake, and a client that gains a folder says so with this
-  // notification — which nothing here listened for, so a connection whose workspace
+  // notification, which nothing here listened for, so a connection whose workspace
   // grew went on being served, and writing, out of the record it resolved first.
   //
   // This is the whole of the server's half: ask the client for the list again (the
   // notification carries nothing), and hand it to the ONE function that re-runs the
-  // cascade. The rule lives there, in the same `resolveContext` the handshake ran —
+  // cascade. The rule lives there, in the same `resolveContext` the handshake ran:
   // a second reading of "where is this session" is exactly how the two would come to
   // disagree. It is also the PORTABLE half: this is protocol, so it works in any MCP
   // client, with no hook and no host-specific wiring anywhere near it.
@@ -578,15 +578,15 @@ export function buildMcpServer(options: McpServerOptions): {
         ),
       );
     } catch (error) {
-      // A re-read that refuses leaves the session exactly as it was — `refreshWorkspace`
-      // assigns nothing before the anchor is read — so the connection stays usable and
+      // A re-read that refuses leaves the session exactly as it was (`refreshWorkspace`
+      // assigns nothing before the anchor is read), so the connection stays usable and
       // the operator is told why the workspace it can see did not move.
       log(oneLine(`workspace re-read #${active.refreshes} refused: ${messageOf(error)}`));
     }
   });
 
   // Every tool, each declaring what calling it can do to the record. The declarations
-  // are collected as they are registered — never listed beside the registrations, which
+  // are collected as they are registered, never listed beside the registrations, which
   // is the list that goes stale the one time it matters.
   const declaredTools: DeclaredTool[] = [];
   registerTools(declaringInto(server, declaredTools, ensureSession), ensureSession);
@@ -595,13 +595,13 @@ export function buildMcpServer(options: McpServerOptions): {
    * Ends the connection's session: every run it opened, then its caches.
    *
    * SYNCHRONOUS from the check to the log line, and that is the requirement rather
-   * than a style — see {@link armSessionClose}. It reads the session off
+   * than a style: see {@link armSessionClose}. It reads the session off
    * `openedSession` and not off the promise for exactly that reason.
    *
    * Only a session that actually opened is closed; a run left open by a refusal is
    * tolerated (the projection reads it as still open), so this never throws. A
-   * session still OPENING holds nothing to release — no write can have reached a run
-   * before the session it needs exists — and a session that FAILED to open never
+   * session still OPENING holds nothing to release (no write can have reached a run
+   * before the session it needs exists) and a session that FAILED to open never
    * read a tree at all.
    *
    * A session that only READ has no run, and the line says so instead of naming
@@ -611,14 +611,14 @@ export function buildMcpServer(options: McpServerOptions): {
    * The line names the runs rather than counting them, in both halves. A connection
    * that wrote to three projects ends three runs in three records, and a count
    * would leave a reader of the host's log unable to pair any of them with what
-   * they can read on disk — which is the whole use of this line.
+   * they can read on disk, which is the whole use of this line.
    */
   const closeNow = (): void => {
     if (openedSession === undefined) return;
     const { closed, leftOpen, replaced, begunWithNoRun } = closeSession(openedSession);
     // "Nothing was written" only where no write began: a run's opening founds on its way in
     // when the key has no anchor there, so a run that failed to open may have left the founding
-    // behind — and the line said "nothing was written" over it.
+    // behind, and the line said "nothing was written" over it.
     const begun =
       begunWithNoRun.length > 0
         ? `; a write began in ${begunWithNoRun.join(', ')} and no run opened there, so what comes before a run (a founding) may be on disk`
@@ -666,7 +666,7 @@ export function buildMcpServer(options: McpServerOptions): {
 }
 
 /**
- * One tool, and what calling it can do to the record — the same declaration a verb of
+ * One tool, and what calling it can do to the record: the same declaration a verb of
  * the command line makes, over the same two words (`record-effect.ts`).
  *
  * The ACT is the tool's name, which is the value the protocol serves it under. It is
@@ -679,7 +679,7 @@ type DeclaredTool = Declared<string>;
  * How a tool is hung on this server: with a DECLARATION where the SDK takes a name.
  *
  * THIS IS WHAT MAKES THE CLASSIFICATION COMPULSORY, and it is the MCP's version of the
- * shape the command line has had all along — there a registrar that answers with nothing
+ * shape the command line has had all along: there a registrar that answers with nothing
  * is not a `Verb` and cannot enter the list (`wiring/verb.ts`). Here the server itself
  * never reaches {@link registerTools}: what reaches it is this function and nothing else,
  * so a tool added tomorrow has no way to be registered without passing through
@@ -701,7 +701,7 @@ type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
  *
  * The declarations travel back rather than being discarded, for the reason the command
  * line's do: a classification is only worth declaring if it can be ASKED. The entry
- * ignores the answer, having nothing to decide with it today — the same as `program.ts`,
+ * ignores the answer, having nothing to decide with it today: the same as `program.ts`,
  * where `registerVerbs` has returned the verbs' declarations since before anything read
  * them, and where the first production reader (the read-only session) arrived afterwards.
  * What reads these now is the guard, and a reviewer.
@@ -709,7 +709,7 @@ type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
  * AND IT IS WHERE THE PROTOCOL'S HINTS ARE WRITTEN, for the reason it is where the
  * declaration is taken: this is the only door a tool comes through, so a hint derived here
  * cannot be missing from one, and a hint a tool spelled for itself would be a second reading
- * of what it does. The config a tool hands in has nowhere to spell them — {@link ToolRegistrar}
+ * of what it does. The config a tool hands in has nowhere to spell them: {@link ToolRegistrar}
  * takes no `annotations`, on purpose.
  */
 function declaringInto(
@@ -728,12 +728,12 @@ function declaringInto(
 }
 
 /**
- * WHAT THE PROTOCOL'S FOUR HINTS SAY ABOUT A TOOL — read off its declaration, and off
+ * WHAT THE PROTOCOL'S FOUR HINTS SAY ABOUT A TOOL: read off its declaration, and off
  * nothing else.
  *
  * A client reads these to decide what it may call without asking a person, and none was
  * sent. The protocol's defaults then described all twenty-five tools as tools that may
- * destroy what they touch and that reach out into an open world — false for every one — and
+ * destroy what they touch and that reach out into an open world, false for every one, and
  * as tools that may change what they read, which is false for the thirteen reads. Each line
  * below is a claim, and `every-tool-says-if-it-writes.test.ts` holds it: it calls every tool
  * twice over one connection to a real project in a sandbox, and holds each hint the protocol
@@ -755,14 +755,14 @@ function declaringInto(
  *     `writer.ts`); below it a write refuses and cuts nothing (`TAIL_DAMAGED`). The sandbox
  *     the case exercises holds no such fragment.
  *   - `idempotentHint` is true for a read, where asking again changes nothing again, and
- *     false for every write — no promise, rather than one kept only sometimes. Most writes
- *     append the event they exist for on every call. Two record at most once per RUN —
+ *     false for every write: no promise, rather than one kept only sometimes. Most writes
+ *     append the event they exist for on every call. Two record at most once per RUN:
  *     `skills` one consultation per pattern, `rules_before_an_edit` one service (and an
- *     asking on every call a rule asks a person on) — so a repeat on the same connection may
+ *     asking on every call a rule asks a person on), so a repeat on the same connection may
  *     add nothing, while a new connection opens a new run and records again.
  *   - `openWorldHint` is false for every tool. What each reaches is this workspace's record
- *     on this machine. The one act of the product that reaches past it — asking a calendar to
- *     attest a checkpoint (`witness-request.ts`) — is `mnema witness`, and no tool serves it.
+ *     on this machine. The one act of the product that reaches past it, asking a calendar to
+ *     attest a checkpoint (`witness-request.ts`), is `mnema witness`, and no tool serves it.
  *
  * The protocol reads `destructiveHint` and `idempotentHint` only beside
  * `readOnlyHint: false`; they are sent for the reads anyway, because they are true of a
@@ -779,12 +779,12 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
 }
 
 /**
- * `handle`, with the refusals thrown below every write answered through {@link refused} — the
- * door every other refusal leaves by — instead of by the SDK.
+ * `handle`, with the refusals thrown below every write answered through {@link refused}, the
+ * door every other refusal leaves by, instead of by the SDK.
  *
  * A REFUSAL IS WHAT CARRIES A CODE, NOT WHAT IS ON A LIST. This door used to know two classes by
  * name (`IdentityUnavailableError`, `TailBusyError`), and the three that refuse an installation
- * id — thrown for the same reason, from the same depth, with a `code` of their own — went out as
+ * id (thrown for the same reason, from the same depth, with a `code` of their own) went out as
  * the SDK's bare message: no `Refused (CODE)`, none of what the session owed. Measured over
  * stdio, with an id file left empty by a stopped process. They share a base now
  * (`CodedError`, from the chain) and the door asks the one question, so a class added next year
@@ -797,7 +797,7 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
  *     (`IdentityUnavailableError`, from the core), because the decision sits below every write
  *     and there is no honest way on. The one that most needs its code is the checkout whose
  *     recorded identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of
- *     this machine's key file — so the reply says where that file is, which the session can and
+ *     this machine's key file, so the reply says where that file is, which the session can and
  *     the core cannot (the key root is read where a writer opens).
  *     `the-checkout-a-key-left.test.ts` asks it over stdio.
  *   - A tail another process holds past the lock's budget (`TailBusyError`). A write opens its
@@ -877,7 +877,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        // The override named a tree absent here — surface it as a tool error so
+        // The override named a tree absent here: surface it as a tool error so
         // the agent sees the capture did not happen, not a silent no-op.
         return refused(active, result);
       }
@@ -1069,7 +1069,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      // The relation the RECORD holds, not the one the call asked for — plus, on the
+      // The relation the RECORD holds, not the one the call asked for, plus, on the
       // relations that carry an ADDRESS, what that address covers. Not every path
       // target is one: `derived-from` names the file a proposal came out of and there
       // is nothing under it to count. The agent gets
@@ -1153,7 +1153,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(feedback !== undefined ? { feedback } : {}),
       });
       if (!result.ok) {
-        // The gate refused — surface it as a tool error so the agent sees the
+        // The gate refused: surface it as a tool error so the agent sees the
         // move did not happen, with the gate's own reason. Not a crash: a
         // refusal is a legitimate answer, returned as data.
         return refused(active, result);
@@ -1346,7 +1346,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     {
       title: 'Bootstrap the session',
       // THE LONGEST DESCRIPTION ON THIS SERVER, and the one Claude Code's 2048-character
-      // ceiling (up to 2.1.295) cut in half — 4478 characters, 2430 of them dropped with `…
+      // ceiling (up to 2.1.295) cut in half: 4478 characters, 2430 of them dropped with `…
       // [truncated]` and no warning. What a cut takes is the END, and the end of this
       // text was where every limit of the read was declared: what `unread` means, why a
       // decision that does not govern is left out, what a total larger than its list
@@ -1357,7 +1357,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // {@link OPEN_RUN_CONTRACT}'s doc), because the model reads the description and
       // the maintainer reads the source. What went sideways rather than up went to a
       // tool THIS TEXT NAMES, and the rule under that is measured rather than assumed:
-      // an agent holding this server with nothing naming a tool called none —
+      // an agent holding this server with nothing naming a tool called none;
       // `mcp_asked` false in 20 of 20 and then in 40 of 40 instrumented cells.
       // So the agent calls what is NAMED: `read_record` now says
       // what an ADR-<n> label is, and `search` says its own ordering and that `kind` is
@@ -1386,11 +1386,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     async () => {
       const active = await ensureSession();
       const context = runBootstrap(active);
-      // The opening read carries the same note as `resume`, whose answer it embeds —
+      // The opening read carries the same note as `resume`, whose answer it embeds,
       // and carries it most usefully, being the first thing an agent asks. It carries
       // WHERE it is reading from for the same reason: this is the first thing read,
       // so it is the cheapest place to learn that the workspace holds more than one
-      // project — and the agent is the party that can pass that on to the person who
+      // project, and the agent is the party that can pass that on to the person who
       // knows which one was meant.
       return withRunState(active, context, [whereThisSessionIs(active)]);
     },
@@ -1438,15 +1438,15 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const result = runSkillsTool(active, { ...(id !== undefined ? { id } : {}) });
       if (!result.ok) {
         // No such skill, a pattern the project closed, or the consultation could not
-        // be recorded — surface it so the agent never mistakes a refusal for "there
+        // be recorded: surface it so the agent never mistakes a refusal for "there
         // are no patterns here".
         return refused(active, result);
       }
-      // Serving a BODY records a consultation, so this read is also a write — and the
+      // Serving a BODY records a consultation, so this read is also a write, and the
       // one report a write must never swallow is what it replaced. The agent name
       // rides on that fact's envelope like any other, so if it held a credential this
       // reply is where the caller can still rotate it. (An answer of names served no
-      // body and wrote nothing, so there is nothing for this to report — it is empty
+      // body and wrote nothing, so there is nothing for this to report: it is empty
       // rather than skipped, which is one branch fewer to get wrong.)
       const notice = replacementNotice(result.replaced);
       // The payload FIRST, then the framing, then the notice. The patterns are the
@@ -1517,7 +1517,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runNextActionsTool(active, { id });
       if (!result.ok) {
-        // No tree of the workspace holds the task, or two records do — surface it as
+        // No tree of the workspace holds the task, or two records do: surface it as
         // a tool error so the agent sees there is no ONE such task, not an empty
         // (misleadable) list.
         return refused(active, result);
@@ -1578,13 +1578,13 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // misleadable verdict.
         return refused(active, result);
       }
-      // A REFUSED verdict is NOT a tool error — the dry-run succeeded and its
+      // A REFUSED verdict is NOT a tool error: the dry-run succeeded and its
       // answer is "the move would be refused, here is why". Return the verdict
       // (and focus) as data so the agent reads the reason, exactly as it would
       // from the real move's refusal.
       //
       // The verdict travels WITH the asker's focus, so this reply lists runs like
-      // `focus` does — and carries the same note for the same reason: "here is
+      // `focus` does, and carries the same note for the same reason: "here is
       // what you are in the middle of" must not answer for the connection.
       return withRunState(active, result.result);
     },
@@ -1694,15 +1694,15 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     },
   );
 
-  // The three INTELLIGENCE tools, prefixed `audit_` — the AUDITOR's view over a UNION
+  // The three INTELLIGENCE tools, prefixed `audit_`: the AUDITOR's view over a UNION
   // of trees (distinct from the session reads focus/resume/guard, which serve the
   // session's own tree and carry no prefix). Each folds every tree it covers into one
   // view and returns the faithful object. Read-only: they read the tails and fold
   // them, opening no writer and no cache. With no project a session has no record to
-  // audit — refused.
+  // audit: refused.
   //
   // ALL FIVE span every project of the workspace, and what differs between them is what
-  // each may MERGE from that one list — by the shape of the answer, never by an option.
+  // each may MERGE from that one list: by the shape of the answer, never by an option.
   // The two keyed by an id merge ITEMS: an id has one home, what points at it lives
   // wherever the pointing happened, and a merged list of labelled items adds without
   // changing. `audit_accountability` and `audit_antipatterns` merge nothing: they
@@ -1712,7 +1712,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   // `audit_exposure` is where both halves of that rule land in ONE answer: the findings
   // merge (each naming the project to rotate in) and the denominator decomposes (one
   // count per record). Two of these fold the TAILS rather than the caches, which is a
-  // different mechanism for reaching a project and a real cost — the trees are the same
+  // different mechanism for reaching a project and a real cost: the trees are the same
   // list either way, so the coverage of an answer never depends on how it is computed.
 
   tool(
@@ -1785,7 +1785,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       // An entity nothing references is an ANSWER ("nothing is tied to this"),
-      // never an error — the same reason an empty history is one.
+      // never an error: the same reason an empty history is one.
       return served(active, result.value);
     },
   );
@@ -1824,7 +1824,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       // A path nothing addresses is an ANSWER ("nothing governs this"), never an
-      // error — and the three counts beside it are what say which kind of nothing.
+      // error, and the three counts beside it are what say which kind of nothing.
       return served(active, result.value);
     },
   );
@@ -1873,10 +1873,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // comes back here is a HOOK REPLY, not an answer to a caller, and the host's
       // contract for it was measured against the real binary:
       // anything that is not the reply JSON is
-      // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
+      // DISCARDED IN SILENCE (no error, no warning, nothing reaching the model). A
       // notice spliced in here would therefore never be read by anybody. It is listed in
-      // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
-      // answer asked for rather than pushed — does carry it.
+      // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules`, the same
+      // answer asked for rather than pushed, does carry it.
       return { content: [block(JSON.stringify(result.value))] };
     },
   );
@@ -1962,7 +1962,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       // An empty report is an ANSWER ("nothing recognizable is recorded here"),
-      // never an error — the same reason an empty history is one.
+      // never an error: the same reason an empty history is one.
       return served(active, result.value);
     },
   );
@@ -2002,7 +2002,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
 }
 
 /**
- * What the client said about its workspace — the ONE place a connection's
+ * What the client said about its workspace: the ONE place a connection's
  * {@link ClientWorkspace} variant is decided, at the handshake.
  *
  * The capability decides, and nothing else does. A client that declared `roots` gets the
@@ -2015,7 +2015,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
  *
  * A client that declared `roots` and then failed to answer is still the first kind. Its
  * declaration is a statement that its workspace is what `roots/list` says, and a failed
- * call does not make the working directory a better answer — it makes the list empty, as
+ * call does not make the working directory a better answer: it makes the list empty, as
  * it always has, and says so in the log.
  */
 async function clientWorkspace(
@@ -2041,7 +2041,7 @@ function declaresRoots(server: McpServer): boolean {
  * (asking one rejects), and what it gets instead is decided by
  * {@link clientWorkspace}, where the capability is read. The re-read on
  * `roots/list_changed` still calls this directly, and for such a client it answers an
- * empty list without asking — its session re-reads its working directory instead
+ * empty list without asking: its session re-reads its working directory instead
  * (`refreshWorkspace`).
  */
 async function listRootsSafely(
@@ -2059,7 +2059,7 @@ async function listRootsSafely(
 }
 
 /**
- * Where a session's landing came from — the parenthesis the log prints after the project,
+ * Where a session's landing came from: the parenthesis the log prints after the project,
  * one phrase per {@link Rung}.
  *
  * TOTAL OVER THE RUNG, and a rung added to the cascade does not compile until it has a
@@ -2107,7 +2107,7 @@ function personSignedNotice(result: PersonSigned): string[] {
  * about leaves a credential unrotated. A tree the caller is not told about leaves the
  * fact somewhere the caller believes it is not: a session of real use recorded a
  * decision, read the record afterwards to find out where it had gone, and passed that
- * on to the person as a caveat — which is the proof that this reply had not spoken.
+ * on to the person as a caveat, which is the proof that this reply had not spoken.
  * The caller is the only party that can still act on either.
  *
  * The scope is the RESOLVED one, taken off the result rather than off the call: the
@@ -2116,21 +2116,21 @@ function personSignedNotice(result: PersonSigned): string[] {
  *
  * WHAT THE RECORD'S OWN STATE OBLIGES is not composed here: it goes through
  * {@link replied} as a block of its own, in the write's wording. This reply used to be
- * one block and is now one or two, and the acknowledgement is the same bytes either way
- * — a caller reading `content[0]` reads exactly what it read before.
+ * one block and is now one or two, and the acknowledgement is the same bytes either way;
+ * a caller reading `content[0]` reads exactly what it read before.
  */
 function recorded(
   session: Session,
   line: string,
   result: Landed & Replacement,
   // Extra lines a particular verb owes, between the acknowledgement and the tree
-  // notice. Only `link_knowledge` has any — what its address covers — and it is a
+  // notice. Only `link_knowledge` has any, what its address covers, and it is a
   // parameter rather than a field on the result so that no other verb's reply gains a
   // slot it can never fill.
   extra: { readonly after?: readonly string[] } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
   // THE ACKNOWLEDGEMENT IS ONE BLOCK AND THE RECORD'S STATE IS ANOTHER. What the verb
-  // owes about its own act — where it landed, what the content door replaced — is one
+  // owes about its own act (where it landed, what the content door replaced) is one
   // sentence with the line it qualifies; whether the record still chains is about the
   // record and not about this act, so it arrives beside it the way it does for a read.
   return replied(
@@ -2154,13 +2154,13 @@ function recorded(
 /**
  * A MOVE's successful reply: the line, plus the replacement notice.
  *
- * The line itself is not built here — {@link movedLine} builds it, for this surface
+ * The line itself is not built here: {@link movedLine} builds it, for this surface
  * and the command line alike, so the acknowledgement of a move reads the same
  * wherever it is read. What this adds is the ENVELOPE: a tool call answers in one
  * text block, where the CLI writes to a stream.
  *
  * It says no tree, and the asymmetry with {@link recorded} is the point. A birth is
- * ROUTED — the surface picks a tree from the kind, the caller said nothing, so the
+ * ROUTED: the surface picks a tree from the kind, the caller said nothing, so the
  * reply is the only place that choice surfaces. A move follows the entity to wherever
  * it was born; nothing was decided here, and there is nothing the caller could do
  * with the answer. Naming a tree where no choice was made would make the sentence
@@ -2203,7 +2203,7 @@ function moved(
  * The reads that answer about RUNS answer about the ACTOR, not the connection: they
  * list the runs this machine's anchor has open and the last one it worked in,
  * wherever those came from. That answer is complete on its own, and it is also the
- * answer most likely to be read as being about the asking session — an empty focus
+ * answer most likely to be read as being about the asking session: an empty focus
  * reads as "you have nothing in flight" when what is true is "this connection has
  * not started anything, and a run opens when you first write". One is a fact about
  * the record, the other about this connection, and the reply now carries both.
@@ -2212,13 +2212,13 @@ function moved(
  * `resume` (the latest run plus that focus), `bootstrap` (which embeds the resume)
  * and `guard` (whose verdict travels paired with the asker's focus). The rule is
  * the payload, not the tool: a read that lists the actor's runs says whose they
- * are. Nothing else on the surface lists a run — the index does not carry them,
+ * are. Nothing else on the surface lists a run: the index does not carry them,
  * `read_record` refuses a run id, and the auditor reads answer about the record
  * rather than about this connection.
  *
  * WHOSE EACH RUN IS is no longer said here, and that is the correction. This sentence
- * used to carry both halves — "this session has opened none" AND "so anything listed
- * is from elsewhere" — which meant the qualifier switched OFF for exactly the session
+ * used to carry both halves ("this session has opened none" AND "so anything listed
+ * is from elsewhere"), which meant the qualifier switched OFF for exactly the session
  * that needed it most: one that had written, and therefore had its own run mixed in
  * with the ones it did not open. It is a property of each run, so it travels on each
  * run (`thisSession`, see {@link OPEN_RUN_CONTRACT}) and cannot switch off.
@@ -2229,10 +2229,10 @@ function moved(
  *
  * It travels as its OWN content block, never merged into the JSON: the payload stays
  * the same document a caller parsed before this sentence existed, and the
- * derivation stays the context package's — a note about the connection has no business
+ * derivation stays the context package's; a note about the connection has no business
  * inside a shape the domain defines.
  *
- * `also` carries any further sentences a particular read adds — they follow the
+ * `also` carries any further sentences a particular read adds: they follow the
  * payload, before this one. Same rule, same reason: a read with something else to
  * say about the connection says it beside the answer, not inside it.
  */
@@ -2242,7 +2242,7 @@ function moved(
  *
  * IT IS THE ONE DOOR EVERY READ LEAVES BY, and that is what makes the obligation total
  * rather than remembered. Fourteen tools used to compose `{ content: [...] }` by hand,
- * which is fourteen places to forget a sentence the product owes — and the sentence it
+ * which is fourteen places to forget a sentence the product owes, and the sentence it
  * owed was this one: the record can stop chaining, `mnema verify` says so, `search` and
  * `status` on the command line said so, and not one of the twenty-five tools did. The
  * agent is this product's principal reader and it was the only one never told.
@@ -2252,7 +2252,7 @@ function moved(
  * THIS DOC USED TO CALL IT THE ONE DOOR EVERY REPLY LEAVES BY, and that was true of the
  * reads and false of the server: {@link recorded} and {@link moved} composed their own
  * envelope beside it and asked nothing. The reading now lives one level down, in
- * {@link replied}, which all three go through — so "the one door" is a claim about that
+ * {@link replied}, which all three go through, so "the one door" is a claim about that
  * function, and this one is the read's half of it.
  *
  * THE FACT RIDES AS ITS OWN BLOCK, never inside the JSON, for the reason
@@ -2263,8 +2263,8 @@ function moved(
  * points at a tool for the rest has stated nothing (`record-framing.ts`), and `verify` is
  * not a tool of this server at all.
  *
- * THE PAYLOAD IS WRITTEN WITHOUT INDENTATION, for every read. Nobody reads it as a page —
- * the host parses it and the model reads every space of it on every call — and
+ * THE PAYLOAD IS WRITTEN WITHOUT INDENTATION, for every read. Nobody reads it as a page
+ * (the host parses it and the model reads every space of it on every call), and
  * `JSON.parse` gives back the same document either way
  * (`tests/a-tool-answers-without-indentation.test.ts`).
  */
@@ -2281,7 +2281,7 @@ function served(
 
 /**
  * THE ONE PLACE THIS SERVER ASKS WHETHER THE RECORD STILL CHAINS, and therefore the one
- * place the obligation can be skipped — which is what makes it total rather than
+ * place the obligation can be skipped, which is what makes it total rather than
  * remembered.
  *
  * It exists because the rule arrived by halves. The reads got it first, through
@@ -2290,12 +2290,12 @@ function served(
  * nothing, and that left uncovered the case where the notice matters MOST: an append
  * onto a tail that already does not chain. The agent is handed `Recorded decision …`,
  * walks away believing it put a fact into an intact record, and is the reader who will
- * cite that id later. The command line had already decided the other way — `decision
- * import` and `switch` write and say so — so the product was applying one rule through
+ * cite that id later. The command line had already decided the other way: `decision
+ * import` and `switch` write and say so, so the product was applying one rule through
  * two doors, which is this bench's named producer of silent divergence.
  *
  * `wrote` picks which of the module's two openings the block gets ({@link
- * linkBreakBlockOnWrite}); everything under it — the issue lines, the closing sentence —
+ * linkBreakBlockOnWrite}); everything under it (the issue lines, the closing sentence)
  * is the same bytes down both roads, because it is the same fact about the same tails.
  *
  * `before` and `after` are what the tool itself composed, and the fact goes BETWEEN
@@ -2306,7 +2306,7 @@ function served(
  *
  * It does not REFUSE, and that is the same ruling the read made. Nothing is lost when a
  * tail stops chaining, the break is behind, and the new event chains from the last hash
- * it found — so it is sound from there forward. Refusing would turn a broken chain into
+ * it found, so it is sound from there forward. Refusing would turn a broken chain into
  * a stopped product, and an append-only record exists to survive the accident rather
  * than to decline to work after it. `record-integrity.ts` holds the argument in full.
  */
@@ -2319,22 +2319,22 @@ function replied(
   // AND WHICH DOOR IS ASKING, because the two have paid for different things by the time
   // they get here: a read came through the registry's `get` and holds caches that already
   // agree with the chain, and a write invalidated and appended without reading. The
-  // reading is one call either way — the branch is inside it, where the cost of each door
+  // reading is one call either way: the branch is inside it, where the cost of each door
   // is written down (`mcp/tools.ts`, {@link WhichDoor}).
   return {
     content: [
       ...before,
       ...fact(sessionLinkBreaks(session, wrote ? A_WRITE : A_READ)),
-      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply — asked here and in
+      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply: asked here and in
       // {@link refused}, which between them are every answer a tool composes, so a tool added
       // later says it without remembering to. (This said "the one place every reply of this
       // server passes", and a refusal did not pass here: see {@link refused}.) Empty unless a
       // key's first write into a tree settled it in an identity the record shows it founded
-      // there beside others — once per key per tree for an installation, and again for a fresh
+      // there beside others, once per key per tree for an installation, and again for a fresh
       // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
-      // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN — its run,
-      // the edit hook's facts — which no tool's own reply acknowledges (`ReplacementsOwed`).
+      // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN: its run,
+      // the edit hook's facts, which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
       ...after,
     ].map(block),
@@ -2342,14 +2342,14 @@ function replied(
 }
 
 /**
- * One text block of a reply — the single place this server makes one, and the place the
+ * One text block of a reply: the single place this server makes one, and the place the
  * control bytes of recorded text are made visible.
  *
  * A model's transport is not a terminal, but the same bytes are commands to the next
  * thing that renders what the model says back (an ANSI sequence in a title the model quotes
  * is a sequence in a pane), and to a log of the exchange. Every reply leaves through
  * {@link replied}, {@link refused} or the hook reply, and all three build their blocks
- * here, so a tool added later cannot answer in raw bytes without writing its own block —
+ * here, so a tool added later cannot answer in raw bytes without writing its own block,
  * which `tests/neutralizes-control-bytes-everywhere.test.ts` reads the source for.
  */
 function block(text: string): { readonly type: 'text'; readonly text: string } {
@@ -2357,7 +2357,7 @@ function block(text: string): { readonly type: 'text'; readonly text: string } {
 }
 
 /**
- * A tool's answer when it refuses — the protocol's error flag, and the text blocks. A type
+ * A tool's answer when it refuses: the protocol's error flag, and the text blocks. A type
  * alias and not an interface: the SDK's result type carries an index signature, which an
  * object type satisfies and an interface does not.
  */
@@ -2368,14 +2368,14 @@ type RefusalReply = {
 
 /**
  * A REFUSAL's answer as the protocol carries it: the line every tool has always answered a
- * refusal with — `Refused (CODE): message` — and then what this connection's writes founded
+ * refusal with (`Refused (CODE): message`) and then what this connection's writes founded
  * since the last reply.
  *
  * IT IS THE ONE DOOR EVERY REFUSAL LEAVES BY, for the reason {@link replied} is the door
  * every other answer leaves by. Twenty-two tools composed `{ isError: true, content: [...] }`
  * by hand, and none of them asked what the session owed. A write opens its run BEFORE the
  * operation decides (`ensureRun`, by design), so a key whose first write into a tree is
- * refused founds its identity there on the way in — and the sentence that says so, which is
+ * refused founds its identity there on the way in, and the sentence that says so, which is
  * owed once, at the write (`a-new-identity.ts`), waited for the next reply. Measured over
  * stdio on the built binary: a connection whose one call was a refused `capture_memory`
  * founded, opened and closed a run, and was never told. The refusal carries it now, and
@@ -2387,11 +2387,11 @@ type RefusalReply = {
  * here: a refusal hands over no record to read and lands nothing of the fact it refused.
  *
  * AN ERROR A TOOL THROWS reaches neither door: the SDK answers it with the message alone. A
- * founding that came before the throw — the run opened, and then the operation's own append
- * met a tail another process held — is not emptied by it: only a composer takes from the
+ * founding that came before the throw (the run opened, and then the operation's own append
+ * met a tail another process held) is not emptied by it: only a composer takes from the
  * watch, so the connection's next reply carries the sentence, and a connection that closes
- * right after never hears it. That is read from the code, not asserted by a case — there is
- * no deterministic way to make the operation's append fail after the run's own succeeded —
+ * right after never hears it. That is read from the code, not asserted by a case (there is
+ * no deterministic way to make the operation's append fail after the run's own succeeded)
  * and it is declared rather than closed.
  */
 function refused(
@@ -2436,13 +2436,13 @@ function withRunState(
  * telling it that in most sessions, and a caution that constant is one nobody reads.
  * Nor could it be more specific honestly: the server knows which project the cascade
  * picked and cannot know which one the person meant. So it reports what it does know
- * and stops — the agent is talking to someone who can tell it, and this is what makes
+ * and stops: the agent is talking to someone who can tell it, and this is what makes
  * asking possible.
  *
  * The others are NAMED, not counted, and the reason is that a write can now name one.
  * A count says a choice was made; the names are what let the agent record work in the
- * project it is actually doing it in, and the agent has no other channel to learn them
- * — it sees directories, not this server's cascade. A number would leave it able to
+ * project it is actually doing it in, and the agent has no other channel to learn them;
+ * it sees directories, not this server's cascade. A number would leave it able to
  * tell that something is wrong and unable to fix it.
  *
  * It travels as its own content block for the same reason the run-state note does:
@@ -2455,7 +2455,7 @@ function whereThisSessionIs(session: Session): string {
   //
   // A project taken from the WORKING DIRECTORY says so here as well as in the log, and
   // this is the reader that needs it more. It is the one landing the client did not ask
-  // for — the server inferred it from where the host started the process — and whether
+  // for (the server inferred it from where the host started the process), and whether
   // anybody reads that host's log is the host's business; the agent reads this.
   const where =
     session.project === undefined
@@ -2467,8 +2467,8 @@ function whereThisSessionIs(session: Session): string {
           : '');
   const projects = session.workspaceProjects;
   // "knows of", because that is exactly what this is: the projects this session
-  // could name. It does not claim they are all the workspace holds — a project the
-  // host announced no folder for is one this session never saw — and it does not
+  // could name. It does not claim they are all the workspace holds (a project the
+  // host announced no folder for is one this session never saw) and it does not
   // claim they came from the roots, since a configured path is not a folder anybody
   // opened.
   //
@@ -2488,7 +2488,7 @@ function whereThisSessionIs(session: Session): string {
 }
 
 /**
- * The half of that sentence which says the list is not frozen — and how many times it
+ * The half of that sentence which says the list is not frozen, and how many times it
  * has been re-read, zero included.
  *
  * ZERO IS PRINTED, and that is the entire reason this exists as its own clause. The
@@ -2500,7 +2500,7 @@ function whereThisSessionIs(session: Session): string {
  *
  * It states the MECHANISM as well as the number, because the number alone answers a
  * question the reader did not know to ask. The agent is the party that can act on
- * this — it is the one that opens a folder mid-session — and what it needs to know is
+ * this (it is the one that opens a folder mid-session) and what it needs to know is
  * that saying so is enough, rather than that this connection must be restarted.
  */
 function reReads(session: Session): string {
@@ -2515,7 +2515,7 @@ function reReads(session: Session): string {
  * One half of the close line: how many runs met a fate, and which ones.
  *
  * `no runs` rather than an empty list, because a line reading "closed: " with
- * nothing after it is a line a reader has to guess at — and the two halves are
+ * nothing after it is a line a reader has to guess at, and the two halves are
  * printed independently, so the empty one has to say what it means. Run ids are
  * minted, never text anybody supplied, so nothing here can break the line.
  */

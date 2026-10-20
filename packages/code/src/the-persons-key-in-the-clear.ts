@@ -13,7 +13,7 @@ import { isProtected, localKeyFingerprint, privateKeyPath } from '@mnema/chain';
 
 /**
  * `true` when the person's signing key is on disk unencrypted, `false` when it is protected, and
- * `undefined` when this machine holds none — nothing to protect, and nothing to say. Reads the
+ * `undefined` when this machine holds none: nothing to protect, and nothing to say. Reads the
  * file's first bytes only to tell which, never to open it: no passphrase is asked.
  */
 export function personsKeyInTheClear(keyRoot: string): boolean | undefined {

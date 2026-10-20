@@ -1,11 +1,11 @@
 /**
- * ONE VOICE FOR A NO — the parser's refusals, and the four ways they could go wrong.
+ * ONE VOICE FOR A NO: the parser's refusals, and the four ways they could go wrong.
  *
  *   - THE SECOND VOICE COMES BACK. A verb added tomorrow, a code nobody thought of, a
  *     subcommand the walk does not reach: each of them answers `error: …` again, and
  *     nothing fails, because a usage error was already a correct exit code carrying an
- *     ugly line. So the sweep drives EVERY command the program declares — not a list
- *     written here — and reads what came out.
+ *     ugly line. So the sweep drives EVERY command the program declares, not a list
+ *     written here, and reads what came out.
  *   - THE MESSAGE STOPS MATCHING THE DECLARATION. The whole argument for building the
  *     sentence out of `--help`'s own text is that there is one text. A case that
  *     re-typed the description would pass while the two drifted apart, so every case
@@ -31,12 +31,12 @@ import { VERSION } from './version.js';
 import { everyCommandOf, misuseReport, speakUsageErrors, WORDED } from './wiring/misuse.js';
 import { BLANK_WHICH_MESSAGE } from './wiring/options.js';
 
-/** The escape byte, and red — what a no is painted with. */
+/** The escape byte, and red: what a no is painted with. */
 const ESC = '\u001b';
 const RED = `${ESC}[31m`;
 
 /**
- * The escapes this surface writes, as a pattern — BUILT rather than written as a
+ * The escapes this surface writes, as a pattern, BUILT rather than written as a
  * literal, and that is not a preference: a regular expression literal holding a
  * control byte is a lint error, and the formatter folds the escape back into one if
  * the pattern is a plain template. (A control byte typed into the SOURCE is worse
@@ -66,7 +66,7 @@ async function invoke(...argv: string[]): Promise<{
   return { out, err, failed };
 }
 
-/** The code commander raised for an invocation — read from the throw, not the text. */
+/** The code commander raised for an invocation: read from the throw, not the text. */
 async function codeOf(argv: readonly string[]): Promise<string> {
   const { program } = buildProgram(silent, argv);
   try {
@@ -116,10 +116,10 @@ afterAll(() => {
 });
 
 describe('every command of the program answers a misuse in the product’s voice', () => {
-  it('leaves no path saying `error:` — asked of the tree, not of a list', async () => {
+  it('leaves no path saying `error:`: asked of the tree, not of a list', async () => {
     // The adversarial question, answered by walking. An undeclared flag is the one
     // misuse EVERY command can be handed, whatever it declares, and it is refused
-    // during the parse — so no action runs, nothing is written, and the server verb
+    // during the parse, so no action runs, nothing is written, and the server verb
     // does not open a connection.
     const commands = everyCommandOf(declared());
     expect(commands.length).toBeGreaterThan(30);
@@ -131,8 +131,8 @@ describe('every command of the program answers a misuse in the product’s voice
       const said = await invoke(...path, '--not-a-flag-anybody-declared');
       const lines = said.err.join(String.fromCharCode(10));
       expect(said.failed, path.join(' ')).toBe(true);
-      // WHICH no it earns is the parser's business — a command with a required flag
-      // asks for that first — so what is asserted is the voice: the product names
+      // WHICH no it earns is the parser's business (a command with a required flag
+      // asks for that first), so what is asserted is the voice: the product names
       // itself, says the command, and commander's own sentence is nowhere on it.
       expect(lines, path.join(' ')).toContain(`mnema ${path.join(' ')}`);
       expect(lines, path.join(' ')).not.toContain('error:');
@@ -178,7 +178,7 @@ describe('every command of the program answers a misuse in the product’s voice
 describe('and what it says comes from what the command already declares', () => {
   /**
    * One case per code the surface words: how to provoke it, and what the line has to
-   * quote. The quoted text is READ FROM THE PROGRAM in each case — a case that typed
+   * quote. The quoted text is READ FROM THE PROGRAM in each case: a case that typed
    * it here would go green while the help and the refusal drifted apart.
    */
   const cases: readonly (readonly [string, readonly string[], () => readonly string[]])[] = [
@@ -259,8 +259,8 @@ describe('and what it says comes from what the command already declares', () => 
   it('and a token the CALLER typed cannot forge a second line, at any of the three', () => {
     // Three of the wordings put a token from the command line into the sentence, and a
     // token comes from a SHELL: a newline in it would end the refusal and start a line
-    // of the reader's own — a complete, plausible second refusal about something that
-    // never happened — and an escape byte would style everything after it. The line a
+    // of the reader's own (a complete, plausible second refusal about something that
+    // never happened) and an escape byte would style everything after it. The line a
     // refusal occupies is the one-item list of the whole reply, which is exactly the
     // shape a forged second half has to imitate.
     //
@@ -291,7 +291,7 @@ describe('and what it says comes from what the command already declares', () => 
     for (const [what, produce] of shapes) {
       const lines = produce();
       expect(lines.length, what).toBeGreaterThan(0);
-      // It is still the value, readable — nothing was swallowed.
+      // It is still the value, readable: nothing was swallowed.
       expect(lines[0], what).toContain('nope');
       // But it is ONE line, and it carries nothing a terminal acts on: the break is
       // SHOWN (two characters) rather than taken, so the second half of the forgery
@@ -313,7 +313,7 @@ describe('and what it says comes from what the command already declares', () => 
 
   it('words the SECOND shape of `invalidArgument`: a positional value, not a flag', async () => {
     // One code, two shapes. The table above has the option shape (`--which " "`), and the
-    // other one was unreachable until a verb declared an ARGUMENT with `.choices()` — so
+    // other one was unreachable until a verb declared an ARGUMENT with `.choices()`, so
     // it fell through to the fallback and came out as commander's own sentence, `error:`
     // and all, on the only refusal `mnema completion` has. What it says now is the
     // declaration's: the term the usage line spells, and the description the help prints
@@ -330,7 +330,7 @@ describe('and what it says comes from what the command already declares', () => 
     );
     expect(said.err[0]).toContain('choices');
     expect(said.err.join('')).not.toContain('error:');
-    // And the code really is the one this case claims — the other shape's case would
+    // And the code really is the one this case claims: the other shape's case would
     // otherwise be covering it.
     expect(await codeOf(['completion', 'powershell'])).toBe('commander.invalidArgument');
   });
@@ -366,26 +366,26 @@ describe('a code nobody worded still comes out through the funnel', () => {
     const plain = renderPlain(lines[0] as (typeof lines)[number]);
     expect(plain).toBe(`Refused (${invented}): error: whatever commander decides to say`);
     // It is a NO like every other, so it is painted like every other. The message it
-    // could not word is carried rather than dropped — the surface never invents a
+    // could not word is carried rather than dropped: the surface never invents a
     // sentence for a refusal it does not understand, and never lets one out unframed.
     expect(renderStyled(lines[0] as (typeof lines)[number])).toContain(RED);
   });
 });
 
 /**
- * NO PARENT TAKES A WORD OF ITS OWN, SO EVERY ONE REFUSES A MISTYPED SUBCOMMAND — IN ONE SENTENCE.
+ * NO PARENT TAKES A WORD OF ITS OWN, SO EVERY ONE REFUSES A MISTYPED SUBCOMMAND, IN ONE SENTENCE.
  *
  * WHAT WAS MEASURED, AND WHAT THIS HELD BEFORE. `mnema task moveZZZ` created a task titled
  * `moveZZZ` and exited 0, where `mnema run startZZZ` refused. The discriminant was not care but
  * the declaration: three of the eight parents (`task`, `decision`, `skill`) declared a positional
- * — the title they created with — which gave commander something for the word to BE, so the
+ * (the title they created with), which gave commander something for the word to BE, so the
  * unknown-command refusal was never reached. This describe used to hold that shape as a defect
  * nobody had decided to repair ("a parent that takes a title cannot refuse a mistyped
  * subcommand"), and the refusals of the other five in their two sentences.
  *
- * WHAT CHANGED IT. Creating is a subcommand now — `task create`, `decision record`, `skill
+ * WHAT CHANGED IT. Creating is a subcommand now (`task create`, `decision record`, `skill
  * create`, the verbs the agent's surface already calls `create_task`, `record_decision` and
- * `create_skill` — and no parent declares a positional. That is also the shape `git`, `docker`,
+ * `create_skill`) and no parent declares a positional. That is also the shape `git`, `docker`,
  * `kubectl` and `cargo` share: the level that has subcommands takes no free word, which is what
  * lets it say a word is not a command instead of acting on it. Here acting on it was worse than
  * elsewhere, because the record is append-only.
@@ -532,7 +532,7 @@ describe('`--help` and `--version` are not touched', () => {
     expect(help.out.join('')).not.toContain('\u001b');
     expect(version.failed).toBe(false);
     // The number is NOT typed here. It is one string with one owner (`version.ts`), and a
-    // literal in this file would be a second place to bump — `cli.help.golden.txt` is the
+    // literal in this file would be a second place to bump: `cli.help.golden.txt` is the
     // one site that pins the bytes, and `the-version-is-one-number.test.ts` holds the rest
     // to it. What this case is for is that `--version` reaches stdout plain under
     // `--color=always`, which a constant says as well as a literal does.
@@ -541,7 +541,7 @@ describe('`--help` and `--version` are not touched', () => {
 
   it('and the help shown INSTEAD of an error is still the help', async () => {
     // `mnema` with no verb prints the whole help and exits non-zero. It is the same
-    // code as `--help`, so nothing is added to it — a caller who typed nothing is
+    // code as `--help`, so nothing is added to it: a caller who typed nothing is
     // being answered, not corrected.
     const said = await invoke();
     expect(said.failed).toBe(true);
