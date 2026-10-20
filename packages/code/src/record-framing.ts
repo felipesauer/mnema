@@ -352,7 +352,8 @@ export type SwitchableChannel =
   | 'session-tally'
   | 'subagent-handback'
   | 'edit-first-write-gate'
-  | 'user-corrections';
+  | 'user-corrections'
+  | 'tool-call-count';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -447,6 +448,19 @@ export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
 export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
 
 /**
+ * The switch of the local count of tool calls: one line in a file on this machine for each call the
+ * MCP server answers, holding the instant, the tool's name, whether it wrote or only read, and `ok`
+ * or the refusal's code.
+ *
+ * NOT A CHANNEL TO A MODEL, and the only entry here whose subject is the machine and not the
+ * record: nothing is put in front of anybody, the file is outside the record and unsigned, and
+ * it is read by `mnema usage --tools`. It is a switch all the same, in the form every other one
+ * takes, so that somebody who does not want the count kept can say so as a fact of the record. ON
+ * until switched off, because what it keeps is local and holds names and nothing else.
+ */
+export const TOOL_CALL_COUNT_CHANNEL: SwitchableChannel = 'tool-call-count';
+
+/**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
  * decisions the record asks a subagent to hand back.
  *
@@ -534,6 +548,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'each proposal it records is itself the recorded fact (a decision awaiting a judgement, ' +
     'with its own event and its own actor), so a second fact saying the channel served would ' +
     'repeat it',
+  'tool-call-count':
+    'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
+    'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
+    'count of the count',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing (no event, no key, no run), so a count of what a session did never moves the ' +
@@ -601,6 +619,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the return of a subagent that ends its final reply without the block of decisions the record ' +
     'asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; ' +
     'off, a subagent stops as it would without the plugin',
+  'tool-call-count':
+    'the local count of tool calls: with it off, the server keeps no line of the calls it answers ' +
+    'and `mnema usage --tools` shows what was kept before. The count is a file on this machine, ' +
+    'outside the record, with the tool’s name and its result and nothing of the arguments',
   'session-tally':
     'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

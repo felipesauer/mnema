@@ -1044,6 +1044,8 @@ $ mnema usage --help
 | what each run cost, read from this machine's Claude Code transcripts
 |
 | Options:
+|   --tools     instead, how many times each MCP tool was called here, from the
+|               count this machine keeps
 |   -h, --help  display help for command
 |
 | What each line says, and what it does not:
@@ -1052,6 +1054,12 @@ $ mnema usage --help
 |   More than one is named and NOT attributed: there is no tie-break that is not invented.
 |   None says `no transcript`, never `0`: no record of the cost is not a cost of zero.
 |   Nothing is recorded: the chain has no field for this, and reading writes nothing.
+|
+| With --tools it prints, per MCP tool, the calls, the refusals and the first and last date:
+|   Only what the MCP server on this machine answered for this project: a call another host
+|   or machine answered is not counted, nor is any use outside the MCP.
+|   The tool name and `ok` or the refusal code, never an argument or an agent’s words.
+|   The count is a file outside the record; `mnema switch off tool-call-count` stops it.
 
 ### mnema resume --help
 $ mnema resume --help
@@ -2060,7 +2068,7 @@ $ mnema switch off --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, session-tally)
+|                    subagent-handback, tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2097,7 +2105,7 @@ $ mnema switch on --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, session-tally)
+|                    subagent-handback, tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

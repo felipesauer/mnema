@@ -389,10 +389,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The `tail list` renderer: an e2e test does take the id off its printed row and feed `tail prune`, but nothing imports `tailReport`, so every column is observed only through the verb.',
   },
-  'packages/code/src/presentation/usage.ts': {
-    reached: 'nobody imports it',
-    why: 'The `mnema usage` table: tests only ever print its `no transcript` rows and closing disclaimer, so the `not attributed` line and the passed-over suffix it alone words go unseen.',
-  },
   'packages/code/src/presentation/witness.ts': {
     reached: 'nobody imports it',
     why: 'The `mnema witness` listing: one assertion touches it (`not covered`, in a test about flags reaching the act), so `PENDING`, `covered` and the checkpoint column go unread.',
@@ -591,7 +587,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/usage.ts': {
     reached: 'nobody imports it',
-    why: "Declares `mnema usage` with no options; the cost suites assert the report's numbers and wording, which presentation/usage.ts produces, and its six-line help block sits in no golden.",
+    why: "Declares `mnema usage` and its `--tools` option; the cost suites assert the report's numbers and wording, which presentation/usage.ts produces, and its help block sits in no golden.",
   },
   'packages/code/src/wiring/why.ts': {
     reached: 'nobody imports it',
@@ -662,7 +658,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 48,
-  presentation: 11,
+  presentation: 10,
   projections: 4,
   completion: 4,
   commands: 2,
@@ -1259,8 +1255,9 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
   'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
-  'packages/code/tests/the-switch-is-a-fact.test.ts': 17,
+  'packages/code/tests/the-switch-is-a-fact.test.ts': 21,
   'packages/code/tests/the-three-doors-are-one.test.ts': 30,
+  'packages/code/tests/the-tool-calls-stay-on-this-machine.test.ts': 17,
   'packages/code/tests/the-vectors-hold-what-the-product-produces.test.ts': 6,
   'packages/code/tests/the-verb-says-which-tails.test.ts': 9,
   'packages/code/tests/the-verb-that-does-not-cut.test.ts': 7,
@@ -1710,6 +1707,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/site/page.ts',
   'packages/code/src/site/verifier-bundle.ts',
   'packages/code/src/the-persons-key-in-the-clear.ts',
+  'packages/code/src/tool-calls.ts',
   'packages/code/src/transcripts.ts',
   'packages/code/src/tree-sources.ts',
   'packages/code/src/user-corrections.ts',
@@ -1980,8 +1978,9 @@ describe('every file has a test that names it', () => {
     // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
     // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
     // 83 once the writer's test asserts on the refusal it throws over a damaged tail.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    // 82 once a test of the local count of tool calls asserts on what presentation/usage.ts words.
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2003,7 +2002,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

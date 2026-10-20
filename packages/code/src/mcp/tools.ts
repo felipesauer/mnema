@@ -172,6 +172,7 @@ import {
   REFUSES_A_WRITE_CHANNEL,
   STARTS_OFF,
   type SwitchableChannel,
+  TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import {
@@ -1585,6 +1586,22 @@ function ambiguousLabel(message: string): {
   readonly message: string;
 } {
   return { ok: false, code: 'AMBIGUOUS_LABEL', message };
+}
+
+/**
+ * Whether this session keeps the local count of the calls it answers (`tool-call-count`, on
+ * until somebody switches it off).
+ *
+ * A record this session cannot read is NOT counted: the count is a convenience, and when the
+ * switch cannot be told the direction that cannot go against somebody's instruction is the
+ * quiet one, the way off wins between trees that cannot be ordered (`channelIsOn`).
+ */
+export function countsToolCalls(session: Session): boolean {
+  try {
+    return channelIsOn(workspaceCaches(session), TOOL_CALL_COUNT_CHANNEL);
+  } catch {
+    return false;
+  }
 }
 
 /** Every tree of the workspace with its warm projection cache attached. */

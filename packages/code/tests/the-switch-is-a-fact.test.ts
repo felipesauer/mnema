@@ -48,6 +48,9 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runHandback } from '../src/commands/handback.js';
@@ -69,9 +72,11 @@ import {
   STARTS_OFF,
   SUBAGENT_HANDBACK_CHANNEL,
   SWITCHABLE_CHANNELS,
+  TOOL_CALL_COUNT_CHANNEL,
   USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
+import { readToolCalls, toolCallsFile } from '../src/tool-calls.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 
@@ -487,6 +492,29 @@ const HONOURED: Readonly<
         },
       );
       return 'decision' in done.reply;
+    },
+  },
+  [TOOL_CALL_COUNT_CHANNEL]: {
+    // A COUNT KEPT BY THE SERVER, driven the way a host drives it: one tool call over a connection.
+    // "Speaks" is a line being added to the file the project's calls are counted in. It is on
+    // from the start, so there is nothing to set up.
+    setUp: async () => {},
+    speaks: async () => {
+      const file = toolCallsFile(resolveTrees(repo, env));
+      const before = file === undefined ? 0 : readToolCalls(file).calls.length;
+      const { server } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
+      const client = new Client(
+        { name: 'claude-code', version: '1.0.0' },
+        { capabilities: { roots: {} } },
+      );
+      client.setRequestHandler(ListRootsRequestSchema, () => ({
+        roots: [{ uri: pathToFileURL(repo).href }],
+      }));
+      const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+      await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+      await client.callTool({ name: 'search', arguments: { term: 'anything' } });
+      await client.close();
+      return file !== undefined && readToolCalls(file).calls.length > before;
     },
   },
   [AGENT_ACCEPTS_CHANNEL]: {
