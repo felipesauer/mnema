@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY GIT A TEST STARTS TO WRITE A REPOSITORY RUNS WITH AUTOMATIC MAINTENANCE OFF: through the
  * file `support/git-without-maintenance.ts` names, handed as `GIT_CONFIG_GLOBAL`, which is the one

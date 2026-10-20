@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * WHAT SHIPS CITES ONLY WHAT SHIPS: no file this repository publishes may point a reader
  * at a document the repository does not publish.

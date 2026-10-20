@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY SANDBOX MADE UNDER `tmpdir()` IS REMOVED BY THE NAME THAT WAS MADE.
  *

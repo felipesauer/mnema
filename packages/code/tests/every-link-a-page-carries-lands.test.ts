@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY LINK A PAGE CARRIES LANDS: a relative path on a file or directory the repository
  * tracks, and an anchor on a heading the page it names has.

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * Every option the CLI declares hands its value to something that READS it.
  *

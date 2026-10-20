@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE EXAMPLE A PACKAGE PUBLISHES IS THE EXAMPLE THAT RUNS: line for line.
  *

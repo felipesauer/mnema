@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE EVIDENCE PAGE CITES ONLY WHAT EXISTS: every file `docs/evidence.md` names as the thing
  * that holds a claim is a file of this tree.

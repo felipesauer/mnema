@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE HOST CONTRACT'S CHECKS HAVE NAMES THAT DO NOT MOVE.
  *

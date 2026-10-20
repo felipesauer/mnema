@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * NO WORKFLOW PUBLISHES THE EXTENSION.
  *

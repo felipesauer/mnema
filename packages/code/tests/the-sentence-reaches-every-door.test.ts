@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE SENTENCE REACHES EVERY DOOR, and nine-of-ten is what this file exists to redden.
  *

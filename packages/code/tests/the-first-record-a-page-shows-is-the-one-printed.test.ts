@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE FIRST RECORD THE ROOT PAGE SHOWS IS THE ONE THE BINARY PRINTS: every line of it, and a
  * cut only where the page marks one.

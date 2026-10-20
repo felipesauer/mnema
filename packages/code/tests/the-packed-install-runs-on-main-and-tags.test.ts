@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PACKED INSTALL RUNS WHERE IT IS MEANT TO. `.github/workflows/packed-install.yml` packs the
  * five publishable packages and installs them together, and it is meant to run on a push to `main`

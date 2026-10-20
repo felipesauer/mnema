@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PROSE CARRIES NO EM DASH. Nothing this repository holds as text writes U+2014: not a page,
  * not a comment, not the name of a case, not a string the product prints, not a manifest.

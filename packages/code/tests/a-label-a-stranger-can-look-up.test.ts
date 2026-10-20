@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A LABEL A STRANGER CAN LOOK UP: no file this repository hands out may lean on a word
  * whose definition only the local workbench holds.

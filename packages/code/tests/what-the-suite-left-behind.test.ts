@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE SWEEP OF `/tmp` ANSWERS, OR SAYS IT CANNOT.
  *

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY PRODUCT FILE HAS A TEST THAT ASSERTS ABOUT IT: and the suite says which do not.
  *
@@ -262,6 +263,8 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The scan that refuses an attribution footer in a commit message or a pull request description before either reaches the trunk. It runs on a runner against the event payload rather than inside the suite, so like the three .mjs rows above it sits under .github/ where no walk of packages/ can reach it.',
   'packages/code/tests/the-pull-request-text.test.ts -> ../../../.github/the-pull-request-text/check.mjs':
     'The check that refuses a pull request whose title, description or commit message carries the em dash, and names where. It runs on a runner against the event payload, so like the .mjs rows above it sits under .github/ where no walk of packages/ can reach it.',
+  'packages/code/tests/the-fast-guards-are-the-marked-ones.test.ts -> ../../../.github/the-fast-guards/marked.mjs':
+    'The finder of the test files that carry the line which puts them in the fast run. The vitest config for that run reads it before any test exists, so it is plain ESM under .github/, outside the packages/ walk either corpus makes, and the scanner follows only a .ts specifier.',
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
   'packages/chain/src/readme-example.test.ts -> ./index.js':
@@ -1163,6 +1166,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-example-is-type-checked.test.ts': 6,
   'packages/code/tests/the-example-rules-run.test.ts': 8,
   'packages/code/tests/the-example-stacks-install.test.ts': 7,
+  'packages/code/tests/the-fast-guards-are-the-marked-ones.test.ts': 6,
   'packages/code/tests/the-feed-covers-this-project.test.ts': 10,
   'packages/code/tests/the-feed-leaves-the-bodies-behind.test.ts': 7,
   'packages/code/tests/the-first-record-a-page-shows-is-the-one-printed.test.ts': 8,
@@ -2016,8 +2020,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(12);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(12);
+    expect(unresolved.length).toBe(13);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(13);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

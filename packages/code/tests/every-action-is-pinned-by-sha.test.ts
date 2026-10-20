@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY ACTION A WORKFLOW USES IS PINNED BY THE SHA OF A COMMIT.
  *

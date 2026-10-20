@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE RECORDINGS ARE WHAT THE BINARY DRAWS: the animations the front page shows, each held to a
  * run of the script it was made from, against the built binary, so none goes stale in silence.

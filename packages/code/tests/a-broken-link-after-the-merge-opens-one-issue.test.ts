@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A BROKEN LINK AFTER THE MERGE OPENS ONE ISSUE: the job that asks the network for every image and
  * every absolute link of the READMEs once the change is on `main`.

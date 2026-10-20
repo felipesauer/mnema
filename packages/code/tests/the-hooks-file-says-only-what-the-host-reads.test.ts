@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE HOOKS FILE SAYS ONLY WHAT THE HOST READS: an event the host has never heard of is a hook
  * that never runs, and a key it does not know is a field that is dropped without a word.

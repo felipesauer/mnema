@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE SESSION THE MANUAL SHOWS IS THE ONE THE BINARY PRINTS: every command of the block under
  * "From the terminal", every line it prints, a cut only where the page marks one.

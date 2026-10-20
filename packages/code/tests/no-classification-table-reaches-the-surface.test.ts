@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A classification stays in the module that owns it; only the QUESTION crosses a
  * package boundary.

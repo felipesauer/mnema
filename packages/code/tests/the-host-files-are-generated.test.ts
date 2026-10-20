@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE HOST FILES ARE GENERATED, AND ONE EDITED BY HAND IS RED.
  *

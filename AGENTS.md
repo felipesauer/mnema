@@ -15,6 +15,8 @@ pnpm test
 
 `pnpm build` comes before `pnpm typecheck` and `pnpm test`: the packages compile against each
 other's built output, so a stale `dist` makes both go green over code that no longer exists.
+After a change to text, a page, the changelog or a list of files, `pnpm test:guards` runs just
+the cases that walk the whole tree; it does not replace `pnpm test`.
 When a case is red, keep the output, then run `pnpm why-it-went-red`: it says whether the
 guard caught a defect or the machine was busy.
 

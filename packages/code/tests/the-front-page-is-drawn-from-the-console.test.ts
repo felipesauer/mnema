@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE FRONT PAGE IS DRAWN FROM THE CONSOLE: the pictures in `docs/assets/` are made by a script
  * from the same sources the console draws from, and painted in one accent.

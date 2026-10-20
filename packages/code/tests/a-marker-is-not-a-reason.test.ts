@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A MARKER THE PRODUCT PRINTS WHERE A REASON GOES IS REFUSED AS ONE: every marker, read off the
  * product's own sources and pages rather than off a list.
