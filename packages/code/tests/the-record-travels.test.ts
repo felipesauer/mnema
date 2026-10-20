@@ -310,7 +310,7 @@ describe('outside a project there is one tree, and a kind cannot ask for another
     expect(session.inProject).toBe(false);
 
     const decision = runRecordDecision(session, { title: 'a global call', rationale: 'why' });
-    if (!decision.ok) throw new Error(`refused: ${decision.code} — ${decision.message}`);
+    if (!decision.ok) throw new Error(`refused: ${decision.code}: ${decision.message}`);
     expect(decision.scope).toBe('global');
 
     const globalRoot = resolveTrees(join(sandbox, 'nowhere'), env).global;

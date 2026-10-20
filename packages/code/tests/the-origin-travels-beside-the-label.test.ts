@@ -66,7 +66,7 @@ beforeEach(() => {
   writeFileSync(
     join(repo, 'docs', 'adr', GATEWAY),
     [
-      '# ADR-008 — The gateway is idempotent',
+      '# ADR-008: The gateway is idempotent',
       '',
       '## Context',
       '',

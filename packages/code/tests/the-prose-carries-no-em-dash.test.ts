@@ -67,7 +67,7 @@ const ESCAPES: readonly string[] = [
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
-  '.github/': 26,
+  '.github/': 22,
   // the manual
   'docs/': 15,
   // the source of @mnema/code outside the areas below
@@ -76,8 +76,6 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/code/src/presentation/': 5,
   // the verifier page it builds
   'packages/code/src/site/': 1,
-  // the cases beside @mnema/code
-  'packages/code/tests/': 322,
   // @mnema/core
   'packages/core/': 5,
   // the plugin for agent hosts

@@ -96,7 +96,7 @@ const RELAXED: Readonly<Record<string, { readonly value: unknown; readonly why: 
   composite: { value: false, why: '`composite` requires emit, and there is none.' },
   declaration: {
     value: false,
-    why: 'A declaration file for an extracted block is consumed by nobody — the block is a leaf.',
+    why: 'A declaration file for an extracted block is consumed by nobody: the block is a leaf.',
   },
   sourceMap: {
     value: false,
@@ -108,7 +108,7 @@ const RELAXED: Readonly<Record<string, { readonly value: unknown; readonly why: 
   },
   noUnusedLocals: {
     value: false,
-    why: 'A page names results to SHOW them — `const lastGoal = …` is the documentation. Under the repository setting every such line would be an error, which would say nothing about the example.',
+    why: 'A page names results to SHOW them: `const lastGoal = …` is the documentation. Under the repository setting every such line would be an error, which would say nothing about the example.',
   },
   noUnusedParameters: { value: false, why: 'The same reason, for a callback a page writes out.' },
   lib: { value: ['ES2022'], why: 'The blocks use `Date` and nothing from a DOM.' },

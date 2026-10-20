@@ -148,7 +148,7 @@ function after(lines: readonly string[], lead: string): string {
     const rest = line.slice(at + lead.length).trim();
     return rest.match(/\(([^)]+)\)/)?.[1] ?? rest.split(/\s/)[0] ?? '';
   }
-  throw new Error(`setup: no line carried "${lead}" — got ${lines.join(' / ')}`);
+  throw new Error(`setup: no line carried "${lead}", got ${lines.join(' / ')}`);
 }
 
 beforeEach(() => {
