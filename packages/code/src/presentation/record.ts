@@ -197,7 +197,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(
         render(
           statedFact(
-            `${body.record.adr} — ${oneLine(body.record.title)}`,
+            `${body.record.adr}: ${oneLine(body.record.title)}`,
             asState(body.record.state),
           ),
         ),

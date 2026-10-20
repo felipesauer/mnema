@@ -129,7 +129,7 @@ const NOT_A_WAY_OF_WORKING =
  */
 function onlyTheNames(count: number, bytes: number): string {
   return (
-    `${count} adopted pattern(s) here, and their bodies are ${bytes} bytes together — ` +
+    `${count} adopted pattern(s) here, and their bodies are ${bytes} bytes together: ` +
     'more than one read serves at once, so this reply carries their names. Ask ' +
     '`skills` again with the `id` of the one you want to read its body, which is ' +
     'served whole.'
@@ -193,6 +193,6 @@ export function patternsFraming(catalogue: SkillCatalogue): string[] {
 function provenanceLine(skill: ServedSkill): string {
   const name = `  “${oneLine(skill.name)}”`;
   return skillDisposition(skill.state) === 'in-force'
-    ? `${name} — adopted by ${oneLine(skill.adoptedBy ?? A_PERSON)}`
-    : `${name} — ${skill.state}, adopted by nobody`;
+    ? `${name}: adopted by ${oneLine(skill.adoptedBy ?? A_PERSON)}`
+    : `${name}: ${skill.state}, adopted by nobody`;
 }

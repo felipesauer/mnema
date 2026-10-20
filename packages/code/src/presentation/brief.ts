@@ -199,7 +199,7 @@ const WHAT_THIS_IS = recordFraming('brief-document');
  * read by an agent that never saw a `--scope` flag has no use for it.
  */
 const WHAT_TRAVELS = [
-  'It carries what is COMMITTED to this project — the record a clone of the repository',
+  'It carries what is COMMITTED to this project: the record a clone of the repository',
   'gets, and nothing kept privately on one machine or for one person. A rule recorded',
   'that way is not below, and each heading counts what is printed under it.',
 ];
@@ -232,7 +232,7 @@ const WHAT_TRAVELS = [
  */
 export const HOW_TO_REGENERATE = [
   'Regenerate this file with `mnema brief > <this file>`, and check it with',
-  '`mnema brief | diff - <this file>` — a difference is either a copy that fell behind',
+  '`mnema brief | diff - <this file>`: a difference is either a copy that fell behind',
   'the record or an edit made here by hand, and an edit here is lost on the next run.',
   'The `>` replaces the whole of the file it names, and this document is the whole of',
   'what it writes: nothing else in that file survives a regeneration.',
@@ -552,7 +552,7 @@ const WHERE_THE_PATTERN_IS = [
  * reads like an answer, in the place where it would be read most often.
  */
 const NO_DECISIONS = [
-  'Nothing has been decided here yet — which is not the same as there being no rules.',
+  'Nothing has been decided here yet, which is not the same as there being no rules.',
   'No decision has been recorded and accepted in this project, so the record has none',
   'to hand over.',
 ];
@@ -582,13 +582,13 @@ const MOVED_APART = [
 const LABEL_NAMES_TWO = [
   'One of the labels below is answered to by more than one rule. An `ADR-<n>` is',
   'numbered within a single chain and frozen when the rule was recorded, so two people',
-  'deciding while apart can mint the same one — and nothing renumbers either afterwards,',
+  'deciding while apart can mint the same one, and nothing renumbers either afterwards,',
   'because the record is not edited. Cite these by id rather than by label:',
 ];
 
 /** What an empty list of patterns says, on the same distinction. */
 const NO_PATTERNS = [
-  'No pattern has been adopted here yet — which is not the same as there being no way',
+  'No pattern has been adopted here yet, which is not the same as there being no way',
   'of working here. The record holds none to hand over.',
 ];
 
@@ -910,7 +910,7 @@ function leftOut(decisions: number, patterns: number, ceiling: HookCeiling): str
   ].join(' and ');
   return [
     '',
-    `Left out of this text: ${parts} — the last ${decisions + patterns === 1 ? 'one' : 'ones'} in the order above.`,
+    `Left out of this text: ${parts}, the last ${decisions + patterns === 1 ? 'one' : 'ones'} in the order above.`,
     `A hook hands a session at most ${hookCeilingInWords(ceiling)}, and a file path in place of a longer`,
     'text, so this one stops at a whole rule instead. `search` with `kind` `decision` and',
     '`state` `accepted`, or `kind` `skill` and `state` `adopted`, serves every one of them.',
@@ -969,7 +969,7 @@ function composed(
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
         rule(
-          `${decision.adr} — ${decision.title}`,
+          `${decision.adr}: ${decision.title}`,
           decision.id,
           decision.origin,
           decision.acceptance,
@@ -1139,5 +1139,5 @@ function apart(move: DivergentMove): string {
  */
 function ambiguous(collision: AdrCollision): string {
   const ids = collision.ids.map((id) => `\`${oneLine(id)}\``).join(', ');
-  return `- \`${oneLine(collision.adr)}\` — ${ids}`;
+  return `- \`${oneLine(collision.adr)}\`: ${ids}`;
 }

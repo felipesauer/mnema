@@ -531,7 +531,7 @@ beforeAll(async () => {
   // `assertNothingVolatile` would refuse the transcript rather than pin the lie.
   const short = name(anchor.slice(0, 'mnid:'.length + 8), 'anchor-short');
   const backupKeyPath = name(
-    after(initiated, '  backup key: created and enrolled — private half at '),
+    after(initiated, '  backup key: created and enrolled, private half at '),
     'backup-key-path',
   );
   // The backup key's own fingerprint, which the census names on its own. `init`

@@ -63,7 +63,7 @@ const DESCRIPTION_SAID: Readonly<Record<DescriptionSource, string>> = {
  * sandbox around the invocation and finds it byte-identical.
  */
 const NOTHING_RECORDED =
-  'The record holds no description — this one was produced for the file and not stored. ' +
+  'The record holds no description: this one was produced for the file and not stored. ' +
   'Nothing was recorded: no event, no consultation, and the record is byte-identical after this.';
 
 /** The lines `mnema skill export` prints. */
@@ -73,7 +73,7 @@ export function exportReport(render: Render, done: SkillExportDone): string[] {
     render(fact(`description: ${DESCRIPTION_SAID[done.descriptionFrom]}`)),
     render(
       fact(
-        `provenance in the file: record ${done.id}, adopted by ${oneLine(done.adoptedBy)} — ` +
+        `provenance in the file: record ${done.id}, adopted by ${oneLine(done.adoptedBy)}, ` +
           'both checkable against this repository',
       ),
     ),

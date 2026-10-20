@@ -142,7 +142,7 @@ describe('the command line says what an address covers', () => {
       '  src/collate covers 2 of 4 file(s) counted in the working tree; not counted: .mnema.',
     );
     expect(said.out).toContain(
-      '  Files on disk, not edits — a directory nobody touches counts the same as a busy one.',
+      '  Files on disk, not edits: a directory nobody touches counts the same as a busy one.',
     );
     // No threshold, no advice, no severity: the whole reply, on the widest address
     // there is, holds none of these words.

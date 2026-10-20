@@ -63,12 +63,12 @@ export function registerUnlink(program: Command, wiring: Wiring): Declared {
         });
         if (result.ok) {
           // Three of the caller's values, so each goes through the collapse (see `onOneLine`).
-          io.out(onOneLine`Retracted link ${result.subject} —${result.rel}→ ${result.target}`);
+          io.out(onOneLine`Retracted link ${result.subject} -${result.rel}→ ${result.target}`);
           reportRecorded(result, io);
           return;
         }
         reportRefusal(wiring, result, {
-          UNKNOWN_LINK: noSuchRecord('link', `${subject} —${opts.rel}→ ${target}`),
+          UNKNOWN_LINK: noSuchRecord('link', `${subject} -${opts.rel}→ ${target}`),
         });
       },
     );

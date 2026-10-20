@@ -67,7 +67,7 @@ const ESCAPES: readonly string[] = [
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
-  '.github/': 164,
+  '.github/': 26,
   // the headers mnema writes into its own tree
   '.mnema/': 2,
   // the changelog
@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the security policy
   'SECURITY.md': 4,
   // the manual
-  'docs/': 385,
+  'docs/': 368,
   // @mnema/action
   'packages/action/': 28,
   // the page of @mnema/action
@@ -91,17 +91,13 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 333,
+  'packages/code/src/': 163,
   // what it prints
-  'packages/code/src/presentation/': 43,
-  // the console
-  'packages/code/src/repl/': 4,
-  // the Sigstore reader
-  'packages/code/src/sigstore/': 1,
+  'packages/code/src/presentation/': 5,
   // the verifier page it builds
-  'packages/code/src/site/': 7,
+  'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 805,
+  'packages/code/tests/': 684,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
@@ -114,14 +110,12 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/sdk/README.md': 1,
   // the page of @mnema/stacks
   'packages/stacks/README.md': 1,
-  // @mnema/vscode
-  'packages/vscode/': 1,
   // the page of @mnema/vscode
   'packages/vscode/README.md': 1,
   // the plugin for agent hosts
-  'plugin/': 169,
+  'plugin/': 10,
   // the recordings and the scripts that make them
-  'recordings/': 71,
+  'recordings/': 6,
 };
 
 /**
@@ -144,10 +138,7 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
  * rather than as the character. It is not data; it waits for the sweep of what the product
  * prints, which decides what stands in its place. Held to an exact count, like the list above.
  */
-const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-  // the title of a problem report
-  'packages/code/src/problem-report.ts': 1,
-};
+const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * One directory is not ours to write: the test vectors other people wrote, copied byte for byte

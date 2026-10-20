@@ -28,7 +28,7 @@ already here ([the table](README.md#in-vs-code-and-cursor)):
   a JavaScript module from its own folder, so the generator writes one self-contained module
   (`plugin/opencode/mnema.js`) that runs `mnema` as a process, and the person copies it. Gemini
   CLI reads its hooks from an extension, a folder it copies at install, with its hooks at
-  `hooks/hooks.json` — the path of this plugin's own hooks file — so the extension is a folder of
+  `hooks/hooks.json` (the path of this plugin's own hooks file) so the extension is a folder of
   its own (`plugin/gemini/`), generated from the table and self-contained: its hooks run one script
   in it, since the handlers beside the plugin's hooks file would not be copied with it.
 

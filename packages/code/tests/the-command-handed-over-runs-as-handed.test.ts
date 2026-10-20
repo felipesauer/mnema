@@ -20,7 +20,7 @@
  * agent, a sentence on the page, and a BLOCK on the page, the one a reader copies to close the
  * session the block opened. And the discriminant has a blind spot of its own: the product also
  * hands commands over WITHOUT backticks. `key request` prints `mnema key enroll <the line>` alone
- * on a line, the `--help` pages print examples, and `status` prints `— mnema decision import
+ * on a line, the `--help` pages print examples, and `status` prints `(n): mnema decision import
  * <dir>`. Those are read here too.
  *
  * WHAT IS CHECKED. Each command is read the way the shell reads it
@@ -141,8 +141,8 @@ export function handedOnPage(
 /** A command at the head of a line of literal text: one the product prints with no backtick. */
 const AT_THE_HEAD = /^\s*(mnema ([a-z][a-z-]*)[^`\n]*)/;
 
-/** …or after the dash `status` puts between a thing and the command that reads it. */
-const AFTER_A_DASH = /— (mnema ([a-z][a-z-]*)[^`\n]*)/;
+/** …or after the colon `status` puts between a count and the command that reads it. */
+const AFTER_A_COUNT = /\): (mnema ([a-z][a-z-]*)[^`\n]*)/;
 
 /**
  * Every command a source file hands over, read off what its string and template literals SAY
@@ -179,7 +179,7 @@ export function handedInSource(
     if (open !== null) unreadable.push({ where: lineOf(open.index), text: shown(piece.trim()) });
     let at = 0;
     for (const line of left.split('\n')) {
-      for (const shape of [AT_THE_HEAD, AFTER_A_DASH]) {
+      for (const shape of [AT_THE_HEAD, AFTER_A_COUNT]) {
         const found = shape.exec(line);
         if (found === null || !verbs.has(found[2] as string)) continue;
         const command = (found[1] as string).split(/\s{2,}/)[0] as string;
@@ -379,7 +379,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   A_VALUE_IS_NOT_A_NAME:
     'A marker is filled with a value nothing checks, and the mirror carries no value parser: which actions `task move` has, which shells `completion` knows and which scopes exist are the gate’s and the declaration’s answers about a value, and a marker is exactly what does not know it. `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` declares the same for the pages.',
   A_LINE_HEADED_BY_ANOTHER_PROGRAM:
-    'Without a backtick, a command is read only at the head of a line of text or after `status`’s dash. `source <(mnema completion bash)` in the completion help is a shell line whose head is `source`, and the reading does not look past it — a miss rather than an accusation, and the pages’ blocks, where the same line is published, are read by the shell reading.',
+    'Without a backtick, a command is read only at the head of a line of text or after the colon `status` puts after a count. `source <(mnema completion bash)` in the completion help is a shell line whose head is `source`, and the reading does not look past it — a miss rather than an accusation, and the pages’ blocks, where the same line is published, are read by the shell reading.',
   THE_SETTINGS_A_DECLARATION_DOES_NOT_SHOW:
     'The mirror copies what commander lets a declaration be read back as: commands, arguments, options, mandatoriness, defaults, the version, and whether a command acts. A setting commander keeps with no getter — excess arguments, unknown options, positional or pass-through options, conflicts, implications, environment variables — is not copied. The program uses none of them, and a case below reads the source to keep that true.',
   RUNNING_IS_NOT_READING:
@@ -931,14 +931,14 @@ describe('the reading FIRES', () => {
     expect(inSource(split)).toEqual({ handed: [], unreadable: 1 });
   });
 
-  it('a command with no backtick is read at the head of a line and after the dash, and prose is not', () => {
+  it('a command with no backtick is read at the head of a line and after a count’s colon, and prose is not', () => {
     expect(inSource("fact('mnema key enroll <the line>', 2);").handed).toEqual([
       'mnema key enroll <the line>',
     ]);
     expect(inSource("'  mnema brief > MNEMA.md          the record, in a file'").handed).toEqual([
       'mnema brief > MNEMA.md',
     ]);
-    expect(inSource('`  #{dir} (#{n}) — mnema decision import #{dir}`').handed).toEqual([
+    expect(inSource('`  #{dir} (#{n}): mnema decision import #{dir}`').handed).toEqual([
       'mnema decision import {}',
     ]);
     expect(inSource("'mnema is append-only and nothing deletes a fact'").handed).toEqual([]);
