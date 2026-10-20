@@ -24,18 +24,18 @@ tool answer: audit_exposure                    82 B       26 tok
 tool answer: audit_antipatterns               301 B       74 tok
 tool answer: record_decision                  152 B       48 tok
 tool answer: capture_memory                   146 B       44 tok
-tool definition: capture_memory              2116 B      456 tok
-tool definition: record_observation          2424 B      528 tok
-tool definition: retract_note                1838 B      416 tok
-tool definition: retract_link                2063 B      470 tok
-tool definition: record_handoff              2414 B      549 tok
-tool definition: link_knowledge              2730 B      610 tok
-tool definition: create_task                 2292 B      503 tok
-tool definition: task_transition             2019 B      447 tok
-tool definition: record_decision             3059 B      668 tok
-tool definition: decision_transition         2289 B      509 tok
-tool definition: create_skill                2465 B      545 tok
-tool definition: skill_transition            1923 B      437 tok
+tool definition: capture_memory              2117 B      456 tok
+tool definition: record_observation          2425 B      528 tok
+tool definition: retract_note                1839 B      416 tok
+tool definition: retract_link                2064 B      470 tok
+tool definition: record_handoff              2415 B      549 tok
+tool definition: link_knowledge              2731 B      610 tok
+tool definition: create_task                 2293 B      503 tok
+tool definition: task_transition             2020 B      447 tok
+tool definition: record_decision             3060 B      668 tok
+tool definition: decision_transition         2290 B      509 tok
+tool definition: create_skill                2466 B      545 tok
+tool definition: skill_transition            1924 B      437 tok
 tool definition: bootstrap                   2291 B      570 tok
 tool definition: skills                      2514 B      589 tok
 tool definition: focus                       1221 B      286 tok
@@ -47,8 +47,8 @@ tool definition: read_record                 1371 B      322 tok
 tool definition: audit_timeline               975 B      224 tok
 tool definition: audit_refs                  1502 B      369 tok
 tool definition: governing_rules             1501 B      339 tok
-tool definition: rules_before_an_edit        2425 B      546 tok
+tool definition: rules_before_an_edit        2426 B      546 tok
 tool definition: audit_accountability        1986 B      440 tok
 tool definition: audit_exposure              1626 B      364 tok
 tool definition: audit_antipatterns          1447 B      314 tok
-tool definitions: all 27                    54229 B    12303 tok
+tool definitions: all 27                    54242 B    12303 tok

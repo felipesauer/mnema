@@ -365,7 +365,7 @@ describe('the server says it too, in its log', () => {
       env,
     );
     const opened = logged.findIndex((line) => line.startsWith('session opened:'));
-    expect(logged[opened]).toContain('project=(none — the global tree)');
+    expect(logged[opened]).toContain('project=(none: the global tree)');
     const named = logged.filter((line) => line.includes('is not taken for a project'));
     expect(named).toEqual([
       expect.stringContaining(`${join(home, PROJECT_DIR)} is not taken for a project`),
