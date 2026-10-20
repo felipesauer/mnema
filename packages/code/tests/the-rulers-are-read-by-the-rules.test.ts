@@ -154,6 +154,7 @@ describe('the same globs reach every instrument this repository ships or runs', 
     expect(theInstruments()).toEqual([
       '.github/a-home-of-its-own/setup.mjs',
       '.github/flake-sampler/summarize.mjs',
+      '.github/release-prepare/prepare.mjs',
       '.github/the-binary-runs/mark-it-runnable.mjs',
       '.github/the-fast-guards/marked.mjs',
       '.github/the-front-page/accent.mjs',
