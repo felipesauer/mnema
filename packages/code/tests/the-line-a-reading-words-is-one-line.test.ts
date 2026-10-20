@@ -421,25 +421,25 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- brief.ts: the document an agent reads on its own --------------------------
   'brief.ts «{} of the rules below {} an ADDRESS: a path in this» addressed #1': {
     verdict: 'minted',
-    why: 'how many of the printed rules have an address — a count this document made, and the one number here that is not a list’s length',
+    why: 'how many of the printed rules have an address: a count this document made, and the one number here that is not a list’s length',
   },
   "brief.ts «{} of the rules below {} an ADDRESS: a path in this» addressed === 1 ? 'has' : 'have' #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
+      why: 'one of two words written in this module, chosen by the count beside it: nothing from the record reaches it',
     },
   'brief.ts «{} of them {} for a PERSON at an address: where one» asking #1': {
     verdict: 'minted',
-    why: 'how many of the printed rules can STOP a write — a count this document made',
+    why: 'how many of the printed rules can STOP a write: a count this document made',
   },
   "brief.ts «{} of them {} for a PERSON at an address: where one» asking === 1 ? 'asks' : 'ask' #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
+      why: 'one of two words written in this module, chosen by the count beside it: nothing from the record reaches it',
     },
   'brief.ts «{} of them {} a WRITE at an address: where one» refusing #1': {
     verdict: 'minted',
-    why: 'the count of rules in force linked under the refusing relation — a number this product counted',
+    why: 'the count of rules in force linked under the refusing relation: a number this product counted',
   },
   "brief.ts «{} of them {} a WRITE at an address: where one» refusing === 1 ? 'refuses' : 'refuse' #1":
     {
@@ -448,41 +448,41 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'brief.ts «{} was switched off by {} at» oneLine(gate.channel) #2': {
     verdict: 'collapsed',
-    why: 'the channel a switch names — a subject somebody’s command line sent, in the paragraph about the refusal',
+    why: 'the channel a switch names: a subject somebody’s command line sent, in the paragraph about the refusal',
   },
   "brief.ts «{} was switched off by {} at» oneLine(gate.by ?? '') #2": {
     verdict: 'collapsed',
-    why: 'the anchor that switched the refusal off — out of the record, and not on a bullet, so a break here forges a claim about it',
+    why: 'the anchor that switched the refusal off: out of the record, and not on a bullet, so a break here forges a claim about it',
   },
   "brief.ts «{}. Run \\`mnema switch\\` for where every switch stands.» oneLine(gate.at ?? '') #2":
     {
       verdict: 'collapsed',
-      why: 'the instant a switch records — written by whoever ran it, in the paragraph about the refusal',
+      why: 'the instant a switch records: written by whoever ran it, in the paragraph about the refusal',
     },
   'brief.ts «{} was switched off by {} at» oneLine(gate.channel) #1': {
     verdict: 'collapsed',
-    why: 'the channel a switch names — a subject somebody’s command line sent, in the middle of the paragraph about the gate',
+    why: 'the channel a switch names: a subject somebody’s command line sent, in the middle of the paragraph about the gate',
   },
   "brief.ts «{} was switched off by {} at» oneLine(gate.by ?? '') #1": {
     verdict: 'collapsed',
-    why: 'the anchor that switched the gate off — out of the record, and not on a bullet, so a break here forges a claim about the gate',
+    why: 'the anchor that switched the gate off: out of the record, and not on a bullet, so a break here forges a claim about the gate',
   },
   "brief.ts «{}. Run \\`mnema switch\\` for where every switch stands.» oneLine(gate.at ?? '') #1":
     {
       verdict: 'collapsed',
-      why: 'when the gate was switched off — an instant out of the record, collapsed for the same reason the anchor is',
+      why: 'when the gate was switched off: an instant out of the record, collapsed for the same reason the anchor is',
     },
   'brief.ts «{} {}» awaiting #1': {
     verdict: 'minted',
-    why: 'how many of this kind are recorded here and awaiting a judgement — a count this document made, and the number that makes the heading above it legible',
+    why: 'how many of this kind are recorded here and awaiting a judgement: a count this document made, and the number that makes the heading above it legible',
   },
   'brief.ts «{} {}» awaiting === 1 ? words.one : words.many #1': {
     verdict: 'minted',
-    why: 'one of two sentences written in this module, chosen by the count beside it — the shape the address paragraph uses, and the words are constants of this file handed in by the call above',
+    why: 'one of two sentences written in this module, chosen by the count beside it: the shape the address paragraph uses, and the words are constants of this file handed in by the call above',
   },
   'brief.ts «{} {}» n #1': {
     verdict: 'minted',
-    why: 'how many rules of one kind a hook’s copy left out — a count this document made',
+    why: 'how many rules of one kind a hook’s copy left out: a count this document made',
   },
   'brief.ts «{} {}» n === 1 ? one : many #1': {
     verdict: 'minted',
@@ -490,7 +490,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «Left out of this text: {}, the last {} in the order above.» parts #1': {
     verdict: 'composed',
-    why: 'the counts of what a hook’s copy left out, joined — every part is a count and a noun of this module',
+    why: 'the counts of what a hook’s copy left out, joined: every part is a count and a noun of this module',
   },
   "brief.ts «Left out of this text: {}, the last {} in the order above.» decisions + patterns === 1 ? 'one' : 'ones' #1":
     {
@@ -500,7 +500,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'brief.ts «A hook hands a session at most {}, and a file path in place of a longer» hookCeilingInWords(ceiling) #1':
     {
       verdict: 'minted',
-      why: 'the host’s ceiling as a sentence prints it — composed below from the numbers the measurement holds',
+      why: 'the host’s ceiling as a sentence prints it: composed below from the numbers the measurement holds',
     },
   'brief.ts «{} characters» count #1': {
     verdict: 'minted',
@@ -516,11 +516,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «{}: {}» decision.adr #1': {
     verdict: 'composed',
-    why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
+    why: 'the `ADR-<n>` half of a rule’s name: the whole name is collapsed by `rule` below',
   },
   'brief.ts «{}: {}» decision.title #1': {
     verdict: 'composed',
-    why: 'the title an actor wrote, on the sharpest line there is — `rule` collapses the composed name',
+    why: 'the title an actor wrote, on the sharpest line there is: `rule` collapses the composed name',
   },
   'brief.ts «## {} ({})» heading #1': {
     verdict: 'minted',
@@ -528,7 +528,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «## {} ({})» printed #1': {
     verdict: 'minted',
-    why: 'how many rules are printed under the heading — a count this document made',
+    why: 'how many rules are printed under the heading: a count this document made',
   },
   'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(name) #1': {
     verdict: 'collapsed',
@@ -536,15 +536,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(id) #1': {
     verdict: 'collapsed',
-    why: 'the record id — minted, and collapsed anyway because the rule is the line’s',
+    why: 'the record id: minted, and collapsed anyway because the rule is the line’s',
   },
   'brief.ts «- **{}** · \\`{}\\`{}{}» from #1': {
     verdict: 'composed',
-    why: 'the provenance fields, one per source — each already collapsed in the template below, which is why this bullet can take them whole',
+    why: 'the provenance fields, one per source: each already collapsed in the template below, which is why this bullet can take them whole',
   },
   'brief.ts «- **{}** · \\`{}\\`{}{}» by #1': {
     verdict: 'composed',
-    why: 'the clause that says who accepted the rule — built by acceptedBy below, every part of it collapsed or this module’s own word',
+    why: 'the clause that says who accepted the rule: built by acceptedBy below, every part of it collapsed or this module’s own word',
   },
   'brief.ts « · {}» acceptedBy(acceptance) #1': {
     verdict: 'composed',
@@ -552,7 +552,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'accepted-by.ts «accepted by {} ({}{})» oneLine(acceptance.by) #1': {
     verdict: 'collapsed',
-    why: 'the identity that accepted — an anchor read out of the envelope of the accepting event, shortened',
+    why: 'the identity that accepted: an anchor read out of the envelope of the accepting event, shortened',
   },
   'accepted-by.ts «accepted by {} ({}{})» act #1': {
     verdict: 'composed',
@@ -592,7 +592,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts « · {} \\`{}\\`» oneLine(target) #1': {
     verdict: 'collapsed',
-    why: 'where the record says the rule came from — a link target the writer supplied, which nothing validates on the way in, on the sharpest line there is',
+    why: 'where the record says the rule came from: a link target the writer supplied, which nothing validates on the way in, on the sharpest line there is',
   },
   'brief.ts «\\`{}\\`» oneLine(id) #1': {
     verdict: 'collapsed',
@@ -600,7 +600,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «- \\`{}\\`: {}» oneLine(collision.adr) #1': {
     verdict: 'collapsed',
-    why: 'the label two rules answer to — an `ADR-<n>`, collapsed for the rule’s sake',
+    why: 'the label two rules answer to: an `ADR-<n>`, collapsed for the rule’s sake',
   },
   'brief.ts «- \\`{}\\`: {}» ids #1': {
     verdict: 'composed',
@@ -612,7 +612,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'brief.ts «- \\`{}\\` left {} to {}» oneLine(move.from) #1': {
     verdict: 'collapsed',
-    why: 'the state that rule left twice — a transition’s `from`, read out of the record',
+    why: 'the state that rule left twice: a transition’s `from`, read out of the record',
   },
   "brief.ts «- \\`{}\\` left {} to {}» oneLine(move.to.join(', then ')) #1": {
     verdict: 'collapsed',
@@ -684,16 +684,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'brief.ts «This project points at {}, and it could not be read here: {}.» oneLine(inherited.why) #1':
     {
       verdict: 'collapsed',
-      why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+      why: 'why an inherited record was not read: a sentence that can carry what git or the verifier said, or a path',
     },
   'brief.ts «This project points at {}, and the record there did not verify: {}.» oneLine(inherited.why) #1':
     {
       verdict: 'collapsed',
-      why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+      why: 'why an inherited record was not read: a sentence that can carry what git or the verifier said, or a path',
     },
   'brief.ts «{}, so nothing is inherited.» oneLine(inherited.why) #1': {
     verdict: 'collapsed',
-    why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+    why: 'why an inherited record was not read: a sentence that can carry what git or the verifier said, or a path',
   },
   'brief.ts «{} at commit {}» oneLine(inherited.pointer.where) #1': {
     verdict: 'collapsed',
@@ -723,18 +723,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'exported.ts «provenance in the file: record {}, adopted by {}, » oneLine(done.adoptedBy) #1': {
     verdict: 'collapsed',
-    why: 'the agent that adopted the pattern — a name somebody typed',
+    why: 'the agent that adopted the pattern: a name somebody typed',
   },
 
   // --- promoted.ts: the candidates a promotion lists, and the copy it made ---------
   'promoted.ts «It cites {} instances as derived-from:» done.derivedFrom.length #1': {
     verdict: 'minted',
-    why: 'how many instances the copy cites — a count',
+    why: 'how many instances the copy cites: a count',
   },
   'promoted.ts «Nothing recurs, with the same words and in force, in the committed record of {} project{}.» listed.projects #1':
     {
       verdict: 'minted',
-      why: 'how many distinct projects were read — a count',
+      why: 'how many distinct projects were read: a count',
     },
   "promoted.ts «Nothing recurs, with the same words and in force, in the committed record of {} project{}.» listed.projects === 1 ? '' : 's' #1":
     {
@@ -747,15 +747,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'promoted.ts «Promoted {} "{}" ({})» done.kind #1': {
     verdict: 'minted',
-    why: '`skill` or `decision` — the closed union of what can be promoted',
+    why: '`skill` or `decision`: the closed union of what can be promoted',
   },
   'promoted.ts «Promoted {} "{}" ({})» oneLine(done.title) #1': {
     verdict: 'collapsed',
-    why: 'the name or title the pattern was recorded under — text somebody wrote',
+    why: 'the name or title the pattern was recorded under: text somebody wrote',
   },
   'promoted.ts «To put it in force: {}» adopt #1': {
     verdict: 'composed',
-    why: 'the two verbs that move the copy, composed in this module — each value in them is a minted id, sited below',
+    why: 'the two verbs that move the copy, composed in this module: each value in them is a minted id, sited below',
   },
   'promoted.ts «\\`mnema decision move accept {} --note "<why>"\\`» done.id #1': {
     verdict: 'minted',
@@ -773,42 +773,42 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'promoted.ts «{}  {}» from.id #1': {
     verdict: 'minted',
-    why: 'the id of an instance the copy cites — minted in the project it was written in',
+    why: 'the id of an instance the copy cites: minted in the project it was written in',
   },
   'promoted.ts «{}  {}» instance.id #1': {
     verdict: 'minted',
-    why: 'the id of an instance a candidate is in force as — minted in the project it was written in',
+    why: 'the id of an instance a candidate is in force as: minted in the project it was written in',
   },
   'promoted.ts «{}  {}» oneLine(from.project) #1': {
     verdict: 'collapsed',
-    why: 'the directory of a project the caller named — a value from the command line',
+    why: 'the directory of a project the caller named: a value from the command line',
   },
   'promoted.ts «{}  {}» oneLine(instance.project) #1': {
     verdict: 'collapsed',
-    why: 'the directory of a project the caller named — a value from the command line',
+    why: 'the directory of a project the caller named: a value from the command line',
   },
   'promoted.ts «{} "{}": in force in {} projects» candidate.kind #1': {
     verdict: 'minted',
-    why: '`skill` or `decision` — the closed union of what can be promoted',
+    why: '`skill` or `decision`: the closed union of what can be promoted',
   },
   'promoted.ts «{} "{}": in force in {} projects» new Set(candidate.instances.map((i) => i.project)).size #1':
     {
       verdict: 'minted',
-      why: 'how many distinct projects hold it — a count',
+      why: 'how many distinct projects hold it: a count',
     },
   'promoted.ts «{} "{}": in force in {} projects» oneLine(candidate.title) #1': {
     verdict: 'collapsed',
-    why: 'the name or title the pattern was recorded under — text somebody wrote',
+    why: 'the name or title the pattern was recorded under: text somebody wrote',
   },
   'promoted.ts «{} holds no record; it was left out.» oneLine(missing) #1': {
     verdict: 'collapsed',
-    why: 'a path the caller named that holds no record — a value from the command line',
+    why: 'a path the caller named that holds no record: a value from the command line',
   },
 
   // --- site.ts: the page `mnema site` wrote --------------------------------------
   'site.ts «Wrote {}» oneLine(done.path) #1': {
     verdict: 'collapsed',
-    why: 'the path the page went to, built under the directory `--out` named — a value from the command line',
+    why: 'the path the page went to, built under the directory `--out` named: a value from the command line',
   },
   'site.ts «{} decision(s), {} in force; {} event(s); » done.decisions #1': {
     verdict: 'minted',
@@ -835,15 +835,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- exposure.ts: what a scan for credentials found ----------------------------
   'exposure.ts «Nothing recognizable in {} record(s).» report.scanned #1': {
     verdict: 'minted',
-    why: 'how many records were read — a count',
+    why: 'how many records were read: a count',
   },
   'exposure.ts «{} of {} record(s) hold a credential format:» report.findings.length #1': {
     verdict: 'minted',
-    why: 'how many findings there are — a count',
+    why: 'how many findings there are: a count',
   },
   'exposure.ts «{} of {} record(s) hold a credential format:» report.scanned #1': {
     verdict: 'minted',
-    why: 'how many records were read — the same count',
+    why: 'how many records were read: the same count',
   },
 
   // --- plain.ts: the renderer, which neutralizes the text of every part -----------
@@ -859,19 +859,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- git-bridge.ts: the pages of commits, why and aging ------------------------
   'git-bridge.ts asId(oneLine(aged.id)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts asId(oneLine(rule.id)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts asId(short(commit.sha)) #1': {
     verdict: 'minted',
-    why: 'the first ten hex characters of a git object name — git’s own, no newline possible',
+    why: 'the first ten hex characters of a git object name: git’s own, no newline possible',
   },
   'git-bridge.ts asWhen(commit.at) #1': {
     verdict: 'minted',
-    why: 'git’s own committer date in ISO-8601 (`%cI`) — no newline possible',
+    why: 'git’s own committer date in ISO-8601 (`%cI`): no newline possible',
   },
   'git-bridge.ts aside(READ_NOW) #1': {
     verdict: 'minted',
@@ -900,12 +900,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "git-bridge.ts fact(done.commit.cites.length === 0 ? 'It carries no Mnema-Decision trailer.' : `It carries ${done.commit.cites.length} Mnema-Decision trailer${done.commit.cites.length === 1 ? '' : 's'}.`) #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
     },
   "git-bridge.ts itemLine(...(rule.files !== undefined ? [`${rule.files} changed file${rule.files === 1 ? '' : 's'}`] : [])) #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
     },
   'git-bridge.ts fact(SHALLOW) #1': {
     verdict: 'minted',
@@ -926,64 +926,64 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» aged.addresses.map((a) => shellWord(oneLine(a === '' ? '.' : a))).join(' ') #1":
     {
       verdict: 'collapsed',
-      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+      why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
     },
   'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» oneLine(aged.adr) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» shellWord(oneLine(aged.acceptedAt)) #1':
     {
       verdict: 'collapsed',
-      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+      why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
     },
   'git-bridge.ts itemLine(oneLine(aged.adr)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts itemLine(oneLine(aged.title)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts itemLine(oneLine(commit.subject)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   "git-bridge.ts itemLine(oneLine(rule.address === '' ? '.' : rule.address)) #1": {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts itemLine(oneLine(rule.name)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   "git-bridge.ts subjectLine(done.exists ? 'in the working tree' : 'not in the working tree') #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts subjectLine(oneLine(decision.adr)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts subjectLine(oneLine(decision.state)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts subjectLine(oneLine(decision.title)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts subjectLine(oneLine(done.commit.subject)) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   "git-bridge.ts subjectLine(oneLine(done.relative ?? 'outside this project')) #1": {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts subjectLine(short(done.commit.sha)) #1': {
     verdict: 'minted',
-    why: 'the first ten hex characters of a git object name — git’s own, no newline possible',
+    why: 'the first ten hex characters of a git object name: git’s own, no newline possible',
   },
   'git-bridge.ts « · commits touching it with a trailer: {}{}» done.commits.length #1': {
     verdict: 'minted',
@@ -991,7 +991,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts « · commits touching it with a trailer: {}{}» done.more ? '+' : '' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts «({}{} file{} read)» done.files #1': {
     verdict: 'minted',
@@ -999,11 +999,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «({}{} file{} read)» done.files === 1 ? '' : 's' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   "git-bridge.ts «({}{} file{} read)» done.moreFiles ? '+' : '' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts «It carries {} Mnema-Decision trailer{}.» done.commit.cites.length #1': {
     verdict: 'minted',
@@ -1012,11 +1012,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "git-bridge.ts «It carries {} Mnema-Decision trailer{}.» done.commit.cites.length === 1 ? '' : 's' #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
     },
   'git-bridge.ts «accepted {}» oneLine(aged.acceptedAt) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «cites {}» citation(cite) #1': {
     verdict: 'composed',
@@ -1029,7 +1029,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "git-bridge.ts «commits touching it that cite a decision{}» done.more ? ' (newest first, more not shown)' : '' #1":
     {
       verdict: 'minted',
-      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
     },
   'git-bridge.ts «listed at {} or more commits on their paths since they were accepted» done.minCommits #1':
     {
@@ -1051,15 +1051,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "git-bridge.ts «{} (a label {} decisions here carry: {})» cite.ambiguous.map((id) => oneLine(id)).join(', ') #1":
     {
       verdict: 'collapsed',
-      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+      why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
     },
   'git-bridge.ts «{} (a label {} decisions here carry: {})» oneLine(cite.value) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{} (no decision here by that name)» oneLine(cite.value) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{} ({}{})» heading #1': {
     verdict: 'minted',
@@ -1071,7 +1071,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «{} ({}{})» page.more ? ' shown, newest first, more not shown' : '' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts «{} changed file{}» rule.files #1': {
     verdict: 'minted',
@@ -1079,7 +1079,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «{} changed file{}» rule.files === 1 ? '' : 's' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts «{} of {} accepted decision{} with an address» done.aged.length #1': {
     verdict: 'minted',
@@ -1091,12 +1091,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «{} of {} accepted decision{} with an address» done.looked === 1 ? '' : 's' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   "git-bridge.ts «{} of {} commits since touched {}» aged.addresses.map((a) => oneLine(a === '' ? '.' : a)).join(', ') #1":
     {
       verdict: 'collapsed',
-      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+      why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
     },
   'git-bridge.ts «{} of {} commits since touched {}» aged.all #1': {
     verdict: 'minted',
@@ -1108,19 +1108,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.adr) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.id) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.state) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.title) #1': {
     verdict: 'collapsed',
-    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    why: 'a value out of the record or out of git (a title, an id, a label, an address, a commit message or a trailer) collapsed to one line here',
   },
   'git-bridge.ts «{}{} cite it by trailer · » done.cited.commits.length #1': {
     verdict: 'minted',
@@ -1128,7 +1128,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «{}{} cite it by trailer · » done.cited.more ? '+' : '' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
   'git-bridge.ts «{}{} touched a path it addresses» done.touching.commits.length #1': {
     verdict: 'minted',
@@ -1136,7 +1136,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "git-bridge.ts «{}{} touched a path it addresses» done.touching.more ? '+' : '' #1": {
     verdict: 'minted',
-    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
   },
 
   // --- occurrence.ts: one event of the chain -------------------------------------
@@ -1146,13 +1146,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'occurrence.ts «{} {}» oneLine(event.which ?? A_PERSON) #1': {
     verdict: 'collapsed',
-    why: 'the agent on the envelope — text whoever opened the session wrote',
+    why: 'the agent on the envelope: text whoever opened the session wrote',
   },
 
   // --- provenance.ts: where a pattern came from ----------------------------------
   'provenance.ts «{} pattern(s):» patterns.length #1': {
     verdict: 'minted',
-    why: 'how many patterns follow — the count the lines under it are counted by',
+    why: 'how many patterns follow: the count the lines under it are counted by',
   },
   'provenance.ts «proposed by {}» oneLine(pattern.proposedBy ?? A_PERSON) #1': {
     verdict: 'collapsed',
@@ -1170,16 +1170,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'recall.ts «## {} ({})» hits.length #1': {
     verdict: 'minted',
-    why: 'how many notes are printed under the heading — the count the lines are counted by',
+    why: 'how many notes are printed under the heading: the count the lines are counted by',
   },
   'recall.ts «{} are recorded here, and none of them is below; \\`search\\` with» search.total #1':
     {
       verdict: 'minted',
-      why: 'how many of this kind the index holds in all, said where a hook’s copy printed none of them — its own total, a count',
+      why: 'how many of this kind the index holds in all, said where a hook’s copy printed none of them: its own total, a count',
     },
   'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» search.total #1': {
     verdict: 'minted',
-    why: 'how many of this kind the index holds in all — its own total, a count',
+    why: 'how many of this kind the index holds in all: its own total, a count',
   },
   'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» these #1': {
     verdict: 'composed',
@@ -1187,20 +1187,20 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'recall.ts «{} of them» printed #1': {
     verdict: 'minted',
-    why: 'how many of them are printed — the length of the list under the sentence',
+    why: 'how many of them are printed: the length of the list under the sentence',
   },
   'recall.ts «the {} newest» printed #1': {
     verdict: 'minted',
-    why: 'how many of them are printed — the length of the list under the sentence',
+    why: 'how many of them are printed: the length of the list under the sentence',
   },
   'recall.ts «Nearest first: the ones that share a word with what this session touches ({}), closest first, then the newest.» whereTheWordsCameFrom(touched) #1':
     {
       verdict: 'composed',
-      why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
+      why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants: never the words, which are paths and a branch somebody named',
     },
   'brief.ts «- {}» toImport(base.directory, base.documents) #1': {
     verdict: 'composed',
-    why: 'a base with documents the record has none for, worded by `status.ts`’s `toImport` — the hook copy’s bullet is that one spelling',
+    why: 'a base with documents the record has none for, worded by `status.ts`’s `toImport`: the hook copy’s bullet is that one spelling',
   },
   "brief.ts «Not in the record: {} in this checkout, by file name, with no decision derived from them here.» counted(total, 'decision document', 'decision documents') #1":
     {
@@ -1221,15 +1221,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'recall.ts «{} {}» n #1': {
     verdict: 'minted',
-    why: 'a count of what the session touches — files, tasks or commits — never anything they hold',
+    why: 'a count of what the session touches (files, tasks or commits), never anything they hold',
   },
   'recall.ts «{} {}» n === 1 ? noun : `${noun}s` #1': {
     verdict: 'minted',
-    why: 'a noun this module writes, made plural by the count beside it — nothing from the tree reaches it',
+    why: 'a noun this module writes, made plural by the count beside it: nothing from the tree reaches it',
   },
   'recall.ts «The first {} share a word with what this session touches.» n #1': {
     verdict: 'minted',
-    why: 'how many of the printed notes share a word with what the session touches — a count of the list',
+    why: 'how many of the printed notes share a word with what the session touches: a count of the list',
   },
   'recall.ts «\\`kind\\` \\`{}\\` serves the rest.» kind #1': {
     verdict: 'minted',
@@ -1237,23 +1237,23 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'recall.ts «- {} · \\`{}\\`» WITHHELD #1': {
     verdict: 'minted',
-    why: 'the stand-in for a note whose line holds a credential — a constant of this module, and nothing from the record',
+    why: 'the stand-in for a note whose line holds a credential: a constant of this module, and nothing from the record',
   },
   'recall.ts «- {} · \\`{}\\`» oneLine(hit.id) #1': {
     verdict: 'collapsed',
-    why: 'the id of the withheld note — minted by the product, and a record can be appended to by anything holding a key',
+    why: 'the id of the withheld note: minted by the product, and a record can be appended to by anything holding a key',
   },
   'recall.ts «- {} · \\`{}\\`» oneLine(hit.title) #1': {
     verdict: 'collapsed',
-    why: 'the start of a memory — text an agent or a person typed, on the one line that stands for it',
+    why: 'the start of a memory: text an agent or a person typed, on the one line that stands for it',
   },
   'recall.ts «- {} · \\`{}\\`» oneLine(hit.id) #2': {
     verdict: 'collapsed',
-    why: 'the memory’s id, beside text somebody typed — collapsed for the reason the document collapses its ids',
+    why: 'the memory’s id, beside text somebody typed: collapsed for the reason the document collapses its ids',
   },
   'recall.ts «- **{}** · \\`{}\\`» oneLine(excerptOf(hit.title)) #1': {
     verdict: 'collapsed',
-    why: 'the start of an observation’s topic — a name whoever recorded it chose, cut by the index’s excerpt rule and collapsed where the line is built',
+    why: 'the start of an observation’s topic: a name whoever recorded it chose, cut by the index’s excerpt rule and collapsed where the line is built',
   },
   'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.id) #1': {
     verdict: 'collapsed',
@@ -1263,7 +1263,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- record.ts: one whole record -----------------------------------------------
   'record.ts «{} {}» body.kind #1': {
     verdict: 'minted',
-    why: 'which of the five kinds this record is — a closed word',
+    why: 'which of the five kinds this record is: a closed word',
   },
   'record.ts «{} {}» body.id #1': {
     verdict: 'minted',
@@ -1279,7 +1279,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «about {} · recorded {}» oneLine(body.record.about) #1': {
     verdict: 'collapsed',
-    why: 'what the observation is about — the positional `observe` does not validate',
+    why: 'what the observation is about: the positional `observe` does not validate',
   },
   'record.ts «about {} · recorded {}» body.record.recordedAt #1': {
     verdict: 'minted',
@@ -1287,7 +1287,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «retracted {} by {}» retracted.at #1': {
     verdict: 'minted',
-    why: 'an ISO-8601 instant off the record — when the retraction was written',
+    why: 'an ISO-8601 instant off the record: when the retraction was written',
   },
   'record.ts «retracted {} by {}» actorText(context.anchors, by) #1': {
     verdict: 'composed',
@@ -1295,11 +1295,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «why: {}» oneLine(retracted.reason) #1': {
     verdict: 'collapsed',
-    why: 'the reason `--reason` gave a retraction — free text, on a fact line of its own',
+    why: 'the reason `--reason` gave a retraction: free text, on a fact line of its own',
   },
   'record.ts «topic: {}» oneLine(body.record.topic) #1': {
     verdict: 'collapsed',
-    why: 'the topic `--topic` named — free text, on a fact line of its own',
+    why: 'the topic `--topic` named: free text, on a fact line of its own',
   },
   'record.ts «{}: {}» body.record.adr #1': {
     verdict: 'minted',
@@ -1307,7 +1307,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «{}: {}» oneLine(body.record.title) #1': {
     verdict: 'collapsed',
-    why: 'the decision’s title — text whoever recorded it wrote',
+    why: 'the decision’s title: text whoever recorded it wrote',
   },
   'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true) #1':
     {
@@ -1345,7 +1345,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «{} {}» DERIVED_FROM #1': {
     verdict: 'minted',
-    why: 'the one word this product introduces a provenance with — a constant of `provenance.ts`, shared so the four channels that print this fact cannot drift into two words for it',
+    why: 'the one word this product introduces a provenance with: a constant of `provenance.ts`, shared so the four channels that print this fact cannot drift into two words for it',
   },
   'record.ts «{} {}» oneLine(path) #1': {
     verdict: 'collapsed',
@@ -1353,7 +1353,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'record.ts «{} · {}» oneLine(one.action) #1': {
     verdict: 'collapsed',
-    why: 'the action a move recorded — a literal of the record, naming the proof under it',
+    why: 'the action a move recorded: a literal of the record, naming the proof under it',
   },
   'record.ts «{} · {}» oneLine(one.at) #1': {
     verdict: 'collapsed',
@@ -1369,15 +1369,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'occurrence.ts itemLine(...theMove(entry.event)) #1': {
     verdict: 'composed',
-    why: 'where a move moved to, composed by `theMove` below — the same column the arriving line carries, empty for an event that is not a move',
+    why: 'where a move moved to, composed by `theMove` below: the same column the arriving line carries, empty for an event that is not a move',
   },
   'occurrence.ts «[{}]» oneLine(entry.role) #1': {
     verdict: 'collapsed',
-    why: 'the role the queried entity appears by — a closed word of this reading, collapsed because a list of one-line events is what surrounds it',
+    why: 'the role the queried entity appears by: a closed word of this reading, collapsed because a list of one-line events is what surrounds it',
   },
   'occurrence.ts itemLine(who) #1': {
     verdict: 'composed',
-    why: 'the actor, already written through its anchor by the caller — anchors.ts decides how short an identity may be spelled',
+    why: 'the actor, already written through its anchor by the caller: anchors.ts decides how short an identity may be spelled',
   },
   'occurrence.ts fact(oneLine(said)) #1': {
     verdict: 'collapsed',
@@ -1411,7 +1411,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'references.ts «{}{}» said #1': {
     verdict: 'composed',
-    why: 'the parenthesis after the id — a word of the walk’s vocabulary, carrying its own leading space',
+    why: 'the parenthesis after the id: a word of the walk’s vocabulary, carrying its own leading space',
   },
   'references.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -1419,19 +1419,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'references.ts «{} ({})» items.length #1': {
     verdict: 'minted',
-    why: 'how many rows are under the heading — the count they are counted by',
+    why: 'how many rows are under the heading: the count they are counted by',
   },
   'references.ts «{}:{}» link.role #1': {
     verdict: 'minted',
-    why: 'one of `about`, `target`, `by` — which field carries the edge',
+    why: 'one of `about`, `target`, `by`: which field carries the edge',
   },
   'references.ts «{}:{}» oneLine(link.rel) #1': {
     verdict: 'collapsed',
-    why: 'the relation label — an OPEN string `mnema link --rel` records verbatim',
+    why: 'the relation label: an OPEN string `mnema link --rel` records verbatim',
   },
   'references.ts «[{}]» link.scope #1': {
     verdict: 'minted',
-    why: 'the tree the assertion lives in — one of three words',
+    why: 'the tree the assertion lives in: one of three words',
   },
   'references.ts «→ {}» rel #1': {
     verdict: 'composed',
@@ -1443,7 +1443,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'references.ts «{} → {} → {}» label(link.from) #1': {
     verdict: 'composed',
-    why: 'the near end’s id and what it resolved to — `label` collapses the id at its one exit',
+    why: 'the near end’s id and what it resolved to: `label` collapses the id at its one exit',
   },
   'references.ts «{} → {} → {}» rel #1': {
     verdict: 'composed',
@@ -1455,11 +1455,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'references.ts «{} hop(s)» node.depth #1': {
     verdict: 'minted',
-    why: 'how far the walk reached to get there — a count',
+    why: 'how far the walk reached to get there: a count',
   },
   'references.ts «cut at {} hop(s): more lies beyond. Raise --depth to see it.» graph.depth #1': {
     verdict: 'minted',
-    why: 'the depth cap the walk applied, after clamping — a count',
+    why: 'the depth cap the walk applied, after clamping: a count',
   },
 
   // --- rules.ts: which recorded rules govern a path -------------------------------
@@ -1474,51 +1474,51 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'rules.ts «{} govern this path · {} address this project · » counts.matching #1': {
     verdict: 'minted',
-    why: 'how many addresses cover the path — a count',
+    why: 'how many addresses cover the path: a count',
   },
   'rules.ts «{} govern this path · {} address this project · » counts.governing #1': {
     verdict: 'minted',
-    why: 'how many addresses the project’s record holds at all — a count',
+    why: 'how many addresses the project’s record holds at all: a count',
   },
   'rules.ts «{} address nothing here · {} name a rule not here» counts.stale #1': {
     verdict: 'minted',
-    why: 'how many addresses name nothing in the working tree — a count',
+    why: 'how many addresses name nothing in the working tree: a count',
   },
   'rules.ts «{} address nothing here · {} name a rule not here» counts.unresolved #1': {
     verdict: 'minted',
-    why: 'how many addresses name a rule no tree here holds — a count, and the one that used to be folded into the number beside it and read as rules that govern',
+    why: 'how many addresses name a rule no tree here holds: a count, and the one that used to be folded into the number beside it and read as rules that govern',
   },
   'rules.ts «{} ask for a person here · {} ask in » counts.asks.matching #1': {
     verdict: 'minted',
-    why: 'how many gate addresses cover the path — a count',
+    why: 'how many gate addresses cover the path: a count',
   },
   'rules.ts «{} ask for a person here · {} ask in » counts.asks.addressed #1': {
     verdict: 'minted',
-    why: 'how many gate addresses the project’s record holds at all — a count',
+    why: 'how many gate addresses the project’s record holds at all: a count',
   },
   'rules.ts «this project · {} ask about nothing here · » counts.asks.stale #1': {
     verdict: 'minted',
-    why: 'how many gate addresses name nothing in the working tree — a count, and the one that says a gate stopped closing in silence',
+    why: 'how many gate addresses name nothing in the working tree: a count, and the one that says a gate stopped closing in silence',
   },
   'rules.ts «{} name a rule not here» counts.asks.unresolved #1': {
     verdict: 'minted',
-    why: 'how many gate addresses name a rule no tree here holds — a gate counted from an address nobody can read would say a write is watched by a rule a reader cannot open',
+    why: 'how many gate addresses name a rule no tree here holds: a gate counted from an address nobody can read would say a write is watched by a rule a reader cannot open',
   },
   'rules.ts «{} refuse a write here · {} refuse » counts.refuses.matching #1': {
     verdict: 'minted',
-    why: 'how many refusing addresses cover the path — a count',
+    why: 'how many refusing addresses cover the path: a count',
   },
   'rules.ts «{} refuse a write here · {} refuse » counts.refuses.addressed #1': {
     verdict: 'minted',
-    why: 'how many refusing addresses the project’s record holds at all — a count',
+    why: 'how many refusing addresses the project’s record holds at all: a count',
   },
   'rules.ts «in this project · {} refuse nothing here · » counts.refuses.stale #1': {
     verdict: 'minted',
-    why: 'how many refusing addresses name nothing in the working tree — a count, and the one that says a refusal stopped closing in silence',
+    why: 'how many refusing addresses name nothing in the working tree: a count, and the one that says a refusal stopped closing in silence',
   },
   'rules.ts «{} name a rule not here» counts.refuses.unresolved #1': {
     verdict: 'minted',
-    why: 'how many refusing addresses name a rule no tree here holds — a refusal counted from an address nobody can read would say a write is refused by a rule a reader cannot open',
+    why: 'how many refusing addresses name a rule no tree here holds: a refusal counted from an address nobody can read would say a write is refused by a rule a reader cannot open',
   },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -1526,11 +1526,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'rules.ts «{} ({})» rules.length #1': {
     verdict: 'minted',
-    why: 'how many rows are under the heading — the count they are counted by',
+    why: 'how many rows are under the heading: the count they are counted by',
   },
   'rules.ts itemLine(oneLine(rule.address ?? rule.recorded)) #1': {
     verdict: 'collapsed',
-    why: 'the address `mnema link --rel governs` recorded — a caller’s string the core never validates',
+    why: 'the address `mnema link --rel governs` recorded: a caller’s string the core never validates',
   },
   'rules.ts itemLine(said) #1': {
     verdict: 'composed',
@@ -1538,7 +1538,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'rules.ts «({})» rule.kind #1': {
     verdict: 'minted',
-    why: 'a `SearchKind` the read resolved the rule to — one of five words',
+    why: 'a `SearchKind` the read resolved the rule to: one of five words',
   },
   'rules.ts itemLine(...(rule.state === undefined ? [] : [asState(oneLine(rule.state))])) #1': {
     verdict: 'collapsed',
@@ -1550,11 +1550,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'rules.ts asId(oneLine(rule.rule)) #1': {
     verdict: 'collapsed',
-    why: 'the rule’s id — a link’s subject, which the core forwards without verifying it exists',
+    why: 'the rule’s id: a link’s subject, which the core forwards without verifying it exists',
   },
   'rules.ts «[{}]» rule.assertedIn #1': {
     verdict: 'minted',
-    why: 'the tree whose record asserts the address — one of three words',
+    why: 'the tree whose record asserts the address: one of three words',
   },
 
   // --- runs.ts: a run, for all three readings ------------------------------------
@@ -1568,11 +1568,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'runs.ts «: {}» oneLine(run.goal) #1': {
     verdict: 'collapsed',
-    why: 'the run’s goal — text whoever opened the session typed, and BOTH readings print it',
+    why: 'the run’s goal: text whoever opened the session typed, and BOTH readings print it',
   },
   'runs.ts «{} run(s) still open» resume.focus.openRuns.length #1': {
     verdict: 'minted',
-    why: 'how many runs are still open — a count',
+    why: 'how many runs are still open: a count',
   },
   "runs.ts «starts in {} (this machine's clock is behind the writer's)» humanDuration(-run.ageSeconds) #1":
     {
@@ -1589,7 +1589,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'runs.ts « · {} · {}» age #1': {
     verdict: 'composed',
-    why: 'the age clause composed above — a duration or one of this module’s sentences',
+    why: 'the age clause composed above: a duration or one of this module’s sentences',
   },
   'runs.ts « · {} · {}» idle #1': {
     verdict: 'composed',
@@ -1597,11 +1597,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   "runs.ts « · wrote {}» run.wrote.map((w) => `${w.count} ${w.kind}`).join(', ') #1": {
     verdict: 'minted',
-    why: 'what the run wrote — each entry a count and one of the catalog’s own kind literals, neither of them anything an actor typed',
+    why: 'what the run wrote: each entry a count and one of the catalog’s own kind literals, neither of them anything an actor typed',
   },
   'runs.ts «{}{}» count #1': {
     verdict: 'minted',
-    why: 'how many of a unit the duration holds — a number',
+    why: 'how many of a unit the duration holds: a number',
   },
   'runs.ts «{}{}» suffix #1': {
     verdict: 'minted',
@@ -1611,7 +1611,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- search.ts: the index ------------------------------------------------------
   'search.ts « matching "{}"» oneLine(term) #1': {
     verdict: 'collapsed',
-    why: 'the term the caller typed — the one value here that never came out of the record',
+    why: 'the term the caller typed: the one value here that never came out of the record',
   },
   'search.ts «Nothing recorded{}.» forTerm #1': {
     verdict: 'composed',
@@ -1619,11 +1619,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'search.ts «{} of {}» result.hits.length #1': {
     verdict: 'minted',
-    why: 'how many hits were served — a count',
+    why: 'how many hits were served: a count',
   },
   'search.ts «{} of {}» result.total #1': {
     verdict: 'minted',
-    why: 'how many there are — a count',
+    why: 'how many there are: a count',
   },
   'search.ts «{}» result.total #1': {
     verdict: 'minted',
@@ -1639,17 +1639,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'search.ts «{} ({})» kind #1': {
     verdict: 'minted',
-    why: 'one of `SEARCH_KINDS` — the group this run of rows is under',
+    why: 'one of `SEARCH_KINDS`: the group this run of rows is under',
   },
   'search.ts «{} ({})» group.length #1': {
     verdict: 'minted',
-    why: 'how many rows are in the group — the count they are counted by',
+    why: 'how many rows are in the group: the count they are counted by',
   },
 
   // --- state.ts: a record's position ---------------------------------------------
   'state.ts «({})» state #1': {
     verdict: 'minted',
-    why: 'a position in one of the three machines — a word of a closed transition table',
+    why: 'a position in one of the three machines: a word of a closed transition table',
   },
 
   // --- status.ts: where things stand ---------------------------------------------
@@ -1668,7 +1668,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'status.ts «{} adopted pattern(s):» status.skills.length #1': {
     verdict: 'minted',
-    why: 'how many patterns are adopted — the one list nothing cuts',
+    why: 'how many patterns are adopted: the one list nothing cuts',
   },
   'status.ts «{} awaiting a judgement:» served(status.awaitingJudgement.length, status.awaitingJudgementTotal) #1':
     {
@@ -1677,46 +1677,46 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'status.ts «{} · {}» item.adr #1': {
     verdict: 'composed',
-    why: 'the label half of a waiting decision’s name — collapsed whole at the call site',
+    why: 'the label half of a waiting decision’s name: collapsed whole at the call site',
   },
   'status.ts «{} · {}» item.title #1': {
     verdict: 'composed',
-    why: 'the title half, text an actor wrote — collapsed whole at the call site below',
+    why: 'the title half, text an actor wrote: collapsed whole at the call site below',
   },
   'status.ts «  {} ({}): mnema search --kind {}» item.kind #1': {
     verdict: 'minted',
-    why: 'one of `SEARCH_KINDS` — the same vocabulary `search.ts` groups its rows by',
+    why: 'one of `SEARCH_KINDS`: the same vocabulary `search.ts` groups its rows by',
   },
   'status.ts «  {} ({}): mnema search --kind {}» item.held #1': {
     verdict: 'minted',
-    why: 'how many of that kind the record holds — a count, from the index’s own total',
+    why: 'how many of that kind the record holds: a count, from the index’s own total',
   },
   'status.ts «  {} ({}): mnema search --kind {}» item.kind #2': {
     verdict: 'minted',
-    why: 'the same word again, as the flag that reaches it — a kind is what `--kind` takes',
+    why: 'the same word again, as the flag that reaches it: a kind is what `--kind` takes',
   },
   'status.ts «{} ({}): mnema decision import {}» oneLine(directory) #1': {
     verdict: 'collapsed',
-    why: 'the directory a `derived-from` edge names, or one of the five conventional ones — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under the heading; a literal of this package is collapsed too, because the field is one field and a rule that held for one source of it and not the other would be two rules',
+    why: 'the directory a `derived-from` edge names, or one of the five conventional ones: a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under the heading; a literal of this package is collapsed too, because the field is one field and a rule that held for one source of it and not the other would be two rules',
   },
   'status.ts «{} ({}): mnema decision import {}» documents #1': {
     verdict: 'minted',
-    why: 'how many documents of that base the record has no decision for — a count this reading made over the file names',
+    why: 'how many documents of that base the record has no decision for: a count this reading made over the file names',
   },
   'status.ts «{} ({}): mnema decision import {}» oneLine(directory) #2': {
     verdict: 'collapsed',
-    why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
+    why: 'the same path again, as the argument the verb takes: collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
   },
   'status.ts «  {}» toImport(base.directory, base.outside) #1': {
     verdict: 'composed',
-    why: 'a base under the drift heading, worded by `toImport` — the one spelling of a base, its count and the command, shared with the opening document’s hook copy',
+    why: 'a base under the drift heading, worded by `toImport`: the one spelling of a base, its count and the command, shared with the opening document’s hook copy',
   },
   'status.ts «  {}» toImport(base.directory, base.documents) #1': {
     verdict: 'composed',
     why: 'a base under the arrival heading, worded by the same `toImport`',
   },
-  'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows — a count' },
-  'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are — a count' },
+  'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows: a count' },
+  'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are: a count' },
   'status.ts «{}» total #1': {
     verdict: 'minted',
     why: 'the same count, on the branch where nothing was cut',
@@ -1725,15 +1725,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- tails.ts: the tails on disk -----------------------------------------------
   "tails.ts «No tail holds events in any tree here (looked in {}).» trees.join(', ') #1": {
     verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by this report',
+    why: 'the trees that were looked in: closed words, joined by this report',
   },
   'tails.ts «{} tail(s) holding events (the ones a cut can name):» tails.length #1': {
     verdict: 'minted',
-    why: 'how many tails follow — the count the rows are counted by',
+    why: 'how many tails follow: the count the rows are counted by',
   },
   'tails.ts «{} event(s) through {}» held.standing.eventCount #1': {
     verdict: 'minted',
-    why: 'how many events the tail holds — a count',
+    why: 'how many events the tail holds: a count',
   },
   'tails.ts «{} event(s) through {}» held.standing.throughHash #1': {
     verdict: 'minted',
@@ -1747,39 +1747,39 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- witness.ts: where the external witness stands ------------------------------
   'witness.ts «{} tail(s):» lines.length #1': {
     verdict: 'minted',
-    why: 'how many tails follow — the count the rows are counted by',
+    why: 'how many tails follow: the count the rows are counted by',
   },
   'witness.ts «checkpoint {}» line.checkpoint #1': {
     verdict: 'minted',
-    why: 'the digest an attestation is filed under — sixty-four hex characters this package computed',
+    why: 'the digest an attestation is filed under: sixty-four hex characters this package computed',
   },
 
   // --- switches.ts: where the product's own switches stand ------------------------
   'switches.ts «{} channel(s), looked in {}:» rows.length #1': {
     verdict: 'minted',
-    why: 'how many channels follow — the count the rows are counted by',
+    why: 'how many channels follow: the count the rows are counted by',
   },
   "switches.ts «{} channel(s), looked in {}:» trees.join(', ') #1": {
     verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by this report',
+    why: 'the trees that were looked in: closed words, joined by this report',
   },
   "switches.ts «switched off by {}» oneLine(anchorText(anchors, row.state.by ?? '')) #1": {
     verdict: 'collapsed',
-    why: 'the anchor that switched it, in the short form the record knows — not forgeable today (it is derived from a key), closed as a rule because it is read back out of the record',
+    why: 'the anchor that switched it, in the short form the record knows: not forgeable today (it is derived from a key), closed as a rule because it is read back out of the record',
   },
   "switches.ts asWhen(row.state.at ?? '') #1": {
     verdict: 'minted',
-    why: 'when the switch was made — an instant off the record',
+    why: 'when the switch was made: an instant off the record',
   },
   'switches.ts «reason: {}» oneLine(row.state.reason) #1': {
     verdict: 'collapsed',
-    why: 'why somebody switched it off — free text they typed at `--reason`, on a line the header counts',
+    why: 'why somebody switched it off: free text they typed at `--reason`, on a line the header counts',
   },
 
   // --- brief.ts: the document, and the switch that explains its silence -----------
   'brief.ts «to be changed: {} was switched off by {}» oneLine(push.channel) #1': {
     verdict: 'collapsed',
-    why: 'the channel as the RECORD spells it — a switch’s subject is a caller’s string, so what the document reads back is not the closed set the verb refuses against',
+    why: 'the channel as the RECORD spells it: a switch’s subject is a caller’s string, so what the document reads back is not the closed set the verb refuses against',
   },
   "brief.ts «to be changed: {} was switched off by {}» oneLine(push.by ?? '') #1": {
     verdict: 'collapsed',
@@ -1794,25 +1794,25 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- usage.ts: what the host's transcripts cost --------------------------------
   "usage.ts «No run is recorded here (looked in {}).» listing.trees.join(', ') #1": {
     verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by this report',
+    why: 'the trees that were looked in: closed words, joined by this report',
   },
   'usage.ts «{} run(s):» listing.runs.length #1': {
     verdict: 'minted',
-    why: 'how many runs follow — the count the rows are counted by',
+    why: 'how many runs follow: the count the rows are counted by',
   },
   'usage.ts «Read from {}: {} host session(s) there record work in this project.» oneLine(listing.store) #1':
     {
       verdict: 'collapsed',
-      why: 'the host’s store — a PATH, built from this machine’s home and an environment',
+      why: 'the host’s store: a PATH, built from this machine’s home and an environment',
     },
   'usage.ts «Read from {}: {} host session(s) there record work in this project.» listing.sessionsInStore #1':
     {
       verdict: 'minted',
-      why: 'how many host sessions are in the store — a count',
+      why: 'how many host sessions are in the store: a count',
     },
   'usage.ts «{} → {}» spend.startedAt #1': {
     verdict: 'minted',
-    why: 'when the run opened — an instant off the record',
+    why: 'when the run opened: an instant off the record',
   },
   'usage.ts «{} → {}» spend.endedAt ?? STILL_OPEN #1': {
     verdict: 'minted',
@@ -1824,12 +1824,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'usage.ts «{} · {} host sessions overlap this run: {}» spend.sessions.length #1': {
     verdict: 'minted',
-    why: 'how many host sessions overlap — a count',
+    why: 'how many host sessions overlap: a count',
   },
   "usage.ts «{} · {} host sessions overlap this run: {}» spend.sessions.map(oneLine).join(', ') #1":
     {
       verdict: 'collapsed',
-      why: 'the host session ids, each collapsed — they are the host’s values, not the record’s',
+      why: 'the host session ids, each collapsed: they are the host’s values, not the record’s',
     },
   'usage.ts «in {} · out {} · cache-read {} · cache-write {} tokens» input #1': {
     verdict: 'minted',
@@ -1849,49 +1849,49 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'usage.ts «{} message(s)» messages #1': {
     verdict: 'minted',
-    why: 'how many messages the run held — a count',
+    why: 'how many messages the run held: a count',
   },
   "usage.ts «session {}» oneLine(spend.sessions[0] ?? '') #1": {
     verdict: 'collapsed',
-    why: 'the host session id this row was attributed to — the host’s value, not the record’s',
+    why: 'the host session id this row was attributed to: the host’s value, not the record’s',
   },
   'usage.ts «{} line(s) passed over» passedOver #1': {
     verdict: 'minted',
-    why: 'how many transcript lines the reading did not understand — a count',
+    why: 'how many transcript lines the reading did not understand: a count',
   },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
   'diagram.ts «    [*] --> {}: {}» initial #1': {
     verdict: 'minted',
-    why: 'the birth state of a workflow — a word of the closed state table',
+    why: 'the birth state of a workflow: a word of the closed state table',
   },
   'diagram.ts «    [*] --> {}: {}» entities(BORN[workflow]) #1': {
     verdict: 'minted',
-    why: 'what a workflow’s birth is called — a constant written in this module, written as entities like every label',
+    why: 'what a workflow’s birth is called: a constant written in this module, written as entities like every label',
   },
   'diagram.ts «    n0([{}])» quoted(id) #1': {
     verdict: 'composed',
-    why: 'the id a caller typed, as the head of a timeline — `quoted` collapses it and writes the entities, the one door of this module',
+    why: 'the id a caller typed, as the head of a timeline: `quoted` collapses it and writes the entities, the one door of this module',
   },
   'diagram.ts «    n{} --> n{}» at #1': {
     verdict: 'minted',
-    why: 'the position of an event in a chain — a count this diagram made',
+    why: 'the position of an event in a chain: a count this diagram made',
   },
   'diagram.ts «    n{} --> n{}» at + 1 #1': {
     verdict: 'minted',
-    why: 'the position of the next event — a count this diagram made',
+    why: 'the position of the next event: a count this diagram made',
   },
   'diagram.ts «    n{}[{}]» at + 1 #1': {
     verdict: 'minted',
-    why: 'the node name of an event — a count this diagram made, never a word of the record',
+    why: 'the node name of an event: a count this diagram made, never a word of the record',
   },
   'diagram.ts «    n{}[{}]» quoted(describe(entry)) #1': {
     verdict: 'composed',
-    why: 'an event’s line — when, kind, role, who and what it said, handed to `quoted`',
+    why: 'an event’s line: when, kind, role, who and what it said, handed to `quoted`',
   },
   "diagram.ts «    {} --> {}: {}» entities([move.action, ...owed].join(' · ')) #1": {
     verdict: 'minted',
-    why: 'a move’s action and the words of what it owes — rows of a closed transition table, written as entities',
+    why: 'a move’s action and the words of what it owes: rows of a closed transition table, written as entities',
   },
   'diagram.ts «    {} --> {}: {}» move.from #1': {
     verdict: 'minted',
@@ -1903,11 +1903,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'diagram.ts «    {} -->|{}| {}» nameOf(link.from) #1': {
     verdict: 'minted',
-    why: 'the node name of an edge’s near end — a count this diagram made',
+    why: 'the node name of an edge’s near end: a count this diagram made',
   },
   'diagram.ts «    {} -->|{}| {}» nameOf(link.to) #1': {
     verdict: 'minted',
-    why: 'the node name of an edge’s far end — a count this diagram made',
+    why: 'the node name of an edge’s far end: a count this diagram made',
   },
   'diagram.ts «    {} -->|{}| {}» quoted(edge) #1': {
     verdict: 'composed',
@@ -1915,7 +1915,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'diagram.ts «    {}[{}]» nameOf(id) #1': {
     verdict: 'minted',
-    why: 'the node name of an entity — a count this diagram made',
+    why: 'the node name of an entity: a count this diagram made',
   },
   'diagram.ts «    {}[{}]» quoted(`${id}${said}`) #1': {
     verdict: 'composed',
@@ -1923,7 +1923,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'diagram.ts « ({})» node.kind #1': {
     verdict: 'minted',
-    why: 'the kind the search resolved an entity to — a word of the closed vocabulary',
+    why: 'the kind the search resolved an entity to: a word of the closed vocabulary',
   },
   'diagram.ts «"{}"» entities(oneLine(text)) #1': {
     verdict: 'collapsed',
@@ -1931,19 +1931,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'diagram.ts «#{};» char.codePointAt(0) #1': {
     verdict: 'minted',
-    why: 'the number of a character the door wrote as an entity — a number, built from the character',
+    why: 'the number of a character the door wrote as an entity: a number, built from the character',
   },
   'diagram.ts «<{}>» proof #1': {
     verdict: 'minted',
-    why: 'a proof field with no sentence of its own — a word of the closed set of proof fields',
+    why: 'a proof field with no sentence of its own: a word of the closed set of proof fields',
   },
   'diagram.ts «n{}» names.size #1': {
     verdict: 'minted',
-    why: 'the next node name — a count this diagram made',
+    why: 'the next node name: a count this diagram made',
   },
   'diagram.ts «{}:{}» link.rel #1': {
     verdict: 'composed',
-    why: 'the relation an edge was recorded with, open text — it goes into `edge`, which `quoted` takes',
+    why: 'the relation an edge was recorded with, open text: it goes into `edge`, which `quoted` takes',
   },
   'diagram.ts «{}:{}» link.role #1': {
     verdict: 'minted',
@@ -1957,11 +1957,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- exposure.ts: what a scan for credentials found ----------------------------
   'exposure.ts itemLine(finding.kind) #1': {
     verdict: 'minted',
-    why: 'a `SearchKind` — one closed word of the record’s own vocabulary',
+    why: 'a `SearchKind`: one closed word of the record’s own vocabulary',
   },
   "exposure.ts itemLine(finding.classes.join(', ')) #1": {
     verdict: 'minted',
-    why: 'the names of the credential formats recognized — this scanner’s own vocabulary',
+    why: 'the names of the credential formats recognized: this scanner’s own vocabulary',
   },
   'exposure.ts asScope(finding.scope) #1': {
     verdict: 'minted',
@@ -1983,11 +1983,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'occurrence.ts itemLine(...theMove(event)) #1': {
     verdict: 'composed',
-    why: 'where a move moved to, composed by `theMove` — one function for this line and the history’s, so the two cannot spell one event two ways',
+    why: 'where a move moved to, composed by `theMove`: one function for this line and the history’s, so the two cannot spell one event two ways',
   },
   'occurrence.ts «→ {}» oneLine(to) #1': {
     verdict: 'collapsed',
-    why: 'the state the gate resolved a move to — a closed word of the workflow, collapsed because the rule is the line’s',
+    why: 'the state the gate resolved a move to: a closed word of the workflow, collapsed because the rule is the line’s',
   },
   'occurrence.ts asWhen(oneLine(event.at)) #1': {
     verdict: 'collapsed',
@@ -2001,11 +2001,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- provenance.ts: where a pattern came from ----------------------------------
   'provenance.ts itemLine(column(pattern.state, STATE_WIDTH)) #1': {
     verdict: 'minted',
-    why: 'a pattern’s position — a word of its transition table, padded to a column',
+    why: 'a pattern’s position: a word of its transition table, padded to a column',
   },
   'provenance.ts itemLine(oneLine(pattern.name)) #1': {
     verdict: 'collapsed',
-    why: 'the pattern’s name — text an actor wrote, and the subject of the row',
+    why: 'the pattern’s name: text an actor wrote, and the subject of the row',
   },
   "provenance.ts itemLine(acts.join(' · ')) #1": {
     verdict: 'composed',
@@ -2020,27 +2020,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- record.ts: one whole record -----------------------------------------------
   'record.ts subjectLine(body.scope) #1': {
     verdict: 'minted',
-    why: 'the tree this record lives in — one of three words',
+    why: 'the tree this record lives in: one of three words',
   },
   'record.ts asState(body.record.state) #1': {
     verdict: 'minted',
-    why: 'a decision’s position — a word of its machine’s transition table',
+    why: 'a decision’s position: a word of its machine’s transition table',
   },
   'record.ts statedFact(oneLine(body.record.title)) #1': {
     verdict: 'collapsed',
-    why: 'a task’s title — text whoever created it wrote',
+    why: 'a task’s title: text whoever created it wrote',
   },
   'record.ts asState(body.record.state) #2': {
     verdict: 'minted',
-    why: 'a task’s position — a word of its machine’s transition table',
+    why: 'a task’s position: a word of its machine’s transition table',
   },
   'record.ts statedFact(oneLine(body.record.name)) #1': {
     verdict: 'collapsed',
-    why: 'a pattern’s name — text whoever proposed it wrote',
+    why: 'a pattern’s name: text whoever proposed it wrote',
   },
   'record.ts asState(body.record.state) #3': {
     verdict: 'minted',
-    why: 'a pattern’s position — a word of its machine’s transition table',
+    why: 'a pattern’s position: a word of its machine’s transition table',
   },
   'record.ts fact(consultedLine(context.consultations ?? 0)) #1': {
     verdict: 'composed',
@@ -2054,7 +2054,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'references.ts subjectLine(known) #1': {
     verdict: 'minted',
-    why: 'what the origin resolved to — a `SearchKind`, or the word `unresolved`',
+    why: 'what the origin resolved to: a `SearchKind`, or the word `unresolved`',
   },
   'references.ts itemLine(label(link.to)) #1': {
     verdict: 'composed',
@@ -2084,7 +2084,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- search.ts: the index ------------------------------------------------------
   'search.ts itemLine(oneLine(hit.title)) #1': {
     verdict: 'collapsed',
-    why: 'the record’s title — text an actor wrote, and the subject of the row',
+    why: 'the record’s title: text an actor wrote, and the subject of the row',
   },
   'search.ts itemLine(...(state !== undefined ? [asState(state)] : [])) #1': {
     verdict: 'composed',
@@ -2101,13 +2101,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'search.ts asState(state) #1': {
     verdict: 'minted',
-    why: 'the hit’s position — a word of its machine’s transition table',
+    why: 'the hit’s position: a word of its machine’s transition table',
   },
 
   // --- status.ts: where things stand ---------------------------------------------
   'status.ts fact(lastRunPhrase(lastRun)) #1': {
     verdict: 'composed',
-    why: 'the run’s phrase, worded by `runs.ts` — which is where the goal is collapsed',
+    why: 'the run’s phrase, worded by `runs.ts`: which is where the goal is collapsed',
   },
   'status.ts fact(openRunsPhrase(status.resume)) #1': {
     verdict: 'composed',
@@ -2115,12 +2115,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'status.ts itemLine(oneLine(item.title)) #1': {
     verdict: 'collapsed',
-    why: 'a live task’s title — text an actor wrote, under a header that counts the rows',
+    why: 'a live task’s title: text an actor wrote, under a header that counts the rows',
   },
   'status.ts asId(item.id) #1': { verdict: 'minted', why: 'the task’s record id' },
   'status.ts asState(item.state) #1': {
     verdict: 'minted',
-    why: 'the task’s position — a word of its transition table',
+    why: 'the task’s position: a word of its transition table',
   },
   'status.ts itemLine(item.adr) #1': {
     verdict: 'minted',
@@ -2128,17 +2128,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'status.ts itemLine(oneLine(item.title)) #2': {
     verdict: 'collapsed',
-    why: 'a decision’s title — text whoever recorded it wrote',
+    why: 'a decision’s title: text whoever recorded it wrote',
   },
   'status.ts asId(item.id) #2': { verdict: 'minted', why: 'the decision’s record id' },
   'status.ts itemLine(oneLine(item.name)) #1': {
     verdict: 'collapsed',
-    why: 'an adopted pattern’s name — text whoever proposed it wrote',
+    why: 'an adopted pattern’s name: text whoever proposed it wrote',
   },
   'status.ts asId(item.id) #3': { verdict: 'minted', why: 'the pattern’s record id' },
   'status.ts itemLine(column(item.kind, KIND_WIDTH)) #1': {
     verdict: 'minted',
-    why: 'which machine the item is waiting in — one of three words, padded',
+    why: 'which machine the item is waiting in: one of three words, padded',
   },
   'status.ts itemLine(oneLine(named(item))) #1': {
     verdict: 'collapsed',
@@ -2147,7 +2147,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'status.ts asId(item.id) #4': { verdict: 'minted', why: 'the waiting record’s id' },
   'status.ts asState(item.state) #2': {
     verdict: 'minted',
-    why: 'its position — a word of its own machine’s transition table',
+    why: 'its position: a word of its own machine’s transition table',
   },
 
   // --- tails.ts: the tails on disk -----------------------------------------------
@@ -2167,7 +2167,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- witness.ts: where the external witness stands ------------------------------
   'witness.ts asId(line.tail) #1': {
     verdict: 'minted',
-    why: 'the tail id, whole, exactly as the tails report writes it — a value the two reports must not disagree about',
+    why: 'the tail id, whole, exactly as the tails report writes it: a value the two reports must not disagree about',
   },
   'witness.ts asScope(column(line.scope, SCOPE_WIDTH)) #1': {
     verdict: 'minted',
@@ -2180,7 +2180,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "witness.ts itemLine(line.checkpoint === null ? 'no checkpoint' : `checkpoint ${line.checkpoint}`) #1":
     {
       verdict: 'minted',
-      why: 'this module’s own words, or the digest above — the tail with no checkpoint says so',
+      why: 'this module’s own words, or the digest above: the tail with no checkpoint says so',
     },
   'witness.ts itemLine(line.reading.detail) #1': {
     verdict: 'composed',
@@ -2193,13 +2193,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'switches.ts asId(column(row.state.channel, width)) #1': {
     verdict: 'minted',
-    why: 'the channel name, whole, because `switch off` takes it — one of the product’s own two',
+    why: 'the channel name, whole, because `switch off` takes it: one of the product’s own two',
   },
 
   // --- usage.ts: what the host's transcripts cost --------------------------------
   'usage.ts itemLine(column(oneLine(spend.agent), AGENT_WIDTH)) #1': {
     verdict: 'collapsed',
-    why: 'the agent the run was opened for — text whoever opened it typed',
+    why: 'the agent the run was opened for: text whoever opened it typed',
   },
   'usage.ts itemLine(window(spend)) #1': {
     verdict: 'composed',
@@ -2207,7 +2207,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'usage.ts itemLine(told(spend)) #1': {
     verdict: 'composed',
-    why: 'what the transcripts told, worded below — every value on it is a site of its own',
+    why: 'what the transcripts told, worded below: every value on it is a site of its own',
   },
   'usage.ts asId(spend.run) #1': {
     verdict: 'minted',
@@ -2384,10 +2384,10 @@ const SERVED_WHOLE: Readonly<Record<string, string>> = {
   'body.record.content': 'a memory’s text, which is the whole of that record',
   'body.record.text': 'an observation’s text, on the same terms',
   'body.record.rationale': 'the argument a decision was accepted on',
-  'body.record.alternatives': 'what that decision turned down — a second paragraph, headed',
+  'body.record.alternatives': 'what that decision turned down: a second paragraph, headed',
   'body.record.body': 'a pattern’s body, which is the instruction itself',
   'one.said':
-    'what one move of a record said — a paragraph somebody wrote, headed the way a decision’s alternatives are, and the only body a task will ever have',
+    'what one move of a record said: a paragraph somebody wrote, headed the way a decision’s alternatives are, and the only body a task will ever have',
 };
 
 describe('the body is served whole, and it is the only thing that is', () => {
