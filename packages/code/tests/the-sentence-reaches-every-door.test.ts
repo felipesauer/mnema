@@ -99,7 +99,7 @@ describe('the sentence reaches every door', () => {
     const binary = join(ROOT, 'packages/code/dist/cli.js');
     expect(
       existsSync(binary),
-      'packages/code/dist is missing — this case reads the built binary, so run `pnpm build` first',
+      'packages/code/dist is missing: this case reads the built binary, so run `pnpm build` first',
     ).toBe(true);
     const help = execFileSync(process.execPath, [binary, '--help'], { encoding: 'utf8' });
     expect(flat(help)).toContain(flat(PRODUCT_PROMISE));
@@ -150,7 +150,7 @@ const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
   },
   {
     phrase: 'record every action',
-    why: 'measured false: an agent left to itself did not ask — `mcp_asked` false in 20 of 20 instrumented cells',
+    why: 'measured false: an agent left to itself did not ask: `mcp_asked` false in 20 of 20 instrumented cells',
   },
   {
     phrase: 'behind workflow gates',
@@ -158,7 +158,7 @@ const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
   },
   {
     phrase: 'cryptographically verifiable',
-    why: 'true and empty: what verifies is integrity, never who wrote it or when — a record forged whole verifies clean',
+    why: 'true and empty: what verifies is integrity, never who wrote it or when: a record forged whole verifies clean',
   },
   {
     phrase: 'nothing can be silently altered',
@@ -385,12 +385,12 @@ describe('no manifest sells the gate as more than it is', () => {
  * this case existed.
  */
 const KEYWORDS_THE_PROMISE_BUYS: Readonly<Record<string, string>> = {
-  'ai-agents': 'the work the record is of — "the decisions behind AI-agent work"',
+  'ai-agents': 'the work the record is of: "the decisions behind AI-agent work"',
   adr: 'what a record holds is decisions with their reasoning, which is what an ADR is',
   'append-only': 'verbatim in the promise, and a property of the format',
   'audit-trail': 'the category a signed, append-only record of who did what belongs to',
   'local-first':
-    'no service is asked and no network is needed — the record is in the repository where the work happens, and a stranger checks it without installing this',
+    'no service is asked and no network is needed: the record is in the repository where the work happens, and a stranger checks it without installing this',
   mcp: 'a fact about the shape of the surface, not a claim about the record',
   'model-context-protocol': 'the same fact, spelled the way the protocol is searched for',
   accountability:

@@ -113,7 +113,7 @@ describe('the binary a page promises is the one that speaks', () => {
   it('is built, or there is nothing here to invoke', () => {
     // Not ceremony: without this, every case below fails with a module-resolution error and
     // reads like a defect in the product rather than a missing `pnpm build`.
-    expect(existsSync(CLI), `${CLI} is missing — run \`pnpm build\` first`).toBe(true);
+    expect(existsSync(CLI), `${CLI} is missing: run \`pnpm build\` first`).toBe(true);
   });
 
   it('speaks from its real path', () => {

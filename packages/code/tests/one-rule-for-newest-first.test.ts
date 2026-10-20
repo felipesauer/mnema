@@ -143,8 +143,8 @@ const DESCENDING_BY_HAND = [
 const AN_INSTANT_FIELD = /\.(?:at|[A-Za-z]+At)\b/;
 
 /** What a rostered ordering means. The three are exhaustive by the inline-name check. */
-const NEWEST = 'newest first — asks the one rule';
-const OLDEST = 'oldest first — an ascending tie-break AGREES with the instant here';
+const NEWEST = 'newest first: asks the one rule';
+const OLDEST = 'oldest first: an ascending tie-break AGREES with the instant here';
 const OTHER = 'not an instant';
 
 /** One ordering the product installs: where it is, what it is called, what it means. */

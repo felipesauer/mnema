@@ -202,7 +202,7 @@ export function theSettledScreen(
     throw new Error(
       `no frame in this stream was drawn ${columns} columns wide${holds === undefined ? '' : ` with ${JSON.stringify(holds)} on it`}, so there is no settled page ` +
         `to read at that size. The width is read off the rules the input area sits between, ` +
-        `which every frame of this console writes — so either the session never reached that ` +
+        `which every frame of this console writes, so either the session never reached that ` +
         `size, or it drew an arrangement with no rules in it. Reading the end of the stream ` +
         `instead would be an index by another name.`,
     );
@@ -252,7 +252,7 @@ export function theFirstScreenWith(
     throw new Error(
       `no frame in this stream ever showed ${JSON.stringify(what)}, so there is no page to read ` +
         `it off. Either the session never drew it, or it is spelled here in a way the page ` +
-        `never was — a fold puts a break in the middle of a row, and a row carrying style ` +
+        `never was: a fold puts a break in the middle of a row, and a row carrying style ` +
         `carries escapes between its characters.`,
     );
   }
@@ -313,7 +313,7 @@ export function theFirstScreenWhere(
   }
   throw new Error(
     `no frame in this stream ever drew a page the case would accept. Every frame was replayed ` +
-      `and the question was asked of each — so either the session never reached that page, or ` +
+      `and the question was asked of each, so either the session never reached that page, or ` +
       `what the question asks for is not what a page of this console can be.`,
   );
 }
@@ -333,7 +333,7 @@ export function theScreenBeforeLeaving(bytes: string, columns: number, rows: num
   if (back < 0) {
     throw new Error(
       `this session never gave the screen back, so there is no page it left. Either it is still ` +
-        `running, or it died where nothing of ours runs — and a replay of the whole stream would ` +
+        `running, or it died where nothing of ours runs, and a replay of the whole stream would ` +
         `be a page nobody ever saw.`,
     );
   }
@@ -363,8 +363,8 @@ function theWidthIsTheOneItWasDrawnAt(rows: readonly string[], columns: number):
     `this screen was replayed ${columns} columns wide and nothing on it was drawn that wide: ` +
       `the frame's own edges measure ${measured}. The box and the rules are drawn corner to ` +
       `corner, so the width of an edge IS the width the process read off its device. Whether ` +
-      `that device was the size the case asked for is answered where the session is driven — ` +
-      `\`support/pty.ts\` accuses it there — so if nothing was said there, the console drew at ` +
+      `that device was the size the case asked for is answered where the session is driven (` +
+      `\`support/pty.ts\` accuses it there), so if nothing was said there, the console drew at ` +
       `a width the terminal never reported; and if this screen is simply being read at a size ` +
       `the run was never driven at, the case is asking the wrong question. Either way an ` +
       `assertion about a row further down is out by whatever the difference folds, and that ` +
@@ -425,7 +425,7 @@ function theStreamWasDecodedWhole(bytes: string, columns: number): void {
     `this screen was replayed from a stream with a REPLACEMENT CHARACTER in it, which is ` +
       `what a decoder leaves when it is handed half a character: ${JSON.stringify(around)}. ` +
       `The bytes of a pseudo-terminal arrive in chunks and are decoded one chunk at a time, ` +
-      `so a boundary inside a multi-byte glyph destroys it — and the glyph a rule is drawn ` +
+      `so a boundary inside a multi-byte glyph destroys it, and the glyph a rule is drawn ` +
       `out of is three bytes long. What that costs is a row ONE COLUMN wider than the ` +
       `${columns} it was drawn for, which the terminal folds, which puts a row on the page ` +
       `that nobody drew. Every off-by-one a case is about to report is that row. The product ` +
@@ -878,8 +878,8 @@ function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: 
     // sequence: there is nothing after it to have been misread.
     if (at + 1 >= bytes.length) return bytes.length;
     throw new Error(
-      `this screen was replayed from bytes holding an escape outside the CSI family — ` +
-        `ESC ${JSON.stringify(bytes.slice(at + 1, at + 8))} — which this model does not ` +
+      `this screen was replayed from bytes holding an escape outside the CSI family (` +
+        `ESC ${JSON.stringify(bytes.slice(at + 1, at + 8))}), which this model does not ` +
         `understand and therefore did not perform. What is above is a page the terminal ` +
         `never showed, so anything read off it is about the model rather than the product.`,
     );
@@ -963,7 +963,7 @@ function privateMode(body: string, final: string, grid: Grid, columns: number, r
     throw new Error(
       `this screen was replayed from bytes holding ESC[?${part}${final}, which is a private ` +
         `mode this model neither acts on nor has a reason to ignore. A mode can move a whole ` +
-        `page — the buffer swap is one — so the page above may be one the terminal never ` +
+        `page (the buffer swap is one), so the page above may be one the terminal never ` +
         `showed. Give it a case here, or name it in MODES_THAT_DRAW_NOTHING with the reason ` +
         `it draws nothing.`,
     );

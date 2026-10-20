@@ -224,7 +224,7 @@ describe('the sweep is wired where it can be right', () => {
     expect(reports, 'ci.yml never reads the baseline back').toHaveLength(1);
     expect(
       suiteRuns.length,
-      'ci.yml runs the suite nowhere — this case reads nothing',
+      'ci.yml runs the suite nowhere: this case reads nothing',
     ).toBeGreaterThan(0);
     expect(
       Math.max(...records),

@@ -509,7 +509,7 @@ describe('the refused run is refused everywhere', () => {
       const allowed = await mnema(line);
       const appended = held(sandbox).events - beforeWrite.events;
       if (allowed.failed) {
-        complaints.push(`${one.path}: refused unpinned — ${allowed.err.join(' / ')}`);
+        complaints.push(`${one.path}: refused unpinned: ${allowed.err.join(' / ')}`);
       }
       if (appended <= 0) complaints.push(`${one.path}: appended nothing unpinned`);
       // WHAT WAS MEASURED, not that the loop ran: a path is recorded here only where the
@@ -549,7 +549,7 @@ describe('the refused run is refused everywhere', () => {
     for (const [path, argv, why] of misused) {
       const outcome = await mnema(argv);
       const said = whatItDid(at(path), outcome);
-      const where = `mnema ${argv.join(' ')} — ${why}`;
+      const where = `mnema ${argv.join(' ')}: ${why}`;
       expect(said.parserAnswered, where).toBe(true);
       // And it is not the pin resolver that spoke, which is the whole reason a lie here
       // is silent: `asked: false` on its own reads as a verb that stamps no run.

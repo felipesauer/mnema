@@ -181,7 +181,7 @@ type Reading = 'where it was written' | 'its own copy, which the group takes';
  * because `witness` declares `--global` too and takes it. Measured on the binary, outside a project
  * and with one tail in the machine-global tree: `mnema witness --global` listed that tail, `mnema
  * witness stamp --global` answered `there is no tail here to witness`, and `mnema witness upgrade
- * --global` said `No tail holds events in any tree here — looked in .`, two sentences false for
+ * --global` said `No tail holds events in any tree here (looked in .)`, two sentences false for
  * the tree that was asked for. It was recorded here and not repaired, because making the flag
  * reach the acts changes which tails the one verb that speaks to a public calendar sends out, and
  * whether the spelling before the act is honoured or refused was not this file's to decide.
