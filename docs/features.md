@@ -6,7 +6,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   the write there, through each host's own hook: in Claude Code, VS Code, Cursor's command-line
   agent, Codex, Copilot CLI, Gemini CLI and OpenCode. Which of that a test holds against the real
   host, and which was read once, is [the table of each host's rung](evidence.md#each-hosts-rung). It binds an agent that goes through the plugin, not a person with an
-  editor, and `mnema switch off edit-refuses-a-write` is the way out — recorded, as a signed
+  editor, and `mnema switch off edit-refuses-a-write` is the way out: recorded, as a signed
   fact. [The plugin's page](../plugin/README.md#what-it-does--and-what-it-does-not). The refusal
   is a gate, and a gate that cannot answer lets the write through: with no `mnema` on the PATH
   ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)).
@@ -17,7 +17,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   reader's own words. The reach is the tree's: a line of the project's public or private tree refuses
   every write in that project, and a line of the machine's global tree, which every project reads,
   refuses every write in every project of the machine. The ways out are said with it: update mnema,
-  or restore the line — from the repository's history for the public tree, and for the private and
+  or restore the line: from the repository's history for the public tree, and for the private and
   the global tree, which are not versioned, from a copy, or by repairing or removing that line
   ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts), and in Claude
   Code, Gemini CLI and Codex by the host contract). Nothing is recorded, because a refusal fact
@@ -77,8 +77,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
   decisions. **None of the three is published**: they run from a checkout of this repository.
   The SDK calls the same functions as the command line, and a test holds the doors to the same
   events and refusals.
-- **Skills and agents a project adopts.** `mnema stack add` installs a stack — skills and agents
-  someone published — where the hosts look for them, from a plan shown whole, and records the
+- **Skills and agents a project adopts.** `mnema stack add` installs a stack (skills and agents
+  someone published) where the hosts look for them, from a plan shown whole, and records the
   adoption as a signed fact; a hook it declares stays off until a person turns it on at a terminal.
   The digest proves the bytes, a Sigstore signature who signed them, and neither that the stack is
   safe. [The stack contract](../packages/stacks/README.md).
