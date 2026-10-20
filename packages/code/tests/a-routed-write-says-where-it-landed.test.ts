@@ -216,7 +216,7 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
 
     const lines = text.split('\n');
     const notices = lines.filter((line) => line.trimStart().startsWith('Landed in the'));
-    expect(notices.map((line) => line.split(' —')[0]?.trim())).toEqual([
+    expect(notices.map((line) => line.split(':')[0]?.trim())).toEqual([
       'Landed in the private tree',
     ]);
     expect(lines.filter((line) => line.startsWith('  In the project at'))).toHaveLength(1);

@@ -159,7 +159,7 @@ const PROBES: readonly Probe[] = [
   {
     key: 'wiring/unlink.ts link #1',
     argv: ['unlink', NAME, 'a-target', '--rel', 'relates-to', '--reason', 'a reason'],
-    says: `No link ${NAME} —relates-to→ a-target here.`,
+    says: `No link ${NAME} -relates-to→ a-target here.`,
   },
   {
     key: 'wiring/skill.ts skill #1',

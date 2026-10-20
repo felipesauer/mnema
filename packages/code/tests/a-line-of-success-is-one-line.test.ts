@@ -710,11 +710,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the project root — a directory name is what this class was first measured on',
   },
-  'init.ts «Already a mnema project at {} — nothing to found.» #1': {
+  'init.ts «Already a mnema project at {}: nothing to found.» #1': {
     verdict: 'collapsed',
     why: 'the same root, on the second branch',
   },
-  'init.ts «backup key: created and enrolled — private half at {}» #1': {
+  'init.ts «backup key: created and enrolled, private half at {}» #1': {
     verdict: 'collapsed',
     why: 'a path built under this machine’s key root',
   },
@@ -742,11 +742,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
   },
-  'link.ts «Linked {} —{}→ {}» #1': {
+  'link.ts «Linked {} -{}→ {}» #1': {
     verdict: 'collapsed',
     why: 'subject, relation and target — none validated, and the relation is open by design',
   },
-  'unlink.ts «Retracted link {} —{}→ {}» #1': {
+  'unlink.ts «Retracted link {} -{}→ {}» #1': {
     verdict: 'collapsed',
     why: 'the edge as the link recorded it — the caller’s three values, which the link never validated',
   },
@@ -1054,9 +1054,9 @@ const PROBES: readonly Probe[] = [
     says: `about ${VALUE}`,
   },
   {
-    keys: ['link.ts «Linked {} —{}→ {}» #1'],
+    keys: ['link.ts «Linked {} -{}→ {}» #1'],
     argv: ['link', VALUE, 'a-target', '--rel', 'relates-to'],
-    says: `Linked ${VALUE} —relates-to→ a-target`,
+    says: `Linked ${VALUE} -relates-to→ a-target`,
   },
   {
     keys: ['handoff.ts «Recorded handoff on {}: {} → {}» #1'],
@@ -1104,7 +1104,7 @@ describe('a value from outside cannot forge a second line', () => {
   it('says the ordinary value exactly as it always did', async () => {
     // Byte for byte, against the literal this surface printed before the tag existed.
     const said = await invoke('link', ORDINARY, 'a-target', '--rel', 'relates-to');
-    expect(said.out[0]).toBe(`Linked ${ORDINARY} —relates-to→ a-target`);
+    expect(said.out[0]).toBe(`Linked ${ORDINARY} -relates-to→ a-target`);
     const run = await invoke('run', 'start', '--which', 'an-agent', '--goal', 'a goal');
     expect(run.out[1]).toBe('  for an-agent — a goal');
   });
@@ -1141,7 +1141,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the hook name must be one the receipt declares to get here, so it is the stack’s own word',
   'stack.ts «{} hook {} was not approved. Nothing changed.» #1':
     'the same declared name as the line above',
-  'unlink.ts «Retracted link {} —{}→ {}» #1':
+  'unlink.ts «Retracted link {} -{}→ {}» #1':
     'needs the edge already linked, so two verbs: `link` then `unlink` — driven in ' +
     '`tests/a-link-can-be-retracted.test.ts`, through the same collapse as `link`’s line',
   'antipatterns.ts «{}» #1': 'needs a task reopened twice in the record',
@@ -1158,8 +1158,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
-  'init.ts «Already a mnema project at {} — nothing to found.» #1': 'the same directory',
-  'init.ts «backup key: created and enrolled — private half at {}» #1': 'needs such a key root',
+  'init.ts «Already a mnema project at {}: nothing to found.» #1': 'the same directory',
+  'init.ts «backup key: created and enrolled, private half at {}» #1': 'needs such a key root',
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
     'needs a checkout its key has left — and the values inside the words are the core’s, ' +
     'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
@@ -1311,7 +1311,7 @@ describe('WHAT_IS_NOT_CLOSED', () => {
     const owned = fileURLToPath(
       new URL('./the-line-a-reading-words-is-one-line.test.ts', import.meta.url),
     );
-    expect(readFileSync(owned, 'utf-8')).toContain('runs.ts « — {}» oneLine(run.goal) #1');
+    expect(readFileSync(owned, 'utf-8')).toContain('runs.ts «: {}» oneLine(run.goal) #1');
   });
 
   it('no longer names the chain’s own detail, because the chain now words it one line', () => {

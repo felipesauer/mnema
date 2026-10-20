@@ -165,7 +165,7 @@ describe('mnema tail list', () => {
 
     const listed = await mnema('tail', 'list');
     expect(listed.failed, listed.err.join(' / ')).toBe(false);
-    expect(listed.out[0]).toBe('2 tail(s) holding events — the ones a cut can name:');
+    expect(listed.out[0]).toBe('2 tail(s) holding events (the ones a cut can name):');
     const row = listedRows(listed).find((line) => idOn(line) === foreign) as string;
     expect(row, `no row for ${foreign} in ${listed.out.join(' / ')}`).toBeDefined();
 
@@ -218,7 +218,7 @@ describe('mnema tail list', () => {
     const said = await mnema('tail', 'list');
     expect(said.failed, said.err.join(' / ')).toBe(false);
     expect(said.out).toEqual([
-      'No tail holds events in any tree here — looked in public, private, global.',
+      'No tail holds events in any tree here (looked in public, private, global).',
     ]);
 
     // Outside a project there is one tree left to look in, and the sentence says so
@@ -227,7 +227,7 @@ describe('mnema tail list', () => {
     mkdirSync(nowhere, { recursive: true });
     process.chdir(nowhere);
     const outside = await mnema('tail', 'list');
-    expect(outside.out).toEqual(['No tail holds events in any tree here — looked in global.']);
+    expect(outside.out).toEqual(['No tail holds events in any tree here (looked in global).']);
   });
 
   it('writes nothing: the sandbox is byte-identical after it', async () => {

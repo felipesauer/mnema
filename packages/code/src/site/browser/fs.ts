@@ -109,7 +109,7 @@ export function closeSync(descriptor: number): void {
 }
 
 const READ_ONLY = (name: string) => (): never => {
-  throw new Error(`${name} is not available in the browser verifier — it only reads.`);
+  throw new Error(`${name} is not available in the browser verifier: it only reads.`);
 };
 
 export const mkdirSync = READ_ONLY('mkdirSync');

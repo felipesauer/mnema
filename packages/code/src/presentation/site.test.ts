@@ -41,7 +41,7 @@ describe('what mnema site says', () => {
       done({ verdict: { ok: false, summary: 'local integrity FAILED\nsee issues' } }),
     ).map(render);
     expect(notice).toBe(
-      'this record does not verify: local integrity FAILED see issues — the page says so to its readers, and `mnema verify` says more',
+      'this record does not verify: local integrity FAILED see issues (the page says so to its readers, and `mnema verify` says more)',
     );
   });
 });

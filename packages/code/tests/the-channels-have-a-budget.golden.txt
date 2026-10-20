@@ -1,15 +1,15 @@
 The size of every channel the model reads, over one fixture record.
 Bytes are UTF-8; tokens are o200k_base, a relative measure and not what a Claude model bills.
 
-session start: brief --hook                  2477 B      661 tok
-session start: recall --hook                  820 B      200 tok
-file form: brief (what MNEMA.md carries)     2534 B      676 tok
+session start: brief --hook                  2462 B      660 tok
+session start: recall --hook                  811 B      200 tok
+file form: brief (what MNEMA.md carries)     2519 B      676 tok
 instructions                                 2044 B      470 tok
-edit: rules pushed                            334 B       93 tok
-edit: asks for a person                       518 B      138 tok
-edit: refuses the write                       646 B      185 tok
+edit: rules pushed                            331 B       92 tok
+edit: asks for a person                       515 B      137 tok
+edit: refuses the write                       643 B      184 tok
 tool answer: bootstrap                       2104 B      784 tok
-tool answer: skills                           305 B       90 tok
+tool answer: skills                           302 B       89 tok
 tool answer: focus                            743 B      295 tok
 tool answer: resume                          1127 B      439 tok
 tool answer: search                          1305 B      464 tok
@@ -22,8 +22,8 @@ tool answer: next_actions ["id"]              106 B       28 tok
 tool answer: audit_accountability             916 B      276 tok
 tool answer: audit_exposure                    82 B       26 tok
 tool answer: audit_antipatterns               301 B       74 tok
-tool answer: record_decision                  152 B       48 tok
-tool answer: capture_memory                   146 B       44 tok
+tool answer: record_decision                  149 B       48 tok
+tool answer: capture_memory                   143 B       44 tok
 tool definition: capture_memory              2125 B      456 tok
 tool definition: record_observation          2433 B      528 tok
 tool definition: retract_note                1841 B      416 tok
