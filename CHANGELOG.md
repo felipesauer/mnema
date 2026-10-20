@@ -188,10 +188,10 @@ with its own changelog.
 ### Changed
 
 - **The rest of what the program prints no longer carries an em dash.** The lines of `mnema doctor` (what it found
-  and what to do about it), of `mnema key` (the lines for an agent's or a checker's key, enrolling and retiring
+  and what to do about it), of the key commands (the lines for an agent's or a checker's key, enrolling and retiring
   one), of `mnema verify` (what each tree says, the notes about `--against-github` and `--against-sigstore`, and
-  the lines `--since` prints: `gone: <file> ...`, `rewritten: <file> ...`), of `mnema witness`, of `mnema decision
-  import` (`docs/adr/0002.md: no level-1 title; nothing names the decision`), of `mnema task next` and `timeline`
+  the lines `--since` prints: `gone: <file> ...`, `rewritten: <file> ...`), of `mnema witness`, of the decision import
+  (`docs/adr/0002.md: no level-1 title; nothing names the decision`), of the task commands and `timeline`
   (`Task <id>: 2 legal move(s):`), of the line after `run start` (`for <agent>: <goal>`), of `rules-file`, and the
   help of every command now use a colon, a comma, a semicolon or parentheses where the dash stood. Where the dash
   was a pair, commas or parentheses stand in; where it joined a label to what it says, a colon does. Nothing else in
