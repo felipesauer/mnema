@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 30, name: 47, flag: 1 },
+  'CHANGELOG.md': { line: 32, name: 47, flag: 1 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -685,14 +685,14 @@ export const HANDED_OVER: Readonly<
   'docs/packages.md': { line: 1, name: 2 },
   'docs/site.md': { line: 1, name: 3 },
   'docs/verify-without-installing.md': { name: 1 },
-  'docs/what-it-proves.md': { line: 4, name: 8 },
+  'docs/what-it-proves.md': { line: 5, name: 8 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 14, name: 12 },
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 82, name: 105, flag: 2 },
+  'docs/cli-reference.md': { line: 87, name: 106, flag: 2 },
   'packages/code/README.md': { line: 1, name: 5 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
