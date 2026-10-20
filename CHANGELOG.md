@@ -178,8 +178,8 @@ with its own changelog.
   first request that carries a list of tools is read off what each real host sends its stand-in model, in the
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
-  definition of all 27 (49,914, 50,040, 50,967 and 56,740 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
-  a relative measure), against 54,242 bytes and 12,303 tokens for the server's own listing; Codex carries none and
+  definition of all 27 (49,902, 50,028, 50,955 and 56,728 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
+  a relative measure), against 54,230 bytes and 12,303 tokens for the server's own listing; Codex carries none and
   one `tool_search` entry that lists the server (2,882 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
@@ -213,8 +213,20 @@ with its own changelog.
   Nothing else in those lines changed: where a dash was a pair, commas or parentheses stand in; where it joined a
   label to its description, a colon does. A file generated before keeps its old characters until it is generated
   again, and the check that compares it with the record will say so. The importer of decision files written by others
-  still reads a dash in a title. The replies of the MCP server and the lines `verify` prints keep their dash for now.
+  still reads a dash in a title. The replies of the MCP server keep their dash for now.
   The recordings on the front page were made again with the binary, so they show the new lines.
+
+- **The lines `verify` prints, the Action's comment and the refusals of the core no longer carry an em dash.** The
+  headline of a level reads `local integrity verified (T1 only): no signature was checked`, and
+  `local integrity FAILED: see issues`, a colon where a dash stood; the lines about a tail's census, about the external
+  witness (`external witness (T3): covered, Bitcoin block ...`) and the sentence for an author that is not covered
+  read with a colon, a comma or a hyphen in the same way, and so does the comment the Action posts and the messages
+  with which the core refuses a write. The second reader written in Python says the not-covered sentence in the same
+  words. `mnema init` writes the header of `.mnema/.gitignore` and `.mnema/.gitattributes`
+  without a dash in a repository that has none; a file that already exists is not rewritten, so the old header stays
+  in a repository that was initialized before. The recordings `first-record`, `a-write-refused` and `console` were made
+  again with the binary. The description of the tools `skills` and `search` lost its two dashes as well, so the
+  `tools/list` is 12 bytes smaller (6 for `skills` and 6 for `search`), and the four weights above are the new ones.
 
 - **Every link in the body of a published package's README is a full address on `main`.** The five pages
   (`@mnema/chain`, `@mnema/core`, `@mnema/context`, `@mnema/stacks` and `@mnema/code`) had 22 relative links, such as

@@ -33,9 +33,9 @@ describe('renderComment checks', () => {
   it('says so in one line when a check was asked for and no rule carries one', () => {
     const text = renderComment({
       ...quiet,
-      checks: { passed: true, said: 'No rule in force carries a check — nothing ran.' },
+      checks: { passed: true, said: 'No rule in force carries a check: nothing ran.' },
     });
-    expect(text).toContain('No check ran: No rule in force carries a check — nothing ran.');
+    expect(text).toContain('No check ran: No rule in force carries a check: nothing ran.');
   });
 
   it('cuts a comment that would pass the size GitHub accepts, and says so', () => {
@@ -60,9 +60,9 @@ describe('renderComment', () => {
     const text = renderComment(busy);
     expect(text).toContain('3 new events');
     expect(text).toContain('| `decision.transitioned` | 2 |');
-    expect(text).toContain('- ADR-1 — Keep money as integer cents: accepted');
+    expect(text).toContain('- ADR-1: Keep money as integer cents (accepted)');
     expect(text).toContain(
-      '- `src/billing/invoice.ts` — governed by Keep money as integer cents (`d1`)',
+      '- `src/billing/invoice.ts`: governed by Keep money as integer cents (`d1`)',
     );
     expect(text).toContain('`verify --require=signed --since <base>`): passed');
   });

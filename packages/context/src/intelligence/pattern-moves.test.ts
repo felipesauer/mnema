@@ -246,7 +246,7 @@ describe('patternMoveWitness, which of three answers the record gives about a mo
     // be the claim that the third answer is not an accusation.
     const witness = patternMoveWitness([]);
     expect(witness.note).toContain(
-      'a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting',
+      'a move whose run recorded no consultation at all is NOT OBSERVABLE here: never a move made without consulting',
     );
     expect(witness.note).toContain(
       'a consultation is recorded when the AGENT surface serves a body',

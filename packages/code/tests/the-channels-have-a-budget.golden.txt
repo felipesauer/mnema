@@ -37,12 +37,12 @@ tool definition: decision_transition         2290 B      509 tok
 tool definition: create_skill                2466 B      545 tok
 tool definition: skill_transition            1924 B      437 tok
 tool definition: bootstrap                   2291 B      570 tok
-tool definition: skills                      2514 B      589 tok
+tool definition: skills                      2508 B      589 tok
 tool definition: focus                       1221 B      286 tok
 tool definition: resume                      1300 B      302 tok
 tool definition: next_actions                 836 B      193 tok
 tool definition: guard                       2886 B      676 tok
-tool definition: search                      2688 B      629 tok
+tool definition: search                      2682 B      629 tok
 tool definition: read_record                 1371 B      322 tok
 tool definition: audit_timeline               975 B      224 tok
 tool definition: audit_refs                  1502 B      369 tok
@@ -51,4 +51,4 @@ tool definition: rules_before_an_edit        2426 B      546 tok
 tool definition: audit_accountability        1986 B      440 tok
 tool definition: audit_exposure              1626 B      364 tok
 tool definition: audit_antipatterns          1447 B      314 tok
-tool definitions: all 27                    54242 B    12303 tok
+tool definitions: all 27                    54230 B    12303 tok

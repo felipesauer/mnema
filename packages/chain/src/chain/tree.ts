@@ -45,7 +45,7 @@ import { type ChainLayout, gitattributesPath, gitignorePath } from './layout.js'
  * elsewhere the project might track.
  */
 const GITIGNORE_CONTENT = [
-  "# Managed by mnema — this file governs only mnema's own tree.",
+  "# Managed by mnema: this file governs only mnema's own tree.",
   '# The private subtree: this machine only, never shared.',
   '/private/',
   '# Machine-local key material: the private key and per-install ids never commit;',
@@ -73,7 +73,7 @@ const LOCKS_LINE = '/locks/';
  * not stopped by it: the readers then name the carriage return in their refusal.
  */
 const GITATTRIBUTES_CONTENT = [
-  "# Managed by mnema — this file governs only mnema's own tree.",
+  "# Managed by mnema: this file governs only mnema's own tree.",
   '# The record is signed bytes: never rewrite its line ends on checkout.',
   '* -text',
   '',

@@ -173,10 +173,10 @@ describe('how a level reads', () => {
     // The two wordings that must not drift, because a reader learned them: the
     // record that is entirely proven, and the one with a real break.
     expect(levelHeadline('fully-signed')).toBe('local integrity verified (T1/T2/T4)');
-    expect(levelHeadline('broken')).toBe('local integrity FAILED — see issues');
+    expect(levelHeadline('broken')).toBe('local integrity FAILED: see issues');
     // The two that used to borrow the first one.
     expect(levelHeadline('hash-chain-only')).toBe(
-      'local integrity verified (T1 only) — no signature was checked',
+      'local integrity verified (T1 only): no signature was checked',
     );
     expect(levelHeadline('signed-through-last-checkpoint')).toBe(
       'local integrity verified (T1/T2/T4) up to the last checkpoint',

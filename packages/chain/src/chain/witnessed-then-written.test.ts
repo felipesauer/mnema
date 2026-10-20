@@ -56,7 +56,7 @@ const ATTESTED_AT = '2026-08-25T01:47:34.000Z';
 
 /** What the whole verdict says about this record, in one line, to the byte. */
 const THE_CLAUSE =
-  `external witness (T3): not covered — the last attested checkpoint is dated by ` +
+  `external witness (T3): not covered, the last attested checkpoint is dated by ` +
   `Bitcoin block ${BLOCK} at ${ATTESTED_AT}, with 1 event(s) written after it`;
 
 let root: string;
@@ -152,7 +152,7 @@ describe('a record that was dated, and then written to', () => {
     for (const hash of [OLDER, NEWER]) rmSync(witnessBlocksPath({ root }, TAIL, hash));
     const result = verify(root, catalogUpcasters());
     expect(clauseOf(result)).toBe(
-      'external witness (T3): PENDING, which is not coverage — anchored in Bitcoin ' +
+      'external witness (T3): PENDING, which is not coverage: anchored in Bitcoin ' +
         `block ${BLOCK}, whose header this record does not carry`,
     );
     expect(result.summary).not.toContain('nothing outside this machine attests this record');
@@ -191,7 +191,7 @@ describe('a record that was dated, and then written to', () => {
     // still carries the header that dates it, and the NEWER one's was removed above, so
     // its own attestation in the same block cannot be folded here.
     expect(clauseOf(result)).toBe(
-      `external witness (T3): PENDING, which is not coverage — the last attested checkpoint ` +
+      `external witness (T3): PENDING, which is not coverage: the last attested checkpoint ` +
         `is dated by Bitcoin block ${BLOCK} at ${ATTESTED_AT}, with 2 event(s) written after ` +
         `it, and anchored in Bitcoin block ${BLOCK}, whose header this record does not carry`,
     );
@@ -207,7 +207,7 @@ describe('a record that was dated, and then written to', () => {
       rmSync(witnessBlocksPath({ root }, TAIL, hash));
     }
     expect(clauseOf(verify(root, catalogUpcasters()))).toBe(
-      'external witness (T3): not covered — nothing outside this machine attests this record',
+      'external witness (T3): not covered, nothing outside this machine attests this record',
     );
   });
 });

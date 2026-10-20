@@ -245,7 +245,7 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
       ok: false,
       code: 'INVALID_ANCHOR',
       message:
-        `"${oneLine(input.anchor)}" is not an identity id — an identity looks like ` +
+        `"${oneLine(input.anchor)}" is not an identity id: an identity looks like ` +
         `${ANCHOR_PREFIX}<64 hex>, as printed when a project is founded`,
     };
   }
@@ -346,7 +346,7 @@ export function requestAgentEnrollment(input: AgentRequestInput): AgentRequestOk
       ok: false,
       code: 'INVALID_ANCHOR',
       message:
-        `"${oneLine(input.anchor)}" is not an identity id — an identity looks like ` +
+        `"${oneLine(input.anchor)}" is not an identity id: an identity looks like ` +
         `${ANCHOR_PREFIX}<64 hex>, as printed when a project is founded`,
     };
   }
@@ -360,7 +360,7 @@ export function requestAgentEnrollment(input: AgentRequestInput): AgentRequestOk
         ok: false,
         code: 'PROTECTED_AGENT_KEY',
         message:
-          `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at — ` +
+          `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at: ` +
           'leave the key out and `mnema key request --agent <name> --anchor <your identity>` makes the agent one that is not protected',
       };
     }

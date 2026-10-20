@@ -166,7 +166,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
 | Claim | What actually holds |
 |---|---|
-| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed: the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
+| **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed: the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only): no signature was checked`), and only the first of those means every event is covered. |
 | **`verify` covered the record** | Both trees of the project: the committed one and this machine's private one, each with its own verdict under its own name. The exit code is the **weakest** of them, so a gate cannot pass because one tree is healthy. It used to cover the committed tree alone, which said nothing about signed facts written `--scope private`. This machine's **global** tree is a third record, shared by every project on the disk; `mnema verify --global` covers it, and nothing does by default. |
 | **`verify` covered every project** | Only the ones you **named**: `mnema verify --workspace <path...>` gives one verdict over the projects at those paths, and a bare `verify` covers the project you are standing in. The set is never searched for: nothing walks the disk looking for a `.mnema/`, so no verdict of yours covers a project you did not name. Two names of one record (the same path twice, a subdirectory of one already named, a symlink) count **once**; a named path with no record is reported, left **out** of the level, counted at the end, and makes the exit non-zero: naming a path is asserting that it is a project, so a typo in a CI step is news rather than a silent pass, and `--allow-no-record` is how a caller declares otherwise. The aggregate is the weakest project's, so nothing passes on another project's proof, and a set in which no path holds a record exits non-zero rather than reading as a pass over nothing. Costs one full replay per project. |
 | **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree never travels with a clone, so a fresh clone has none, and *absent* is not *broken*. |
@@ -287,7 +287,7 @@ mnema verify
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
 #> /home/you/work/api public: local integrity verified (T1/T2/T4); …
-#> /home/you/work/web public: local integrity FAILED — see issues; …
+#> /home/you/work/web public: local integrity FAILED: see issues; …
 #> …
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
@@ -306,7 +306,7 @@ others.** This paragraph used to say `verify` exits non-zero "when the record is
 broken" and leave it there, which reads as a promise about forgery. It is not one.
 Measured, against a record forged by hand: rewrite one fact, recompute the hash
 links with this product's own function, empty that tail's `checkpoints.jsonl`, and
-`mnema verify` exits **0**, printing `local integrity verified (T1 only) — no
+`mnema verify` exits **0**, printing `local integrity verified (T1 only): no
 signature was checked`, while `mnema search` serves the forged fact. Nothing is
 broken there: the hash chain is consistent, and the signatures that would have
 contradicted it are gone. A crude edit (a `sed`, no rehash) *is* caught and exits
@@ -341,7 +341,7 @@ signature was checked` over the record it cannot vouch for.
 
 **And what neither value answers, said plainly.** One tail removed whole while another
 remains is reported but is not a break: `verify` crosses the committed keys against the tails on disk and prints
-`N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
+`N committed key(s) without a tail (see census: informational, not a break)`, exit 0.
 One key is said otherwise: the backup `mnema init` creates never signs until it is
 restored, and `init` declares it in the record (`backup.declared`), so every machine reads
 `N backup key(s), which sign nothing until restored`, and its census line (`--verbose`) still says that a backup
@@ -1743,12 +1743,12 @@ quote it:
 
 ```sh
 mnema witness upgrade
-#> 8f21ab…-3c9d0e… (public): completed — the attestation over checkpoint f84396… has confirmed
-#>   external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
+#> 8f21ab…-3c9d0e… (public): completed: the attestation over checkpoint f84396… has confirmed
+#>   external witness (T3): covered: Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 
 mnema verify --require=witnessed
 #> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
-#> signature-covered; external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
+#> signature-covered; external witness (T3): covered, Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 #> (the work of its block header was checked here, not its place in the Bitcoin chain)
 ```
 
