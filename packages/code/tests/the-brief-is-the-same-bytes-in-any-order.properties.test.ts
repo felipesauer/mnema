@@ -168,7 +168,7 @@ describe('P4: the brief prints the same bytes whatever order the record is met i
               expect(backward.bytes).toBe(forward.bytes);
               expect(reopened.bytes).toBe(forward.bytes);
 
-              // What is listed is what was accepted — read off the drawing, not off the reading.
+              // What is listed is what was accepted: read off the drawing, not off the reading.
               const accepted = [
                 ...first.flatMap((rule, index) =>
                   rule.outcome === 'accepted' ? [`Rule 0.${index}`] : [],

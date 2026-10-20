@@ -3,12 +3,12 @@
  *
  * A freshly founded project used to be answered with three things: the verdict, a census note about
  * the backup key `init` makes (which says the key signs nothing until it is restored), and a line
- * saying the private tree holds no record. Both are true and neither is news — they were the loudest
+ * saying the private tree holds no record. Both are true and neither is news: they were the loudest
  * part of the first verdict a newcomer reads, over a record with nothing wrong in it.
  *
  * WHAT MOVES AND WHAT NEVER DOES. Only what is informational goes behind the flag: the backup-key
  * census note and the PRIVATE tree's "no record here". A break with its evidence, a global tree that
- * holds nothing, and the exit code are the same with the flag and without it — the flag adds
+ * holds nothing, and the exit code are the same with the flag and without it: the flag adds
  * lines and never removes a warning, so the cases that must stay loud are here beside the ones that
  * go quiet.
  *
@@ -139,7 +139,7 @@ describe('a clean verify says the verdict and stops', () => {
   it('keeps an agent the key only declared behind --verbose, and out of the verdict', async () => {
     // A `which` written by a key without the agent role is what every record carries today: the
     // key that signed stated it, and nothing holds it. True, informational, and on nearly every
-    // record — so it is said where the notes are listed, and the clean verdict stays one line.
+    // record, so it is said where the notes are listed, and the clean verdict stays one line.
     await found();
     await record('write the runbook');
     await record('ask the agent for it', '--which', 'claude');
@@ -245,7 +245,7 @@ describe('--verbose never carries what is not informational', () => {
 
   it('says a global tree that holds nothing without the flag, as it does with it', async () => {
     // Only the PRIVATE tree's empty line waits for --verbose: asked for the global tree, a reader
-    // is told it holds nothing in a clean reading too. (The committed tree is never empty here —
+    // is told it holds nothing in a clean reading too. (The committed tree is never empty here:
     // the project is found by it, and an empty one still gets a verdict.)
     await found();
 

@@ -1,5 +1,5 @@
 /**
- * THE OPENING AND THE DOCTOR SAY NO MORE THAN THEY PROVE — held on the built binary.
+ * THE OPENING AND THE DOCTOR SAY NO MORE THAN THEY PROVE: held on the built binary.
  *
  * The opening a session starts from names the stacks the record says are adopted, and the record
  * is read, not trusted: a fact appended past the write door (the door refuses what these facts

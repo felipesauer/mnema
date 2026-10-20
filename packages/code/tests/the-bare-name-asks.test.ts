@@ -1,5 +1,5 @@
 /**
- * THE BARE NAME ASKS WHAT YOU WANT — at a terminal, and nowhere else.
+ * THE BARE NAME ASKS WHAT YOU WANT: at a terminal, and nowhere else.
  *
  * `mnema` with nothing after it printed the catalogue: twenty-nine verbs at once, with the
  * options above them. That is the right answer for somebody who knows what they are looking
@@ -9,7 +9,7 @@
  * THE HALF EVERYTHING RESTS ON IS THE OTHER ONE. Without a terminal the answer did not move
  * by a byte: the help, on stderr, with the exit code of one. Every shell pipeline, every
  * script and every CI job that has ever run this binary with no arguments is on that side of
- * the decision, and `src/cli.help.golden.txt` is where those bytes are pinned — this file is
+ * the decision, and `src/cli.help.golden.txt` is where those bytes are pinned: this file is
  * what says the entry DELEGATES to the very call the golden drives, and what says the
  * question really does appear when the same call is made at a device.
  *
@@ -49,7 +49,7 @@ import {
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { held } from './support/the-record-held.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** `packages/code/src`, for the guards that read this surface's own source. */
@@ -79,7 +79,7 @@ const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => u
 const verbs = buildProgram(quiet).verbs;
 
 /**
- * THE DOORS THE PRODUCT COMPOSES, in each state a directory can be in — asked of the module
+ * THE DOORS THE PRODUCT COMPOSES, in each state a directory can be in: asked of the module
  * that composes them rather than retyped.
  *
  * It is the link between what this file reads off a screen and what the surface decided: a
@@ -95,7 +95,7 @@ const doorsIn = (inProject: boolean) => theDoors(verbs, inProject);
 let sandbox: string;
 /** A directory with a project in it. */
 let project: string;
-/** A directory with no project anywhere above it — where the first door is `init`. */
+/** A directory with no project anywhere above it, where the first door is `init`. */
 let nowhere: string;
 let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
@@ -153,7 +153,7 @@ async function inPty(options: {
   return await drive(fixture, {
     columns: options.columns ?? 100,
     // THE DEFAULT HEIGHT IS THE FLOOR'S, and it was thirty. What these cases are about is which
-    // door a bare name offers, so the size was never the subject — but a window under the floor
+    // door a bare name offers, so the size was never the subject, but a window under the floor
     // draws no console at all (`src/repl/floor.ts`), and a door that opens onto the screen saying
     // the window is too small would answer every one of them.
     rows: options.rows ?? THE_FLOOR.rows,
@@ -164,8 +164,8 @@ async function inPty(options: {
 /**
  * A WHOLE FRAME THIS STEP CAUSED, WITH `what` ON IT.
  *
- * The question has no row being typed, so the usual wait — a finished frame carrying the
- * prompt — cannot be used: what a step waits for is a string of the page, arriving since the
+ * The question has no row being typed, so the usual wait, a finished frame carrying the
+ * prompt, cannot be used: what a step waits for is a string of the page, arriving since the
  * step began, at a frame boundary. The first half keeps it from ending on a frame that was
  * already in flight and the second from reading half of one (`support/pty.ts`).
  */
@@ -178,7 +178,7 @@ function aFrameSaying(what: string): (bytes: string, since: number) => boolean {
  *
  * WHAT IT WAITS FOR IS THE DOOR THAT DEPENDS ON THE DIRECTORY, not the one both states
  * share. Waiting for the catalogue would be waiting for something a page composed against
- * the WRONG state also carries — so the mutation that fixes the doors would sail past this
+ * the WRONG state also carries, so the mutation that fixes the doors would sail past this
  * step and die later, on whichever assertion happened to come first. Named after that door
  * for the same reason: a red that says which door never appeared is a red about the defect.
  */
@@ -209,7 +209,7 @@ describe('with no terminal the bare name is the help it always was', () => {
   ): Promise<{ readonly said: string; readonly failed: boolean }> {
     const lines: string[] = [];
     let failed = false;
-    // ONE CALL MAY CARRY SEVERAL LINES — commander hands its whole help over in one write —
+    // ONE CALL MAY CARRY SEVERAL LINES: commander hands its whole help over in one write,
     // so the prefix goes on each of them, exactly as the golden's own encoder does. A helper
     // that prefixed the call rather than the line would compare two strings that are equal
     // and say nothing about which stream the rest of the rows went to.
@@ -229,11 +229,11 @@ describe('with no terminal the bare name is the help it always was', () => {
   }
 
   /**
-   * THE INVOCATION, HELD TO ANSWERING AT ALL — and a red that says what went wrong.
+   * THE INVOCATION, HELD TO ANSWERING AT ALL: and a red that says what went wrong.
    *
    * A verb that prints and exits comes back; a QUESTION does not, because it is waiting for a
    * key nobody is going to press. So the way this case fails when the terminal is taken out
-   * of the decision is that the call never returns — and a bare `await` turns that into the
+   * of the decision is that the call never returns, and a bare `await` turns that into the
    * runner's own *test timed out*, which names the case and not the defect. Measured: the
    * mutation that lets the question appear without a terminal produced exactly that message.
    * What is raced against it is a message that says what happened.
@@ -267,7 +267,7 @@ describe('with no terminal the bare name is the help it always was', () => {
     );
     expect(asEntry.said, 'the entry no longer answers what the golden pins').toBe(asRun.said);
     expect(asEntry.failed, 'the exit code moved').toBe(asRun.failed);
-    // AND IT IS THE CATALOGUE, ON STDERR, WITH A NON-ZERO EXIT — asserted rather than left
+    // AND IT IS THE CATALOGUE, ON STDERR, WITH A NON-ZERO EXIT: asserted rather than left
     // to the equality above, which two empty transcripts would also satisfy.
     expect(asEntry.failed, 'the bare name stopped failing').toBe(true);
     expect(asEntry.said, 'the catalogue is not on stderr').toContain('! Usage: mnema');
@@ -277,7 +277,7 @@ describe('with no terminal the bare name is the help it always was', () => {
 
   it('would say something else the moment a terminal is claimed', async () => {
     // THE NON-VACUITY OF THE CASE ABOVE, and the mutation the handoff names: the same call,
-    // the same argv, the same port — and BOTH ends a terminal. It must not print the help,
+    // the same argv, the same port, and BOTH ends a terminal. It must not print the help,
     // and it must draw the question instead.
     const terminal = fakeTerminal({ columns: 100, rows: THE_FLOOR.rows });
     const lines: string[] = [];
@@ -327,7 +327,7 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
     expect(theMarkedRow(question), 'the mark did not open on the first door').toContain(
       doors[0]?.word as string,
     );
-    // AND ENTER OPENED THE CONSOLE — the one thing only the chosen line can produce.
+    // AND ENTER OPENED THE CONSOLE: the one thing only the chosen line can produce.
     expect(ran.bytes, 'Enter on the first door did not open the console').toContain(OPENED);
     expect(ran.bytes, 'there is no row being typed').toContain(PROMPT);
   }, 300_000);
@@ -363,7 +363,7 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
         // ONE DOWN MOVES THE MARK, and that is a frame this step really caused.
         { types: DOWN, until: aFrameSaying(PICK), what: 'moved down' },
         // A SECOND DOWN HOLDS, AND A HOLD DRAWS NOTHING. The rows it would produce are the
-        // rows already on the screen, so the layout writes not one byte — which is why this
+        // rows already on the screen, so the layout writes not one byte, which is why this
         // step may not wait for a frame of its own (`support/pty.ts`, `aFrameSince`). What
         // says the mark held is what RETURN then chose: had the second Down wrapped round to
         // the first door, the console would have opened instead of the catalogue. The two
@@ -379,7 +379,7 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
     expect(theMarkedRow(moved), 'one Down did not move the mark to the last door').toContain(
       doors[1]?.word as string,
     );
-    // AND THE CATALOGUE IS WHAT CHOOSING IT PRINTED — every verb, which is what the door said, down to its last heading.
+    // AND THE CATALOGUE IS WHAT CHOOSING IT PRINTED: every verb, which is what the door said, down to its last heading.
     expect(ran.bytes, 'the catalogue was not printed').toContain('Usage: mnema');
     expect(ran.bytes, 'the catalogue is not the whole catalogue').toContain('Help:');
     // AND THE CONSOLE WAS NOT OPENED, which is what a Down that wrapped would have produced.
@@ -389,7 +389,7 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
   it('holds at the first door when the arrows are walked up from it', async () => {
     // THE OTHER END, AND IT DRAWS NOTHING AT ALL: the mark opens on the first door, so every
     // Up from there is a hold and no frame is written for any of them. What answers is again
-    // what RETURN chose — the console, which is the first door — where a list that wrapped
+    // what RETURN chose (the console, which is the first door) where a list that wrapped
     // would have taken the last one and printed the catalogue.
     const ran = await inPty({
       where: project,
@@ -493,7 +493,7 @@ describe('every site that rules on the bare name, and every one that asks for a 
 
   it('rules on the bare name in ONE place, and that place is the entry', () => {
     // THE DISCRIMINANT IS THE COMPARISON, not a list of files. What happens when no verb was
-    // given used to be commander's alone — reached from `run` — and there is now a decision in
+    // given used to be commander's alone, reached from `run`, and there is now a decision in
     // front of it. A SECOND site would be a second answer to *was anything typed*, and the two
     // would disagree the first time one of them moved.
     const ruling = modules()
@@ -523,14 +523,14 @@ describe('every site that rules on the bare name, and every one that asks for a 
       .map((module) => module.where)
       .sort();
     // The verbs, which refuse outside a project; the two surfaces' own context; the console's
-    // status line; and — the site this delivery adds — the question the bare name asks, which
+    // status line; and, the site this delivery adds, the question the bare name asks, which
     // reaches it through the console's own reading rather than through a thirtieth spelling.
     expect(asking).toContain('choice/asked.ts');
     expect(asking).toContain('repl/standing.ts');
     expect(asking.length, 'the scan found almost nothing').toBeGreaterThan(20);
     // AND THE NEW SITE ASKS IT THROUGH THE ONE FUNCTION THAT ALREADY ANSWERED IT for a
-    // surface: `standing()` is where the console reads the same fact, and a second reading —
-    // an `existsSync` over a directory name, say — would be a second idea of what a project is.
+    // surface: `standing()` is where the console reads the same fact, and a second reading
+    // (an `existsSync` over a directory name, say) would be a second idea of what a project is.
     const asked = modules().find((module) => module.where === 'choice/asked.ts');
     expect(asked?.code, 'the question invented its own way of finding a project').toContain(
       'standing()',

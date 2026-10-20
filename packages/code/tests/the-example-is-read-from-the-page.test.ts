@@ -1,5 +1,5 @@
 /**
- * THE EXAMPLE A PACKAGE PUBLISHES IS THE EXAMPLE THAT RUNS — line for line.
+ * THE EXAMPLE A PACKAGE PUBLISHES IS THE EXAMPLE THAT RUNS: line for line.
  *
  * WHAT WAS HERE BEFORE, AND WHY IT WAS NOT A GUARD. One package had a case called
  * `readme-example.test.ts` whose header said *"If this drifts from the README, fix one or
@@ -163,7 +163,7 @@ function firstDifference(page: readonly string[], runs: readonly string[]): stri
 
 describe('the example a package publishes is the example that runs', () => {
   for (const example of PUBLISHED_EXAMPLES) {
-    it(`@mnema/${example.pkg} — the page's block IS the case's body`, () => {
+    it(`@mnema/${example.pkg}: the page's block IS the case's body`, () => {
       const page = pageBody(publishedBlock(read(example.readme)), example.elided);
       const runs = runnableBody(read(example.test));
       // Named first so a failure reads as the one line that moved rather than as two
@@ -172,7 +172,7 @@ describe('the example a package publishes is the example that runs', () => {
       expect(page).toEqual(runs);
     });
 
-    it(`@mnema/${example.pkg} — the page imports what the case imports`, () => {
+    it(`@mnema/${example.pkg}: the page imports what the case imports`, () => {
       const onThePage = importedNames(publishedBlock(read(example.readme)));
       const inTheCase = importedNames(read(example.test).split('\n'));
       const declared = Object.keys(example.specifiers).sort();
@@ -184,7 +184,7 @@ describe('the example a package publishes is the example that runs', () => {
       }
     });
 
-    it(`@mnema/${example.pkg} — every elided line is still on the page`, () => {
+    it(`@mnema/${example.pkg}: every elided line is still on the page`, () => {
       const below = belowTheImports(publishedBlock(read(example.readme)));
       expect(below.slice(0, example.elided.length)).toEqual([...example.elided]);
     });
@@ -243,7 +243,7 @@ describe('the comparison FIRES', () => {
     expect(firstDifference(page.slice(0, -1), page)).not.toEqual([]);
   });
 
-  it('identical bodies are no difference at all — the reading is not stuck on red', () => {
+  it('identical bodies are no difference at all: the reading is not stuck on red', () => {
     expect(firstDifference(page, [...page])).toEqual([]);
   });
 
@@ -255,7 +255,7 @@ describe('the comparison FIRES', () => {
   it('an elision is removed only where the page still carries it', () => {
     const block = ["import { a } from 'x';", '', 'const root = 1;', 'a(root);'];
     expect(pageBody(block, ['const root = 1;'])).toEqual(['a(root);']);
-    // The stale elision does not match, so nothing is dropped and the body stays whole —
+    // The stale elision does not match, so nothing is dropped and the body stays whole:
     // a difference the comparison then reports, rather than a line quietly swallowed.
     expect(pageBody(block, ['const root = 2;'])).toEqual(['const root = 1;', 'a(root);']);
   });

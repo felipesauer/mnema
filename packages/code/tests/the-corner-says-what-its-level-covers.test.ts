@@ -1,5 +1,5 @@
 /**
- * THE CORNER OF THE CONSOLE, WHEN THE RECORD MOVES UNDER THE SESSION — on a real
+ * THE CORNER OF THE CONSOLE, WHEN THE RECORD MOVES UNDER THE SESSION: on a real
  * pseudo-terminal, with a real break, planted by another process while the page is up.
  *
  * ## What it was
@@ -10,8 +10,8 @@
  * stays quiet while the record is broken is the one failure this surface may not have"*.
  *
  * Measured, and it is why this file exists: with a duplicate of the tail's last entry
- * appended DURING the session — the same seq, the same prev, which is what two writers
- * appending at once used to leave — the body of the page printed `seq gap: expected 8,
+ * appended DURING the session (the same seq, the same prev, which is what two writers
+ * appending at once used to leave) the body of the page printed `seq gap: expected 8,
  * found 7` and the corner, IN THE SAME FRAME, said `fully-signed`. The surface disagreed
  * with itself on one screen. The sentence was true about the opening and false about every
  * instant after it.
@@ -20,15 +20,15 @@
  *
  * The badge used to be a PROP of the frame, composed once and handed to the layout, and
  * the question this file asks is whether a row that is fixed for the session can stop
- * being fixed without anything else on the page moving. Both halves of that — the row
- * changing, and nothing else changing with it — are about frames a device received. A case
+ * being fixed without anything else on the page moving. Both halves of that (the row
+ * changing, and nothing else changing with it) are about frames a device received. A case
  * that called the composer would prove the words and say nothing about whether they ever
  * reach a screen.
  *
  * ## What it does NOT claim, and the claim is narrower than the defect
  *
  * The corner does not detect a break. What it asks is the cheap question the follower
- * beside it already pays for — whether the chain MOVED — so a sound append degrades it
+ * beside it already pays for, whether the chain MOVED, so a sound append degrades it
  * exactly as a planted duplicate does, and the second run below asserts precisely that
  * rather than leaving it to be discovered. Ruling again is `verify`, which the row names
  * and which costs 54 ms over a small record and 1.7 s over a nine-megabyte one (measured
@@ -59,7 +59,7 @@ import {
 } from './support/pty.js';
 import { theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at, and what the other process runs. */
+/** The built CLI: the same file the `mnema` bin points at, and what the other process runs. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it. */
@@ -70,7 +70,7 @@ const PROMPT = 'mnema>';
  *
  * Built from its CODE POINT rather than typed, like every unusual byte in this
  * repository: a control character in a source file is a byte nobody can see, and the
- * guard that says so is `the-prose-carries-its-own-emphasis.test.ts` — which is what
+ * guard that says so is `the-prose-carries-its-own-emphasis.test.ts`, which is what
  * caught this line.
  */
 const CLEARS_THE_LINE = String.fromCodePoint(0x03);
@@ -79,7 +79,7 @@ const COLUMNS = 140;
 const ROWS = THE_FLOOR.rows;
 
 /**
- * WHAT A SOUND TREE'S VERDICT SAYS, and what a broken one's says — the two the body of the
+ * WHAT A SOUND TREE'S VERDICT SAYS, and what a broken one's says: the two the body of the
  * page prints, read off the product rather than retyped.
  *
  * They are what the CORNER is compared against: the whole subject of this file is the two
@@ -90,7 +90,7 @@ const FAILED = 'local integrity FAILED';
 
 /**
  * THE CLAUSE THE CORNER ADDS once its level has stopped covering the record, as the module
- * that composes it composes it — never retyped.
+ * that composes it composes it, never retyped.
  *
  * It is taken as the DIFFERENCE between the two rows rather than written out, so a case
  * here cannot come to expect a wording the product does not use: whatever
@@ -126,8 +126,8 @@ async function shell(...argv: string[]): Promise<string> {
 /**
  * A PROJECT OF ITS OWN PER RUN, and the reason is the first run's subject.
  *
- * One of the two sessions below BREAKS its record and leaves it broken — that is what it
- * is for — and the other one's whole assertion is that a sound record leaves the corner
+ * One of the two sessions below BREAKS its record and leaves it broken (that is what it
+ * is for) and the other one's whole assertion is that a sound record leaves the corner
  * where it was. Sharing a tree between them would make the second case read a record the
  * first one broke, which is a fixture proving nothing about the product (measured: it
  * waited for a verdict the tree could no longer give and timed out).
@@ -147,7 +147,7 @@ function elsewhere(at: string, ...argv: string[]): string {
 }
 
 /**
- * The committed tail's one segment file — the bytes a plant is made in.
+ * The committed tail's one segment file: the bytes a plant is made in.
  *
  * The tail is read off the DIRECTORY rather than named here: which tail this machine
  * writes is a function of its key, so a name written down would be a fixture about
@@ -208,7 +208,7 @@ const fixture = (project: string): Fixture => ({
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
-/** The row of a screen the corner is on — the one holding the badge's mark. */
+/** The row of a screen the corner is on: the one holding the badge's mark. */
 function theCornerOf(rows: readonly string[]): string {
   const found = rows.filter((row) => row.includes('◉'));
   expect(found.length, `rows with the badge mark:\n${rows.join('\n')}`).toBe(1);
@@ -239,7 +239,7 @@ describe('the corner stops claiming a level about a record it has not read', () 
       steps: [
         opensAConsole(PROMPT),
         {
-          // THE BODY SAYS THE RECORD IS SOUND, BEFORE ANYTHING MOVES — so the corner
+          // THE BODY SAYS THE RECORD IS SOUND, BEFORE ANYTHING MOVES: so the corner
           // agreeing with it is a fact about this run rather than about a fixture.
           types: 'verify\r',
           // THE SECOND OCCURRENCE: the opening panel already states the verdict once, so
@@ -335,7 +335,7 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
           // AND THEN A SOUND APPEND, which is the limit stated as a case rather than left
           // to be found: what the corner keys on is the record MOVING, not the record
           // breaking. Another process recording a task degrades it exactly as a planted
-          // duplicate does — and that is the honest reading of what the cheap question can
+          // duplicate does, and that is the honest reading of what the cheap question can
           // answer (`repl/proving.ts`).
           does: () => {
             elsewhere(project, 'task', 'create', 'a sound append by somebody else');
@@ -357,7 +357,7 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
     expect(theCornerOf(watched.rows)).toBe(
       renderPlain(badgeLine('fully-signed', 'the-whole-record')),
     );
-    // And the clause never reached the device at all while nothing was moving — which the
+    // And the clause never reached the device at all while nothing was moving, which the
     // row above cannot say, because it reads one frame.
     expect(ran.bytes.slice(0, ran.at[2] as number)).not.toContain(theClause());
   });
@@ -369,7 +369,7 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
     expect(theCornerOf(after.rows)).toBe(
       renderPlain(badgeLine('fully-signed', 'the-record-as-it-opened')),
     );
-    // And the record really is still sound — the verdict the session printed is the only
+    // And the record really is still sound: the verdict the session printed is the only
     // one anything ruled, and nothing here broke a tail.
     expect(elsewhere(project, 'verify')).toContain(VERIFIED);
   });
@@ -377,7 +377,7 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
 
 describe('the watch on the proof, asked directly', () => {
   /**
-   * WHERE A TREE'S CHAIN IS — the directory the extent is read out of.
+   * WHERE A TREE'S CHAIN IS: the directory the extent is read out of.
    *
    * It is the same one the plant is made in, one level up: a layout's root holds `tails/`,
    * and that is what the sweep of segments is relative to.
@@ -402,7 +402,7 @@ describe('the watch on the proof, asked directly', () => {
     elsewhere(project, 'task', 'create', 'somebody else appended');
     expect(proof.coversTheWholeRecord()).toBe(false);
     // AND IT LATCHES. A verdict is formed at an INSTANT, so a later instant whose extent
-    // happens to match is not that instant — and the latch is also what bounds the cost,
+    // happens to match is not that instant, and the latch is also what bounds the cost,
     // because nothing is asked of the disk after this.
     expect(proof.coversTheWholeRecord()).toBe(false);
     expect(proof.coversTheWholeRecord()).toBe(false);
@@ -410,7 +410,7 @@ describe('the watch on the proof, asked directly', () => {
 
   it('and with no record to rule on, it covers everything there is', async () => {
     // A session opened outside any project holds no verdict, so there is no level for a
-    // corner to degrade — and a watch that answered `false` there would make the corner
+    // corner to degrade, and a watch that answered `false` there would make the corner
     // name a level nobody stated.
     const proof = watchingTheProof([]);
     expect(proof.coversTheWholeRecord()).toBe(true);

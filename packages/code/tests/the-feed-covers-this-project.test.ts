@@ -1,11 +1,11 @@
 /**
- * WHAT LEAVES THE MACHINE IS WHAT THE PERSON CHOSE — the tree lock on `mnema export`.
+ * WHAT LEAVES THE MACHINE IS WHAT THE PERSON CHOSE: the tree lock on `mnema export`.
  *
  * MEASURED on the built binary before this existed. Two projects on one disk; a personal
  * note written to the machine-GLOBAL tree from inside project B; `export` run inside
  * project A. The id, the instant and the author of B's fact came out in A's feed, and
  * there was no flag to prevent it. `export` is the only read of this product that leaves
- * the machine — whoever forwards the feed to a company's SIEM was forwarding what they
+ * the machine: whoever forwards the feed to a company's SIEM was forwarding what they
  * had written at home, in another repository.
  *
  * THE FORM IS THE ONE THE PRODUCT ALREADY DECIDED, FOUR TIMES. `verify --global` and the
@@ -23,7 +23,7 @@
  * tree is in every feed this verb emits.
  *
  * AND THE COVERAGE IS DECLARED, because a cut with nothing saying so is worse than no cut.
- * NDJSON has no header, and every line names the tree it came FROM — which says where a
+ * NDJSON has no header, and every line names the tree it came FROM, which says where a
  * fact was and nothing about where the reader was not allowed to look. So "no global fact
  * exists" and "the global tree was left out" arrive identical. The verb writes what it
  * covered on stderr, because stdout carries records and nothing else.
@@ -33,7 +33,7 @@
  * whole content, `search` with no term lists the titles of all three trees, and
  * `bootstrap` carried a global skill written in another project into `awaitingJudgement`.
  * So the claim that this lock "closes the only real leak" is FALSE. What it closes is the
- * leanest of the exits — an envelope, no body — and it is the one a person pushes
+ * leanest of the exits (an envelope, no body) and it is the one a person pushes
  * somewhere permanent on purpose. The bodies reaching an agent are a decision nobody has
  * taken, and it is not this one.
  */
@@ -103,14 +103,14 @@ function feedOfA(global?: boolean): {
 }
 
 describe('the feed covers this project, and says which trees that was', () => {
-  it('keeps the other project’s global fact out — the leak, measured shut', () => {
+  it('keeps the other project’s global fact out: the leak, measured shut', () => {
     const feed = feedOfA();
     // WHAT THE LOCK PREVENTS, prevented: not one line from the machine-global tree.
     expect(feed.logs).not.toContain('global');
     expect(feed.trees).toEqual(['public', 'private']);
   });
 
-  it('lets this project’s own record through — both of its trees', () => {
+  it('lets this project’s own record through: both of its trees', () => {
     // WHAT THE LOCK MUST LET PASS, passing. Without this the case above would be
     // satisfied by an `export` that emitted nothing at all.
     const feed = feedOfA();
@@ -129,7 +129,7 @@ describe('the feed covers this project, and says which trees that was', () => {
     // facts in the feed correlated to a session that never opens in it.
     expect(feed.logs).toContain('public');
     expect(feed.logs).toContain('private');
-    // And the fact that comes back is the one written in the OTHER project — which is
+    // And the fact that comes back is the one written in the OTHER project, which is
     // what makes the default a lock and not an accident of this fixture.
     expect(feed.logs.filter((log) => log === 'global').length).toBeGreaterThan(0);
   });
@@ -144,9 +144,9 @@ describe('the feed covers this project, and says which trees that was', () => {
   });
 
   it('says it in the words the other three verbs say it in', () => {
-    // ONE AXIS, ONE SENTENCE. It was spelled two ways before this verb needed it —
-    // `witness` shared one string across three subcommands, `verify` had a longer one
-    // of its own — and a third spelling was one verb away. The shared half is asserted
+    // ONE AXIS, ONE SENTENCE. It was spelled two ways before this verb needed it
+    // (`witness` shared one string across three subcommands, `verify` had a longer one
+    // of its own) and a third spelling was one verb away. The shared half is asserted
     // here; the clause that varies is each verb's own consequence.
     const shared = "also cover this machine's global tree — left out by default";
     expect(globalTreeGloss('and this is the only read that leaves the machine')).toContain(shared);

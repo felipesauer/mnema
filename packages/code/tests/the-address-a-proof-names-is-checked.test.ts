@@ -1,5 +1,5 @@
 /**
- * THE LINE THIS SURFACE PRINTS ABOUT AN ADDRESS IT DECLINED TO CONTACT — driven on the
+ * THE LINE THIS SURFACE PRINTS ABOUT AN ADDRESS IT DECLINED TO CONTACT: driven on the
  * real program, with the real argv.
  *
  * IT EXISTS BECAUSE A MUTATION FOUND NOTHING. `mnema witness upgrade` reads the calendar
@@ -13,13 +13,13 @@
  * the half of the design a person actually reads was the half nothing held.
  *
  * IT HAS TO BE THE SURFACE AND NOT THE TABLE. A case over `witnessRefusalWord` would go
- * red for the same mutation while saying nothing about whether the verb prints it — and
+ * red for the same mutation while saying nothing about whether the verb prints it, and
  * the phrase is only worth having if it reaches a person.
  *
  * THE PROOF IS PLANTED AS BYTES, and that is not laziness. Reaching this line from a
  * command line needs a pending attestation already on disk naming the address, and the
  * only verb that writes one is `stamp`, which needs a calendar to answer. `@mnema/chain`
- * exports no serializer past its own surface on purpose — exporting one so a test could
+ * exports no serializer past its own surface on purpose: exporting one so a test could
  * call it would be a public function with no caller in production, which is the shape
  * four defects of this series took. So the wire form is written out here, with the digest
  * of the sandbox's own checkpoint spliced into it.
@@ -128,7 +128,7 @@ describe('the address a proof names, on the surface a person reads', () => {
 
   it('does not tell its owner to come back and ask again', () => {
     // `ask again later` is advice, and repeating this act over an address the product
-    // will not contact resolves nothing — the eternal PENDING a fixed list of four hosts
+    // will not contact resolves nothing: the eternal PENDING a fixed list of four hosts
     // was rejected for, arriving one branch further in.
     expect(said).not.toContain('ask again later');
     expect(said).toContain('names could be asked — see below');

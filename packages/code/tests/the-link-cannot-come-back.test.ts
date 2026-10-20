@@ -11,8 +11,8 @@
  *
  * SO THE PROPERTY HAS TWO HALVES AND THIS FILE SPENDS AS MUCH ON THE SECOND. A guard that
  * refuses the footer is worth nothing if it also refuses the 13 legitimate `Co-authored-by:
- * dependabot[bot]` trailers on this trunk — it would block the next dependency bump and be
- * switched off that afternoon — or if it refuses the word `claude`, which is a VALUE of this
+ * dependabot[bot]` trailers on this trunk (it would block the next dependency bump and be
+ * switched off that afternoon) or if it refuses the word `claude`, which is a VALUE of this
  * product (`which: 'claude'`) and the subject of `plugin/`. The six cases the delivery was
  * accepted against are three reds and three greens, and the greens are load-bearing:
  *
@@ -23,7 +23,7 @@
  *   5. a commit that only MENTIONS `claude`, in prose or in a fixture value    → GREEN
  *   6. a scan that examined zero commits                                       → red, by name
  *
- * CASE 3 IS THE ONE THAT ALMOST ESCAPED. The body is not git — it is a field of the GitHub API —
+ * CASE 3 IS THE ONE THAT ALMOST ESCAPED. The body is not git (it is a field of the GitHub API)
  * and it carried 19 of the 33 leaks. A guard over commit messages alone leaves the larger half
  * open, so `the scan reads both surfaces` below fails if either stops being handed over.
  *
@@ -207,7 +207,7 @@ describe('what it must never refuse', () => {
     expect(attributionIn('Anthropic is named in this sentence and nowhere else', 'x')).toEqual([]);
   });
 
-  it('says nothing about a long ordinary commit message — the zero control', () => {
+  it('says nothing about a long ordinary commit message: the zero control', () => {
     // THE CONTROL THE MUTATION BATTERY IS READ AGAINST, and it is deliberately a HARD one: it
     // is as long as a real message on this trunk, it names the vendor, it names the tool, it
     // carries a legitimate trailer and it carries a bracketed generated-with that is somebody
@@ -440,12 +440,12 @@ describe('the scan reads real git, and reads every commit of a range', () => {
   });
 
   it("is green over a range of this trunk's own message shapes", () => {
-    // THE ZERO CONTROL OVER THE GIT READER — every other case here ends in a finding, so
+    // THE ZERO CONTROL OVER THE GIT READER: every other case here ends in a finding, so
     // without this one nothing says the real reader stays quiet over ordinary messages.
     //
     // IT READ THIS REPOSITORY'S OWN HISTORY UNTIL 2026-09-12, AND THAT WAS FALSE. It ran
     // `commitsIn('HEAD~5..HEAD', ROOT)` and called itself not vacuous because the trunk had
-    // been swept. The guard's job takes `fetch-depth: 0`, but THE SUITE DOES NOT RUN IN IT —
+    // been swept. The guard's job takes `fetch-depth: 0`, but THE SUITE DOES NOT RUN IN IT:
     // it runs in the matrix job, whose default checkout is depth 1. `HEAD~5` does not resolve
     // there, `git rev-list` exits non-zero, and the case was red on every runner while being
     // green on any workstation that had the commits. A case whose universe the checkout
@@ -493,7 +493,7 @@ describe('the scan is wired where it can be right', () => {
     //
     // AND THIS CASE WAS BLIND WHEN IT WAS WRITTEN. It read `toContain('fetch-depth: 0')` over
     // the job INCLUDING its comments, and the comment above the checkout step quotes the
-    // setting to explain it — so deleting the `with:` block left the string in the file and
+    // setting to explain it, so deleting the `with:` block left the string in the file and
     // the mutation lit nothing. `theJob` now drops every comment line, and the shape below
     // requires the value to sit under the checkout's own `with:` rather than anywhere.
     expect(theJob()).toMatch(
@@ -647,16 +647,16 @@ describe('the scan takes its range and its pull request off the runner, never of
 
   it('drives the whole instrument the way a runner does, with NO seam anywhere', () => {
     // THE DEFAULT WIRING, WHICH THE CASE ABOVE CANNOT REACH. Every other case hands `main` its
-    // own readers or its own event path, so the three fallbacks a runner actually takes — the
+    // own readers or its own event path, so the three fallbacks a runner actually takes (the
     // range out of the event, `commitsIn` against the working directory, `pullRequestFrom`
-    // against `GITHUB_EVENT_PATH` — would be unexercised code in a file that looks thoroughly
+    // against `GITHUB_EVENT_PATH`) would be unexercised code in a file that looks thoroughly
     // tested. This is `ci.yml`'s own command: `node scan.mjs`, a working directory that is a
     // repository, and the event variable pointing at the payload.
     //
     // WHAT IT REPLACES WAS WRONG TWICE, and a red runner on 2026-09-12 found both halves. It
     // ran `--range HEAD~3..HEAD` over THIS repository, which the matrix job's depth-1 checkout
     // does not have. And it passed `--commits-only`, which makes `main` take the `'not-asked'`
-    // branch and never call `readPullRequest` at all — so `pullRequestFrom`, one of the two
+    // branch and never call `readPullRequest` at all, so `pullRequestFrom`, one of the two
     // arrows its own comment named, was the one arrow it did not exercise. The red half below
     // is what closes that: the footer sits in the event's `body` and nowhere else, so a finding
     // can only have arrived through the real reader.

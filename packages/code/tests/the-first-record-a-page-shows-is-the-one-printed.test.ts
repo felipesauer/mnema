@@ -1,28 +1,28 @@
 /**
- * THE FIRST RECORD THE ROOT PAGE SHOWS IS THE ONE THE BINARY PRINTS — every line of it, and a
+ * THE FIRST RECORD THE ROOT PAGE SHOWS IS THE ONE THE BINARY PRINTS: every line of it, and a
  * cut only where the page marks one.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT HID. The block under "Your first record" showed four of the
  * ten lines `init` prints and two of the three `verify` prints, with nothing to say lines were
- * gone. The `verify` line it left out was the census note about the reader's own backup key —
+ * gone. The `verify` line it left out was the census note about the reader's own backup key:
  * the one line a new user would have had to ask about. Nothing read that block's output:
  * `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` reads its verbs and flags and
  * drops every `#>` line (`THE_OUTPUT_IS_A_SECOND_RULE`), and
  * `the-verifier-a-page-publishes-runs.test.ts` holds the NEXT block on the same page.
  *
  * WHAT IS CHECKED. The block's commands run in order, through the built binary, in a sandbox
- * of their own — its own `HOME`, its own repository — and each command's output is held to the
+ * of their own (its own `HOME`, its own repository) and each command's output is held to the
  * `#>` lines under it:
  *   - every line it printed is shown, in order, and every line shown was printed;
  *   - `…` is the page's one mark of a cut: inside a line it stands for what the page
  *     shortened, and a line that is `…` alone for one or more whole lines left out;
  *   - an id, a fingerprint, a date and the sandbox's own path are the machine's and not the
- *     page's, so both sides are read with each replaced by what it is ({@link asShape}) — which
+ *     page's, so both sides are read with each replaced by what it is ({@link asShape}), which
  *     is what lets the page print an id that looks like one;
  *   - and nothing is printed on the other stream, which the page does not show at all.
  *
  * WHAT IT DOES NOT CHECK:
- *   - the page's prose around the block, and every other block on every other page — this is
+ *   - the page's prose around the block, and every other block on every other page: this is
  *     one block, the one a new user copies first;
  *   - a `…` that shortens a line to nothing useful: the mark is honest by construction, and
  *     whether it cut too much is a judgement for whoever reads the page.
@@ -37,7 +37,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { accountsFor, asMinted, blockUnder } from './support/a-page-held-to-a-run.js';
 import { read } from './support/published-examples.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The page, and the heading the block lives under. */

@@ -4,12 +4,12 @@
  * `mnema decision import` reads a directory of ADRs and freezes its OWN `ADR-<n>` into
  * each decision, so a file named `ADR-008` becomes `ADR-2` in the record. That is
  * deliberate and stays: two projects can each hold an ADR-1, and a label re-derived on
- * read would silently cite a different decision. The source's number is not lost — it
+ * read would silently cite a different decision. The source's number is not lost: it
  * is in the file NAME, and the import records that name as a `derived-from` edge.
  *
  * MEASURED BEFORE ANY OF THIS WAS WRITTEN, on a real clone: `show`, `show --json` and
  * `read_record` served the decision without the edge. And `brief` sends a reader to
- * exactly one of them — *"For the argument behind one, ask `read_record` for its id"* —
+ * exactly one of them (*"For the argument behind one, ask `read_record` for its id"*)
  * so the door the product NAMES was the door without the fact. `mnema refs` had it all
  * along, which is why this is a gap in three reads rather than a missing write.
  *
@@ -21,7 +21,7 @@
  *     field on everything: a decision recorded HERE, by hand, carries no `origin` at
  *     all — absent, not empty, so nobody reads `[]` as "derived from nothing".
  *   - N EDGES. A subject may assert several provenances, and a read that reduced them
- *     to one would be choosing by row order — the defect class that made a verdict
+ *     to one would be choosing by row order: the defect class that made a verdict
  *     print either of two sentences depending on a third party's file order.
  *   - THE PRIVATE-TREE EDGE. A link is legitimately cross-tree, so a private assertion
  *     can name a public decision. These reads do not go looking for one: the answer has
@@ -163,7 +163,7 @@ describe('the origin travels beside the label', () => {
 
   it('carries every provenance a record asserts, in the record’s own order', () => {
     const decision = imported();
-    // A second source, linked by hand — the shape a document that MOVED leaves behind.
+    // A second source, linked by hand: the shape a document that MOVED leaves behind.
     // Its target sorts before the imported one, so a read that took "the first row" and
     // a read that took "all of them" cannot agree by accident.
     const second = runLink(
@@ -191,7 +191,7 @@ describe('the origin travels beside the label', () => {
   it('leaves a private assertion to the read that crosses trees', () => {
     const decision = imported();
     // A private tree asserting a provenance about a PUBLIC decision. It is a legal
-    // fact — a link is cross-tree by design — and it is not part of what a clone of
+    // fact (a link is cross-tree by design) and it is not part of what a clone of
     // the public tree would hold.
     const hidden = runLink(
       { cwd: repo, env },

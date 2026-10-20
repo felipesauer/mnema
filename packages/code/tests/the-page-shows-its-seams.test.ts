@@ -1,12 +1,12 @@
 /**
- * THE PAGE SHOWS ITS SEAMS — where a region begins, where it ends, and which row is the
+ * THE PAGE SHOWS ITS SEAMS: where a region begins, where it ends, and which row is the
  * caller's own.
  *
  * IT CAME OUT OF THREE SCREENSHOTS WITH LINES DRAWN ON THEM, and the three asked for one thing:
  * a page a reader can find their way around. Under the banner there was nothing saying the
  * banner had ended; the roll started against the left edge of the terminal; and the line a
  * caller had TYPED read at exactly the weight of the answer to it, so scrolling a session meant
- * hunting for it. What answers all three is chrome — a rule, a margin, and the echo composed like
+ * hunting for it. What answers all three is chrome: a rule, a margin, and the echo composed like
  * every other line so a renderer can weigh it. THE MARGIN HAD A GUIDE DOWN IT, A PURPLE LINE BESIDE
  * EVERY ROW, AND IT IS GONE: what tells a caller's words from the answer to them is a band behind
  * the command and a dot that opens the answer, and the purple is left to the places that say *this
@@ -16,7 +16,7 @@
  * picture:
  *
  *   - THREE RULES AND ONE DRAWING. The page has three seams now and they come out of one
- *     function in one hue — a third way to draw a line across a terminal would be a third thing
+ *     function in one hue: a third way to draw a line across a terminal would be a third thing
  *     to keep in step with the other two.
  *   - THE BREATH IS ONE ROW, and the top region still fits inside the third of the screen the
  *     chrome is allowed. This delivery SPENDS rows on a screen where every row is somebody's
@@ -76,7 +76,7 @@ import {
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 import { theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** `packages/code/src`, for the scans that read this product's own source. */
@@ -88,7 +88,7 @@ const PROMPT = 'mnema>';
 /** What the opening always says on a window that serves. */
 const OPENED = 'a session over this project';
 
-/** The glyph a rule is drawn out of, and the one the guide is — both by code point. */
+/** The glyph a rule is drawn out of, and the one the guide is: both by code point. */
 const RUN = '\u2500';
 const GUIDE = '\u2502';
 
@@ -100,7 +100,7 @@ const ANSWERED = '\u25cf';
 const A_VERB = 'search';
 const THE_ANSWER = 'record(s)';
 
-/** A third of the screen, rounded down — the share the chrome may hold (`repl/panel.ts`). */
+/** A third of the screen, rounded down: the share the chrome may hold (`repl/panel.ts`). */
 const A_THIRD_OF = (rows: number): number => Math.floor(rows / 3);
 
 /** Every style sequence in some bytes, in the order they appear. */
@@ -109,13 +109,13 @@ function sgrOf(text: string): string[] {
   return text.match(/\u001b\[[0-9;]*m/g) ?? [];
 }
 
-/** The same bytes with every style sequence taken out — what a pipe would have received. */
+/** The same bytes with every style sequence taken out: what a pipe would have received. */
 function stripped(text: string): string {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
   return text.replace(/\u001b\[[0-9;]*m/g, '');
 }
 
-/** Whether a row of a page is a rule and nothing else — the discriminant for a seam. */
+/** Whether a row of a page is a rule and nothing else: the discriminant for a seam. */
 function isRule(row: string): boolean {
   const drawn = stripped(row).replace(/ +$/, '');
   return drawn.length > 0 && [...drawn].every((glyph) => glyph === RUN);
@@ -201,7 +201,7 @@ const leaves: Step = leavesTheSession;
  *
  * IT IS THE INSTRUMENT FOR THE PAINT, where the pseudo-terminal is the instrument for the
  * GEOMETRY. What a case about a hue needs is the escapes around a row, and a replayed screen
- * deliberately throws those away — it answers what is on the page, not what colour it is
+ * deliberately throws those away: it answers what is on the page, not what colour it is
  * (`support/screen.ts`). What it needs of the layout is real, and it is: the same components,
  * the same library, the same accent.
  */
@@ -294,7 +294,7 @@ describe('the page has three rules, and they are the same drawing in the same hu
 describe('the banner ends in a rule and one row of breath', () => {
   it('leaves exactly one blank row between the seam and what the session says', async () => {
     // AT THE FLOOR, which is where a row costs the most: the shortest window this console draws
-    // a page on. IT WAS EIGHTY BY TWENTY-FOUR — the canonical terminal — and it is eighty by
+    // a page on. IT WAS EIGHTY BY TWENTY-FOUR: the canonical terminal, and it is eighty by
     // forty-two, which is the height the name is drawn whole at, worked out from the drawing
     // (`src/repl/floor.ts`). Read off the floor rather than retyped, so *at the floor* goes on
     // meaning it.
@@ -308,7 +308,7 @@ describe('the banner ends in a rule and one row of breath', () => {
     expect(blank(seam + 1), 'there is no row of breath under the seam').toBe(true);
     expect(blank(seam + 2), 'the breath is more than one row').toBe(false);
     // AND WHAT IS ON THE ROW UNDER IT IS THE SESSION'S, drawn inside the margin and with nothing
-    // in the margin — the breath separates the banner from the roll rather than from nothing, and
+    // in the margin: the breath separates the banner from the roll rather than from nothing, and
     // there is no guide beside it.
     const first = [...(screen.rows[seam + 2] as string)];
     expect(first.slice(0, THE_INSET).join('').trim(), 'something is drawn in the margin').toBe('');
@@ -317,7 +317,7 @@ describe('the banner ends in a rule and one row of breath', () => {
   it('keeps the whole top region inside a third of the screen it never moves on', async () => {
     // THE BOUND THIS DELIVERY SPENDS AGAINST, asked where it is tightest. The seam is chrome and
     // it is counted where the arrangement's rows are counted (`repl/panel.ts`, `THE_SEAM`), so a
-    // window that can no longer afford the drawing it had gets the next one down — never a top
+    // window that can no longer afford the drawing it had gets the next one down, never a top
     // region that quietly grew by two.
     const columns = THE_FLOOR.columns;
     const rows = THE_FLOOR.rows;
@@ -329,7 +329,7 @@ describe('the banner ends in a rule and one row of breath', () => {
     expect(fixed, `the top region holds more than a third:\n${screen.text}`).toBeLessThanOrEqual(
       A_THIRD_OF(rows),
     );
-    // AND IT REALLY IS SPENT — a region that had collapsed to nothing would satisfy the bound
+    // AND IT REALLY IS SPENT: a region that had collapsed to nothing would satisfy the bound
     // and lose the identity the whole opening exists to keep.
     expect(fixed, 'the top region spends nothing at all').toBeGreaterThan(2);
     const chrome = screen.rows.slice(0, fixed).join('\n');
@@ -372,7 +372,7 @@ describe('the line a caller sent is told from the answer to it', () => {
   }, 120_000);
 
   it('is still the caller’s line when there is no colour at all', async () => {
-    // WHAT `NO_COLOR` REACHES, measured rather than assumed — and this paragraph is where a
+    // WHAT `NO_COLOR` REACHES, measured rather than assumed, and this paragraph is where a
     // premise fell.
     //
     // EVERY LINE THE PRODUCT COMPOSES GOES QUIET, because the rule that chooses a renderer is
@@ -415,7 +415,7 @@ describe('the line a caller sent is told from the answer to it', () => {
     expect(echoed.slice(THE_INSET).trimEnd(), 'the sent line is not the mark and the words').toBe(
       `${SENT} ${A_VERB}`,
     );
-    // AND NOT ONE BYTE OF COLOUR IS LEFT on the frame — ours OR the library's. It used to let
+    // AND NOT ONE BYTE OF COLOUR IS LEFT on the frame: ours OR the library's. It used to let
     // the layout's own accent and its closer through, and that pair was the half of the page
     // that was not obeying the caller.
     const frame = ran.bytes.slice(ran.at[0] as number, ran.at[1] as number);
@@ -476,7 +476,7 @@ describe('the tree column stops competing with the title beside it', () => {
     expect(wrapping('the task the seams are measured over'), 'the title is painted').not.toBe(
       '\u001b[2m',
     );
-    // AND THE PLAIN LINE IS UNMOVED, byte for byte — which is what keeps a recorded transcript
+    // AND THE PLAIN LINE IS UNMOVED, byte for byte, which is what keeps a recorded transcript
     // and a CI log saying exactly what they said before this delivery.
     const plain: string[] = [];
     await run(['--color=never', 'search'], {
@@ -500,7 +500,7 @@ describe('the margin takes columns of the page and never a character of a line',
     const columns = THE_FLOOR.columns;
     const rows = THE_FLOOR.rows;
     // THE WIDEST THING THE SESSION SAYS, asked of the product rather than retyped. IT WAS THE
-    // TABLE `/help` PRINTED and that word is gone — the list under the prompt answers it, and a
+    // TABLE `/help` PRINTED and that word is gone: the list under the prompt answers it, and a
     // list is CUT to the terminal rather than folded by it. What is left that a fold has
     // anything to do to is the REFUSAL of a write, composed off the declaration by the one
     // funnel every no on this surface goes through (`src/repl/gate.ts`, `src/wiring/report.ts`).
@@ -525,7 +525,7 @@ describe('the margin takes columns of the page and never a character of a line',
       ],
     });
     const screen = theSettledScreen(ran.bytes, columns, rows, IN_THE_REFUSAL);
-    // EVERY ROW OF THE FOLD IS ON THE PAGE, in order, each of them inside the margin — so
+    // EVERY ROW OF THE FOLD IS ON THE PAGE, in order, each of them inside the margin, so
     // nothing was cut, nothing was clipped, and the break is the product's own rather than the
     // terminal's.
     const page = screen.rows.map((row) => row.slice(THE_INSET).replace(/ +$/, ''));
@@ -563,11 +563,11 @@ describe('every site that echoes, every site that draws an edge, every site that
   it('puts the prompt in front of what was typed in ONE shape, in both places it happens', () => {
     // THE DISCRIMINANT IS THE COMPOSITION, never a list of files: anything that puts the prompt
     // and the caller's words together. THE ECHO USED TO BE THREE OF THEM — `land(prompt + line)`
-    // at the three ways a row leaves the input — and the ROW BEING TYPED was a fourth, with the
+    // at the three ways a row leaves the input, and the ROW BEING TYPED was a fourth, with the
     // reason written out: *it may not become a composed line, because the caret is an offset in
     // columns into it and escapes a terminal does not print would be arithmetic on the one number
     // that has to be exact.* The number is counted over the prompt and the typed text and never
-    // over the composed row, so that reason was about a string nothing measured — and the row is
+    // over the composed row, so that reason was about a string nothing measured, and the row is
     // the same line now (`repl/console.ts`, `renderTyped`,
     // `tests/the-prompt-is-painted-where-you-type.test.ts`).
     const composing = /\bprompt\s*\+|\+\s*prompt\b/;
@@ -578,7 +578,7 @@ describe('every site that echoes, every site that draws an edge, every site that
     ).toEqual([]);
     // AND BOTH PLACES ASK ONE FUNCTION FOR THE SHAPE, with the shape somewhere else entirely.
     // THE ROW BEING TYPED asks for the echo, and the line that landed on the roll when it was sent
-    // asks for the sent command — two shapes in `presentation/echo.ts`, one call each in the console.
+    // asks for the sent command: two shapes in `presentation/echo.ts`, one call each in the console.
     for (const shape of ['echoLine', 'sentLine']) {
       const asking = sources().filter((file) => new RegExp(`${shape}\\(`).test(file.code));
       expect(asking.map((file) => file.where).sort(), shape).toEqual([
@@ -595,8 +595,8 @@ describe('every site that echoes, every site that draws an edge, every site that
   });
 
   it('draws every edge of the page out of one module, and composes none of them', () => {
-    // A RULE AND A GUIDE ARE THE SAME KIND OF THING — a box with nothing in it and one edge
-    // switched on — so the discriminant is the library's own word for an edge.
+    // A RULE AND A GUIDE ARE THE SAME KIND OF THING: a box with nothing in it and one edge
+    // switched on, so the discriminant is the library's own word for an edge.
     const drawing = sources().filter((file) => /borderStyle/.test(file.code));
     expect(drawing.map((file) => file.where)).toEqual(['repl/region.ts']);
     const region = (drawing[0] as { code: string }).code;
@@ -613,7 +613,7 @@ describe('every site that echoes, every site that draws an edge, every site that
   });
 
   it('says which column is a tree at every list that has one, and nowhere else', () => {
-    // THE READINGS THAT PUT A TREE IN A COLUMN — found by the marker, and then read back
+    // THE READINGS THAT PUT A TREE IN A COLUMN: found by the marker, and then read back
     // against every site that names a scope at all.
     const marking = sources()
       .filter((file) => /asScope\(/.test(file.code))

@@ -1,7 +1,7 @@
 /**
  * The first write is held once: with `edit-first-write-gate` switched on, the first write of a
  * session to a file a rule addresses is refused with the rules in the reason, so they arrive before
- * the write instead of beside its result — and the same write, repeated, goes through.
+ * the write instead of beside its result, and the same write, repeated, goes through.
  *
  * WHAT IS HELD HERE. The product's half: that the channel is OFF until a tree switches it on (and
  * says so where switches are listed), that the hold is once per path per connection, that the
@@ -48,7 +48,7 @@ async function mnema(
   return seen;
 }
 
-/** Runs a verb and refuses to continue if it was refused — setup, not assertion. */
+/** Runs a verb and refuses to continue if it was refused: setup, not assertion. */
 async function did(...argv: string[]): Promise<string> {
   const seen = await mnema(...argv);
   expect(seen.failed, `${argv.join(' ')}: ${seen.err.join(' / ')}`).toBe(false);

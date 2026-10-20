@@ -1,5 +1,5 @@
 /**
- * The key lives in one place — the home — whatever launched the process that writes.
+ * The key lives in one place, the home, whatever launched the process that writes.
  *
  * WHAT WAS WRONG. The key root followed `$XDG_DATA_HOME`, and that variable is set on a person's
  * behalf by whatever launches a process: a snap-packaged editor pointed it inside its own revision
@@ -13,9 +13,9 @@
  *
  *   - the property itself: one person, two launchers that disagree about `$XDG_DATA_HOME`, one
  *     author in the record;
- *   - that `$MNEMA_HOME` — the one variable that moves the key — REACHES both surfaces: the
+ *   - that `$MNEMA_HOME`, the one variable that moves the key, REACHES both surfaces: the
  *     command line and the server a host spawns. The environment is read in one place (`here()`)
- *     and the server is handed what it read, so each case below is the proof for its surface —
+ *     and the server is handed what it read, so each case below is the proof for its surface:
  *     a mutation that stops `mnema mcp` handing the variable on reddens the second alone. It is
  *     the mould of `mcp-flag-reaches-the-server.test.ts`: what is asserted is that the value
  *     arrives; what the rule does with it is `resolve.test.ts`;
@@ -32,7 +32,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-/** The built binary — what a person runs, and what a host spawns as the server. */
+/** The built binary: what a person runs, and what a host spawns as the server. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;
@@ -137,7 +137,7 @@ describe('$MNEMA_HOME reaches both surfaces', () => {
 });
 
 describe('a home kept under git', () => {
-  it('never stages the key — and still stages the global tree, which is the person’s to version', () => {
+  it('never stages the key, and still stages the global tree, which is the person’s to version', () => {
     // Dotfiles: the home IS a repository. The key root carries a `.gitignore` of its own, so
     // `git add` in the home takes everything the person wrote except the private half.
     expect(spawnSync('git', ['init', '-q'], { cwd: home }).status).toBe(0);
@@ -153,7 +153,7 @@ describe('a home kept under git', () => {
 });
 
 describe('the two readings of $MNEMA_HOME a person can get wrong', () => {
-  it('reads it empty as unset — the key root is the home’s', () => {
+  it('reads it empty as unset: the key root is the home’s', () => {
     const ran = mnema(repo, { HOME: home, MNEMA_HOME: '' }, 'memory', 'x', '--scope', 'global');
     expect(ran.status, ran.stderr).toBe(0);
     expect(privateKeysAt(join(home, '.mnema', 'identity'))).toHaveLength(1);

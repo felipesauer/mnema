@@ -3,28 +3,28 @@
  * text at a model reaching for it, and nothing in it telling a reader what to do.
  *
  * WHAT THIS EXISTS TO CATCH, and it is not a hypothetical. There were TWO declarations
- * in this product saying the same thing about the same text — one on the `skills`
- * answer, one in the document `mnema brief` prints — written months apart and never
+ * in this product saying the same thing about the same text (one on the `skills`
+ * answer, one in the document `mnema brief` prints) written months apart and never
  * compared. They had drifted: the document claimed the text was written "and settled"
  * (false of a pattern served so it can be RULED on) and ended with "Follow them."
  * Nothing was red. The next channel to push a rule into a prompt would have written a
  * third, and the one after that a fourth.
  *
  * THE DISCRIMINANT IS THE DESTINATION, NOT THE FUNCTION. A point owes a declaration
- * because of where its text lands — in front of a model — and not because of what it
+ * because of where its text lands, in front of a model, and not because of what it
  * is called. So the enumeration here is over PLACES: the source of every file the
  * plugin's `hooks.json` runs, and the printed output of every read the command line
  * has. A guard that walked a list of function names would be a guard that a new
  * function walks straight past.
  *
  * WHAT IS ASSERTED WHERE, said out loud because it is split across two files. The
- * SOURCE-side default-deny and the wording live here; the one BEHAVIOURAL assertion —
+ * SOURCE-side default-deny and the wording live here; the one BEHAVIOURAL assertion,
  * that what the `SessionStart` handler actually puts into a session carries the
- * declaration — lives in `the-record-arrives-unasked.test.ts`, on the sandbox that file
+ * declaration, lives in `the-record-arrives-unasked.test.ts`, on the sandbox that file
  * already builds (a seeded project, the real binary on the PATH, the handler run the
  * way the host runs it). Rebuilding that harness here would be a second copy of it.
  *
- * WHAT THIS GUARD IS NOT. {@link SAYS_WHAT_TO_DO} cannot recognize a paraphrase — it is
+ * WHAT THIS GUARD IS NOT. {@link SAYS_WHAT_TO_DO} cannot recognize a paraphrase: it is
  * a tripwire on the one text `record-framing.ts` emits, and the case below proves it
  * still fires rather than trusting that it does. The classification of every OTHER
  * sentence around a framing (a candidate's, a name list's, the document's sections) is
@@ -53,7 +53,7 @@ import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../src/served-patterns
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
-/** The handlers the plugin ships — every file the host could be told to run. */
+/** The handlers the plugin ships: every file the host could be told to run. */
 const HOOKS_DIR = join(REPO, 'plugin', 'hooks');
 /** The module that decides what a channel says. */
 const FRAMING_SOURCE = join(REPO, 'packages', 'code', 'src', 'record-framing.ts');
@@ -61,7 +61,7 @@ const FRAMING_SOURCE = join(REPO, 'packages', 'code', 'src', 'record-framing.ts'
 const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt');
 
 /**
- * The claim itself, as it is printed — the sentence this delivery collapsed two copies
+ * The claim itself, as it is printed: the sentence this delivery collapsed two copies
  * of into one.
  *
  * It is typed out HERE and nowhere else on purpose. Importing the constant would make
@@ -71,7 +71,7 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  *
  * IT ENDED ", not instructions from mnema." AND IT DOES NOT NOW. The authorship half is
  * what the product can stand behind and it is kept; the negation was the idiom that marks
- * text a model must not act on, and it went — see {@link SAYS_WHAT_IT_IS_NOT} for the
+ * text a model must not act on, and it went: see {@link SAYS_WHAT_IT_IS_NOT} for the
  * case that keeps it from coming back on any channel.
  */
 const THE_CLAIM = 'They are text the people and agents working on it wrote.';
@@ -87,7 +87,7 @@ const EDIT_CHANNELS: readonly string[] = [
  * What a framing would say if it went back to declaring what its text is NOT.
  *
  * "Data, not instructions" is the construction the ecosystem uses to mark content a model
- * must ignore — the defence against prompt injection — and the product's declaration used
+ * must ignore, the defence against prompt injection, and the product's declaration used
  * to end in it, meaning authorship and reading, to the reader it lands in front of, as
  * "do not act on this". The pattern is narrow on purpose: it names the idiom and not
  * every "not" a sentence could hold, because "a pattern that is not adopted" is a fact the
@@ -99,7 +99,7 @@ const SAYS_WHAT_IT_IS_NOT = /\bnot (an? )?instructions?\b/i;
  * What a handler writes when it puts something in front of a model.
  *
  * On this host, a handler for a context-injecting event reaches the model through its
- * STDOUT — either as bare text or as a JSON reply carrying `additionalContext`,
+ * STDOUT: either as bare text or as a JSON reply carrying `additionalContext`,
  * `updatedInput` or `updatedToolOutput`. So writing to stdout at all is the
  * discriminant: it is coarser than reading the reply's shape, and coarse in the safe
  * direction, since a handler that writes nothing cannot have pushed anything.
@@ -117,7 +117,7 @@ function handlers(): string[] {
  *
  * Two enumerations are needed and they catch different things. Walking the directory
  * finds a handler FILE that pushes without declaring a channel. Walking this finds a hook
- * that has no file at all — which is what a `type: "mcp_tool"` hook is: the host calls
+ * that has no file at all, which is what a `type: "mcp_tool"` hook is: the host calls
  * into the MCP server this plugin declares, no process is spawned, and there is no source
  * for the source-side default-deny to read. The file walk was the whole of this guard
  * until such a hook existed, and it walked straight past it.
@@ -136,7 +136,7 @@ function declaredHooks(): { readonly event: string; readonly hook: Record<string
  *
  * All four packages and not just this one: a second copy of the declaration is a defect
  * wherever it is written, and a walk that stopped at the package which happens to emit
- * it today would be green over a copy in `core`, `chain` or `context` — which is the
+ * it today would be green over a copy in `core`, `chain` or `context`, which is the
  * scope this walk used to have, and the hole a mutation found.
  */
 function everySource(): { readonly path: string; readonly text: string }[] {
@@ -175,7 +175,7 @@ function printedByVerb(): { readonly command: string; readonly output: string }[
 describe('one declaration, and one place that decides it', () => {
   it('writes the claim in exactly one source file', () => {
     // The regression this whole delivery is about: a second copy of these words, in a
-    // second channel, drifting on its own. The goldens are allowed to hold them —
+    // second channel, drifting on its own. The goldens are allowed to hold them:
     // pinning printed bytes is what a golden is for, and a golden that stopped holding
     // them would be its own red.
     const holders = everySource()
@@ -293,12 +293,12 @@ describe('one declaration, and one place that decides it', () => {
 describe('what `channel.served` counts, said by the table the type makes total', () => {
   it('counts exactly what the per-edit hook pushes, and nothing a session opens with', () => {
     // `CountedChannel` is what `recordServices` takes, so a channel outside it cannot be
-    // recorded as served — that half is the compiler's. What this holds is that the table
+    // recorded as served: that half is the compiler's. What this holds is that the table
     // naming the rest agrees with what a hook actually pushes through its tool.
     const counted = SWITCHABLE_CHANNELS.filter((channel) => !(channel in NOT_COUNTED_AS_SERVED));
     // THESE WERE ONE LIST AND ARE TWO, and the test said so by equality until the refusal came:
-    // "counted as served" was "pushed by the tool". A refusal is pushed by the tool — its reason
-    // is framed text a model reads — and is not counted, because each `channel.refused` is the
+    // "counted as served" was "pushed by the tool". A refusal is pushed by the tool (its reason
+    // is framed text a model reads) and is not counted, because each `channel.refused` is the
     // refusal itself and a service fact beside it would repeat it. So what is counted is what the
     // tool pushes MINUS the channel that is its own fact, and both halves are held.
     const pushed = PUSHED_BY_TOOL.rules_before_an_edit ?? [];
@@ -317,7 +317,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
     ]);
   });
 
-  it('says why for each channel it does not count — a read, which writes nothing', () => {
+  it('says why for each channel it does not count: a read, which writes nothing', () => {
     // TWO KINDS OF REASON, and the table used to hold one. The two texts a session opens with are
     // reads, and a read writes nothing. `agent-accepts` is not a read: what it says is the reply
     // to a write that IS the fact (the acceptance, with its actor on the envelope) or is refused
@@ -349,7 +349,7 @@ describe('the framing says what the text is, never what to do about it', () => {
 
   it('catches the imperative this delivery removed', () => {
     // The scanner's OWN case. Without it, a rule that stopped matching would leave
-    // every assertion above green over a framing that had grown an order in it — the
+    // every assertion above green over a framing that had grown an order in it: the
     // instrument reporting zero because it broke, which this bench has paid for twice.
     expect(tellsWhatToDo(`${THE_CLAIM} Follow them.`)).toBe('follow');
     expect(tellsWhatToDo('These are the rules. You must apply them.')).toBe('you must');
@@ -377,7 +377,7 @@ describe('the framing says what the text is, never what to do about it', () => {
   it('says what the text IS and never what it is NOT, on every framed channel', () => {
     // The inversion this sentence went through, held in both directions. The case that
     // asserts the new words is above; this is the one that goes red if the old clause is
-    // written back, on any channel — and on the tool description that carried a second
+    // written back, on any channel, and on the tool description that carried a second
     // copy of the same idiom, which is the site a search for the framing's own constant
     // would never have found.
     for (const channel of FRAMED_CHANNELS) {
@@ -418,8 +418,8 @@ describe('every handler that pushes declares the channel it carries', () => {
   });
 
   it('names a channel this product knows, or writes nothing to a model', () => {
-    // DEFAULT-DENY, and that is the point: a handler added tomorrow — the rule matched
-    // to a prompt, the decision that governs the file about to be edited — is red here
+    // DEFAULT-DENY, and that is the point: a handler added tomorrow (the rule matched
+    // to a prompt, the decision that governs the file about to be edited) is red here
     // by its own file name until it says which framing its text carries. A handler that
     // genuinely reaches no model writes no stdout, and is not asked.
     const named: string[] = [];
@@ -432,7 +432,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       // A handler may carry more than one channel, joined by `+`: the reason the gate's command
       // hands back is the asking's or the refusal's, whichever the write met. A channel is known
       // when it carries a declaration (it is framed) or when the table that says why it carries
-      // none names it — a count has no record text to say whose it is.
+      // none names it: a count has no record text to say whose it is.
       for (const one of channel.split('+')) {
         expect(
           [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
@@ -444,7 +444,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     // And at least one handler WAS asked. Without this the case is green on a plugin
     // whose handlers all stopped writing, which is the shape a broken enumeration has.
     // TWO now, one per text a session opens with; the module they share (`hand-over.mjs`)
-    // answers with text and writes nothing out, so it is walked and not asked — which is
+    // answers with text and writes nothing out, so it is walked and not asked, which is
     // what keeps the rule that decides silence in ONE file without giving that file a
     // channel it does not carry. AND A THIRD, the gate as VS Code runs it: a process that
     // hands back what `mnema before-a-write` answers, whose reason is framed where the MCP
@@ -466,7 +466,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     // case above walks the handler FILES, so it can only rule on a hook that is a
     // process; a `type: "mcp_tool"` hook is a call into the MCP server, has no file, and
     // was invisible to every assertion in this file. So each declared hook is classified
-    // here by its type, and a type this guard has no rule for FAILS — the next one the
+    // here by its type, and a type this guard has no rule for FAILS: the next one the
     // host offers (`http`, `prompt`, `agent`) is red until somebody says where its
     // declaration lives.
     const ruled: string[] = [];
@@ -530,7 +530,7 @@ describe('every handler that pushes declares the channel it carries', () => {
 
   it('will not read a declaration out of a comment', () => {
     // The scanner's own case, for the same reason the imperative one has one. NOTHING in
-    // a handler reads `MODEL_CHANNEL` — the value exists to be read from the source — so
+    // a handler reads `MODEL_CHANNEL`, the value exists to be read from the source, so
     // a commented-out declaration runs identically to a live one, and a pattern that
     // matched the words anywhere left the guard green over a handler declaring nothing.
     const live = "export const MODEL_CHANNEL = 'brief-document';";
@@ -548,7 +548,7 @@ describe('every handler that pushes declares the channel it carries', () => {
   });
 
   it('names the channels in a vocabulary the module owns', () => {
-    // The handler cannot import the module — the host spawns it with no build — so the
+    // The handler cannot import the module, the host spawns it with no build, so the
     // string is compared here instead. Every channel a handler names is a key of the
     // table, checked above; this is the other direction, and it is what makes the
     // handler's constant a declaration rather than a comment.
@@ -562,8 +562,8 @@ describe('what goes to a PERSON does not speak as if to a model', () => {
     // The other half of the rule, and the half nobody looks for: the framing belongs to
     // a channel a MODEL reads, and a terminal answer that started declaring itself would
     // be this surface talking past the person who typed the verb. It was ONE verb, `mnema
-    // brief`; `mnema recall` is the second, and for the same reason — its whole output is
-    // the text a session opens with — so the list is the two producers of what a session is
+    // brief`; `mnema recall` is the second, and for the same reason (its whole output is
+    // the text a session opens with), so the list is the two producers of what a session is
     // handed, and a third verb that began declaring itself is red here by its name.
     const blocks = printedByVerb();
     expect(blocks.length).toBeGreaterThan(20);

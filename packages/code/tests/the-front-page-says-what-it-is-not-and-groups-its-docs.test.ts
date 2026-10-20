@@ -1,5 +1,5 @@
 /**
- * THE FRONT PAGE SAYS WHAT MNEMA IS NOT, AND GROUPS ITS DOCS BY WHO READS THEM — and neither can
+ * THE FRONT PAGE SAYS WHAT MNEMA IS NOT, AND GROUPS ITS DOCS BY WHO READS THEM: and neither can
  * drift from the page it summarises or from the directory it lists.
  *
  *   - "WHAT IT IS NOT" has four lines, and each one is the line of `docs/where-it-fits.md` said
@@ -7,8 +7,8 @@
  *     rests on ({@link LINES}): were the page to change one, the front page could not go on saying
  *     another thing without this failing. The page carries the reason; the front page carries the
  *     claim and a link to the page.
- *   - "DOCS" has four groups, in the order a reader comes to them — use, verify, integrate,
- *     contribute — and every link in them lands on a file that exists.
+ *   - "DOCS" has four groups, in the order a reader comes to them (use, verify, integrate,
+ *     contribute) and every link in them lands on a file that exists.
  *   - EVERY PAGE OF `docs/` IS IN ONE GROUP, or is on {@link LEFT_OUT} with its reason. A page added
  *     to `docs/` and linked from nowhere fails here, rather than being found by whoever looks for
  *     it. {@link LEFT_OUT} is held in both directions: a page on it that is now linked, or that
@@ -29,7 +29,7 @@ const WHERE_IT_FITS = read('docs/where-it-fits.md');
 /** One whitespace for any run of it, so a line wrapped on the page is the same sentence. */
 const flat = (text: string): string => text.replace(/\s+/g, ' ');
 
-/** The body of a `## ` section — from under its heading to the next heading of the same level. */
+/** The body of a `## ` section: from under its heading to the next heading of the same level. */
 function sectionOf(page: string, heading: string): string {
   const lines = page.split('\n');
   const from = lines.indexOf(`## ${heading}`);
@@ -138,7 +138,7 @@ describe('"Docs" on the front page', () => {
     links: linksOf(b),
   }));
 
-  it('has four groups — use, verify, integrate, contribute — in that order', () => {
+  it('has four groups (use, verify, integrate, contribute) in that order', () => {
     expect(grouped.map((g) => g.label)).toEqual([...GROUPS]);
     for (const b of bullets) expect(b).toMatch(/^\*\*[A-Z][a-z]+\.\*\* \[/);
   });

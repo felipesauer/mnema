@@ -5,25 +5,25 @@
  * THE FOUR THINGS HERE ARE THE FOUR A READER OF THE OUTPUT CANNOT CHECK.
  *
  * NEVER DOLLARS is the rule three products of the ecosystem study broke, each with a
- * hardcoded price table that ages in silence — one had priced every non-Claude model
+ * hardcoded price table that ages in silence: one had priced every non-Claude model
  * wrong through a default. So the case refuses `$`, `usd` and `USD` on the page AND
  * asserts the counts that ARE there: half of it alone would pass over an empty answer,
  * which is the shape a currency check is most likely to decay into.
  *
- * NO CONTENT LEAVES THE TRANSCRIPT. A transcript is the whole conversation — whatever
- * anybody pasted into it — and this verb reads it for four numbers. The fixture puts a
+ * NO CONTENT LEAVES THE TRANSCRIPT. A transcript is the whole conversation, whatever
+ * anybody pasted into it, and this verb reads it for four numbers. The fixture puts a
  * sentence inside `message.content` and the case asserts it is nowhere in the output,
  * which is the only form of that assertion that can fail for a reason.
  *
  * THE LIMIT IS ON THE PAGE. The report claims the counts are not the record's, are
  * not covered by `verify`, and were produced without writing anything. A doc-comment
- * asserting that is a comment; this is the half that holds it to being true — the last
+ * asserting that is a comment; this is the half that holds it to being true: the last
  * claim by the digest below, the first two by being read off the output a person gets.
  *
  * AND IT IS A READ, PROVED BY BYTES, over a sandbox that includes THE HOST'S OWN STORE.
  * That is the one difference from every other read-only case in this suite: this verb
  * opens files somebody else's product owns, and the digest is what would catch a
- * reading that touched one of them. Nothing here reads the real `~/.claude` — `HOME` is
+ * reading that touched one of them. Nothing here reads the real `~/.claude`: `HOME` is
  * the sandbox for the length of the file.
  */
 
@@ -77,7 +77,7 @@ async function mnema(...argv: string[]): Promise<Said> {
 }
 
 /**
- * A content digest of every file under `dir` — the shape `guard.test.ts` established,
+ * A content digest of every file under `dir`: the shape `guard.test.ts` established,
  * and here it covers the host's store as well as the record.
  */
 function digest(dir: string): string {

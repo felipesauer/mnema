@@ -3,8 +3,8 @@
  *
  * The entry used to import the whole product to print anything. Every wiring file
  * pulled its command adapter at module scope, each adapter pulls the chain, the
- * projections and the derivations behind it, and so `mnema --version` — which reads
- * nothing — paid for all of it. Measured on 6/ago: a floor of 121 ms against 19 ms
+ * projections and the derivations behind it, and so `mnema --version`, which reads
+ * nothing, paid for all of it. Measured on 6/ago: a floor of 121 ms against 19 ms
  * for an empty node, on a slowest verb of 169 ms. Seventy-two per cent of what a
  * person waited for was modules loading, and the work itself (3–48 ms) was under
  * the threshold where anybody notices anything at all.
@@ -16,34 +16,34 @@
  *
  * THIS GUARD IS A SHAPE, NOT A STOPWATCH. The machine that runs it has measured
  * contention (five-second timeouts in `cli.test.ts`), so a timed assertion here
- * would be a flake somebody switches off — and then the floor grows back. So this
+ * would be a flake somebody switches off, and then the floor grows back. So this
  * walks the entry's STATIC imports and states what they reach. The milliseconds
  * belong in a report.
  *
  * THE HALF OF THAT WHICH HAS SINCE CHANGED, and it does not change this file's shape.
  * "A flake somebody switches off" assumed a red nobody could tell from contention;
  * `.github/why-it-went-red/` now re-runs a red ALONE and says which reds reproduce.
- * A timed assertion here would still be the wrong instrument — it would measure this
- * machine rather than the floor — but it would no longer be indistinguishable noise.
+ * A timed assertion here would still be the wrong instrument (it would measure this
+ * machine rather than the floor), but it would no longer be indistinguishable noise.
  *
  * AND THE FLOOR GREW BACK ANYWAY, TWICE, WHICH IS WHY THE COUNTS BELOW ARE EXACT.
  * This paragraph used to end at *"the record of an earlier pass says the floor had
  * been brought to 90 ms, and nineteen PRs later it was 121, because nothing
- * measured"* — written as a thing that had happened once. It happened again while
+ * measured"*: written as a thing that had happened once. It happened again while
  * that sentence stood: the last floor anybody recorded was **97.8 ms** (30/jul,
  * `a27f7975`), and the channel-cost measurement of 19/aug found **143.1 ms**, of
  * which only 20.5 ms is node. The two were never reconciled, and this file could not
- * have caught it — its size assertion was `toBeGreaterThan(35)`, a FLOOR and not a
+ * have caught it: its size assertion was `toBeGreaterThan(35)`, a FLOOR and not a
  * ceiling, so a graph that only ever grows satisfies it forever.
  *
  * The gap was then attributed rather than guessed at: `a27f7975` was rebuilt and run
  * on this machine, on this node, beside the current build with the order alternating.
- * It measured 97.3 ms against the current 139.4 — 0.5% from what the archive recorded
- * for it — so the environment did not move and the 42 ms is OURS. It is NOT this list
+ * It measured 97.3 ms against the current 139.4, 0.5% from what the archive recorded
+ * for it, so the environment did not move and the 42 ms is OURS. It is NOT this list
  * getting longer: the July floor reached THIRTY modules under `commands/`, because the
  * rule below did not exist yet, and today it reaches none of them. A floor that carries
  * less work and costs more is not a floor that grew by our modules. Measured
- * marginally, `string-width` is 25.4 ms of it and did not exist in that build — which
+ * marginally, `string-width` is 25.4 ms of it and did not exist in that build, which
  * is why the second table here declares the edges that are NOT the domain's, the table
  * it would have shown up in on the day it arrived.
  *
@@ -65,19 +65,19 @@
  *     would make every other verb pay for the thing built to stop paying.
  *   - every edge from the closure into `@mnema/*` is DECLARED, with the reason it
  *     has to be there. The floor reaches the domain in TWELVE places, five of them a
- *     constant or a parser commander needs before it can route anything — and the table
+ *     constant or a parser commander needs before it can route anything, and the table
  *     is what makes the thirteenth visible instead of silent. It reconciles in both
  *     directions, so an edge that goes away has to leave too;
  *   - every MODULE of `src` on the floor is NAMED, and so is every edge out of it that
  *     is not the domain's. This is the ceiling, and it is structural for the same
  *     reason the rest of the file is: it counts what the source says rather than what
  *     the clock says. A module that arrives lands in `reached` BY NAME, so the failure
- *     says which one — a ceiling that only counted would be a ceiling that tells you to
+ *     says which one: a ceiling that only counted would be a ceiling that tells you to
  *     go looking, and the honest repair for one of those is to raise the number.
  *
  * WHAT IT DOES NOT COVER. A `--help` that changed is a declaration that became
  * lazy, and that is the golden's job (`cli.golden.test.ts`), not this file's. And a
- * static walk says nothing about whether an awaited load actually ran — which is
+ * static walk says nothing about whether an awaited load actually ran, which is
  * the OTHER defect of this shape, and why the second half of this file spawns two
  * real processes instead of reading source.
  */
@@ -99,7 +99,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 /** `packages/code/src`, where the walk starts and stays. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 // ---------------------------------------------------------------------------
@@ -118,9 +118,9 @@ const WITH_BRACES = /^[ \t]*(?:import|export)\s+(type\s+)?\{([^}]*)\}\s*from\s*[
  */
 const BARE =
   /^[ \t]*import\s+(type\s+)?(?!type\s*\{)(?:[A-Za-z_$][\w$]*|\*\s+as\s+[A-Za-z_$][\w$]*)\s*(?:,\s*\{[^}]*\})?\s*from\s*['"]([^'"]+)['"]/gm;
-/** `import '…'` — loaded for its effect, which is still loaded. */
+/** `import '…'`: loaded for its effect, which is still loaded. */
 const SIDE_EFFECT = /^[ \t]*import\s*['"]([^'"]+)['"]/gm;
-/** `export * from '…'` — a barrel loads what it plumbs. */
+/** `export * from '…'`: a barrel loads what it plumbs. */
 const STAR = /^[ \t]*export\s+\*\s+from\s*['"]([^'"]+)['"]/gm;
 
 /**
@@ -128,7 +128,7 @@ const STAR = /^[ \t]*export\s+\*\s+from\s*['"]([^'"]+)['"]/gm;
  *
  * A type-only import is not one: `verbatimModuleSyntax` makes the `type` modifier
  * mandatory, so a clause whose every name carries it is erased and costs nothing.
- * Neither is a dynamic `import()` — that is the whole point of this file, and it is
+ * Neither is a dynamic `import()`, that is the whole point of this file, and it is
  * excluded by construction: every pattern here is anchored at the start of a line
  * with `import`/`export` as the first word, and a dynamic load is an expression.
  */
@@ -164,7 +164,7 @@ interface Edge {
 interface Closure {
   /** Every module of `src` reached, relative to `src`, sorted. */
   readonly modules: readonly string[];
-  /** Every edge out of `src` — a package, a node builtin — sorted. */
+  /** Every edge out of `src` (a package, a node builtin) sorted. */
   readonly external: readonly Edge[];
   /** A relative specifier that resolved to no file: a walk that stopped early. */
   readonly unresolved: readonly Edge[];
@@ -211,12 +211,12 @@ function eagerClosure(entry: string): Closure {
 // ---------------------------------------------------------------------------
 
 /**
- * The packages whose load IS the floor — the ones measured at 38, 68 and 73 ms — and the
+ * The packages whose load IS the floor (the ones measured at 38, 68 and 73 ms) and the
  * one SUBPATH that is here for the opposite reason.
  *
  * `@mnema/chain/one-line` is a leaf: one exported function, no imports of its own, and a
  * guard over its source that says so (`chain/src/one-line.test.ts`). It is named here
- * anyway, because the specifier one character shorter is the proof engine — and the day
+ * anyway, because the specifier one character shorter is the proof engine, and the day
  * somebody widens the re-export in `one-line.ts` to the index, the edge has to be
  * visible rather than lost in the difference between two strings.
  */
@@ -233,8 +233,8 @@ const DOMAIN = [
  *
  * A module under one of these is loaded when a verb runs and never before it: the command
  * adapters and the MCP server because they pull the domain, the completion generator
- * because it walks the whole command tree — which is cheap and is still work `mnema
- * --version` has no reason to do — and the interactive session because it drags all
+ * because it walks the whole command tree (which is cheap and is still work `mnema
+ * --version` has no reason to do) and the interactive session because it drags all
  * three of readline, that same generator and the entry point behind it.
  *
  * AND THE QUESTION THE BARE NAME ASKS, which is the newest of them and joins for the
@@ -248,13 +248,13 @@ const WORK = ['choice', 'commands', 'mcp', 'completion', 'repl'];
  *
  * Eight of the twelve are DECLARATIONS: commander is handed a help string or an
  * argument parser while the program is being built, before it has parsed a word, so
- * the value has to exist by then. Three are not, and they say so — they are what the
+ * the value has to exist by then. Three are not, and they say so: they are what the
  * next pass at the floor is about, and all three cost nothing TODAY because the
  * declarations above them already hold `@mnema/core` open.
  *
  * THE COUNT USED TO SAY EIGHT, AND FIVE DECLARATIONS. What falsified it: the slice that
  * gave the surfaces one vocabulary added the sets' own module to the floor (two edges),
- * and the slice that split that module so both surfaces could read it added a third —
+ * and the slice that split that module so both surfaces could read it added a third,
  * and the sentence went on saying eight through both, because a number in prose is the
  * one thing here that nothing checked. It is checked now: `reaches the domain only where
  * the declaration needs it` asserts the table's SIZE next to its contents, so the next
@@ -334,7 +334,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
  * Every edge out of the floor that is NOT the domain's, and why it is on the floor.
  *
  * The domain table above is about reaching `@mnema/*`. This one is about reaching
- * anything else — a third-party package, a node builtin — and it exists because the
+ * anything else (a third-party package, a node builtin) and it exists because the
  * expensive kind of growth does not have to be ours. The layout library has a case of
  * its own further down, for being the one that was measured at a fifth of a second;
  * this is the general rule that would have caught it, and that catches the next one
@@ -370,8 +370,8 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
  * Every module of `src` the floor loads, by name.
  *
  * THE CEILING, and it is a list rather than a number for one reason: a number can be
- * raised. This file's size assertion used to be `toBeGreaterThan(35)` — a floor under
- * the floor, which a graph that only grows satisfies forever — and while it stood, the
+ * raised. This file's size assertion used to be `toBeGreaterThan(35)` (a floor under
+ * the floor, which a graph that only grows satisfies forever) and while it stood, the
  * measured cost of loading this list went from 97.8 ms to 143 ms with nothing saying
  * so. A count would have gone red and been "fixed" by editing the count. A name has to
  * be ADDED, which is a sentence in a diff saying *I put this on the floor*.
@@ -382,8 +382,8 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
  * first assertion of this file is what says so.
  *
  * `presentation/` is here for a reason worth naming, because it is the part a reader
- * would question: the declarations compose sentences — help, refusals, the contract
- * printed under a verb's help — and composing a sentence is what that directory is.
+ * would question: the declarations compose sentences (help, refusals, the contract
+ * printed under a verb's help) and composing a sentence is what that directory is.
  * It reaches no adapter and no record; the walk above is what says so.
  */
 const FLOOR_MODULES: readonly string[] = [
@@ -406,23 +406,23 @@ const FLOOR_MODULES: readonly string[] = [
   // `program.ts` because it was typed into NINE places and nothing held them together, and a
   // tenth spelling in the entry is the shape the module exists to have ended
   // (`the-sentence-reaches-every-door.test.ts`). What it costs is ONE file with no
-  // imports at all — two string constants, reaching no adapter, no record and no
+  // imports at all: two string constants, reaching no adapter, no record and no
   // package, which the walk above is what proves.
   'promise.ts',
   // THE SECOND MODULE ON THE FLOOR THAT IS A RULE RATHER THAN A DECLARATION, and it is
   // here for the reason `record-framing.ts` below it is. Every verb SAYS what it can do
-  // to the record as it registers, which is eager by construction — commander has the
-  // declaration before it routes a word — and what the two words MEAN is now one module
+  // to the record as it registers, which is eager by construction (commander has the
+  // declaration before it routes a word) and what the two words MEAN is now one module
   // above both surfaces, so the MCP's tools cannot come to classify by a second reading
   // (`record-effect.ts`). Spelling the effect in the wiring instead would be exactly the
   // duplication that module exists to have ended. What it costs is ONE file with NO
   // imports at all: a closed type of two members and two one-line constructors, reaching
-  // no adapter, no record and no package — which the walk above is what proves.
+  // no adapter, no record and no package, which the walk above is what proves.
   'record-effect.ts',
   // THE ONE MODULE HERE THAT IS NOT A DECLARATION AND NOT A SENTENCE, and it is on the
   // floor by a decision rather than by the rule. `mnema switch` declares its channel
   // argument out of the closed set of channels this product pushes, and that set lives
-  // where the channels are decided (`record-framing.ts`) — so commander needs it before
+  // where the channels are decided (`record-framing.ts`), so commander needs it before
   // it can print a line of help. Typing the two names into the wiring instead would be
   // the second spelling the whole module exists to have ended. What it costs is ONE file
   // with no imports of its own: it reaches no adapter, no record and no package, which
@@ -477,8 +477,8 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/problem-report.ts',
   'wiring/promote.ts',
   // The verb that prints the notes a session opens with. It is on the floor for the
-  // reason every verb's wiring is — commander has to hold its declaration to print a line
-  // of help — and it reaches its command and its presentation only inside the action, so
+  // reason every verb's wiring is (commander has to hold its declaration to print a line
+  // of help) and it reaches its command and its presentation only inside the action, so
   // what it adds here is one file of declarations and no adapter.
   'wiring/recall.ts',
   'wiring/no-such-decision.ts',
@@ -515,9 +515,9 @@ const FLOOR_MODULES: readonly string[] = [
 
 /** What an exception table tolerates, and what it does not. */
 interface Reconciliation {
-  /** Reached and NOT declared — the guard's teeth. */
+  /** Reached and NOT declared: the guard's teeth. */
   readonly reached: readonly string[];
-  /** Declared and no longer reached — a declaration that outlived its reason. */
+  /** Declared and no longer reached: a declaration that outlived its reason. */
   readonly stale: readonly string[];
 }
 
@@ -525,8 +525,8 @@ interface Reconciliation {
  * Reconciles what the walk found against what is declared, both ways at once.
  *
  * It takes the declared NAMES rather than a table, because the floor is declared in
- * three shapes now — two tables with a reason per edge, and a plain list of the
- * modules — and this is one rule about two sets. Three readings of "is everything
+ * three shapes now (two tables with a reason per edge, and a plain list of the
+ * modules) and this is one rule about two sets. Three readings of "is everything
  * accounted for" would be three chances for one of them to be the lenient one.
  */
 function reconcile(found: readonly string[], declared: readonly string[]): Reconciliation {
@@ -547,7 +547,7 @@ const DOMAIN_EDGES = FLOOR.external
   .filter((edge) => DOMAIN.includes(edge.specifier))
   .map((edge) => `${edge.from} ${edge.specifier}`);
 
-/** And every edge out of the floor that is NOT the domain's — the other half. */
+/** And every edge out of the floor that is NOT the domain's: the other half. */
 const EXTERNAL_EDGES = FLOOR.external
   .filter((edge) => !DOMAIN.includes(edge.specifier))
   .map((edge) => `${edge.from} ${edge.specifier}`);
@@ -581,12 +581,12 @@ describe('the floor is the declaration', () => {
     // and an edge that goes away lands in `stale` until its entry is deleted.
     expect(reconcile(DOMAIN_EDGES, Object.keys(EAGER_DOMAIN))).toEqual({ reached: [], stale: [] });
     // And the SIZE, so the number this file's own doc states cannot drift from the
-    // table it describes. It drifted twice before anybody noticed — the prose said
+    // table it describes. It drifted twice before anybody noticed: the prose said
     // eight through two slices that made it ten and then eleven.
     expect(Object.keys(EAGER_DOMAIN)).toHaveLength(13);
   });
 
-  it('loads these modules and no others — the ceiling, by name', () => {
+  it('loads these modules and no others: the ceiling, by name', () => {
     // THE CEILING. A module that arrives lands in `reached` and the failure NAMES it;
     // a module that leaves lands in `stale` and the entry has to go. It is a list and
     // not a count because a count can be raised without looking, and this floor has
@@ -597,7 +597,7 @@ describe('the floor is the declaration', () => {
 
   it('leaves the floor for nothing but what is declared out there either', () => {
     // The other direction out: a package or a builtin. The expensive growth does not
-    // have to be ours — `string-width` arrived this way, small and unremarked — and
+    // have to be ours (`string-width` arrived this way, small and unremarked) and
     // this reconciles both ways over the same rule the domain table uses.
     expect(reconcile(EXTERNAL_EDGES, Object.keys(EAGER_EXTERNAL))).toEqual({
       reached: [],
@@ -607,21 +607,21 @@ describe('the floor is the declaration', () => {
 
   it('walks a graph that is really there', () => {
     // This file's own non-vacuity. The assertions above are about a SET, so a walk
-    // that stopped at the entry — a specifier shape this parser stopped recognizing,
-    // a rename — would have to be met by deleting the declarations rather than by
+    // that stopped at the entry (a specifier shape this parser stopped recognizing,
+    // a rename) would have to be met by deleting the declarations rather than by
     // going green on its own; these are the anchors that say the walk arrived.
     expect(FLOOR.modules).toContain('program.ts');
     expect(FLOOR.modules).toContain('wiring/index.ts');
     // Every verb's DECLARATION is in the floor, which is the other half of the rule:
     // commander cannot route a word or print `--help` without them. Read off the map
     // of the surface rather than off the directory, because `verb.ts` is types alone
-    // and is erased — being absent from the floor is what it should be.
+    // and is erased: being absent from the floor is what it should be.
     const verbs = [...eagerSpecifiers(readFileSync(join(SRC, 'wiring/index.ts'), 'utf-8'))]
       .filter((specifier) => specifier.startsWith('./'))
       .map((specifier) => join('wiring', specifier.replace(/^\.\//, '').replace(/\.js$/, '.ts')));
     expect(verbs.length).toBeGreaterThanOrEqual(25);
     for (const verb of verbs) expect(FLOOR.modules).toContain(verb);
-    // And the work the first assertion says is absent does EXIST — otherwise it would be
+    // And the work the first assertion says is absent does EXIST: otherwise it would be
     // reporting empty directories. Asked of every one of them, so a family added to
     // {@link WORK} without files, or renamed, cannot leave that assertion vacuous.
     expect(filesUnder('commands').length).toBeGreaterThan(20);
@@ -629,7 +629,7 @@ describe('the floor is the declaration', () => {
       expect(filesUnder(directory).length, directory).toBeGreaterThan(0);
     // A relative specifier that resolves to nothing is a subtree never visited.
     expect(FLOOR.unresolved).toEqual([]);
-    // The walker follows a value import INTO the domain — proved where the domain is
+    // The walker follows a value import INTO the domain: proved where the domain is
     // supposed to be reached, so "no edges" elsewhere means something.
     const adapter = eagerClosure(join(SRC, 'commands/task.ts'));
     expect(adapter.external.map((edge) => edge.specifier)).toContain('@mnema/core/write');
@@ -637,7 +637,7 @@ describe('the floor is the declaration', () => {
 
   it('never loads the layout library, which is the newest thing it must not pay for', () => {
     // The session's console draws with a library, and that library is the most expensive
-    // import on this surface — measured at a fifth of a second, against a floor of about
+    // import on this surface: measured at a fifth of a second, against a floor of about
     // a tenth. It is paid ONCE, when a caller asks for a session, and by nobody else:
     // `mnema --version` and every verb that reads must not know it exists.
     const external = FLOOR.external.map((edge) => edge.specifier);
@@ -675,7 +675,7 @@ describe('the floor is the declaration', () => {
 
   it('reads an import the way the runtime does', () => {
     // The extractor's own non-vacuity, on input this test owns: each thing it must
-    // see, and each thing it must not. The `import type` case is not hypothetical —
+    // see, and each thing it must not. The `import type` case is not hypothetical:
     // it is the false positive this guard shipped with for one run.
     const loads = (source: string): string[] => [...eagerSpecifiers(source)];
 
@@ -708,7 +708,7 @@ describe('the floor is the declaration', () => {
 
   it('tolerates a declared edge and still reports an undeclared one', () => {
     // The table's mechanism, on names this test owns. The real table is not empty, so
-    // the assertion above exercises the tolerant direction — but not the stale one,
+    // the assertion above exercises the tolerant direction, but not the stale one,
     // which is what keeps the table from outliving its reasons.
     const found = ['a.ts @mnema/core', 'b.ts @mnema/chain'];
     expect(reconcile(found, ['a.ts @mnema/core'])).toEqual({
@@ -765,7 +765,7 @@ describe('a verb that loads its work still answers', () => {
   // In a real process, not through the injected io: the failure mode IS the process
   // exiting first, and an in-process test awaits the same promise commander does.
 
-  it('refuses in a directory that is no project — and says so, and exits non-zero', () => {
+  it('refuses in a directory that is no project, and says so, and exits non-zero', () => {
     const done = cli('verify');
     expect(done.stderr).toContain('No mnema project here');
     expect(done.status).not.toBe(0);
@@ -776,7 +776,7 @@ describe('a verb that loads its work still answers', () => {
     const done = cli('task', 'create', 'a task the floor test wrote');
     expect(done.stdout).toContain('Created task ');
     expect(done.status).toBe(0);
-    // TWO PROCESSES, and one of them FOUNDS a project — the only case in this file that
+    // TWO PROCESSES, and one of them FOUNDS a project: the only case in this file that
     // writes, and the only one that pays a key being made. 237 ms on a quiet machine and
     // 1006 ms with the suite running at a load of twenty.
   }, 60_000);
@@ -785,8 +785,8 @@ describe('a verb that loads its work still answers', () => {
 describe('the width authority is not on the floor', () => {
   // The static walk above cannot see this: the package is reached by `createRequire`, which
   // is a call and not an import, and the call is only as lazy as every caller that reaches
-  // it. A declaration that measured a word while the program was being built — the help of
-  // `repl` aligns its column that way — put the 25 ms back with no import anywhere to show it.
+  // it. A declaration that measured a word while the program was being built, the help of
+  // `repl` aligns its column that way, put the 25 ms back with no import anywhere to show it.
   // So this watches the process: a hook counts every request for the package and the run is
   // the one that asks for nothing but the version.
   it('is not asked for by a run that prints the version', () => {

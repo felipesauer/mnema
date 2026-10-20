@@ -1,5 +1,5 @@
 /**
- * THE NAME, THE HINTS, AND WHERE THE SESSION IS STANDING — the three things the opening
+ * THE NAME, THE HINTS, AND WHERE THE SESSION IS STANDING: the three things the opening
  * of a console says that are not answers to a typed line.
  *
  * Each of the three is here for a different reason, and the reasons are what the cases
@@ -11,9 +11,9 @@
  *     cannot check. THIS USED TO SAY THE TERMINAL FOLDED IT, on purpose, and
  *     `presentation/folded.ts` falsified the second half of that: the product folds, and
  *     what is on purpose is that it never CUTS. The first half of the sentence is what
- *     this file pins, and it did not move — a width still decides what is printed in
+ *     this file pins, and it did not move: a width still decides what is printed in
  *     exactly one place, and everywhere else it decides only where a line breaks.
- *     Art is the exception, and an exception is exactly the thing to pin —
+ *     Art is the exception, and an exception is exactly the thing to pin,
  *     so the three forms are asserted one by one, at the widths that choose them, and the
  *     narrowest is asserted to still say the name.
  *   - THE TIPS ARE PINNED BY WHERE THEY LAND, not by what they say. A hint that has
@@ -24,7 +24,7 @@
  *   - THE STATUS IS PINNED BY WHAT IT DOES NOT DO. `verify` over a real record costs about
  *     a tenth of a second, and anything that asked the record on every redraw would pay it
  *     on every keystroke. That is an ABSENCE, and an absence needs an instrument rather
- *     than an assertion — so the reads are counted, and the counter is proved to have teeth
+ *     than an assertion, so the reads are counted, and the counter is proved to have teeth
  *     by a read of the record in the same window moving it.
  *
  * THE INSTRUMENT NOW TELLS THE OPENING FROM A FRAME, and that is a change of shape rather
@@ -34,7 +34,7 @@
  * a decision taken with the number in hand (`repl/session.ts`, `theRecord`). So the
  * absence was split in two, and the half with teeth is untouched:
  *
- *   - THE OPENING may read the record, and reads it EXACTLY ONCE — asserted against what
+ *   - THE OPENING may read the record, and reads it EXACTLY ONCE: asserted against what
  *     one `runVerify` reads over the same project, path for path, so a second call or a
  *     read per tree is a different list.
  *   - A FRAME may not read it at all. The watch is switched on AFTER the session is open,
@@ -43,12 +43,12 @@
  *
  * AND THE INSTRUMENT NOW TELLS A READ FROM A QUESTION, which is a sharpening rather than
  * a loosening, and it is what following the record required. A session ASKS, ten times a
- * second, whether the chain has grown — one `readdir` per tail and one `stat` on that
+ * second, whether the chain has grown: one `readdir` per tail and one `stat` on that
  * tail's last segment, and nothing opened (`chain/freshness.ts`). Counting that as a read
  * would have made "a frame reads nothing" false about a console that opens no file at all,
  * and the two are different questions of the filesystem: a LISTING says how far a chain
- * reaches, and only a READ can say what is in it. So the doors are split — `readFileSync`
- * and `openSync` are reads, `readdirSync` is a listing — and the promise with teeth is
+ * reaches, and only a READ can say what is in it. So the doors are split (`readFileSync`
+ * and `openSync` are reads, `readdirSync` is a listing) and the promise with teeth is
  * asserted over the reads:
  *
  *   - THE PROBE opens nothing, however long a session watches, and the listings GROW with
@@ -94,7 +94,7 @@ const DIM = `${ESC}[2m`;
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
 
-/** What the caller types in front of — the one thing on every page, at every width. */
+/** What the caller types in front of: the one thing on every page, at every width. */
 const PROMPT = 'mnema>';
 
 /**
@@ -106,7 +106,7 @@ const PROMPT = 'mnema>';
  */
 const CLEARS_THE_LINE = '\u0003';
 
-/** Tab, likewise — the key that finishes a word, and here a record. */
+/** Tab, likewise: the key that finishes a word, and here a record. */
 const COMPLETES = '\u0009';
 
 /**
@@ -141,7 +141,7 @@ interface Touched {
 /**
  * Everything touched while the watch is on.
  *
- * An ESM namespace cannot be spied on, so the module is WRAPPED — every other export is
+ * An ESM namespace cannot be spied on, so the module is WRAPPED: every other export is
  * the real one, and each of the three doors below passes straight through to it.
  */
 const watched = vi.hoisted(() => ({ touched: [] as { door: string; path: string }[], on: false }));
@@ -177,20 +177,20 @@ async function reading(work: () => Promise<void>): Promise<Touched[]> {
 /**
  * Which of those are THE RECORD.
  *
- * A tail is where every event of a chain lives — the segments, the checkpoints and the
- * proof of the tail's own ownership are all under it — and nothing can be projected,
+ * A tail is where every event of a chain lives (the segments, the checkpoints and the
+ * proof of the tail's own ownership are all under it) and nothing can be projected,
  * counted or verified without reading one. So this is not a sample of the record: it is
  * the only door to it. Key material sits beside it under `keys/`, and the status line is
  * allowed to read that, which is why the predicate names the tail and not the tree.
  */
 const RECORD = `${sep}tails${sep}`;
 
-/** Every path of the record that was OPENED — what it took to know what is in it. */
+/** Every path of the record that was OPENED: what it took to know what is in it. */
 const ofTheRecord = (touched: readonly Touched[]): string[] =>
   touched.filter((one) => one.door === 'read' && one.path.includes(RECORD)).map((one) => one.path);
 
 /**
- * WHAT SAYS WHICH IDENTITY THIS INSTALLATION SPEAKS AS — the anchor a tree recorded for a
+ * WHAT SAYS WHICH IDENTITY THIS INSTALLATION SPEAKS AS: the anchor a tree recorded for a
  * key of this machine.
  *
  * It is not the record and the predicate above deliberately does not cover it: it sits
@@ -203,12 +203,12 @@ const ofTheRecord = (touched: readonly Touched[]): string[] =>
  */
 const IDENTITY = /\.anchor$/;
 
-/** Every anchor this process OPENED — what it took to know who this installation is. */
+/** Every anchor this process OPENED: what it took to know who this installation is. */
 const ofTheIdentity = (touched: readonly Touched[]): string[] =>
   touched.filter((one) => one.door === 'read' && IDENTITY.test(one.path)).map((one) => one.path);
 
 /**
- * Every path of the record that was merely LISTED — the probe's whole question.
+ * Every path of the record that was merely LISTED: the probe's whole question.
  *
  * It is counted rather than banned, and the difference is the design: a listing cannot say
  * what an event is, so a session that only ever lists has read nothing. What it CAN say is
@@ -225,7 +225,7 @@ function tailOf(path: string): string {
 }
 
 /**
- * What is in `these` and not in `those` — as a MULTISET, so a path read twice by one and
+ * What is in `these` and not in `those`, as a MULTISET, so a path read twice by one and
  * once by the other counts once here.
  */
 function beyond(these: readonly string[], those: readonly string[]): string[] {
@@ -311,7 +311,7 @@ async function openedAt(
     //
     // THE CLEAR DOES DRAW SOMETHING NOW, and the two writes stay for what they always bought. A
     // clear that leaves the page as it was is an answer that left the page as it was, and that
-    // raises a row at the foot saying so (`src/repl/console.ts`, `judged`) — once the answer has
+    // raises a row at the foot saying so (`src/repl/console.ts`, `judged`), once the answer has
     // ended, which is after the growth this loop waits for. Each half of a line is a frame the
     // moment its key is answered; that is the property this wait rests on, and it did not move.
     let grown = terminal.bytes().length;
@@ -320,7 +320,7 @@ async function openedAt(
     grown = terminal.bytes().length;
     terminal.type('\r');
     await until(() => terminal.bytes().length > grown, `answered ${line}`);
-    // The turn is serialized, so the next line waits for this one — and the wait is on
+    // The turn is serialized, so the next line waits for this one, and the wait is on
     // the page having stopped growing rather than on a fixed pause.
     let settled = terminal.bytes().length;
     for (let still = 0; still < 8; still++) {
@@ -347,7 +347,7 @@ async function openedAt(
  * a resize nothing happened for, and the case built on it could not go red.
  */
 /**
- * A window tall enough for whatever a case here is really about — THE FLOOR'S OWN HEIGHT.
+ * A window tall enough for whatever a case here is really about: THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which was tall while the shortest window this console drew a page on was
  * twenty-four rows. The floor is forty-two now and it is worked out from the drawing of the name
@@ -359,13 +359,13 @@ const TALL = THE_FLOOR.rows;
  * What a console drew, opened at `columns` and then resized to each of `widths` in turn.
  *
  * The page follows the terminal's WIDTH, so each of these is a recomposition of the
- * opening and a page turned — which is exactly the thing that must not cost a read. Each
+ * opening and a page turned, which is exactly the thing that must not cost a read. Each
  * width is waited out until the page has really been turned for it.
  *
  * EACH WIDTH HAS TO CHANGE THE DRAWING, and that is what the frame's departure made a
  * requirement. Any two widths used to differ, because the box was drawn corner to corner; nothing
  * is drawn to an edge now, so a width that moves no glyph turns no page (`repl/panel.ts`,
- * `sameOpening`) and a step waiting for one waits forever — measured, at a hundred and sixty.
+ * `sameOpening`) and a step waiting for one waits forever: measured, at a hundred and sixty.
  */
 async function resizedThrough(columns: number, widths: readonly number[]): Promise<string> {
   const terminal = fakeTerminal({ columns, rows: TALL });
@@ -396,7 +396,7 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
 }
 
 /**
- * What a console read while the caller TYPED — with the opening already paid for.
+ * What a console read while the caller TYPED: with the opening already paid for.
  *
  * The watch is switched on only once the session is open, which is the whole point of the
  * helper: the panel's one read happens before a byte is drawn, so everything counted here
@@ -452,13 +452,13 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<Tou
 }
 
 /**
- * What a console read while the caller COMPLETED a record — with a read already answered.
+ * What a console read while the caller COMPLETED a record: with a read already answered.
  *
  * A Tab over an id is the one offer on this surface whose candidates are not in a
  * declaration, so it is the one that could have gone looking. It cannot: what it offers is
  * what the session has already SHOWN, and this is where that stops being a sentence. The
  * search is run and waited out BEFORE the watch is switched on, so what is counted is the
- * Tabs and nothing else — and the completion is waited for, so a run that pressed Tab
+ * Tabs and nothing else, and the completion is waited for, so a run that pressed Tab
  * against an empty memory is not what came back with no reads.
  *
  * It drives a terminal of its own rather than taking {@link readingWhileTyping}'s, because
@@ -481,8 +481,8 @@ async function readingWhileCompleting(tabs: number): Promise<{
     leaving: hooksNothing,
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
-  // THE READ, PAID FOR OUTSIDE THE WINDOW. `search` reads the record — that is what makes
-  // an id appear on the page at all — and the counting starts after it has answered.
+  // THE READ, PAID FOR OUTSIDE THE WINDOW. `search` reads the record (that is what makes
+  // an id appear on the page at all) and the counting starts after it has answered.
   terminal.type('search\r');
   await until(() => ID_ON_THE_PAGE.test(terminal.bytes()), 'answered with a record');
   const found = ID_ON_THE_PAGE.exec(terminal.bytes())?.[0] as string;
@@ -517,7 +517,7 @@ async function readingWhileCompleting(tabs: number): Promise<{
 describe('a Tab over a record reads nothing, however many times it is pressed', () => {
   it('reads exactly what no Tab reads, and really did finish one', async () => {
     // THE HALF WITH TEETH, asked of the one offer that is not in a declaration. What a Tab
-    // completes here is an id, and the only other way to know one is to open the record —
+    // completes here is an id, and the only other way to know one is to open the record,
     // so this is where "it never reads" would break if it were going to.
     const none = await readingWhileCompleting(0);
     const many = await readingWhileCompleting(4);
@@ -542,7 +542,7 @@ const times = (text: string, what: string): number => text.split(what).length - 
  * THIS USED TO BE THE HEIGHT ALONE. The banner gave way when the DRAWING was taller than
  * the terminal, so holding the height at {@link TALL} was enough to keep it out of the way.
  * It gives way when the PAGE stops fitting now (`presentation/banner.ts`), and what a page
- * costs is answered by whoever composes one — so the way to hold the other axis still is to
+ * costs is answered by whoever composes one, so the way to hold the other axis still is to
  * answer that a page costs no rows at all, which no console does and every case here needs.
  */
 const COSTS_NOTHING = (): number => 0;
@@ -552,7 +552,7 @@ const COSTS_NOTHING = (): number => 0;
  * any of them.
  *
  * The banner gives way on either measurement (`presentation/banner.ts`), so a case about
- * the WIDTH has to hold the other one still — a height that chose a form would make every
+ * the WIDTH has to hold the other one still: a height that chose a form would make every
  * width below answer the same thing. {@link TALL} is the height every console in this file
  * is opened at, and the first case asserts the tall form really is what comes back at it,
  * which is what keeps this from being a height that decides.
@@ -561,7 +561,7 @@ const drawn = (columns: number): string[] =>
   bannerFor({ columns, rows: TALL, needs: COSTS_NOTHING }).map(renderPlain);
 
 /**
- * EVERY DRAWING OF THE NAME THERE IS, biggest first — walked off the module rather than written
+ * EVERY DRAWING OF THE NAME THERE IS, biggest first: walked off the module rather than written
  * down.
  *
  * A form is what a width answers with, so the forms are what the answers CHANGE at. It is the
@@ -588,7 +588,7 @@ function everyDrawing(): readonly (readonly string[])[] {
  *
  * THE FIRST ROW USED TO STAND IN FOR THIS, and it was true of every form there was: the
  * five-row one is a rectangle, so its first row is as wide as the drawing. The biggest one is
- * not — its widest rows are in the middle — so a case that measured the first would give way
+ * not (its widest rows are in the middle), so a case that measured the first would give way
  * one column early and call it the art's own width. It has been true of two different biggest
  * drawings now, the second by a wider margin than the first: forty-four columns on its first
  * row against fifty on its widest.
@@ -602,13 +602,13 @@ describe('the name is drawn, and how much of it depends on the terminal', () => 
     // falsified it is a fourth drawing: the widest form is not the five-row block any more, so
     // that block is what a terminal one column too narrow for the biggest one gets, and asking
     // two hundred columns for it would be asking for something else entirely. Which drawing is
-    // the biggest has changed twice since — from the isometric one to a drawing of blocks — and
+    // the biggest has changed twice since, from the isometric one to a drawing of blocks, and
     // nothing here moved, because the width it asks for is the biggest form's OWN. What the
     // case is for is unchanged and is the half no other case holds: the mask really became a
     // drawing of one glyph.
     const tall = drawn(widthOf(drawn(200)) - 1);
     expect(tall).toHaveLength(5);
-    // Every row is the same width, made of the ink and spaces and nothing else — the
+    // Every row is the same width, made of the ink and spaces and nothing else: the
     // property a mask translated into a glyph either has or has quietly lost.
     expect(new Set(tall.map((row) => [...row].length)).size).toBe(1);
     for (const row of tall) expect(new Set([...row])).toEqual(new Set([INK, ' ']));
@@ -640,7 +640,7 @@ describe('the name is drawn, and how much of it depends on the terminal', () => 
 
   it('never pads a row at its end, in any form', () => {
     // The layout trims the end of every row it writes, so a form padded on the right
-    // would arrive somewhere narrower than this module thinks it is — and the choice
+    // would arrive somewhere narrower than this module thinks it is, and the choice
     // between forms is made on that width.
     for (const columns of [200, 29, 20, 9, 4]) {
       for (const row of drawn(columns)) expect(row).toBe(row.replace(/[ \t]+$/, ''));
@@ -663,7 +663,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     //
     // WHAT IS LEFT IS THE LINK ITSELF, and it is the half that was always this case's: the
     // drawing on the page is one of THIS MODULE'S forms, found by asking which of them is there
-    // rather than by naming one, and it is the biggest — which is only true if the size the
+    // rather than by naming one, and it is the biggest, which is only true if the size the
     // device reported reached the module at all.
     const wide = await openedAt(200);
     expect(wide).toContain(drawn(200)[0] as string);
@@ -677,7 +677,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     expect(on(wide), 'a wide window did not get the whole name').toEqual(
       everyDrawing()[0] as readonly string[],
     );
-    // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE — which is where the ladder is reachable
+    // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE: which is where the ladder is reachable
     // and the reason this case may stop asserting it. Every width above the floor holds the
     // biggest drawing, because it is forty-eight columns and the narrowest page is the floor
     // less its margin; the widths that give it away are all under the floor, where no page is
@@ -695,16 +695,16 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
   it('writes the banner on EVERY frame, exactly as it writes the tips', async () => {
     // THIS CASE SAID *writes the banner ONCE and the tips on every frame*, and the whole of
     // this delivery is the inversion of it. The banner was landed like a line, into a region the
-    // layout wrote once and never took back, and the tips were redrawn — so *once* against *many*
+    // layout wrote once and never took back, and the tips were redrawn, so *once* against *many*
     // was the discriminant between what is kept and what is redrawn. Both are REGIONS now: the
     // banner is the fixed top of the screen and the tips are the last row of the fixed bottom,
     // and every frame draws all three regions. What that buys is the thing the old shape could
-    // not have — the banner is on the screen after ten thousand lines, because it is drawn there
+    // not have: the banner is on the screen after ten thousand lines, because it is drawn there
     // rather than left there.
     const page = await openedAt(200, ['verify', 'audit antipatterns']);
     // It really was a session that did some work, or the counts below are about nothing.
     expect(page).toContain('local integrity verified');
-    // ONE NUMBER AGAINST THE OTHER, still — and now they are the SAME number, which is the
+    // ONE NUMBER AGAINST THE OTHER, still, and now they are the SAME number, which is the
     // claim: the drawing of the name is redrawn as often as the row that says what to type.
     const tipped = times(page, renderPlain(tips()));
     expect(tipped, 'the tips were not redrawn').toBeGreaterThan(1);
@@ -712,7 +712,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
   }, 120_000);
 
   it('says what the caller can do, in the weight this surface means by secondary', () => {
-    // IT USED TO ASSERT EVERY WORD THE SESSION ANSWERS TO and every keystroke besides —
+    // IT USED TO ASSERT EVERY WORD THE SESSION ANSWERS TO and every keystroke besides:
     // the three words, Ctrl-D, Ctrl-C and Tab, all on one row. WHAT FALSIFIED IT is the
     // width: five clauses came to about a hundred and ten characters, and the terminal
     // folded them into two rows below ninety-seven columns, so the row that exists to be
@@ -731,8 +731,8 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // naming any of them. What falsified it is the palette: the slash opens the list those
     // words are IN, so a hint that pointed at the list and then quoted an item out of it
     // would be spending a clause on what the clause beside it already hands over. The
-    // property the line was holding survives whole — the row is an AFFORDANCE rather than a
-    // sentence about nothing — and what carries it is the key rather than the word.
+    // property the line was holding survives whole (the row is an AFFORDANCE rather than a
+    // sentence about nothing) and what carries it is the key rather than the word.
     expect(said.includes(PREFIX)).toBe(true);
     // THE LINK, so the affordance is one that answers: every word the session has begins
     // with that key, and there is at least one.
@@ -752,7 +752,7 @@ describe('the opening says where the session is', () => {
   it('names the project’s directory and the identity, on one line', async () => {
     const page = await openedAt(200);
     expect(page).toContain(project);
-    // The identity is the SHORT form, and short here means a PREFIX — which is the whole
+    // The identity is the SHORT form, and short here means a PREFIX, which is the whole
     // of what makes it honest: whoever holds the value can see this at the front of it.
     // The whole one is read off the disk by this case, from the file the writer records
     // it in, so the two cannot drift into two ideas of what the identity is.
@@ -788,13 +788,13 @@ function recordedAnchor(): string {
 describe('the opening reads the record once, and a redraw never reads it', () => {
   it('reads one verify’s worth, plus the one line per tail a follower resumes from', async () => {
     // THE EXCEPTION, MEASURED. The panel says what the record is, so the opening pays a
-    // `verify` — once. What that costs is not asserted here as a duration, which would be
+    // `verify`, once. What that costs is not asserted here as a duration, which would be
     // a number about this machine; it is asserted as the READS, against the only thing
     // that can say what one verify's worth of them is: one verify.
     //
     // AND IT USED TO BE THE WHOLE OF WHAT THE OPENING PAID. A session follows the record
     // now, and to tell what happens NEXT from what was already there it takes the seq each
-    // tail ENDS at — one entry, off the end of the tail, whatever the history weighs
+    // tail ENDS at: one entry, off the end of the tail, whatever the history weighs
     // (`repl/following.ts`). So the exception has a second half and it has a NUMBER: one
     // line per tail, and the line is one the verify opened too.
     const opening = await reading(async () => {
@@ -814,7 +814,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
       // segment of the record, not from something beside it.
       expect(ofTheRecord(alone), path).toContain(path);
     }
-    // Nothing the verify read went unread by the opening, either — the exception is what
+    // Nothing the verify read went unread by the opening, either: the exception is what
     // the opening pays ON TOP, never something it skipped.
     expect(beyond(ofTheRecord(alone), ofTheRecord(opening))).toEqual([]);
     // The instrument was pointed at something wider than the record, too: opening a
@@ -853,7 +853,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
   it('reads nothing at all when the caller asks for a clean page, however many times', async () => {
     // THE DECISION, MEASURED. A clean page is the page the session opened with, and the
     // panel on it was paid for with the one read this surface declares. Asking for it
-    // again could have been a second `verify` — and worse than costing one, it could have
+    // again could have been a second `verify`, and worse than costing one, it could have
     // made the panel say something different halfway through a session. So the opening is
     // a VALUE the console keeps, and this is what says so: three clean pages read exactly
     // what no clean page reads.
@@ -873,7 +873,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
   it('reads nothing at all when the caller resizes the terminal, however many times', async () => {
     // THE SAME DECISION, ASKED OF THE OTHER CALLER. The page follows the terminal's width
     // now: a caller who narrows their window past the threshold gets the page again, with the
-    // arrangement recomposed for it. Recomposing is not RE-READING — the lines already exist, and what the width
+    // arrangement recomposed for it. Recomposing is not RE-READING: the lines already exist, and what the width
     // decides is which drawing there is room for and how much of the name is drawn. A
     // redraw that asked `verify` again could make the panel say something different
     // halfway through a session, which is the same hazard a clean page was measured
@@ -920,7 +920,7 @@ describe('the session resolves who it is when it opens, and never again', () => 
     // THE COST OF THE ANSWER IS PAID ONCE. What the panel names is also what a verb
     // requiring the asker's identity is handed (`repl/asking.ts`), and the only reason
     // that is affordable is that it is a VALUE the session already has. Resolved per
-    // line, it would be a small file opened on every read the caller runs — cheap enough
+    // line, it would be a small file opened on every read the caller runs: cheap enough
     // to go unnoticed and a second answer to "who is this machine" either way.
     const opening = await reading(async () => {
       await openedAt(200);
@@ -928,7 +928,7 @@ describe('the session resolves who it is when it opens, and never again', () => 
     // NOT VACUOUS: the door really is one this instrument can see, and the opening really
     // goes through it. Without this the absence below is an absence of an instrument.
     expect(ofTheIdentity(opening).length, 'the opening read no identity at all').toBeGreaterThan(0);
-    // AND NOTHING WHILE TYPING, in the window that only sees what a keystroke caused —
+    // AND NOTHING WHILE TYPING, in the window that only sees what a keystroke caused:
     // asked of a verb that requires the identity, so the line that is filled in is the
     // line being counted. (This asked `status`, until `status` stopped requiring one: it answers
     // as the identity this machine writes as when no `--actor` is typed, and RESOLVES that itself,

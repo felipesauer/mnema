@@ -146,7 +146,7 @@ describe('a rule that refuses a write', () => {
   });
 });
 
-describe('where a refusal and a pause for a person meet, the refusal wins — decided here', () => {
+describe('where a refusal and a pause for a person meet, the refusal wins: decided here', () => {
   it('refuses at a path where one rule refuses and another asks', async () => {
     const refusing = await ruleAt('Nobody writes the ledger', 'src/ledger', 'refuses-a-write');
     const asking = await ruleAt('Somebody looks at source', 'src', 'asks-for-a-person');
@@ -175,7 +175,7 @@ describe('where a refusal and a pause for a person meet, the refusal wins — de
 
     const verdict = meets('src/billing/invoice.ts');
     expect(verdict?.grade).toBe('ask');
-    // The same text the asking doors already send — this decision adds a grade above the
+    // The same text the asking doors already send: this decision adds a grade above the
     // asking and changes nothing below it.
     const asked = withScopedCaches(resolveTrees(repo, env), (sources) =>
       whatAWriteAsks(sources, { path: 'src/billing/invoice.ts', root: repo, from: repo }),

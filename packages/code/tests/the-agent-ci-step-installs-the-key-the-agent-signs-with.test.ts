@@ -1,5 +1,5 @@
 /**
- * THE STEP THE PAGE PUBLISHES FOR AN AGENT IN CI INSTALLS THE KEY THE AGENT SIGNS WITH — run, from
+ * THE STEP THE PAGE PUBLISHES FOR AN AGENT IN CI INSTALLS THE KEY THE AGENT SIGNS WITH: run, from
  * the page's own bytes.
  *
  * WHERE THIS COMES FROM. A CI runner begins every job with nothing, so the agent's key has to arrive
@@ -278,7 +278,7 @@ describe('the step the page publishes for an agent in CI', () => {
 
     expect(said.status, said.out).toBe(0);
     expect(said.out).toContain(`Restored the key of the agent ci: ${fingerprint}`);
-    // The server reads the variable; the hook takes the flag only — the line says which.
+    // The server reads the variable; the hook takes the flag only: the line says which.
     expect(said.out).toContain(
       'a server started with --agent-key ci, or with MNEMA_AGENT_KEY=ci in its environment, or a hook started with --agent-key ci, signs with it',
     );

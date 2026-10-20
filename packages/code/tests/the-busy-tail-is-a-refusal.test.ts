@@ -1,5 +1,5 @@
 /**
- * A TAIL ANOTHER PROCESS HOLDS IS A REFUSAL ON THE AGENT'S SURFACE — worded at the door every
+ * A TAIL ANOTHER PROCESS HOLDS IS A REFUSAL ON THE AGENT'S SURFACE: worded at the door every
  * other refusal leaves by, and not answered by the protocol library with a bare message.
  *
  * WHAT WAS WRONG. The chain refuses an append whose tail stays locked past its budget by
@@ -11,8 +11,8 @@
  * waited for a next reply. `answeringThrownRefusals` in `mcp/server.ts`
  * catches it now, beside the identity refusals it already caught.
  *
- * HOW THE TAIL IS MADE BUSY: the lock file of this key's tail, written as a live process — this
- * one — holding it now. The lock waits its whole budget (2000 ms) and refuses; nothing of the
+ * HOW THE TAIL IS MADE BUSY: the lock file of this key's tail, written as a live process, this
+ * one, holding it now. The lock waits its whole budget (2000 ms) and refuses; nothing of the
  * refused write is appended.
  */
 
@@ -28,7 +28,7 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;

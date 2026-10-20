@@ -1,5 +1,5 @@
 /**
- * THE CONSOLE READS THE STACKS AND TURNS NO HOOK ON — held on the built binary, at a real
+ * THE CONSOLE READS THE STACKS AND TURNS NO HOOK ON: held on the built binary, at a real
  * pseudo-terminal.
  *
  * The console is the surface a person reaches by typing `mnema` and it only reads the record: a verb

@@ -5,7 +5,7 @@
  * ONE FACT, WRITTEN ONCE. Which hook reaches which host, through which door and under which
  * matcher, was a hand-written file the binary's tables had to agree with; the shell in front of
  * two of its commands said which host it was in. Now the command line of each hook is generated
- * from the host's row — its door, whether it asks, the variable it sets — and the handler is told
+ * from the host's row (its door, whether it asks, the variable it sets) and the handler is told
  * its host by name (`--host`) and what starts it (`--tools`, `--where`), so the file holds no
  * shell. `the-host-files-are-generated.test.ts` compares each committed file with what this
  * module makes, and writes them with `-u`.
@@ -95,7 +95,7 @@ function version(): string {
 const HOOKS_DESCRIPTION =
   "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way — in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened — a count, which records nothing. And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. Each can be switched off with `mnema switch`, which records that it was.";
 
-/** A variable the HOST expands in the files it reads — written as the host spells it, never ours. */
+/** A variable the HOST expands in the files it reads: written as the host spells it, never ours. */
 const hostVariable = (name: string): string => `$${'{'}${name}}`;
 
 /** How long the host waits for a hook, in seconds. */
@@ -104,7 +104,7 @@ const TIMEOUT = 15;
 /**
  * What a hook that records says of the key it records with: the agent a host's hooks sign as is
  * named for the host (`--agent-key <host>`), where the project's record enrols a key under that
- * name — and the person's key signs everywhere else. The same name the host's server is started
+ * name, and the person's key signs everywhere else. The same name the host's server is started
  * with, where the host's file can say it (`agentServerEnv`).
  */
 const signsAs = (host: HostName): readonly string[] => ['--agent-key', host];
@@ -119,7 +119,7 @@ const agentServerEnv = (host: HostName): { readonly MNEMA_AGENT_KEY: string } =>
   MNEMA_AGENT_KEY: host,
 });
 
-/** The tools Claude Code writes a file through — and Cursor, which names its write as it does. */
+/** The tools Claude Code writes a file through, and Cursor, which names its write as it does. */
 const CLAUDE_WRITES = 'Write|Edit|NotebookEdit';
 
 /** A command hook that runs one handler of the plugin, with its arguments. */
@@ -139,7 +139,7 @@ function nodeRuns(handler: string, args: readonly string[] = []): string {
  *
  * WHY A SHELL AND NOT ONLY THE HANDLER. The handler filters too (`whatTheGateAnswers`), as a
  * second line; but a filter in the handler costs a `node` start at every call it turns away, and
- * VS Code runs every command of the plugin on every tool call, whatever its matcher says — a read
+ * VS Code runs every command of the plugin on every tool call, whatever its matcher says: a read
  * would start two. So a host that sets a variable of its own is asked for it before anything
  * starts (`[ -n "$VAR" ] && …; exit 0`), and a host that reads no matcher has its payload passed
  * on only when it names one of the tools it writes through (`case`). Neither is written by hand:
@@ -460,7 +460,7 @@ export function opencodePlugin(): string {
 
 /**
  * Gemini CLI's extension manifest: the server, declared the way the host's reference gives, and
- * nothing else. The hooks are not in it — the host reads them from `hooks/hooks.json` in the
+ * nothing else. The hooks are not in it: the host reads them from `hooks/hooks.json` in the
  * extension's folder, and the manifest does not name them.
  *
  * THE SERVER IS STARTED AS `mnema mcp`, the first `mnema` on the PATH, as Codex's: the extension is
@@ -745,7 +745,7 @@ function codexManifest(
  * TWO THINGS DIFFER FROM CLAUDE CODE'S, BOTH MEASURED (1.0.94). A plugin's server is started in
  * the plugin's own directory unless the manifest says `cwd`, and `"."` is the session's: without
  * it `mnema mcp` would look for a project in the folder the plugin was installed to. And the
- * server is started as `mnema mcp`, the first `mnema` on the PATH — the host has no option a
+ * server is started as `mnema mcp`, the first `mnema` on the PATH: the host has no option a
  * person fills in, so `mnema_path` cannot reach it. The hooks are the file this host alone reads.
  */
 export function copilotPluginJson(): string {
@@ -1075,7 +1075,7 @@ function withTheSummary(page: string, base: string, path: string): string {
   return `${page.slice(0, from)}${SUMMARY_BEGIN}\n\n${hostSummary(base)}\n\n${page.slice(to)}`;
 }
 
-/** What `path` is once generated, given its committed text — a page keeps its own prose. */
+/** What `path` is once generated, given its committed text: a page keeps its own prose. */
 export function generated(path: (typeof GENERATED)[number], committed: string): string {
   switch (path) {
     case 'plugin/hooks/hooks.json':

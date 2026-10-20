@@ -1,9 +1,9 @@
 /**
- * WHAT SHIPS CITES ONLY WHAT SHIPS — no file this repository publishes may point a reader
+ * WHAT SHIPS CITES ONLY WHAT SHIPS: no file this repository publishes may point a reader
  * at a document the repository does not publish.
  *
  * WHERE THIS COMES FROM. Seven doc-comments in non-test `src` cited this project's local
- * workbench — `.refactor/active/<delivery>/report.md`, `RECONSTRUCTION.md`, a ledger
+ * workbench: `.refactor/active/<delivery>/report.md`, `RECONSTRUCTION.md`, a ledger
  * in `ARCHITECTURE.md`, a study under `.refactor/decisions/`. That directory is
  * `.gitignore`d, so `git ls-files` returns none of those files and nobody outside this
  * machine has one. And the citations SHIPPED: `tsconfig.base.json` sets no
@@ -14,13 +14,13 @@
  * documents no reader could open.
  *
  * WHAT THE FIX WAS, because it is not "delete the reference". Each citation was holding a
- * sentence up. The substantive fact was inline in six of the seven already — the numbers,
- * the falsified premise, the named test — so the sentence stands on its own once the
+ * sentence up. The substantive fact was inline in six of the seven already (the numbers,
+ * the falsified premise, the named test), so the sentence stands on its own once the
  * pointer goes; the two that did not (`mcp/server.ts`, `edit-rules-push.ts`) now say it inline,
  * which is the only place this repository publishes it.
  *
  * THE REACH IS WHAT TRAVELS, AND IT IS ASKED OF GIT. A hand-written list of packages
- * carries whoever wrote it's blind spot — the first sweep of this rule was written against
+ * carries whoever wrote it's blind spot: the first sweep of this rule was written against
  * a package's own `src` alone and missed `plugin/hooks/session-start.mjs`, which cited the
  * same
  * workbench and is code the Claude Code marketplace installs on somebody's machine. So the
@@ -29,17 +29,17 @@
  * have.
  *
  * TESTS ARE DELIBERATELY OUT, and the argument is not "they don't travel" alone. They do
- * not — `files: ["dist/"]` ships no test — but the load-bearing reason is that a test is
+ * not (`files: ["dist/"]` ships no test), but the load-bearing reason is that a test is
  * where a name like this BELONGS. `src/outside-the-record.test.ts` holds
  * `.refactor/decisions` as a fixture on purpose: it is the directory a reader of that
  * module would most expect in the published list, so it is the sharpest case that the list
  * excludes it. Extending this guard over tests would turn that file red over code that is
- * exactly right — the false accusation this workspace has already paid for once.
+ * exactly right: the false accusation this workspace has already paid for once.
  *
  * WHAT IT DOES NOT COVER. It reads NAMES, not reachability: a citation of a file that is
  * tracked today and deleted tomorrow goes unnoticed, and a sentence that invokes authority
  * without naming anything ("the bench measured it") is invisible to it. The second is not
- * an oversight that can be closed by adding `bench` to the list below — counted after this
+ * an oversight that can be closed by adding `bench` to the list below: counted after this
  * delivery, that word carries seventeen uses across fourteen non-test source files, and
  * every one of them either states its fact inline or names something git hands out. There
  * it means the repository a reader is already looking at, not a document, and a guard
@@ -55,13 +55,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
  * WHAT A PUBLISHED FILE MAY NOT NAME, each with why it is here rather than as a bare list.
  *
- * These are DOCUMENTS — a directory and two files a reader would have to open. A WORD whose
+ * These are DOCUMENTS: a directory and two files a reader would have to open. A WORD whose
  * definition only the workbench holds is a citation too, and it is the sibling guard's:
  * `a-label-a-stranger-can-look-up.test.ts` sweeps every tracked file, tests included, for
  * the workbench's numbered rules and its Portuguese vocabulary. The workbench's own name
@@ -101,12 +101,12 @@ interface Citation {
 
 /**
  * THE RULE, IN ONE FUNCTION WITH EVERY CALLER. The corpus case asks it, and so does every
- * case that pins a legitimate path — a second reading of "does this text cite the
+ * case that pins a legitimate path: a second reading of "does this text cite the
  * workbench" is a second rule, and the two disagree the first time one of them moves.
  *
  * It reads the raw text and not `codeOnly`: the defect lives in the COMMENTS, which is
  * exactly what `codeOnly` blanks. That inverts the usual precaution here and brings back
- * the risk it was built for — a guard that quotes what it forbids accuses itself — so this
+ * the risk it was built for, a guard that quotes what it forbids accuses itself, so this
  * file sits in `tests/`, which `A_PUBLISHED_PATH` does not match, and a case below asserts
  * that it does not.
  */
@@ -157,7 +157,7 @@ describe('what this repository publishes cites only what this repository publish
 
   /**
    * EVERY SPELLING FIRES. A row that matches nothing is a row that has quietly stopped
-   * being a rule, and every row here matches nothing in the corpus today — which is the
+   * being a rule, and every row here matches nothing in the corpus today, which is the
    * difference between "absent" and "not looked for".
    */
   it('finds each spelling it forbids, so no row of the list is decorative', () => {
@@ -193,7 +193,7 @@ describe('what this repository publishes cites only what this repository publish
   /**
    * THE GUARD IS NOT ITS OWN CORPUS. This file spells every forbidden name twice over, and
    * a sweep of raw text that reached it would accuse it on the strength of its own
-   * documentation — which is how a sibling guard in this workspace once listed itself.
+   * documentation, which is how a sibling guard in this workspace once listed itself.
    */
   it('does not sweep itself, which is the only reason it may quote what it forbids', () => {
     const itself = 'packages/code/tests/what-ships-cites-only-what-ships.test.ts';

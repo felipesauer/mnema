@@ -1,11 +1,11 @@
 /**
- * WHAT THE RECORD HOLDS RIGHT NOW — the one reading of *did anything reach the chain?*
+ * WHAT THE RECORD HOLDS RIGHT NOW: the one reading of *did anything reach the chain?*
  *
  * IT WAS WRITTEN OUT TWICE AND A THIRD CASE NEEDED IT, which is the shape this bench keeps
  * paying for: two spellings of one measurement is how one of them quietly stops counting
- * something. The two were byte-for-byte the same rule — `every-verb-says-if-it-writes.test.ts`,
+ * something. The two were byte-for-byte the same rule (`every-verb-says-if-it-writes.test.ts`,
  * where every verb of the surface is exercised and counted around, and
- * `a-terminal-of-its-own.test.ts`, where the whole vocabulary is typed at the session's prompt —
+ * `a-terminal-of-its-own.test.ts`, where the whole vocabulary is typed at the session's prompt)
  * and the third is the console crossing the floor of the window
  * (`a-floor-under-the-window.test.ts`), where what has to be true is that a page nobody could
  * draw wrote nothing down.
@@ -20,13 +20,13 @@
  *
  * AND NOTHING ELSE IS COUNTED. This said the cache was left out because "most reads rebuild the
  * projection, which writes a file, so a digest of the whole sandbox would accuse every one of
- * them". The premise was false when it was written — the projection was held in memory — and the
+ * them". The premise was false when it was written (the projection was held in memory) and the
  * tools' guard digests its whole sandbox beside this reading and finds no read that changes a
  * path of it (`every-tool-says-if-it-writes.test.ts`, the MCP still holds it in memory). IT HAS
  * BECOME TRUE OF THE COMMAND LINE, which keeps the projection in the tree it read
  * (`CacheOptions.persist`): the whole-sandbox digests of the verbs now excuse that one file by its
  * shape (`the-cache-is-not-the-record.ts`) and nothing else. What this module answers is still the
- * narrower question — whether something reached the RECORD — and the argument for asking that
+ * narrower question, whether something reached the RECORD, and the argument for asking that
  * one is in `every-verb-says-if-it-writes.test.ts`.
  */
 

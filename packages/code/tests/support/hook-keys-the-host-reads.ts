@@ -1,5 +1,5 @@
 /**
- * WHAT CLAUDE CODE READS IN A HOOKS FILE — the events and the keys, as the host documents them.
+ * WHAT CLAUDE CODE READS IN A HOOKS FILE: the events and the keys, as the host documents them.
  *
  * READ OFF https://code.claude.com/docs/en/hooks on 2026-10-05: the events from the table under
  * "Hook lifecycle", the matcher-group shape from "Configuration", the handler keys from "Hook

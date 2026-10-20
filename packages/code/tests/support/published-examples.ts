@@ -1,15 +1,15 @@
 /**
- * THE PAGES THIS WORKSPACE PUBLISHES A RUNNABLE EXAMPLE ON — read once, by both guards.
+ * THE PAGES THIS WORKSPACE PUBLISHES A RUNNABLE EXAMPLE ON: read once, by both guards.
  *
  * WHY THIS FILE EXISTS AS A FILE. Two rules now stand over the same roster: the example a
  * package publishes is the example that RUNS (`the-example-is-read-from-the-page.test.ts`)
  * and the example a package publishes TYPE-CHECKS (`the-example-is-type-checked.test.ts`).
- * A second copy of the list is the shape that produces divergence in silence — one guard
- * covering a page the other does not — so the list is written here and read twice.
+ * A second copy of the list is the shape that produces divergence in silence (one guard
+ * covering a page the other does not), so the list is written here and read twice.
  *
  * A THIRD GUARD READS THIS FILE AND NOT THIS ROSTER.
  * `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` rules over the SHELL blocks,
- * which no entry here describes, and it takes only {@link ROOT} and {@link read} — one
+ * which no entry here describes, and it takes only {@link ROOT} and {@link read}: one
  * reading of where the workspace is, rather than a third climb up `..`.
  *
  * WHAT AN ENTRY CARRIES, AND WHY TWO KINDS OF ELISION LIVE ON IT. `elided` is what the
@@ -18,7 +18,7 @@
  * the page against them so the declaration cannot go stale. `pagePreamble` is the reverse:
  * names the PAGE itself leaves undeclared, in the prose above its block, which the
  * type-check must supply for the block to be a compilable unit at all. The two never
- * overlap — one is text the page has and the case has not, the other is text the case has
+ * overlap: one is text the page has and the case has not, the other is text the case has
  * and the page has not.
  */
 
@@ -64,7 +64,7 @@ export interface PublishedExample {
   readonly specifiers: Readonly<Record<string, string>>;
   /**
    * The exact lines the case does not carry, in order, at the top of the page's body.
-   * Declared as TEXT, never as a count — a count is a number anyone could raise to
+   * Declared as TEXT, never as a count: a count is a number anyone could raise to
    * swallow a difference.
    */
   readonly elided: readonly string[];
@@ -142,7 +142,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
 
 /**
  * A package README that publishes no runnable TypeScript, and why. Reconciled against the
- * disk in both directions by the comparison guard — an entry that grows a ```ts block is
+ * disk in both directions by the comparison guard: an entry that grows a ```ts block is
  * accused, and so is a README in neither list.
  */
 export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
@@ -179,7 +179,7 @@ export const TYPESCRIPT_FENCES = ['ts', 'tsx', 'typescript'];
 
 const FENCED = '^```(?:' + TYPESCRIPT_FENCES.join('|') + ')$';
 
-/** Whether a page publishes TypeScript at all — the discriminant the roster is swept by. */
+/** Whether a page publishes TypeScript at all: the discriminant the roster is swept by. */
 export function publishesTypeScript(markdown: string): boolean {
   return new RegExp(FENCED, 'm').test(markdown);
 }

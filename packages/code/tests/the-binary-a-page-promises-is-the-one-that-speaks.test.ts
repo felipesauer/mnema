@@ -1,5 +1,5 @@
 /**
- * THE BINARY A PAGE PROMISES IS THE ONE THAT SPEAKS — invoked the way it is installed.
+ * THE BINARY A PAGE PROMISES IS THE ONE THAT SPEAKS: invoked the way it is installed.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT COST. Three pages published a global install under the
  * sentence "This installs the `mnema` binary", and the binary that install creates printed
@@ -16,33 +16,33 @@
  *     with no symlink anywhere.
  *
  * WHY TWENTY-ODD SUBPROCESS TESTS DID NOT SEE IT, which is the part worth keeping. Every
- * subprocess invocation in this suite passes the REAL path —
- * `spawnSync(process.execPath, [CLI, …])` — and the real path is the one spelling that
+ * subprocess invocation in this suite passes the REAL path
+ * (`spawnSync(process.execPath, [CLI, …])`) and the real path is the one spelling that
  * worked. `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` resolves every
  * published `mnema <verb>` against `buildProgram` and says in as many words that "nothing is
  * executed to find out": it answers "does the verb exist?". Nothing answered "does the
  * binary speak?". The path that works had ten witnesses; the path a reader touches had none.
  *
  * SO THIS FILE INVOKES THE BUILT BINARY THE WAY IT IS INSTALLED, and only that. It is not a
- * second reading of what the CLI does — `cli-e2e` and the rest own that. Each case here
+ * second reading of what the CLI does: `cli-e2e` and the rest own that. Each case here
  * asks `--version`, because the answer is one short line the product alone can produce, and
  * because a mute process and a working one differ by exactly that line.
  *
  * THE FOURTH CASE IS THE OTHER HALF, and it is why the fix could not simply be "compare
  * less". Over twenty test files import `../src/cli.js` for {@link buildProgram}, and they do
  * it counting on the entry block NOT firing. A fix that made the block eager would not go
- * obviously red — it would go strange, with the CLI running inside the runner. So one case
+ * obviously red: it would go strange, with the CLI running inside the runner. So one case
  * imports the built module from a script that was itself handed `--version`, and asserts the
  * process stays silent: had the block fired, it would have printed a version.
  *
- * WHAT IT DOES NOT CHECK. Windows spellings (`C:\Program Files\`) — the escaping half is
+ * WHAT IT DOES NOT CHECK. Windows spellings (`C:\Program Files\`): the escaping half is
  * exercised by a space and an accent on this platform, and the drive-letter form is not
  * reachable from here. Nor does it install from a registry.
  *
  * THAT LAST SENTENCE USED TO CARRY A SECOND CLAUSE, AND THE CLAUSE IS DEAD. It read: "the
  * `workspace:*` dependencies of the three internal packages still stop `npm i -g` before
  * the binary is ever reached … which is why the pages that publish that command now say the
- * package is not published yet." Both halves are gone. The three are not internal any more —
+ * package is not published yet." Both halves are gone. The three are not internal any more:
  * they are released beside `@mnema/code`, which is what makes `workspace:*` resolve, since
  * the packer rewrites each one to the concrete version of a package that is on the registry.
  * And the pages no longer say the package is not published: they publish the command and
@@ -68,7 +68,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { VERSION } from '../src/version.js';
 
-/** The built binary — the artifact a global install puts behind `mnema`. */
+/** The built binary: the artifact a global install puts behind `mnema`. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The package's own dependencies, borrowed by the copy that runs from an escaped path. */
@@ -118,21 +118,21 @@ describe('the binary a page promises is the one that speaks', () => {
 
   it('speaks from its real path', () => {
     // The control. This is the spelling the twenty-odd subprocess tests already use, and it
-    // was never broken — it is here so that a failure in the two cases below cannot be
+    // was never broken: it is here so that a failure in the two cases below cannot be
     // mistaken for a broken build or a broken sandbox.
     expect(speaks(CLI, sandbox)).toBe(VERSION);
   });
 
-  it('speaks through a symlink — the shape every global install creates', () => {
+  it('speaks through a symlink: the shape every global install creates', () => {
     const link = join(sandbox, 'mnema');
     symlinkSync(CLI, link);
     expect(speaks(link, sandbox)).toBe(VERSION);
   });
 
-  it('speaks from a path that needs escaping — a space and an accent, no symlink', () => {
+  it('speaks from a path that needs escaping: a space and an accent, no symlink', () => {
     // The built tree is PLANTED here, not linked to: a link would be followed back to the
     // unescaped path and the case would pass without testing anything. Source maps and
-    // declarations are left behind — nothing loads them, and copying them is the bulk of the
+    // declarations are left behind: nothing loads them, and copying them is the bulk of the
     // bytes.
     const home = join(sandbox, 'um diretório com espaço');
     mkdirSync(home);

@@ -4,13 +4,13 @@
  * The sibling slice closed the lines the WIRING words (`tests/a-line-of-success-is-one-line.test.ts`)
  * and named `presentation/` as debt, in a note that said "six of the ten modules". There
  * are twenty-four modules, and the count in the note was of the word `oneLine` rather
- * than of a call — four of the modules it counted only MENTION it in a comment. That is
+ * than of a call: four of the modules it counted only MENTION it in a comment. That is
  * the fourth miss of this series from the same cause: a list of addresses standing in for
  * a rule. So nothing here is found by a list. {@link sitesInSource} walks the layer and
  * {@link CLASSIFIED} answers it, in both directions.
  *
  * THE DISCRIMINANT IS THE ORIGIN OF THE VALUE, and the question is the one the family
- * has always asked — CAN THIS HOLD A NEWLINE. A uuid, an `ADR-<n>`, an anchor, a content
+ * has always asked: CAN THIS HOLD A NEWLINE. A uuid, an `ADR-<n>`, an anchor, a content
  * hash, an instant, a count, a tree, a word of a closed transition table cannot. What
  * arrived through the argv, came back out of the record, or was built out of this
  * machine's environment can, and every one of those goes through `oneLine`.
@@ -18,15 +18,15 @@
  * WHAT IS A SITE HERE IS A VALUE, NOT A LINE, AND THAT IS THE ONE THING THIS SLICE DOES
  * DIFFERENTLY FROM ITS SIBLING. The wiring hands `io.out` a STRING: by the time the rule
  * applies the values are already bytes, so the only unit a guard can see is the whole
- * template — which is why that layer needed a TAG (`wiring/on-one-line.ts`), one that
+ * template, which is why that layer needed a TAG (`wiring/on-one-line.ts`), one that
  * takes the template and collapses every value in it by construction. This layer does not
  * word bytes. It builds a {@link Line} out of PARTS, and a part is a value of its own
  * (`presentation/line.ts`), so a list of columns is not a sentence with three holes in
- * it — it is three values in an array, which no tag could span. The finer unit is
+ * it: it is three values in an array, which no tag could span. The finer unit is
  * available here, and with it "did this site collapse every field" stops being the
  * undecidable question it was over there: each field IS a site, and the guard reads the
- * verdict of each off the source. So the door is `oneLine` itself — the same function the
- * tag calls — applied where the value enters the line, and there is no second one.
+ * verdict of each off the source. So the door is `oneLine` itself, the same function the
+ * tag calls, applied where the value enters the line, and there is no second one.
  *
  * NOT EVERY MODULE HERE IS A SITE, and saying so is part of the classification rather
  * than an exemption. Eleven of the twenty-four never receive the record: they are the
@@ -35,7 +35,7 @@
  * `styled.ts`, `folded.ts`, `render.ts`), the drawing of the product's own name
  * (`banner.ts`) and one sentence about a count (`consultation.ts`). A module that never
  * receives a value from outside has no value whose origin is in question, and the split
- * is DERIVED from the imports rather than written down — so a primitive that starts
+ * is DERIVED from the imports rather than written down, so a primitive that starts
  * reading the record becomes a composer, its values become unclassified, and this file
  * goes red.
  *
@@ -43,11 +43,11 @@
  * phrase BOTH `resume` and `status` print, and the run's goal inside it is text somebody
  * typed: `resume` collapsed it at its own line and `status` did not, so the same run came
  * out as one line through one verb and as two through the other. That is what the rule
- * living at a CALLER costs — as many doors as there are callers — and it is fixed by
+ * living at a CALLER costs (as many doors as there are callers) and it is fixed by
  * moving the collapse into the phrase, where both readings pass. Five more values were
  * open and are named in the table: a search TERM the caller typed, the host store's PATH
  * `usage` reports, an edge's RELATION (`--rel`, which the record takes verbatim) and the
- * ids around it, the agent that adopted an exported pattern, and — the sharpest of them —
+ * ids around it, the agent that adopted an exported pattern, and, the sharpest of them,
  * the fields `show` prints as FACTS under a subject, where an observation's `about` is
  * the value `observe` does not validate.
  *
@@ -64,12 +64,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
-/** `packages/code/src/presentation` — the layer that words what a reading says. */
+/** `packages/code/src/presentation`: the layer that words what a reading says. */
 const LAYER = fileURLToPath(new URL('../src/presentation', import.meta.url));
 
 /** A newline, built rather than typed, so no literal in this file spans two lines. */
 const LF = String.fromCharCode(10);
-/** The collapse — `one-line.ts`, and the one door this layer has. */
+/** The collapse: `one-line.ts`, and the one door this layer has. */
 const DOOR = 'oneLine';
 
 // ---------------------------------------------------------------------------
@@ -80,8 +80,8 @@ const DOOR = 'oneLine';
  * The source with comments blanked and every offset kept, so a `fact(` inside a
  * paragraph of prose is not a call and a `//` never eats a line of code.
  *
- * Strings keep their content — a builder's argument may BE a string literal, and the
- * scan has to see that it is one — and templates are left whole, because their text is
+ * Strings keep their content (a builder's argument may BE a string literal, and the
+ * scan has to see that it is one) and templates are left whole, because their text is
  * what {@link readTemplate} reads a shape out of.
  */
 function withoutComments(source: string): string {
@@ -136,7 +136,7 @@ function copyQuoted(source: string, at: number, keep: (text: string) => void): n
 }
 
 /**
- * A module of this layer that RECEIVES the record — which is every module that imports
+ * A module of this layer that RECEIVES the record, which is every module that imports
  * anything from outside `presentation/`.
  *
  * It is the discriminant for what gets asked at all, and it is derived rather than
@@ -148,8 +148,8 @@ function copyQuoted(source: string, at: number, keep: (text: string) => void): n
  *
  * IT WAS *ANY IMPORT THAT IS NOT `./`* AND THAT IS NOT WHAT IT MEANS. The record arrives from a
  * PACKAGE of this workspace or from a layer above this one; a dependency off the registry brings
- * no record at all, and the first module here to take one — the authority over how many columns
- * text takes, which loads the measurement the layout library draws by — was classified as a
+ * no record at all, and the first module here to take one (the authority over how many columns
+ * text takes, which loads the measurement the layout library draws by) was classified as a
  * composer with nothing to classify. So the predicate names the two ways a record can arrive
  * instead of naming everything that is not local.
  */
@@ -165,7 +165,7 @@ function receivesTheRecord(source: string): boolean {
 interface Site {
   /** The file, relative to `src/presentation`. */
   readonly file: string;
-  /** The expression, as it is written — whitespace collapsed so a wrap cannot move it. */
+  /** The expression, as it is written: whitespace collapsed so a wrap cannot move it. */
   readonly expression: string;
   /** `<file> «<shape>» <expression> #<n>`, or `<file> <builder>(<expression>) #<n>`. */
   readonly key: string;
@@ -319,7 +319,7 @@ function oneExpression(text: string): string {
 
 /**
  * Every argument a builder is handed in this file, with the array a list's columns
- * arrive in flattened — an item's fields are its columns, not one value.
+ * arrive in flattened: an item's fields are its columns, not one value.
  */
 function builderArguments(
   text: string,
@@ -352,7 +352,7 @@ function builderArguments(
   return found;
 }
 
-/** The top-level arguments of the call whose `(` — or list whose `[` — is at `open`. */
+/** The top-level arguments of the call whose `(`, or list whose `[`, is at `open`. */
 function argumentsOf(text: string, open: number): string[] {
   const found: string[] = [];
   let i = open + 1;
@@ -392,9 +392,9 @@ const FOUND = sitesInSource();
 // ---------------------------------------------------------------------------
 
 /**
- * Where one value on a line came from — the answer to the one question this family asks.
+ * Where one value on a line came from: the answer to the one question this family asks.
  *
- *   - `collapsed` — it arrived through the argv, came back out of the record, or was
+ *   - `collapsed`: it arrived through the argv, came back out of the record, or was
  *     built out of this machine's environment, so it goes through `oneLine` HERE. The
  *     table does not decide this: the expression really does hold the call, and a value
  *     that stops going through it goes red.
@@ -413,9 +413,9 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * Every value this layer puts on a line, and where it comes from.
  *
  * The KEYS are reconciled against the source in both directions and the VERDICTS are
- * checked against it; the REASONS cannot be — no walk derives "an anchor is `mnid:` and
+ * checked against it; the REASONS cannot be: no walk derives "an anchor is `mnid:` and
  * 64 hex" from an expression. So the table carries what a reader knows, and the part
- * that rots — which values exist, and whether each is collapsed — is derived.
+ * that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
   // --- brief.ts: the document an agent reads on its own --------------------------
@@ -2228,7 +2228,7 @@ describe('every value this layer puts on a line is classified', () => {
 
   it('walks enough to mean something', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
-    // are equal. The scale is stated, and so is the SPLIT the debt got wrong — it said
+    // are equal. The scale is stated, and so is the SPLIT the debt got wrong: it said
     // "six of the ten modules", counting the WORD `oneLine`, four of whose ten hits are
     // a mention in a comment. There are twenty-seven modules and fifteen are asked.
     //
@@ -2297,12 +2297,12 @@ describe('every value this layer puts on a line is classified', () => {
 // ---------------------------------------------------------------------------
 
 describe('the rule has one door in this layer', () => {
-  /** The shape of the door's own body — `text.replace(/\\s+/g, ' ')`. */
+  /** The shape of the door's own body: `text.replace(/\\s+/g, ' ')`. */
   const A_COLLAPSE = /replace\(\s*\/\\s/;
 
   it('collapses with the shared function and with nothing of its own', () => {
     // `oneLine` is what `wiring/on-one-line.ts`'s tag calls. A second collapse written
-    // here — a `replace` by hand, a local helper — would be a second rule, and the one
+    // here (a `replace` by hand, a local helper) would be a second rule, and the one
     // that stops agreeing is always the second.
     //
     // IT LIVES IN `@mnema/chain` NOW, not in this package's `one-line.ts`, which
@@ -2343,7 +2343,7 @@ describe('the rule has one door in this layer', () => {
   it('accounts for every collapse the layer performs', () => {
     // The direction that catches a value the walk cannot see: if a composer holds a
     // `oneLine` that no site's expression holds, it is collapsing something in a position
-    // this scan does not reach — which means the classification is not total, whatever
+    // this scan does not reach, which means the classification is not total, whatever
     // it says about itself.
     const atASite = new Map<string, number>();
     for (const site of FOUND.sites) {
@@ -2361,7 +2361,7 @@ describe('the rule has one door in this layer', () => {
       if (uses !== seen) unaccounted.push(`${path}: ${uses} in source, ${seen} classified`);
     }
     // `usage.ts` names the models a run used by handing `oneLine` to a `map` inside an
-    // array this walk does not enter — the ONE collapse in the layer that is not at a
+    // array this walk does not enter: the ONE collapse in the layer that is not at a
     // site. It is named rather than left silent, and it is reconciled: the day the count
     // moves, this goes red and the exception is deleted with it.
     expect(unaccounted).toEqual(['usage.ts: 5 in source, 4 classified']);
@@ -2378,7 +2378,7 @@ describe('the rule has one door in this layer', () => {
  * A body is what that read exists to serve, and collapsing one would damage the only
  * thing anybody opened the record for. It is the one exception this layer grants, it is
  * granted per FIELD rather than per module, and it is derived from the source in both
- * directions below — so a sixth body cannot join the five without saying so.
+ * directions below, so a sixth body cannot join the five without saying so.
  */
 const SERVED_WHOLE: Readonly<Record<string, string>> = {
   'body.record.content': 'a memory’s text, which is the whole of that record',
@@ -2445,8 +2445,8 @@ const ORDINARY = '0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55';
 /**
  * The forged value, with its id made UNIQUE per probe.
  *
- * The second half reads as a ROW of the list it lands in — two spaces and something a
- * reader would take for an item — because that is what a forged line costs here: not an
+ * The second half reads as a ROW of the list it lands in (two spaces and something a
+ * reader would take for an item), because that is what a forged line costs here: not an
  * ugly answer, but a record nobody wrote, under a header that counts them.
  *
  * One sandbox serves the whole file and the probes WRITE, so a value reused across two
@@ -2462,7 +2462,7 @@ const forged = (nth: number): string =>
   `${ORDINARY.slice(0, -2)}${String(10 + nth).slice(-2)}${LF}  ${FORGED_ROW}`;
 
 let sandbox: string;
-/** The identity this installation recorded for the project — what `--actor` takes. */
+/** The identity this installation recorded for the project: what `--actor` takes. */
 let actor: string;
 const cwdBefore = process.cwd();
 const envBefore = { ...process.env };
@@ -2508,7 +2508,7 @@ interface Probe {
 
 /** Where the forged value goes in a probe's argv. */
 const VALUE = '<value>';
-/** Where the id the WRITE minted goes — a read that has to be asked by it. */
+/** Where the id the WRITE minted goes: a read that has to be asked by it. */
 const RECORDED = '<recorded>';
 /** Where the identity `init` recorded goes. */
 const ACTOR = '<actor>';
@@ -2518,8 +2518,8 @@ const ACTOR = '<actor>';
  * entering exactly as somebody would type it.
  *
  * Four of the six take TWO verbs, and those are the sharpest: a forged value enters the
- * record through one verb — `observe`, which does not validate its positional, `task`,
- * `link`, `run start` — and comes back out through another, as a FACT under a subject in
+ * record through one verb (`observe`, which does not validate its positional, `task`,
+ * `link`, `run start`) and comes back out through another, as a FACT under a subject in
  * `show`, as a ROW of a counted list in `status`, as an edge in `refs`. The rest are
  * named in {@link UNREACHABLE} with what stands in the way, and the two lists are
  * reconciled against the classification.
@@ -2578,7 +2578,7 @@ function mintedId(said: readonly string[]): string {
 
 describe('a value from outside cannot forge a second line', () => {
   for (const [nth, probe] of PROBES.entries()) {
-    it(`keeps it to one line — ${probe.keys.join(' + ')}`, async () => {
+    it(`keeps it to one line: ${probe.keys.join(' + ')}`, async () => {
       const value = forged(nth);
       const wrote =
         probe.first === undefined
@@ -2592,12 +2592,12 @@ describe('a value from outside cannot forge a second line', () => {
       );
       const whole = said.out.join(LF);
       // THAT THIS PROBE REACHED ITS SITE. Every line of this surface is one line, so a
-      // count alone passes for a probe that never got there — which is exactly what a
+      // count alone passes for a probe that never got there, which is exactly what a
       // refusal one branch earlier looks like.
       expect(whole, probe.keys[0]).toContain(probe.says);
       // AND THAT THE VALUE ARRIVED, rather than being dropped on the way.
       expect(whole, probe.keys[0]).toContain(FORGED_MARK);
-      // THE FORGERY IS THE SECOND HALF STANDING AT THE HEAD OF A LINE — that is what
+      // THE FORGERY IS THE SECOND HALF STANDING AT THE HEAD OF A LINE: that is what
       // reads as a row of the list it landed in, and it is what may not exist. Asserted
       // on the shape rather than on a count of lines, because a probe that covers three
       // values lands the half on three lines legitimately.
@@ -2616,7 +2616,7 @@ describe('the run’s phrase reads the same by both paths', () => {
     // THE CASE THIS SLICE WAS HANDED. `lastRunPhrase` is worded once and printed twice,
     // and the goal inside it is text somebody typed: the collapse used to be at
     // `resume`'s line, so `status` printed the same run raw. Asserted on the PHRASE
-    // rather than on the two whole answers — the two readings say different things
+    // rather than on the two whole answers: the two readings say different things
     // around it, and what has to agree is the run.
     const goal = `a goal${LF}  ${FORGED_ROW}`;
     await invoke('run', 'start', '--which', 'the-same-agent', '--goal', goal);

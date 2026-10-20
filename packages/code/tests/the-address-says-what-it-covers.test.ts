@@ -1,5 +1,5 @@
 /**
- * What an address covers, said at the moment somebody records one — on BOTH surfaces
+ * What an address covers, said at the moment somebody records one: on BOTH surfaces
  * that record one, over a real working tree.
  *
  * THE HOLE THIS CLOSES was measured and not guessed: an address one segment shallower
@@ -9,7 +9,7 @@
  *
  * IT IS A FACT AND NOT A WARNING, which is asserted rather than said: the invocation
  * exits clean whatever the reach, and the wording carries no threshold, no advice and
- * no glyph. The cases below hold both halves — the number, and the absence of an
+ * no glyph. The cases below hold both halves: the number, and the absence of an
  * opinion about it.
  *
  * THE BASE IS A JUDGEMENT AND IT SAYS SO. What counts as "a file of the project" has
@@ -87,7 +87,7 @@ function connect(): Session {
   return openSession({ clientName: 'agent-alpha', roots: [pathToFileURL(repo).href], env });
 }
 
-/** A connected client over the real transport — what the agent actually talks to. */
+/** A connected client over the real transport: what the agent actually talks to. */
 async function connectClient(): Promise<Client> {
   const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
@@ -136,7 +136,7 @@ describe('the command line says what an address covers', () => {
     file('src/billing/charge.ts');
     file('README.md');
     const said = await address('src/collate');
-    // Four files, and `.mnema` — the record this product writes — is out of the base
+    // Four files, and `.mnema`, the record this product writes, is out of the base
     // and named on the line, which is the whole of what "the base is a judgement" means.
     expect(reachLine(said)).toBe(
       '  src/collate covers 2 of 4 file(s) counted in the working tree; not counted: .mnema.',
@@ -203,7 +203,7 @@ describe('the base of the fraction', () => {
     const said = await address('.');
     const line = reachLine(said);
     // One file: `src/a.ts`. Everything under a skipped name is out of the base
-    // entirely — six directories of content, none of it counted.
+    // entirely: six directories of content, none of it counted.
     expect(line).toContain('covers 1 of 1 file(s)');
     for (const skipped of NOT_HAND_WRITTEN) {
       expect(line, skipped).toContain(skipped);
@@ -211,10 +211,10 @@ describe('the base of the fraction', () => {
     expect(line).toContain('not counted:');
   });
 
-  it('counts a hand-written dotted directory — the rule is not "starts with a dot"', async () => {
+  it('counts a hand-written dotted directory: the rule is not "starts with a dot"', async () => {
     file('.github/workflows/ci.yml');
     file('src/a.ts');
-    // `.github/workflows/ci.yml` and `src/a.ts` — the dotted one counts.
+    // `.github/workflows/ci.yml` and `src/a.ts`: the dotted one counts.
     expect(reachLine(await address('.'))).toContain('covers 2 of 2 file(s)');
     expect(reachLine(await address('.github'))).toContain('covers 1 of 2 file(s)');
   });
@@ -235,7 +235,7 @@ describe('the base of the fraction', () => {
     for (let i = 0; i < 12; i += 1) file(`src/d${i}/f.ts`);
     // The ceiling is squeezed rather than the tree grown: a case that wrote fifty
     // thousand files is a case nobody runs, and what has to be proved is that the walk
-    // STOPS and SAYS SO — not the size of the real number.
+    // STOPS and SAYS SO, not the size of the real number.
     const cut = reachOfAddress('governs', '.', repo, 5);
     expect(cut?.truncated).toBe(true);
     expect(cut?.counted).toBe(5);
@@ -266,7 +266,7 @@ describe('the agent is told the same thing', () => {
     expect(linked.reach).toBeDefined();
     expect(linked.reach?.address).toBe('src/collate');
     expect(linked.reach?.under).toBe(1);
-    // The CLI, over the same tree, reports the same base — one derivation, one walk,
+    // The CLI, over the same tree, reports the same base: one derivation, one walk,
     // one judgement about what a file of the project is.
     expect(reachLine(await address('src/collate'))).toContain(
       `covers 1 of ${linked.reach?.counted} file(s)`,
@@ -324,9 +324,9 @@ describe('one place decides which relations carry an address', () => {
    * asserts it against the derivation that reads them rather than against a list
    * written twice. It said "whose target is a path" and the decision import falsified
    * that: `derived-from` records the file a proposal was read out of, which is a path
-   * and covers no region — so the list is about coverage, never about the shape of the
+   * and covers no region, so the list is about coverage, never about the shape of the
    * string. Read on: `governance.ts` walks exactly these relations, so a third one added
-   * to the constant and not to the walk — or the reverse — is red here.
+   * to the constant and not to the walk, or the reverse, is red here.
    *
    * Read off the SOURCE because the walk takes the relation as an argument, so no
    * type can hold this: the domain is an open string by design (a relation is never a
@@ -344,7 +344,7 @@ describe('one place decides which relations carry an address', () => {
       new Set(['GOVERNS_RELATION', 'ASKS_FOR_A_PERSON_RELATION', 'REFUSES_A_WRITE_RELATION']),
     );
     expect([...ADDRESS_RELATIONS]).toEqual(['governs', 'asks-for-a-person', 'refuses-a-write']);
-    // And the reach agrees with the constant, member for member — the third place the
+    // And the reach agrees with the constant, member for member: the third place the
     // pair could have drifted.
     for (const rel of ADDRESS_RELATIONS) {
       expect(reachOfAddress(rel, '.', repo), rel).toBeDefined();
@@ -358,7 +358,7 @@ describe('the walk is nowhere near the hot path', () => {
    * A `readdir` of the whole project is fine once, in a verb a person just ran; it is
    * not fine on the channel the HOST calls before every file write. So the reach is
    * reached from the two verbs that RECORD an address and from nothing else, and that
-   * is checked by walking the package's own source for the call — by the symbol, so a
+   * is checked by walking the package's own source for the call: by the symbol, so a
    * third caller written next year is red here rather than slow in production.
    */
   it('is called from the two write verbs and from nowhere else', async () => {

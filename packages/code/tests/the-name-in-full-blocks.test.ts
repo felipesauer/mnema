@@ -1,17 +1,17 @@
 /**
- * THE NAME IN FULL BLOCKS — the drawing that replaced the nine rows of shades, and the floor
+ * THE NAME IN FULL BLOCKS: the drawing that replaced the nine rows of shades, and the floor
  * that follows it instead of being told what it is.
  *
  * WHERE THE REQUIREMENT CAME FROM: the name was asked to be drawn *better and more robust*,
  * now that a floor under the window guarantees the room for it. Four samples were drawn in the
- * real arrangement and one was chosen — full blocks with a contour round them, six rows by
+ * real arrangement and one was chosen: full blocks with a contour round them, six rows by
  * forty-eight columns. What was turned down is worth as much as what was kept: the nine-row
  * drawing whose last three rows are the dust of a drop shadow, which disappears in a thin font,
  * and a compact three-row one, which is the opposite of what was asked for.
  *
  * AND THE INTERACTION IT FORCED IS WHAT THIS FILE IS REALLY ABOUT. The delivery before this one
  * defined the shortest window this console draws on as *the height the name is drawn whole at*
- * and left the answer as a NUMBER — fifty-one, measured on a real pseudo-terminal one row at a
+ * and left the answer as a NUMBER: fifty-one, measured on a real pseudo-terminal one row at a
  * time. A number measured once is true of the drawing it was measured against: swap in a
  * drawing three rows shorter and fifty-one is a floor nine rows above where the name is drawn
  * whole, and every window in between draws the screen that says it is too small for no reason
@@ -21,7 +21,7 @@
  *
  * WHAT IT HOLDS, and what each part needs its instrument for:
  *
- *   - THE ART ITSELF, measured by the function the page is measured by — never by counting
+ *   - THE ART ITSELF, measured by the function the page is measured by, never by counting
  *     characters here, which would be a second opinion about how wide a row is.
  *   - THE FLOOR AS A FUNCTION: the old drawing handed back puts the floor back at fifty-one,
  *     a row of drawing is worth three rows of window, and a drawing too wide for the page moves
@@ -35,7 +35,7 @@
  *
  * WHAT IS NOT HERE, deliberately: the floor ON A REAL DEVICE. A session driven on a
  * pseudo-terminal at the floor draws every row of the art and one row under it says the window
- * is too small — that is `tests/the-floor-is-where-the-name-is-drawn.test.ts`, which reads the
+ * is too small, that is `tests/the-floor-is-where-the-name-is-drawn.test.ts`, which reads the
  * drawing off the module and the size off the floor, so it moved with both. A second copy of
  * that run would cost four minutes to assert what is already asserted.
  */
@@ -63,7 +63,7 @@ const ACROSS = widthOfTheDrawing(THE_BIGGEST_DRAWING);
 
 describe('the drawing is six rows of one width, in glyphs the product measures at one column', () => {
   it('is forty-eight columns, and every row reaches them but the one whose letter ends in a blank', () => {
-    // THE WIDTH IS ASKED OF THE PRODUCT'S OWN MEASUREMENT — `widthOf`, which is what the panel
+    // THE WIDTH IS ASKED OF THE PRODUCT'S OWN MEASUREMENT: `widthOf`, which is what the panel
     // chooses an arrangement by and what the floor works its columns out of. Counting the
     // characters here instead would be this file's opinion about how wide a row is, and the
     // arrangement would go on believing its own.
@@ -71,8 +71,8 @@ describe('the drawing is six rows of one width, in glyphs the product measures a
     expect(ACROSS, 'the drawing is not forty-eight columns wide').toBe(48);
 
     // AND EVERY ROW IS THAT WIDTH BUT ONE, WHICH IS THE TRIM RULE SEEN FROM THE OTHER END. No
-    // row of a form may end in a blank — the layout trims what it writes, so a padded row would
-    // arrive narrower than the arithmetic that chose it believes — and the last letter's top row
+    // row of a form may end in a blank (the layout trims what it writes, so a padded row would
+    // arrive narrower than the arithmetic that chose it believes) and the last letter's top row
     // ends in a blank of its own shape. So that blank came off with the padding and the top row
     // is one column short of the rest. What matters is that NOTHING is wider than the drawing
     // says and nothing is short by more than that blank.
@@ -96,7 +96,7 @@ describe('the drawing is six rows of one width, in glyphs the product measures a
     //
     // AND THE ANSWER IS HALF AN ANSWER, WHICH IS WHY IT IS WRITTEN OUT. What the product
     // measures with counts CODE POINTS (`presentation/plain.ts`), so every one of these glyphs
-    // is one column to it — the measurement is self-consistent, which is what keeps the
+    // is one column to it: the measurement is self-consistent, which is what keeps the
     // arrangement, the floor and the fold agreeing with each other, and it says nothing about
     // what a CJK terminal draws. That debt is declared in the module and it did not change kind
     // when this drawing arrived: it was one ambiguous glyph and it is seven.
@@ -107,7 +107,7 @@ describe('the drawing is six rows of one width, in glyphs the product measures a
     }
     // NOT VACUOUS: the measurement really can answer more than one. A single code point is one
     // column to it whatever it is, so a case that only ever showed it a single code point would
-    // be affirming the counter rather than the drawing — this is what it says about something
+    // be affirming the counter rather than the drawing: this is what it says about something
     // it counts as two.
     expect(widthOf(subjectLine(`${glyphs[0] as string}${glyphs[0] as string}`))).toBe(2);
   });
@@ -123,7 +123,7 @@ function aDrawingOf(rows: number, across = 20): readonly Line[] {
 }
 
 /**
- * THE DRAWING THIS CONSOLE HAD UNTIL THIS DELIVERY — nine rows, as a FIXTURE.
+ * THE DRAWING THIS CONSOLE HAD UNTIL THIS DELIVERY: nine rows, as a FIXTURE.
  *
  * It is the shape of the old art and not the art: what the floor is a function of is how many
  * rows a drawing has and how wide it is, so a fixture of the right shape asks the same question
@@ -134,7 +134,7 @@ const THE_NINE_ROW_DRAWING: readonly Line[] = aDrawingOf(9, 50);
 describe('the floor follows the drawing, because it is worked out from it', () => {
   it('is what the drawing there is asks for, and the drawing before it asked for fifty-one', () => {
     // THE PROMISE OF THE DELIVERY, IN TWO LINES. The floor is the function applied to the art
-    // there is, and the art there was puts it back where it was written down — which is the one
+    // there is, and the art there was puts it back where it was written down, which is the one
     // statement that could not be made while the floor was a number, because a number does not
     // answer questions about drawings it was not measured against.
     expect(THE_FLOOR, 'the floor is not what the drawing there is asks for').toEqual(
@@ -171,8 +171,8 @@ describe('the floor follows the drawing, because it is worked out from it', () =
 
   it('keeps the width everything was measured across, until a drawing wants more', () => {
     // THE OTHER MEASUREMENT, AND IT WAS A NUMBER TOO. Eighty columns is what every ladder on
-    // this surface was measured across, and the drawing has to be INSIDE the page — which keeps
-    // a margin — so the floor's width is the larger of the two demands rather than the first of
+    // this surface was measured across, and the drawing has to be INSIDE the page, which keeps
+    // a margin, so the floor's width is the larger of the two demands rather than the first of
     // them. The art there is does not dispute it, and the case says so by measuring rather than
     // by asserting the number alone.
     expect(THE_FLOOR.columns, 'the floor is not eighty columns').toBe(80);
@@ -209,7 +209,7 @@ describe('the floor follows the drawing, because it is worked out from it', () =
  * The lines are of the shape the session composes rather than its bytes: one row of title, one
  * of place, a heading and a line per tree (`repl/session.ts`). What binds this shape to the one
  * a console really draws is a pseudo-terminal, and that measurement is in
- * `tests/the-floor-is-where-the-name-is-drawn.test.ts` — where the arrangement is read off the
+ * `tests/the-floor-is-where-the-name-is-drawn.test.ts`, where the arrangement is read off the
  * page's own seam and compared with this floor.
  */
 const A_PAGE = {
@@ -226,7 +226,7 @@ const A_PAGE = {
 } as const;
 
 /**
- * HOW TALL A SCREEN A DRAWING NEEDS ON THAT PAGE — the composer's own question, written out.
+ * HOW TALL A SCREEN A DRAWING NEEDS ON THAT PAGE: the composer's own question, written out.
  *
  * It is the taller of two demands: the rows the page takes with this drawing in it plus the
  * input area under it, and the shortest screen on which the arrangement this drawing would
@@ -302,7 +302,7 @@ describe('the floor is the shortest screen the whole name survives on, searched 
 // ---------------------------------------------------------------------------
 
 /**
- * EVERY DRAWING THERE IS, richest first — walked off the module rather than written down.
+ * EVERY DRAWING THERE IS, richest first: walked off the module rather than written down.
  *
  * A form is what a size answers with, so the forms are what the answers CHANGE at: the widths
  * are walked from a terminal wider than anything down to one with no width at all, on a page
@@ -323,10 +323,10 @@ describe('the ladder is total: every window gets a drawing, and never a richer o
   it('answers every size of a grid, and never richer on a smaller window it draws on', () => {
     // WHAT TOTALITY MEANS ON TWO MEASUREMENTS, asserted over a grid rather than at the sizes
     // this delivery happened to think about. Two properties, and they are not asked over the
-    // same region — which is a MEASUREMENT this file made rather than a hedge it chose:
+    // same region, which is a MEASUREMENT this file made rather than a hedge it chose:
     //
     //   - THERE IS ALWAYS A DRAWING, AT EVERY SIZE OF THE GRID. The floor of the ladder is the
-    //     name as it is typed, and it is answered at every width and every height there is —
+    //     name as it is typed, and it is answered at every width and every height there is,
     //     including sizes no device reports, because a function of a number has to answer for
     //     the number.
     //   - AND RICHNESS ONLY EVER GOES ONE WAY ON A WINDOW THIS CONSOLE DRAWS ON. A window one
@@ -334,13 +334,13 @@ describe('the ladder is total: every window gets a drawing, and never a richer o
     //     richer one.
     //
     // THE SECOND ONE IS FALSE UNDER THE FLOOR, and the numbers are the point. Walking the whole
-    // grid finds THIRTY inversions, every one of them at the same width step — fifty-eight
-    // columns to fifty-nine — and the tallest window that has one is FORTY-ONE rows, which is
+    // grid finds THIRTY inversions, every one of them at the same width step, fifty-eight
+    // columns to fifty-nine, and the tallest window that has one is FORTY-ONE rows, which is
     // one row under the floor. What happens there is that fifty-nine columns is where the page
     // first has room for an ARRANGEMENT across, and an arrangement has to be inside its share of
     // the screen: a window too short for that share is refused the drawing it was being given
     // while the same lines were landing on the roll. Above the floor there is always room for
-    // the share, so it cannot happen — measured as ZERO over the same grid, not argued.
+    // the share, so it cannot happen: measured as ZERO over the same grid, not argued.
     //
     // IT IS NOT THIS DELIVERY'S TO CLOSE and it is not a consequence of it: the step is a
     // property of the arrangement's own budget, which this delivery did not touch, and every
@@ -387,7 +387,7 @@ describe('the ladder is total: every window gets a drawing, and never a richer o
       Math.max(...richerOnTheSmaller.map(heightOf)),
       'an inversion reaches a window the console draws a page on',
     ).toBe(THE_FLOOR.rows - 1);
-    // AND THE GRID REALLY CROSSES THE THRESHOLDS, so more than one rung was walked — and the
+    // AND THE GRID REALLY CROSSES THE THRESHOLDS, so more than one rung was walked, and the
     // richest of them is the drawing this delivery is about.
     const walked = new Set(rank.flat());
     expect(walked.size, 'the grid never left one rung of the ladder').toBeGreaterThan(1);

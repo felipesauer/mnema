@@ -1,5 +1,5 @@
 /**
- * WHAT A PACKAGE PUBLISHES IS WHAT ITS PAGE PROMISES — asked of the tarball, not of the tree.
+ * WHAT A PACKAGE PUBLISHES IS WHAT ITS PAGE PROMISES: asked of the tarball, not of the tree.
  *
  * WHERE THIS COMES FROM. Three of this workspace's four packages were `private: true` with no
  * `files` field at all, which meant nothing had ever decided what they would carry. Measured
@@ -7,7 +7,7 @@
  * seventeen `__pycache__/*.pyc` bytecode caches, forty-one `.test.ts` files, and a
  * `tsconfig.json` whose `extends` points two directories above the package and therefore
  * resolves to nothing. The root `.gitignore` names `__pycache__/` and `dist/`, and the packer
- * read NEITHER of them — it looks for an ignore file beside the manifest and does not walk up
+ * read NEITHER of them: it looks for an ignore file beside the manifest and does not walk up
  * to the workspace root. So "publish whatever is not ignored" was never the rule in force;
  * there was no rule in force.
  *
@@ -18,7 +18,7 @@
  * Python verifier written from the document. Copying `files: ["dist/"]` from `@mnema/code`
  * would have shipped the engine with none of them, which is a page promising what the
  * artifact does not carry. So the chain tarball carries them, and the case below RUNS the
- * verifier out of an extracted tarball — with nothing else beside it — because a list of
+ * verifier out of an extracted tarball, with nothing else beside it, because a list of
  * filenames proves the files are present and not that they are enough.
  *
  * `@mnema/core` and `@mnema/context` carry `dist/` and no more. They are published because
@@ -33,7 +33,7 @@
  *     that measured `npm pack` would be measuring an artifact nobody can install.
  *   - `tar` AND NOT THE PACKER'S OWN `--json`, because the report is not the tarball.
  *     Measured on `@mnema/context`: `pnpm pack --json` listed 107 files and the tarball held
- *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root — so the one
+ *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root, so the one
  *     file that makes `"license": "Apache-2.0"` more than a word in a manifest is exactly the file
  *     neither report mentions. A guard reading the report would have sworn it was absent.
  *
@@ -49,7 +49,7 @@
  * 380 in `@mnema/code`. The choice was between shipping `src/` and embedding the source in
  * the maps, and it was made for the second. `tsconfig.base.json` now sets `inlineSources`,
  * which the compiler honours for the maps of the emitted JavaScript and NOT for declaration
- * maps — measured with `tsc` 7.0.2, a `.d.ts.map` comes out with `sources` and no
+ * maps: measured with `tsc` 7.0.2, a `.d.ts.map` comes out with `sources` and no
  * `sourcesContent` whatever `inlineSources` says. A declaration map can therefore only point
  * at a `src/` the tarball does not carry, so `declarationMap` is off, and
  * {@link mapsWithoutTheirSource} below holds both halves: every map that travels carries the
@@ -63,13 +63,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
  * EVERY PACKAGE OF THE WORKSPACE, ASKED OF GIT. `pnpm-workspace.yaml` says `packages/*`, and
  * a list typed here would stay at four while a fifth arrived carrying whatever the packer's
- * defaults decide — which is precisely the state this file was written to end.
+ * defaults decide, which is precisely the state this file was written to end.
  */
 const MANIFESTS: readonly string[] = execFileSync(
   'git',
@@ -104,7 +104,7 @@ const ALL: readonly Manifest[] = MANIFESTS.map(readManifest);
 const PUBLISHABLE: readonly Manifest[] = ALL.filter((m) => m.private !== true);
 
 /**
- * One sandbox of its own for the tarballs, destroyed when the file is done — never the work
+ * One sandbox of its own for the tarballs, destroyed when the file is done, never the work
  * tree, and never a directory another worker writes to.
  */
 const SANDBOX = mkdtempSync(join(tmpdir(), 'mnema-tarballs-'));
@@ -202,7 +202,7 @@ describe('the workspace knows which packages it publishes', () => {
 
   it('says out loud that a scoped package is public, because npm assumes otherwise', () => {
     // Every name here is under `@mnema/`, and a scoped package defaults to restricted. The
-    // failure is not silent — the publish is refused — but it is refused for each package
+    // failure is not silent (the publish is refused), but it is refused for each package
     // separately, which is how three of four get published and one does not.
     const quiet = PUBLISHABLE.filter((m) => m.publishConfig?.access !== 'public').map(
       (m) => m.where,
@@ -213,7 +213,7 @@ describe('the workspace knows which packages it publishes', () => {
   it('decides what it carries, rather than letting the packer decide', () => {
     // A package with no `files` publishes whatever the packer's defaults leave behind, and
     // this workspace measured what that is: bytecode caches, test files, and a
-    // `tsconfig.json` that extends a path outside the tarball. The point is not which list —
+    // `tsconfig.json` that extends a path outside the tarball. The point is not which list:
     // it is that there is one.
     const undecided = PUBLISHABLE.filter((m) => !Array.isArray(m.files) || m.files.length === 0);
     expect(undecided.map((m) => m.where)).toEqual([]);
@@ -265,7 +265,7 @@ describe('nothing travels that is a fact about this machine', () => {
 
   it('ships no incremental-build cache', () => {
     // `dist/.tsbuildinfo` is what `tsc -b` writes to know what it can skip next time, and
-    // `files: ["dist/"]` carried it into all four tarballs — `@mnema/code` included, which
+    // `files: ["dist/"]` carried it into all four tarballs: `@mnema/code` included, which
     // had had that `files` field since before this delivery. It is nobody's business but
     // this machine's, and an adopter who deleted it would notice nothing.
     const stray = [...PACKED].flatMap(([name, files]) =>
@@ -388,7 +388,7 @@ describe('every package carries the licence its manifest claims', () => {
  *
  * A map is only worth shipping if a debugger in an installed tree can open what it names, and
  * the installed tree has no `src/`. So each map read out of a tarball must hold, for every
- * entry of `sources`, a `sourcesContent` string — and that string must be the repository's
+ * entry of `sources`, a `sourcesContent` string, and that string must be the repository's
  * file at that path, because an empty string or a stale copy satisfies a check
  * on the shape and leaves the debugger showing something other than what ran.
  *
@@ -516,7 +516,7 @@ describe('the second reader runs out of what the package publishes', () => {
 
   beforeAll(() => {
     // NOT AT MODULE SCOPE, AND THE REASON IS A MEASURED ONE. This ran at collection, with
-    // `TARBALLS.get('@mnema/chain') ?? ''` for the path — and a mutation that put
+    // `TARBALLS.get('@mnema/chain') ?? ''` for the path, and a mutation that put
     // `private: true` back on the chain took it out of the packed set, so `tar` was handed
     // an empty path, threw during collection, and the whole FILE reported "no tests". The
     // defect was caught, loudly, but by a stack trace instead of by the case whose name says
@@ -630,7 +630,7 @@ describe('the guard is not vacuous', () => {
     expect(mapsWithoutTheirSource('m', ['dist/index.d.ts.map'], filled, source)).toEqual([
       'm: dist/index.d.ts.map is a declaration map, which the compiler cannot fill',
     ]);
-    // And the same map with its source, under the JavaScript name, is clean — so the red
+    // And the same map with its source, under the JavaScript name, is clean, so the red
     // above is the declaration map and not the fixture.
     expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], filled, source)).toEqual([]);
   });

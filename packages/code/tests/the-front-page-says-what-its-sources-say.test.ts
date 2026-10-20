@@ -1,5 +1,5 @@
 /**
- * THE DOCS SAY WHAT THEIR SOURCES SAY — each number the pages show and each table they draw is read
+ * THE DOCS SAY WHAT THEIR SOURCES SAY: each number the pages show and each table they draw is read
  * off the file it came from, so the page cannot go on saying a fact its source stopped saying.
  *
  * THE PAGE COUNTS AND DRAWS TWO THINGS THAT ARE NOT ITS OWN, and this reads both from where they
@@ -42,7 +42,7 @@ const PACKAGES = 'docs/packages.md';
 const VERIFY = 'docs/verify-without-installing.md';
 
 /**
- * The body of a `##` section of the page — from under its heading to the next `##` that is a
+ * The body of a `##` section of the page: from under its heading to the next `##` that is a
  * heading, which a `##` inside a fence is not. It throws when the section is gone, because a case
  * that read an empty section would be a case saying nothing is wrong with what it never read.
  */
@@ -93,7 +93,7 @@ const WORDS = [
 /** The tens this page could write a count in, from twenty. */
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
-/** A count in words — and a count this page would never write in words is refused, not guessed. */
+/** A count in words, and a count this page would never write in words is refused, not guessed. */
 function inWords(count: number): string {
   const word = WORDS[count];
   if (word !== undefined) return word;
@@ -125,7 +125,7 @@ describe('the historical result the evidence page keeps', () => {
     expect(prose).toContain(`from ${rates['base']} to ${rates['mnema-doc']}`);
   });
 
-  it('says what the rates are over — the day, the model, the cells and the runs', () => {
+  it('says what the rates are over: the day, the model, the cells and the runs', () => {
     expect(prose).toContain('21 August 2026');
     expect(prose).toContain('Claude Haiku 4.5');
     expect(prose).toContain('160 cells');

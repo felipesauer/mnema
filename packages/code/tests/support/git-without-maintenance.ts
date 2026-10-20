@@ -1,6 +1,6 @@
 /**
- * THE GLOBAL GIT CONFIGURATION EVERY TEST THAT WRITES A REPOSITORY HANDS ITS GIT — automatic
- * maintenance off — and the one channel that reaches the remote a push writes to.
+ * THE GLOBAL GIT CONFIGURATION EVERY TEST THAT WRITES A REPOSITORY HANDS ITS GIT: automatic
+ * maintenance off, and the one channel that reaches the remote a push writes to.
  *
  * WHAT IT CLOSES. A case with a bare remote and a clone per machine failed once in sixty runs of
  * the suite, in its preparation: `git clone` of the remote died with *"failed to copy file to
@@ -8,7 +8,7 @@
  * file by file, and one went away under it. What took it, measured on git 2.55 with the remote's
  * directory watched: the `receive-pack` of the push before it starts `git maintenance run --auto
  * --detach`, whose default strategy is the geometric one, and its repack task estimates the loose
- * objects from `objects/17` alone — so TWO loose objects in that one directory repack the remote
+ * objects from `objects/17` alone, so TWO loose objects in that one directory repack the remote
  * in the background, in a remote that holds a few dozen: a pack, a multi-pack-index, and every
  * loose object deleted with its directory, about 30 ms after the push returned. A clone that
  * starts then loses the race. Reproduced by git alone, with git's defaults: a remote given 4,000

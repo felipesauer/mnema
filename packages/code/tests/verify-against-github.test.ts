@@ -179,7 +179,7 @@ describe('mnema key github', () => {
   });
 });
 
-/** Every event of a tree — the count a refusal must not move. */
+/** Every event of a tree: the count a refusal must not move. */
 function orderedEventsOf(root: string): unknown[] {
   return orderedEvents({ root }, catalogUpcasters());
 }
