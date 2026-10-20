@@ -32,7 +32,7 @@ const GITHUB_LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 export function githubLoginRefusal(login: string): string | undefined {
   if (GITHUB_LOGIN.test(login)) return undefined;
   return (
-    `${JSON.stringify(login)} is not a GitHub account name — letters, digits and single ` +
+    `${JSON.stringify(login)} is not a GitHub account name: letters, digits and single ` +
     'hyphens, not starting or ending with a hyphen, at most 39 characters'
   );
 }
@@ -51,7 +51,7 @@ const A_WORKFLOW =
 export function sigstoreIdentityRefusal(identity: string): string | undefined {
   if (AN_EMAIL.test(identity) || A_WORKFLOW.test(identity)) return undefined;
   return (
-    `${JSON.stringify(identity)} is not an identity a Sigstore certificate names — an e-mail ` +
+    `${JSON.stringify(identity)} is not an identity a Sigstore certificate names: an e-mail ` +
     'address, or a workflow as https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>'
   );
 }

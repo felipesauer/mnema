@@ -4,7 +4,7 @@
  * `judge` reads the record at the pull request's base and at what is checked out, asks `mnema`
  * which changed files a rule addresses, writes the comment, and says whether the check fails.
  * Handed a checker key, it also has `mnema check run` record, in the working tree, whether each
- * rule in force held — the one write it makes, and never a commit or a push: the only thing it
+ * rule in force held (the one write it makes, and never a commit or a push). The only thing it
  * sends anywhere is the comment, through the `GitHub` it is given.
  */
 
@@ -32,15 +32,15 @@ export interface World {
   readonly mnema: {
     /**
      * `mnema verify --require=signed --since <base>`: whether it exited zero, and what it said.
-     * `--since` is what catches a record cut back to an earlier, honest state — the newest events
-     * taken with the checkpoint that covered them — which no reading of the record alone can see.
+     * `--since` is what catches a record cut back to an earlier, honest state (the newest events
+     * taken with the checkpoint that covered them), which no reading of the record alone can see.
      */
     verify(base: string): { passed: boolean; said: string };
     /** `mnema rules <path> --json`, parsed. */
     rules(path: string): unknown;
     /**
      * `mnema check run`, signing with the checker key whose private half is `key`: whether it
-     * exited zero — every check passed — and what it said.
+     * exited zero (every check passed) and what it said.
      */
     checkRun(key: string): { passed: boolean; said: string };
   };

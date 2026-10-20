@@ -628,7 +628,7 @@ describe('the bytes a checkpoint signs did not change', () => {
     // holds in memory must land on the same bytes as one signing what it read
     // back. A decomposed "café" is that case.
     // Spelled with escapes so a normalizing editor cannot quietly recompose it.
-    const decomposed = 'cafe\u0301 — deja\u0300 vu';
+    const decomposed = 'cafe\u0301 – deja\u0300 vu';
     expect(decomposed).not.toBe(decomposed.normalize('NFC')); // else this proves nothing
     const w = openFounded({ maxUnsignedEvents: NEVER });
     w.append(memoryCaptured(env(w, 'm-1'), { content: decomposed }));

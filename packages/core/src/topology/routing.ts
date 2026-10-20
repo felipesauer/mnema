@@ -207,7 +207,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'checker.retired': 'a checker is retired in the committed tree it was enrolled in',
   'check.passed': 'a result is written beside the rule it checks, in the committed tree',
   'check.failed': 'a result is written beside the rule it checks, in the committed tree',
-  'run.started': 'a run follows the fact it authorizes — it opens in that fact’s own tree',
+  'run.started': 'a run follows the fact it authorizes: it opens in that fact’s own tree',
   'run.ended': 'a run ends in the tree it was opened in, which it carries',
   'identity.founded': 'identity is per-tree: it is founded in whichever tree is first written',
   'key.enrolled': 'the roster belongs to the tree that holds the identity it rosters',
@@ -215,7 +215,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'account.linked': 'an identity names its account in the tree that holds the identity',
   'backup.declared': 'a backup is declared in the tree that enrolled it, beside its enrollment',
   'tail.pruned':
-    'a waiver belongs to the tree whose tail it names — the census that reads it is per-tree',
+    'a waiver belongs to the tree whose tail it names: the census that reads it is per-tree',
   'stack.adopted':
     'an adoption is written in the tree its signed scope names, which the person chose: public, private or global',
   'stack.removed': 'a removal is written in the tree the adoption it ends was written in',

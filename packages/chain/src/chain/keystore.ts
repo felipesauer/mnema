@@ -769,7 +769,7 @@ export function signerOf(layout: ChainLayout, fingerprint: string): ChainSigner 
  * The key root's own `.gitignore`: everything in it, always.
  */
 const KEY_ROOT_GITIGNORE = [
-  "# Managed by mnema — this machine's private keys live here, and nothing in this directory",
+  "# Managed by mnema: this machine's private keys live here, and nothing in this directory",
   '# is ever committed: not the key, not its cold backup, not a registration.',
   '*',
   '',

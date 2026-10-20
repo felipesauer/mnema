@@ -45,7 +45,7 @@ function mined(bits: number, merkleRoot: Buffer): Buffer {
     header.writeUInt32LE(nonce, 76);
     if (headerCarriesItsOwnClaim(header)) return header;
   }
-  throw new Error('no nonce met even the easiest target — the mining loop is wrong');
+  throw new Error('no nonce met even the easiest target: the mining loop is wrong');
 }
 
 /** The half of the rule that is NOT the floor, so the mining loop can aim at it. */

@@ -268,7 +268,7 @@ function refuseNamedSecret(field: string, found: readonly SecretClass[]): NameHo
     ok: false,
     code: 'NAME_HOLDS_A_SECRET',
     message:
-      `"${field}" reads as ${classes}, and it is a name the record is addressed by — ` +
+      `"${field}" reads as ${classes}, and it is a name the record is addressed by: ` +
       'so replacing it would record a different entity, not a redacted one. The fact was ' +
       'not recorded. Name it something else; if the value itself matters, rotate it.',
   };
@@ -296,7 +296,7 @@ function refuseIfOversize(field: string, bytes: number): ContentTooLargeErr | un
     code: 'CONTENT_TOO_LARGE',
     message:
       `"${field}" is ${bytes} bytes; a single field holds at most ${FIELD_BYTE_LIMIT}. ` +
-      'The fact was not recorded — split it across several records, or record where it lives.',
+      'The fact was not recorded: split it across several records, or record where it lives.',
   };
 }
 

@@ -27,8 +27,8 @@ export function theMnemaBinary(): string {
 
 /**
  * The environment a check's program is started with: this process's, without one input of the
- * Action. The runner hands every input as an `INPUT_*` variable, and two of them are secrets — the
- * checker key and the GitHub token — which a declared program would otherwise be handed as it
+ * Action. The runner hands every input as an `INPUT_*` variable, and two of them are secrets: the
+ * checker key and the GitHub token, which a declared program would otherwise be handed as it
  * starts. It can still read the key file from disk while the run lasts; this narrows what it is
  * handed, not what it can reach.
  */
@@ -45,7 +45,7 @@ const git = (cwd: string, args: readonly string[]): string =>
 
 /**
  * The git and mnema of the repository checked out at `cwd`. `env` is the environment the Action
- * was started with, inputs included — what a check's program must not be handed.
+ * was started with, inputs included: what a check's program must not be handed.
  */
 export function worldAt(
   cwd: string,

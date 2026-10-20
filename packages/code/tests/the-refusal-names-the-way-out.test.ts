@@ -419,7 +419,7 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
     expect(said).toContain(`It speaks for ${founded} again once ${theirs} lets it go`);
     expect(said).toContain(`a machine whose writes here speak for ${theirs} runs`);
     expect(said).toContain(
-      `Or it can leave ${founded} instead — the identity it founded here, whose only key it is, so another key joins it first`,
+      `Or it can leave ${founded} instead: the identity it founded here, whose only key it is, so another key joins it first`,
     );
     expect(said).not.toContain('can only go back');
     expect(theWayOutOf(said, founded).leftIn).toBe(theirs);
