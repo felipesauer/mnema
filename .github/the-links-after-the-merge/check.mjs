@@ -93,11 +93,16 @@ const blank = (/** @type {string} */ text) => text.replace(/[^\n]/g, ' ');
  * @returns {string}
  */
 function renderedOf(markdown) {
+  /** @type {string | null} */
   let fence = null;
   const kept = markdown.split('\n').map((line) => {
     const opening = /^ {0,3}(`{3,}|~{3,})/.exec(line);
     if (fence !== null) {
-      if (opening !== null && opening[1]?.[0] === fence[0] && opening[1].length >= fence.length) {
+      if (
+        opening !== null &&
+        opening[1]?.[0] === fence[0] &&
+        (opening[1]?.length ?? 0) >= fence.length
+      ) {
         fence = null;
       }
       return '';
