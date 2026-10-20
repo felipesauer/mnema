@@ -1080,7 +1080,7 @@ export function runRetractLink(
     return {
       ok: false,
       code: 'UNKNOWN_LINK',
-      message: `no link ${oneLine(typed.subject)} —${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this workspace or the global tree`,
+      message: `no link ${oneLine(typed.subject)} -${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this workspace or the global tree`,
     };
   }
   const { scope } = located;
@@ -2144,7 +2144,7 @@ export function runSearchTool(session: Session, input: RecordQuery = {}): Search
     return {
       ok: false,
       code: 'SCOPE_UNAVAILABLE',
-      message: `no ${input.scope} tree here — a session outside a project has only the global scope`,
+      message: `no ${input.scope} tree here: a session outside a project has only the global scope`,
     };
   }
   // The kinds are a closed vocabulary. The transport's schema already names
@@ -2155,7 +2155,7 @@ export function runSearchTool(session: Session, input: RecordQuery = {}): Search
     return {
       ok: false,
       code: 'UNKNOWN_KIND',
-      message: `"${input.kind}" is not a kind of record — one of: ${SEARCH_KINDS.join(', ')}`,
+      message: `"${input.kind}" is not a kind of record (one of: ${SEARCH_KINDS.join(', ')})`,
     };
   }
   return { ok: true, value: searchRecords(workspaceCaches(session), input) };
@@ -2223,7 +2223,7 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
       ok: false,
       code: 'USE_SKILLS_TOOL',
       message:
-        `"${oneLine(input.id)}" is a skill — read it with the \`skills\` tool, which ` +
+        `"${oneLine(input.id)}" is a skill: read it with the \`skills\` tool, which ` +
         'serves a pattern’s body and records that it was consulted',
     };
   }
@@ -2307,7 +2307,7 @@ function requireProject(
     return {
       ok: false,
       code: 'NO_PROJECT',
-      message: 'no project here — an intelligence read is about a project’s record',
+      message: 'no project here: an intelligence read is about a project’s record',
     };
   }
   return undefined;

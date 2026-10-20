@@ -277,7 +277,7 @@ export const RECOMMENDED_RELATIONS = `recommended: ${RECOMMENDED_LINK_RELATIONS.
 export const RECORD_CONTRACT =
   ' RECORDING IS PERMANENT: mnema is append-only and nothing deletes a fact. ' +
   'A record in the public scope is committed to the repository and reaches every ' +
-  'machine that clones it — published, if that repository is public. So do NOT ' +
+  'machine that clones it (published, if that repository is public). So do NOT' +
   'record credentials here. Values in a recognized format (cloud keys, API ' +
   'tokens, private keys, a password inside a URL) are replaced with a typed ' +
   'placeholder before anything is written and the reply says what was replaced, ' +
