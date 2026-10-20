@@ -15,7 +15,7 @@ name: Packed install
 # It is not a required check and nothing waits for it.
 #
 # WHAT IT DOES NOT PROVE. It installs from the tarballs of the commit it runs on, not from the
-# registry's own files, and it runs on one Node, the newest 24. It needs no secret and no account, and publishes nothing.
+# registry's own files, and it runs on the three Nodes of the engines range (24.15.0, 24 and 26). It needs no secret and no account, and publishes nothing.
 #
 # THE STEPS ARE `.github/the-packed-install/run.sh`, so that the same command runs on a
 # workstation: `pnpm build && bash .github/the-packed-install/run.sh`.
@@ -34,8 +34,12 @@ concurrency:
 
 jobs:
   the-packed-install:
-    name: the packed install
+    name: the packed install (node ${{ matrix.node }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['24.15.0', '24', '26']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -43,7 +47,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: ${{ matrix.node }}
           cache: 'pnpm'
 
       - name: Install dependencies

@@ -12,7 +12,7 @@
  * `@mnema/stacks` from the registry, where it is not, instead of from the tarball beside it).
  */
 
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -53,4 +53,52 @@ describe('the packed install runs where it is meant to', () => {
     expect(SCRIPT).toMatch(/^run verify$/m);
     expect(SCRIPT).toContain('-i HOME="$home" PATH=');
   });
+
+  it('runs on the three Nodes the engines range allows', () => {
+    expect(CODE).toMatch(
+      /^ {4}strategy:\n {6}fail-fast: false\n {6}matrix:\n {8}node: \['24\.15\.0', '24', '26'\]\n/m,
+    );
+    expect(CODE).toContain(`node-version: \${{ matrix.node }}`);
+    expect(CODE).not.toMatch(/node-version: '24'/);
+  });
+
+  it('keeps going after a failed step and still fails at the end', () => {
+    expect(SCRIPT).toMatch(/^set -euo pipefail$/m);
+    expect(SCRIPT).toMatch(/^exit "\$failed"$/m);
+  });
+
+  it('fails when a tarball carries a source map', () => {
+    expect(SCRIPT).toMatch(/tar -tzf[^\n]*\.map/);
+    expect(SCRIPT).toMatch(/source map/);
+  });
+});
+
+describe('the five publishable packages are packed clean', () => {
+  const publishable = readdirSync(join(ROOT, 'packages'))
+    .map((d) => ({ d, path: join(ROOT, 'packages', d, 'package.json') }))
+    .filter(({ path }) => existsSync(path))
+    .map(({ d, path }) => ({ d, pkg: JSON.parse(readFileSync(path, 'utf-8')) }))
+    .filter(({ pkg }) => !pkg.private);
+
+  it('finds the five', () => {
+    expect(publishable.map(({ d }) => d).sort()).toEqual([
+      'chain',
+      'code',
+      'context',
+      'core',
+      'stacks',
+    ]);
+  });
+
+  it.each(['chain', 'code', 'context', 'core', 'stacks'])(
+    '%s leaves the maps out and says where it lives',
+    (d) => {
+      const pkg = publishable.find((p) => p.d === d)?.pkg as {
+        files: string[];
+        repository: { directory: string };
+      };
+      expect(pkg.files).toContain('!dist/**/*.map');
+      expect(pkg.repository.directory).toBe(`packages/${d}`);
+    },
+  );
 });

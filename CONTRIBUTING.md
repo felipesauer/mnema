@@ -105,7 +105,7 @@ There is no tag and no release until the first publication on npm, and the proce
 written with it. **Publishing to npm is the maintainer's own act**: nothing here runs `npm publish`.
 What exists today is the check of the package: it packs the five publishable packages, installs them
 together into an empty prefix and an empty `HOME`, and runs `init`, `decision record` and `verify` with
-the installed binary.
+the installed binary, and fails if a tarball carries a source map. CI runs it on Node 24.15.0, 24 and 26.
 
 ```sh
 pnpm build && bash .github/the-packed-install/run.sh

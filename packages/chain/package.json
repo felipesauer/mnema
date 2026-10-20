@@ -27,6 +27,7 @@
   "files": [
     "dist/",
     "!dist/.tsbuildinfo",
+    "!dist/**/*.map",
     "verifier/",
     "!verifier/**/__pycache__",
     "FORMAT.md",
@@ -37,7 +38,8 @@
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git"
+    "url": "git+https://github.com/felipesauer/mnema.git",
+    "directory": "packages/chain"
   },
   "bugs": {
     "url": "https://github.com/felipesauer/mnema/issues"

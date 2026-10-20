@@ -196,6 +196,10 @@ with its own changelog.
 
 ### Changed
 
+- **The five published packages carry no source maps and say where in the repository they live.** `files` of each now
+  leaves out `dist/**/*.map` (a map pointed at sources the package never shipped), and `repository.directory` names the
+  package's folder. The packed install check runs on Node 24.15.0, 24 and 26, its script stops at nothing but still
+  fails at the end, and it fails if a tarball carries a `.map`.
 - **Two more lines read as they mean.** The first line of what the status reading prints is now `<identity>, where things stand.`, because the identity already carries a colon (`mnid:<hex>`); and the description of the `rules_before_an_edit` tool has a comma before "and the host holds the write", so that it is the host that holds the write and a person that cites the rule's id. No word changed; the description weighs one byte more.
 - **The text the program prints reads better where the sweep of the em dash left a chain of colons or an ambiguous
   comma.** Only the punctuation changed, and no word: the `--global` line of `--help` (the parenthesis
