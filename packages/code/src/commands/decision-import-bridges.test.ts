@@ -89,7 +89,7 @@ describe('decision import --format', () => {
 
   it('the host memory, from outside the project: cited by source and file', () => {
     const memory = join(sandbox, 'home', '.claude', 'projects', 'p', 'memory');
-    put(memory, 'MEMORY.md', '- [x](feedback_x.md) — index\n');
+    put(memory, 'MEMORY.md', '- [x](feedback_x.md): index\n');
     put(
       memory,
       'feedback_x.md',

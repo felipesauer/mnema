@@ -37,7 +37,7 @@ export interface CorrectionShape {
  * proposal came from, and so a shape added is a line somebody has to write a probe for.
  */
 export const CORRECTION_SHAPES: readonly CorrectionShape[] = [
-  { name: 'no, …', pattern: /^\s*(no|nope|não|nao)\s*[,.!;:—-]/i },
+  { name: 'no, …', pattern: /^\s*(no|nope|não|nao)\s*[,.!;:\u2014-]/i },
   { name: 'stop …', pattern: /^\s*(stop|pare|para)\s+(doing|using|de|with|it)\b/i },
   {
     name: 'do not …',
