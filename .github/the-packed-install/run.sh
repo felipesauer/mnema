@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# Packs the publishable packages, installs them TOGETHER into an empty prefix the way the release
-# notes tell a person to, and drives the installed binary through `init`, `decision record` and
-# `verify` in a project and a HOME that are empty. It needs the workspace built (`pnpm build`)
-# and it touches nothing outside the temporary directory it makes.
+# Installs the publishable packages TOGETHER into an empty prefix the way the release notes tell a
+# person to, and drives the installed binary through `init`, `decision record` and `verify` in a
+# project and a HOME that are empty. It touches nothing outside the temporary directory it makes.
+# Without a directory it packs the packages itself and needs the workspace built (`pnpm build`); with
+# a directory it packs nothing, needs no build, and installs the tarballs found there.
 #
 # WHY IT IS A SCRIPT AND NOT A TEST. Every test of the suite runs the workspace's own `dist`, with
 # its own `node_modules`: a package missing from the tarballs, a file `files` leaves out, a
 # dependency declared as `workspace:*` that never became a version, all resolve there. Only a
 # package installed from what `pnpm pack` made, with nothing of the workspace beside it, finds them.
 #
-# Usage: run.sh            (from the root of the workspace)
+# Usage: run.sh [tarballs-dir]   (from the root of the workspace)
+#   Without an argument it packs the packages itself. With a directory it installs the tarballs
+#   found there instead and packs nothing: this is how the release installs the very files it
+#   will publish.
 set -euo pipefail
 
 root="$(pwd)"
@@ -35,11 +39,16 @@ if [ "${#dirs[@]}" -ne 5 ]; then
   fail "expected five publishable packages, found ${#dirs[@]}"
 fi
 
-mkdir "$work/tarballs"
-for dir in "${dirs[@]}"; do
-  (cd "$dir" && pnpm pack --pack-destination "$work/tarballs" >/dev/null) || fail "could not pack $dir"
-done
-tarballs=("$work"/tarballs/*.tgz)
+if [ "$#" -ge 1 ]; then
+  given="$(cd "$1" && pwd)"
+  tarballs=("$given"/*.tgz)
+else
+  mkdir "$work/tarballs"
+  for dir in "${dirs[@]}"; do
+    (cd "$dir" && pnpm pack --pack-destination "$work/tarballs" >/dev/null) || fail "could not pack $dir"
+  done
+  tarballs=("$work"/tarballs/*.tgz)
+fi
 # A source map in a tarball points at sources the package does not ship.
 for tarball in "${tarballs[@]}"; do
   maps="$(tar -tzf "$tarball" | grep -c '\.map$' || true)"

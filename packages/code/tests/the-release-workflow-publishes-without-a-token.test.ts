@@ -11,7 +11,14 @@
  * - it publishes the tarball of each package with `--provenance --access public`, in the order chain, core,
  *   context, stacks, code;
  * - the tag and the release belong to a job that needs the publish, and no step before the publish creates one;
- * - the packed install runs first, on the three Nodes.
+ * - the packed install runs first, on the three Nodes, on the very tarballs that are then published;
+ * - the two jobs that write outside (the publish and the tag and release) ask for the `npm` environment, in
+ *   both ways to reach the tag, so nothing is tagged or released without a person's approval;
+ * - no job that installs or builds can ask for the OIDC token, and the job that can publishes without
+ *   installing or building anything (not even a newer npm: it only reads the one it has);
+ * - the publish checks the tarballs it downloaded against the SHA-256 the pack job exposes as outputs, not
+ *   against a file that travels in the same artifact;
+ * - the publish needs the packed install and does not run when it failed (no `always()` in its `if`).
  *
  * What this reads is the file, not a run: the workflow has never run, the trusted publisher is configured on
  * npmjs.com by a person, and none of that is visible here. The text is read without its comment lines, so a
@@ -57,7 +64,59 @@ describe('the release workflow publishes without a token', () => {
     expect(publish).toMatch(/^ {4}environment: npm$/m);
     expect(publish).toMatch(/^ {6}id-token: write$/m);
     expect(publish).not.toMatch(/contents: write/);
-    expect(publish).toMatch(/needs: \[plan, packed-install\]/);
+    expect(publish).toMatch(/needs: \[plan, pack, packed-install\]/);
+  });
+
+  it('asks for the npm environment in the two jobs that write outside', () => {
+    expect(job('publish')).toMatch(/^ {4}environment: npm$/m);
+    expect(job('release')).toMatch(/^ {4}environment: npm$/m);
+  });
+
+  it('never gives id-token to a job that installs or builds', () => {
+    const names = [...CODE.slice(CODE.indexOf('\njobs:')).matchAll(/^ {2}([a-z][\w-]*):\n/gm)].map(
+      (m) => m[1] as string,
+    );
+    expect(names).toEqual(['plan', 'pack', 'packed-install', 'publish', 'release']);
+    for (const name of names) {
+      const text = job(name);
+      if (/pnpm install|pnpm build|pnpm pack/.test(text)) {
+        expect(text, `${name} installs or builds`).not.toMatch(/id-token/);
+      }
+    }
+    expect(job('pack')).toMatch(/^ {6}contents: read$/m);
+    expect(job('pack')).toContain('pnpm install --frozen-lockfile');
+    expect(job('pack')).toContain('sha256sum');
+    expect(job('pack')).toContain('actions/upload-artifact@');
+  });
+
+  it('publishes without installing or building anything', () => {
+    const publish = job('publish');
+    expect(publish).not.toMatch(
+      /npm install|npm ci|npm run|pnpm|git clone|checkout|actions\/cache/,
+    );
+    expect(publish).toContain('actions/download-artifact@');
+    expect(publish).toContain('npm --version');
+    expect(publish).toContain('older than 11.5.1, which publishing through OIDC needs');
+  });
+
+  it('checks the downloaded tarballs against the hashes the pack job exposes', () => {
+    const pack = job('pack');
+    const publish = job('publish');
+    for (const p of ['chain', 'core', 'context', 'stacks', 'code']) {
+      expect(pack).toContain(`sha256-${p}: \${{ steps.pack.outputs.${p} }}`);
+      expect(publish).toContain(
+        `SHA256_${p.toUpperCase()}: \${{ needs.pack.outputs.sha256-${p} }}`,
+      );
+    }
+    expect(publish).toContain('sha256sum "$tarballs/mnema-$p-$VERSION.tgz"');
+    expect(publish).not.toMatch(/SHA256SUMS|sha256sum --check/);
+    expect(publish.indexOf('sha256sum "$tarballs')).toBeLessThan(publish.indexOf('npm publish'));
+  });
+
+  it('does not run the publish when the packed install failed', () => {
+    const condition = /^ {4}if: (.*)$/m.exec(job('publish'))?.[1] ?? '';
+    expect(condition).toBe("needs.plan.outputs.action == 'publish'");
+    expect(condition).not.toMatch(/always\(\)|cancelled\(\)|failure\(\)|success\(\)/);
   });
 
   it('holds no secret and no npm token anywhere', () => {
@@ -71,9 +130,11 @@ describe('the release workflow publishes without a token', () => {
     expect(publish).toContain(
       'npm publish "$tarballs/mnema-$p-$VERSION.tgz" --provenance --access public',
     );
-    expect(publish).toContain('npm install --global npm@11.5.1');
     const order = [...publish.matchAll(/for p in ([a-z ]+); do/g)].map((m) => m[1]);
-    expect(order).toEqual(['chain core context stacks code', 'chain core context stacks code']);
+    const five = 'chain core context stacks code';
+    expect(order).toEqual([five, five]);
+    const packed = [...job('pack').matchAll(/for p in ([a-z ]+); do/g)].map((m) => m[1]);
+    expect(packed).toEqual([five, five]);
     expect(publish).toContain('is already on npm');
   });
 
@@ -98,7 +159,9 @@ describe('the release workflow publishes without a token', () => {
   it('runs the packed install on the three Nodes before the publish', () => {
     const packed = job('packed-install');
     expect(packed).toContain("node: ['24.15.0', '24', '26']");
-    expect(packed).toContain('run: bash .github/the-packed-install/run.sh');
-    expect(packed).not.toMatch(/id-token|environment:/);
+    expect(packed).toContain('run: bash .github/the-packed-install/run.sh "$RUNNER_TEMP/tarballs"');
+    expect(packed).toContain('actions/download-artifact@');
+    expect(packed).toMatch(/needs: \[plan, pack\]/);
+    expect(packed).not.toMatch(/id-token|environment:|pnpm /);
   });
 });

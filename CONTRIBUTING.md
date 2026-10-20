@@ -138,20 +138,35 @@ pnpm build && bash .github/the-packed-install/run.sh
    that does not exist is created with no protection at all when a job asks for it.
 5. Then, on npmjs.com, for each of the five packages, add a trusted publisher: this repository, the
    workflow file `release.yml` and the environment `npm`.
-6. Run the `Release` workflow by hand (Actions, Run workflow) with `mode: tag-only`. It publishes nothing: it
-   checks that the five packages on npm carry the version of the root `package.json`, and only then creates
-   the tag `v0.1.0` and the release of GitHub. The tag falls on the head of `main` at the moment you
-   dispatch, so run this before any other pull request is merged.
+6. Run the `Release` workflow by hand (Actions, Run workflow) with `mode: tag-only`, and approve it in the `npm`
+   environment when it asks (the tag and the release are never made without your approval, in this way or
+   after a publish). It publishes nothing: it checks that the five packages on npm carry the version of the
+   root `package.json`, and only then creates the tag `v0.1.0` and the release of GitHub. The tag falls on the
+   head of `main` at the moment you dispatch, so run this before any other pull request is merged.
 7. On each package's settings on npmjs.com, turn on "Require two-factor authentication and disallow tokens".
 
 ### The next versions
 
 1. `pnpm release:prepare` (with the number, or without it to be told one and why), then a pull request.
-2. Merge it. The `Release` workflow starts on the push to `main` and runs the packed install on Node
-   24.15.0, 24 and 26. Only when those pass does it wait for your approval in the `npm` environment.
-3. On approval it publishes the five tarballs in the order chain, core, context, stacks, code (with
-   `--provenance`, skipping one that is already at the version), and only then creates the tag and the
-   release, whose notes are the CHANGELOG section.
+2. Merge it. The `Release` workflow starts on the push to `main`. A job that holds no `id-token` installs,
+   builds and packs the five and keeps the tarballs with their SHA-256; the packed install installs those very
+   tarballs on Node 24.15.0, 24 and 26. Only when those pass does the publish wait for your approval in the
+   `npm` environment.
+3. On approval the publish downloads the tarballs, checks the SHA-256 and publishes them in the order chain,
+   core, context, stacks, code (with `--provenance`, skipping one that is already at the version). It installs
+   and builds nothing (it only checks that the npm it has is 11.5.1 or newer), so what is published is what was
+   tested and no install script runs while the job can ask for the OIDC token. It checks each tarball against
+   the SHA-256 that the packing job exposed as its own outputs, not against a file that travels with the
+   tarballs.
+4. The tag and the release (whose notes are the CHANGELOG section) come only after the five are on npm, and
+   they ask for your approval in the `npm` environment once more.
+
+If a publish stops halfway, run the workflow again (Actions, Run workflow, `mode: publish`): the packages
+already at the version are skipped and the ones left are published. The tag and the release are made only
+once all five are on npm. A run again packs and tests the head of `main` as it is then, not the commit of
+the run that stopped: the packages already published came from the earlier commit, and the tag falls on
+the commit of the run that finishes. If `main` moved in between, the packages are not all from one commit,
+so before running again check that the commits since are not changes to the packages.
 
 While `@mnema/code` is not on npm, a push to `main` does not publish: the workflow says the first
 publication is by hand and ends green. The workflow has not run yet.
