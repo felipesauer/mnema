@@ -58,7 +58,7 @@ describe('the packed install runs where it is meant to', () => {
     expect(CODE).toMatch(
       /^ {4}strategy:\n {6}fail-fast: false\n {6}matrix:\n {8}node: \['24\.15\.0', '24', '26'\]\n/m,
     );
-    expect(CODE).toContain('node-version: ${{ matrix.node }}');
+    expect(CODE).toContain(`node-version: \${{ matrix.node }}`);
     expect(CODE).not.toMatch(/node-version: '24'/);
   });
 
