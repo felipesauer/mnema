@@ -1859,6 +1859,38 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many transcript lines the reading did not understand: a count',
   },
+  'usage.ts «No tool call is counted here (looked in {}).» oneLine(listing.file) #1': {
+    verdict: 'collapsed',
+    why: 'the file the count is kept in: a PATH, built from this machine’s data directory and a digest',
+  },
+  'usage.ts «Read from {}.» oneLine(listing.file) #1': {
+    verdict: 'collapsed',
+    why: 'the same path, on the report that has rows',
+  },
+  'usage.ts «first {}, last {}» oneLine(tool.first) #1': {
+    verdict: 'collapsed',
+    why: 'the first instant a tool was counted: read off a file this machine keeps, which nothing verified',
+  },
+  'usage.ts «first {}, last {}» oneLine(tool.last) #1': {
+    verdict: 'collapsed',
+    why: 'the last instant a tool was counted: read off a file this machine keeps, which nothing verified',
+  },
+  'usage.ts «{} call(s)» tool.calls #1': {
+    verdict: 'minted',
+    why: 'how many calls a tool was counted for: a count this module made',
+  },
+  'usage.ts «{} refused» tool.refused #1': {
+    verdict: 'minted',
+    why: 'how many of them were not ok: a count this module made',
+  },
+  'usage.ts «{} line(s) of the file were not a call.» listing.passedOver #1': {
+    verdict: 'minted',
+    why: 'how many lines of the count file the reading did not understand: a count',
+  },
+  'usage.ts «{} tool(s) called:» listing.tools.length #1': {
+    verdict: 'minted',
+    why: 'how many tools have a row: the count the rows are counted by',
+  },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
   'diagram.ts «    [*] --> {}: {}» initial #1': {
@@ -2213,6 +2245,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the run’s uuid, whole, because every other reading of a run takes it',
   },
+  'usage.ts itemLine(column(oneLine(tool.tool), TOOL_WIDTH)) #1': {
+    verdict: 'collapsed',
+    why: 'the tool name: read off a file this machine keeps, which nothing verified',
+  },
+  "usage.ts itemLine(column(tool.effect === 'mutates' ? 'writes' : 'only reads', 11)) #1": {
+    verdict: 'minted',
+    why: 'this module’s own word for what the tool’s declaration says it may do',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -2255,7 +2295,7 @@ describe('every value this layer puts on a line is classified', () => {
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
     // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted.
-    expect(FOUND.sites.length).toBe(427);
+    expect(FOUND.sites.length).toBe(437);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2276,10 +2316,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(113);
-    expect(count('minted')).toBe(242);
+    expect(count('collapsed')).toBe(118);
+    expect(count('minted')).toBe(247);
     expect(count('composed')).toBe(72);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(118);
   });
 
   it('every reason says where the value comes from', () => {
@@ -2364,7 +2404,7 @@ describe('the rule has one door in this layer', () => {
     // array this walk does not enter: the ONE collapse in the layer that is not at a
     // site. It is named rather than left silent, and it is reconciled: the day the count
     // moves, this goes red and the exception is deleted with it.
-    expect(unaccounted).toEqual(['usage.ts: 5 in source, 4 classified']);
+    expect(unaccounted).toEqual(['usage.ts: 10 in source, 9 classified']);
   });
 });
 

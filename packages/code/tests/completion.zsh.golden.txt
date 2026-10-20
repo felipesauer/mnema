@@ -225,7 +225,7 @@ _mnema_flags() {
     'audit exposure') echo '--json -h --help -V --version --color' ;;
     'diagram') echo '-h --help -V --version --color' ;;
     'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
-    'usage') echo '-h --help -V --version --color' ;;
+    'usage') echo '--tools -h --help -V --version --color' ;;
     'resume') echo '--actor --json -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
     'why') echo '--json -h --help -V --version --color' ;;
@@ -335,10 +335,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback tool-call-count session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback tool-call-count session-tally' ;;
     'inherit:--color') echo 'auto always never' ;;
     'inherit set:--color') echo 'auto always never' ;;
     'inherit update:--color') echo 'auto always never' ;;

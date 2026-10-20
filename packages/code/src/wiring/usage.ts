@@ -10,7 +10,10 @@
  * before. The half that moved is the one whose subject the new name says better: what
  * lives there is a {@link Misuse}, and it was called `Misuse` already.
  *
- * NO OPTIONS AT ALL, in this slice. Not `--json`: the verb exists for a person
+ * ONE OPTION, `--tools`, WHICH IS THE OTHER READING OF THE SAME VERB: what the cost reading
+ * reads is the host's transcripts, and what `--tools` reads is the count of the MCP calls this
+ * machine kept (`tool-calls.ts`). Both are outside the record and both say so. Before it the verb
+ * had no options at all. It has no `--json`: the verb exists for a person
  * accounting for what work cost, the agent surface has no tool for it and will not get
  * one, and a public option with no production caller is a defect. Not `--which` either, and
  * that one is worth stating: every write carries it so an agent can name itself, and
@@ -36,6 +39,10 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
   const usage = program
     .command('usage')
     .description("what each run cost, read from this machine's Claude Code transcripts")
+    .option(
+      '--tools',
+      'instead, how many times each MCP tool was called here, from the count this machine keeps',
+    )
     .addHelpText(
       'after',
       [
@@ -46,12 +53,28 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
         '  More than one is named and NOT attributed: there is no tie-break that is not invented.',
         '  None says `no transcript`, never `0`: no record of the cost is not a cost of zero.',
         '  Nothing is recorded: the chain has no field for this, and reading writes nothing.',
+        '',
+        'With --tools it prints, per MCP tool, the calls, the refusals and the first and last date:',
+        '  Only what the MCP server on this machine answered for this project: a call another host',
+        '  or machine answered is not counted, nor is any use outside the MCP.',
+        '  The tool name and `ok` or the refusal code, never an argument or an agent’s words.',
+        '  The count is a file outside the record; `mnema switch off tool-call-count` stops it.',
       ].join('\n'),
     )
-    .action(async () => {
+    .action(async (options: { tools?: boolean }) => {
       const { linkBreakNotice } = await import('./integrity.js');
-      const { runUsage } = await import('../commands/usage.js');
-      const { usageReport } = await import('../presentation/usage.js');
+      const { runToolUsage, runUsage } = await import('../commands/usage.js');
+      const { toolUsageReport, usageReport } = await import('../presentation/usage.js');
+      if (options.tools === true) {
+        const counted = runToolUsage(here());
+        if (!counted.ok) {
+          reportRefusal(wiring, counted);
+          return;
+        }
+        for (const line of linkBreakNotice(counted.linkBreaks)) io.err(render(line));
+        writeLines(io, toolUsageReport(render, counted));
+        return;
+      }
       const result = runUsage(here());
       if (!result.ok) {
         // The one refusal it has, and it takes the surface's own wording for it: a

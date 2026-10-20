@@ -77,6 +77,7 @@
  * server side never fires it.
  */
 
+import { existsSync } from 'node:fs';
 import { CodedError } from '@mnema/chain';
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/context';
 import {
@@ -121,6 +122,7 @@ import {
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
+import { appendToolCall, resultOf, toolCallsFile, UNCODED_FAILURE } from '../tool-calls.js';
 import { VERSION } from '../version.js';
 import {
   actionsRequiring,
@@ -144,6 +146,7 @@ import { closeSession, openSession, refreshWorkspace, type Session } from './ses
 import {
   A_READ,
   A_WRITE,
+  countsToolCalls,
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
@@ -722,9 +725,63 @@ function declaringInto(
     server.registerTool(
       what.act,
       { ...config, annotations: hintsOf(what) },
-      answeringThrownRefusals(handle, ensureSession, what.effect),
+      countedLocally(
+        answeringThrownRefusals(handle, ensureSession, what.effect),
+        ensureSession,
+        what,
+      ),
     );
   };
+}
+
+/**
+ * `handle`, with each call it answers counted in the local file `tool-calls.ts` describes: the
+ * tool's name, its declared effect and `ok` or the refusal's code, never a byte of the arguments.
+ *
+ * THE ONE DOOR EVERY TOOL COMES THROUGH, for the reason {@link hintsOf} is derived here: a count
+ * kept by each tool would be a tool that forgot. It wraps OUTSIDE {@link answeringThrownRefusals},
+ * so what it reads is the reply the host gets, and a throw the door does not answer is counted
+ * as a failure and thrown on. The count never changes a reply: whatever it cannot do (no project,
+ * switched off, a file it cannot write) it leaves undone.
+ */
+function countedLocally<Input extends ZodRawShapeCompat | undefined>(
+  handle: ToolCallback<Input>,
+  ensureSession: () => Promise<Session>,
+  what: DeclaredTool,
+): ToolCallback<Input> {
+  const called = handle as (...args: unknown[]) => unknown;
+  const count = async (result: string): Promise<void> => {
+    try {
+      const session = await ensureSession();
+      const file = toolCallsFile(session.trees);
+      if (file === undefined || !countsToolCalls(session)) return;
+      // WHERE THE MACHINE HAS NO KEY OF ITS OWN YET NOTHING IS KEPT, and the count makes no
+      // directory of its own. A connection that only reads, and a write refused for want of a
+      // key, leave the home as they found it (`a-session-opens-where-nothing-signs.test.ts`,
+      // `a-refusal-leaves-nothing.test.ts`), and the first write that signs is what makes the
+      // key root: the calls from then on are counted, the ones before it are the cost.
+      if (!existsSync(session.trees.keyRoot)) return;
+      appendToolCall(file, {
+        at: new Date().toISOString(),
+        tool: what.act,
+        effect: what.effect,
+        result,
+      });
+    } catch {
+      // A count that cannot be kept is not a reason for a tool to answer differently.
+    }
+  };
+  return (async (...args: unknown[]) => {
+    let reply: unknown;
+    try {
+      reply = await called(...args);
+    } catch (error) {
+      await count(UNCODED_FAILURE);
+      throw error;
+    }
+    await count(resultOf(reply));
+    return reply;
+  }) as ToolCallback<Input>;
 }
 
 /**
@@ -748,6 +805,11 @@ function declaringInto(
  *     measured: a read leaves every file and directory of the sandbox as it found them, not
  *     only the chain. The projection it rebuilds is held in memory, so there is no cache file for it
  *     to write, unless `$MNEMA_CACHE_DIR` names a directory (`core/src/projections/cache-home.ts`).
+ *     THE ONE EXCEPTION IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
+ *     appends a line to a file in the machine's data directory, outside the record, until
+ *     `tool-call-count` is switched off. It changes no fact and loses nothing, which is what a
+ *     client weighing whether to call a tool without asking needs to know, and the measurement
+ *     excuses that one place and no other.
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed

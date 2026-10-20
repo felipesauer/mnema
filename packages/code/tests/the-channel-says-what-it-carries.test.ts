@@ -313,6 +313,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'recall-document',
       'session-tally',
       'subagent-handback',
+      'tool-call-count',
       'user-corrections',
     ]);
   });

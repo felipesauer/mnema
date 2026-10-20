@@ -38,9 +38,9 @@
  * around the invocation.
  */
 
-import type { RunSpend, UsageDone } from '../commands/usage.js';
+import type { RunSpend, ToolUsageDone, UsageDone } from '../commands/usage.js';
 import { oneLine } from '../one-line.js';
-import { asId, column, itemLine } from './items.js';
+import { asId, asWhen, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** The width the agent column is padded to, so the windows below it line up. */
@@ -128,4 +128,58 @@ function told(spend: RunSpend): string {
   // that means "the reading did not understand part of what it read".
   if (passedOver > 0) parts.push(`${passedOver} line(s) passed over`);
   return parts.join(' · ');
+}
+
+/** The width the tool column is padded to: the longest tool name is shorter than this. */
+const TOOL_WIDTH = 24;
+
+/**
+ * What `mnema usage --tools` is, said once, at the end: how far the count reaches, which is
+ * the half a reader would otherwise take for granted.
+ */
+const WHAT_THE_COUNT_IS = [
+  'This counts only the calls the MCP server on this machine answered for this project:',
+  'a call another host or another machine answered is not here, and neither is any use of',
+  'mnema outside the MCP. It holds the tool name, whether the tool writes, and `ok` or the',
+  "refusal's code, never an argument or a word an agent wrote. It is not in the record,",
+  'nothing here is signed and `mnema verify` does not cover it. Nothing was written to produce it.',
+].join(' ');
+
+/** What a reader is told when the count is off now: the lines below, if any, are older. */
+const SWITCHED_OFF =
+  'The count is switched off (`mnema switch on tool-call-count`): no call is kept while it is, and what follows was kept before.';
+
+/** The lines `mnema usage --tools` prints. */
+export function toolUsageReport(render: Render, listing: ToolUsageDone): string[] {
+  const off = listing.counting ? [] : [SWITCHED_OFF, ''];
+  const odd =
+    listing.passedOver > 0 ? [`${listing.passedOver} line(s) of the file were not a call.`] : [];
+  if (listing.tools.length === 0) {
+    return [
+      ...off,
+      `No tool call is counted here (looked in ${oneLine(listing.file)}).`,
+      ...odd,
+      '',
+      WHAT_THE_COUNT_IS,
+    ];
+  }
+  return [
+    ...off,
+    `${listing.tools.length} tool(s) called:`,
+    ...listing.tools.map((tool) =>
+      render(
+        itemLine([
+          column(oneLine(tool.tool), TOOL_WIDTH),
+          column(tool.effect === 'mutates' ? 'writes' : 'only reads', 11),
+          `${tool.calls} call(s)`,
+          `${tool.refused} refused`,
+          asWhen(`first ${oneLine(tool.first)}, last ${oneLine(tool.last)}`),
+        ]),
+      ),
+    ),
+    '',
+    `Read from ${oneLine(listing.file)}.`,
+    ...odd,
+    WHAT_THE_COUNT_IS,
+  ];
 }

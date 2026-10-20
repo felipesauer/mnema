@@ -248,10 +248,20 @@ function whatTheCallDid(
   // The derived cache is rewritten by a write that reads from it, and it is not the record: what
   // `destructiveHint: false` promises is that no fact is lost, and deleting the cache loses none.
   // It is excused by its shape and no other file is (`support/the-cache-is-not-the-record.ts`).
+  // THE LOCAL COUNT OF TOOL CALLS IS NOT THE RECORD EITHER, and a read that is counted appends a
+  // line to it: one file per project in the machine's data directory, outside every tree, unsigned
+  // and never read by `verify` (`src/tool-calls.ts`). The hints are about the record and about what a
+  // client can lose by calling a tool: a line added to a counter loses nothing and changes no
+  // fact. It is excused by its place and no other file is, in `changed` as it is in `destroyed`.
   return {
-    changed: changed.sort(),
-    destroyed: destroyed.filter((at) => !isTheDerivedCache(at)).sort(),
+    changed: changed.filter((at) => !isTheToolCallCount(at)).sort(),
+    destroyed: destroyed.filter((at) => !isTheDerivedCache(at) && !isTheToolCallCount(at)).sort(),
   };
+}
+
+/** Whether a sandbox path is the local count of tool calls: `<data>/tool-calls/<file>`. */
+function isTheToolCallCount(at: string): boolean {
+  return /(^|\/)\.mnema\/tool-calls\/[0-9a-f]{16}\.jsonl$/.test(at);
 }
 
 /** The four hints the protocol serves, each of which this file holds to the calls. */

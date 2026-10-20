@@ -38,6 +38,7 @@
  */
 
 import { dirname } from 'node:path';
+import { channelIsOn } from '@mnema/context';
 import {
   type Clock,
   type DiscoveryEnv,
@@ -48,6 +49,8 @@ import {
   systemClock,
   treesSearched,
 } from '@mnema/core';
+import { TOOL_CALL_COUNT_CHANNEL } from '../record-framing.js';
+import { readToolCalls, type ToolTally, tallyToolCalls, toolCallsFile } from '../tool-calls.js';
 import {
   type HostSession,
   hostTranscriptRoot,
@@ -247,4 +250,48 @@ function overlaps(session: HostSession, from: number, to: number): boolean {
 function instant(at: string): number | undefined {
   const ms = Date.parse(at);
   return Number.isNaN(ms) ? undefined : ms;
+}
+
+/** What the local count of tool calls holds for this project, tool by tool. */
+export interface ToolUsageDone {
+  readonly ok: true;
+  /** One row per tool called, most called first. */
+  readonly tools: readonly ToolTally[];
+  /** The file the rows were read from: said, so an empty answer says where nothing was found. */
+  readonly file: string;
+  /** Lines of the file that were not a call. */
+  readonly passedOver: number;
+  /** Whether the count is being kept now (`mnema switch` says why when it is not). */
+  readonly counting: boolean;
+  /**
+   * The tails among those read that do not chain, for the reason {@link UsageDone.linkBreaks} is
+   * carried: the switch above was read from the record.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
+}
+
+/**
+ * `mnema usage --tools`: how many times each tool of the MCP server was called, read from the
+ * file this machine keeps for this project (`tool-calls.ts`).
+ *
+ * It reads the file and the record's one switch and writes nothing. It refuses outside a
+ * project for the reason {@link runUsage} does: the count is per project.
+ */
+export function runToolUsage(ctx: UsageContext): ToolUsageDone | UsageRefused {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const file = toolCallsFile(trees);
+  if (file === undefined) return { ok: false, reason: 'NO_PROJECT' };
+  const read = readToolCalls(file);
+  const switched = withScopedCaches(trees, (sources) => ({
+    counting: channelIsOn(sources, TOOL_CALL_COUNT_CHANNEL),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+  }));
+  return {
+    ok: true,
+    tools: tallyToolCalls(read.calls),
+    file,
+    passedOver: read.passedOver,
+    counting: switched.counting,
+    linkBreaks: switched.linkBreaks,
+  };
 }
