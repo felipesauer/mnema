@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **`pnpm release:prepare [x.y.z] [--check]` writes a release's one number everywhere and cuts the CHANGELOG.** It writes
+  the number into every tracked `package.json`, `plugin.json` and `gemini-extension.json` that declares a version (found
+  by asking git, not from a list), into `packages/code/src/version.ts`, `packages/chain/src/version.ts` and the
+  `--version` line of `cli.help.golden.txt`; turns `## [Unreleased]` into `## [x.y.z] - date` with an empty
+  `## [Unreleased]` above it and a link to the release; and makes `recordings/console.cast` and its GIF again when the
+  number moves (that step needs a build, `agg` and a pseudo-terminal). Without a number it proposes one from the
+  Unreleased section (Added, Changed or Removed is a minor, anything else a patch), says why, and applies it; `--check`
+  changes nothing and exits 1 if something would change. A test runs the script on a copy of the workspace's manifests,
+  plus one at a path nobody listed, and fails if any is left behind.
 - **A job after the merge asks the network for every image and link of the READMEs.** A new workflow runs on each push
   to `main` (and by hand): it reads the front page's README and each package's README, asks every absolute address
   (an image, a link, a `srcset`) up to three times, and, if one answers with an HTTP error, opens one issue under a
