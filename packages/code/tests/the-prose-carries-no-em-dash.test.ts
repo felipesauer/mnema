@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // @mnema/chain, its reader in Python and its format
   'packages/chain/': 57,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 582,
+  'packages/code/src/': 451,
   // what it prints
   'packages/code/src/presentation/': 5,
   // the Sigstore reader
@@ -85,13 +85,13 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the verifier page it builds
   'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 774,
+  'packages/code/tests/': 730,
   // @mnema/context
   'packages/context/': 4,
   // @mnema/core
   'packages/core/': 101,
   // the plugin for agent hosts
-  'plugin/': 8,
+  'plugin/': 2,
   // the recordings and the scripts that make them
   'recordings/': 6,
 };
