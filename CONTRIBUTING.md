@@ -101,15 +101,54 @@ names how to run it.
 
 ## Releases
 
-There is no tag and no release until the first publication on npm, and the procedure for one will be
-written with it. **Publishing to npm is the maintainer's own act**: nothing here runs `npm publish`.
-What exists today is the check of the package: it packs the five publishable packages, installs them
-together into an empty prefix and an empty `HOME`, and runs `init`, `decision record` and `verify` with
-the installed binary.
+**Publishing to npm is the maintainer's own act**, and the first publication is made by hand. After it, a
+workflow publishes, but only when a person approves it. A release needs no token and no secret in this
+repository: npm trusts `.github/workflows/release.yml` (see below) and signs a provenance statement with
+each package.
+
+The check that runs before any of this packs the five publishable packages, installs them together into
+an empty prefix and an empty `HOME`, and runs `init`, `decision record` and `verify` with the installed
+binary. It runs on a push to `main`, and you can run it yourself:
 
 ```sh
 pnpm build && bash .github/the-packed-install/run.sh
 ```
+
+### The first version, 0.1.0
+
+1. Open a pull request that runs `pnpm release:prepare 0.1.0`. **Write the number**: without one the script
+   proposes a number from the CHANGELOG, and today that would be 0.2.0. The pull request carries what the
+   script writes: the number in every manifest, the CHANGELOG cut, the recording made again.
+2. Merge it.
+3. On the merged commit, build and pack the five, then publish them in this order, from your own login (the
+   packages are not on npm yet, so there is no trusted publisher to publish for you):
+
+   ```sh
+   pnpm install --frozen-lockfile && pnpm build
+   mkdir -p /tmp/mnema-tarballs
+   for p in chain core context stacks code; do (cd packages/$p && pnpm pack --pack-destination /tmp/mnema-tarballs); done
+   for p in chain core context stacks code; do npm publish /tmp/mnema-tarballs/mnema-$p-0.1.0.tgz --access public; done
+   ```
+
+4. On npmjs.com, for each of the five packages, add a trusted publisher: this repository, the workflow file
+   `release.yml` and the environment `npm`. In the repository's Settings, make an environment named `npm`
+   with yourself as a required reviewer.
+5. Run the `Release` workflow by hand (Actions, Run workflow) with `mode: tag-only`. It publishes nothing: it
+   checks that the five packages on npm carry the version of the root `package.json`, and only then creates
+   the tag `v0.1.0` and the release of GitHub.
+6. On each package's settings on npmjs.com, turn on "Require two-factor authentication and disallow tokens".
+
+### The next versions
+
+1. `pnpm release:prepare` (with the number, or without it to be told one and why), then a pull request.
+2. Merge it. The `Release` workflow starts on the push to `main` and waits for your approval in the `npm`
+   environment.
+3. On approval it runs the packed install on Node 24.15.0, 24 and 26, publishes the five tarballs in the
+   order chain, core, context, stacks, code (with `--provenance`, skipping one that is already at the
+   version), and only then creates the tag and the release, whose notes are the CHANGELOG section.
+
+While `@mnema/code` is not on npm, a push to `main` does not publish: the workflow says the first
+publication is by hand and ends green. The workflow has not run yet.
 
 ## A pull request
 

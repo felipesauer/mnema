@@ -1,0 +1,195 @@
+name: Release
+
+# PUBLISHES THE FIVE PACKAGES TO NPM AND ONLY THEN CUTS THE TAG AND THE RELEASE. A person approves it
+# in the `npm` environment (its required reviewer is set in the repository's Settings, not here);
+# the publish itself holds no token and no secret: npm trusts this workflow through OIDC (the
+# trusted publisher of each package names this repository, `release.yml` and the `npm` environment)
+# and signs a provenance statement with every package.
+#
+# WHEN. On a push to `main`, and by hand with `mode`:
+#   publish   publish what the root version names, if npm does not have it yet (the default);
+#   tag-only  publish nothing: check that the five packages on npm carry the root version, then
+#             create the tag and the release. It exists for the first publication, which is made
+#             by hand (a package that is not on npm yet has no trusted publisher to be trusted by).
+# A push whose root version is the one npm already serves does nothing. A push while `@mnema/code`
+# is not on npm at all does not publish either: it says the first publication is by hand, and ends
+# green.
+#
+# THE ORDER. chain, core, context, stacks, code: a package is published after the ones it depends
+# on. A package already at the version is skipped, so a run that stopped halfway runs again.
+# The tag and the release come after the publish, and only if the five are on npm at the version.
+#
+# WHAT IT DOES NOT PROVE. It has not run: nothing here was ever published. It needs no npm token and
+# no secret of the repository; the release is created with the job's own `github.token`.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'publish: publish what the root version names. tag-only: only tag and release what npm already has.'
+        type: choice
+        options: [publish, tag-only]
+        default: publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: what is to be done
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      action: ${{ steps.plan.outputs.action }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compare the root version with the one npm serves
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          MODE: ${{ inputs.mode }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          [ "$REF" = "refs/heads/main" ] || { echo "::error::release runs on main only, not on $REF"; exit 1; }
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$MODE" = "tag-only" ]; then
+            echo "action=tag-only" >> "$GITHUB_OUTPUT"
+            echo "tag-only: $version"
+            exit 0
+          fi
+
+          if published="$(npm view @mnema/code version 2>"$RUNNER_TEMP/npm-view.err")"; then
+            :
+          elif grep -q E404 "$RUNNER_TEMP/npm-view.err"; then
+            echo "action=first-by-hand" >> "$GITHUB_OUTPUT"
+            echo "::notice::@mnema/code is not on npm yet: the first publication is made by hand, so nothing is published here."
+            exit 0
+          else
+            cat "$RUNNER_TEMP/npm-view.err"
+            exit 1
+          fi
+
+          if [ "$published" = "$version" ]; then
+            echo "action=nothing" >> "$GITHUB_OUTPUT"
+            echo "npm already serves $version: nothing to publish."
+          else
+            echo "action=publish" >> "$GITHUB_OUTPUT"
+            echo "npm serves $published, the root says $version: publish."
+          fi
+
+  packed-install:
+    name: packed install (node ${{ matrix.node }})
+    needs: plan
+    if: needs.plan.outputs.action == 'publish'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: true
+      matrix:
+        node: ['24.15.0', '24', '26']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: bash .github/the-packed-install/run.sh
+
+  publish:
+    name: publish the five to npm
+    needs: [plan, packed-install]
+    if: needs.plan.outputs.action == 'publish'
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      # Trusted publishing needs npm 11.5.1 or newer; the exact version is what was read.
+      - name: Install the npm that can publish by OIDC
+        run: npm install --global npm@11.5.1
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Pack the five, then publish them in dependency order
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          tarballs="$RUNNER_TEMP/tarballs"
+          mkdir "$tarballs"
+          for p in chain core context stacks code; do
+            (cd "packages/$p" && pnpm pack --pack-destination "$tarballs" >/dev/null)
+          done
+          for p in chain core context stacks code; do
+            if [ "$(npm view "@mnema/$p@$VERSION" version 2>/dev/null || true)" = "$VERSION" ]; then
+              echo "@mnema/$p@$VERSION is already on npm: skipped."
+              continue
+            fi
+            npm publish "$tarballs/mnema-$p-$VERSION.tgz" --provenance --access public
+          done
+
+  release:
+    name: tag and release what npm serves
+    needs: [plan, publish]
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.plan.outputs.action == 'tag-only') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check that the five are on npm at the version
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          for p in chain core context stacks code; do
+            served="$(npm view "@mnema/$p@$VERSION" version 2>/dev/null || true)"
+            [ "$served" = "$VERSION" ] || { echo "::error::@mnema/$p@$VERSION is not on npm"; exit 1; }
+          done
+
+      - name: Create the tag and the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "v$VERSION already has a release: nothing to do."
+            exit 0
+          fi
+          notes="$RUNNER_TEMP/notes.md"
+          awk -v h="## [$VERSION]" 'index($0, h) == 1 { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > "$notes"
+          [ -s "$notes" ] || { echo "::error::CHANGELOG.md has no section for $VERSION"; exit 1; }
+          printf '\nnpm: https://www.npmjs.com/package/@mnema/code/v/%s\n' "$VERSION" >> "$notes"
+          gh release create "v$VERSION" --target "$SHA" --title "v$VERSION" --notes-file "$notes"
