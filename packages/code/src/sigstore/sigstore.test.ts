@@ -101,11 +101,23 @@ interface Asked {
   readonly body?: string;
 }
 
+/**
+ * The one instant the doubles live at, a day from now. Left to the wall clock, the Rekor stamps the
+ * second it logs at and the certificates start the instant they are born, so a clock that steps
+ * back between the two makes the verifier refuse the chain. The double's root certificate always
+ * starts at the real now and lasts a year, so a constant date cannot serve: it would precede the
+ * root today and outlive it later. Pinned a day ahead, nothing the wall clock does afterwards
+ * changes the reading.
+ */
+const aClock = (): Date => new Date(Math.floor((Date.now() + 86_400_000) / 1000) * 1000);
+
 /** A Fulcio, a Rekor and a trust root that reaches them, all made here. */
-async function aSigstore(subjectClaim = 'email') {
-  const ctlog = await initializeCTLog(P256());
-  const ca = await initializeCA(P256(), ctlog);
-  const tlog = await initializeTLog('https://rekor.sigstore.dev', P256());
+async function aSigstore(subjectClaim = 'email', rekorBehindMs = 0) {
+  const clock = aClock();
+  const rekorClock = new Date(clock.getTime() - rekorBehindMs);
+  const ctlog = await initializeCTLog(P256(), clock);
+  const ca = await initializeCA(P256(), ctlog, clock);
+  const tlog = await initializeTLog('https://rekor.sigstore.dev', P256(), rekorClock);
   const fulcio = fulcioHandler(ca, { subjectClaim });
   const rekor = rekorHandler(tlog);
   const asked: Asked[] = [];
@@ -604,10 +616,36 @@ describe('reading a bundle, offline', () => {
   it('reads who signed and when Rekor logged it, by Sigstore’s own checks', async () => {
     const { text, root } = await aBundle();
     const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
-    expect(reading).toMatchObject({
+    expect(reading, JSON.stringify(reading)).toMatchObject({
       kind: 'signed',
       identity: EMAIL,
       issuer: 'https://oauth2.sigstore.dev/auth',
+    });
+  });
+
+  describe('a Rekor whose clock is behind the certificate authority', () => {
+    /** A bundle from a Rekor whose clock is `rekorBehindMs` behind the CA's and the CT log's. */
+    async function aBundleLoggedAt(rekorBehindMs: number) {
+      const sigstore = await aSigstore('email', rekorBehindMs);
+      const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: sigstore.fetch,
+        token: async () => aToken(LOCAL_CLAIMS),
+      });
+      if (!signed.ok || !signed.checkpoints[0]?.ok) throw new Error('setup: not signed');
+      return { text: JSON.stringify(signed.checkpoints[0].bundle), root: sigstore.trustedRoot };
+    }
+
+    it('is refused when it logged a second before the certificate began', async () => {
+      const { text, root } = await aBundleLoggedAt(1000);
+      const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+      expect(reading.kind, JSON.stringify(reading)).toBe('not-covered');
+      expect(JSON.stringify(reading)).toContain('Failed to verify certificate chain');
+    });
+
+    it('is read as signed at the same instant as the certificate authority', async () => {
+      const { text, root } = await aBundleLoggedAt(0);
+      const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+      expect(reading.kind, JSON.stringify(reading)).toBe('signed');
     });
   });
 
@@ -624,7 +662,8 @@ describe('reading a bundle, offline', () => {
 
   it('names the repository, the workflow, the commit and the run the certificate carries', async () => {
     const { text, root } = await anActionsBundle();
-    expect(readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root)).toMatchObject({
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    expect(reading, JSON.stringify(reading)).toMatchObject({
       kind: 'signed',
       identity: ACTIONS_WORKFLOW,
       ran: {
@@ -642,7 +681,8 @@ describe('reading a bundle, offline', () => {
       run_id: '778',
       run_attempt: '1',
     });
-    expect(readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root)).toMatchObject({
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    expect(reading, JSON.stringify(reading)).toMatchObject({
       kind: 'signed',
       ran: {
         commit: 'b'.repeat(40),
@@ -654,7 +694,7 @@ describe('reading a bundle, offline', () => {
   it('names no run for a certificate that carries none, and never invents one', async () => {
     const { text, root } = await aBundle();
     const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
-    expect(reading.kind).toBe('signed');
+    expect(reading.kind, JSON.stringify(reading)).toBe('signed');
     expect(reading).not.toHaveProperty('ran');
     const partial = await anActionsBundle({ run_id: undefined });
     expect(
@@ -808,7 +848,10 @@ describe('the act, the claim and the reading, over a record', () => {
     const receipts = readSigstoreReceipts(after.trees, { trustedRoot: sigstore.trustedRoot });
     expect(receipts.findings).toHaveLength(1);
     const [finding] = receipts.findings;
-    expect(finding?.reading).toMatchObject({ kind: 'signed', identity: EMAIL });
+    expect(finding?.reading, JSON.stringify(finding?.reading)).toMatchObject({
+      kind: 'signed',
+      identity: EMAIL,
+    });
     expect(finding?.namedBy).toBe(claimed.ok ? claimed.anchor : '');
 
     // The file is the head's, under its digest; asking again sends nothing.
@@ -869,7 +912,9 @@ describe('the act, the claim and the reading, over a record', () => {
     const receipts = readSigstoreReceipts(verdict(ctx).trees, {
       trustedRoot: sigstore.trustedRoot,
     });
-    expect(receipts.findings[0]?.reading.kind).toBe('signed');
+    expect(receipts.findings[0]?.reading.kind, JSON.stringify(receipts.findings[0]?.reading)).toBe(
+      'signed',
+    );
     expect(receipts.findings[0]?.namedBy).toBeUndefined();
   });
 
