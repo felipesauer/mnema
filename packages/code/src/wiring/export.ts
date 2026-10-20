@@ -35,7 +35,7 @@ export function registerExport(program: Command, wiring: Wiring): Declared {
     .option('--from <iso>', windowGloss('from', 'fact'))
     .option('--to <iso>', windowGloss('to', 'fact'))
     .addHelpText('after', windowHelp('fact'))
-    .option('--who <id>', `include only facts authorized by this identity — ${ACTOR_HELP}`)
+    .option('--who <id>', `include only facts authorized by this identity: ${ACTOR_HELP}`)
     // A FILTER over who already acted, not a declaration of who is acting, so it carries
     // no `declaredAgent` parser, exactly as `accountability`'s does not: nothing is being
     // attributed here, and a value naming no recorded agent is an empty feed, which is

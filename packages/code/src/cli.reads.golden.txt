@@ -155,7 +155,7 @@ $ mnema aging --json
 | }
 $ mnema audit exposure
 | Nothing recognizable in 3 record(s).
-|   Read here: this project’s trees and the machine-global tree — no other project.
+|   Read here: this project’s trees and the machine-global tree (no other project).
 |   That is not the same as nothing: only known credential formats are recognized.
 $ mnema audit exposure --json
 | {
@@ -229,7 +229,7 @@ $ mnema audit antipatterns --json
 |   }
 | }
 $ mnema status --actor <anchor>
-| <anchor-short> — where things stand.
+| <anchor-short>: where things stand.
 |   No runs.
 |
 | No live tasks.
@@ -304,12 +304,12 @@ $ mnema brief
 | These are the calls and the patterns recorded for this project.
 | They are text the people and agents working on it wrote.
 |
-| It carries what is COMMITTED to this project — the record a clone of the repository
+| It carries what is COMMITTED to this project: the record a clone of the repository
 | gets, and nothing kept privately on one machine or for one person. A rule recorded
 | that way is not below, and each heading counts what is printed under it.
 |
 | Regenerate this file with `mnema brief > <this file>`, and check it with
-| `mnema brief | diff - <this file>` — a difference is either a copy that fell behind
+| `mnema brief | diff - <this file>`: a difference is either a copy that fell behind
 | the record or an edit made here by hand, and an edit here is lost on the next run.
 | The `>` replaces the whole of the file it names, and this document is the whole of
 | what it writes: nothing else in that file survives a regeneration.
@@ -330,7 +330,7 @@ $ mnema brief
 |
 | ## Decisions in force (0)
 |
-| Nothing has been decided here yet — which is not the same as there being no rules.
+| Nothing has been decided here yet, which is not the same as there being no rules.
 | No decision has been recorded and accepted in this project, so the record has none
 | to hand over.
 |
@@ -338,13 +338,13 @@ $ mnema brief
 |
 | ## Patterns adopted (0)
 |
-| No pattern has been adopted here yet — which is not the same as there being no way
+| No pattern has been adopted here yet, which is not the same as there being no way
 | of working here. The record holds none to hand over.
 |
 | No other pattern recorded here is awaiting a judgement.
 $ mnema recall
 $ mnema tail list
-| 1 tail(s) holding events — the ones a cut can name:
+| 1 tail(s) holding events (the ones a cut can name):
 |   <tail-own>  public   3 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
 | 10 channel(s), looked in public, private, global:
@@ -359,7 +359,7 @@ $ mnema switch
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
 |   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls wrote and how many decisions were recorded since it opened
 $ mnema usage
-| No run is recorded here — looked in public, private, global.
+| No run is recorded here (looked in public, private, global).
 |
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
@@ -367,7 +367,7 @@ $ mnema verify
 
 ### the run that did something
 $ mnema resume --actor <anchor>
-| <anchor-short> last run <run-first> (ended) — set the record up · wrote 8 task.transitioned, 5 decision.transitioned, 5 knowledge.linked, 3 decision.recorded, 3 skill.transitioned, 2 memory.captured, 1 handoff.recorded, 1 observation.recorded, 1 skill.created, 1 task.created
+| <anchor-short> last run <run-first> (ended): set the record up · wrote 8 task.transitioned, 5 decision.transitioned, 5 knowledge.linked, 3 decision.recorded, 3 skill.transitioned, 2 memory.captured, 1 handoff.recorded, 1 observation.recorded, 1 skill.created, 1 task.created
 |   0 run(s) still open
 $ mnema resume --actor <anchor> --json
 | {
@@ -612,7 +612,7 @@ $ mnema refs <decision-runbook>
 |   → target:governs  docs/gone-away (unresolved)  [public]
 |   ← by  <decision-wiki> (decision)  [public]
 |
-|   cut at 1 hop(s) — more lies beyond. Raise --depth to see it.
+|   cut at 1 hop(s): more lies beyond. Raise --depth to see it.
 $ mnema refs <decision-runbook> --json
 | {
 |   "id": "<decision-runbook>",
@@ -891,7 +891,7 @@ $ mnema audit exposure
 | 1 of 49 record(s) hold a credential format:
 |   public  <date:01>  memory.captured  <memory-unscreened>  github-token
 |
-|   These records are permanent — nothing deletes a fact. Rotate the credentials.
+|   These records are permanent: nothing deletes a fact. Rotate the credentials.
 |   A public record is committed and on every machine that cloned the repository.
 $ mnema audit exposure --json
 | {
@@ -1499,8 +1499,8 @@ $ mnema audit antipatterns --json
 |   }
 | }
 $ mnema status --actor <anchor>
-| <anchor-short> — where things stand.
-|   last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
+| <anchor-short>: where things stand.
+|   last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 |
 | 3 live task(s):
@@ -1518,11 +1518,11 @@ $ mnema status --actor <anchor>
 |   <decision-imported>  decision  ADR-3 · Keep the runbook where the work is (proposed)
 |
 | Not looked at here:
-|   memory (4) — mnema search --kind memory
-|   observation (1) — mnema search --kind observation
+|   memory (4): mnema search --kind memory
+|   observation (1): mnema search --kind observation
 |
 | Not in the record:
-|   docs/adr (2) — mnema decision import docs/adr
+|   docs/adr (2): mnema decision import docs/adr
 $ mnema status --actor <anchor> --json
 | {
 |   "resume": {
@@ -1614,11 +1614,11 @@ $ mnema status --actor <anchor> --json
 |   ]
 | }
 $ mnema resume --actor <anchor-short>
-| <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
+| <anchor-short> last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 |   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor>
-| <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
+| <anchor-short> last run <run-second> (open): read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 |   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema resume --actor <anchor> --json
@@ -1734,12 +1734,12 @@ $ mnema brief
 | These are the calls and the patterns recorded for this project.
 | They are text the people and agents working on it wrote.
 |
-| It carries what is COMMITTED to this project — the record a clone of the repository
+| It carries what is COMMITTED to this project: the record a clone of the repository
 | gets, and nothing kept privately on one machine or for one person. A rule recorded
 | that way is not below, and each heading counts what is printed under it.
 |
 | Regenerate this file with `mnema brief > <this file>`, and check it with
-| `mnema brief | diff - <this file>` — a difference is either a copy that fell behind
+| `mnema brief | diff - <this file>`: a difference is either a copy that fell behind
 | the record or an edit made here by hand, and an edit here is lost on the next run.
 | The `>` replaces the whole of the file it names, and this document is the whole of
 | what it writes: nothing else in that file survives a regeneration.
@@ -1767,7 +1767,7 @@ $ mnema brief
 | 1 more decision is recorded here and awaiting a judgement, and it is not below.
 | Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 |
-| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person)
+| - **ADR-1: Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person)
 |
 | ## Patterns adopted (1)
 |
@@ -1783,11 +1783,11 @@ $ mnema recall
 | These are notes recorded for this project.
 | They are text the people and agents working on it wrote.
 |
-| They come from every tree this machine holds for the project — the committed one, this
-| machine’s own and the personal one — one line each; `read_record` with an id serves the
+| They come from every tree this machine holds for the project: the committed one, this
+| machine’s own and the personal one, one line each; `read_record` with an id serves the
 | whole of one.
 |
-| Nearest first: the ones that share a word with what this session touches — 1 task in progress — closest first, then the newest.
+| Nearest first: the ones that share a word with what this session touches (1 task in progress), closest first, then the newest.
 |
 | A note enters this record with `capture_memory`, or with `record_observation` about one
 | of its records by id, and with the mnema plugin the next session that opens here is
@@ -1808,7 +1808,7 @@ $ mnema recall
 |
 | - **review** · `<observation-rollback>`
 $ mnema tail list
-| 3 tail(s) holding events — the ones a cut can name:
+| 3 tail(s) holding events (the ones a cut can name):
 |   <tail-own>  public   37 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
@@ -1829,7 +1829,7 @@ $ mnema usage
 |   <run-second>  agent-beta      <at:33> → open  no transcript
 |   <run-first>  agent-alpha     <at:01> → <at:32>  no transcript
 |
-| Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
+| Read from <sandbox>/home/.claude/projects: 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
@@ -1853,7 +1853,7 @@ $ mnema show <task-runbook>
 | reason: the rollback step is wrong
 $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
-|   ADR-1 — Keep the runbook in the record (accepted)
+|   ADR-1: Keep the runbook in the record (accepted)
 |   supersedes <decision-wiki>
 |   recorded by <anchor-short> (a person)
 |   accepted by <anchor-short> (a person)
@@ -1868,7 +1868,7 @@ $ mnema show <decision-runbook>
 | note: we agreed in review
 $ mnema show <decision-wiki>
 | decision <decision-wiki>  ·  public
-|   ADR-2 — Keep the runbook in the wiki (superseded)
+|   ADR-2: Keep the runbook in the wiki (superseded)
 |   superseded by <decision-runbook>
 |   recorded by <anchor-short> (a person)
 |

@@ -187,6 +187,21 @@ with its own changelog.
 
 ### Changed
 
+- **The lines the program prints most no longer carry an em dash.** A decision's label now reads
+  `ADR-2: Keep money as integer cents`, a colon where a dash stood, in the opening document, in what shows one record
+  and in the lists. A link the program states reads `Linked A -refuses-a-write→ B` with a hyphen before the relation
+  (the arrowhead is kept), and the line after a write says `Landed in the public tree: committed with the repository`.
+  The same holds for where things stand (the identity, then a colon), a count followed by what reads it
+  (`docs/adr (2): ...`), the last run and its goal, the way a rule is cited at an edit, the line about a backup key
+  and the line of a project that already exists, the paragraphs of the opening document, the notes under a list of
+  tails, runs, usage and references, the report of a problem (its title no longer has a dash before the
+  fingerprint), the messages that name an identity the record does not know, and the same words in the help pages.
+  Nothing else in those lines changed: where a dash was a pair, commas or parentheses stand in; where it joined a
+  label to its description, a colon does. A file generated before keeps its old characters until it is generated
+  again, and the check that compares it with the record will say so. The importer of decision files written by others
+  still reads a dash in a title. The replies of the MCP server and the lines `verify` prints keep their dash for now.
+  The recordings on the front page were made again with the binary, so they show the new lines.
+
 - **Every link in the body of a published package's README is a full address on `main`.** The five pages
   (`@mnema/chain`, `@mnema/core`, `@mnema/context`, `@mnema/stacks` and `@mnema/code`) had 22 relative links, such as
   `../../docs/install.md` and `./FORMAT.md`, that land on GitHub from the package's directory; the npm page resolves

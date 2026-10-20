@@ -115,7 +115,7 @@ function refuse(
       code: 'AMBIGUOUS_ANCHOR',
       message:
         `"${oneLine(typed)}" names ${resolved.candidates.length} of the identities this ` +
-        `record knows — ${written(resolved.candidates)} — so it does not say which; ` +
+        `record knows (${written(resolved.candidates)}), so it does not say which; ` +
         'pass one of those, or the whole identity',
     };
   }
@@ -128,7 +128,7 @@ function refuse(
       ok: false,
       code: 'UNKNOWN_ANCHOR',
       message:
-        'it names no identity — an unset variable, most likely. Name the identity ' +
+        'it names no identity: an unset variable, most likely. Name the identity ' +
         `whose record you are asking about${all.length > 0 ? `: ${written(all)}` : ''}`,
     };
   }
@@ -143,8 +143,8 @@ function refuse(
     message:
       all.length === 0
         ? `"${oneLine(typed)}" names no identity, and this record holds none to match a ` +
-          'prefix against — name the whole identity (`mnid:` and 64 hex, as printed when ' +
+          'prefix against: name the whole identity (`mnid:` and 64 hex, as printed when ' +
           'a project is founded)'
-        : `"${oneLine(typed)}" names no identity in this record — these are: ${written(all)}`,
+        : `"${oneLine(typed)}" names no identity in this record (these are: ${written(all)})`,
   };
 }

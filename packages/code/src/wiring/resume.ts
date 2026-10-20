@@ -35,7 +35,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
     .description('show where an actor left off, and the runs they still have open')
     .requiredOption(
       '--actor <id>',
-      `the identity whose last run and open runs to show — ${ACTOR_HELP}`,
+      `the identity whose last run and open runs to show: ${ACTOR_HELP}`,
     )
     .option('--json', 'emit the faithful resume object as JSON')
     .action(async (opts: { actor: string; json?: boolean }) => {

@@ -107,7 +107,7 @@ export function statusReport(
   asThisMachine = false,
 ): string[] {
   return [
-    `${actor} — where things stand.`,
+    `${actor}: where things stand.`,
     ...(asThisMachine
       ? [render(fact('The identity this machine writes as in this project.'))]
       : []),
@@ -197,13 +197,13 @@ function outsideLines(outside: readonly DecisionsOutside[]): string[] {
 }
 
 /**
- * One base, its count and the command: `docs/decisions (4)`, an em dash, `mnema decision
+ * One base, its count and the command: `docs/decisions (4)`, a colon, `mnema decision
  * import docs/decisions`. The one spelling of that fact, for both sections above and for the
  * paragraph the opening document's hook copy carries (`presentation/brief.ts`), so two surfaces
  * telling a reader about the same files cannot word them two ways.
  */
 export function toImport(directory: string, documents: number): string {
-  return `${oneLine(directory)} (${documents}) — mnema decision import ${oneLine(directory)}`;
+  return `${oneLine(directory)} (${documents}): mnema decision import ${oneLine(directory)}`;
 }
 
 /**
@@ -240,7 +240,7 @@ function unreadLines(status: Bootstrap): string[] {
   return [
     '',
     'Not looked at here:',
-    ...unread.map((item) => `  ${item.kind} (${item.held}) — mnema search --kind ${item.kind}`),
+    ...unread.map((item) => `  ${item.kind} (${item.held}): mnema search --kind ${item.kind}`),
   ];
 }
 

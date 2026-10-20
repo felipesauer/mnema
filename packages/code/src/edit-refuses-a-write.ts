@@ -103,5 +103,5 @@ function refuseLine(rule: PushedRule): string {
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
   const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
-  return `“${oneLine(rule.name)}” — refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
+  return `“${oneLine(rule.name)}”: refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
 }

@@ -82,7 +82,7 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // is validated: a link is legitimately cross-tree, and the relation is an
           // open string on purpose. So this line is three doors onto itself, and each
           // one goes through the collapse (see {@link onOneLine}).
-          io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+          io.out(onOneLine`Linked ${result.subject} -${result.rel}→ ${result.target}`);
           // What that address covers, on the relations that carry an ADDRESS, and
           // nothing at all on every other: a path target alone is not one. A fact, not a warning: see `reachNotice`.
           // It goes BEFORE the tree notice because it is about what was just recorded

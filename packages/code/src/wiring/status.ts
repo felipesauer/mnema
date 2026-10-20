@@ -27,7 +27,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
     .description('show where things stand: the work, what governs, what awaits a ruling')
     .option(
       '--actor <id>',
-      `the identity whose session to report — ${ACTOR_HELP}. Omitted, it is the identity this machine writes as in this project, and the report says so.`,
+      `the identity whose session to report: ${ACTOR_HELP}. Omitted, it is the identity this machine writes as in this project, and the report says so.`,
     )
     .option('--json', 'emit the faithful opening context as JSON')
     .action(async (opts: { actor?: string; json?: boolean }) => {

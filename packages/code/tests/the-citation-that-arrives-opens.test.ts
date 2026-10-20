@@ -286,8 +286,8 @@ describe('a rule that arrives unasked carries a path that opens', () => {
         .sort(),
     ).toEqual(
       [
-        `- **ADR-1 — The gateway is idempotent** · \`${rules.get(GATEWAY) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${GATEWAY}\``,
-        `- **ADR-2 — The ledger is append-only** · \`${rules.get(LEDGER) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${LEDGER}\``,
+        `- **ADR-1: The gateway is idempotent** · \`${rules.get(GATEWAY) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${GATEWAY}\``,
+        `- **ADR-2: The ledger is append-only** · \`${rules.get(LEDGER) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${LEDGER}\``,
       ].sort(),
     );
     // AND THEY OPEN. Not "a path is printed": the bytes behind each are read back, and
@@ -306,7 +306,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
 
     const collate = pushed('src/collate/fold.ts').context ?? '';
     expect(bare(collate.split('\n')[2])).toBe(
-      `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
+      `“The gateway is idempotent”: governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
     // reader could follow, and it opens through this product alone: the door the reader
@@ -335,7 +335,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
 
     const collate = pushed('src/collate/fold.ts').ask ?? '';
     expect(bare(collate.split('\n')[2])).toBe(
-      `“The gateway is idempotent” — asks for a person at src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
+      `“The gateway is idempotent”: asks for a person at src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
     expect(provenancesIn(pushed('src/ledger/append.ts').ask ?? '')).toEqual([`docs/adr/${LEDGER}`]);
@@ -363,14 +363,14 @@ describe('what the channels say when the record asserts no provenance', () => {
     await addressAt(rule, 'src/collate', 'asks-for-a-person');
 
     const text = await briefText();
-    expect(text).toContain(`- **ADR-1 — Queues are at-least-once** · \`${rule}\``);
+    expect(text).toContain(`- **ADR-1: Queues are at-least-once** · \`${rule}\``);
     expect(text).not.toContain(DERIVED_FROM);
     const { context, ask } = pushed('src/collate/fold.ts');
     expect(bare((context ?? '').split('\n')[2])).toBe(
-      `“Queues are at-least-once” — governs src/collate · ${rule}`,
+      `“Queues are at-least-once”: governs src/collate · ${rule}`,
     );
     expect(bare((ask ?? '').split('\n')[2])).toBe(
-      `“Queues are at-least-once” — asks for a person at src/collate · ${rule}`,
+      `“Queues are at-least-once”: asks for a person at src/collate · ${rule}`,
     );
   });
 });
@@ -457,14 +457,14 @@ describe('the line of a pushed provenance is one line', () => {
     await addressAt(rule, 'src/collate', 'governs');
     await addressAt(rule, 'src/collate', 'asks-for-a-person');
     // A target that would close its own field and open a whole forged rule under it.
-    const forged = `docs/a.md${String.fromCharCode(10)}“forged” — governs src · forged-id`;
+    const forged = `docs/a.md${String.fromCharCode(10)}“forged”: governs src · forged-id`;
     await addressAt(rule, forged, 'derived-from');
 
     const { context, ask } = pushed('src/collate/fold.ts');
     for (const served of [context ?? '', ask ?? '']) {
       // Framing, the addressed line, one rule: three, whatever the record holds.
       expect(served.split(String.fromCharCode(10))).toHaveLength(3);
-      expect(served).toContain('docs/a.md “forged” — governs src · forged-id');
+      expect(served).toContain('docs/a.md “forged”: governs src · forged-id');
     }
   });
 });

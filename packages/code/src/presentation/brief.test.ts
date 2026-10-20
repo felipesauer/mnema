@@ -403,7 +403,7 @@ describe('the brief costs one line per rule', () => {
       }),
     );
     expect(text).toContain(
-      '- **ADR-7 — Keep the runbook in the record** · `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b07`',
+      '- **ADR-7: Keep the runbook in the record** · `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b07`',
     );
     expect(text).toContain('- **One slice per PR** · `0198f3c1-7a2e-7b41-9c05-3d8e6f2a2b03`');
     // The doors the file points at are the AGENT's, because the reader of the file is
@@ -646,7 +646,7 @@ describe('the brief declares a label that names more than one rule', () => {
     // half of a clash, and the reason the ids are not filtered to what is listed.
     const text = printed(governance({ ...rules, collisions: [clash] }));
     expect(text).toContain(
-      '- `ADR-1` — `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b01`, `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b09`',
+      '- `ADR-1`: `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b01`, `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b09`',
     );
     // And it says what to do instead, in the file itself.
     expect(text).toContain('Cite these by id rather than by label');
@@ -914,7 +914,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
     const hook = briefWithin(crowded, HOOK_TEXT_CEILING);
     const decisionsLeft = 60 - bullets(hook).length;
     expect(hook.join('\n')).toContain(
-      `Left out of this text: ${decisionsLeft} decisions in force and 5 adopted patterns — the last ones in the order above.`,
+      `Left out of this text: ${decisionsLeft} decisions in force and 5 adopted patterns, the last ones in the order above.`,
     );
     expect(hook.join('\n')).toContain('`search` with `kind` `decision` and');
     expect(hook.join('\n')).toContain('`kind` `skill` and `state` `adopted`');
@@ -928,9 +928,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
       decisions: [1, 2].map((n) => decision(n, `A call numbered ${n} ${'at length '.repeat(100)}`)),
     });
     const hook = briefWithin(two, printedLength(theHooksCopy(two)) - 1).join('\n');
-    expect(hook).toContain(
-      'Left out of this text: 1 decision in force — the last one in the order',
-    );
+    expect(hook).toContain('Left out of this text: 1 decision in force, the last one in the order');
     expect(hook).not.toContain('adopted pattern');
   });
 

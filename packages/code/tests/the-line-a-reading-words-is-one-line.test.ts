@@ -488,11 +488,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the singular or the plural of a noun written in this module, chosen by the count beside it',
   },
-  'brief.ts «Left out of this text: {} — the last {} in the order above.» parts #1': {
+  'brief.ts «Left out of this text: {}, the last {} in the order above.» parts #1': {
     verdict: 'composed',
     why: 'the counts of what a hook’s copy left out, joined — every part is a count and a noun of this module',
   },
-  "brief.ts «Left out of this text: {} — the last {} in the order above.» decisions + patterns === 1 ? 'one' : 'ones' #1":
+  "brief.ts «Left out of this text: {}, the last {} in the order above.» decisions + patterns === 1 ? 'one' : 'ones' #1":
     {
       verdict: 'minted',
       why: 'one of two words written here, chosen by how many were left out',
@@ -514,11 +514,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many bytes make one of that host’s tokens, a count read off the host table',
   },
-  'brief.ts «{} — {}» decision.adr #1': {
+  'brief.ts «{}: {}» decision.adr #1': {
     verdict: 'composed',
     why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
   },
-  'brief.ts «{} — {}» decision.title #1': {
+  'brief.ts «{}: {}» decision.title #1': {
     verdict: 'composed',
     why: 'the title an actor wrote, on the sharpest line there is — `rule` collapses the composed name',
   },
@@ -598,11 +598,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'one id sharing a label, inside the warning about the collision',
   },
-  'brief.ts «- \\`{}\\` — {}» oneLine(collision.adr) #1': {
+  'brief.ts «- \\`{}\\`: {}» oneLine(collision.adr) #1': {
     verdict: 'collapsed',
     why: 'the label two rules answer to — an `ADR-<n>`, collapsed for the rule’s sake',
   },
-  'brief.ts «- \\`{}\\` — {}» ids #1': {
+  'brief.ts «- \\`{}\\`: {}» ids #1': {
     verdict: 'composed',
     why: 'the ids that share it, each one already collapsed in the template above',
   },
@@ -717,11 +717,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'one of this module’s own two sentences, keyed by a closed union',
   },
-  'exported.ts «provenance in the file: record {}, adopted by {} — » done.id #1': {
+  'exported.ts «provenance in the file: record {}, adopted by {}, » done.id #1': {
     verdict: 'minted',
     why: 'the record id the export was asked for',
   },
-  'exported.ts «provenance in the file: record {}, adopted by {} — » oneLine(done.adoptedBy) #1': {
+  'exported.ts «provenance in the file: record {}, adopted by {}, » oneLine(done.adoptedBy) #1': {
     verdict: 'collapsed',
     why: 'the agent that adopted the pattern — a name somebody typed',
   },
@@ -787,16 +787,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the directory of a project the caller named — a value from the command line',
   },
-  'promoted.ts «{} "{}" — in force in {} projects» candidate.kind #1': {
+  'promoted.ts «{} "{}": in force in {} projects» candidate.kind #1': {
     verdict: 'minted',
     why: '`skill` or `decision` — the closed union of what can be promoted',
   },
-  'promoted.ts «{} "{}" — in force in {} projects» new Set(candidate.instances.map((i) => i.project)).size #1':
+  'promoted.ts «{} "{}": in force in {} projects» new Set(candidate.instances.map((i) => i.project)).size #1':
     {
       verdict: 'minted',
       why: 'how many distinct projects hold it — a count',
     },
-  'promoted.ts «{} "{}" — in force in {} projects» oneLine(candidate.title) #1': {
+  'promoted.ts «{} "{}": in force in {} projects» oneLine(candidate.title) #1': {
     verdict: 'collapsed',
     why: 'the name or title the pattern was recorded under — text somebody wrote',
   },
@@ -826,7 +826,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a count of the record’s files the page carries',
   },
-  'site.ts «this record does not verify: {} — the page says so to » oneLine(done.verdict.summary) #1':
+  'site.ts «this record does not verify: {} (the page says so to » oneLine(done.verdict.summary) #1':
     {
       verdict: 'collapsed',
       why: 'the chain’s sentence over the public tree, which names tails by directories a disk chose',
@@ -1193,7 +1193,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many of them are printed — the length of the list under the sentence',
   },
-  'recall.ts «Nearest first: the ones that share a word with what this session touches — {} — closest first, then the newest.» whereTheWordsCameFrom(touched) #1':
+  'recall.ts «Nearest first: the ones that share a word with what this session touches ({}), closest first, then the newest.» whereTheWordsCameFrom(touched) #1':
     {
       verdict: 'composed',
       why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
@@ -1301,11 +1301,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the topic `--topic` named — free text, on a fact line of its own',
   },
-  'record.ts «{} — {}» body.record.adr #1': {
+  'record.ts «{}: {}» body.record.adr #1': {
     verdict: 'minted',
     why: 'the `ADR-<n>` the decision was minted with',
   },
-  'record.ts «{} — {}» oneLine(body.record.title) #1': {
+  'record.ts «{}: {}» oneLine(body.record.title) #1': {
     verdict: 'collapsed',
     why: 'the decision’s title — text whoever recorded it wrote',
   },
@@ -1457,7 +1457,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how far the walk reached to get there — a count',
   },
-  'references.ts «cut at {} hop(s) — more lies beyond. Raise --depth to see it.» graph.depth #1': {
+  'references.ts «cut at {} hop(s): more lies beyond. Raise --depth to see it.» graph.depth #1': {
     verdict: 'minted',
     why: 'the depth cap the walk applied, after clamping — a count',
   },
@@ -1566,7 +1566,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'one of this module’s own two words for where a run stands',
   },
-  'runs.ts « — {}» oneLine(run.goal) #1': {
+  'runs.ts «: {}» oneLine(run.goal) #1': {
     verdict: 'collapsed',
     why: 'the run’s goal — text whoever opened the session typed, and BOTH readings print it',
   },
@@ -1653,7 +1653,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- status.ts: where things stand ---------------------------------------------
-  'status.ts «{} — where things stand.» actor #1': {
+  'status.ts «{}: where things stand.» actor #1': {
     verdict: 'minted',
     why: 'an anchor: the reading resolved the actor to one before this line',
   },
@@ -1683,27 +1683,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the title half, text an actor wrote — collapsed whole at the call site below',
   },
-  'status.ts «  {} ({}) — mnema search --kind {}» item.kind #1': {
+  'status.ts «  {} ({}): mnema search --kind {}» item.kind #1': {
     verdict: 'minted',
     why: 'one of `SEARCH_KINDS` — the same vocabulary `search.ts` groups its rows by',
   },
-  'status.ts «  {} ({}) — mnema search --kind {}» item.held #1': {
+  'status.ts «  {} ({}): mnema search --kind {}» item.held #1': {
     verdict: 'minted',
     why: 'how many of that kind the record holds — a count, from the index’s own total',
   },
-  'status.ts «  {} ({}) — mnema search --kind {}» item.kind #2': {
+  'status.ts «  {} ({}): mnema search --kind {}» item.kind #2': {
     verdict: 'minted',
     why: 'the same word again, as the flag that reaches it — a kind is what `--kind` takes',
   },
-  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #1': {
+  'status.ts «{} ({}): mnema decision import {}» oneLine(directory) #1': {
     verdict: 'collapsed',
     why: 'the directory a `derived-from` edge names, or one of the five conventional ones — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under the heading; a literal of this package is collapsed too, because the field is one field and a rule that held for one source of it and not the other would be two rules',
   },
-  'status.ts «{} ({}) — mnema decision import {}» documents #1': {
+  'status.ts «{} ({}): mnema decision import {}» documents #1': {
     verdict: 'minted',
     why: 'how many documents of that base the record has no decision for — a count this reading made over the file names',
   },
-  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #2': {
+  'status.ts «{} ({}): mnema decision import {}» oneLine(directory) #2': {
     verdict: 'collapsed',
     why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
   },
@@ -1723,11 +1723,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- tails.ts: the tails on disk -----------------------------------------------
-  "tails.ts «No tail holds events in any tree here — looked in {}.» trees.join(', ') #1": {
+  "tails.ts «No tail holds events in any tree here (looked in {}).» trees.join(', ') #1": {
     verdict: 'minted',
     why: 'the trees that were looked in — closed words, joined by this report',
   },
-  'tails.ts «{} tail(s) holding events — the ones a cut can name:» tails.length #1': {
+  'tails.ts «{} tail(s) holding events (the ones a cut can name):» tails.length #1': {
     verdict: 'minted',
     why: 'how many tails follow — the count the rows are counted by',
   },
@@ -1771,7 +1771,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'when the switch was made — an instant off the record',
   },
-  'switches.ts «— {}» oneLine(row.state.reason) #1': {
+  'switches.ts «reason: {}» oneLine(row.state.reason) #1': {
     verdict: 'collapsed',
     why: 'why somebody switched it off — free text they typed at `--reason`, on a line the header counts',
   },
@@ -1792,7 +1792,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
 
   // --- usage.ts: what the host's transcripts cost --------------------------------
-  "usage.ts «No run is recorded here — looked in {}.» listing.trees.join(', ') #1": {
+  "usage.ts «No run is recorded here (looked in {}).» listing.trees.join(', ') #1": {
     verdict: 'minted',
     why: 'the trees that were looked in — closed words, joined by this report',
   },
@@ -1800,12 +1800,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many runs follow — the count the rows are counted by',
   },
-  'usage.ts «Read from {} — {} host session(s) there record work in this project.» oneLine(listing.store) #1':
+  'usage.ts «Read from {}: {} host session(s) there record work in this project.» oneLine(listing.store) #1':
     {
       verdict: 'collapsed',
       why: 'the host’s store — a PATH, built from this machine’s home and an environment',
     },
-  'usage.ts «Read from {} — {} host session(s) there record work in this project.» listing.sessionsInStore #1':
+  'usage.ts «Read from {}: {} host session(s) there record work in this project.» listing.sessionsInStore #1':
     {
       verdict: 'minted',
       why: 'how many host sessions are in the store — a count',
@@ -2562,7 +2562,7 @@ const PROBES: readonly Probe[] = [
     says: 'live task(s):',
   },
   {
-    keys: ['runs.ts « — {}» oneLine(run.goal) #1', 'status.ts fact(lastRunPhrase(lastRun)) #1'],
+    keys: ['runs.ts «: {}» oneLine(run.goal) #1', 'status.ts fact(lastRunPhrase(lastRun)) #1'],
     first: ['run', 'start', '--which', 'an-agent', '--goal', VALUE],
     argv: ['status', '--actor', ACTOR],
     says: 'last run ',
@@ -2649,7 +2649,7 @@ describe('an ordinary value says what it always did', () => {
     expect(id).toBeDefined();
     const resumed = await invoke('resume', '--actor', actor);
     const phrase = resumed.out.find((line) => line.includes('last run ')) ?? '';
-    expect(phrase).toContain(`last run ${id} (open) — a plain goal · open `);
+    expect(phrase).toContain(`last run ${id} (open): a plain goal · open `);
     await invoke('run', 'end');
   });
 

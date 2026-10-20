@@ -304,7 +304,7 @@ describe('the identity the caller names is the one that is answered for', () => 
     expect(said.err).toEqual([]);
     const headline = said.out[0] as string;
     expect(headline).toContain(WHERE_THINGS_STAND);
-    expect(other.startsWith(headline.split(' ')[0] as string)).toBe(true);
+    expect(other.startsWith(headline.split(': ')[0] as string)).toBe(true);
     // AND IT IS NOT THE SESSION'S, which is the half that fails if the fill overrode the
     // caller: the two identities are different, and the answer names only one of them.
     expect(mine).not.toBe(other);

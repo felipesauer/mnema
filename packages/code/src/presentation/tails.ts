@@ -66,7 +66,7 @@ const NOT_AUTHORIZED = 'no waiver';
 export function noTailHoldsEvents(trees: readonly Scope[]): string {
   return trees.length === 0
     ? 'No tail holds events here: this is not a mnema project, and this machine’s global tree is read only with --global.'
-    : `No tail holds events in any tree here — looked in ${trees.join(', ')}.`;
+    : `No tail holds events in any tree here (looked in ${trees.join(', ')}).`;
 }
 
 /** The lines `mnema tail list` prints. */
@@ -77,7 +77,7 @@ export function tailReport(
 ): string[] {
   if (tails.length === 0) return [noTailHoldsEvents(trees)];
   return [
-    `${tails.length} tail(s) holding events — the ones a cut can name:`,
+    `${tails.length} tail(s) holding events (the ones a cut can name):`,
     ...tails.map((held) =>
       render(
         itemLine([
