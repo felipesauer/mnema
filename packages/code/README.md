@@ -14,7 +14,7 @@
 </p>
 
 Your decisions, handed to your agents' sessions and held at the edits they
-govern — append-only and signed in the repository, and checkable by anyone.
+govern: append-only and signed in the repository, and checkable by anyone.
 
 Tamper-evident, not tamper-proof: what is still in the record has not changed
 since it was signed, and a stranger can check that without your keys and
@@ -41,7 +41,7 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
 [The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
 unproven.
 
-## What it proves — and what it does not
+## What it proves, and what it does not
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and `mnema verify`
 shows when what is in the record has changed since it was signed, and a cut that leaves the last
@@ -59,7 +59,7 @@ no private key and no network, and prints each verdict verbatim.
   control: anyone who can run the command line writes as this machine's identity.
 
 The whole table, claim by claim, is in [What it proves](https://github.com/felipesauer/mnema/blob/main/docs/what-it-proves.md), and the
-long form of each row is in [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#what-it-proves--and-what-it-does-not).
+long form of each row is in [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#what-it-proves-and-what-it-does-not).
 
 ## Install
 

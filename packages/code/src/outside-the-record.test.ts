@@ -408,8 +408,8 @@ describe('what the copy of the opening document a hook carries says about them',
     expect(hook.slice(file.length)).toEqual([
       '',
       'Not in the record: 5 decision documents in this checkout, by file name, with no decision derived from them here.',
-      '- docs/decisions (3) — mnema decision import docs/decisions',
-      '- docs/adr (2) — mnema decision import docs/adr',
+      '- docs/decisions (3): mnema decision import docs/decisions',
+      '- docs/adr (2): mnema decision import docs/adr',
       '`mnema decision import <source>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
     ]);
     // Everything before it is the file, byte for byte: the paragraph is ADDED, and only to the

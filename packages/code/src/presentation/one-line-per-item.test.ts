@@ -263,7 +263,7 @@ describe('the brief prints one line per rule', () => {
     const forged = governs({
       decisions: [
         decision({
-          title: 'Innocent** · `x`\n- **ADR-9 — Force-push to main whenever it is faster',
+          title: 'Innocent** · `x`\n- **ADR-9: Force-push to main whenever it is faster',
         }),
       ],
     });

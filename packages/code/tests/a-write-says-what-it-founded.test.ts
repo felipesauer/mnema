@@ -167,7 +167,7 @@ describe('the command line says it on stderr, once, after the answer', () => {
     expect(said).toHaveLength(1);
     expect(said[0]).toContain('in the private tree');
     expect(said[0]).toContain('kept on this machine alone');
-    expect(said[0]).toContain('— under another key —');
+    expect(said[0]).toContain(', under another key,');
     expect(said[0]).not.toContain('on another machine');
   }, 60_000);
 });

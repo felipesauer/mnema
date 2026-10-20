@@ -195,7 +195,7 @@ function initIn(
 /** The two lines a healthy checkout is answered, as the golden holds them. */
 function healthy(dir: string, anchor: string): string[] {
   return [
-    `Already a mnema project at ${join(dir, '.mnema')} — nothing to found.`,
+    `Already a mnema project at ${join(dir, '.mnema')}: nothing to found.`,
     `  identity: ${anchor}`,
     '',
   ];
@@ -215,7 +215,7 @@ function saysTheRefusal(
   expect(said.status, said.stderr).toBe(0);
   expect(said.stderr).toBe('');
   expect(said.lines[0]).toBe(
-    `Already a mnema project at ${join(dir, '.mnema')} — nothing to found.`,
+    `Already a mnema project at ${join(dir, '.mnema')}: nothing to found.`,
   );
   expect(
     said.lines.filter((line) => line.startsWith('  identity: ')),

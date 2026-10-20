@@ -2,7 +2,7 @@
  * THE HONEST GUARANTEE IS WORDED AS A PROOF, ON EVERY PAGE AND EVERYWHERE ONE IS NAMED.
  *
  * THE PREMISE THIS REPLACES. The README standard has always called the section
- * `What it proves — and what it does not` and called it mandatory for any package that
+ * `What it proves, and what it does not` and called it mandatory for any package that
  * makes a claim. Two of the four wrote `What it guarantees` instead, and had since they
  * were written. That is not a cosmetic difference: the sentence this product sells says
  * the record is **tamper-evident, not tamper-proof** (it PROVES and does not GUARANTEE)
@@ -10,14 +10,14 @@
  * promise had just been rewritten to refuse.
  *
  * THE DISCRIMINANT IS THE AFFIRMATION, NOT AN IDENTIFIER. There is no function to grep.
- * Sweeping for the heading's own tail (`— and what it does not`) over every tracked file
+ * Sweeping for the heading's own tail (` and what it does not`) over every tracked file
  * found SEVEN places, where a list made by reading the four package READMEs had two: the
  * format specification cites the section by name, and so does the doc-comment that holds
  * the product's promise. Neither is a README, and a rename that missed them would have
  * left two documents pointing at a section that no longer exists under that name.
  *
  * THE SEVENTH IS THE ONE WORTH WRITING DOWN. `plugin/README.md` carries
- * `## What it does — and what it does not`, which is a THIRD wording and is not a mistake:
+ * `## What it does, and what it does not`, which is a THIRD wording and is not a mistake:
  * that page documents an agent-host plugin rather than an `@mnema/*` package, and a plugin
  * makes no proof to be honest about. It is an allowed exception with its reason, held in
  * both directions, rather than a file quietly skipped.
@@ -61,10 +61,18 @@ const read = (relative: string): string => readFileSync(join(ROOT, relative), 'u
  * read out of that document, because the document is not committed: a case that read it
  * would pass over a file a clone does not have.
  */
-const HONEST_GUARANTEE = 'What it proves — and what it does not';
+const HONEST_GUARANTEE = 'What it proves, and what it does not';
 
-/** The tail every wording of the heading shares: the discriminant the sweep runs on. */
-const THE_TAIL = '— and what it does not';
+/**
+ * The tail every wording of the heading shares: the discriminant the sweep runs on. It has
+ * no comma in front on purpose: the old wording put an em dash there, and a tail that
+ * required the comma let that heading through. It is also ordinary prose ("What a table tolerates, and what it does
+ * not"), so a line is only accused when it is a HEADING that opens with {@link THE_LEAD}.
+ */
+const THE_TAIL = ' and what it does not';
+
+/** How a heading of the standard opens, so that a heading about something else is not accused. */
+const THE_LEAD = /^#+ What it /;
 
 /**
  * Where the tail appears in a wording that is not the canonical one, and why that is
@@ -74,8 +82,8 @@ const THE_TAIL = '— and what it does not';
 const WORDED_OTHERWISE: readonly { file: string; heading: string; why: string }[] = [
   {
     file: 'plugin/README.md',
-    heading: '## What it does — and what it does not',
-    why: "It documents the agent-host plugin, not an `@mnema/*` package. A plugin wires a host to the product and proves nothing of its own, so the section it owes a reader is what it DOES — the standard's honest-guarantee section would have nothing to be honest about.",
+    heading: '## What it does, and what it does not',
+    why: "It documents the agent-host plugin, not an `@mnema/*` package. A plugin wires a host to the product and proves nothing of its own, so the section it owes a reader is what it DOES: the standard's honest-guarantee section would have nothing to be honest about.",
   },
 ];
 
@@ -172,7 +180,7 @@ function otherWordings(corpus: readonly { file: string; text: string }[]): strin
   const accused: string[] = [];
   for (const { file, text } of corpus) {
     for (const line of text.split('\n')) {
-      if (!line.includes(THE_TAIL)) continue;
+      if (!line.includes(THE_TAIL) || !THE_LEAD.test(line)) continue;
       if (line.includes(HONEST_GUARANTEE)) continue;
       accused.push(`${file} :: ${line.trim()}`);
     }
@@ -218,10 +226,29 @@ describe('nowhere names the section by another wording', () => {
     // Written here, not read off the disk: a sweep whose instrument is never shown to
     // fire reports zero when it is broken, and zero is what a healthy tree looks like.
     const corpus = [
-      { file: 'control.md', text: `# A page\n\n## What it guarantees ${THE_TAIL}\n\nprose\n` },
+      { file: 'control.md', text: `# A page\n\n## What it guarantees${THE_TAIL}\n\nprose\n` },
       { file: 'clean.md', text: `# A page\n\n## ${HONEST_GUARANTEE}\n\nprose\n` },
     ];
-    expect(otherWordings(corpus)).toEqual([`control.md :: ## What it guarantees ${THE_TAIL}`]);
+    expect(otherWordings(corpus)).toEqual([`control.md :: ## What it guarantees${THE_TAIL}`]);
+  });
+
+  it('the sweep FIRES on the old wording with an em dash, and on one with no comma or a full stop', () => {
+    const corpus = [
+      { file: 'dash.md', text: `# What it proves ${String.fromCharCode(0x2014)}${THE_TAIL}\n` },
+      { file: 'bare.md', text: `# What it proves${THE_TAIL}\n` },
+      { file: 'stop.md', text: `# What it proves.${THE_TAIL}\n` },
+    ];
+    expect(otherWordings(corpus)).toHaveLength(3);
+  });
+
+  it('the sweep is not fooled by prose or by a heading about something else', () => {
+    const corpus = [
+      { file: 'prose.md', text: `What a table tolerates${THE_TAIL}.\n` },
+      { file: 'other.md', text: `## 5. What a capture changes${THE_TAIL}\n` },
+      { file: 'tail.md', text: '## What it proves, and what it cannot\n' },
+      { file: 'canonical.md', text: `## ${HONEST_GUARANTEE}\n` },
+    ];
+    expect(otherWordings(corpus)).toEqual([]);
   });
 
   it('the sweep reads the whole tracked tree, not a handful of files', () => {

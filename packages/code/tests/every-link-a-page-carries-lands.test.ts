@@ -365,7 +365,7 @@ describe('every link a page carries lands', () => {
     );
     expect(asked).toEqual(
       expect.arrayContaining([
-        'README.md → #what-it-proves--and-what-it-does-not',
+        'README.md → #what-it-proves-and-what-it-does-not',
         'docs/install.md → ../plugin/README.md#in-vs-code-and-cursor',
         'docs/cli-reference.md → ../plugin/README.md#in-vs-code-and-cursor',
       ]),

@@ -433,7 +433,7 @@ describe('a transition that lands in a project that does not enrol the agent', (
 
 describe('a link taken back from the project that holds it', () => {
   const LANDED =
-    '  Landed in the public tree — committed with the repository, so it reaches every clone.';
+    '  Landed in the public tree: committed with the repository, so it reaches every clone.';
 
   async function retractedAs(target: string, holder: string): Promise<string> {
     mkdirSync(join(holder, 'src'), { recursive: true });

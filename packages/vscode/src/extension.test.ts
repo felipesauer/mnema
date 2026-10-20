@@ -307,7 +307,7 @@ const DIGEST = 'd8ef7d9252d24840adb4ac3804ed6fe1f525c25f477d7eca275aa7af7ad7f174
 const PLAN = [
   'Stack hello-stack 1.0.0: A hello.',
   `  digest   ${DIGEST}`,
-  '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files —',
+  '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files:',
   'Hooks (1), declared by the stack and off: none is written, and turning one on is a separate act of yours:',
   '  format  on after-edit  hooks/format.sh  Formats.',
   '',

@@ -82,7 +82,7 @@ export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
 export const REACHES_AN_AGENT = [
   'mnema writes no file of yours. In Claude Code the mnema plugin hands this record to',
   'each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this',
-  'project in a file of its own — the `>` replaces the whole of the file it names — and',
+  'project in a file of its own (the `>` replaces the whole of the file it names), and',
   'one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only',
   'where no `CLAUDE.md` exists):',
 ];
@@ -138,7 +138,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
         for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
       } else {
-        io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
+        io.out(onOneLine`Already a mnema project at ${result.root}: nothing to found.`);
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
       }
     });
@@ -206,9 +206,7 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Ren
   if (backup?.created === true) {
     io.out(
       render(
-        fact(
-          onOneLine`backup key: created and enrolled — private half at ${backup.privateKeyPath}`,
-        ),
+        fact(onOneLine`backup key: created and enrolled, private half at ${backup.privateKeyPath}`),
       ),
     );
     io.out(

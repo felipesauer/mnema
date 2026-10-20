@@ -67,61 +67,33 @@ const ESCAPES: readonly string[] = [
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
-  '.github/': 164,
+  '.github/': 26,
   // the headers mnema writes into its own tree
   '.mnema/': 2,
-  // the changelog
-  'CHANGELOG.md': 20,
-  // the front page
-  'README.md': 7,
-  // the security policy
-  'SECURITY.md': 4,
   // the manual
-  'docs/': 387,
+  'docs/': 26,
   // @mnema/action
   'packages/action/': 28,
-  // the page of @mnema/action
-  'packages/action/README.md': 9,
   // @mnema/chain, its reader in Python and its format
   'packages/chain/': 57,
-  // the page of @mnema/chain
-  'packages/chain/README.md': 1,
-  // the manifest of @mnema/code, whose description the registry shows
-  'packages/code/package.json': 1,
-  // the page of @mnema/code
-  'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 624,
+  'packages/code/src/': 451,
   // what it prints
-  'packages/code/src/presentation/': 43,
-  // the console
-  'packages/code/src/repl/': 4,
+  'packages/code/src/presentation/': 5,
   // the Sigstore reader
-  'packages/code/src/sigstore/': 6,
+  'packages/code/src/sigstore/': 5,
   // the verifier page it builds
-  'packages/code/src/site/': 7,
+  'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 861,
+  'packages/code/tests/': 730,
   // @mnema/context
-  'packages/context/': 10,
-  // the page of @mnema/context
-  'packages/context/README.md': 41,
+  'packages/context/': 4,
   // @mnema/core
-  'packages/core/': 106,
-  // the page of @mnema/core
-  'packages/core/README.md': 20,
-  // the page of @mnema/sdk
-  'packages/sdk/README.md': 1,
-  // the page of @mnema/stacks
-  'packages/stacks/README.md': 1,
-  // @mnema/vscode
-  'packages/vscode/': 1,
-  // the page of @mnema/vscode
-  'packages/vscode/README.md': 1,
+  'packages/core/': 101,
   // the plugin for agent hosts
-  'plugin/': 163,
+  'plugin/': 2,
   // the recordings and the scripts that make them
-  'recordings/': 71,
+  'recordings/': 6,
 };
 
 /**
@@ -150,10 +122,7 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
  * rather than as the character. It is not data; it waits for the sweep of what the product
  * prints, which decides what stands in its place. Held to an exact count, like the list above.
  */
-const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-  // the title of a problem report
-  'packages/code/src/problem-report.ts': 1,
-};
+const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * One directory is not ours to write: the test vectors other people wrote, copied byte for byte

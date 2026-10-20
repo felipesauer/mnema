@@ -10,16 +10,16 @@
  * transcript the payload names and the record. The rule for running a verb is `hand-over.mjs`'s.
  *
  * NO MODEL IS CALLED, and nothing is written to the record: the line is a count, in the words the
- * other handlers use for a fact — what was counted, and from where — and not an instruction.
+ * other handlers use for a fact (what was counted, and from where) and not an instruction.
  *
- * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0 — no
+ * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0: no
  * `mnema` on the PATH, no project, a transcript it could not read, the channel switched off
- * (`mnema switch off session-tally`) — and silence is no output at all, which a host reads as
+ * (`mnema switch off session-tally`). Silence is no output at all, which a host reads as
  * nothing to say.
  */
 
 /**
- * WHICH channel of the product's framing this handler carries — the name `record-framing.ts`
+ * WHICH channel of the product's framing this handler carries: the name `record-framing.ts`
  * knows it by. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */

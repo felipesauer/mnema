@@ -6,7 +6,7 @@
  * unset, when this was measured, and it always is now) and a directory called `.mnema` is
  * exactly what the project walk looks for. Measured on the
  * built binary before this: after the first `mnema init` anywhere, `mnema memory` in a plain
- * folder under the home answered "Landed in the public tree — committed with the repository"
+ * folder under the home answered "Landed in the public tree: committed with the repository"
  * and wrote into `~/.mnema/tails/`, and `mnema recall` there spoke of "notes recorded for
  * this project". A rule for the working-directory rung of the server already refused that
  * directory; nothing else did. And a `.mnema/` FOUNDED in the home (`mnema init` there,

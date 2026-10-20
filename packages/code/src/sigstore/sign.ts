@@ -207,7 +207,7 @@ export async function signWithSigstore(
       code: 'PRIVATE_REPOSITORY',
       message:
         'this workflow runs in a private repository, and a Sigstore certificate would write ' +
-        "the repository's name and its workflow's into a public log that does not forget — " +
+        "the repository's name and its workflow's into a public log that does not forget: " +
         'nothing was sent',
     };
   }

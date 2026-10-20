@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# THE FIRST RECORD, TYPED — the script the recording on the front page is made from.
+# THE FIRST RECORD, TYPED: the script the recording on the front page is made from.
 #
 # It founds a record in an empty repository, writes down one decision with the option it turned
 # down, accepts it, prints the decisions the plugin hands the next agent session, and verifies.
@@ -19,8 +19,8 @@
 #   agg --theme github-dark --font-size 16 recordings/first-record.cast recordings/first-record.gif
 #
 # HOW IT IS HELD TO THE BINARY: packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts
-# runs this same script with PACE=0 — every pause and every per-character delay skipped, the
-# text unchanged — and compares what it prints with the text of the committed .cast, so a change
+# runs this same script with PACE=0 (every pause and every per-character delay skipped, the
+# text unchanged) and compares what it prints with the text of the committed .cast, so a change
 # to anything the binary prints turns that case red until the recording is made again.
 set -euo pipefail
 
@@ -33,7 +33,7 @@ pause() { if [ "$PACE" != 0 ]; then sleep "$1"; fi; }
 
 export TERM=xterm-256color
 # One byte, one column, for every tool the script pipes through: `fold` counts bytes where coreutils
-# is built without multibyte support and characters where it is built with it, and the `—` in
+# is built without multibyte support and characters where it is built with it, and the em dash in
 # `verify`'s lines is three bytes, so an unpinned locale folds the same output two ways.
 export LC_ALL=C
 SB=$(realpath "$(mktemp -d "${TMPDIR:-/tmp}/mnema-first-record-XXXXXX")")
@@ -88,7 +88,7 @@ typed "mnema brief | sed -n '/Decisions in force/,/^- /p'"
 mnema brief | sed -n '/Decisions in force/,/^- /p' | tilde
 pause 2.2
 
-say "and what the record can prove about itself — no key, no network"
+say "and what the record can prove about itself: no key, no network"
 typed "mnema verify"
 mnema verify | fold -s -w 94 | tilde
 pause 3
