@@ -282,7 +282,7 @@ export function windowDeclaration(subject: WindowSubject): string {
  */
 export function globalTreeGloss(consequence: string): string {
   return (
-    "also cover this machine's global tree: left out by default: it belongs to no " +
+    "also cover this machine's global tree (left out by default): it belongs to no " +
     `project and is present in every one, ${consequence}`
   );
 }

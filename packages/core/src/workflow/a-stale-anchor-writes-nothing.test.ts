@@ -673,7 +673,7 @@ describe('what the refusal says, by what the record proves about the key', () =>
       expect(left.writer.anchor).toBe(derived);
       const refusal = refusalOf(left);
       expect(refusal.message).toBe(
-        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete ${anchorPath({ root: tree }, fingerprint)}, and the next write here decides again, from the record, as a first write does`,
+        `this checkout records ${derived} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one. There is no identity for it to leave: delete ${anchorPath({ root: tree }, fingerprint)}, and the next write here decides again, from the record, as a first write does`,
       );
       expect(refusal.restores).toBeUndefined();
 

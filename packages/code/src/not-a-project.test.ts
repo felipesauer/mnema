@@ -87,7 +87,7 @@ describe('the sentence', () => {
     const said = passedOverSentence({ tree, why: 'home' }, { events: 5, tails: 2, unreadable: 0 });
     expect(said).toBe(
       `${tree} is not taken for a project: ${WHY_NO_PROJECT_ROOT.home}. It holds 5 event(s) in ` +
-        '2 tail(s), recorded there as a project’s: left as they are: nothing here reads them ' +
+        '2 tail(s), recorded there as a project’s, left as they are: nothing here reads them ' +
         'into an answer, and nothing is written beside them.',
     );
   });

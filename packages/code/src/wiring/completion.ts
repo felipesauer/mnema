@@ -52,7 +52,7 @@ export function registerCompletion(program: Command, wiring: Wiring): Declared {
       'after',
       [
         '',
-        'It prints to stdout and installs nothing, where the script goes is your choice:',
+        'It prints to stdout and installs nothing; where the script goes is your choice:',
         '  source <(mnema completion bash)                                this shell, now',
         '  mnema completion bash > /etc/bash_completion.d/mnema           every bash',
         `  mnema completion zsh > "\${fpath[1]}/_mnema"                    every zsh`,

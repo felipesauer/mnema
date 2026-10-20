@@ -29,4 +29,4 @@ export function personsKeyInTheClear(keyRoot: string): boolean | undefined {
 
 /** The sentence both the verb and the doctor say when it is. */
 export const THE_AGENT_KEY_SEPARATES_NOTHING =
-  'the agent key separates nothing while your own key is in the clear: anything that can read your home can sign as you: run `mnema key protect`, and keep MNEMA_KEY_PASSPHRASE out of the environment the agent host inherits';
+  'the agent key separates nothing while your own key is in the clear (anything that can read your home can sign as you); run `mnema key protect`, and keep MNEMA_KEY_PASSPHRASE out of the environment the agent host inherits';

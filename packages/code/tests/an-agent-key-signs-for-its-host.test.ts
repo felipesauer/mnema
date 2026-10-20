@@ -943,7 +943,7 @@ describe('mnema doctor says what the agent keys are', () => {
     );
     const none = findings();
     expect(none[0]).toBe(
-      'attention this machine holds the agent key "claude", and no record of this project or this machine enrols it: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. `mnema key enroll --agent claude` enrols it in every tree this reaches.',
+      'attention this machine holds the agent key "claude", and no record of this project or this machine enrols it: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine). `mnema key enroll --agent claude` enrols it in every tree this reaches.',
     );
     // The person's key is in the clear, and an agent key exists: the separation is nothing.
     expect(
@@ -953,7 +953,7 @@ describe('mnema doctor says what the agent keys are', () => {
     // Enrolled in the committed tree alone: the other two are said as lacking it.
     enrolledIn('public', lineOf(requested));
     expect(findings()[0]).toBe(
-      'attention this machine holds the agent key "claude", and the record enrols it in the committed tree and not in the private and global trees: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. `mnema key enroll --agent claude` enrols it in every tree this reaches.',
+      'attention this machine holds the agent key "claude", and the record enrols it in the committed tree and not in the private and global trees: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine). `mnema key enroll --agent claude` enrols it in every tree this reaches.',
     );
 
     await did(undefined, 'key', 'enroll', '--agent', 'claude');
@@ -1047,14 +1047,14 @@ describe('mnema doctor says what the agent keys are', () => {
     // One line for each host that runs a hook, but the one whose key is held.
     expect(lines).toHaveLength(5);
     expect(lines).toContain(
-      'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
+      'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine); `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
     );
     expect(lines.some((line) => line.includes('"codex"'))).toBe(false);
   });
 
   it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
     expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
-      'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: this process, and a command run with it, signs as you, or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine; `mnema key request --agent gemini --anchor <your identity>` makes one.',
+      'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: this process, and a command run with it, signs as you, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine); `mnema key request --agent gemini --anchor <your identity>` makes one.',
     ]);
     // A name that is no agent's is refused, and the line says so, not that the process signs as the person.
     expect(findings({ MNEMA_AGENT_KEY: 'Claude' })).toEqual([
@@ -1627,7 +1627,7 @@ describe('retiring an agent, and making it a new key', () => {
 
 describe('the server says, tree by tree, where its agent is not the one that signs', () => {
   const declaredIn = (where: string): string =>
-    `agent key "claude" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "claude": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent claude\` where you hold your own key puts it in force (\`mnema key request --agent claude --anchor <identity>\` first, if this machine holds no key under that name)`;
+    `agent key "claude" is not in force in ${where}: this machine holds no key under that name, or the record there does not enrol it as "claude"; a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent claude\` where you hold your own key puts it in force (\`mnema key request --agent claude --anchor <identity>\` first, if this machine holds no key under that name)`;
 
   it('says one line for the tree it opens in, and one for each tree of a project it lands on, and does not repeat', async () => {
     await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());

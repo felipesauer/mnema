@@ -459,7 +459,7 @@ export function staleAnchorRefusal(
   }
   if (proven?.code === 'REVOKED_KEY') {
     return stale(
-      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys, nor among the keys of any other identity here: it was retired: a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys, nor among the keys of any other identity here: it was retired. A write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
       fingerprint,
     );
   }
@@ -470,7 +470,7 @@ export function staleAnchorRefusal(
   }
   // NOT_A_MEMBER, or no half and nothing that names the key: nothing in the record ever held it.
   return stale(
-    `this checkout records ${oneLine(anchor)} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete ${oneLine(anchorPath(layout, fingerprint))}, and the next write here decides again, from the record, as a first write does`,
+    `this checkout records ${oneLine(anchor)} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one. There is no identity for it to leave: delete ${oneLine(anchorPath(layout, fingerprint))}, and the next write here decides again, from the record, as a first write does`,
   );
 }
 
