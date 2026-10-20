@@ -7,20 +7,14 @@
  * them across one thousand and ninety-two files, nine in ten of them in comments. A mark that
  * often marks nothing, and each session copied it from the file it was editing.
  *
- * IT IS BANNED IN STEPS. The tree is swept one area at a time, so {@link NOT_YET_SWEPT} names the
- * areas still holding some and how many each holds. The ceiling is the count and only goes down:
- * an area that holds none leaves the list, and a file outside every listed area is accused at its
- * first dash. When the list is empty, the ban is whole.
+ * THE BAN IS WHOLE. No file is excused: the first dash in any text the workspace holds is accused
+ * at its line and column, except in the directory of copied vectors named below.
  *
  * WHERE THE CHARACTER IS DATA, it is written as an escape (a backslash, the letter u, then the
  * four digits of the code point), and only in the files {@link WHERE_THE_DASH_IS_DATA} names,
  * each with how many it holds and why. An escape anywhere else is accused too: written in a
  * comment it is the same dash, only harder to read, and that is how the escapes found here were
  * born (a tool parameter turns the escape into the character unless its backslash is doubled).
- *
- * RECOUNTING. After a sweep merges, run this file with `RECOUNT_THE_EM_DASH=1` in the
- * environment: the ceiling case prints what each area holds now, in the form the list is
- * written in.
  *
  * WHAT IT DOES NOT COVER: commit messages and pull request descriptions, which no file holds;
  * the en dash (U+2013), which this rule leaves alone; and whether the sentence left where a dash
@@ -60,14 +54,6 @@ const ESCAPES: readonly string[] = [
 ];
 
 /**
- * THE AREAS NOT YET SWEPT, each with the most U+2014 it may hold. A file belongs to the longest
- * prefix that starts its path. The numbers were counted on the tree this guard was merged into;
- * a sweep lowers its own line, or deletes it when the area holds none. Each line has a comment of
- * its own above it, so two sweeps that delete different lines never touch neighbouring ones.
- */
-const NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
-
-/**
  * WHERE THE CHARACTER IS DATA: how many escapes each file holds, exactly, and why. A count that
  * drops leaves the entry overstating, and that is red too, so the list cannot keep a file that
  * no longer needs it.
@@ -105,13 +91,6 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
       'number, to show it still strips the number',
   },
 };
-
-/**
- * PRINTED THROUGH AN ESCAPE AND NOT YET SWEPT: a dash the product prints, written as an escape
- * rather than as the character. It is not data; it waits for the sweep of what the product
- * prints, which decides what stands in its place. Held to an exact count, like the list above.
- */
-const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * One directory is not ours to write: the test vectors other people wrote, copied byte for byte
@@ -195,40 +174,15 @@ function escapesIn(text: string): number[] {
   return ESCAPES.flatMap((spelling) => indexesOf(lower, spelling)).sort((a, b) => a - b);
 }
 
-/** The area a path belongs to: the longest listed prefix of it, or none. */
-function areaOf(where: string, areas: Readonly<Record<string, number>>): string | undefined {
-  return Object.keys(areas)
-    .filter((prefix) => where.startsWith(prefix))
-    .sort((a, b) => b.length - a.length)[0];
-}
-
-/** What each area holds now, and where its first dash is. */
-function countByArea(
-  read: readonly Read[],
-  areas: Readonly<Record<string, number>>,
-): Map<string, { count: number; first: string }> {
-  const counted = new Map<string, { count: number; first: string }>();
-  for (const prefix of Object.keys(areas)) counted.set(prefix, { count: 0, first: '' });
-  for (const file of read) {
-    const area = areaOf(file.where, areas);
-    const at = indexesOf(file.text, EM_DASH);
-    if (area === undefined || at.length === 0) continue;
-    const entry = counted.get(area) as { count: number; first: string };
-    if (entry.first === '') entry.first = `${file.where}:${position(file.text, at[0] as number)}`;
-    entry.count += at.length;
-  }
-  return counted;
-}
-
-/** The files outside every area that hold the character, each at its first one. */
-function accusedOutside(read: readonly Read[], areas: Readonly<Record<string, number>>): string[] {
+/** The files that hold the character, each at its first one. */
+function withTheDash(read: readonly Read[]): string[] {
   return read
-    .filter((file) => areaOf(file.where, areas) === undefined && file.text.includes(EM_DASH))
+    .filter((file) => file.text.includes(EM_DASH))
     .map((file) => `${file.where}:${position(file.text, file.text.indexOf(EM_DASH))}`)
     .sort();
 }
 
-/** The escapes outside the two lists, each at its first one; and the listed counts that drifted. */
+/** The escapes outside the list, each at its first one; and the listed counts that drifted. */
 function escapesOutOfPlace(
   read: readonly Read[],
   allowed: Readonly<Record<string, number>>,
@@ -251,12 +205,9 @@ function escapesOutOfPlace(
   return { accused: accused.sort(), drifted: drifted.sort() };
 }
 
-const ALLOWED_ESCAPES: Readonly<Record<string, number>> = {
-  ...Object.fromEntries(
-    Object.entries(WHERE_THE_DASH_IS_DATA).map(([where, { times }]) => [where, times]),
-  ),
-  ...PRINTED_AND_NOT_YET_SWEPT,
-};
+const ALLOWED_ESCAPES: Readonly<Record<string, number>> = Object.fromEntries(
+  Object.entries(WHERE_THE_DASH_IS_DATA).map(([where, { times }]) => [where, times]),
+);
 
 describe('a sentence carries no em dash, anywhere the workspace holds text', () => {
   it('reads every text file it is given, and the whole workspace', () => {
@@ -296,36 +247,8 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
     );
   });
 
-  it('is held by no file outside the areas still to sweep', () => {
-    expect(
-      accusedOutside(CORPUS.read, NOT_YET_SWEPT),
-      'an em dash was written outside the areas still to sweep',
-    ).toEqual([]);
-  });
-
-  it('is held by each area still to sweep exactly as often as its ceiling says, and by none that holds none', () => {
-    const counted = countByArea(CORPUS.read, NOT_YET_SWEPT);
-    const now = [...counted].map(([prefix, { count }]) => `  '${prefix}': ${count},`).join('\n');
-    if (process.env.RECOUNT_THE_EM_DASH === '1') process.stdout.write(`${now}\n`);
-    const over = [...counted]
-      .filter(([prefix, { count }]) => count > (NOT_YET_SWEPT[prefix] as number))
-      .map(
-        ([prefix, { count, first }]) =>
-          `${prefix} holds ${count}, at most ${NOT_YET_SWEPT[prefix]} (first at ${first})`,
-      );
-    expect(over, `an area holds more em dashes than it did; what each holds now:\n${now}`).toEqual(
-      [],
-    );
-    // A ceiling above what the area holds is room to write more, so it is held to the count: a
-    // sweep that removes some lowers its line in the same change, and no line can go up.
-    const loose = [...counted]
-      .filter(([prefix, { count }]) => count > 0 && count < (NOT_YET_SWEPT[prefix] as number))
-      .map(([prefix, { count }]) => `${prefix} holds ${count}, listed ${NOT_YET_SWEPT[prefix]}`);
-    expect(loose, `a ceiling is above what its area holds; what each holds now:\n${now}`).toEqual(
-      [],
-    );
-    const swept = [...counted].filter(([, { count }]) => count === 0).map(([prefix]) => prefix);
-    expect(swept, 'an area that holds none leaves the list').toEqual([]);
+  it('is held by no file', () => {
+    expect(withTheDash(CORPUS.read), 'an em dash was written').toEqual([]);
   });
 
   it('is written as an escape only where it is data, and as many times as the list says', () => {
@@ -344,23 +267,27 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
   });
 
   it('would find the dash in any kind of text, at its line and column, and not its neighbours', () => {
-    const areas = { 'docs/': 1 };
     const sample = (where: string, text: string): Read => ({ where, text });
     // One sample per kind of text the corpus holds, each built from the code point.
     expect(
-      accusedOutside(
-        [
-          sample('a.md', `# Title\n\nA page ${EM_DASH} a clause.`),
-          sample('b.ts', `  // a comment ${EM_DASH} and its tail`),
-          sample('c.ts', `const said = 'printed ${EM_DASH} text';`),
-          sample('d.yml', `name: a job ${EM_DASH} named`),
-          sample('e.json', `{ "description": "a manifest ${EM_DASH} line" }`),
-          sample('f.svg', `<svg><text>a heading ${EM_DASH} drawn</text></svg>`),
-          sample('docs/g.md', `listed ${EM_DASH} area`),
-        ],
-        areas,
-      ),
-    ).toEqual(['a.md:3:8', 'b.ts:1:16', 'c.ts:1:23', 'd.yml:1:13', 'e.json:1:30', 'f.svg:1:22']);
+      withTheDash([
+        sample('a.md', `# Title\n\nA page ${EM_DASH} a clause.`),
+        sample('b.ts', `  // a comment ${EM_DASH} and its tail`),
+        sample('c.ts', `const said = 'printed ${EM_DASH} text';`),
+        sample('d.yml', `name: a job ${EM_DASH} named`),
+        sample('e.json', `{ "description": "a manifest ${EM_DASH} line" }`),
+        sample('f.svg', `<svg><text>a heading ${EM_DASH} drawn</text></svg>`),
+        sample('docs/g.md', `listed ${EM_DASH} area`),
+      ]),
+    ).toEqual([
+      'a.md:3:8',
+      'b.ts:1:16',
+      'c.ts:1:23',
+      'd.yml:1:13',
+      'docs/g.md:1:8',
+      'e.json:1:30',
+      'f.svg:1:22',
+    ]);
     // The hyphen, the en dash and two hyphens are not it; neither is the escape, which is
     // accused by its own case and not by this one.
     const neighbours = [
@@ -369,12 +296,7 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
       'a -- b',
       `a ${ESCAPES[0]} b`,
     ];
-    expect(
-      accusedOutside(
-        neighbours.map((text) => sample('h.md', text)),
-        areas,
-      ),
-    ).toEqual([]);
+    expect(withTheDash(neighbours.map((text) => sample('h.md', text)))).toEqual([]);
     // And every spelling of the escape is found, in any case.
     for (const spelling of ESCAPES) {
       expect(escapesIn(`x ${spelling.toUpperCase()} y`), spelling).toEqual([2]);

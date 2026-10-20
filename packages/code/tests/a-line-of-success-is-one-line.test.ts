@@ -692,7 +692,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'resume.ts «: {}» #1': {
     verdict: 'collapsed',
-    why: 'the run’s goal; the dash is a chunk so the collapse cannot eat its space',
+    why: 'the run’s goal; the colon is a chunk so the collapse cannot eat its space',
   },
   'guard.ts «{} {} → {}» #1': {
     verdict: 'collapsed',

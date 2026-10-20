@@ -688,7 +688,7 @@ with its own changelog.
   bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
   a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
-  holds one row per host and one cell per rung; (a) the MCP server and a rules file, (b) the opening
+  holds one row per host and one cell per rung, (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person, each saying how it is known:
   held by a test, read once on the real host, or documented and not measured. The plugin's hooks
   files and manifests, a summary on the README and the whole table on `docs/evidence.md` are

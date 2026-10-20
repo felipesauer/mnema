@@ -1451,7 +1451,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» letsGo.length === 1 ? oneLine(letsGo.join(' and ')) : 'each of them' #1":
     {
       verdict: 'collapsed',
-      why: 'the one anchor that can retire the key, out of stored events: or a constant when there are more',
+      why: 'the one anchor that can retire the key, out of stored events, or a constant when there are more',
     },
   '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» oneLine(kept) #1':
     {

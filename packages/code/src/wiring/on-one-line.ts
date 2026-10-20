@@ -35,11 +35,11 @@
  *
  * THE LITERAL CHUNKS ARE THE PRODUCT'S WORDS, AND THE SPACES IN THEM MATTER. `oneLine`
  * trims, so a fragment composed before it reaches an interpolation loses the space it
- * opens with: `for ${agent}${goal === undefined ? '' : ` <em dash> ${goal}`}` printed
- * `for a <em dash> g` and would print `for a<em dash> g`. The rule that follows is the one the call
+ * opens with, which is why the phrase is the template `for ${agent}: ${goal}` and never
+ * a fragment that carries its own separator. The rule that follows is the one the call
  * sites now hold (INTERPOLATE THE VALUE, never a fragment that carries its own
  * punctuation) and the two sites that used to (`run start`, `focus`) were rewritten so
- * the ` <em dash> ` is a chunk of a template rather than the head of a value. Those two are the
+ * the `: ` is a chunk of a template rather than the head of a value. Those two are the
  * ones `tests/a-line-of-success-is-one-line.test.ts` compares byte for byte against the
  * literal they printed before; every OTHER line of every touched verb is held by the
  * suite it already had, and by the goldens, which were not regenerated.
