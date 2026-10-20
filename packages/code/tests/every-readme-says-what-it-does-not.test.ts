@@ -5,12 +5,12 @@
  * `What it proves — and what it does not` and called it mandatory for any package that
  * makes a claim. Two of the four wrote `What it guarantees` instead, and had since they
  * were written. That is not a cosmetic difference: the sentence this product sells says
- * the record is **tamper-evident, not tamper-proof** — it PROVES and does not GUARANTEE —
+ * the record is **tamper-evident, not tamper-proof** (it PROVES and does not GUARANTEE)
  * so a page whose heading says "guarantees" makes, in its title, the stronger claim the
  * promise had just been rewritten to refuse.
  *
  * THE DISCRIMINANT IS THE AFFIRMATION, NOT AN IDENTIFIER. There is no function to grep.
- * Sweeping for the heading's own tail — `— and what it does not` — over every tracked file
+ * Sweeping for the heading's own tail (`— and what it does not`) over every tracked file
  * found SEVEN places, where a list made by reading the four package READMEs had two: the
  * format specification cites the section by name, and so does the doc-comment that holds
  * the product's promise. Neither is a README, and a rename that missed them would have
@@ -28,7 +28,7 @@
  * FLOOR, not a judgement of substance: measured on 11/09/2026 the four sections carry 11,
  * 13, 30 and 53 of them, so three is a floor a section that merely sells cannot reach and
  * a section written honestly cannot notice. What it does not do is read what the negatives
- * SAY — that stays a reviewer's job, and this file claims nothing more.
+ * SAY: that stays a reviewer's job, and this file claims nothing more.
  *
  * THERE ARE FIVE SECTIONS SINCE 17/09/2026, and the fifth is the reason to say so here.
  * This repository is public and had no root `README.md` at all, so the page a clone lands
@@ -58,12 +58,12 @@ const read = (relative: string): string => readFileSync(join(ROOT, relative), 'u
 
 /**
  * The section's name, as the README standard writes it. It is spelled here rather than
- * read out of that document, because the document is not committed — a case that read it
+ * read out of that document, because the document is not committed: a case that read it
  * would pass over a file a clone does not have.
  */
 const HONEST_GUARANTEE = 'What it proves — and what it does not';
 
-/** The tail every wording of the heading shares — the discriminant the sweep runs on. */
+/** The tail every wording of the heading shares: the discriminant the sweep runs on. */
 const THE_TAIL = '— and what it does not';
 
 /**
@@ -101,8 +101,8 @@ const NEGATIVES_FLOOR = 3;
  * Every page held to the section, by its path from the workspace root: the README of each
  * package directory on disk, and the ROOT page.
  *
- * THE ROOT PAGE IS HERE BECAUSE IT WAS THE HOLE. Until 17/09/2026 this repository — which
- * is public — had no `README.md` at all, so the page a clone lands on was the one page no
+ * THE ROOT PAGE IS HERE BECAUSE IT WAS THE HOLE. Until 17/09/2026 this repository (which
+ * is public) had no `README.md` at all, so the page a clone lands on was the one page no
  * rule of this workspace reached. It now makes the product's claim to a stranger in fewer
  * words than any package page does, and fewer words is where an honest limit gets dropped,
  * so it is held to the same heading and the same floor as the four below it.
@@ -181,7 +181,7 @@ function otherWordings(corpus: readonly { file: string; text: string }[]): strin
 }
 
 describe('every package page words its honest guarantee as a proof', () => {
-  it('finds the pages it rules on — the four packages and the page a clone lands on', () => {
+  it('finds the pages it rules on: the four packages and the page a clone lands on', () => {
     // The non-vacuity of both cases below: an empty roster satisfies each of them, and a
     // roster that quietly lost the root page would read exactly like the tree before it
     // had one.
@@ -214,7 +214,7 @@ describe('every package page words its honest guarantee as a proof', () => {
 });
 
 describe('nowhere names the section by another wording', () => {
-  it('the sweep FIRES — a page worded otherwise is named, with its line', () => {
+  it('the sweep FIRES: a page worded otherwise is named, with its line', () => {
     // Written here, not read off the disk: a sweep whose instrument is never shown to
     // fire reports zero when it is broken, and zero is what a healthy tree looks like.
     const corpus = [

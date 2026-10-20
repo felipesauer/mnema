@@ -1,36 +1,36 @@
 /**
- * THE PYTHON FLOOR IS DECLARED ONCE, AND CI RUNS IT — the second reader's twin of
+ * THE PYTHON FLOOR IS DECLARED ONCE, AND CI RUNS IT: the second reader's twin of
  * `the-runtime-floor-is-declared-once.test.ts`.
  *
  * WHERE THIS COMES FROM. Two pages promise that the second reader in `packages/chain/verifier/`
  * runs on a Python as old as the one its own page names, "or later": that page, and the root
  * one. Nothing ran it there. Every case that starts the reader calls whatever `python3` the
  * machine has, `ci.yml` set up no Python at all, and the runner image this repository pins
- * ships 3.12 — so the floor two pages publish had been checked for its GRAMMAR once, by hand,
+ * ships 3.12, so the floor two pages publish had been checked for its GRAMMAR once, by hand,
  * and never for its library. A floor CI never runs is a floor nobody has checked.
  *
- * SO THE FLOOR IS ONE NUMBER WITH ONE OWNER — the sentence on the reader's own page, which is
- * the page that travels with the reader in `@mnema/chain`'s tarball — and this case is what
+ * SO THE FLOOR IS ONE NUMBER WITH ONE OWNER (the sentence on the reader's own page, which is
+ * the page that travels with the reader in `@mnema/chain`'s tarball), and this case is what
  * makes every other place quote it rather than restate it:
  *
  *   - EVERY TRACKED FILE THAT STATES A PYTHON FLOOR, found by the claim and not by a list, in
- *     any file git carries — pages, docstrings, manifests and workflows alike.
+ *     any file git carries: pages, docstrings, manifests and workflows alike.
  *   - EVERY WORKFLOW THAT SETS UP A PYTHON. The job that says it runs the floor sets up exactly
  *     that one, and no job anywhere sets up one below it.
- *   - THAT JOB RUNS EVERY TEST FILE THAT STARTS `python3`, found by the discriminant — a string
- *     literal that is the interpreter's name and nothing else — so a new file that starts the
+ *   - THAT JOB RUNS EVERY TEST FILE THAT STARTS `python3`, found by the discriminant (a string
+ *     literal that is the interpreter's name and nothing else), so a new file that starts the
  *     reader is red here until the job runs it too, and a file the job names that no longer
  *     starts it is red as well.
  *   - THAT JOB TYPE-CHECKS THE WHOLE READER AGAINST THE FLOOR, with a pinned `mypy`: every
  *     `--python-version` a job passes is the floor, like every page's sentence. The cases below
- *     only see what the floor lacks on a line they reach, and one error at a time — the reader's
+ *     only see what the floor lacks on a line they reach, and one error at a time: the reader's
  *     first run on 3.9 died on import, on a type alias spelled with `|`, and said nothing about
  *     the rest. The checker reads every line.
  *   - AND THE `python3` THOSE CASES CALL IS THE FLOOR, EXACTLY, in that job. The job says so by
  *     setting `PYTHON3_IS_THE_FLOOR`, and the last case here asks the interpreter itself for
- *     `sys.version_info[:2]` — so an image or an action that stopped putting the floor first on
- *     `PATH` turns the job red instead of green on the image's own Python. Everywhere else —
- *     a workstation, the matrix, the flake sampler — the same case asks only that it be no
+ *     `sys.version_info[:2]`, so an image or an action that stopped putting the floor first on
+ *     `PATH` turns the job red instead of green on the image's own Python. Everywhere else
+ * (a workstation, the matrix, the flake sampler) the same case asks only that it be no
  *     lower than the floor.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered:
@@ -52,7 +52,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -84,8 +84,8 @@ const OWNER = 'packages/chain/verifier/README.md';
 /**
  * A PYTHON FLOOR, AS A FILE STATES ONE. The discriminant is the claim, and not the word `Python`
  * near a number: the runner's own 3.12 is named in this workspace, correctly, and it is not a
- * floor. It reads five shapes — `Python` and a number followed by `or later`, `or newer`,
- * `or above`, `or higher` or `+`, or preceded by `≥` or `>=` — and NOTHING ELSE: a floor written
+ * floor. It reads five shapes (`Python` and a number followed by `or later`, `or newer`,
+ * `or above`, `or higher` or `+`, or preceded by `≥` or `>=`) and NOTHING ELSE: a floor written
  * as "requires 3.9" with no `Python` before it, or as `python3.9`, is not seen. The owner's own
  * sentence has to be one of the five, which the first case below holds.
  */
@@ -172,8 +172,8 @@ const THE_FLOORS_JOB = SETS_UP_PYTHON.filter((job) =>
 
 /**
  * EVERY TEST FILE THAT STARTS THE INTERPRETER. The discriminant is a string literal that is the
- * interpreter's name and nothing else — `'python3'`, what every one of them hands `spawnSync` or
- * `execFileSync` — rather than the word near a call: a comment that says "`python3`" in back
+ * interpreter's name and nothing else (`'python3'`, what every one of them hands `spawnSync` or
+ * `execFileSync`) rather than the word near a call: a comment that says "`python3`" in back
  * quotes starts nothing, and the product names `python` beside `node` and `psql` as programs
  * whose way out it copies.
  */

@@ -1,7 +1,7 @@
 /**
  * Identity by enrollment, end to end through the verifier.
  *
- * These build real Ed25519 keys and real chains on disk, then run `verify` — the
+ * These build real Ed25519 keys and real chains on disk, then run `verify`: the
  * same path an anonymous clone runs. They pin the single identity rule (an event
  * is authentic only if its signer is a key valid for its anchor at its point),
  * the three enrollment facts, the reverse-signature proof-of-possession, and the
@@ -49,7 +49,7 @@ function commitPublicKey(kp: KeyPair): void {
  * Writes a tail directory named `<fp>-<suffix>` holding `events` in order,
  * hash-chained, and signs one checkpoint over the whole tail with `signer`.
  * Every helper below composes chains out of this, so a tail is always a real
- * sealed, checkpointed artifact — the shape verify actually reads.
+ * sealed, checkpointed artifact: the shape verify actually reads.
  */
 function writeTail(
   tailId: string,
@@ -72,7 +72,7 @@ function writeTail(
   writeFileSync(segmentPath({ root }, tailId, 1), `${lines.join('\n')}\n`);
   // A real installation signs its own tail id at birth. `tailProof: false`
   // models a keyless attacker who fabricates a tail under a real fingerprint
-  // and CANNOT produce this signature — the verifier rejects it outright.
+  // and CANNOT produce this signature: the verifier rejects it outright.
   if (opts.tailProof !== false) {
     const proof = signTailProof(tailId, signer);
     writeFileSync(tailProofPath({ root }, tailId), `${serializeTailProof(proof)}\n`);
@@ -123,7 +123,7 @@ function task(anchor: string, signer: KeyPair, id: string): CatalogEvent {
   );
 }
 
-describe('enrollment — the solo founder', () => {
+describe('enrollment: the solo founder', () => {
   it('a founded solo key verifies green (one-member anchor)', () => {
     const kp = generateKeyPair();
     commitPublicKey(kp);
@@ -167,7 +167,7 @@ describe('enrollment — the solo founder', () => {
     commitPublicKey(kp);
     commitPublicKey(other);
     const anchor = deriveAnchor(kp.fingerprint);
-    // signerFp is `other`, but foundingFp claims kp — not self-signed.
+    // signerFp is `other`, but foundingFp claims kp, not self-signed.
     const bad = identityFounded(
       { at: AT, who: anchor, signerFp: other.fingerprint, subject: anchor },
       { foundingFp: kp.fingerprint },
@@ -179,9 +179,9 @@ describe('enrollment — the solo founder', () => {
   });
 });
 
-describe('enrollment — a distinct key joins one anchor (scenario 1)', () => {
+describe('enrollment: a distinct key joins one anchor (scenario 1)', () => {
   // B's task must come AFTER its enrollment in the fold order. In practice `at`
-  // orders them — B can only write once A has enrolled it — so these use
+  // orders them (B can only write once A has enrolled it), so these use
   // increasing timestamps, the realistic case. (A caveat, documented in
   // enrollment.ts: when two tails share an identical `at`, the deterministic
   // tie-break is by tail id, which does not encode causality; production stamps
@@ -231,7 +231,7 @@ describe('enrollment — a distinct key joins one anchor (scenario 1)', () => {
   });
 });
 
-describe('enrollment — an unenrolled attacker is rejected (scenario 2)', () => {
+describe('enrollment: an unenrolled attacker is rejected (scenario 2)', () => {
   it('a stranger key authoring events under an anchor it never joined is rejected', () => {
     const a = generateKeyPair();
     const evil = generateKeyPair();
@@ -253,7 +253,7 @@ describe('enrollment — an unenrolled attacker is rejected (scenario 2)', () =>
     commitPublicKey(evil);
     const anchor = deriveAnchor(a.fingerprint);
     writeTail(`${a.fingerprint}-i1`, [founding(a)], a);
-    // evil signs a key.enrolled for itself, with a valid reverse-sig — but evil
+    // evil signs a key.enrolled for itself, with a valid reverse-sig, but evil
     // is not a member, so the voucher check fails.
     const selfEnroll = keyEnrolled(
       { at: AT, who: anchor, signerFp: evil.fingerprint, subject: anchor },
@@ -268,7 +268,7 @@ describe('enrollment — an unenrolled attacker is rejected (scenario 2)', () =>
   });
 });
 
-describe('enrollment — the reverse signature proves possession (replay closed)', () => {
+describe('enrollment: the reverse signature proves possession (replay closed)', () => {
   it('rejects an enrollment whose reverse-sig is for a DIFFERENT anchor (replay)', () => {
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -331,7 +331,7 @@ describe('enrollment — the reverse signature proves possession (replay closed)
   });
 });
 
-describe('enrollment — revocation is prospective (scenario 3)', () => {
+describe('enrollment: revocation is prospective (scenario 3)', () => {
   it('events a key signed BEFORE its revocation stay valid; AFTER are rejected', () => {
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -421,7 +421,7 @@ describe('enrollment — revocation is prospective (scenario 3)', () => {
       { at: '2026-07-21T00:00:02.000Z', who: anchor, signerFp: a.fingerprint, subject: anchor },
       { newFp: b.fingerprint, reverseSig: reverseSig(anchor, b) },
     );
-    // B revokes the FOUNDER A. Then A tries to write — rejected; B still writes.
+    // B revokes the FOUNDER A. Then A tries to write: rejected; B still writes.
     const revokeA = keyRevoked(
       { at: '2026-07-21T00:00:03.000Z', who: anchor, signerFp: b.fingerprint, subject: anchor },
       { revokedFp: a.fingerprint, reason: 'founder key retired' },
@@ -445,14 +445,14 @@ describe('enrollment — revocation is prospective (scenario 3)', () => {
   });
 });
 
-describe('enrollment — a residual revocation cannot invalidate an honest signed chain', () => {
+describe('enrollment: a residual revocation cannot invalidate an honest signed chain', () => {
   it('a keyless residual key.revoked on a fabricated real-fp tail does NOT flip an honest chain', () => {
     // The denial vector: a keyless party fabricates a tail named by a REAL
     // enrolled fingerprint (permitted in the residual window) and plants an
     // UNCHECKPOINTED key.revoked of another member, timed before that member's
     // signed events, trying to make the honest, fully-signed chain fail. Because
-    // a revocation takes effect only when signature-covered — and a keyless party
-    // cannot checkpoint a fabricated tail — the residual revoke is ignored.
+    // a revocation takes effect only when signature-covered, and a keyless party
+    // cannot checkpoint a fabricated tail, the residual revoke is ignored.
     const a = generateKeyPair();
     const b = generateKeyPair();
     commitPublicKey(a);
@@ -461,7 +461,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
 
     // Honest, fully-signed victim chain: A founds, enrolls B, and later A writes
-    // a task — all in one checkpointed tail.
+    // a task, all in one checkpointed tail.
     writeTail(
       `${a.fingerprint}-i1`,
       [
@@ -483,7 +483,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     expect(verify(root).ok).toBe(true);
 
     // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL revoke
-    // of A timed (t3) between B's enrollment and A's task — NO checkpoint, and
+    // of A timed (t3) between B's enrollment and A's task, NO checkpoint, and
     // NO tail proof (a keyless party cannot sign B's tail id). The tail proof is
     // the first line of defence: the fabricated tail is rejected outright,
     // before its revoke is ever folded.
@@ -509,7 +509,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
   it('a CHECKPOINTED revocation still takes effect (the gate does not disable honest revokes)', () => {
     // The contrast: the same revoke, but signature-covered, DOES remove the key.
     // A can only checkpoint its own tail with its own key, so this is the honest
-    // path — a member revoking another and signing the revocation.
+    // path: a member revoking another and signing the revocation.
     const a = generateKeyPair();
     const b = generateKeyPair();
     commitPublicKey(a);
@@ -534,7 +534,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
       ],
       a,
     );
-    // B writes AFTER its checkpointed revocation — rejected.
+    // B writes AFTER its checkpointed revocation: rejected.
     writeTail(
       `${b.fingerprint}-i1`,
       [
@@ -555,7 +555,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     // removed), but a keyless party plants a fabricated tail with an UNCHECKPOINTED
     // key.enrolled re-adding B, ordered AFTER the covered revoke. If additions were
     // ungated, this residual re-add would restore B and re-authorize its later,
-    // CHECKPOINTED task — undoing a signed removal with no key. The re-enroll is
+    // CHECKPOINTED task: undoing a signed removal with no key. The re-enroll is
     // reused verbatim from B's published reverse-sig; the voucher fp is A's public.
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -564,7 +564,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     const anchor = deriveAnchor(a.fingerprint);
     const t = (n: number) => `2026-07-21T00:00:0${n}.000Z`;
 
-    // A founds, enrolls B, then revokes B — all signature-covered in A's tail.
+    // A founds, enrolls B, then revokes B: all signature-covered in A's tail.
     writeTail(
       `${a.fingerprint}-i1`,
       [
@@ -595,7 +595,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
       b,
     );
     // Attacker: fabricated tail under B's REAL fingerprint, one RESIDUAL re-enroll
-    // of B at t4 (after the covered revoke) — NO checkpoint, and NO tail proof
+    // of B at t4 (after the covered revoke), NO checkpoint, and NO tail proof
     // (a keyless party cannot sign B's tail id). The tail proof rejects the
     // fabricated tail outright, so the re-enroll never even enters the fold.
     writeTail(
@@ -618,7 +618,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
 
   it('a SIGNATURE-COVERED re-enrollment legitimately supersedes a covered revoke', () => {
     // The contrast: A revokes B (covered), then A re-enrolls B and CHECKPOINTS the
-    // re-enroll. A signed re-add is the honest key-rotation path — B is valid again
+    // re-enroll. A signed re-add is the honest key-rotation path: B is valid again
     // and its later work verifies. The gate only bites the UNSIGNED re-add.
     const a = generateKeyPair();
     const b = generateKeyPair();
@@ -668,7 +668,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
     // for a member who DOES hold the key: A (a real, proven tail) checkpoints
     // through a revoke of B, then appends a re-enroll of B that is NOT
     // checkpointed. The add gate keeps B revoked because the re-add is not
-    // itself signature-covered — the tail proof does not obscure that.
+    // itself signature-covered: the tail proof does not obscure that.
     const a = generateKeyPair();
     const b = generateKeyPair();
     commitPublicKey(a);
@@ -712,7 +712,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
       prev = hash;
     }
     writeFileSync(segmentPath({ root }, tailA, 1), `${lines.join('\n')}\n`);
-    // A genuine tail proof (A holds the key) — the tail is NOT fabricated.
+    // A genuine tail proof (A holds the key): the tail is NOT fabricated.
     writeFileSync(
       tailProofPath({ root }, tailA),
       `${serializeTailProof(signTailProof(tailA, a))}\n`,
@@ -746,7 +746,7 @@ describe('enrollment — a residual revocation cannot invalidate an honest signe
   });
 });
 
-describe('enrollment — the residual-dup and HOLE#1 vectors', () => {
+describe('enrollment: the residual-dup and HOLE#1 vectors', () => {
   it('rejects a fabricated tail whose fingerprint is NOT enrolled (HOLE#1 stays shut)', () => {
     // A keyless attacker fabricates a tail named by an uncommitted fingerprint
     // and stuffs events in it. Two guards fire: the tail-prefix guard (no

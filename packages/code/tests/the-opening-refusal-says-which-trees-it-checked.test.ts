@@ -2,7 +2,7 @@
  * THE ORDER OF A WORKSPACE'S ROOTS DECIDES NOTHING, AND A REFUSAL NAMES THE TREE IT WAS ASKED OF.
  *
  * With only the agent's key on the machine, a session was opened through the first tree that had
- * someone to sign — its own project's, else the global one — and a workspace whose first root was a
+ * someone to sign (its own project's, else the global one) and a workspace whose first root was a
  * project that does not enrol the agent did not open at all, while the same two roots the other way
  * round did: whether the one project that DOES enrol the agent could be written in was decided by the
  * order the host listed them. A session opens and reads now, in either order; a write routed to the

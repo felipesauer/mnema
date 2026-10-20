@@ -6,14 +6,14 @@
  *
  * A record is split across trees on purpose: one is committed and reaches every
  * machine that clones the repository, one never leaves the machine that wrote it. The
- * routing rule decides which — and the moment it did, the REFERENCES between events
+ * routing rule decides which, and the moment it did, the REFERENCES between events
  * became answerable or not. Every event carries the `run` that authorizes it, and a
  * fact in the committed tree citing a run in the private one is a fact whose clone
  * points at an authority nothing in the clone can open. The chain still verifies `ok`
  * while it does, which is the one class of defect the proof does not catch.
  *
  * The direction is what matters, not the split. A reference may point at a tree that
- * travels FURTHER than its own — a private fact citing a committed run is resolvable
+ * travels FURTHER than its own: a private fact citing a committed run is resolvable
  * wherever that private fact can be read at all, because the private tree lives inside
  * the committed one. It may never point the other way.
  *
@@ -79,7 +79,7 @@ function makeProject(name: string): string {
   return dir;
 }
 
-/** An agent connection on a project — the shape every MCP test starts from. */
+/** An agent connection on a project: the shape every MCP test starts from. */
 function openOn(project: string): Session {
   return openSession({ clientName: 'claude-code', roots: [pathToFileURL(project).href], env });
 }
@@ -99,7 +99,7 @@ describe('a connection that writes to two trees opens a run in each', () => {
     // The ordinary session, after the routing rule: a decision is a declaration about
     // the project and goes to the committed tree; a memory is the one kind that still
     // reads the author, and an MCP connection is an agent, so it goes private. Two
-    // trees, and therefore two runs — a run is the authority for work in a RECORD, and
+    // trees, and therefore two runs: a run is the authority for work in a RECORD, and
     // one record cannot vouch for what another holds.
     const project = makeProject('proj');
     const session = openOn(project);
@@ -137,7 +137,7 @@ describe('a connection that writes to two trees opens a run in each', () => {
   });
 
   it('an override is enough on its own: a private decision opens the private run', () => {
-    // The run follows the WRITE, not the kind's usual answer — so a caller that moves
+    // The run follows the WRITE, not the kind's usual answer, so a caller that moves
     // one fact moves the run it cites with it, and no reference crosses.
     const project = makeProject('proj');
     const session = openOn(project);
@@ -154,14 +154,14 @@ describe('a connection that writes to two trees opens a run in each', () => {
     expect([...session.runs.keys()]).toEqual([privateRoot]);
     const recorded = eventsIn(privateRoot).find((e) => e.kind === 'decision.recorded');
     expect(recorded?.run).toBe(session.runs.get(privateRoot)?.id);
-    // The committed tree took nothing — not the fact, and not a run for it.
+    // The committed tree took nothing, not the fact, and not a run for it.
     expect(eventsIn(treeOf(project, 'public')).some((e) => e.kind === 'run.started')).toBe(false);
 
     closeSession(session);
   });
 });
 
-describe('the committed tree is closed under its own references — the clone', () => {
+describe('the committed tree is closed under its own references: the clone', () => {
   /**
    * The record a busy session leaves: every kind that writes, both surfaces, both
    * trees. Returns the project.
@@ -173,7 +173,7 @@ describe('the committed tree is closed under its own references — the clone', 
   function aRecordOfEverything(): string {
     const project = makeProject('proj');
 
-    // The command line first — a person, then an agent driving it in a session.
+    // The command line first: a person, then an agent driving it in a session.
     const started = runRunStart({ cwd: project, env }, { agent: 'agent-alpha' });
     if (!started.ok) throw new Error('setup: run start refused');
     // BOTH pinned to that run, and both halves matter: the task lands in the committed
@@ -224,7 +224,7 @@ describe('the committed tree is closed under its own references — the clone', 
   }
 
   /**
-   * The committed tree, copied ALONE — the way `git clone` delivers it.
+   * The committed tree, copied ALONE: the way `git clone` delivers it.
    *
    * The private subtree is left behind because that is what the `.gitignore` does: it
    * is inside the committed tree on disk and outside the repository. A copy that took
@@ -244,7 +244,7 @@ describe('the committed tree is closed under its own references — the clone', 
   it('no event of it cites a `run` that is not there', () => {
     // THE assertion this delivery exists for. A fact whose run is absent from its own
     // record is a fact a colleague reads with no way to ask what session it belonged
-    // to — and nothing marks it: the chain verifies, the projection answers, and the
+    // to, and nothing marks it: the chain verifies, the projection answers, and the
     // reference simply resolves to nothing.
     const project = aRecordOfEverything();
     const clone = cloneOfTheCommittedTree(project);
@@ -277,10 +277,10 @@ describe('the committed tree is closed under its own references — the clone', 
     }
   });
 
-  it('the private tree may point INTO the committed one — the safe direction', () => {
+  it('the private tree may point INTO the committed one: the safe direction', () => {
     // The other half of the rule, and why it is a direction rather than a ban. A
     // command-line run is born committed, so the private memory pinned to it cites a
-    // run in another tree — and that reference resolves wherever the memory itself can
+    // run in another tree, and that reference resolves wherever the memory itself can
     // be read, because the private tree lives inside the committed one on disk. The
     // reverse is what a clone cannot resolve, and the test above is what forbids it.
     const project = aRecordOfEverything();
@@ -291,7 +291,7 @@ describe('the committed tree is closed under its own references — the clone', 
       (event) => event.run !== undefined && committedRuns.has(event.run as string),
     );
     expect(crossing.length).toBeGreaterThan(0);
-    // Read together — which is the only way the private tree is ever read — every
+    // Read together (which is the only way the private tree is ever read) every
     // reference of both trees resolves.
     const allRuns = new Set([...committedRuns, ...projectRuns(privateEvents).keys()]);
     for (const event of privateEvents) {
@@ -301,10 +301,10 @@ describe('the committed tree is closed under its own references — the clone', 
 });
 
 describe('outside a project there is one tree, and a kind cannot ask for another', () => {
-  it('a decision in a global session goes to the global tree — never refused', () => {
+  it('a decision in a global session goes to the global tree, never refused', () => {
     // The rule answers for a project, where public and private both exist. Outside one
     // the global tree is the only tree there is, so a kind that asked for `public`
-    // would name a tree that is not there — and `SCOPE_UNAVAILABLE` belongs to a scope
+    // would name a tree that is not there, and `SCOPE_UNAVAILABLE` belongs to a scope
     // the CALLER named, never to one the rule chose on its own.
     const session = openSession({ clientName: 'claude-code', roots: [], env });
     expect(session.inProject).toBe(false);
@@ -335,7 +335,7 @@ describe('both surfaces say the same sentence about where a write landed', () =>
   it('the wording is one function, so a tree cannot be described two ways', () => {
     // The CLI prints it under the headline and the MCP appends it to the reply; the
     // FORM differs and the sentence does not. Asserted here rather than by comparing
-    // two goldens, because what must not drift is the sentence — and a golden of each
+    // two goldens, because what must not drift is the sentence, and a golden of each
     // surface would agree with itself while disagreeing with the other.
     for (const scope of ['public', 'private', 'global'] as const) {
       const sentence = landedNotice(scope);
@@ -347,7 +347,7 @@ describe('both surfaces say the same sentence about where a write landed', () =>
       // second fact about the write.
       expect(sentence.split('\n')).toHaveLength(1);
     }
-    // The three are distinguishable — a shared prefix with no distinguishing tail
+    // The three are distinguishable: a shared prefix with no distinguishing tail
     // would pass the checks above and tell a reader nothing.
     const said = (['public', 'private', 'global'] as const).map(landedNotice);
     expect(new Set(said).size).toBe(3);

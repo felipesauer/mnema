@@ -1,5 +1,5 @@
 /**
- * A PAGE HELD TO A RUN — the two readings every case shares that holds what a page or a
+ * A PAGE HELD TO A RUN: the two readings every case shares that holds what a page or a
  * recording shows to a run of the binary today.
  *
  * WHY THIS FILE EXISTS AS A FILE. Both were written inside
@@ -7,14 +7,14 @@
  * `#>` lines to the binary. The front page then grew more of the same: the opening document it
  * quotes and the two recordings it plays (`the-recordings-are-what-the-binary-draws.test.ts`).
  * Two spellings of what counts as minted, or of what a cut may leave out, is how one of the
- * cases comes to let a stale line through — so the two readings live here, unchanged, and every
+ * cases comes to let a stale line through, so the two readings live here, unchanged, and every
  * such case asks them. A third joined them when the manual's session was held to a run
  * (`the-session-the-manual-shows-is-the-one-printed.test.ts`): which lines of a page's block are
  * the commands and which the output ({@link blockUnder}), read the same way for both pages.
  *
  * WHAT THE MACHINE MINTS. A run makes up an id per write, prints the day it ran and makes its
  * keys on the spot, so no second run prints them again. Both sides are read with each replaced
- * by what it is ({@link asMinted}) — and through the same function, so neither side can be made
+ * by what it is ({@link asMinted}), and through the same function, so neither side can be made
  * to agree by a replacement the other did not get. The order is part of the reading: an id is
  * read before a run of hex, or the hex would take the id apart and leave its dashes behind; and
  * an id the page cut after its first group (`0198f3c1-…`) is read as the id it stands for, which
@@ -33,7 +33,7 @@ import { argvOf, linesOf } from './reading-a-shell-line.js';
 /** A record's id, as every write prints it. */
 const AN_ID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 
-/** An id a page cut after its first group — `0198f3c1-…` — which is still an id. */
+/** An id a page cut after its first group, `0198f3c1-…`, which is still an id. */
 const AN_ID_CUT = /[0-9a-f]{8}-(?=…)/g;
 
 /**
@@ -49,15 +49,15 @@ const AN_ALIAS = new RegExp(
 const A_DATE = /\b\d{4}-\d{2}-\d{2}(?=T|\b)/g;
 
 /**
- * What the line under a console's answer says that the machine measured — how long it took and
- * the hour it was done: `✻ status · 56ms · done 20:28`. Both are a clock's, so they are minted
+ * What the line under a console's answer says that the machine measured (how long it took and
+ * the hour it was done): `✻ status · 56ms · done 20:28`. Both are a clock's, so they are minted
  * like an id and read as what they are. Matched on the whole of the line's shape, never on a
  * duration or an hour alone, so a `30s` or a `12:00` somewhere in a record's own words is left as
  * the record wrote it.
  */
 const A_DONE_LINE = /(\u273b \S+ \u00b7 )(?:\d+ms|\d+\.\ds|\d+m \d{2}s)( \u00b7 done )\d{2}:\d{2}/g;
 
-/** A key's fingerprint, an identity, a digest — any run of lower-case hex eight long or longer. */
+/** A key's fingerprint, an identity, a digest: any run of lower-case hex eight long or longer. */
 const HEX = /[0-9a-f]{8,}/g;
 
 /** Some text with what the machine minted replaced by what it is: `<uuid>`, `<date>`, `<hex>`, `<took>`, `<hour>`. */
@@ -130,7 +130,7 @@ export type Step =
  * command printed.
  *
  * A command may run over several lines with a trailing `\`, as a shell reads it. Everything else
- * — a comment, `cd` into the reader's own repository — is the reader's and not the binary's, and
+ * (a comment, `cd` into the reader's own repository) is the reader's and not the binary's, and
  * is not a step. Throws when the section or its block is gone, because a guard that silently read
  * nothing would be a guard reporting that output it never compared agrees.
  */

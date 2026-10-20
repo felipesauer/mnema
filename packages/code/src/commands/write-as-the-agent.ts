@@ -76,7 +76,7 @@ export function originOfTheWrite(writing: Writing, declared: string | undefined)
  * The `which` the fact is written with in `scope`'s tree: the name the record gives the agent
  * where its key signs there; else the declared one; else the agent the variable asked for.
  * A `--which` that names another than the record's name is not written, and the second stream
- * says so — unless the name is the product's own (`typed` false), which nobody wrote on a line.
+ * says so, unless the name is the product's own (`typed` false), which nobody wrote on a line.
  */
 export function whichOfTheWrite(
   writing: Writing,

@@ -5,13 +5,13 @@
  * digest into a block's MERKLE ROOT; the header is where that root is written,
  * next to the instant the block claims and the difficulty it was mined at. So a
  * record that carries the header carries everything needed to check the
- * attestation with no network, no node, and no service — which is the only reason
+ * attestation with no network, no node, and no service, which is the only reason
  * `verify` can stay offline while gaining a layer that is, by definition, outside
  * this machine.
  *
  * TWO QUESTIONS AND NOT THREE. This module answers whether the header CARRIES WORK
  * ({@link headerCarriesRealWork}) and what it says (merkle root, instant). It does
- * NOT answer whether the header sits on the longest chain — that needs the headers
+ * NOT answer whether the header sits on the longest chain: that needs the headers
  * before it, which this record does not carry and this package will not pretend to.
  *
  * SELF-CONSISTENCY IS NOT ENOUGH AND THE FLOOR IS WHY THIS IS NOT A ONE-LINER. A
@@ -24,12 +24,12 @@
  * WHAT IS LEFT, said here rather than in a footnote: the floor bounds the COST of a
  * forgery, it does not prove the block is Bitcoin's. Someone with mining hardware
  * and a reason could produce a header that passes this and is on no chain at all.
- * Closing that needs the chain of headers or somebody else's copy of it — and the
+ * Closing that needs the chain of headers or somebody else's copy of it, and the
  * `.ots` beside the header is exactly what makes that a five-second job for a
  * stranger, who runs the OpenTimestamps client against a node and gets the answer
  * this module deliberately does not fake.
  *
- * EVERY FIELD IS LITTLE-ENDIAN and the merkle root is in INTERNAL byte order —
+ * EVERY FIELD IS LITTLE-ENDIAN and the merkle root is in INTERNAL byte order:
  * the order it is serialized in, which is the reverse of the order an explorer
  * prints. That matters exactly once: an OpenTimestamps Bitcoin attestation folds
  * to the root in internal order, so the comparison is against these bytes as they
@@ -47,13 +47,13 @@ export const BLOCK_HEADER_BYTES = 80;
  * block.
  *
  * WHY A CONSTANT AND NOT THE CURRENT DIFFICULTY. Nothing offline knows what the
- * current difficulty is — that is a fact about a chain this record does not carry —
+ * current difficulty is (that is a fact about a chain this record does not carry)
  * so the choice is between a fixed floor and none. A fixed floor ages in ONE
  * direction that matters: it is a refusal, so it can only ever reject a real block
  * mined below it, never accept a forged one above it.
  *
  * WHY THIS NUMBER. It is roughly 2**72 hashes for one header, which is hours of the
- * entire Bitcoin network or years of a large private one — expensive enough that a
+ * entire Bitcoin network or years of a large private one: expensive enough that a
  * forged sidecar is not a thing somebody does casually, which is what the guard is
  * for. Bitcoin passed it in 2019 and would have to fall more than a hundredfold to
  * come back under it; if it ever does, this constant is the one line to revisit, and
@@ -77,7 +77,7 @@ export class UnreadableHeaderError extends Error {
 export interface BlockHeader {
   /** The header's own bytes, kept so the record can be re-checked from them. */
   readonly bytes: Buffer;
-  /** The merkle root in INTERNAL byte order — what an attestation folds to. */
+  /** The merkle root in INTERNAL byte order: what an attestation folds to. */
   readonly merkleRoot: Buffer;
   /** The instant the block claims, in seconds since the epoch. */
   readonly time: number;
@@ -115,8 +115,8 @@ export function parseBlockHeader(bytes: Buffer): BlockHeader {
  * and the hash is compared as a 256-bit little-endian number, which is what the hash
  * IS: the leading zeroes an explorer shows are the trailing bytes here.
  *
- * A `bits` field a header could not have carried — the sign bit set, an exponent past
- * the width of the number, a zero mantissa — is FALSE rather than an exception: it is
+ * A `bits` field a header could not have carried (the sign bit set, an exponent past
+ * the width of the number, a zero mantissa) is FALSE rather than an exception: it is
  * a header that fails its own claim, which is the same answer as a nonce that never
  * found one, and a caller has one thing to do about either.
  */
@@ -140,7 +140,7 @@ function targetOf(bits: number): Buffer | null {
   if (mantissa === 0 || exponent > 32 || exponent < 3) return null;
   const target = Buffer.alloc(32);
   // The mantissa's three bytes sit so that their LAST one is at position `exponent`,
-  // counting from the big end — the compact form's definition.
+  // counting from the big end: the compact form's definition.
   target.writeUIntBE(mantissa, 32 - exponent, 3);
   return target;
 }

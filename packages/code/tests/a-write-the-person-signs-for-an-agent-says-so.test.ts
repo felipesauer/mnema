@@ -2,15 +2,15 @@
  * A WRITE ROUTED TO A PROJECT THAT DOES NOT ENROL THE AGENT SAYS THE PERSON SIGNED IT.
  *
  * A server asked to sign as an agent says, at the opening, where the agent is not in force in the
- * trees of its own session. A write can be routed to ANOTHER project of the workspace — by the
- * `project` argument, or by a transition on an id only that project holds — and where that project
+ * trees of its own session. A write can be routed to ANOTHER project of the workspace (by the
+ * `project` argument, or by a transition on an id only that project holds) and where that project
  * does not enrol the agent the person's key signs, with a `which` the client merely declared. That
  * is true and was said nowhere. The reply of such a write says it, once, in the words of the
  * opening's notice.
  *
  * Seven verbs take `project`; each is driven over the real transport, and the claim is checked
  * against the disk: the event the write left is signed by the person's key, under the declared
- * name — not by the agent's.
+ * name, not by the agent's.
  */
 
 import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';

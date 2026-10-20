@@ -1,16 +1,16 @@
 /**
- * `mnema brief` — what governs the work here, as the file an agent reads anyway.
+ * `mnema brief`: what governs the work here, as the file an agent reads anyway.
  *
  * Every other read answers someone who asked. This one exists because the measured
  * weakness of the product is that adoption depends on the agent ASKING: three rounds
  * of use showed an agent that does go looking, but through a door that was not the
- * one designed for it — and over an empty record it concludes there is nothing
+ * one designed for it, and over an empty record it concludes there is nothing
  * there. A markdown file the host reads on its own has no such problem, and the cost of
  * being read is zero.
  *
  * WHICH FILE THAT IS BELONGS TO THE HOST, AND THIS SAID IT BELONGED TO TWO. It read
  * "`AGENTS.md` is an open convention read natively by several hosts, `CLAUDE.md` is read
- * when a session opens" — two files on an equal footing. For the host this product ships a
+ * when a session opens": two files on an equal footing. For the host this product ships a
  * plugin for, they are not: Claude Code reads an `AGENTS.md` only from 2.1.277 and, by
  * default, only where no `CLAUDE.md` exists in the working directory or above it
  * (code.claude.com/docs/en/memory, *AGENTS.md*), and on this machine 0 of 299 sessions
@@ -18,7 +18,7 @@
  * the file it imports with an `@` line. The plugin needs neither: its `SessionStart` hook
  * hands this document to the session without writing a file.
  *
- * What those files lack is provenance — hand-kept instruction with no author, no
+ * What those files lack is provenance: hand-kept instruction with no author, no
  * state and no supersession, rotting in silence. So this does not replace the
  * record with a file; it PROJECTS one out of it. The record stays the thing with the
  * proof, and the file is a cache that can be thrown away and made again, which is
@@ -27,14 +27,14 @@
  * IT WRITES NOTHING, and that is deliberate to the point of being the design. The
  * output goes to stdout and `mnema brief > AGENTS.md` is the operator's choice, not
  * this verb's: mnema has never written outside its own tree, and writing into a file
- * the user owns opens the whole question of who owns it — what happens to a hand
+ * the user owns opens the whole question of who owns it (what happens to a hand
  * edit, when it is regenerated, whether a `git status` goes dirty in the middle of
- * an agent's session. A redirection answers all three by never being ours.
+ * an agent's session). A redirection answers all three by never being ours.
  *
  * THERE IS NO `--check` EITHER, for the same reason and one more: `mnema brief |
  * diff - AGENTS.md` already answers "is the copy stale", exactly, with a tool every
  * operator has. A flag that read the user's file would be new surface for what a
- * pipe does — and it would have to guess where that file is.
+ * pipe does, and it would have to guess where that file is.
  *
  * And no `--actor`. Measured: only the two reads that answer ABOUT AN ACTOR (`focus`,
  * `resume`) need one, and every read that answers about the project takes none. What
@@ -42,7 +42,7 @@
  *
  * IT REFUSES OUTSIDE A PROJECT, unlike `search` and `skills`, and the difference is
  * what the answer is FOR. Those two audit whatever record the caller can see, and
- * outside a project that is a person's own global tree — a legitimate thing to
+ * outside a project that is a person's own global tree: a legitimate thing to
  * search. This composes a document that says "recorded for this project" and is
  * meant to be redirected into that project's repository. With no project there is no
  * repository to put it in, and printing a person's global conventions under that
@@ -51,18 +51,18 @@
  * COMMITTED record, and with no public tree there is nothing for it to be made of.
  *
  * IT REFUSES WHEN ITS OWN CHANNEL IS SWITCHED OFF, which is the second refusal it has and
- * the one a reader will not expect from a read. This verb is not only a report — it is the
+ * the one a reader will not expect from a read. This verb is not only a report: it is the
  * producer of a channel, the file a session opens with, and every channel this product
  * pushes can be switched off with the switching recorded. Off, there is no document: the
  * refusal goes to stderr with a non-zero exit, so the plugin's handler is silent by the
  * rule it already has, and the person who typed the verb is told which switch is holding it
  * and where to look ({@link BriefSwitchedOff}).
  *
- * Read-only in the strict sense — it records nothing: a cache per visible tree, brought forward from
+ * Read-only in the strict sense; it records nothing: a cache per visible tree, brought forward from
  * the one the tree keeps (`CacheOptions.persist`), and
  * the context package's pure `brief`. No writer, no key, no event, no consultation recorded
  * (serving a pattern's BODY records one; serving its name is not serving it, and
- * this never touches a body). Switching a channel is a WRITE and lives in its own verb —
+ * this never touches a body). Switching a channel is a WRITE and lives in its own verb:
  * this one only reads where the switch stands.
  */
 
@@ -91,7 +91,7 @@ import {
 } from '../tree-sources.js';
 import { type StacksHere, stacksHere } from './stack-inspect.js';
 
-/** What the brief needs — injected so it is testable. */
+/** What the brief needs: injected so it is testable. */
 export interface BriefContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -104,18 +104,18 @@ export interface BriefDone {
   readonly ok: true;
   /**
    * Both lists, whole. Empty is a legitimate answer and the document says which kind
-   * of empty it is — nobody has decided yet, not "there are no rules".
+   * of empty it is: nobody has decided yet, not "there are no rules".
    */
   readonly brief: Brief;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
   /**
-   * The decision documents of this CHECKOUT the record has no decision for — present only when
+   * The decision documents of this CHECKOUT the record has no decision for: present only when
    * the caller asked ({@link runBrief}'s `outside`), which is the hook's copy and never the file.
    *
    * They are `mnema status`'s two readings, called the same way (`outside-the-record.ts`): drift
@@ -129,20 +129,20 @@ export interface BriefDone {
     readonly arrival: readonly UnimportedBase[];
   };
   /**
-   * What the project inherits from another repository's record, read at the commit it points to
-   * — present only when the project points at one (`inherited-record.ts`). It is NEVER part of
+   * What the project inherits from another repository's record, read at the commit it points to,
+   * present only when the project points at one (`inherited-record.ts`). It is NEVER part of
    * {@link brief}: those are the project's own, signed by it and counted by its `verify`.
    */
   readonly inherited?: InheritedReading;
   /**
-   * The stacks adopted for this project and where their files part from the record — present only
+   * The stacks adopted for this project and where their files part from the record, present only
    * when the caller asked ({@link runBrief}'s `outside`), for the reason {@link outside} is: it
    * reads the disk, so the file somebody commits never carries it.
    */
   readonly stacks?: StacksHere;
 }
 
-/** The read was refused — there is no project to compose a brief for. */
+/** The read was refused: there is no project to compose a brief for. */
 export interface BriefRefused {
   readonly ok: false;
   readonly reason: 'NO_PROJECT';
@@ -155,7 +155,7 @@ export interface BriefRefused {
  * is the whole of a file, so printing nothing would look to `mnema brief > AGENTS.md` like
  * a record with nothing in it and would truncate a governance file the repository holds. A
  * refusal on stderr with a non-zero exit is what the plugin's handler already treats as
- * silence — it is how this verb behaves outside a project — so the session of somebody who
+ * silence (it is how this verb behaves outside a project), so the session of somebody who
  * switched the document off opens with nothing added, exactly as they asked, while the
  * person who typed the verb is told why and by whom.
  *
@@ -166,7 +166,7 @@ export interface BriefRefused {
 export interface BriefSwitchedOff {
   readonly ok: false;
   readonly reason: 'SWITCHED_OFF';
-  /** The channel that is off — this verb's own, named so the wording can cite it. */
+  /** The channel that is off: this verb's own, named so the wording can cite it. */
   readonly channel: string;
   /** The anchor whose switch decides it. */
   readonly by: string;
@@ -180,7 +180,7 @@ export interface BriefSwitchedOff {
  * The refusal a channel's own verb answers with while that channel is switched OFF, or
  * `undefined` while it is on.
  *
- * ONE FUNCTION FOR EVERY VERB THAT PRODUCES A CHANNEL, and there are two of them now —
+ * ONE FUNCTION FOR EVERY VERB THAT PRODUCES A CHANNEL, and there are two of them now:
  * this one, and `mnema recall`, which produces the notes a session opens with. The refusal
  * is the same fact about a different channel, so it is one reading over the sources and
  * one shape; two copies of "is it off, and who switched it" are the shape that comes to
@@ -204,12 +204,12 @@ export function switchedOff(
 }
 
 /**
- * Composes what governs the work here out of the trees visible from `ctx.cwd` — every
+ * Composes what governs the work here out of the trees visible from `ctx.cwd`: every
  * one of them opened, and the document made of the one that travels.
  *
  * The caches go in WITH their scopes, and that is what changed here. They used to be
  * handed over stripped, on the premise that "a decision governs the work here
- * whichever tree holds it — the team's, this machine's, or the personal one — and the
+ * whichever tree holds it (the team's, this machine's, or the personal one) and the
  * document names no tree". The second half is still true and the first half was
  * measured wrong: a title recorded `--scope private` reached a document whose recipe
  * is a redirection into a tracked file and a commit, and two chains numbering their own
@@ -221,7 +221,7 @@ export function switchedOff(
  * That costs two rebuilds this answer does not print, and it buys the thing worth more
  * than them: the filter runs on the path a person actually takes, so a test over this
  * verb is a test of the rule and not of an adapter that was careful. A surface that
- * pre-filtered would make the composition's own guard vacuous — it would never be
+ * pre-filtered would make the composition's own guard vacuous: it would never be
  * handed a tree to leave out.
  */
 export function runBrief(
@@ -237,7 +237,7 @@ export function runBrief(
     // who switched this off on their machine switched off what reaches their sessions,
     // and answering only out of the committed tree would keep printing the file at them.
     // It is the same asymmetry the composition draws for the other channel and in the
-    // same direction — what a channel may do is read from every tree, what a committed
+    // same direction: what a channel may do is read from every tree, what a committed
     // file may CARRY is read from one.
     const off = switchedOff(sources, DOCUMENT_CHANNEL);
     if (off !== undefined) return off;
@@ -245,7 +245,7 @@ export function runBrief(
       ok: true as const,
       // NOT in the document, and the stream is the whole of the reason. This verb's
       // output is a FILE somebody commits, and a sentence about the proof being broken
-      // today is a sentence that stays in that file after the record is repaired — a
+      // today is a sentence that stays in that file after the record is repaired: a
       // fact with an expiry date inside an artefact that cannot update itself. It goes
       // to `err`, where the person who typed the verb reads it and the redirection does
       // not. What that leaves is the reader the plugin's handler serves, which drops
@@ -254,7 +254,7 @@ export function runBrief(
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       ...inheritedOf(trees),
       // READ FROM THE DISK, AND ONLY WHEN ASKED: see {@link BriefDone.outside}. Over every tree,
-      // for `decision import`'s reason — a file imported into the private tree is imported.
+      // for `decision import`'s reason: a file imported into the private tree is imported.
       ...(asked.outside === true
         ? {
             stacks: stacksHere(ctx),
@@ -266,7 +266,7 @@ export function runBrief(
         : {}),
       // BOTH channels the per-edit hook pushes, named here because the vocabulary is this
       // package's. The document explains what a silence at an edit means, and there are now
-      // two switches that can produce it — a document naming one of them would explain the
+      // two switches that can produce it: a document naming one of them would explain the
       // silence wrongly half the time, which is worse than not explaining it.
       brief: brief(sources, {
         editPush: EDIT_PUSH_CHANNEL,
@@ -277,7 +277,7 @@ export function runBrief(
   });
 }
 
-/** The inherited reading, as the field {@link BriefDone} carries it — absent when none. */
+/** The inherited reading, as the field {@link BriefDone} carries it: absent when none. */
 function inheritedOf(trees: ReturnType<typeof resolveTrees>): { inherited?: InheritedReading } {
   const inherited = readProjectInherited(trees);
   return inherited === undefined ? {} : { inherited };

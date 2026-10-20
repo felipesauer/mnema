@@ -1,5 +1,5 @@
 /**
- * THE SECOND READER IMPORTS NOTHING OF THIS PRODUCT — the guard on the only thing that
+ * THE SECOND READER IMPORTS NOTHING OF THIS PRODUCT: the guard on the only thing that
  * makes it worth having.
  *
  * A second implementation that copied the first proves nothing, and the interoperability
@@ -13,7 +13,7 @@
  * list somebody maintains:
  *
  *   - nothing in `packages/chain/verifier/` names this product. Not an import, not a path,
- *     not a comment — the scan is over the RAW TEXT, because a comment pointing at
+ *     not a comment: the scan is over the RAW TEXT, because a comment pointing at
  *     `hash.ts` is exactly the residue of having read `hash.ts`, and it changes no
  *     behaviour at all, so a behavioural test could never see it.
  *   - every module it imports is the Python standard library or its own package. A wheel
@@ -27,7 +27,7 @@
  * the guard is what stands between them and nobody noticing.
  *
  * The scan is a pure function of (name, text), so the mutations are applied to the text
- * and never to the tree — a guard whose non-vacuity proof edits the repository is a guard
+ * and never to the tree: a guard whose non-vacuity proof edits the repository is a guard
  * that can leave the repository edited.
  */
 
@@ -45,7 +45,7 @@ const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
  *
  * Each entry is a way a reference to the TypeScript could survive into the Python: a
  * package name, a source path, a compiled path, a module with a `.ts` extension. `mnema`
- * on its own is deliberately NOT here — the verifier's own package is called
+ * on its own is deliberately NOT here: the verifier's own package is called
  * `mnemaverify`, and a pattern that matched its own name would match every file and
  * measure nothing.
  */
@@ -61,7 +61,7 @@ const PRODUCT_REFERENCES: readonly (readonly [string, RegExp])[] = [
 /**
  * Modules the verifier may import: the standard library it actually uses, and itself.
  *
- * `mnemaverify` is its own package — the two entry-point scripts reach it absolutely, since
+ * `mnemaverify` is its own package: the two entry-point scripts reach it absolutely, since
  * they are run as files rather than as a module. Everything else here is standard library,
  * and the case below says the same thing a second way by naming the third-party packages
  * that would otherwise be edited into this list.
@@ -161,7 +161,7 @@ describe('the verifier tree is what this guard thinks it is', () => {
     // second reader too. The hazard this case exists for is untouched, and it is the same
     // one `format-doc.test.ts` names for the vectors: this tree ignores whole directories
     // by name, and a verifier a `.gitignore` swallowed would publish nothing while every
-    // other case here stayed green. It is not the tarball that would catch it — measured
+    // other case here stayed green. It is not the tarball that would catch it: measured
     // on 22/09/2026, npm looks for an ignore file BESIDE the manifest and does not walk up
     // to the workspace root, so a file the root `.gitignore` swallowed is absent from every
     // clone and present in a tarball packed on the machine that has it, which is worse than
@@ -219,7 +219,7 @@ describe('nothing in the second reader names this product', () => {
  *
  * Both are inert. The comment is a comment; the import is of a standard-library module
  * that is present and never used. Run the verifier with either one applied and every
- * verdict, every digest and every refusal is identical — which is exactly the argument for
+ * verdict, every digest and every refusal is identical, which is exactly the argument for
  * having a structural guard at all: there is no behavioural test that could ever go red on
  * these, so without this file the residue of having read the implementation would be
  * invisible.
@@ -232,7 +232,7 @@ describe('the guard is not vacuous, and neither mutation changes any behaviour',
     expect(importsOf(CLEAN).filter((m) => !ALLOWED_IMPORTS.includes(m))).toEqual([]);
   });
 
-  it('reddens on a COMMENT that names a product module — behaviour untouched', () => {
+  it('reddens on a COMMENT that names a product module: behaviour untouched', () => {
     const mutated = `# the same fold as packages/chain/src/chain/hash.ts\n${CLEAN}`;
     const leaks = referencesToTheProduct('mutated.py', mutated);
     expect(leaks.length).toBeGreaterThan(0);
@@ -248,7 +248,7 @@ describe('the guard is not vacuous, and neither mutation changes any behaviour',
     expect(leaks.map((leak) => leak.what)).toEqual(['a TypeScript module']);
   });
 
-  it('reddens on an UNUSED standard-library import — behaviour untouched', () => {
+  it('reddens on an UNUSED standard-library import: behaviour untouched', () => {
     const mutated = `import xml.dom.minidom\n${CLEAN}`;
     const outside = importsOf(mutated).filter((module) => !ALLOWED_IMPORTS.includes(module));
     expect(outside).toEqual(['xml']);
@@ -276,7 +276,7 @@ describe('the guard is not vacuous, and neither mutation changes any behaviour',
 /**
  * THE GAP REGISTRY IS CITED, AND EVERY CITATION RESOLVES.
  *
- * The gaps are the deliverable half of a second implementation — they are the evidence
+ * The gaps are the deliverable half of a second implementation: they are the evidence
  * that the document, and not the code, was what was read. A citation that pointed at
  * nothing would be the same failure `format-doc.test.ts` guards against on the other side:
  * a claim with nothing behind it.

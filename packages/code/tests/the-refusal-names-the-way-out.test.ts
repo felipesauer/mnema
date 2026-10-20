@@ -1,31 +1,31 @@
 /**
- * A key the record proves in two identities is refused — and the refusal names the ways out the
+ * A key the record proves in two identities is refused, and the refusal names the ways out the
  * record shows, each of which works when it is done to the letter, with git doing what git does.
  *
  * WHAT WAS WRONG, TWICE. The refusal first stopped at "which one it should speak for here is not a
  * choice to make on its behalf", and the page promised the write was refused "until you say
- * which" — with no command that says which. Then it named a revocation by the identity that should
+ * which": with no command that says which. Then it named a revocation by the identity that should
  * not have the key, and said that where the key is an identity's last there was no other way: a
  * key that founded an identity by writing "can only go back to speaking for" it, and a key that is
  * the only key of both had "no revocation here" that separates them. Simulated on the binary, with
  * git clones, both were false: another key brought into the identity the key founded, from the
- * checkout that founded it, lets this key leave it — and that checkout, whose anchor is local, is
+ * checkout that founded it, lets this key leave it, and that checkout, whose anchor is local, is
  * the installation that still writes as that identity.
  *
  * WHAT IS ASSERTED, with a bare remote and a clone per machine, the way a team works:
  *
- *   - in each shape a record reaches this in, the refusal says which ways out the record names —
+ *   - in each shape a record reaches this in, the refusal says which ways out the record names,
  *     and where it names none, it says so and hands over no command;
- *   - each way out, followed to the letter — the commands copied out of the words WHOLE, each
+ *   - each way out, followed to the letter (the commands copied out of the words WHOLE, each
  *     marker filled with what the words say fills it, run where the words say, and the pull, the
- *     commit and the share done where the words say them and nowhere else — is accepted, and a
+ *     commit and the share done where the words say them and nowhere else) is accepted, and a
  *     fresh clone then writes as the identity the words said, read from the stored events;
  *   - the checkout a key left an identity from writes as the one the key is left in once it ran
  *     the restore the words name, the record then verifies, and the clone after the way out is not
  *     told that its key founded an identity of its own;
  *   - the revocation of a machine's own key says what the record leaves it: a restore and the file
  *     it takes, where the record still proves the key in one identity, and a warning where it
- *     proves none — and that what the checkout writes to the PUBLIC tree is refused, which is the
+ *     proves none, and that what the checkout writes to the PUBLIC tree is refused, which is the
  *     tree the retirement reaches: a private write from it lands;
  *   - and the agent is told the same words, from the same sentence.
  *
@@ -56,12 +56,12 @@ import { buildMcpServer } from '../src/mcp/server.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { argvOf } from './support/reading-a-shell-line.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 const REFUSED = 'Refused (AMBIGUOUS_MEMBERSHIP): ';
 
-/** The words every founding sentence starts with — `a-new-identity.ts`. */
+/** The words every founding sentence starts with: `a-new-identity.ts`. */
 const FOUNDED = 'This key founded an identity of its own';
 
 let sandbox: string;
@@ -129,7 +129,7 @@ function git(dir: string, ...args: string[]): string {
   return ran.stdout;
 }
 
-/** A clone of the team's remote — a checkout of its own, as a machine keeps one. */
+/** A clone of the team's remote: a checkout of its own, as a machine keeps one. */
 function checkout(remote: string, name: string): string {
   const to = join(sandbox, 'checkouts', name);
   mkdirSync(join(sandbox, 'checkouts'), { recursive: true });
@@ -160,7 +160,7 @@ function team(founder: string): { remote: string; founding: string } {
   return { remote, founding };
 }
 
-/** The fingerprint of the key under `homeDir` — the one signing key its key root holds. */
+/** The fingerprint of the key under `homeDir`: the one signing key its key root holds. */
 function keyOf(homeDir: string): string {
   const [key] = readdirSync(join(homeDir, '.mnema', 'identity', 'keys')).filter((name) =>
     name.endsWith('.key'),
@@ -218,7 +218,7 @@ function commandsIn(words: string): string[] {
 
 /**
  * A command as a person runs it: each MARKER replaced, BEFORE the line is read, by what the words
- * say fills it — and a marker this case was not handed a value for fails by name, so words that
+ * say fills it, and a marker this case was not handed a value for fails by name, so words that
  * grow a marker nobody can fill are red here. Then the line is read as a shell reads it
  * (`argvOf`), so a quoted marker is one word and an unquoted one falls apart into several, as it
  * would for the person. Nothing is added.
@@ -254,12 +254,12 @@ function theWayOutOf(words: string, left: string): { clause: string; leftIn: str
 
 /** Where each step of a way out runs, as this case knows the places. */
 interface Places {
-  /** Checkouts by the words that name them — each one writes as the identity the words say. */
+  /** Checkouts by the words that name them: each one writes as the identity the words say. */
   readonly checkouts: Readonly<Record<string, string>>;
   /** The home of the key that leaves, which is the key the refusal is about. */
   readonly leaving: string;
   /**
-   * The key that joins in its place: the home it lives in — "where that key lives" — or a COPY of
+   * The key that joins in its place: the home it lives in, "where that key lives", or a COPY of
    * a key the leaving machine keeps, by its file, which the words ask for with `--key` "on this
    * machine".
    */
@@ -271,7 +271,7 @@ interface Places {
  * left in, the checkout it was done from, and what the revocation printed.
  *
  * THE PLACES ARE READ OFF THE WORDS. The checkout the words send the way out to is looked up in
- * {@link Places}, and one this case does not know fails by name — whoever changes where the words
+ * {@link Places}, and one this case does not know fails by name: whoever changes where the words
  * send a person has to come here and say it. So is each step that is not a command: the pull, and
  * the commit and share, are done where the words say them, and a way out whose words lose one is a
  * way out this case does not do.
@@ -299,7 +299,7 @@ function leave(
   expect(clause).toContain(`\`${elsewhere}\` prints where that key lives`);
   expect(here, clause).toContain(' --key ');
   expect(clause).toContain(`\`${here}\` on this machine`);
-  // Where that key lives: its own home, outside every project — or this machine, for its copy.
+  // Where that key lives: its own home, outside every project, or this machine, for its copy.
   const asked =
     typeof at.joining === 'string'
       ? mnema(sandbox, at.joining, ...argvFor(elsewhere as string, {}))
@@ -379,7 +379,7 @@ describe('a key enrolled into two identities, having founded neither', () => {
     ).toContain('Refused (AMBIGUOUS_MEMBERSHIP)');
 
     // Done to the letter FIRST, by the machine whose writes speak for X, the identity that lets it
-    // go — so words that lose a step fail here, on what the binary does, before any wording below.
+    // go, so words that lose a step fail here, on what the binary does, before any wording below.
     letGo(said, { checkout: founding, home: a });
     expect(writeAs(checkout(remote, 'after'), d, 'written after X let go').who).toBe(y);
 
@@ -431,7 +431,7 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
   it('the first, done to the letter: the other identity lets it go, and the key speaks for the one it founded', () => {
     const { a, b, remote, founding, atB, fp, founded } = foundedThenEnrolled();
     const said = refusedIn(remote, b, 'first');
-    // The identity it founded cannot retire it — its only key — which is why the words say so.
+    // The identity it founded cannot retire it, its only key, which is why the words say so.
     pull(atB);
     expect(
       mnema(atB, b, 'key', 'revoke', fp, '--reason', 'leave the one I founded').stderr,
@@ -442,8 +442,8 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
 
   it('the second, done to the letter from the checkout that founded it: the key speaks for the other, and verifies', () => {
     const { b, n, remote, atB, founded, foundingSaid } = foundedThenEnrolled();
-    // The founding said an enrollment ALONE joins nothing here — every fresh clone refusing the
-    // key meanwhile, which the refusal below is — until another key takes this one's place in the
+    // The founding said an enrollment ALONE joins nothing here (every fresh clone refusing the
+    // key meanwhile, which the refusal below is) until another key takes this one's place in the
     // identity it founded, which the way out below does.
     expect(foundingSaid).toContain(
       'Not in this project by an enrollment alone: here it joins nothing until another key takes this one’s place in the identity it just founded',
@@ -466,7 +466,7 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
 /**
  * The shape a migration reaches: C (the old laptop) founds Y by writing; B (the new one) writes
  * and founds its own; C vouches for B into Y and then retires itself. The checkout B founded from
- * last pulled BEFORE the vouch — a checkout left alone — which is what makes the words' pull a
+ * last pulled BEFORE the vouch, a checkout left alone, which is what makes the words' pull a
  * step the way out cannot skip.
  */
 function theOnlyKeyOfBothIdentities() {
@@ -506,7 +506,7 @@ describe('a key that is the only key of both identities', () => {
     expect(theWayOutOf(said, founded).leftIn).toBe(y);
   }, 90_000);
 
-  it('done to the letter from the checkout that founded it — which had not pulled — the key speaks for the other, and verifies', () => {
+  it('done to the letter from the checkout that founded it (which had not pulled), the key speaks for the other, and verifies', () => {
     const { b, n, remote, atB, fp, founded, y } = theOnlyKeyOfBoth();
     const said = refusedIn(remote, b, 'first');
     // Before the way out, the checkout that founded goes on writing as the identity it founded.
@@ -536,7 +536,7 @@ describe('a key that is the only key of both identities', () => {
   }, 120_000);
 });
 
-describe('a key that is the only key of both identities — the other key being a copy this machine keeps', () => {
+describe('a key that is the only key of both identities: the other key being a copy this machine keeps', () => {
   /** The same migration, with a backup of the laptop's own identity kept on the laptop. */
   function withABackup() {
     const shape = theOnlyKeyOfBothIdentities();
@@ -677,7 +677,7 @@ describe('the revocation of this machine’s own key says what the record leaves
     // while nothing read a recorded anchor again: the words were a warning, and the write they
     // warned against exited 0. The write is refused now, and the words say so; and since what the
     // revocation reads is the copy of the record this checkout holds, they name the restore on
-    // the one condition under which it would work — the case below is where that condition is met.
+    // the one condition under which it would work: the case below is where that condition is met.
     const a = home('a');
     const { founding } = team(a);
     // `init` enrolled a backup key beside this one, so this machine's key is not the last.
@@ -703,12 +703,12 @@ describe('the revocation of this machine’s own key says what the record leaves
     expect(kept.stderr).not.toContain('Refused');
   }, 60_000);
 
-  it('where the checkout had not pulled, followed to the letter: the pull, the restore — and it writes as the other identity, and verifies', () => {
+  it('where the checkout had not pulled, followed to the letter: the pull, the restore; and it writes as the other identity, and verifies', () => {
     // THE CHECKOUT LEFT ALONE. The laptop's checkout last pulled before the old laptop vouched for
     // it into Y, and it lets its key go from there: another key takes this one's place in the
     // identity it founded, and the revocation reads a record that does not yet show Y. This said
-    // "it must not write to this project again" here — false, measured on the binary: a pull and
-    // the restore make it write as Y.
+    // "it must not write to this project again" here (false, measured on the binary: a pull and
+    // the restore make it write as Y).
     const { b, n, remote, atB, fp, y } = theOnlyKeyOfBothIdentities();
     const founded = anchorIn(atB, fp);
     expect(mnema(atB, b, 'key', 'enroll', requestFrom(n, founded)).status).toBe(0);

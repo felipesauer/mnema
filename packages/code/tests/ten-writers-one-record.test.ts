@@ -1,23 +1,23 @@
 /**
- * TEN WRITERS, ONE RECORD — the short battery of concurrency the suite runs on every push.
+ * TEN WRITERS, ONE RECORD: the short battery of concurrency the suite runs on every push.
  *
  * WHY IT EXISTS. Two concurrent `mnema decision` runs once corrupted the chain in 15 of 20
  * rounds (the header of `chain/src/chain/tail-lock.ts` tells it), and the lock that closed it has
- * been touched since: a write that took the lock twice — once to append, once to sign — could be
+ * been touched since: a write that took the lock twice (once to append, once to sign) could be
  * refused on the second take with its fact already on the chain, and say "not appended". Nothing
  * in the suite wrote one record from more than one process at a time, so the next change to the
  * lock could reopen either defect and every case would stay green.
  *
- * WHAT IT DOES. Ten servers of the built binary — ten processes, each announcing an agent of its
- * own, the way ten agents in one project each start one — record ten decisions each, one after
+ * WHAT IT DOES. Ten servers of the built binary (ten processes, each announcing an agent of its
+ * own, the way ten agents in one project each start one) record ten decisions each, one after
  * the other, all ten servers at once. Then three readings, each independent of the processes
  * that wrote:
  *
  *   - `mnema verify` exits 0 over the record;
  *   - the second reader (`packages/chain/verifier/`) says VERIFIED, with every event signed;
  *   - every call that answered success has its decision on the chain, once, and every call that
- *     answered a refusal has nothing there. A refusal is allowed — ten writers on a loaded runner
- *     can keep the tail past its budget — but a refusal that lies is not.
+ *     answered a refusal has nothing there. A refusal is allowed (ten writers on a loaded runner
+ *     can keep the tail past its budget), but a refusal that lies is not.
  *
  * WHY SERVERS AND NOT TEN COMMAND LINES. The lock is the same one either way, so either finds the
  * defects above. A hundred command lines start a hundred programs, and on a four-core runner that

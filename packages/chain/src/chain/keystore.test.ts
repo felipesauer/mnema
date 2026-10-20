@@ -1,5 +1,5 @@
 /**
- * The key root ignores itself in git — asked of git, not of the file's contents.
+ * The key root ignores itself in git: asked of git, not of the file's contents.
  *
  * The key root lives in the home, and a home kept under git is a repository: without this, `git add
  * .mnema` stages the machine's private key and its cold backup. Each case below writes key material
@@ -26,7 +26,7 @@ import {
 import { keyRootLockPath, keysDir, privateKeyPath, publicKeyPath } from './layout.js';
 
 let home: string;
-/** A key root inside a home that is itself a repository — the dotfiles case. */
+/** A key root inside a home that is itself a repository: the dotfiles case. */
 let keyRoot: string;
 
 beforeEach(() => {
@@ -54,7 +54,7 @@ function filesOfTheKeyRoot(): string[] {
   return out;
 }
 
-/** The files git would stage, of `paths` — the ones `check-ignore` does not claim. */
+/** The files git would stage, of `paths`: the ones `check-ignore` does not claim. */
 function notIgnored(paths: readonly string[]): string[] {
   return paths.filter(
     (path) => spawnSync('git', ['check-ignore', '-q', path], { cwd: home }).status !== 0,
@@ -62,7 +62,7 @@ function notIgnored(paths: readonly string[]): string[] {
 }
 
 describe('the key root ignores itself in git', () => {
-  it('from the moment a key is minted into it — the key, its public half, and the file itself', () => {
+  it('from the moment a key is minted into it: the key, its public half, and the file itself', () => {
     const minted = loadOrCreateKeyPair({ root: keyRoot });
     const files = filesOfTheKeyRoot();
     expect(files).toContain(join('.mnema', 'identity', 'keys', `${minted.fingerprint}.key`));
@@ -77,7 +77,7 @@ describe('the key root ignores itself in git', () => {
     expect(notIgnored(files)).toEqual([]);
   });
 
-  it('leaves a `.gitignore` that is already there as it was — a person who edited it keeps the edit', () => {
+  it('leaves a `.gitignore` that is already there as it was: a person who edited it keeps the edit', () => {
     ensureKeyRootIgnored({ root: keyRoot });
     const theirs = '# mine\n*.key\n';
     writeFileSync(join(keyRoot, '.gitignore'), theirs);
@@ -85,7 +85,7 @@ describe('the key root ignores itself in git', () => {
     expect(readFileSync(join(keyRoot, '.gitignore'), 'utf-8')).toBe(theirs);
   });
 
-  it('is asked of a directory git would otherwise stage — the case is not vacuous', () => {
+  it('is asked of a directory git would otherwise stage: the case is not vacuous', () => {
     // Beside the key root, in the same repository, a file nothing ignores is staged: the
     // repository is live, and `check-ignore` says no when the answer is no.
     writeFileSync(join(home, 'a-dotfile'), 'x');
@@ -93,7 +93,7 @@ describe('the key root ignores itself in git', () => {
   });
 });
 
-describe('listAnchoredFingerprints — which keys have settled whom they speak for in a tree', () => {
+describe('listAnchoredFingerprints: which keys have settled whom they speak for in a tree', () => {
   it('lists the keys with a local anchor, sorted, and nothing else in keys/', () => {
     const tree = { root: join(home, 'tree') };
     const [one, two] = [generateKeyPair().fingerprint, generateKeyPair().fingerprint];
@@ -103,7 +103,7 @@ describe('listAnchoredFingerprints — which keys have settled whom they speak f
     expect(listAnchoredFingerprints(tree)).toEqual([one, two].sort());
   });
 
-  it('is empty for a tree with no keys directory — or no tree at all', () => {
+  it('is empty for a tree with no keys directory, or no tree at all', () => {
     expect(listAnchoredFingerprints({ root: join(home, 'nothing-here') })).toEqual([]);
   });
 });
@@ -112,7 +112,7 @@ describe('listAnchoredFingerprints — which keys have settled whom they speak f
  * Two first writes in a new home make ONE key.
  *
  * Not a race, for the reason `tail-lock.test.ts` gives: what the race produces is a state, and
- * the case plants it — a process that found no key arriving at the mint while another process
+ * the case plants it; a process that found no key arriving at the mint while another process
  * holds the key root's lock and mints. The other process is a thread here: it holds the lock
  * (a record naming this live process, so nobody breaks it), writes its key the way the product
  * does, and lets go. Rounds with two processes released at one instant are a measurement, not
@@ -165,7 +165,7 @@ describe('the first key of a machine is minted once', () => {
     expect(Date.now() - started).toBeLessThan(1_000);
   });
 
-  it('writes the private half aside and names it whole — no aside is left, and none is a key', () => {
+  it('writes the private half aside and names it whole: no aside is left, and none is a key', () => {
     const layout = { root: keyRoot };
     const pair = generateKeyPair();
     persistKeyPair(layout, pair);

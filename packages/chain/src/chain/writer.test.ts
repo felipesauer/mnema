@@ -1,5 +1,5 @@
 /**
- * How a writer resumes an existing tail — and what it refuses to sign.
+ * How a writer resumes an existing tail, and what it refuses to sign.
  *
  * Every operation in the product opens a NEW writer (one process, one write, one
  * forced checkpoint), so this resume path runs on every single write. Each of its
@@ -11,9 +11,9 @@
  *
  * A partial read is only worth having if it answers what the whole read
  * answered, so the two describes below hold each one against the complete reader
- * it replaced. The rest of the value lives in the recovery edges — a crash, a
+ * it replaced. The rest of the value lives in the recovery edges (a crash, a
  * torn line, a line heavier than a read chunk, a range that spans segments, a
- * tail with no checkpoint at all — so each gets a case here. The last describe
+ * tail with no checkpoint at all), so each gets a case here. The last describe
  * pins what must NOT have changed: the bytes that get signed.
  */
 
@@ -68,7 +68,7 @@ const upcasters = catalogUpcasters();
 
 /** A cadence high enough that no checkpoint ever fires on its own. */
 const NEVER = 10_000;
-/** A segment cap so small that every append rotates — one entry per segment. */
+/** A segment cap so small that every append rotates: one entry per segment. */
 const ONE_PER_SEGMENT = 1;
 
 /** The envelope carries the writer's real identity, as the core's writes do. */
@@ -79,7 +79,7 @@ const env = (w: ChainWriter, subject: string) => ({
   subject,
 });
 
-/** Opens a writer whose key root is the chain root — the simple test layout. */
+/** Opens a writer whose key root is the chain root: the simple test layout. */
 function openChain(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   return openChainForWriting(root, { keyRoot: root, ...opts });
 }
@@ -132,8 +132,8 @@ function linesInLastSegment(): number {
 /**
  * The whole truth about a tail, from the reader that holds all of it. Every tip
  * has to agree with it: the same entries above the coverage, and the same last
- * entry. It cannot be list equality — the tip returns LESS on purpose, stopping
- * at the boundary instead of handing back whole segments — so the agreement is
+ * entry. It cannot be list equality (the tip returns LESS on purpose, stopping
+ * at the boundary instead of handing back whole segments), so the agreement is
  * stated over exactly what the tip promises.
  */
 function tipAgreesWithTheWholeTail(minSeq: number): Entry[] {
@@ -147,11 +147,11 @@ function tipAgreesWithTheWholeTail(minSeq: number): Entry[] {
 describe('reading the tip of a tail', () => {
   it('reads nothing from a tail that has no segment yet', () => {
     // Opened and never appended to. This said the open "creates the tail directory and its
-    // proof, but no entry" — the tail is born at its first append now, so there is no
+    // proof, but no entry": the tail is born at its first append now, so there is no
     // directory either, and the tail is asked of the writer rather than read off `tails/`.
     const w = openChain();
     expect(readTailTip(layout(), w.tail, upcasters, -1)).toEqual([]);
-    // And the shape an older writer left at open — the directory, no segment — reads the same.
+    // And the shape an older writer left at open (the directory, no segment) reads the same.
     mkdirSync(tailDir(layout(), w.tail), { recursive: true });
     expect(readTailTip(layout(), w.tail, upcasters, -1)).toEqual([]);
   });
@@ -164,7 +164,7 @@ describe('reading the tip of a tail', () => {
 
     const tip = readTailTip(layout(), tailIdOf(), upcasters, cp.toSeq);
     // The last segment holds the last entry, which is all a covered tail is
-    // asked for — so five segments are read one segment deep.
+    // asked for, so five segments are read one segment deep.
     expect(orderedSegments(layout(), tailIdOf())).toHaveLength(5);
     expect(linesInLastSegment()).toBe(1);
     expect(tip.map((e) => e.link.seq)).toEqual([4]);
@@ -174,7 +174,7 @@ describe('reading the tip of a tail', () => {
     const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 1);
     expect(forceCheckpoint(w).toSeq).toBe(1);
-    appendTasks(w, 3, 1); // seq 2, 3, 4 — one per segment
+    appendTasks(w, 3, 1); // seq 2, 3, 4: one per segment
 
     // Everything above seq 1 is in hand, and the walk stopped at the segment
     // holding the boundary instead of reading the whole tail.
@@ -230,7 +230,7 @@ describe('reading the tip of a tail', () => {
     const segment = segmentPath(layout(), tailIdOf(), 1);
     writeFileSync(segment, `${readFileSync(segment, 'utf-8')}{"event":{"kin`, 'utf-8');
 
-    // Both readers drop the fragment, so both see the same tail — the tolerance
+    // Both readers drop the fragment, so both see the same tail: the tolerance
     // is one rule, reached from either direction.
     expect(tipAgreesWithTheWholeTail(-1).map((e) => e.link.seq)).toEqual([0, 1, 2]);
   });
@@ -239,7 +239,7 @@ describe('reading the tip of a tail', () => {
 describe('reading the last checkpoint of a tail', () => {
   /**
    * The backward read has to answer exactly what taking the last of the whole
-   * file answered — that is the behaviour it replaces, and the writer's coverage
+   * file answered; that is the behaviour it replaces, and the writer's coverage
    * and its checkpoint chain both hang off it.
    */
   function agreesWithTheWholeFile(tail: string = tailIdOf()): Checkpoint | undefined {
@@ -249,7 +249,7 @@ describe('reading the last checkpoint of a tail', () => {
   }
 
   it('finds nothing when the tail has never checkpointed', () => {
-    // Opened, never appended: no checkpoints file — and, since a tail is born at its first
+    // Opened, never appended: no checkpoints file, and, since a tail is born at its first
     // append, no directory to read the tail's name off, so the writer names it.
     const w = openChain();
     expect(agreesWithTheWholeFile(w.tail)).toBeUndefined();
@@ -325,7 +325,7 @@ describe('reading the last checkpoint of a tail', () => {
     writeFileSync(file, `{"tail":"broken"\n${lines[1]}\n`, 'utf-8');
 
     // The declared cost of not reading the file: a malformed line the writer no
-    // longer trips over. It costs the proof nothing — the verifier reads every
+    // longer trips over. It costs the proof nothing: the verifier reads every
     // checkpoint, and it is what reports the file.
     expect(() => readTailCheckpoints(layout(), tailIdOf())).toThrow();
     expect(lastTailCheckpoint(layout(), tailIdOf())).toEqual(last);
@@ -459,7 +459,7 @@ describe('the writer resumes from the end of the tail', () => {
 
   it('covers a batch bigger than the checkpoint cadence with one checkpoint', () => {
     const w = openChain({ maxUnsignedEvents: 2 });
-    found(w); // seq 0 — one event short of the cadence
+    found(w); // seq 0: one event short of the cadence
     const batch = [
       ...taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' }),
       ...taskBirth(env(w, 't-2'), { title: 'ship too', initial: 'draft' }),
@@ -610,8 +610,8 @@ describe('the bytes a checkpoint signs did not change', () => {
     const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 3);
 
-    // Ed25519 is deterministic, so equal bytes here means the signed message —
-    // and therefore the content root over the events — is the same set.
+    // Ed25519 is deterministic, so equal bytes here means the signed message,
+    // and therefore the content root over the events, is the same set.
     const firstReRead = signFromAReReadOfTheTail(0, 3, null);
     expect(serializeCheckpoint(forceCheckpoint(w))).toBe(serializeCheckpoint(firstReRead));
 
@@ -646,7 +646,7 @@ describe('the bytes a checkpoint signs did not change', () => {
  *
  * This is the guard that makes the property structural rather than adopted. The
  * core asks the same question at each of its write operations and reports a typed
- * refusal, which is what a person or an agent reads — but an operation added
+ * refusal, which is what a person or an agent reads, but an operation added
  * tomorrow that forgot to ask, or a caller of `@mnema/chain` outside this
  * workspace, would otherwise put an unreadable entry on the tail and leave every
  * later read of that tree failing, forever. These two doors are the only way onto
@@ -715,14 +715,14 @@ describe('the writer refuses what no reader could accept', () => {
 
   it('never signs a checkpoint over an event it refused', () => {
     // The buffer is what the next checkpoint signs. A refused event that reached it
-    // would make the coverage claim a range the bytes do not contain — an honest
+    // would make the coverage claim a range the bytes do not contain: an honest
     // tail then reads as tampered.
     const w = found(openChain({ maxUnsignedEvents: NEVER }));
     expect(() => w.append(memoryCaptured(env(w, ''), { content: 'c' }))).toThrow(EventParseError);
     w.append(memoryCaptured(env(w, 'm-1'), { content: 'one' }));
     // The founding plus this one event is the whole range the checkpoint claims.
     // Had the refusal been buffered, the buffer would hold three where the range
-    // covers two and signing would throw on the mismatch — which is the loud
+    // covers two and signing would throw on the mismatch, which is the loud
     // version of the silent break this asserts against.
     const cp = forceCheckpoint(w);
     expect([cp.fromSeq, cp.toSeq]).toEqual([0, 1]);
@@ -732,8 +732,8 @@ describe('the writer refuses what no reader could accept', () => {
 
 describe('a tail is born at its first append, not when its writer opens', () => {
   /**
-   * What a clone of this chain would receive is FILES — git carries no directory of its
-   * own — so "nothing a clone receives" is asked of the files under the chain root.
+   * What a clone of this chain would receive is FILES, git carries no directory of its
+   * own, so "nothing a clone receives" is asked of the files under the chain root.
    */
   function filesUnder(dir: string, base = dir): string[] {
     const out: string[] = [];
@@ -747,7 +747,7 @@ describe('a tail is born at its first append, not when its writer opens', () => 
 
   /**
    * A writer whose key lives OUTSIDE the chain, as the product's does, so every file the
-   * chain holds is one that opening or appending put there — the keyRoot == chainRoot
+   * chain holds is one that opening or appending put there: the keyRoot == chainRoot
    * shorthand the rest of this file uses would put the key's own files in the count.
    */
   function openApart(): ChainWriter {
@@ -765,7 +765,7 @@ describe('a tail is born at its first append, not when its writer opens', () => 
 
   it('leaves only the installation id in a chain its writer opened and never wrote to', () => {
     const w = openApart();
-    // The id is the one thing opening writes — local, and ignored by the tree's own
+    // The id is the one thing opening writes: local, and ignored by the tree's own
     // `.gitignore` (`tree.test.ts` holds that). No public key, no tail, no proof.
     expect(filesUnder(root)).toEqual([`keys/${w.signerFingerprint}.inst`]);
   });

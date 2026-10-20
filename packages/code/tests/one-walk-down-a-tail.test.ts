@@ -4,7 +4,7 @@
  * WHAT THIS EXISTS TO CATCH is a defect this product shipped. The reading learned to
  * ask every checkpoint a tail holds; `mnema witness upgrade` went on asking only the
  * last one. Both were correct in isolation and both had cases, and together they made
- * the product contradict itself about one disk in one minute — `verify` reporting that
+ * the product contradict itself about one disk in one minute: `verify` reporting that
  * an attestation had been requested and had not confirmed, and the verb whose whole
  * job is to finish such a request reporting that nothing had been asked, and skipping.
  * That is exactly two readings of one rule, drifting in silence.
@@ -12,8 +12,8 @@
  * SO THE RULE HAS ONE SITE, and this reads the source to say so. A behaviour test
  * cannot: two implementations that happen to agree today pass every case, and the day
  * one of them changes there is nothing to go red. What is asserted is that the fact
- * each caller needs — which checkpoints a tail holds a proof for, and in what order a
- * walk down them stops — is derived in exactly one place, and that both callers reach
+ * each caller needs (which checkpoints a tail holds a proof for, and in what order a
+ * walk down them stops) is derived in exactly one place, and that both callers reach
  * it through that place.
  *
  * IT IS ALSO THE LINK: `witnessWalk` crosses the package line, and a public export
@@ -37,7 +37,7 @@ function source(relative: string): string {
   return text;
 }
 
-/** How many times a name appears — declaration and calls alike. */
+/** How many times a name appears: declaration and calls alike. */
 function mentions(text: string, name: string): number {
   return text.split(name).length - 1;
 }
@@ -51,7 +51,7 @@ describe('the checkpoints a tail holds a proof for are enumerated once', () => {
     // The directory read is the only thing that knows which checkpoints were ever
     // stamped. A second one is a second answer to that question.
     expect(mentions(text, 'readdirSync(')).toBe(1);
-    // Declared once, called once — and the call is inside the walk.
+    // Declared once, called once, and the call is inside the walk.
     expect(mentions(text, 'stampedCheckpoints(')).toBe(2);
     const walk = bodyOf(text, 'export function* witnessWalk(');
     expect(walk).toContain('stampedCheckpoints(layout, tailId)');
@@ -61,7 +61,7 @@ describe('the checkpoints a tail holds a proof for are enumerated once', () => {
     const text = source(ACTS);
     // `mnema witness` and `mnema witness upgrade` are the two verbs a person alternates
     // between. A listing that showed a request the act did not walk to would be the same
-    // contradiction, one list over — so the list has one derivation.
+    // contradiction, one list over, so the list has one derivation.
     expect(mentions(text, 'readTailCheckpoints(')).toBe(1);
     // And both verbs reach it through that one derivation.
     expect(bodyOf(text, 'export function runWitnessList(')).toContain('storedCheckpoints(chain)');

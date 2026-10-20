@@ -9,7 +9,7 @@
  *
  * WHY THE RUN IS STUBBED. A stop is a refusal of the write door on a file the reader accepted, and
  * the reader and the door ask one function for every rule they share (`a-reason-states-something`),
- * so no document made of text reaches the door and fails there — which is what makes the stop a
+ * so no document made of text reaches the door and fails there, which is what makes the stop a
  * rare path and the exit code the thing nobody exercised. What is under test is the wiring's
  * reading of the result, so the result is what is handed in.
  */

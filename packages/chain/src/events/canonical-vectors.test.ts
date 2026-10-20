@@ -6,9 +6,9 @@
  * vectors froze "a representative event of every kind", and called itself "the
  * regression floor under the whole proof". It held TEN vectors over NINE kinds
  * of the catalog's TWENTY, and the nine were the nine oldest: every kind the v1
- * added — `memory.captured`, `observation.recorded`, `handoff.recorded`,
+ * added (`memory.captured`, `observation.recorded`, `handoff.recorded`,
  * `knowledge.linked`, the three `skill.*`, `tail.pruned` and the three
- * `channel.*` — had no frozen bytes at all. What falsified it is a count, taken
+ * `channel.*`) had no frozen bytes at all. What falsified it is a count, taken
  * against `LATEST_VERSION`; and what let it drift is that nothing referred to
  * this file, so a kind added to the catalog moved no floor. The table is now a
  * type in `src` (`vectors.ts`) that does not compile until a new kind has a
@@ -17,7 +17,7 @@
  * WHAT THE VECTORS ARE FOR. The property tests next door prove canonicalization
  * is deterministic, key-sorted and Unicode-normalized. They do NOT pin the ACTUAL
  * bytes: a refactor could change the byte layout while keeping every property
- * intact, and every existing test would stay green — silently breaking the
+ * intact, and every existing test would stay green, silently breaking the
  * ability of an older clone, or a signed checkpoint, to reproduce the same
  * content root. These digests freeze the exact SHA-256 of the canonical bytes, so
  * a change to the format has to be a deliberate, versioned migration.
@@ -29,8 +29,8 @@
  * rewrites: `--update` would silently move a frozen digest, and moving one is the one
  * edit here that has to be a decision somebody made.
  *
- * WHY THE DIGESTS ARE NOT IN THIS FILE. They live in `canonical-vectors.json` —
- * the artifact `FORMAT.md` describes and an outside implementation downloads —
+ * WHY THE DIGESTS ARE NOT IN THIS FILE. They live in `canonical-vectors.json`,
+ * the artifact `FORMAT.md` describes and an outside implementation downloads,
  * and this file recomputes them. That is one list, not two: the file DECLARES the
  * digests and the code COMPUTES them, so a digest edited in the file alone goes
  * red, and a change to canonicalization that moves the bytes goes red on every
@@ -108,7 +108,7 @@ describe('the vectors cover the catalog, and the type is what keeps them coverin
   });
 });
 
-describe('canonicalization golden vectors — the byte format must not drift silently', () => {
+describe('canonicalization golden vectors: the byte format must not drift silently', () => {
   for (const { name, event } of vectors) {
     it(`${name} hashes to the digest the published file declares`, () => {
       const row = published.get(name);
@@ -133,8 +133,8 @@ describe('canonicalization golden vectors — the byte format must not drift sil
       expect(unreadableReason(event)).toBeUndefined();
       // Stronger than acceptance: the reader REBUILDS an event from the declared
       // fields alone, so re-canonicalizing what it hands back reproduces the frozen
-      // bytes only if the vector has exactly those fields — no extra key riding
-      // along, none of the declared ones absent.
+      // bytes only if the vector has exactly those fields (no extra key riding
+      // along, none of the declared ones absent).
       const rebuilt = parseEvent(canonicalStringify(toCanonical(event)), catalogUpcasters());
       expect(canonicalBytes(toCanonical(rebuilt))).toEqual(bytesOf(event));
     });
@@ -144,7 +144,7 @@ describe('canonicalization golden vectors — the byte format must not drift sil
 describe('the published artifact says what the code says', () => {
   it('carries exactly the keys an outside consumer reads it for', () => {
     // The artifact is public surface, and three of its keys are read by nothing in
-    // this suite — `vectorsVersion`, `describedBy` and `envelope` are for the
+    // this suite: `vectorsVersion`, `describedBy` and `envelope` are for the
     // stranger, not for us. A key renamed or dropped would break every consumer and
     // pass every other case here, so the SHAPE is asserted whole.
     expect(Object.keys(artifact)).toEqual([

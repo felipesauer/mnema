@@ -1,12 +1,12 @@
 /**
- * `mnema key enroll <request>` — vouch for a key so it joins this identity.
+ * `mnema key enroll <request>`: vouch for a key so it joins this identity.
  *
  * The second step of putting two machines on one identity, and the one that has to
  * run on a machine that is ALREADY a member: membership is granted by a member's
  * signature, so there is no way for a joining machine to admit itself.
  *
  * Scope, for a key that joins or checks, is the project's PUBLIC tree, and only it. An
- * enrollment is a per-tree fact, and the tree that matters is the committed one — it is what
+ * enrollment is a per-tree fact, and the tree that matters is the committed one: it is what
  * the other machine will read to learn it was accepted, and what an anonymous verifier checks
  * the vouch against. The private and global trees are local to one machine, so a second machine
  * could never see an enrollment recorded there. An AGENT's key ({@link runAgentEnroll}) is the
@@ -14,13 +14,13 @@
  *
  * A thin adapter: resolve the project, hand ONE core operation a deferred write of the
  * tree, report what came back. Whether the request proves consent, whether this machine
- * may vouch, whether the key is already a member — all of it is the core's judgement and
+ * may vouch, whether the key is already a member: all of it is the core's judgement and
  * reaches the person as the core worded it.
  *
  * DEFERRED, and not an open writer, because opening one touches the tree before anything
- * is appended — an installation id, today. Measured on the binary, a refused enrollment
+ * is appended: an installation id, today. Measured on the binary, a refused enrollment
  * used to leave the project with an untracked `keys/<fp>.pub` and an empty tail of the key
- * that asked — which is the key a person following the words of a split has at hand; those
+ * that asked, which is the key a person following the words of a split has at hand; those
  * two are born at a writer's first append now, and the id is still a file. The core decides
  * first and opens the writer only to write, so a refusal leaves the tree as it found it.
  */
@@ -54,7 +54,7 @@ import { oneLine } from '../one-line.js';
 import { personsKeyInTheClear } from '../the-persons-key-in-the-clear.js';
 import { agentKeyAlgorithmRefusal } from './key-request.js';
 
-/** What the enrollment needs — injected so it is testable. */
+/** What the enrollment needs: injected so it is testable. */
 export interface KeyEnrollContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -67,7 +67,7 @@ export interface KeyEnrolled {
   readonly ok: true;
   /** The joining key's fingerprint, derived from the key the request carried. */
   readonly fingerprint: string;
-  /** The identity it now belongs to — this machine's own. */
+  /** The identity it now belongs to: this machine's own. */
   readonly anchor: string;
   /** True when the record already proved it a member, so nothing was appended. */
   readonly alreadyMember: boolean;
@@ -77,7 +77,7 @@ export interface KeyEnrolled {
 
 /** The enrollment was refused; nothing was written. */
 export type KeyEnrollRefused =
-  /** There is no project here — an enrollment is a fact in a committed record. */
+  /** There is no project here: an enrollment is a fact in a committed record. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** The core refused: a malformed request, one made for another identity, no right to vouch. */
   | {
@@ -92,9 +92,9 @@ export interface CheckerEnrolled {
   readonly ok: true;
   /** The checker key's fingerprint. */
   readonly fingerprint: string;
-  /** The anchor it signs results under — its own. */
+  /** The anchor it signs results under: its own. */
   readonly checker: string;
-  /** The identity that vouched for it — this machine's. */
+  /** The identity that vouched for it: this machine's. */
   readonly vouchedBy: string;
   /** True when the record already enrolled it, so nothing was appended. */
   readonly alreadyChecker: boolean;
@@ -103,8 +103,8 @@ export interface CheckerEnrolled {
 }
 
 /**
- * Enrolls the key a CHECKER request carries — a key that will sign check results and nothing
- * else — vouched for by this machine's identity, in the project's public tree.
+ * Enrolls the key a CHECKER request carries (a key that will sign check results and nothing
+ * else) vouched for by this machine's identity, in the project's public tree.
  */
 export function runCheckerEnroll(
   ctx: KeyEnrollContext,
@@ -146,7 +146,7 @@ export function runKeyEnroll(
   }
 
   // The enrollment signs its own checkpoint, so this only covers the founding a first-ever
-  // write may have appended alongside it — and is a no-op otherwise, including when the
+  // write may have appended alongside it, and is a no-op otherwise, including when the
   // writer was never opened (a key the record already proved a member).
   write.checkpoint();
 
@@ -183,7 +183,7 @@ export interface AgentEnrolled {
   readonly fingerprint: string;
   /** The name it was enrolled under: the `which` of everything it signs. */
   readonly name: string;
-  /** The identity it speaks for in the first tree that took it — this machine's own. */
+  /** The identity it speaks for in the first tree that took it: this machine's own. */
   readonly anchor: string;
   /** True when no tree needed a write and none refused: the record already had it, under this name. */
   readonly alreadyAgent: boolean;
@@ -218,13 +218,13 @@ interface AgentSubject {
 }
 
 /**
- * Enrolls the key an AGENT request carries — a key that signs for this identity under a name —
+ * Enrolls the key an AGENT request carries, a key that signs for this identity under a name,
  * vouched for by this machine's key, in every tree this process reaches that the key can be in:
  * the project's committed tree, where the other machines and an anonymous verifier read it, and,
  * where the key lives on THIS machine, the project's private tree and the machine's global one, so
  * what the agent writes there is signed by it too. Outside a project, the global tree alone.
  *
- * `request` is the line `key request --agent` printed, or — where the key lives on this machine —
+ * `request` is the line `key request --agent` printed, or, where the key lives on this machine,
  * the agent's NAME, from which the line is made here for each tree. The person's key signs each
  * vouch: this is the verb that asks it for its passphrase at the terminal, which is what the
  * agent's host, without one, can never do.
@@ -232,7 +232,7 @@ interface AgentSubject {
  * ONE LINE SERVES EVERY TREE where the identity is the same in all of them: the consent covers the
  * identity, the key and the name, never a tree. In a tree whose identity is another's (a machine
  * that joined an identity writes its private and global trees under one of its own), the line does
- * not hold, and the key on this machine consents afresh for that tree's identity — which is what
+ * not hold, and the key on this machine consents afresh for that tree's identity, which is what
  * `key request --agent <name> --anchor <that identity>` would have it do.
  *
  * A key retired anywhere this process reaches, or an agent under another name in one, is refused
@@ -337,8 +337,8 @@ export function runAgentEnroll(
 
 /**
  * The fingerprints of the OTHER keys a tree counts as agents under the name just enrolled. The
- * record allows them — a key is an agent by its fingerprint, and a person with two machines has two
- * keys under the one name the host's manifest fixes — so this is said, never refused.
+ * record allows them (a key is an agent by its fingerprint, and a person with two machines has two
+ * keys under the one name the host's manifest fixes), so this is said, never refused.
  */
 function otherKeysUnder(
   agent: { readonly fingerprint: string; readonly name: string; readonly anchor: string },
@@ -350,8 +350,8 @@ function otherKeysUnder(
 }
 
 /**
- * What the verb was handed: a line, or a name. A name needs the key to be here already — it stands
- * for the line this machine would print — and says `NO_AGENT_KEY` when it is not. Anything else is
+ * What the verb was handed: a line, or a name. A name needs the key to be here already (it stands
+ * for the line this machine would print) and says `NO_AGENT_KEY` when it is not. Anything else is
  * handed to the core as a line, which refuses what is not one.
  */
 function subjectOf(env: DiscoveryEnv, request: string): AgentSubject | KeyEnrollRefused {
@@ -400,8 +400,8 @@ function freshLine(write: DeferredWrite, subject: AgentSubject): string | undefi
 }
 
 /**
- * One tree's vouch: the line first, and — in a tree other than the committed one, for a key that
- * lives here — the key's fresh consent to that tree's identity where the line was made for another.
+ * One tree's vouch: the line first, and (in a tree other than the committed one, for a key that
+ * lives here) the key's fresh consent to that tree's identity where the line was made for another.
  * What a tree throws (a private tree git would stage, an identity the record cannot name) is that
  * tree's refusal, in the code it carries.
  */

@@ -1,5 +1,5 @@
 /**
- * A LABEL A STRANGER CAN LOOK UP — no file this repository hands out may lean on a word
+ * A LABEL A STRANGER CAN LOOK UP: no file this repository hands out may lean on a word
  * whose definition only the local workbench holds.
  *
  * WHERE THIS COMES FROM. The workbench this project is built from numbers its working rules
@@ -7,11 +7,11 @@
  * to: *"at one site because it is one rule (A3)"*, *"the shape amarra A2 exists to kill"*,
  * *"THE ELO"* over a case proving that an option reaches what it feeds. The definitions live
  * in a `.gitignore`d directory, so `git ls-files` returns none of them and nobody with a
- * clone can find out what `A3` is — asked of every tracked file, nothing
+ * clone can find out what `A3` is: asked of every tracked file, nothing
  * defines one. Thirteen of those lines were in non-test `src`, across eleven files,
  * and `tsc` keeps comments, so the built `dist/` carried them to every install. It is the
- * class `what-ships-cites-only-what-ships.test.ts` closed for documents — a citation the
- * reader cannot open — and this closes it for labels.
+ * class `what-ships-cites-only-what-ships.test.ts` closed for documents, a citation the
+ * reader cannot open, and this closes it for labels.
  *
  * WHAT THE FIX WAS, because it is not "delete the label". Each one was holding a sentence
  * up. Where the principle was already written beside it (*"ONE RULE FOR THE STATUS, at one
@@ -24,7 +24,7 @@
  * a file a clone has, so they are not a row; a case below reads the definitions out of the
  * file that holds them, so a row that would accuse one is refused before it can be written.
  *
- * THE REACH IS EVERY FILE GIT HANDS OUT, TESTS INCLUDED — the opposite choice from the
+ * THE REACH IS EVERY FILE GIT HANDS OUT, TESTS INCLUDED: the opposite choice from the
  * sibling guard, and for a reason that does not transfer. That guard leaves tests out
  * because a fixture there has to NAME the workbench's directory to test that the product
  * excludes it. No test needs a workbench label to test anything: the suite is green with
@@ -33,17 +33,17 @@
  *
  * THE LIST IS WHAT LEAKED, NOT WHAT COULD. The Portuguese rows are words that turned up in
  * English comments. Words the workbench uses that never leaked are not rows, and one of them
- * is why: `core/src/adr/read.test.ts` holds Portuguese ADRs on purpose — importing them is
- * the product's job — and one of its fixture sentences uses `entrega`, which is also a
+ * is why: `core/src/adr/read.test.ts` holds Portuguese ADRs on purpose (importing them is
+ * the product's job) and one of its fixture sentences uses `entrega`, which is also a
  * workbench word. A row for it would accuse a fixture that is exactly right. The same cost
  * stands behind every Portuguese row that IS here: the day a Portuguese fixture needs one of
  * them, that is the case this list is wrong about, and it is argued here rather than dodged.
  *
  * WHAT IT DOES NOT COVER. A label with no family. `L4`, `E3`, `S2`, `P2`–`P4` and a battery
  * row `M9.4` stood in the tree as one-offs, defined nowhere, and were removed by hand in the
- * same change — but nothing here would catch the next one: a single letter and a digit
+ * same change, but nothing here would catch the next one: a single letter and a digit
  * cannot be forbidden without accusing the format's `T1`–`T4`, the Unicode blocks `C0` and
- * `C1`, or the gap ids above. And English process words — a delivery, a battery, the bench — are the
+ * `C1`, or the gap ids above. And English process words (a delivery, a battery, the bench) are the
  * sibling's argument, which stands: where they appear, the fact is stated inline.
  */
 
@@ -53,7 +53,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** This file, spelled the way `git ls-files` spells it. */
@@ -106,7 +106,7 @@ const WORKBENCH_VOCABULARY: readonly {
 ];
 
 /**
- * WHAT IS NOT SWEPT, each with the reason — a reach with an unargued hole is a reach with a
+ * WHAT IS NOT SWEPT, each with the reason: a reach with an unargued hole is a reach with a
  * blind spot, and the cases below hold each reason to still being true.
  */
 const NOT_SWEPT: readonly { readonly path: RegExp; readonly why: string }[] = [
@@ -125,7 +125,7 @@ const textOf = (where: string): string => readFileSync(join(ROOT, where), 'utf-8
 /** A binary file, told apart the way git's own test tells one: it holds a NUL. */
 const isBinary = (text: string): boolean => text.includes('\0');
 
-/** Every tracked file, asked of git — what git does not hand out, a stranger does not have. */
+/** Every tracked file, asked of git: what git does not hand out, a stranger does not have. */
 const TRACKED: readonly string[] = execFileSync('git', ['ls-files'], {
   cwd: ROOT,
   encoding: 'utf-8',
@@ -154,13 +154,13 @@ interface Label {
 
 /**
  * THE RULE, IN ONE FUNCTION WITH EVERY CALLER. The corpus case asks it, and so does every
- * case that plants a spelling or pins a legitimate one — a second reading of "does this
+ * case that plants a spelling or pins a legitimate one: a second reading of "does this
  * text lean on the workbench" is a second rule, and the two disagree the first time one of
  * them moves. No pattern carries the `g` flag, so `test` keeps no position between lines.
  *
  * It reads raw text, comments included, because the comments are where the defect lived.
- * That brings back the risk a raw reading always carries — a guard that quotes what it
- * forbids accuses itself — so this file is taken out of its own corpus by name, and a case
+ * That brings back the risk a raw reading always carries, a guard that quotes what it
+ * forbids accuses itself, so this file is taken out of its own corpus by name, and a case
  * below asserts both halves: that it is out, and that it would be accused if it were in.
  */
 function labelsIn(text: string): Label[] {
@@ -181,8 +181,8 @@ describe('the repository leans on no label and no word that only the workbench d
   /**
    * NOT VACUOUS, AND THIS IS THE CASE THAT SAYS SO. A sweep for an absence answers `0` both
    * when the corpus is clean and when it is empty. So the reach is pinned by files that
-   * carried the defect in every place it was — three packages' `src`, a test inside `src`,
-   * the suite, its support and CI — plus the plugin's hook, which ships as it is, and an
+   * carried the defect in every place it was (three packages' `src`, a test inside `src`,
+   * the suite, its support and CI) plus the plugin's hook, which ships as it is, and an
    * empty corpus fails with a sentence saying the ruler broke rather than with a count.
    */
   it('sweeps the files that carried the defect, in every place it was', () => {
@@ -215,7 +215,7 @@ describe('the repository leans on no label and no word that only the workbench d
   /**
    * EVERY ROW FIRES, ON A LINE THAT REALLY LEAKED. Each line below is quoted from the tree
    * before the fix, so the planted text is what the defect produced and not what a test
-   * author imagined it would look like — including the two shapes a narrower pattern would
+   * author imagined it would look like, including the two shapes a narrower pattern would
    * have missed: a range (`A5/A10`) and a label with no brackets in running prose.
    */
   it('finds each spelling it forbids, in the shapes they leaked in, so no row is decorative', () => {
@@ -331,7 +331,7 @@ describe('the repository leans on no label and no word that only the workbench d
   /**
    * THE GUARD IS NOT ITS OWN CORPUS, and the exclusion is load-bearing: this file is
    * tracked, it quotes every row it forbids, and a sweep that reached it would accuse it on
-   * the strength of its own documentation — which is how a sibling guard in this workspace
+   * the strength of its own documentation, which is how a sibling guard in this workspace
    * once listed itself.
    */
   it('does not sweep itself, which is the only reason it may quote what it forbids', () => {

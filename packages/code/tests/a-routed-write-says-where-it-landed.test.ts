@@ -3,13 +3,13 @@
  *
  * A write takes only the absolute path of a project, never the name of its directory: a
  * name a conversation carries can mean another directory after a reload, and the write
- * — signed, append-only — would resolve to it without a word. A name is refused with the
+ * (signed, append-only) would resolve to it without a word. A name is refused with the
  * paths to use. What a path routes still says, in the one reply the caller reads, the
  * absolute path it fell in (one directory can still have two paths, through a symlink).
  *
  * Seven verbs take `project`, so each is driven here, over the real transport, and the
  * expected path is the directory the test made, and the files that grew on disk say which
- * directory took the write — the reply is checked against the disk, not against itself.
+ * directory took the write: the reply is checked against the disk, not against itself.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';

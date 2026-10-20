@@ -1,12 +1,12 @@
 /**
  * The `mnema audit accountability` wiring: what it declares, and what it prints.
  *
- * `mnema audit accountability [--from --to --who --which] [--json]` — who authorized
+ * `mnema audit accountability [--from --to --who --which] [--json]`: who authorized
  * what over the whole record. No filter = everything (git shortlog -sn); the
  * flags only narrow. The human summary is one level (total, and one line per
  * who with their count); the nested byKind/byWhich is in --json. Beside each
  * author, both forms carry where and when its identity was founded beside
- * others — the account's own `foundedBeside`, the field the agent's account
+ * others: the account's own `foundedBeside`, the field the agent's account
  * carries too, from the one selection in the context package's fold.
  */
 
@@ -56,7 +56,7 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
           reportRefusal(wiring, result);
           return;
         }
-        // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+        // BEFORE the answer, and on the other stream, so it survives a pipe, and so
         // `--json` stays the machine-readable thing it promises to be.
         for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {
@@ -68,13 +68,13 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
           io.out(JSON.stringify(result.account, null, 2));
           return;
         }
-        // Human summary — one level. The total and one line per author with their
+        // Human summary: one level. The total and one line per author with their
         // count; the per-kind and per-agent breakdown stays in --json, but for the agents
         // an agent key attested.
         //
         // AND, BESIDE AN AUTHOR WHOSE IDENTITY WAS FOUNDED WHERE OTHERS ALREADY WERE, where and
-        // when: the count says there are two authors, and this says which one arrived second —
-        // somebody new, or the same person under another key, which only the reader can tell.
+        // when: the count says there are two authors, and this says which one arrived second (
+        // somebody new, or the same person under another key, which only the reader can tell).
         const { total, byWho } = result.account;
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {

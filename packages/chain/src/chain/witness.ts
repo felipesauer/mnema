@@ -8,23 +8,23 @@
  * nothing and re-signs it: every hash links, every signature checks, and the
  * verdict is green over a record that was written this morning and claims a year.
  * What that party cannot do is produce an attestation dated before they started.
- * So the witness attests one thing and one thing only — that a checkpoint's signed
- * message EXISTED at an instant — and a chain rebuilt today has no checkpoint whose
+ * So the witness attests one thing and one thing only, that a checkpoint's signed
+ * message EXISTED at an instant, and a chain rebuilt today has no checkpoint whose
  * digest anybody attested yesterday.
  *
  * WHAT LEAVES THE MACHINE IS A DIGEST AND NOTHING ELSE. The subject is
- * `checkpointHash` — the SHA-256 of a checkpoint's signed message — so no id, no
+ * `checkpointHash`, the SHA-256 of a checkpoint's signed message, so no id, no
  * title, no body and no count travels. And ONE checkpoint is enough for the whole
  * run of them: checkpoints chain (`prev` is the hash of the previous one's signed
  * message, FORMAT.md §6), so an attestation over the last one dates every
- * checkpoint below it. This is why the layer is cheap enough to be honest about —
+ * checkpoint below it. This is why the layer is cheap enough to be honest about:
  * it is not an attestation per event, nor even per checkpoint.
  *
  * AND THEY ACCUMULATE. Nothing here removes a witness file, so stamping today and
  * writing tomorrow leaves yesterday's proof under yesterday's digest, still proving
  * what it proved. The reading therefore asks the NEWEST checkpoint it holds a
  * confirmed attestation for and reports how far that reaches, and it keeps the NEWEST
- * request that has not confirmed for when there is no confirmed one to report — see
+ * request that has not confirmed for when there is no confirmed one to report: see
  * {@link witnessOfTail}, which is where the premise that only the last checkpoint is
  * worth asking about was found to be false, and where the premise that a promise may
  * be thrown away because it is not coverage was found to be false after it.
@@ -44,14 +44,14 @@
  * The `.ots` is the ECOSYSTEM'S OWN FILE, unaltered: a stranger with the
  * `opentimestamps` client and no copy of this product runs `ots verify` on it and
  * gets the same answer. The `.blocks` sidecar is this package's, and it is what
- * makes the reading offline — a proof ends at "the merkle root of block N", and
+ * makes the reading offline: a proof ends at "the merkle root of block N", and
  * without N's header that sentence is a claim rather than arithmetic. Both commit
  * with the tree: they are public by construction (a digest, a merkle path, a block
  * header) and a clone that could not check T3 would be a clone the layer does not
  * reach.
  *
- * THREE STATES AND THE MIDDLE ONE IS THE POINT. An attestation is ASYNCHRONOUS —
- * the calendars aggregate, a Bitcoin block takes as long as it takes — so between
+ * THREE STATES AND THE MIDDLE ONE IS THE POINT. An attestation is ASYNCHRONOUS
+ * (the calendars aggregate, a Bitcoin block takes as long as it takes), so between
  * asking and confirming there is a real, ordinary state that is neither absence nor
  * coverage. Calling it coverage would be the whole layer reduced to a promise; see
  * {@link WITNESS_COVERS} in level.ts, which is where `pending` has to declare that
@@ -60,7 +60,7 @@
  * that follows from being told nothing is to stamp again. It counts for nothing and
  * it is always said.
  *
- * NOTHING HERE REACHES THE NETWORK. This module is the STORE — it reads and writes
+ * NOTHING HERE REACHES THE NETWORK. This module is the STORE: it reads and writes
  * the two files, and it is where both the verifier and the act that stamps go for
  * them, so neither can come to a private idea of where a witness lives or of what
  * one says. Speaking to a calendar is witness-request.ts, which `verify` does not
@@ -87,7 +87,7 @@ import {
 import { lastTailCheckpoint } from './store.js';
 
 /**
- * The strength order of the three states — the fold over several tails reads it,
+ * The strength order of the three states: the fold over several tails reads it,
  * and it is TOTAL over {@link WitnessStatus} so a fourth state does not compile
  * until it says where it sits between absence and coverage.
  */
@@ -102,15 +102,15 @@ const WITNESS_RANK: Readonly<Record<WitnessStatus, number>> = {
  *
  * IT IS A UNION ON THE STATUS, so `covered` is the only shape that carries an
  * instant. It used to be one interface with two optional numbers, and the two were
- * optional for a true reason — a reading that is not covered has no instant to
- * report — stated in a way the compiler could not act on: a caller that wanted the
+ * optional for a true reason (a reading that is not covered has no instant to
+ * report) stated in a way the compiler could not act on: a caller that wanted the
  * instant of a covered reading had to assert it or branch on a case that cannot
  * happen, and this package has already measured what an `as` costs (it empties the
  * assertion that quotes it). Split, the instant is present exactly where it exists.
  */
 export type WitnessReading = AttestedReading | UnattestedReading;
 
-/** A reading that reached a confirmed attestation — the only one with an instant. */
+/** A reading that reached a confirmed attestation: the only one with an instant. */
 export interface AttestedReading {
   readonly status: 'covered';
   /** Why it reads that way, in words a verdict may quote. */
@@ -133,14 +133,14 @@ export interface UnattestedReading {
   /** Why it reads that way, in words a verdict may quote. */
   readonly detail: string;
   /**
-   * True when the record holds NO witness file for this checkpoint at all — as
+   * True when the record holds NO witness file for this checkpoint at all, as
    * opposed to holding one this machine refuses.
    *
    * The two are different sentences and only one of them can go stale. An absence
    * says nothing attests the record, which stops being true the moment an OLDER
    * checkpoint is attested OR asked about; a refusal is a finding about one file and
    * stays true beside any dating and beside any request. {@link witnessOfTail} is the
-   * only reader, and it is what decides which of the two a tail gets — and, when the
+   * only reader, and it is what decides which of the two a tail gets, and, when the
    * absence is the one that went false, what says the truth in its place.
    */
   readonly absent?: true;
@@ -149,7 +149,7 @@ export interface UnattestedReading {
    *
    * Set only by {@link witnessOfTail}, never by {@link readWitness}: one checkpoint's
    * stored files cannot know what an older checkpoint's say. It is not coverage and
-   * never becomes any — see {@link DatedThrough}.
+   * never becomes any: see {@link DatedThrough}.
    */
   readonly datedThrough?: DatedThrough;
 }
@@ -165,7 +165,7 @@ export interface UnattestedReading {
  *
  * IT IS NOT COVERAGE and it is deliberately not reachable from one. It hangs off
  * {@link UnattestedReading} alone, so no fold, no level and no exit code can arrive
- * at it from a state that counts — the mistake this layer already made once, when a
+ * at it from a state that counts: the mistake this layer already made once, when a
  * requested-and-unconfirmed attestation looked enough like coverage to be counted as
  * some.
  */
@@ -185,7 +185,7 @@ interface StoredHeader {
 }
 
 /**
- * The witness stored for one checkpoint — the two files, read but not judged.
+ * The witness stored for one checkpoint: the two files, read but not judged.
  *
  * Kept apart from {@link readWitness} because the ACT that requests an attestation
  * needs exactly this and none of the ruling: it asks what is already there so it
@@ -201,7 +201,7 @@ export interface StoredWitness {
  *
  * THE SIZE IS ASKED BEFORE THE BYTES ARE, and the order is the point. Both files are
  * COMMITTED, so a clone reads whatever the last person to write the repository put
- * there — and a reader that loads whatever it is handed and checks the size afterwards
+ * there, and a reader that loads whatever it is handed and checks the size afterwards
  * has already allocated it. `parseOtsProof` refuses a proof past its limit, which is
  * the right refusal at the wrong moment: by then a gigabyte is in memory. Refused here
  * instead, by the same number, so nothing oversized is ever read.
@@ -249,7 +249,7 @@ const MAX_BLOCKS_BYTES = 1 << 16;
  *
  * A line this cannot read is DROPPED rather than thrown out of, and the reason is
  * what the reading does with the absence: a missing header leaves the attestation
- * `pending` — the honest "an anchor exists and this record cannot check it here" —
+ * `pending`, the honest "an anchor exists and this record cannot check it here",
  * whereas an exception would take down a verdict about the chain over a sidecar
  * that is not part of the chain at all.
  */
@@ -266,13 +266,13 @@ function parseStoredHeader(line: string): StoredHeader | null {
   }
 }
 
-/** How one stored header is written — one line, the canonical form of the tree. */
+/** How one stored header is written: one line, the canonical form of the tree. */
 export function serializeStoredHeader(height: number, header: Buffer): string {
   return canonicalStringify({ header: header.toString('hex'), height });
 }
 
 /**
- * Stores a witness over one checkpoint — the proof, and the headers it needs.
+ * Stores a witness over one checkpoint: the proof, and the headers it needs.
  *
  * IT OVERWRITES, and that is what the naming is for. A proof is born incomplete and
  * is REPLACED as it completes, so the same checkpoint has to land on the same path
@@ -294,14 +294,14 @@ export function writeWitness(
   const headers = [...(witness.headers ?? new Map<number, Buffer>())].sort((a, b) => a[0] - b[0]);
   if (headers.length === 0) return;
   // Each line carries its own terminator rather than being joined by one, so the file
-  // ends in a newline like every other line-per-record file this package writes — and
+  // ends in a newline like every other line-per-record file this package writes, and
   // so this write holds no template that reads like a SENTENCE with a break in it.
   const lines = headers.map(([height, header]) => `${serializeStoredHeader(height, header)}\n`);
   writeFileSync(witnessBlocksPath(layout, tailId, checkpointHash), lines.join(''), 'utf-8');
 }
 
 /**
- * No witness at all — the state every record is in until one is asked for.
+ * No witness at all: the state every record is in until one is asked for.
  *
  * ITS WORDS ARE A CLAIM ABOUT THE WHOLE RECORD, which is why it is marked
  * {@link UnattestedReading.absent}. Every other `not-covered` reading is a finding
@@ -339,7 +339,7 @@ export function readWitness(
 }
 
 /**
- * What one already-read witness proves — {@link readWitness} without the reading.
+ * What one already-read witness proves: {@link readWitness} without the reading.
  *
  * IT IS SPLIT OFF FOR THE WALK, and for one reason: {@link witnessWalk} hands the
  * ACT that completes an attestation the very bytes it judged, so the act does not
@@ -349,7 +349,7 @@ export function readWitness(
  */
 function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessReading {
   // THE PARSE *AND* THE WALK, under one guard. The walk applies the path's operations,
-  // and one of them can be unavailable rather than wrong — OpenSSL 3 moved `ripemd160`
+  // and one of them can be unavailable rather than wrong: OpenSSL 3 moved `ripemd160`
   // behind its legacy provider, so a node built without it cannot run that step. Left
   // outside this, that throw would take down a verdict about a CHAIN over a file that is
   // not part of the chain. Both halves answer the same way now: a proof this machine
@@ -379,7 +379,7 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
   // THE PREMISE THAT FELL, and what falsified it. These were TWO accumulators, and the
   // headerless reading and the calendar's shared the second one under `??=`: whichever
   // the walk reached first won. Measured on one digest, one block and one calendar, with
-  // no headers stored — the same facts both times, only the order of the two
+  // no headers stored, the same facts both times, only the order of the two
   // attestations in the file swapped:
   //
   //   pending listed first  -> "an attestation was requested from <uri> and has not confirmed"
@@ -387,8 +387,8 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
   //
   // A real calendar writes its own attestation before an upgrade appends a block's, so
   // the first line is what the product printed and the second never appeared. §8 of
-  // FORMAT.md already refuses that dependence in the sentence beside this one — it is
-  // why the DATE is not the first confirmed block a walk reaches — and this is the same
+  // FORMAT.md already refuses that dependence in the sentence beside this one (it is
+  // why the DATE is not the first confirmed block a walk reaches) and this is the same
   // refusal on the unattested side. `witness.test.ts` pins both orders to one sentence.
   let anchored: AttestedReading | null = null;
   // The LOWEST height among the bitcoin attestations no header was stored for. Lowest
@@ -400,7 +400,7 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
   for (const { attestation, message } of reached) {
     if (attestation.kind === 'pending') {
       // STILL FIRST-REACHED, AND DECLARED SO. Among several calendars there is no
-      // ordering that means anything — §8 declares none, a reader waits the same for
+      // ordering that means anything: §8 declares none, a reader waits the same for
       // any of them, and a lexicographic one would be a rule this format never
       // published. So the sentence's bytes still depend on the file's order when a
       // proof carries more than one open request. Found by the same sweep that found
@@ -430,7 +430,7 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
         detail: `the stored header for Bitcoin block ${attestation.height} carries another merkle root`,
       };
     }
-    // THE LOWEST HEIGHT, not the first the walk reaches — the same tie-break the
+    // THE LOWEST HEIGHT, not the first the walk reaches: the same tie-break the
     // headerless branch above uses, and now the same one for BOTH sets, which is what
     // §8 means by holding one rule over them. It was `??=` here, and that made the date
     // this product publishes a function of the order the branches of a third party's
@@ -439,8 +439,8 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
     // following the published format.
     //
     // BY HEIGHT AND NOT BY INSTANT, and the difference is not pedantry: a block's
-    // `nTime` is declared by whoever mined it and consensus only BOUNDS it — greater
-    // than the median of the previous eleven, less than now plus two hours — so a lower
+    // `nTime` is declared by whoever mined it and consensus only BOUNDS it (greater
+    // than the median of the previous eleven, less than now plus two hours), so a lower
     // block may carry a later instant. Electing by height is what the reference
     // OpenTimestamps client does (it orders attestations by ascending height and stops
     // at the first valid one), and it does not rest on a field a miner declares.
@@ -456,7 +456,7 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
   return anchored ?? headerlessReading(headerless) ?? unconfirmed ?? NO_ATTESTATION;
 }
 
-/** The stored proof reached nothing at all — neither a block nor an open request. */
+/** The stored proof reached nothing at all: neither a block nor an open request. */
 const NO_ATTESTATION: UnattestedReading = {
   status: 'not-covered',
   detail: 'the stored proof reaches no attestation',
@@ -466,10 +466,10 @@ const NO_ATTESTATION: UnattestedReading = {
  * A bitcoin attestation this record cannot fold, because the header is not here.
  *
  * IT OUTRANKS AN OPEN REQUEST, and that is the ordering this function exists to
- * state. Both are `pending` — {@link WITNESS_COVERS} counts neither, so no level and
- * no exit code move — and the choice is only which sentence a person reads. This one
+ * state. Both are `pending` ({@link WITNESS_COVERS} counts neither, so no level and
+ * no exit code move) and the choice is only which sentence a person reads. This one
  * names a BLOCK: the work is done and the record is one committed file short of
- * proving it offline, and that file is fetchable — {@link completeWitness} asks for
+ * proving it offline, and that file is fetchable; {@link completeWitness} asks for
  * the header of every bitcoin attestation it reaches, on a proof that is already
  * anchored as much as on one that just became so, which is what `mnema witness
  * upgrade` runs. The other sentence names a calendar nobody has heard back from. A
@@ -494,14 +494,14 @@ function headerlessReading(height: number | null): UnattestedReading | null {
  * for a different reason. The listing stopped asking it when the reading learned to
  * walk the whole tail; `mnema witness upgrade` stopped when the ACT did, because a
  * verb that completes proofs already on the disk has no business asking where a new
- * one would go — asking it was how that verb came to report `nothing has been asked
+ * one would go: asking it was how that verb came to report `nothing has been asked
  * about this checkpoint yet` over a record `verify` was, in the same minute, reporting
  * a request in flight for. What is left is the one question this answers: where the
  * act that ASKS files what it gets back.
  *
  * The verifier deliberately does not use it either: it names the checkpoint it PROVED,
  * because a verifier that trusted the last stored line would be reading a file it has
- * not judged. The two agree exactly when the tail verifies — which is the state the
+ * not judged. The two agree exactly when the tail verifies, which is the state the
  * stamping act refuses to proceed without, and `chain.test.ts` is where that agreement
  * is asserted rather than assumed. `witness.test.ts` in `@mnema/code` is where the
  * listing's head and this one are held together now that they are derived apart.
@@ -521,7 +521,7 @@ export function checkpointToWitness(layout: ChainLayout, tailId: string): string
  * leave out.
  */
 export interface ProvenCheckpoint {
-  /** The digest of the checkpoint's signed message — what an attestation is filed under. */
+  /** The digest of the checkpoint's signed message: what an attestation is filed under. */
   readonly hash: string;
   /** The last event seq this checkpoint covers. */
   readonly toSeq: number;
@@ -530,7 +530,7 @@ export interface ProvenCheckpoint {
 /** One tail, as much of it as the witness reading needs. */
 export interface WitnessedTail {
   /**
-   * The checkpoints the CALLER stands behind, in the order they cover the events —
+   * The checkpoints the CALLER stands behind, in the order they cover the events:
    * empty when there are none.
    *
    * Which ones those are is the caller's to say, and the two callers say different
@@ -540,20 +540,20 @@ export interface WitnessedTail {
    * anything. Neither reading of "a checkpoint" belongs to this function.
    */
   readonly checkpoints: readonly ProvenCheckpoint[];
-  /** How many events the tail holds — what the undated remainder is counted against. */
+  /** How many events the tail holds: what the undated remainder is counted against. */
   readonly events: number;
 }
 
-/** What {@link witnessProofPath} names a proof with — the one place the suffix is known. */
+/** What {@link witnessProofPath} names a proof with: the one place the suffix is known. */
 const PROOF_SUFFIX = '.ots';
 
 /**
- * The checkpoint digests this tail holds a proof for — the directory, read once.
+ * The checkpoint digests this tail holds a proof for: the directory, read once.
  *
  * IT IS AN OPTIMIZATION AND NOT A SECOND OPINION. {@link readWitness} stays the only
  * thing that decides what a stored witness SAYS; this decides only which checkpoints
  * are worth asking it about, and it can skip one exactly when that checkpoint's
- * `.ots` is not on the disk — the same fact {@link readStoredWitness} establishes one
+ * `.ots` is not on the disk: the same fact {@link readStoredWitness} establishes one
  * `existsSync` at a time. It exists for the walk: without it, a tail with a thousand
  * checkpoints and one attestation costs a thousand `existsSync` calls to find it, and
  * with it costs one `readdir`. Both were measured; the numbers are in this delivery's
@@ -575,14 +575,14 @@ function stampedCheckpoints(layout: ChainLayout, tailId: string): ReadonlySet<st
  *
  * THE BYTES TRAVEL BECAUSE ONE CALLER NEEDS THEM BACK. A verdict only ever wants the
  * ruling, but the act that completes an attestation has to send the proof it just
- * judged — and an act that re-opened the file would be an act reading a second time
+ * judged, and an act that re-opened the file would be an act reading a second time
  * the thing the walk already told it about.
  */
 export interface WalkedWitness {
   /** Whether this is the tail's newest checkpoint of the ones the caller offered. */
   readonly head: boolean;
   readonly checkpoint: ProvenCheckpoint;
-  /** The two files, read but not judged — what an act sends back to a calendar. */
+  /** The two files, read but not judged: what an act sends back to a calendar. */
   readonly stored: StoredWitness;
   readonly reading: WitnessReading;
 }
@@ -596,7 +596,7 @@ export interface WalkedWitness {
  * confirmed attestation; the act walks down from the head and completes what has not
  * confirmed. Written twice, the two drifted, and the drift was visible in the product:
  * the reading walked the tail while `mnema witness upgrade` asked only
- * {@link checkpointToWitness} — so a record whose stamp sat under an older checkpoint
+ * {@link checkpointToWitness}, so a record whose stamp sat under an older checkpoint
  * had `verify` reporting a request in flight and `upgrade`, in the same minute,
  * reporting that nothing had been asked about it. Two verbs of one product contradicting
  * each other about one disk.
@@ -604,7 +604,7 @@ export interface WalkedWitness {
  * WHY IT STOPS AT THE FIRST COVERED ONE, for both callers. The reading's answer IS the
  * newest confirmed attestation, so nothing under it can change a sentence: a proof below
  * one that confirmed dates a smaller prefix at a later instant, which is weaker on both
- * axes the verdict reports. For the act the same fact is a cost rule — every checkpoint
+ * axes the verdict reports. For the act the same fact is a cost rule: every checkpoint
  * past that point is a request to a calendar whose answer no reading would ever quote.
  *
  * IT SKIPS A CHECKPOINT WHOSE FILE IS GONE rather than reporting an absence for it. The
@@ -641,24 +641,24 @@ export function* witnessWalk(
  * does not follow from it: an attestation over an earlier checkpoint says nothing
  * about what came AFTER, and goes on saying everything about what came BEFORE. So a
  * record with an attestation in its tree began answering `nothing outside this
- * machine attests this record` the instant somebody wrote one more event — a sentence
+ * machine attests this record` the instant somebody wrote one more event: a sentence
  * that is false about that record, and an understatement of what it can prove.
  *
  * AND THE SECOND PREMISE, falsified by this delivery: *a request that has not
- * confirmed is not coverage, so the walk may drop it* — one line of which was true.
+ * confirmed is not coverage, so the walk may drop it*, one line of which was true.
  * A promise is not coverage and never becomes any here; that is the layer's own
  * doctrine and nothing below touches it. What did not follow is that it may be thrown
  * away. Dropped, a record whose only proof was still in flight answered the words of
  * a record nobody ever stamped, and the act that follows from those words is to STAMP
- * AGAIN — a second request for a digest somebody already paid for, and a person who
+ * AGAIN: a second request for a digest somebody already paid for, and a person who
  * cannot tell *nobody asked* from *somebody asked and we are waiting*. The window is
  * ordinary rather than exotic: the two attestations this package's own fixture carries
  * were requested at 00:52 and 01:05, were carried by a block at 01:47, and were served
- * complete at 12:49 — most of a day in a state the reading called silence.
+ * complete at 12:49, most of a day in a state the reading called silence.
  *
  * FOUR WORLDS, WHERE THE PRODUCT HAD TWO AND THEN THREE:
  *
- *   - nothing attests this tail — {@link NOTHING}, unchanged to the byte;
+ *   - nothing attests this tail: {@link NOTHING}, unchanged to the byte;
  *   - the record is dated TO ITS HEAD: the newest attested checkpoint covers the last
  *     event there is. The only state that reads as coverage;
  *   - the record is dated TO A POINT, and events were written after it. Its sentence
@@ -667,29 +667,29 @@ export function* witnessWalk(
  *     this one removed;
  *   - a request is IN FLIGHT and nothing has confirmed. The new one. It is `pending`,
  *     which {@link WITNESS_COVERS} already declares counts for nothing, and the words
- *     are the ones {@link readWitness} has always written for a promise — this walk
+ *     are the ones {@link readWitness} has always written for a promise: this walk
  *     had simply been dropping them on the floor.
  *
  * The last two COMPOSE rather than choose, and the argument is the defect itself: a
  * record dated to an old point with a newer request in flight is a record whose owner
  * has already done the right thing, and publishing only the dating would tell them
- * their head is undated and send them to stamp — the very act this exists to prevent.
+ * their head is undated and send them to stamp, the very act this exists to prevent.
  * The date stays the CONFIRMED one's in every case: a promise moves no frontier, so
  * nothing a promise says reaches {@link DatedThrough}.
  *
  * WHICH QUESTION THE SENTENCE ANSWERS, decided and written down: **how far into the
- * record the dating reaches, and when that point was dated** — the NEWEST attested
+ * record the dating reaches, and when that point was dated**, the NEWEST attested
  * checkpoint, never the oldest. Two reasons and a cost. The verdict's other clauses
  * are all about extent (`N event(s) above the last checkpoint …`), so a T3 clause on
  * that axis composes into one sentence instead of two a reader has to reconcile; and
  * the layer exists to defeat a chain rebuilt this morning, which the LARGEST provably
- * old prefix defeats hardest. The other question — *since when is the old part
- * dated*, the EARLIEST attestation — names a date whose boundary is a different and
+ * old prefix defeats hardest. The other question (*since when is the old part
+ * dated*, the EARLIEST attestation) names a date whose boundary is a different and
  * smaller prefix, so an honest clause would have to carry two (checkpoint, date)
  * pairs and would answer neither. It costs more, too: this walk stops at the first
  * attestation it meets coming down from the head, and the earliest one can only be
  * had by reading every proof the tail stores. The request it reports follows the same
- * rule for the same reason — the NEWEST one still open, which is the one whose
+ * rule for the same reason: the NEWEST one still open, which is the one whose
  * confirmation would move the dating furthest.
  *
  * Returns null when the caller offered no checkpoint at all: there is no reading to
@@ -711,15 +711,15 @@ export function witnessOfTail(
   // of the sentences below. A refusal about that file stays true beside anything an
   // older checkpoint proves and beside any request in flight, so it is kept; the
   // ABSENCE is a claim about the whole record which those same facts falsify, so it
-  // gives way. `covered` reaches that line only in the world below — a head dated but
-  // not to the last event — where the dating says everything the head's own would.
+  // gives way. `covered` reaches that line only in the world below, a head dated but
+  // not to the last event, where the dating says everything the head's own would.
   let finding: UnattestedReading | null = null;
   let promise: UnattestedReading | null = null;
   // ONE RULE FOR THE STATUS, at one site because it is one rule: the head's own,
   // unless the head had nothing to say, in which case the request in flight speaks, and
   // the plain absence when there is neither. Every value it can return is one
   // {@link WITNESS_COVERS} counts for nothing, so the choice moves no level and no exit
-  // code — it decides whether the verdict opens with `not covered` or with `PENDING,
+  // code: it decides whether the verdict opens with `not covered` or with `PENDING,
   // which is not coverage`, and a reader with a request open should wait, not stamp.
   const statusWith = (open: UnattestedReading | null): UnattestedReading['status'] =>
     finding?.status ?? open?.status ?? 'not-covered';
@@ -727,7 +727,7 @@ export function witnessOfTail(
     const { reading } = walked;
     if (walked.head) {
       atHead = reading;
-      // Dated to its head — the state that reads as coverage, and the only one that
+      // Dated to its head: the state that reads as coverage, and the only one that
       // does. The head CHECKPOINT being attested is not enough: events written above it
       // are outside the dating exactly as events above the last checkpoint are outside
       // the signature, and a clause that said `covered` over those was claiming a reach
@@ -750,7 +750,7 @@ export function witnessOfTail(
     };
   }
   if (promise === null) return atHead;
-  // NOTHING CONFIRMED, AND A REQUEST IS OPEN — the case the delivery before this one
+  // NOTHING CONFIRMED, AND A REQUEST IS OPEN: the case the delivery before this one
   // exists for, and the state the act now has a way out of.
   return {
     status: statusWith(promise),
@@ -759,12 +759,12 @@ export function witnessOfTail(
 }
 
 /**
- * What a tail's walk found besides the head's own file — and there is always at least
+ * What a tail's walk found besides the head's own file, and there is always at least
  * one of the two, which is why this is a union and not a pair of optionals.
  *
  * The alternative was two nullable fields, and it hides the same invariant the sentence
  * below depends on: it is called only when the walk has something to state, so a shape
- * that admits "neither" would need words for a case that cannot happen — and words for
+ * that admits "neither" would need words for a case that cannot happen, and words for
  * an impossible case are the ones nothing ever reads and nothing ever checks.
  */
 type TailFacts =
@@ -778,11 +778,11 @@ type TailFacts =
 
 /**
  * A tail's whole sentence, from the facts the walk found: what the head's own file
- * said, what an older attestation dates, and what is still in flight — the ones there
+ * said, what an older attestation dates, and what is still in flight, the ones there
  * are, in that order.
  *
  * THE ORDER IS A REFUSAL FIRST AND A PROMISE LAST, and neither end is arbitrary. A
- * finding about the head's own file — an unreadable proof, a header nobody mined — is
+ * finding about the head's own file (an unreadable proof, a header nobody mined) is
  * a forgery signal, and a fix for an understatement that buried one would be worse
  * than the understatement. A promise is the weakest thing here: it proves nothing, so
  * it goes after the fact that does. And what the absence used to say is in NEITHER
@@ -792,7 +792,7 @@ type TailFacts =
  * package: `the-phrase-the-domain-words-is-one-line.test.ts` follows a producer into
  * its body, and a sentence assembled beside the property is a sentence that walk never
  * enters. For the same reason the clauses are joined HERE rather than composed by a
- * helper — a second function would word half the line outside anything that walk
+ * helper: a second function would word half the line outside anything that walk
  * reaches. (Measured on the first draft of this delivery: split in two, with the second
  * half taking a parameter named `detail` so the walk would follow it, the scanner read
  * the PARAMETER as a prose field and reported the same two values twice. An instrument
@@ -828,7 +828,7 @@ export interface ChainWitness {
 }
 
 /**
- * How much a reading CLAIMS, as a tuple compared left to right — the chain's fold
+ * How much a reading CLAIMS, as a tuple compared left to right: the chain's fold
  * keeps the SMALLEST, so the sentence it publishes is one no tail contradicts.
  *
  * THE FIRST NUMBER IS WHETHER ANYTHING CONFIRMED, and it sits above the status
@@ -836,7 +836,7 @@ export interface ChainWitness {
  * `pending` tail is STRONGER than a `not-covered` one, which is true of the ladder
  * absence → promise → coverage and false of the question this sentence answers. Put
  * first, it made a tail dated by a real Bitcoin block the weakest of a pair whose
- * other half held nothing but a request — so the chain published `the last attested
+ * other half held nothing but a request, so the chain published `the last attested
  * checkpoint is dated by Bitcoin block N …` over a record where one tail had no
  * confirmed attestation at all, which is the overstatement this fold exists to
  * prevent. A confirmed anchor outranks a promise however the three states are
@@ -850,12 +850,12 @@ export interface ChainWitness {
  * THE THIRD IS THE INSTANT, LATER FIRST. A date further from today is a stronger
  * claim about how far back the record provably reaches, so the weaker of two dated
  * tails is the one dated most recently. Within each group the number is defined for
- * every member — `covered` always carries an instant, a dating always carries one,
- * and nothing else has one at all — so it never compares a fact against a filler.
+ * every member (`covered` always carries an instant, a dating always carries one,
+ * and nothing else has one at all), so it never compares a fact against a filler.
  *
  * THE FOURTH IS THE REMAINDER, AND IT WAS FOUND BY A PROBE rather than reasoned
  * about. Two tails dated by the SAME block, one a single event past its dating and
- * one thirty-eight past, tied on the first three numbers — and the tie fell to
+ * one thirty-eight past, tied on the first three numbers, and the tie fell to
  * whichever came first, so the chain published *with 1 event(s) written after it*
  * about a record holding thirty-nine undated events. Weakest means weakest on this
  * axis too, so the larger remainder wins and the published count is a floor no tail
@@ -877,7 +877,7 @@ function claimOf(reading: WitnessReading): readonly [number, number, number, num
   ];
 }
 
-/** Whether `a` claims strictly less than `b` — a tie keeps whoever is already held. */
+/** Whether `a` claims strictly less than `b`: a tie keeps whoever is already held. */
 function claimsLess(a: WitnessReading, b: WitnessReading): boolean {
   const mine = claimOf(a);
   const theirs = claimOf(b);
@@ -890,7 +890,7 @@ function claimsLess(a: WitnessReading, b: WitnessReading): boolean {
 }
 
 /**
- * Whether a reading says something outside this machine CONFIRMED — coverage, or a
+ * Whether a reading says something outside this machine CONFIRMED: coverage, or a
  * dating over an earlier checkpoint.
  *
  * A promise is deliberately not one, here or anywhere: this is the predicate the fold
@@ -902,13 +902,13 @@ function isAnchored(reading: WitnessReading): boolean {
 }
 
 /**
- * Whether the record holds an attestation for this tail AT ALL — one that confirmed,
+ * Whether the record holds an attestation for this tail AT ALL: one that confirmed,
  * or one still in flight.
  *
  * IT REPLACED A NARROWER PREDICATE, and the premise that fell with it was *only a
  * confirmed attestation can falsify the absence*. It cannot: `nothing outside this
  * machine attests this record` is a claim about the whole record, and a tail holding a
- * request nobody has answered yet is a file in the tree that claim is wrong about —
+ * request nobody has answered yet is a file in the tree that claim is wrong about;
  * measured, with a promise beside an unstamped tail publishing exactly those words.
  * That it is not COVERAGE is a different question, answered by {@link isAnchored} and
  * by `WITNESS_COVERS`, and neither answer moves.
@@ -917,7 +917,7 @@ function holdsAttestation(reading: WitnessReading): boolean {
   return isAnchored(reading) || reading.status === 'pending';
 }
 
-/** Whether a reading is the ABSENCE — no stored witness at all, rather than a refusal. */
+/** Whether a reading is the ABSENCE: no stored witness at all, rather than a refusal. */
 function isAbsence(reading: WitnessReading): boolean {
   return reading.status !== 'covered' && reading.absent === true;
 }
@@ -942,12 +942,12 @@ const NO_VERIFIED_CHECKPOINT: UnattestedReading = {
  * Weakest for the reason the level's own fold is weakest (`weakerLevel`): a record is
  * several tails and a reader is given one answer, so an attestation over one
  * machine's tail must never speak for the machine beside it whose events nobody
- * witnessed. What is asked of each tail is {@link witnessOfTail} — no longer its last
+ * witnessed. What is asked of each tail is {@link witnessOfTail}: no longer its last
  * checkpoint alone, for the reason written there.
  *
  * A tail with no verified checkpoint is `not-covered` and gets no special handling here.
  * THIS SAID IT DID NOT NEED ANY, because "a chain with any such tail cannot be
- * `fully-signed` either, so the top rung was already out of reach before this was asked" —
+ * `fully-signed` either, so the top rung was already out of reach before this was asked",
  * and one tail falsifies that: an EMPTY one, a directory holding its ownership proof and no
  * event, which records committed by older writers still carry. It has nothing to sign, so
  * it does not stop the chain being `fully-signed`, and it has no checkpoint, so it reads
@@ -978,7 +978,7 @@ export function witnessOfChain(
     status: reading.status,
     // THE ABSENCE CANNOT SPEAK FOR A CHAIN THAT HOLDS AN ATTESTATION. `nothing outside
     // this machine attests this record` is a claim about everything, and with two
-    // tails it can be published for a chain where the other one holds a proof — the
+    // tails it can be published for a chain where the other one holds a proof: the
     // same false sentence this delivery and the one before it exist to remove, one
     // level up. It is asked of {@link holdsAttestation} and not of a dating, because a
     // request still in flight is a file in the tree those words are wrong about too.

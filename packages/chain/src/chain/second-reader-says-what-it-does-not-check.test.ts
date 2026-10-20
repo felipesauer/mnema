@@ -1,5 +1,5 @@
 /**
- * THE SECOND READER SAYS WHAT IT DOES NOT CHECK — ONCE, AND IN ONE PLACE.
+ * THE SECOND READER SAYS WHAT IT DOES NOT CHECK: ONCE, AND IN ONE PLACE.
  *
  * `verdict.py` states the reason the `NOT COVERED` block exists at all: *a gap that looks
  * like coverage is worse than an absence*. The list of what this reader does not check was
@@ -10,8 +10,8 @@
  *   `record.py`           four `declare_not_covered` calls with their prose typed in
  *   `verifier/README.md`  three bullets
  *
- * SO THE LIST NOBODY DERIVED WAS THE LIST OF WHAT NOBODY CHECKS. G06 — §1's refusal of an
- * explicit `undefined`, unreachable for a reader that only reads files — was in the program
+ * SO THE LIST NOBODY DERIVED WAS THE LIST OF WHAT NOBODY CHECKS. G06 (§1's refusal of an
+ * explicit `undefined`, unreachable for a reader that only reads files) was in the program
  * and not in the README, from the day it was added. And G23 was in NEITHER: the one place
  * the two readers, both faithful to the document, **date the same record differently**, and
  * no verdict this program ever printed said so. A stranger got `VERIFIED` and an instant,
@@ -21,13 +21,13 @@
  * written without answering the question; `gaps.scope()` is the one derivation; the walker
  * loops over it; and this file holds the README against it in both directions. The
  * discriminant, in the registry's own words, is whether the reader can OBSERVE the condition
- * on a record — because if it can, the absence of its report is itself an answer, and
+ * on a record, because if it can, the absence of its report is itself an answer, and
  * announcing it as a general limit would say of every record what is true of some.
  *
  * BOTH DIRECTIONS, EVERYWHERE, for the reason the count in
  * `second-reader-agrees-on-the-record.test.ts` gives: a list that grew silently is a check
  * somebody stopped running, and a list that shrank without the check arriving is the
- * limitation deleted rather than closed. Here that has a third edge — a list that stopped
+ * limitation deleted rather than closed. Here that has a third edge: a list that stopped
  * matching the document a stranger reads is a promise made to somebody who never runs the
  * program.
  */
@@ -102,7 +102,7 @@ function python(args: readonly string[]) {
   return run;
 }
 
-/** The registry as data — the same call the README's instructions tell a stranger to make. */
+/** The registry as data: the same call the README's instructions tell a stranger to make. */
 function catalogue(): Catalogue {
   const run = python([VERIFIER, '--json', 'gaps']);
   expect(run.status, run.stderr).toBe(0);
@@ -138,7 +138,7 @@ const THE_THREE_STANDINGS = ['reader-limit', 'record-finding', 'settled'] as con
  *
  * `one-line.ts` does exactly this and is deliberately NOT imported: nothing here asserts
  * anything about that function, and importing it would move it out of the workspace's
- * unwitnessed ledger on the strength of a helper call — a witness that observes nothing.
+ * unwitnessed ledger on the strength of a helper call, a witness that observes nothing.
  */
 function onOneLine(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -159,7 +159,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
   it('is unresolved exactly when it is a hole, in both directions', () => {
     // THE TOTALITY, ENUMERATED FROM THE SOURCE. `Standing` is a `Literal` and no type checker
     // runs over the verifier directory, so the annotation checks nothing on its own. What
-    // does is `gaps.audit()`, at import — and this, which asks the registry rather than a
+    // does is `gaps.audit()`, at import, and this, which asks the registry rather than a
     // list kept here.
     const { gaps, counts, standings } = catalogue();
     const unresolved = gaps.filter((gap) => gap.how === 'unresolved').map((gap) => gap.id);
@@ -184,7 +184,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
     expect(wrong).toEqual([]);
   });
 
-  it('REFUSES a catalogue that has not answered, at import — seven ways', () => {
+  it('REFUSES a catalogue that has not answered, at import: seven ways', () => {
     // The audit is a structural guard, so here is what lights it. Each mutation is a
     // Gap built in memory and handed to `audit()`; the registry on disk is never touched,
     // because a guard whose non-vacuity proof edits the tree can leave the tree edited.
@@ -228,7 +228,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
   it('runs that audit at IMPORT, so a bad registry stops the program instead of shortening it', () => {
     // The mutation that earns the module-level `audit()` call rather than the
     // function alone: without it a registry that answered nothing would still IMPORT, and
-    // `record` would print a block one row short with no sign that anything was wrong — the
+    // `record` would print a block one row short with no sign that anything was wrong; the
     // same failure one level up: a check that is present and answers nothing.
     //
     // The mutation is applied to a COPY of the verifier in this case's own sandbox. The tree
@@ -315,8 +315,8 @@ describe('the block a verdict prints is the registry, read in both directions', 
     const inTheBlock = new Set(there.notCovered.map((entry) => entry.gap));
     for (const id of findings) expect([...inTheBlock]).not.toContain(id);
 
-    // NON-VACUITY: `witnessed-record` really does exhibit two of them — a `.blocks` sidecar
-    // one header short (G19) and a proof depth measured against §8's undefined unit (G20) —
+    // NON-VACUITY: `witnessed-record` really does exhibit two of them, a `.blocks` sidecar
+    // one header short (G19) and a proof depth measured against §8's undefined unit (G20),
     // and each is a finding with its location, not a disclaimer.
     const located = there.findings.filter((finding) => finding.gap !== '').map((f) => f.gap);
     expect(located).toContain('G19');
@@ -351,7 +351,7 @@ describe('the block a verdict prints is the registry, read in both directions', 
  * does not check, and did.
  *
  * IT KEEPS THE LIST RATHER THAN POINTING AT THE PROGRAM. Deleting it would make the document
- * a worse document for the reader it is written for — somebody deciding whether this verdict
+ * a worse document for the reader it is written for: somebody deciding whether this verdict
  * is worth anything, who has not run it. So it stays, and it is PINNED, entry for entry and
  * id for id, in both directions.
  */
@@ -427,7 +427,7 @@ describe('the README says what the program says, entry for entry', () => {
 });
 
 describe('the block is printed on every run that reads a record', () => {
-  /** The five rows, whatever they are — asked of the registry, never listed here. */
+  /** The five rows, whatever they are: asked of the registry, never listed here. */
   function expectTheWholeBlock(there: Verdict, on: string): void {
     expect(
       there.notCovered.map((entry) => entry.what),
@@ -435,7 +435,7 @@ describe('the block is printed on every run that reads a record', () => {
     ).toEqual(catalogue().scope.map((row) => row.what));
   }
 
-  it('on a record that VERIFIES — where an uncovered check looks covered', () => {
+  it('on a record that VERIFIES, where an uncovered check looks covered', () => {
     const there = reading(copyOf('witnessed-record'));
     expect(there.verdict).toBe('VERIFIED');
     expectTheWholeBlock(there, 'VERIFIED');
@@ -453,7 +453,7 @@ describe('the block is printed on every run that reads a record', () => {
     expectTheWholeBlock(there, 'REFUSED');
   });
 
-  it('on a run it BROKE on before reading a byte — which is where it used to vanish', () => {
+  it('on a run it BROKE on before reading a byte, which is where it used to vanish', () => {
     // THE FALSIFIED PREMISE, PINNED. `declare_scope` was the LAST line of the walk, so every
     // `break_out` above it returned a verdict with the block missing: no record, no `tails/`,
     // no tails. Those are exactly the runs a reader repeats after changing something, and
@@ -478,15 +478,15 @@ describe('the block is printed on every run that reads a record', () => {
  * THE DISAGREEMENT THIS BLOCK ANNOUNCED IS GONE, AND IT WAS NEVER AN AMBIGUITY.
  *
  * It used to declare, in every verdict over a record this reader dated, that another reader
- * of the same bytes read a different instant — the product at block 963690, this reader at
- * 963688 — and it called that a place *"§8 does not decide"*. THE PREMISE WAS FALSE. §8 says
+ * of the same bytes read a different instant (the product at block 963690, this reader at
+ * 963688) and it called that a place *"§8 does not decide"*. THE PREMISE WAS FALSE. §8 says
  * *"Take the earliest confirmed block among them"*, and it said so before this declaration
  * was written: G23, G19 and a note in the product's own test all entered in one commit and
  * all three went stale against the document they audit. So the honest reading was never "two
  * faithful readers disagree"; it was "the product is out of conformance with the format it
  * publishes", and announcing an ambiguity was announcing something that did not exist.
  *
- * A DECLARATION OF A HOLE THAT IS NOT THERE IS NOT A CAUTIOUS DECLARATION — it is a wrong
+ * A DECLARATION OF A HOLE THAT IS NOT THERE IS NOT A CAUTIOUS DECLARATION; it is a wrong
  * one, and it costs more than silence: a stranger reading it would conclude the format left
  * the question open, and would have no way to learn from this verdict that the product was
  * simply not following it. That is why the entry is gone rather than reworded.
@@ -510,7 +510,7 @@ describe('the instant a verdict prints names the block it came from', () => {
 
   it('prints the block it dated the record from, which is what a reader re-derives it from', () => {
     // NON-VACUITY: the declaration above is about a verdict that dates a record at all.
-    // This is the note it is about, and the block is the lowest confirmed one — the rule
+    // This is the note it is about, and the block is the lowest confirmed one: the rule
     // both readers now apply.
     const dated = reading(copyOf('witnessed-record'))
       .findings.filter((finding) => finding.level === 'note' && finding.section === '8')

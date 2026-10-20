@@ -1,24 +1,24 @@
 /**
- * THE FLAGS REACH THE ACT — the link, driven from the command line.
+ * THE FLAGS REACH THE ACT: the link, driven from the command line.
  *
  * `mnema witness` is the one verb of this surface that speaks to somebody else, and
  * one of its options names that somebody: `--calendar`. An option plumbed to the edge
  * of the wiring and dropped there is the shape four defects of this series took, and
- * it is invisible to every test that calls the adapter directly — which is what
+ * it is invisible to every test that calls the adapter directly, which is what
  * `commands/witness.test.ts` does, with the network as a parameter. So this drives the
  * real program with the real argv and reads what comes back.
  *
  * IT REACHES NO NETWORK, and the reason is the same thing that makes it a good link: a
  * calendar whose host resolves to nothing is refused BY NAME, and the name in the
  * refusal is the one that was typed. A case asserting only that the command failed
- * would pass with the flag ignored; asserting that the failure names the typed value —
- * and does NOT name the defaults — is what makes the flag's arrival the thing under
+ * would pass with the flag ignored; asserting that the failure names the typed value
+ * (and does NOT name the defaults) is what makes the flag's arrival the thing under
  * test.
  *
  * AND THE OTHER ACT DOES NOT TAKE ONE, which is the half this file was missing. `upgrade`
  * declared a `--calendar` of its own and its help said `the calendars to ask, when the
  * defaults are not the ones used`. Both halves of that sentence were false: the return
- * visit has no defaults, because it makes no choice — the walk asks each pending
+ * visit has no defaults, because it makes no choice; the walk asks each pending
  * attestation the calendar THAT attestation names. The value was carried from the flag
  * into `{ calendars }`, through the adapter and into `completeWitness`, and read by
  * nothing. It is gone, and what pins it here is the pair: `stamp` still decides, and
@@ -122,7 +122,7 @@ describe('the calendars a stamp is asked of', () => {
     expect(said).not.toContain('catallaxy');
   });
 
-  it('leave nothing behind when no calendar answered — the record is untouched', {
+  it('leave nothing behind when no calendar answered: the record is untouched', {
     timeout: A_NAME_SERVER_ANSWERS,
   }, async () => {
     // A stamp that could not be made writes no file: the alternative is a record that
@@ -145,7 +145,7 @@ describe('the calendars a return visit goes back to', () => {
     expect(said).not.toContain('chosen.invalid');
   });
 
-  it('are not offered by its help either — the sentence that was false is gone', async () => {
+  it('are not offered by its help either: the sentence that was false is gone', async () => {
     const { said } = await invoke('witness', 'upgrade', '--help');
     // The DECLARATION, not the word: the help says the word, on purpose, to answer the
     // question the flag used to answer wrongly. What may not come back is the option.
@@ -157,7 +157,7 @@ describe('the calendars a return visit goes back to', () => {
     expect(said).toContain('--blocks');
   });
 
-  it('leaves `stamp` deciding — the two acts are not one flag', async () => {
+  it('leaves `stamp` deciding: the two acts are not one flag', async () => {
     // The other direction of the same pair. Without this, removing the wrong one of
     // the two would pass every case above.
     const { said } = await invoke('witness', 'stamp', '--help');

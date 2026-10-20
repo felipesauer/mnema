@@ -37,7 +37,7 @@ function openedRun(): { repo: string; env: DiscoveryEnv; id: string } {
 
 /**
  * A discovery env that counts how many times it is READ. Resolving a tree needs
- * it, so a zero count proves the resolution never started — the cheap path.
+ * it, so a zero count proves the resolution never started: the cheap path.
  */
 function countingEnv(env: DiscoveryEnv): { env: DiscoveryEnv; reads: () => number } {
   let reads = 0;
@@ -146,7 +146,7 @@ describe('the pinned run (MNEMA_RUN)', () => {
     });
   });
 
-  it('refuses UNPROVEN_RUN outside a project — there is nothing to prove it against', () => {
+  it('refuses UNPROVEN_RUN outside a project: there is nothing to prove it against', () => {
     const { repo, env, id } = openedRun();
     const orphan = join(sandbox, 'elsewhere');
     mkdirSync(orphan, { recursive: true });
@@ -157,7 +157,7 @@ describe('the pinned run (MNEMA_RUN)', () => {
       expect(result.code).toBe('UNPROVEN_RUN');
       expect(result.message).toContain('no mnema project here');
     }
-    // The run is untouched where it lives — a refusal here changes nothing there.
+    // The run is untouched where it lives: a refusal here changes nothing there.
     expect(resolvePinnedRun({ cwd: repo, env }, id)).toEqual({ ok: true, run: id });
   });
 

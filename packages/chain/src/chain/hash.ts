@@ -10,7 +10,7 @@
  * The load-bearing invariant: the content root is recomputed from the event
  * bytes, never from a stored entry hash. If the root were folded over stored
  * hashes, an adversary who edits an event and then repairs the keyless
- * hash-chain would leave the stored head unchanged — and the signature over it
+ * hash-chain would leave the stored head unchanged, and the signature over it
  * would still verify. Folding over the content means editing any event flips
  * the root even after every entry hash is repaired, so the Ed25519 signature no
  * longer matches.
@@ -34,7 +34,7 @@ import { toCanonical } from '../events/parse.js';
 
 /**
  * The domain tag every entry hash begins with. Exported off the package's public
- * surface — this module, not `index.ts` — because a doc and a published artifact
+ * surface (this module, not `index.ts`), because a doc and a published artifact
  * both NAME it, and a name typed into prose is a name that can come to differ
  * from the code. `FORMAT.md`'s guard and the vectors artifact read it from here,
  * so the day this becomes `v2` the two of them go red instead of going stale.
@@ -54,12 +54,12 @@ declare const writtenBrand: unique symbol;
  * not interchangeable and the difference is invisible at a call site. Reading a
  * stored line LIFTS the event through the registered upcasters (see
  * upcaster.ts), so what a reader holds is the event re-expressed under today's
- * contract — a READING, with the same standing as a projection. The proof was
+ * contract: a READING, with the same standing as a projection. The proof was
  * made over the bytes that reached the disk, so it can only ever be recomputed
  * over those. Hand a lifted event to a digest and the first kind that ever gains
  * a v2 makes every chain written before it report as tampered: the entry hashes
  * stop matching (T1) and, worse, the checkpoint signatures stop verifying
- * (T2/T4) — a keyless-editor alarm raised by an honest read.
+ * (T2/T4), a keyless-editor alarm raised by an honest read.
  *
  * The brand is what turns that rule into a compile error. A `CatalogEvent`
  * cannot be passed where a `WrittenEvent` is wanted, so a future digest site
@@ -75,7 +75,7 @@ export interface WrittenEvent {
 /**
  * The written form of an event this process BUILT and is about to append. The
  * builder produces the current contract's shape, so what it will write is what
- * it holds — the write path's only source of a written form.
+ * it holds: the write path's only source of a written form.
  */
 export function writtenAsBuilt(event: CatalogEvent): WrittenEvent {
   return { value: toCanonical(event) } as WrittenEvent;
@@ -92,7 +92,7 @@ export function writtenAsBuilt(event: CatalogEvent): WrittenEvent {
  * changing the fact, so re-canonicalizing the value let such a line verify. That
  * premise fell on two facts: `FORMAT.md` section 4 says the line IS the canonical
  * serialization, and the second reader refused every reformatted line this product
- * verified — while nothing this product writes ever produces one. So a line that is
+ * verified, while nothing this product writes ever produces one. So a line that is
  * not canonical is refused before this is reached, at the parse, by
  * `parseCanonicalLine`, and so is a key written TWICE, which the recomputation alone
  * could not see (`JSON.parse` keeps the last, which is the signed value). Both are
@@ -106,7 +106,7 @@ export function writtenAsStored(value: CanonicalValue): WrittenEvent {
   return { value } as WrittenEvent;
 }
 
-/** The canonical bytes of the written event — the content every proof is over. */
+/** The canonical bytes of the written event: the content every proof is over. */
 export function eventBytes(written: WrittenEvent): Uint8Array {
   return canonicalBytes(written.value);
 }

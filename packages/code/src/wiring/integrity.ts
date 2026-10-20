@@ -5,7 +5,7 @@
  * used to hold both the sentence and its shape, and its own doc gave the reason: *"IT
  * LIVES IN THE WIRING, beside `verify.ts`, and not in `presentation/`, because that is
  * where the shape it copies lives."* The premise held while the command line was the
- * only reader told anything, and the MCP falsified it — an agent is served the same
+ * only reader told anything, and the MCP falsified it: an agent is served the same
  * record through a door that may not import this directory. So the sentence moved to
  * `record-integrity.ts`, where both surfaces can ask for it, and what stayed is the
  * shape, which really is the wiring's: `verify`'s issue line, out of `fact`.
@@ -25,7 +25,7 @@ import { linkBreakSentences, type ScopedLinkBreak } from '../record-integrity.js
 import { onOneLine } from './on-one-line.js';
 
 /**
- * The lines a read owes about the tails it served that do not chain — none at all for
+ * The lines a read owes about the tails it served that do not chain: none at all for
  * a sound record, which is every record this product wrote on its own.
  *
  * AT THE LEFT EDGE (`depth` 0), unlike the same line in `verify`. There it sits under a
@@ -37,18 +37,18 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
 }
 
 /**
- * The lines a read of one record owes about its moves that did not see each other — none at all
+ * The lines a read of one record owes about its moves that did not see each other: none at all
  * for a record moved in one line, which is every record one machine moved.
  *
  * Beside the link-break notice and in its shape, because it is the same kind of fact: true of
  * the record and invisible in the projection the answer prints. Both moves are signed, `verify`
- * passes them, and the state printed is the last one in the record's order — the line names
+ * passes them, and the state printed is the last one in the record's order: the line names
  * every move out of the state, picks none, and says which one the answer shows. Every value in
  * it came out of the record, so each goes through {@link onOneLine}.
  *
  * IT SAYS THE MOVES DID NOT SEE EACH OTHER, and that is now what the reading holds it to. Two
- * moves out of one state where the writer of the second had seen the first — on one tail, or
- * citing it — are not a divergence: the second is a move the workflow does not allow, which no
+ * moves out of one state where the writer of the second had seen the first (on one tail, or
+ * citing it) are not a divergence: the second is a move the workflow does not allow, which no
  * reader applies and `verify` names (FORMAT.md §6.7). For a while this line named both causes,
  * because the reading could not tell a move written past the gate from two machines apart; the
  * reading tells them apart now, and a move past the gate never reaches this line.

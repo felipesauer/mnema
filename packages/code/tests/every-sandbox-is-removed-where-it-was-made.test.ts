@@ -8,17 +8,17 @@
  * a leaked directory costs nothing anybody looks at.
  *
  * AND THE FIFTEEN CALLERS ALL CLEANED UP, which is the part worth writing down. Every test file
- * using that helper had an `afterEach` doing `rmSync(bench.root, …)` — and `bench.root` is the
+ * using that helper had an `afterEach` doing `rmSync(bench.root, …)`, and `bench.root` is the
  * CHAIN root, several levels inside the sandbox. They emptied the sandbox and left the sandbox. So
  * the defect was not missing cleanup; it was cleanup aimed at what the helper EXPOSED rather than
  * at what the helper CREATED, in a place that was not the place that created it. The fix is the
- * sandbox rule read strictly — whoever creates destroys, in the same function — and this case is
+ * sandbox rule read strictly (whoever creates destroys, in the same function) and this case is
  * the cheapest thing that would have gone red on it.
  *
  * THE DISCRIMINANT IS "CREATES IN `tmpdir()`", NOT "CALLS `mkdtemp`". This distinction is the
  * whole instrument, and getting it wrong was the first thing that happened when the sweep was
  * done by hand: `packages/code/tests/support/pty.ts` calls `mkdtempSync` and contains no
- * `rmSync` anywhere, so a rule reading "makes a temp dir and never removes one" accuses it —
+ * `rmSync` anywhere, so a rule reading "makes a temp dir and never removes one" accuses it,
  * and it is innocent, because it makes its directory inside `fixture.scratch`, a sandbox its
  * caller owns and its caller removes. There is a case below that holds exactly that file
  * against exactly that mistake, because an instrument that has a known way of being wrong needs
@@ -30,19 +30,19 @@
  * tried against this corpus and accused six innocent files, all of which collect their roots
  * into an array and remove them through a loop variable."* The measurement was right and the
  * conclusion did not follow. Re-run on 05/09/2026, that bare shape accuses **seven** files, and
- * every one of them is innocent in one of four readable ways — so the answer was to read the
+ * every one of them is innocent in one of four readable ways, so the answer was to read the
  * four ways, not to stop following the name:
  *
  * | how the name reaches its removal | who does it |
  * |---|---|
- * | `for (const r of [a, b])` — an array LITERAL the loop drains | `topology/locate.test.ts`, `topology/compose.test.ts`, `integration/cross-entity.test.ts` |
- * | `for (const r of roots)` — a VARIABLE the name entered by `= [x]` or `.push(x)` | `workflow/skill-operations.test.ts`, `workflow/decision-operations.test.ts`, `workflow/session-operations.test.ts` |
- * | `while (…) rmSync(sandboxes.pop())` — a stack drained to empty | `code/tests/the-sampler-counts-or-refuses.test.ts` |
- * | `return { root }`, removed later as `rmSync(a.root)` — the name leaves as a FIELD | `integration/enrollment-e2e.test.ts` |
+ * | `for (const r of [a, b])`: an array LITERAL the loop drains | `topology/locate.test.ts`, `topology/compose.test.ts`, `integration/cross-entity.test.ts` |
+ * | `for (const r of roots)`: a VARIABLE the name entered by `= [x]` or `.push(x)` | `workflow/skill-operations.test.ts`, `workflow/decision-operations.test.ts`, `workflow/session-operations.test.ts` |
+ * | `while (…) rmSync(sandboxes.pop())`: a stack drained to empty | `code/tests/the-sampler-counts-or-refuses.test.ts` |
+ * | `return { root }`, removed later as `rmSync(a.root)`: the name leaves as a FIELD | `integration/enrollment-e2e.test.ts` |
  *
  * The fourth row is the one no earlier sweep had: it is not an array and not a loop, and a rule
  * built to forgive collections alone still accuses it. `namesLeftBehind` below reads all four,
- * and over the corpus it accuses **nobody** — measured, and each of the four legs is load-bearing:
+ * and over the corpus it accuses **nobody**, measured, and each of the four legs is load-bearing:
  * deleting the loop leg accuses 6 files, the collection leg 4, the field leg 1. Every case below
  * that names a shape names it on source this file owns, because an assertion over a corpus that
  * is clean today proves the rule silent, not right.
@@ -50,7 +50,7 @@
  * IT ALSO USED TO READ ITS OWN PROSE AS CODE, and that is how the paragraph above got into the
  * corpus. The header quoted `mkdtempSync(join(tmpdir(), 'mnema-context-'))` and the sentence about
  * the fifteen callers quoted `rmSync(bench.root, …)`, so this file listed ITSELF among the files
- * that make a sandbox under `tmpdir()` — and passed, because the second quotation excused the
+ * that make a sandbox under `tmpdir()`, and passed, because the second quotation excused the
  * first. Rewording one sentence would have turned the guard red against itself. It reads
  * `codeOnly` now, which is the workspace's one answer to "what does this file say once the
  * comments and the strings are gone" and already had four callers; this was the fifth site that
@@ -60,8 +60,8 @@
  * WHAT THIS STILL DOES NOT COVER. It reads one file at a time, so a name that leaves as a field
  * is cleared by any `rmSync(<anything>.<that field>)` in the same file, and a sandbox created in
  * one file and removed in another is not followed at all. The path across files is watched where
- * the path is known — `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` names the
- * directory `makeBench` created and asks the filesystem whether it went — and, for the 187
+ * the path is known, `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` names the
+ * directory `makeBench` created and asks the filesystem whether it went, and, for the 187
  * prefixes this corpus builds under, by `.github/what-the-suite-left-behind/`, which sweeps the
  * real `/tmp` with the suite stopped at both ends. Neither is this case, and neither is free:
  * the first covers one prefix and the second does not run inside `pnpm test`.
@@ -74,7 +74,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { codeOnly } from './support/reading-source.js';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -93,10 +93,10 @@ const SOURCES: readonly string[] = execFileSync(
 const A_MAKING = /mkdtempSync\(([^;]*)/g;
 /** The base that call builds on, when the base is the machine's own temp directory. */
 const THE_MACHINES_TEMP = /\btmpdir\(\)/;
-/** A base at all — some expression is being passed. This is what makes "unreadable" mean it. */
+/** A base at all: some expression is being passed. This is what makes "unreadable" mean it. */
 const SOME_BASE = /\S/;
 /**
- * A removal — any removal, which is what the file-wide case (and only it) asks about.
+ * A removal: any removal, which is what the file-wide case (and only it) asks about.
  * `removeTemporary` is the measurement harnesses' guarded one: it removes its argument.
  */
 const A_REMOVAL = /\b(?:rmSync|removeTemporary)\(/;
@@ -113,7 +113,7 @@ const BOUND_AS_FIELD = new RegExp(
 );
 /** A removal whose subject is exactly a name, or a dotted path ending in one. */
 const A_PLAIN_SUBJECT = new RegExp(String.raw`^${A_NAME}(?:\.${A_NAME})*$`);
-/** A removal whose subject is a collection being drained — `sandboxes.pop() as string`. */
+/** A removal whose subject is a collection being drained: `sandboxes.pop() as string`. */
 const A_DRAINED_COLLECTION = new RegExp(
   String.raw`^(${A_NAME})\.(?:pop|shift)\(\)(?:\s+as\s+${A_NAME})?$`,
 );
@@ -164,8 +164,8 @@ function removalSubjects(code: string): string[] {
  * collection a removal drains (a `for…of` over it, or `rmSync(xs.pop())`), or by leaving the
  * function as a field some removal names (`return { root }` against `rmSync(a.root, …)`).
  *
- * The three indirect legs feed each other — a name pushed into an array walked by a loop whose
- * variable is removed — so they run to a fixed point rather than in one pass.
+ * The three indirect legs feed each other (a name pushed into an array walked by a loop whose
+ * variable is removed), so they run to a fixed point rather than in one pass.
  */
 function namesRemovalsReach(code: string): Set<string> {
   const reached = new Set<string>();
@@ -327,7 +327,7 @@ describe('the instrument reads what it claims to read', () => {
 
   it('does not accuse a sandbox made inside a sandbox the caller owns', () => {
     // THE INSTRUMENT'S OWN CASE. `support/pty.ts` calls mkdtempSync and has no rmSync at all,
-    // so it is the exact file a rule about "mkdtemp without cleanup" gets wrong — and it is
+    // so it is the exact file a rule about "mkdtemp without cleanup" gets wrong, and it is
     // innocent, because its base is `fixture.scratch`. If this case ever goes red because that
     // file changed, the answer is to pick another innocent file, not to widen the rule.
     const pty = MAKINGS.filter((m) => m.where === 'packages/code/tests/support/pty.ts');
@@ -378,8 +378,8 @@ describe('the rule follows the name it was given', () => {
 
   /**
    * Read exactly as the sweep reads: through `codeOnly` first. Handing these cases raw source
-   * would exercise the rule on input the guard never produces — a string literal survives here
-   * and is blanked there — and a case that agrees with the product only by accident agrees
+   * would exercise the rule on input the guard never produces (a string literal survives here
+   * and is blanked there) and a case that agrees with the product only by accident agrees
    * until the day it does not.
    */
   const reading = (...lines: string[]) => namesLeftBehind(codeOnly(lines.join('\n')));
@@ -416,8 +416,8 @@ describe('the rule follows the name it was given', () => {
   });
 
   it('clears a for…of over a collection the name entered', () => {
-    // `workflow/skill-operations.test.ts`, `decision-operations.test.ts`, `session-operations.test.ts`
-    // — one name in by assignment, one by push, both out through the same loop variable.
+    // `workflow/skill-operations.test.ts`, `decision-operations.test.ts`, `session-operations.test.ts`:
+    // one name in by assignment, one by push, both out through the same loop variable.
     const { orphans } = reading(
       `const root = ${made};`,
       'roots = [root];',
@@ -452,7 +452,7 @@ describe('the rule follows the name it was given', () => {
   });
 
   it('clears a sandbox born as a field of an object', () => {
-    // `chain/src/chain/backup.test.ts` — `keyRoot = { root: mkdtempSync(…) }`, removed as
+    // `chain/src/chain/backup.test.ts`: `keyRoot = { root: mkdtempSync(…) }`, removed as
     // `rmSync(keyRoot.root, …)`. The name this rule follows is the path, not the variable.
     const { orphans, unbound } = reading(
       `keyRoot = { root: ${made} };`,
@@ -463,7 +463,7 @@ describe('the rule follows the name it was given', () => {
 
   it('counts a making it cannot bind a name for, rather than clearing it', () => {
     // The rule's own silence, made loud. A making whose value goes straight into a call binds
-    // no name, so there is nothing to follow — and the case above turns this count into a red.
+    // no name, so there is nothing to follow, and the case above turns this count into a red.
     expect(reading(`roots.push(${made});`)).toEqual({ orphans: [], unbound: 1 });
   });
 

@@ -5,7 +5,7 @@
  * literal can quietly break: the latest version is always stamped, and absent
  * optional fields are OMITTED rather than set to `undefined`. The second
  * matters because canonicalization refuses an explicit `undefined` (an
- * ambiguous "is the key there or not?") — so a builder that leaves the key out
+ * ambiguous "is the key there or not?"), so a builder that leaves the key out
  * entirely is the safe path to a signable event.
  */
 
@@ -69,8 +69,8 @@ export function taskCreated(envelope: EnvelopeInput, payload: { title: string })
 
 /**
  * Copies only the meaningful proof fields. A field that is undefined OR empty
- * (an empty string, or an empty links array) is treated as absence and omitted
- * — the same rule the parser enforces on read (it rejects an empty string or an
+ * (an empty string, or an empty links array) is treated as absence and omitted:
+ * the same rule the parser enforces on read (it rejects an empty string or an
  * empty array). Keeping the builder symmetric with the parser is what makes an
  * event valid-by-construction: a caller cannot produce a line the chain can
  * write but never read back.
@@ -130,9 +130,9 @@ export const BIRTH_ACTION = 'create';
 /**
  * Builds a `decision.recorded` event (subject = the decision's id). Unlike a
  * task's creation, the decision's fact carries its `rationale` (the why) and
- * its frozen `adr` label — both part of the immutable record.
+ * its frozen `adr` label: both part of the immutable record.
  *
- * `alternatives` — what was turned down, and why not — is omitted from the
+ * `alternatives` (what was turned down, and why not) is omitted from the
  * payload entirely when the caller has none, so a decision without one stays
  * byte-identical to one recorded before the field existed.
  *
@@ -162,8 +162,8 @@ export function decisionRecorded(
 
 /**
  * Builds a `decision.transitioned` event (subject = the decision's id). `from`
- * is a literal state string, or `null` for the birth transition. `by` — the
- * successor decision's id — is written only on a supersede and omitted
+ * is a literal state string, or `null` for the birth transition. `by`, the
+ * successor decision's id, is written only on a supersede and omitted
  * otherwise; `fields` carries the transition's proof and is omitted entirely
  * when empty, so a transition with no proof stays byte-identical to one built
  * without the argument.
@@ -202,7 +202,7 @@ export function decisionTransitioned(
  * Builds the pair of events a decision's birth always emits, in order: the
  * `decision.recorded` that proves it exists (with its why and frozen label),
  * then the birth `decision.transitioned` (`from: null`) that establishes its
- * initial state. The two are one atomic fact — like a task, a decision never
+ * initial state. The two are one atomic fact: like a task, a decision never
  * exists without a state. The caller supplies `initial` because which state a
  * decision starts in is the domain's concern, not the chain's.
  */
@@ -232,7 +232,7 @@ export function decisionBirth(
  * enrollment to one anchor and one new key at once. `<anchor>` is the full
  * anchor id (`mnid:<hash>`) and `<newFp>` the enrolling key's fingerprint, so a
  * signature captured for one (anchor, key) pair cannot be replayed to enroll the
- * same key into a different anchor — the verifier recomputes this exact string
+ * same key into a different anchor: the verifier recomputes this exact string
  * and checks `reverseSig` against it.
  */
 export function enrollmentMessage(anchor: string, newFp: string): Uint8Array {
@@ -309,7 +309,7 @@ export function backupDeclared(
 
 /**
  * Builds a `memory.captured` event (subject = the memory's id). A memory is a
- * single point-in-time fact — no birth pair, no state — so this mirrors
+ * single point-in-time fact (no birth pair, no state), so this mirrors
  * `taskCreated` (the simplest one-field builder) and not the birth builders.
  */
 export function memoryCaptured(
@@ -361,7 +361,7 @@ export function handoffRecorded(
 
 /**
  * Builds a `knowledge.linked` event (subject = the entity that originates the
- * link). `target` is the caller's string and nothing here reads it — this line
+ * link). `target` is the caller's string and nothing here reads it; this line
  * said "only an id", and `governs` falsified it: under that relation the target
  * is a PATH in the working tree, which is an id of nothing. `rel` is an open
  * literal string (see the catalog's recommended set). No dangling check happens
@@ -385,7 +385,7 @@ export function knowledgeLinked(
  * `task.created` that proves the task exists, then the `task.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state.
  *
- * The two are one atomic fact — a task never exists without a state, and a
+ * The two are one atomic fact: a task never exists without a state, and a
  * state is never carried by the creation event. The caller supplies `initial`
  * because the workflow (which state a task starts in) is the domain's concern,
  * not the chain's; the chain only guarantees the birth is always this shape.
@@ -404,7 +404,7 @@ export function taskBirth(
 
 /**
  * Builds a `skill.created` event (subject = the skill's id). A skill's creation
- * carries only what names the reusable pattern — `name` and `body` — because,
+ * carries only what names the reusable pattern, `name` and `body`, because,
  * unlike a decision, its initial state is established by the birth transition and
  * it has no citable label to freeze.
  */
@@ -422,7 +422,7 @@ export function skillCreated(
 
 /**
  * Builds a `skill.transitioned` event (subject = the skill's id). Mirrors
- * `taskTransitioned` — `from` is a literal state or `null` for the birth
+ * `taskTransitioned`: `from` is a literal state or `null` for the birth
  * transition, and `fields` is omitted when empty so a transition with no proof
  * stays byte-identical to one built without the argument. A skill's transition
  * carries no `by`: replacement between skills is a `knowledge.linked`, not a
@@ -453,7 +453,7 @@ export function skillTransitioned(
 /**
  * Builds a `skill.consulted` event (subject = the SKILL that was read). It takes
  * no payload argument because there is none: the whole fact lives in the
- * envelope — which skill (`subject`), who authorized, which agent read it, in
+ * envelope: which skill (`subject`), who authorized, which agent read it, in
  * what run, when. The empty object is written explicitly so the event still
  * carries the `payload` key every kind has, canonicalizing to `{}`.
  */
@@ -472,7 +472,7 @@ export function skillConsulted(envelope: EnvelopeInput): CatalogEvent {
  * Every field of the payload is a claim ABOUT THE DISK, and none of them is checked
  * here: a builder shapes an event, and the checking is the write door's
  * (`unprovenWaiverReason`), which is where the disk is. A caller that assembles
- * this by hand can therefore build a waiver that lies — and get it refused before
+ * this by hand can therefore build a waiver that lies, and get it refused before
  * anything is sealed, which is the same division of labour every other builder has
  * with the reader's own validator.
  */
@@ -501,7 +501,7 @@ export function tailPruned(
  * two byte-distinct spellings of the same fact, and the reader refuses the second.
  *
  * Nothing here knows which channels exist. A builder shapes an event, and the
- * vocabulary of channels belongs to the surface that PUSHES them — this package has
+ * vocabulary of channels belongs to the surface that PUSHES them: this package has
  * no idea that this product injects anything. What that division costs is written
  * where the subject is classified (`core/src/content/fields.ts`): the channel is a
  * caller's string, so it goes through the content door like every other one.
@@ -516,7 +516,7 @@ export function channelSwitched(
 }
 
 /**
- * Builds a `channel.served` event (subject = the CHANNEL that served) — one of the channels
+ * Builds a `channel.served` event (subject = the CHANNEL that served): one of the channels
  * that push at an edit; the texts a session opens with are reads and leave none.
  *
  * No payload at all, and the same shape {@link skillConsulted} has for the same reason:
@@ -538,7 +538,7 @@ export function channelServed(envelope: EnvelopeInput): CatalogEvent {
  * Both fields are REQUIRED and neither is checked here: the rule is an id the reader
  * resolves against its own trees, and the path is whatever the surface compared. A builder
  * shapes an event, and the rule that the id names a rule IN FORCE lives where the reading
- * that decides "in force" does — which is the same division `tailPruned` has with the write
+ * that decides "in force" does, which is the same division `tailPruned` has with the write
  * door. What this signature does enforce is that a charge cannot be built without naming
  * what caused it.
  */
@@ -715,7 +715,7 @@ export function checkerRetired(
  * {@link enrollmentMessage}'s nor {@link checkerEnrollmentMessage}'s, so no consent serves
  * another role; and it carries the anchor and the name, so a consent given as one agent of one
  * identity enrols the key as no other. `anchor` and `agentFp` are fixed-width, and `name` is the
- * last field, taken whole — a colon in it is not a separator.
+ * last field, taken whole: a colon in it is not a separator.
  */
 export function agentEnrollmentMessage(anchor: string, agentFp: string, name: string): Uint8Array {
   return new TextEncoder().encode(`agent-enroll:${anchor}:${agentFp}:${name}`);
@@ -775,8 +775,8 @@ export function accountLinked(
 /**
  * Builds a `stack.adopted` event (subject = the name the stack is installed under).
  *
- * All four fields are required and none is checked here: that each is a closed form — a stack
- * name, a version label, 64 hex characters, one of three scopes — is the write door's rule, not
+ * All four fields are required and none is checked here: that each is a closed form (a stack
+ * name, a version label, 64 hex characters, one of three scopes) is the write door's rule, not
  * the format's, the division `tailPruned` has with its door. The payload is rebuilt from the
  * four named fields alone, so nothing else a caller's object holds reaches the signed bytes.
  */
@@ -814,7 +814,7 @@ export function stackRemoved(
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two
- * are one atomic fact — like a task or decision, a skill never exists without a
+ * are one atomic fact: like a task or decision, a skill never exists without a
  * state. The caller supplies `initial` because which state a skill starts in is
  * the domain's concern, not the chain's.
  */

@@ -4,9 +4,9 @@
  *
  * Opening a session asked "who would sign here?" of the signer, and the signer is made on first use:
  * a machine with no key of its own got one, in its HOME, for a connection that only read. And where
- * nobody could sign at all — the agent asked for is in the record of no tree the session reaches and
+ * nobody could sign at all (the agent asked for is in the record of no tree the session reaches and
  * the person has no key on the machine, or the key is retired, or the record proves it a member of two
- * identities — the session did not open, so even `bootstrap` was refused. What is asserted:
+ * identities) the session did not open, so even `bootstrap` was refused. What is asserted:
  *
  *   - a connection that only reads, on a machine with no key, leaves HOME and the project's `.mnema/`
  *     exactly as it found them (the listing is compared, and no `identity/` appears), and its first
@@ -345,7 +345,7 @@ describe('a machine that holds only the agent, and the record has retired it', (
     return { read: read as Reply, wrote, log };
   }
 
-  it('opens, reads, and refuses with the tree that retired it — in the committed tree', async () => {
+  it('opens, reads, and refuses with the tree that retired it: in the committed tree', async () => {
     await theTeamsRecord();
     const fingerprint = await theAgent(true);
     const write = deferredWrite(resolveTrees(repo, env), 'public');

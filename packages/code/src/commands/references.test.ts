@@ -64,7 +64,7 @@ describe('mnema refs (what an entity is connected to)', () => {
 
     const task = runTask({ cwd: repo, env }, { title: 'the work', scope: 'public' });
     if (!task.ok) throw new Error('setup: task refused');
-    // The observation lands PRIVATE and the link GLOBAL — so a walk that read one
+    // The observation lands PRIVATE and the link GLOBAL, so a walk that read one
     // tree would find neither, or only one.
     const obs = runObserve(
       { cwd: repo, env },
@@ -113,7 +113,7 @@ describe('mnema refs (what an entity is connected to)', () => {
     );
     if (!moved.ok) throw new Error(`setup: supersede refused (${JSON.stringify(moved)})`);
 
-    // From the SUCCESSOR — the side that used to see nothing at all.
+    // From the SUCCESSOR: the side that used to see nothing at all.
     const back = runReferences({ cwd: repo, env }, { id: second.id, direction: 'in', depth: 3 });
     if (!back.ok) throw new Error('refs refused');
     expect(back.graph.links.map((l) => [l.from, l.role, l.to])).toEqual([
@@ -158,7 +158,7 @@ describe('mnema refs (what an entity is connected to)', () => {
     expect(ghost.graph.nodes).toEqual([{ id: 'never-minted', depth: 0, resolved: false }]);
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const task = runTask({ cwd: repo, env }, { title: 'x', scope: 'public' });

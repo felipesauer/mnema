@@ -7,14 +7,14 @@
  * decision about the work, and the chain is permanent and cloned; a line of diagnosis written
  * into it could never be taken back. That is why this is a separate, labelled sink.
  *
- *   - `diagnostics.jsonl` — one {@link Diagnostic} per line, only what `problem-report.ts`
+ *   - `diagnostics.jsonl`: one {@link Diagnostic} per line, only what `problem-report.ts`
  *     allowlists. It is capped: at {@link LOG_LIMIT_BYTES} it is renamed to
  *     `diagnostics.1.jsonl` (replacing the one before) and a new one is begun, so two files
  *     are all there ever is.
- *   - `report-state.json` — the global switch, the fingerprints the person refused, and the
+ *   - `report-state.json`: the global switch, the fingerprints the person refused, and the
  *     offers made, which is what the limits count: one offer per fingerprint, and
  *     {@link DAILY_LIMIT} a day.
- *   - `report-draft.md` — the last report shown, the same text as the screen.
+ *   - `report-draft.md`: the last report shown, the same text as the screen.
  *
  * It writes only on an internal error, never on a refusal and never on a `verify` that fails,
  * and a failure to write is swallowed here: it must never replace the error being reported.
@@ -172,7 +172,7 @@ export interface Noted {
 /**
  * Notes an internal error: logs it and decides whether to offer a report of it.
  *
- * It answers `offer: false` — and writes nothing — when the switch is off, when the error
+ * It answers `offer: false`, and writes nothing, when the switch is off, when the error
  * cannot be rendered by the gate (a report that could not be shown is not logged), and
  * when anything at all fails.
  */

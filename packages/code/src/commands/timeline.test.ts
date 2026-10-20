@@ -60,14 +60,14 @@ describe('mnema timeline (an entity’s history across the trees)', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
-    // The task is born PUBLIC and moved once — two events on its own subject.
+    // The task is born PUBLIC and moved once: two events on its own subject.
     const task = runTask({ cwd: repo, env }, { title: 'the task', scope: 'public' });
     if (!task.ok) throw new Error('setup: task refused');
     const moved = runTaskTransition({ cwd: repo, env }, { id: task.id, action: 'submit' });
     if (!moved.ok) throw new Error('setup: submit refused');
 
     // An observation ABOUT the task lands in the PRIVATE tree (its own subject is
-    // the observation's minted id — a filter on `subject` alone would miss it).
+    // the observation's minted id: a filter on `subject` alone would miss it).
     const obs = runObserve(
       { cwd: repo, env },
       { about: task.id, topic: 'note', text: 'watch this', scope: 'private' },
@@ -85,8 +85,8 @@ describe('mnema timeline (an entity’s history across the trees)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // Events touch the task on three axes — its own subject (created +
-    // transition(s)), the observation (about), and the link (target) — proving the
+    // Events touch the task on three axes: its own subject (created +
+    // transition(s)), the observation (about), and the link (target), proving the
     // union crosses public/private/global. Exactly one about and one target; the
     // rest are the task's own subject events.
     const byRole = (role: string): number => result.entries.filter((e) => e.role === role).length;
@@ -117,7 +117,7 @@ describe('mnema timeline (an entity’s history across the trees)', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const task = runTask({ cwd: repo, env }, { title: 'x', scope: 'public' });

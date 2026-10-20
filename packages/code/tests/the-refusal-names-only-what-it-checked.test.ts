@@ -2,7 +2,7 @@
  * THE REFUSAL OF A HOST SIGNING AS AN AGENT SAYS ONLY WHAT WAS CHECKED.
  *
  * A retirement is found in the trees a process reaches, and the words must not promise more; and the
- * refusal of a session's opening, which asks before any write has a tree, names none — the first tree
+ * refusal of a session's opening, which asks before any write has a tree, names none: the first tree
  * it asks is the private one, and a refusal saying so reads as the tree of a write that was for the
  * committed one.
  */

@@ -1,5 +1,5 @@
 /**
- * WHAT CLAUDE CODE READS IN A HOOKS FILE — the events and the keys, as the host documents them.
+ * WHAT CLAUDE CODE READS IN A HOOKS FILE: the events and the keys, as the host documents them.
  *
  * READ OFF https://code.claude.com/docs/en/hooks on 2026-10-05: the events from the table under
  * "Hook lifecycle", the matcher-group shape from "Configuration", the handler keys from "Hook
@@ -10,7 +10,7 @@
  * It is a list copied from a page that moves. A name the host adds after that date and this
  * plugin uses makes the test that calls {@link whatTheHostDoesNotRead} red until the list is
  * read again and the date above changes with it: a red that names its own cause, and the cheaper
- * mistake of the two — the other is a hook that never runs.
+ * mistake of the two (the other is a hook that never runs).
  */
 
 /** Every event in the host's lifecycle table. */

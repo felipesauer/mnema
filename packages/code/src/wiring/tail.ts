@@ -3,12 +3,12 @@
  *
  * A group of two, and the shape is `key`'s rather than `task`'s: its subject is not
  * a workflow entity but the record's own storage, so there is no birth, no state and
- * no `move` — there is one act, authorizing the cut of a whole tail, and the reading
+ * no `move`; there is one act, authorizing the cut of a whole tail, and the reading
  * that says which tails there are to act on.
  *
  * THE READING IS HERE BECAUSE THE ACT TAKES AN ID NOTHING PRINTED. `prune`'s
  * argument is a tail id, and until `list` existed no read of this product put one on
- * a screen — the help said *"as `verify` spells it"* and `verify` spells a COUNT
+ * a screen: the help said *"as `verify` spells it"* and `verify` spells a COUNT
  * (`1 tail(s)`), so the only way to use the verb was to read `.mnema/tails/` by
  * hand. The two are declared together now, and the argument's help points at the
  * verb that actually spells it (`the-verb-says-which-tails.test.ts` is what holds
@@ -16,7 +16,7 @@
  *
  * THE TAIL IS A POSITIONAL and the reason is what the verb is about: it is the whole
  * subject of the command and competes with nothing. `--reason` is a REQUIRED flag,
- * exactly as `key revoke`'s is and for the same reason — it is the field the record
+ * exactly as `key revoke`'s is and for the same reason: it is the field the record
  * keeps, and a cut with no recorded reason is the one an audit cannot read later.
  *
  * THERE IS NO `--force`, NO `--yes` AND NO PROMPT, and their absence is the design.
@@ -30,11 +30,11 @@
  * the content door's posture (tell the author while they can still act) and the
  * verdict's rigour (say the level reached, not "verified"). The sentence does not
  * change with what git says: reading the repository to soften it was considered and
- * turned down — that is the design a study proposed for redaction and a decision
+ * turned down: that is the design a study proposed for redaction and a decision
  * already deferred once, to when an external witness exists. One sentence, true in
  * the worst case, every time.
  *
- * AN EXTERNAL WITNESS EXISTS NOW (`mnema witness`), AND IT CHANGES NOTHING HERE — which
+ * AN EXTERNAL WITNESS EXISTS NOW (`mnema witness`), AND IT CHANGES NOTHING HERE, which
  * is worth saying, because the deferral above names it as the condition. What T3 attests
  * is that a checkpoint EXISTED at an instant; it says nothing about who else has a copy
  * of the bytes, which is the whole of what this sentence is about. If anything the
@@ -57,8 +57,8 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 /**
  * How far a cut reaches, said in one sentence on every authorization.
  *
- * IT IS THE MEASUREMENT, not a caution. On a project whose chain is committed —
- * which is how a record travels — deleting a tail's directory left `git status`
+ * IT IS THE MEASUREMENT, not a caution. On a project whose chain is committed
+ * (which is how a record travels) deleting a tail's directory left `git status`
  * reporting the deletions and `git show HEAD:<segment>` printing every line back.
  * A person who has just run this command and then `rm -rf` is one command away from
  * believing the content is gone, and it is on the remote and in every clone.
@@ -139,7 +139,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       reportRecorded(result, io);
       // Said plainly, because this is the moment somebody assumes otherwise: the
       // waiver is what makes the cut legible, and the cut itself is theirs to make.
-      // The three values above are the record's own — an event count, a hash, an
+      // The three values above are the record's own: an event count, a hash, an
       // anchor, a tail this run MATCHED against the record before it got here. This one
       // is a PATH, built under the project root, so it is the one line of this verb
       // that can carry a break in from a directory name (see {@link onOneLine}).

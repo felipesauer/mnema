@@ -60,7 +60,7 @@ describe('mnema link', () => {
   it('accepts a `rel` OUTSIDE the recommended set (the relation is an open string)', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
-    // Not one of the recommended labels the catalog documents — still valid.
+    // Not one of the recommended labels the catalog documents: still valid.
     const result = runLink(
       { cwd: repo, env },
       { subject: 'A', target: 'B', rel: 'inspired-by-a-dream' },
@@ -112,7 +112,7 @@ describe('mnema link', () => {
   });
 });
 
-describe('mnema link --which — the agent that executed', () => {
+describe('mnema link --which: the agent that executed', () => {
   /** Every `knowledge.linked` in a tree, with the agent each one names. */
   function edgesIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

@@ -5,7 +5,7 @@
  * The sets themselves, the gloss a scope carries and the functions that turn a set into a
  * phrase are `../vocabulary.ts`, which both surfaces read. What is HERE is the half that
  * only commander has: a `--scope` or an `<action>` is an `Option`/`Argument` object, and
- * something has to know that THIS object takes THAT set — the completion generator asks,
+ * something has to know that THIS object takes THAT set; the completion generator asks,
  * and the prose is generated at the same moment so no site can write a member by hand.
  *
  * THE SET IS NOT `.choices()`, AND THAT IS MEASURED, NOT PREFERRED. commander's
@@ -18,14 +18,14 @@
  *     Refused (UNKNOWN_ACTION): "nonsense" is not a workflow action
  *
  * `UNKNOWN_ACTION` is a typed refusal of the DOMAIN, in the product's voice, and a
- * `.choices()` on `<action>` would make it UNREACHABLE — replaced by a usage error
+ * `.choices()` on `<action>` would make it UNREACHABLE: replaced by a usage error
  * about an invalid argument. So this file enumerates and never validates: the gate
  * keeps the vocabulary, and the help stops being a second copy of it. (`--color` and
  * `completion <shell>` keep their `.choices()`, because their vocabulary belongs to the
- * SURFACE — there is no gate behind them to own it.)
+ * SURFACE: there is no gate behind them to own it.)
  *
  * THE THIRD READER IS ALREADY HERE. `parseScope` in `options.ts` words the refusal for
- * a bad `--scope` from `SCOPES` — the same tuple the help lists — so the flag's prose,
+ * a bad `--scope` from `SCOPES`, the same tuple the help lists, so the flag's prose,
  * its refusal and its Tab cannot disagree about what a scope is. The FOURTH reader is on
  * the other surface: `mcp/server.ts` builds its `z.enum` from the same value, and there
  * the enumeration IS the validation, which is why the set had to leave this file.
@@ -78,7 +78,7 @@ export function valuesDeclaredOn(declaration: Argument | Option): readonly strin
  * A positional ARGUMENT whose value is one of `values`, with the list generated into
  * its help: `<lead> (a, b, c)`.
  *
- * The parenthesis and the list belong to this function, so no site writes a member —
+ * The parenthesis and the list belong to this function, so no site writes a member,
  * which is what makes "the help lists the domain's set" true by construction rather
  * than by review. `values` is stored as GIVEN, not copied: two declarations that read
  * one constant hold the same array, and `one-source-for-a-vocabulary.test.ts` asserts
@@ -98,8 +98,8 @@ export function enumeratedArgument(
  * An OPTION whose value is one of `values`.
  *
  * The description arrives whole rather than as a lead, because each of these sentences
- * continues differently after its list — one names a default, one says which tree an
- * omission picks — and a template with four holes would be harder to read than the
+ * continues differently after its list (one names a default, one says which tree an
+ * omission picks) and a template with four holes would be harder to read than the
  * sentence. What keeps the two halves from drifting is not this signature: the guard
  * asserts every member of `values` appears in the description of every declaration
  * registered here, so a list built from another set, or a member typed by hand and then
@@ -123,7 +123,7 @@ export function enumeratedOption(
  * The `--scope` help for a BIRTH, one wording on every verb that takes one.
  *
  * `what` is the noun ("task", "observation"); `tail` is the sentence about where an
- * omitted flag lands, which is the verb's own and differs — the kind decides the tree,
+ * omitted flag lands, which is the verb's own and differs: the kind decides the tree,
  * so each verb states its own default rather than one wording claiming a rule that is
  * false on five of them.
  *
@@ -159,7 +159,7 @@ export function scopeOption(what: string, tail: string, scopes: readonly Scope[]
  * The exclusion is TYPED, so a rename in the core breaks here rather than quietly
  * offering a word the move cannot take. It is also narrower than what the adapter
  * accepts, deliberately: `decision move supersede <id>` is not refused as an unknown
- * action — it reaches the gate and is refused for the successor it has no way to name.
+ * action; it reaches the gate and is refused for the successor it has no way to name.
  */
 const MOVE_HAS_ITS_OWN_VERB: readonly DecisionAction[] = ['supersede'];
 

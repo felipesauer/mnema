@@ -1,5 +1,5 @@
 /**
- * `mnema key protect` and `mnema key unprotect` — put a passphrase on this machine's private
+ * `mnema key protect` and `mnema key unprotect`: put a passphrase on this machine's private
  * keys at rest, or take it off.
  *
  * WHAT THEY TOUCH is the key files under the key root and nothing else: no event is written, no

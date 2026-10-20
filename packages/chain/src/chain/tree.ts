@@ -4,7 +4,7 @@
  * A project tree (`<repo>/.mnema/`) is committed so the team sees the work, but
  * parts of it must NEVER reach git: the private subtree (`private/`), and every
  * machine-local key material file (private keys, installation ids, anchors). The
- * chain owns its whole tree — including what within it is ignored — so it writes
+ * chain owns its whole tree (including what within it is ignored), so it writes
  * its OWN `.gitignore` at the tree root and never touches the project's. For the same
  * reason it writes its own `.gitattributes`, so a checkout never rewrites the line ends of
  * the bytes that were signed.
@@ -12,14 +12,14 @@
  * The `.gitignore` is written LAZILY, the first time the tree is ensured (which
  * is the first write into it), not by an `init` command: a capture that happened
  * before an init would otherwise leave `private/` unprotected. Writing it is
- * idempotent and non-destructive — an existing `.gitignore` is left untouched,
- * exactly as the tail proof is written once and never overwritten — so a person
+ * idempotent and non-destructive (an existing `.gitignore` is left untouched,
+ * exactly as the tail proof is written once and never overwritten), so a person
  * who has hand-edited theirs keeps their edits.
  *
  * This is for PROJECT trees only. The global tree and the key root are not committed
  * with any project, so they need no `.gitignore` OF THIS KIND. This used to say they
  * "live outside any repo (under the XDG data home)"; they live in the home now
- * (`~/.mnema`), and a home kept under git is a repo — which is why the key root carries a
+ * (`~/.mnema`), and a home kept under git is a repo, which is why the key root carries a
  * `.gitignore` of its own, written before the first private byte (`ensureKeyRootIgnored`,
  * `keystore.ts`). Ensuring the global tree is just creating the directory, which the writer
  * already does on open.
@@ -32,14 +32,14 @@ import { type ChainLayout, gitattributesPath, gitignorePath } from './layout.js'
 /**
  * The chain's own `.gitignore`, self-contained at the tree root. It ignores the
  * private subtree, every local key-material file, and the writers' lock directory
- * (`locks/`, which holds machinery rather than record — the locks, `tailLockPath`,
- * and two files that persist, `projectionCachePath` and `citedHeadsPath`), and —
- * by NOT ignoring them
- * — lets the proof files through: `keys/*.pub`, and everything under `tails/`
+ * (`locks/`, which holds machinery rather than record: the locks, `tailLockPath`,
+ * and two files that persist, `projectionCachePath` and `citedHeadsPath`), and,
+ * by NOT ignoring them,
+ * lets the proof files through: `keys/*.pub`, and everything under `tails/`
  * (segments, `checkpoints.jsonl`, `tailproof.json`, and the `witness/` directory,
  * whose files are useless to a clone that cannot read them: an `.ots` is a digest, a
  * Merkle path and a block header, and a Sigstore bundle also carries a certificate that
- * NAMES SOMEBODY — an e-mail, or a repository's workflow — which is already public in
+ * NAMES SOMEBODY, an e-mail, or a repository's workflow, which is already public in
  * Sigstore's log by the time the file exists). Patterns are anchored with
  * a leading `/` so they match only THIS tree's paths, never a like-named path
  * elsewhere the project might track.
@@ -65,12 +65,12 @@ const LOCKS_LINE = '/locks/';
 /**
  * The chain's own `.gitattributes`. A line of the record is refused unless its bytes are the
  * canonical bytes that were signed (`FORMAT.md` section 4), and a checkout that rewrites line
- * ends — `core.autocrlf=true`, the Git for Windows default, or a `* text eol=crlf` at the
- * repository's root — puts a carriage return at the end of every line. MEASURED: such a
+ * ends (`core.autocrlf=true`, the Git for Windows default, or a `* text eol=crlf` at the
+ * repository's root) puts a carriage return at the end of every line. MEASURED: such a
  * clone of an honest record was refused whole by both readers. `-text` turns off only that
  * conversion; `git diff` still shows the lines as text. It reaches a clone only once it is
  * committed, and a tool other than git (an archive, an editor that normalises on save) is
- * not stopped by it — the readers then name the carriage return in their refusal.
+ * not stopped by it: the readers then name the carriage return in their refusal.
  */
 const GITATTRIBUTES_CONTENT = [
   "# Managed by mnema — this file governs only mnema's own tree.",
@@ -85,7 +85,7 @@ const NO_EOL_LINE = '* -text';
  * Ensures a PROJECT tree exists at `layout.root` and carries its own `.gitignore` and
  * `.gitattributes`. Creates the tree directory if absent and writes each file only if it
  * is not already there; an older `.gitignore` that lacks the `/locks/` line, or a
- * `.gitattributes` that lacks `* -text`, gets that line appended and nothing else — which
+ * `.gitattributes` that lacks `* -text`, gets that line appended and nothing else, which
  * is how a tree made before either line existed gets it, at its next write. Idempotent:
  * safe to call before every write. Returns true if it wrote the `.gitignore` this call (it
  * was absent), false if one already existed (even if a line was appended to it).

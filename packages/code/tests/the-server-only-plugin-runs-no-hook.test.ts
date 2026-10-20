@@ -2,7 +2,7 @@
  * THE INSTALL WITHOUT HOOKS runs no hook: `mnema-server-only`, the marketplace's second plugin,
  * is the MCP server and nothing else. Claude Code finds a plugin's hooks in `hooks/hooks.json`
  * or in a `hooks` key of its manifest, and its skills in `skills/`, so the plugin carrying none
- * of the three is what makes "server only" true — and the server it connects is the very one the
+ * of the three is what makes "server only" true, and the server it connects is the very one the
  * full plugin does, so the two cannot drift into two different commands.
  */
 

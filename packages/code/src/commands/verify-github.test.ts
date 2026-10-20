@@ -38,7 +38,7 @@ const VECTOR_PEM =
 const VECTOR_RAW = '539d3577f8bdc69e589f9f54fb214186086de0016b20f069cd401a6396e4871c';
 const VECTOR_FP = 'a1ccb7bb33a655a0308bb82d699705018ca190292aedc85cd6269c93d2714910';
 
-/** A published RSA key — a line an account may carry that is no key this record signs with. */
+/** A published RSA key: a line an account may carry that is no key this record signs with. */
 const RSA_LINE =
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDLN9/Hb2vZ8Cw1mH6hYzX0XQ6h3x4b3W3K4zE7vH1sGqfQ== rsa@example';
 
@@ -179,7 +179,7 @@ describe('compareWithGithub', () => {
 
   it('gives up on a github.com that does not answer, after the timeout', async () => {
     const { root } = aRecord();
-    // Answers only when aborted — the shape of a host that never responds.
+    // Answers only when aborted: the shape of a host that never responds.
     const fetch: FetchKeys = (_url, { signal }) =>
       new Promise((_resolve, reject) => {
         signal.addEventListener('abort', () => reject(signal.reason));
@@ -210,7 +210,7 @@ describe('compareWithGithub', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('ignores a link above the last checkpoint — the window a keyless party can append to', async () => {
+  it('ignores a link above the last checkpoint: the window a keyless party can append to', async () => {
     const { root, writer } = aRecord();
     // A later link to another account, appended and never checkpointed.
     writer.append(
@@ -280,7 +280,7 @@ describe('compareWithGithub', () => {
 
   it('takes the link a second machine wrote on top of the first, even with its clock behind', async () => {
     // A links `octocat` and enrols B. B, an hour behind by its clock, links `hubber` on top of
-    // what it pulled, and its writer cites A's head. Merged as the record is — by citation —
+    // what it pulled, and its writer cites A's head. Merged as the record is, by citation,
     // B's link is the last; sorted by `at`, it would come first and `octocat` would stand.
     const { root, writer: a } = aRecord();
     const anchor = a.anchor;

@@ -1,5 +1,5 @@
 /**
- * SECTION 1.4 ANCHORS THE BYTES TO A JAVASCRIPT IMPLEMENTATION — so here is the JavaScript.
+ * SECTION 1.4 ANCHORS THE BYTES TO A JAVASCRIPT IMPLEMENTATION: so here is the JavaScript.
  *
  * Rule 4 of section 1 reads: *Strings are escaped by JSON semantics (the shortest form
  * `JSON.stringify` produces).* That is not a rule an implementer outside JavaScript can
@@ -20,11 +20,11 @@
  * SO THIS FILE DOES NOT ARGUE, IT RUNS BOTH. The corpus is built to hit every place two
  * serializers could differ, `JSON.stringify` here is the anchor rule 4 names, and the
  * second reader's canonicalizer is asked for the same bytes through a pipe that carries
- * them as hex — hex because half the corpus is control bytes and lone surrogates, and a
+ * them as hex: hex because half the corpus is control bytes and lone surrogates, and a
  * comparison whose transport mangles the input compares nothing.
  *
  * WHERE THE TWO MUST *NOT* AGREE, THAT IS ASSERTED TOO. `JSON.stringify` of a lone
- * surrogate is `"\ud800"` — valid output. Section 1 refuses lone surrogates two paragraphs
+ * surrogate is `"\ud800"`: valid output. Section 1 refuses lone surrogates two paragraphs
  * below rule 4, so a faithful implementation must refuse where the anchor produces. The
  * two halves of section 1 only agree by cross-reference and the document never makes it
  * (gap G05), so the refusal is asserted rather than assumed.
@@ -53,7 +53,7 @@ interface Canonicalized {
  * Hand the second reader a list of values and get back what it made of each one.
  *
  * Each value travels as its own line of `JSON.stringify`, so a lone surrogate arrives as
- * the `\ud800` escape the anchor itself produces — which is exactly the input whose
+ * the `\ud800` escape the anchor itself produces, which is exactly the input whose
  * treatment is in question. One per line because the second reader refuses at PARSE time,
  * and a refusal inside an array would refuse the array.
  */
@@ -61,7 +61,7 @@ function canonicalizedBySecondReader(values: readonly unknown[]): readonly Canon
   return sendLines(values.map((value) => JSON.stringify(value)));
 }
 
-/** The same pipe, for inputs no JavaScript value can express — a duplicate key. */
+/** The same pipe, for inputs no JavaScript value can express: a duplicate key. */
 function sendLines(lines: readonly string[]): readonly Canonicalized[] {
   const run = spawnSync('python3', [VERIFIER, 'canonicalize'], {
     encoding: 'utf-8',
@@ -76,7 +76,7 @@ function sendLines(lines: readonly string[]): readonly Canonicalized[] {
   return JSON.parse(run.stdout) as readonly Canonicalized[];
 }
 
-/** The bytes the second reader produced, decoded — or a thrown reason if it refused. */
+/** The bytes the second reader produced, decoded, or a thrown reason if it refused. */
 function bytesOf(result: Canonicalized, what: string): string {
   if (result.canonical === undefined) {
     throw new Error(`the second reader refused ${what}: ${result.refused}`);
@@ -87,7 +87,7 @@ function bytesOf(result: Canonicalized, what: string): string {
 /**
  * STRINGS: every place two serializers could disagree about an escape.
  *
- * Each row is (what it is, the string). The expected bytes are not typed out here — they
+ * Each row is (what it is, the string). The expected bytes are not typed out here: they
  * are `JSON.stringify` of the NFC form, because that is what rule 4 and rule 3 say
  * together, and typing them out would be a third opinion nobody asked for.
  */
@@ -122,7 +122,7 @@ const STRINGS: readonly (readonly [string, string])[] = [
 /**
  * NUMBERS: gap G04, which section 1 leaves entirely open.
  *
- * The exponent thresholds are ECMA-262's — exponential below 1e-6 and at or above 1e21 —
+ * The exponent thresholds are ECMA-262's, exponential below 1e-6 and at or above 1e21,
  * and they are the two boundaries every other language's default gets wrong.
  */
 const NUMBERS: readonly (readonly [string, number])[] = [
@@ -205,7 +205,7 @@ describe('the second reader refuses where the anchor would have produced', () =>
 
   it('refuses a key that a duplicate normalizes onto, which no parser reports by itself', () => {
     // Sent as raw text rather than through JSON.stringify of an object, because an object
-    // literal in JavaScript cannot hold two keys that are the same string — the collision
+    // literal in JavaScript cannot hold two keys that are the same string: the collision
     // only exists on the wire.
     const [result] = sendLines([`{"${cp(0xe9)}":1,"${cp(0x65, 0x301)}":2}`]);
     expect(result?.canonical).toBeUndefined();
@@ -224,7 +224,7 @@ describe('the second reader refuses where the anchor would have produced', () =>
  *
  * Above U+FFFF a code point is a surrogate pair starting at 0xD800, so U+10000 sorts
  * BEFORE U+E000 and U+FFFD by code unit and after them by code point. Any implementation
- * that sorts by code point — which is what Python, Rust and Go all do naturally — gets
+ * that sorts by code point (which is what Python, Rust and Go all do naturally) gets
  * this wrong, and section 1 is one of the few places the document is precise enough to
  * catch it.
  *
@@ -274,7 +274,7 @@ describe('the second reader sorts keys by UTF-16 code unit', () => {
  * AND THE PRODUCT'S OWN CANONICALIZER, over the same corpus.
  *
  * The two cases above compare the second reader against `JSON.stringify`, which is the
- * anchor the document names. This one compares it against THE PRODUCT — the third reading,
+ * anchor the document names. This one compares it against THE PRODUCT: the third reading,
  * and the one that would catch the case where the document's anchor and the product's
  * implementation of it have drifted apart. That is a thing that can happen: the anchor is
  * prose, and prose stays green.

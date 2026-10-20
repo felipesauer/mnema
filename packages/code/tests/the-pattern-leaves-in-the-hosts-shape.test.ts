@@ -6,7 +6,7 @@
  *
  * THE TWO OPTIONS REACH THE WORK. `--out` is asserted by the file being under the
  * directory it named and nowhere else, and `--description` by its text being the field
- * in the file — which is what "the flag reaches" means for a verb whose whole product is
+ * in the file, which is what "the flag reaches" means for a verb whose whole product is
  * a file (the mould is `mcp-flag-reaches-the-server.test.ts`). Four defects of this
  * series were an option plumbed to the end with nothing feeding it.
  *
@@ -16,15 +16,15 @@
  * "tidied" in would break it.
  *
  * THE NAME IN THE FILE IS THE NAME OF THE DIRECTORY. That is the specification's own
- * rule and the one whose failure is silent — a host with a mismatched pair ignores the
- * skill and says nothing — so it is read off the file and compared to the path, never
+ * rule and the one whose failure is silent, a host with a mismatched pair ignores the
+ * skill and says nothing, so it is read off the file and compared to the path, never
  * to a constant written here.
  *
  * NOTHING REACHES THE RECORD. The whole project sandbox is hashed around the
  * invocation, which is available to this verb and not to most reads: the destination is
  * a second sandbox of its own, so the digest covers the chain, the caches AND the keys
  * with no writing of the export inside it. `--out` outside the record is not a
- * convenience of the fixture — it is the assertion.
+ * convenience of the fixture: it is the assertion.
  *
  * AND THE PROVENANCE IN THE FILE POINTS BACK AT THE RECORD. The id in `metadata` is fed
  * to `mnema show`, which is the check a third party holding the repository makes, and
@@ -51,7 +51,7 @@ let originalHome: string | undefined;
 /** A line inside the recorded body that has to come out of the file unchanged. */
 const SENTINEL = 'the-exact-line-somebody-signed';
 
-/** The body every exported pattern here carries — one sentence, then the sentinel. */
+/** The body every exported pattern here carries: one sentence, then the sentinel. */
 const BODY = `Keep one slice per PR. ${SENTINEL}\n\n  and an indented tail`;
 
 /** What one invocation wrote, and whether it asked for a non-zero exit. */
@@ -77,7 +77,7 @@ async function mnema(...argv: string[]): Promise<Said> {
   return { out: lines, err: errors, failed };
 }
 
-/** A content digest of every file under `dir` — the shape `guard.test.ts` established. */
+/** A content digest of every file under `dir`: the shape `guard.test.ts` established. */
 function digest(dir: string): string {
   const hash = createHash('sha256');
   const walk = (current: string): void => {
@@ -272,7 +272,7 @@ describe('mnema skill export', () => {
     const said = await mnema('skill', 'export', id, '--out', out);
     expect(said.failed, said.err.join(' / ')).toBe(false);
     expect(written()).toEqual([join('stacked-prs', 'SKILL.md')]);
-    // The record, the caches and the key material — the destination is a sandbox of its
+    // The record, the caches and the key material: the destination is a sandbox of its
     // own, so what is hashed here is everything the export must not have touched.
     expect(digest(sandbox)).toBe(before);
   });
@@ -282,14 +282,14 @@ describe('mnema skill export', () => {
     await mnema('skill', 'export', id, '--out', out);
     const file = readFileSync(join(out, 'stacked-prs', 'SKILL.md'), 'utf-8');
 
-    // The id in the file is the id of the pattern, and `mnema show` — the check a third
-    // party with the repository makes — reads the pattern back with it.
+    // The id in the file is the id of the pattern, and `mnema show`, the check a third
+    // party with the repository makes, reads the pattern back with it.
     expect(field(file, 'mnema-id')).toBe(id);
     const shown = await mnema('show', field(file, 'mnema-id'));
     expect(shown.failed, shown.err.join(' / ')).toBe(false);
     expect(shown.out.join('\n')).toContain(SENTINEL);
 
-    // And the identity beside it is the one the history names for the adoption — WHOLE
+    // And the identity beside it is the one the history names for the adoption: WHOLE
     // in the file, and the short form the read prints is a prefix of it. Asserted as
     // that relation rather than against a slice of a fixed width, because how far an
     // anchor is shortened is a property of the identities the record holds.

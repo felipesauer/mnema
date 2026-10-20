@@ -1,5 +1,5 @@
 /**
- * THE SESSION THE MANUAL SHOWS IS THE ONE THE BINARY PRINTS — every command of the block under
+ * THE SESSION THE MANUAL SHOWS IS THE ONE THE BINARY PRINTS: every command of the block under
  * "From the terminal", every line it prints, a cut only where the page marks one.
  *
  * WHAT WAS UNCHECKED. `the-first-record-a-page-shows-is-the-one-printed.test.ts` holds the root
@@ -9,7 +9,7 @@
  * the reading that runs the root page's four commands could not run it.
  *
  * WHAT IS CHECKED. The block's commands run in order, through the built binary, in a sandbox of
- * their own — its own `HOME`, its own repository — and each command's output is held to the `#>`
+ * their own (its own `HOME`, its own repository) and each command's output is held to the `#>`
  * lines under it by the same comparison and the same reading of what is minted
  * (`support/a-page-held-to-a-run.ts`) the root page's case uses. Three things the root page's
  * block does not do are read here:
@@ -21,7 +21,7 @@
  *     `/home/you`, which is what the page writes for somebody's home.
  *   - THE WORLD THE PAGE IMAGINES IS BUILT, and declared ({@link WORLD}): each project it names
  *     under `~`, founded with one decision in it, and edited by hand where the page shows it
- *     `FAILED` — the crude edit the paragraph under the block says a verify catches. It is built
+ *     `FAILED` (the crude edit the paragraph under the block says a verify catches). It is built
  *     just before the command that names it, because the block's own `init` is the machine's
  *     first and prints what only a first one prints.
  * A command whose output the page shows `FAILED` must exit non-zero, and every other must exit 0
@@ -30,7 +30,7 @@
  *
  * WHAT IT DOES NOT CHECK:
  *   - the prose around the block; and the values the page prints as examples, beyond their
- *     shape — except the one pair the page states a relation between, an alias and the id it
+ *     shape, except the one pair the page states a relation between, an alias and the id it
  *     says the alias is derived from, which has a case of its own;
  *   - a world other than the one declared: two projects, one intact and one broken, is what the
  *     page's output describes, and a different world could print different lines.
@@ -59,7 +59,7 @@ import {
   type Step,
 } from './support/a-page-held-to-a-run.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The page, and the heading the block lives under. */
@@ -175,8 +175,8 @@ function buildTheWorld(): void {
 }
 
 /**
- * The crude edit: one word of a recorded fact changed in place, with no hash recomputed — what
- * the paragraph under the block says a verify catches and exits 1 on.
+ * The crude edit: one word of a recorded fact changed in place, with no hash recomputed (what
+ * the paragraph under the block says a verify catches and exits 1 on).
  */
 function editByHand(tails: string): void {
   for (const tail of readdirSync(tails)) {

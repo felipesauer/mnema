@@ -1,8 +1,8 @@
 /**
- * `mnema witness` counts the tails `mnema verify` counts — over the one record where the two
+ * `mnema witness` counts the tails `mnema verify` counts, over the one record where the two
  * used to disagree: a record holding an EMPTY tail.
  *
- * WHAT THE EMPTY TAIL IS. A tail directory with its ownership proof and no event — what an
+ * WHAT THE EMPTY TAIL IS. A tail directory with its ownership proof and no event: what an
  * older writer left when a key's first write was refused, and what records committed then
  * still carry (they stay as they are). The verifier used to count every directory under
  * `tails/` and fold the empty one into the witness level as a tail nothing attests, while the
@@ -12,7 +12,7 @@
  *
  * THE FIXTURE IS THE PRODUCT'S OWN BYTES. The other machine is the product's writer
  * (`mergeAForeignTail`), and what is kept of its tail is the one file an older writer minted at
- * birth, `tailproof.json`, signed by that key — exactly the residue, with nothing written by
+ * birth, `tailproof.json`, signed by that key: exactly the residue, with nothing written by
  * hand.
  */
 
@@ -106,7 +106,7 @@ afterEach(() => {
 });
 
 describe('witness and verify count the same tails', () => {
-  it('agree over a record with no empty tail — the control', async () => {
+  it('agree over a record with no empty tail: the control', async () => {
     const verified = await mnema('verify');
     const listed = await mnema('witness');
     expect(tailsVerified(verified)).toBe(1);
@@ -140,7 +140,7 @@ describe('witness and verify count the same tails', () => {
     expect(line(after)).toContain(
       '1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
     );
-    // The sentence is the one it was without the residue, plus that clause — nothing else.
+    // The sentence is the one it was without the residue, plus that clause: nothing else.
     expect(
       line(after).replace(
         '; 1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
@@ -161,7 +161,7 @@ describe('witness and verify count the same tails', () => {
     expect(listed.out[0]).toBe('1 tail(s) holding events — the ones a cut can name:');
   });
 
-  it('still refuses to stamp a tree whose only tail is empty — nothing is recorded there', async () => {
+  it('still refuses to stamp a tree whose only tail is empty: nothing is recorded there', async () => {
     // A tree holding only an ownership proof holds nothing, so the listing finds no tail and the
     // stamp has nothing to witness. Asked of this machine's global tree, from outside any
     // project, so that no other tail is beside it.

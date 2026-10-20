@@ -46,7 +46,7 @@ describe('mnema skill', () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      // The canonical id is a minted v7 uuid — never a `s-xxxx`-style alias.
+      // The canonical id is a minted v7 uuid, never a `s-xxxx`-style alias.
       expect(result.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
       );
@@ -71,7 +71,7 @@ describe('mnema skill', () => {
       expect(first.id).not.toBe(second.id);
       const root = resolveTrees(repo, env).projectPublic as string;
       const skills = skillsOf(root);
-      // Both exist, keyed by id — the name is display, never an index.
+      // Both exist, keyed by id: the name is display, never an index.
       expect(skills.has(first.id)).toBe(true);
       expect(skills.has(second.id)).toBe(true);
     }
@@ -106,7 +106,7 @@ describe('mnema skill', () => {
     if (result.ok) {
       const trees = resolveTrees(repo, env);
       expect(skillsOf(trees.projectPrivate as string).has(result.id)).toBe(true);
-      // and NOT in public — the override truly routed the birth.
+      // and NOT in public: the override truly routed the birth.
       expect(skillsOf(trees.projectPublic as string).has(result.id)).toBe(false);
     }
   });
@@ -149,7 +149,7 @@ describe('mnema skill', () => {
   });
 });
 
-describe('mnema skill --which — the agent that executed', () => {
+describe('mnema skill --which: the agent that executed', () => {
   /** Every `skill.created` in a tree, with the agent each one names. */
   function proposalsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

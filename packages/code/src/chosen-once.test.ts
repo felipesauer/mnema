@@ -1,17 +1,17 @@
 /**
- * WHICH RENDERER, chosen once — the precedence, the flag that reaches it, and the
+ * WHICH RENDERER, chosen once: the precedence, the flag that reaches it, and the
  * rule that keeps the question from being asked anywhere else.
  *
  * Three properties, and they fail in three different ways:
  *
  *   - THE PRECEDENCE. `--color`, `NO_COLOR`, `FORCE_COLOR` and the terminal, in the
- *     order the market settled on. It is asserted pair by pair — each rung against
- *     the one below it — because the failure is not a crash: it is a caller whose
+ *     order the market settled on. It is asserted pair by pair, each rung against
+ *     the one below it, because the failure is not a crash: it is a caller whose
  *     `NO_COLOR` was ignored, and the only thing that would notice is a person.
  *   - THE FLAG HAS A CALLER. A precedence nothing consults is a table. So the cases
  *     drive the whole program, over a real record, and read the bytes.
- *   - NOBODY ELSE ASKS. The renderer is named in ONE file of `wiring/` — the one
- *     that chooses it — and every other verb receives one. It was written a hundred
+ *   - NOBODY ELSE ASKS. The renderer is named in ONE file of `wiring/`, the one
+ *     that chooses it, and every other verb receives one. It was written a hundred
  *     and three times before, which is precisely why there was no way to choose.
  *
  * The vacuous form of the last one is a scan that matched nothing, so it asserts the
@@ -36,7 +36,7 @@ describe('the precedence is the conventional one', () => {
   /**
    * One capability, with the terminal absent unless a case says otherwise.
    *
-   * NO WIDTH BY DEFAULT, which is what a pipe, a file and a test report — so every case
+   * NO WIDTH BY DEFAULT, which is what a pipe, a file and a test report, so every case
    * of the precedence is answered by one of the two renderers themselves and can be
    * compared by identity. Whether a line FOLDS is the other question, and it has its own
    * block below.
@@ -89,7 +89,7 @@ describe('the precedence is the conventional one', () => {
   });
 
   it('reads an EMPTY `NO_COLOR` as absent, which is what the standard says', () => {
-    // "Present and not an empty string" — and the case matters, because an unset
+    // "Present and not an empty string", and the case matters, because an unset
     // variable expands to the empty string in a shell: `NO_COLOR="$SOME_UNSET" mnema`
     // must not turn style off on a caller who set nothing.
     expect(chooseRenderer(asked('auto', { NO_COLOR: '' }, true))).toBe(renderStyled);
@@ -104,7 +104,7 @@ describe('the precedence is the conventional one', () => {
 
   it('reads `FORCE_COLOR=0` as the off it means, even on a terminal', () => {
     // node and chalk both made that value mean "no colour", so a caller who set it
-    // meant off — and a tool that forced style ON because the variable was merely
+    // meant off, and a tool that forced style ON because the variable was merely
     // PRESENT would be the worst reading of both conventions.
     expect(chooseRenderer(asked('auto', { FORCE_COLOR: '0' }, true))).toBe(renderPlain);
     // The flag still wins over it: rung one is this invocation's own request.
@@ -113,28 +113,28 @@ describe('the precedence is the conventional one', () => {
 
   it('falls back to the terminal, which is where the default lives', () => {
     expect(chooseRenderer(asked('auto', {}, true))).toBe(renderStyled);
-    // The case the golden depends on: output injected, no terminal, nothing forced —
+    // The case the golden depends on: output injected, no terminal, nothing forced;
     // plain, by this rule and not by a fixture that asked for it.
     expect(chooseRenderer(asked('auto', {}, false))).toBe(renderPlain);
   });
 
   it('takes a terminal that says it is `dumb` at its word, and only that word', () => {
     // THE OTHER HALF OF THE LAST RUNG. `TERM=dumb` is the field's way of saying *this
-    // prints text and nothing else* — a shell inside an editor, a build runner — and every
+    // prints text and nothing else* (a shell inside an editor, a build runner) and every
     // library that paints already honours it. A file descriptor being a terminal is not the
     // whole of whether the destination can show style, and this is the half that was
     // missing: the layout library obeyed the word and this rule did not, so a `dumb`
     // terminal got a page half painted (`repl/painting.ts` says what that measured).
     expect(chooseRenderer(asked('auto', { TERM: 'dumb' }, true))).toBe(renderPlain);
     // AND ONLY THAT WORD. `dumb` is a terminfo NAME, not a family, so a prefix test would
-    // take a terminal that paints down with it — and an unset `TERM` is a caller who said
+    // take a terminal that paints down with it, and an unset `TERM` is a caller who said
     // nothing, which is not a declaration.
     expect(chooseRenderer(asked('auto', { TERM: 'dumb-emacs-ansi' }, true))).toBe(renderStyled);
     expect(chooseRenderer(asked('auto', { TERM: 'xterm-256color' }, true))).toBe(renderStyled);
     expect(chooseRenderer(asked('auto', {}, true))).toBe(renderStyled);
   });
 
-  it('lets both variables and the flag outrank a `dumb` terminal — asking beats declaring', () => {
+  it('lets both variables and the flag outrank a `dumb` terminal: asking beats declaring', () => {
     // IT IS THE LAST RUNG AND IT IS UNDER EVERYTHING, which is the market's ordering and
     // not ours: a caller who set `FORCE_COLOR` asked for colour on a terminal that says it
     // cannot, and that is the whole use of the variable. `--color=always` is the same
@@ -149,7 +149,7 @@ describe('the precedence is the conventional one', () => {
     expect(chooseRenderer(asked('auto', { TERM: 'dumb', NO_COLOR: '1' }, true))).toBe(renderPlain);
   });
 
-  it('never paints without a terminal unless something ASKED — over the whole space', () => {
+  it('never paints without a terminal unless something ASKED: over the whole space', () => {
     // The question the cases above answer one at a time, asked of every input at once:
     // is there a way to style a destination that cannot show it and that nobody asked to
     // paint? That is the failure that reaches a CI log and a redirected file, and the one
@@ -187,7 +187,7 @@ describe('the precedence is the conventional one', () => {
 
 describe('the line folds only where there is a screen to fold it to', () => {
   /**
-   * A line no ordinary terminal holds — the width is what decides whether it breaks.
+   * A line no ordinary terminal holds: the width is what decides whether it breaks.
    *
    * A hundred and twenty-six columns of it, so that eighty folds it and four hundred does
    * not: a case about a threshold needs a line on both sides of one, and a first draft of
@@ -206,7 +206,7 @@ describe('the line folds only where there is a screen to fold it to', () => {
     // THE INVARIANT, and it is asserted by IDENTITY rather than by comparing bytes: a
     // pipe, a file, a CI log and the recorded transcript get `renderPlain` itself, so
     // there is no arithmetic between the line and the stream for a fold to slip into.
-    // The width is set anyway in the second case — a stream that reported one without
+    // The width is set anyway in the second case: a stream that reported one without
     // being a terminal must still not fold, or `mnema … | wc -l` would answer differently
     // depending on the window it was launched from.
     expect(chooseRenderer({ when: 'auto', env: {}, isTty: false, columns: 0 })).toBe(renderPlain);
@@ -233,8 +233,8 @@ describe('the line folds only where there is a screen to fold it to', () => {
 
   it('is not a rung of the colour precedence: `--color=never` still folds', () => {
     // The two questions are orthogonal, and this is the case that says so. A caller who
-    // typed `--color=never` on a terminal asked for no colour — not for the badly folded
-    // line the terminal would give them — and one who set `NO_COLOR` in their profile
+    // typed `--color=never` on a terminal asked for no colour (not for the badly folded
+    // line the terminal would give them) and one who set `NO_COLOR` in their profile
     // asked for even less than that.
     expect(folds({ when: 'never', env: {}, isTty: true, columns: 80 })).toBe(true);
     expect(folds({ when: 'auto', env: { NO_COLOR: '1' }, isTty: true, columns: 80 })).toBe(true);
@@ -243,7 +243,7 @@ describe('the line folds only where there is a screen to fold it to', () => {
     expect(quiet(long)).not.toContain('\u001b');
   });
 
-  it('never folds without a terminal — over the whole space at once', () => {
+  it('never folds without a terminal: over the whole space at once', () => {
     // The question the cases above answer one at a time, asked of every input together:
     // is there a way to break a line for somebody who is not looking at a screen? That is
     // the failure that reaches a CI log, a redirected file and the recorded transcript.
@@ -312,14 +312,14 @@ describe('the flag reaches the bytes', () => {
   });
 
   // `verify` is the read used throughout: its verdict is a `statement`, which is the
-  // form that has a label and a detail — the two roles that carry weight. A verb whose
+  // form that has a label and a detail, the two roles that carry weight. A verb whose
   // whole output is `fact` lines would print the same bytes either way and could not
   // tell a wired flag from an ignored one.
   it('paints when the invocation asks, with no terminal in sight', async () => {
     expect(await invoke('--color=always', 'verify')).toContain('\u001b[1m');
   });
 
-  it('writes not one escape when nothing asks — the default of a pipe', async () => {
+  it('writes not one escape when nothing asks: the default of a pipe', async () => {
     expect(await invoke('verify')).not.toContain('\u001b');
   });
 
@@ -327,7 +327,7 @@ describe('the flag reaches the bytes', () => {
     // THE LINK: the width is read at the entry and spent on the renderer every verb is
     // handed, and this is the case that says it ARRIVES rather than that it is plumbed. The
     // structural scan that counts who asks a stream how big it is would stay green on an
-    // entry that read the number and dropped it — a mechanism wired to the end and never
+    // entry that read the number and dropped it: a mechanism wired to the end and never
     // firing is four defects of this series, and it is what this case refuses.
     //
     // The stream is DRESSED as a terminal rather than a terminal being found: what is under
@@ -343,7 +343,7 @@ describe('the flag reaches the bytes', () => {
       stdout.isTTY = true;
       stdout.columns = 40;
       // `verify` says a sentence of clauses that no forty-column terminal holds, so a
-      // renderer that folds has something to break — and one that never folds does not.
+      // renderer that folds has something to break, and one that never folds does not.
       // Asked of the LINES rather than of the joined output, which holds a break between
       // every two of them: what is under test is a break INSIDE one line, which is the only
       // thing a fold puts there.
@@ -378,7 +378,7 @@ describe('the flag reaches the bytes', () => {
     expect(await invoke('--color=never', 'verify')).not.toContain('\u001b');
   });
 
-  it('lets an explicit `--color=always` overrule `NO_COLOR` — the rung that moved', async () => {
+  it('lets an explicit `--color=always` overrule `NO_COLOR`: the rung that moved', async () => {
     // The correction, driven through the real program rather than through the pure
     // function above: a caller typing the flag on THIS invocation is being more
     // specific than a variable exported in their shell profile, which is what git,
@@ -389,7 +389,7 @@ describe('the flag reaches the bytes', () => {
 
   it('refuses a value that names no answer, as a usage error', async () => {
     // The set is closed at the declaration, so a typo is reported and exits non-zero
-    // rather than silently falling back to the default — which would be a caller who
+    // rather than silently falling back to the default, which would be a caller who
     // asked for plain output, was ignored, and told nothing.
     const said = await invoke('--color=bogus', 'verify');
     expect(failed).toBe(true);
@@ -405,7 +405,7 @@ describe('nothing else decides which renderer', () => {
    * THE THIRD IS A FUNCTION THAT MAKES ONE rather than a value, and it belongs on this
    * list for exactly the reason the other two do: naming it is deciding how output looks,
    * and the decision is the caller's terminal's. A list of two would have let any module
-   * reach for the fold without a case noticing — which is the shape of hole this whole
+   * reach for the fold without a case noticing, which is the shape of hole this whole
    * block exists to keep shut.
    */
   const RENDERERS = ['renderPlain', 'renderStyled', 'foldedAt'];
@@ -437,7 +437,7 @@ describe('nothing else decides which renderer', () => {
     //
     // THREE FILES NOW, and the third is the one that FOLDS: it names the loop it wraps
     // and the wiring names it, which is the same shape the painted one has. What would
-    // be a defect is a fourth — a report builder deciding that its own lines break
+    // be a defect is a fourth: a report builder deciding that its own lines break
     // differently from every other line of this product.
     expect(naming('presentation')).toEqual(['folded.ts', 'plain.ts', 'styled.ts']);
   });
@@ -445,13 +445,13 @@ describe('nothing else decides which renderer', () => {
   it('and not in the session, which is the newest thing that prints', () => {
     // A DIRECTORY THAT PRINTS AND IS NOT A VERB. The two cases above are the whole rule
     // as long as everything that reaches a stream is a verb or a composer; the
-    // interactive session is neither — it prints a banner, a menu of what it runs and
-    // its own refusals — and it is the one place on this surface where the renderer
+    // interactive session is neither (it prints a banner, a menu of what it runs and
+    // its own refusals) and it is the one place on this surface where the renderer
     // could be resolved a SECOND time, because it is the one that lives long enough to
     // ask twice. It takes one, resolved at the entry for the whole session, and names
     // neither.
     // THE ONE MODULE HERE THAT HAS A REASON TO ASK is the opening panel, which chooses
-    // between three drawings by whether each fits the terminal — and it asks how wide a
+    // between three drawings by whether each fits the terminal, and it asks how wide a
     // line is rather than rendering one, because `presentation/` is where that question is
     // answered (`plain.ts`, `widthOf`). It named a renderer on its first draft and this
     // case is what said so.
@@ -487,7 +487,7 @@ describe('nothing else decides which renderer', () => {
       'turn.ts',
     ]);
     // AND THE WITNESS THAT IT PRINTS USED TO BE `writeLines(io,`, which was the report
-    // `/help` wrote. That word is gone — the list under the prompt answers it now — so the
+    // `/help` wrote. That word is gone (the list under the prompt answers it now), so the
     // line it wrote is gone with it, and a witness left pointing at it would have made this
     // case red for a reason that has nothing to do with what it is about. What the session
     // still writes, and what it has always written more of, is refusals.
@@ -505,7 +505,7 @@ describe('nothing else decides which renderer', () => {
 
   it('would accuse a verb that named one', () => {
     // And the other vacuous form: a detector whose terms match nothing any more.
-    // Composed against the line a careful author would write — the import AND the
+    // Composed against the line a careful author would write: the import AND the
     // call, so the build would not fail first and hide the accusation.
     const relapse = [
       "import { renderPlain } from '../presentation/plain.js';",

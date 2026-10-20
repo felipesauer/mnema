@@ -11,8 +11,8 @@
  *
  * That second half is a rewrite. It read "a path with a credential inside it comes
  * back with the door's placeholder in it, exactly as any other prose does", which was
- * true of a door that treated every field alike. `target` is a NAME — the reading is a
- * lookup by exact string — so `src/<SECRET:aws-access-key>/deploy.ts` would be an
+ * true of a door that treated every field alike. `target` is a NAME (the reading is a
+ * lookup by exact string), so `src/<SECRET:aws-access-key>/deploy.ts` would be an
  * address of no file, recorded permanently. The door refuses it instead.
  *
  * NOTHING HERE CHARGES. The reading refuses nothing, blocks nothing and grades
@@ -49,7 +49,7 @@ import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
  *
  * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
  * this file is about the relation that INFORMS, so the relation that STOPS somebody has
- * nothing addressed in any of its fixtures — and it reading anything else would mean the two
+ * nothing addressed in any of its fixtures, and it reading anything else would mean the two
  * walks had started sharing a list. The gate's own cases are with the charge
  * (`the-record-asks-for-a-person.test.ts`).
  */
@@ -219,7 +219,7 @@ describe('a path survives the write half the product already had', () => {
     // under that was that screening a field leaves the field. It does not, for an
     // address: `src/<SECRET:aws-access-key>/deploy.ts` is an address of no file, this
     // relation is read back by exact string, and the record cannot be edited. So
-    // `target` is classified a NAME now and the whole write is refused — which is what
+    // `target` is classified a NAME now and the whole write is refused, which is what
     // this proves, together with the half that matters more: the chain is untouched.
     const rule = await decide('how the deploy works');
     const secret = 'src/AKIAIOSFODNN7EXAMPLE/deploy.ts';
@@ -232,7 +232,7 @@ describe('a path survives the write half the product already had', () => {
     expect(said).toContain('target');
     expect(said).not.toContain('AKIAIOSFODNN7EXAMPLE');
 
-    // And nothing landed — not the value, and not a redacted stand-in for it either.
+    // And nothing landed, not the value, and not a redacted stand-in for it either.
     const reading = await reported('src');
     expect(reading.stale.concat(reading.rules)).toEqual([]);
   });
@@ -356,7 +356,7 @@ describe('the reading answers, and charges nothing', () => {
   it('asks the working tree through the link, so a live symlink is not stale', async () => {
     // The other half: the disk PROBE follows a symlink, because it is `existsSync` and
     // that is what exists means. So an address at a live link is held and one at a
-    // dangling link is stale — which is the same rule the third count always applies.
+    // dangling link is stale, which is the same rule the third count always applies.
     mkdirSync(join(repo, 'src', 'real'), { recursive: true });
     symlinkSync(join(repo, 'src', 'real'), join(repo, 'live'));
     symlinkSync(join(repo, 'src', 'never-was'), join(repo, 'dangling'));
@@ -429,8 +429,8 @@ describe('both surfaces answer out of the same derivation', () => {
     const fromTool = runGoverningRulesTool(session, { path: 'src/collate/fold.ts' });
     expect(fromTool.ok).toBe(true);
     if (!fromTool.ok) return;
-    // The paths differ only in how each surface resolved a relative one — the command
-    // line against a working directory, the server against the project root — and
+    // The paths differ only in how each surface resolved a relative one (the command
+    // line against a working directory, the server against the project root) and
     // everything the reading DERIVED is identical.
     expect(fromTool.value.relative).toBe(fromCli.relative);
     expect(fromTool.value.rules).toEqual(fromCli.rules);
@@ -461,20 +461,20 @@ describe('both surfaces answer out of the same derivation', () => {
 
 describe('one place assembles a governs read', () => {
   /**
-   * The derivations take their disk probe — or, for the reach, their WALK — as a
+   * The derivations take their disk probe (or, for the reach, their WALK) as a
    * parameter, so each surface could bring its own. Two probes is two ideas of what
    * "the address exists" means, and two walks is two ideas of what a file of the
    * project IS; either would make a number depend on which surface asked. So
    * `governed-tree.ts` assembles them and every caller goes through that.
    *
    * THE LIST IS READ OFF THE CONTEXT PACKAGE'S SOURCE, and that is the repair rather than a
-   * detail. It used to be a literal pair — `governingRules` and `rulesInForceAt` —
+   * detail. It used to be a literal pair, `governingRules` and `rulesInForceAt`,
    * with a comment saying a third derivation "is a gap somebody has to notice". A
    * third one shipped (`asksForAPersonAt`, the gate), nobody noticed, and this case
    * stayed GREEN while covering two of three: a guard whose scope is a hand-written
    * list is a guard that stops covering the rule the moment the rule grows. So the
    * derivations are now enumerated from the one file that defines them, by the shape
-   * that makes one dangerous — taking an injected question — and a fourth
+   * that makes one dangerous, taking an injected question, and a fourth
    * (`addressReach`) is in scope by existing.
    *
    * It looks for a CALL and not a mention: a doc-comment naming a derivation is how the

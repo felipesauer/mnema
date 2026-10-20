@@ -1,5 +1,5 @@
 /**
- * WHICH FILE OF A TREE IS THE CACHE — the one path a read of the command line may leave behind,
+ * WHICH FILE OF A TREE IS THE CACHE: the one path a read of the command line may leave behind,
  * and the one a whole-sandbox digest must not count as the read having written.
  *
  * Every guard that proves "a read writes nothing" does it by digesting the whole sandbox before
@@ -15,7 +15,7 @@
  * it is measured over the real binary (`the-record-is-kept-between-reads.test.ts`).
  */
 
-/** The cache a read leaves in a tree — `locks/projection.db`, and the files SQLite keeps beside it. */
+/** The cache a read leaves in a tree: `locks/projection.db`, and the files SQLite keeps beside it. */
 export function isTheDerivedCache(path: string): boolean {
   return /(?:^|[\\/])locks[\\/]projection\.db(?:-wal|-shm|-journal)?$/.test(path);
 }

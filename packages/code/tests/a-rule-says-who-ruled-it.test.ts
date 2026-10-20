@@ -1,9 +1,9 @@
 /**
- * A rule in force says WHO accepted it, and an agent may accept freely — with the trail, a
+ * A rule in force says WHO accepted it, and an agent may accept freely: with the trail, a
  * notice, and a switch for whoever wants it off.
  *
- * THE DEFECT, MEASURED ON THE SHIPPED BINARY. A second clone — a key of its own, an identity of
- * its own, `verify --require signed` green — recorded a decision whose title was an instruction
+ * THE DEFECT, MEASURED ON THE SHIPPED BINARY. A second clone (a key of its own, an identity of
+ * its own, `verify --require signed` green) recorded a decision whose title was an instruction
  * to a model and ACCEPTED it itself. After the pull it opened the victim's `brief` under
  * *Decisions in force*, with no author, and it was the only rule in force there, because the
  * victim's own decisions were still proposed.
@@ -13,7 +13,7 @@
  *     on it (`a person` is an act with none, not a claim about the human);
  *   - an identity that accepted without any other identity ever ruling with it is MARKED, and the
  *     mark leaves the day another identity accepts one of its decisions or has one of its own
- *     accepted — it is the record's shape, never a verdict on the rule;
+ *     accepted: it is the record's shape, never a verdict on the rule;
  *   - an agent may accept: through the MCP server and through `--which`, with the trail on the
  *     envelope (nothing new is written), said in the reply, said by `show`, said by the next
  *     opening;

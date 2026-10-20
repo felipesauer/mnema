@@ -1,11 +1,11 @@
 /**
- * THE CEILING BELONGS TO THE CASE. A case that waits — one that starts processes, or drives
- * a terminal, or walks every source the product has — says so at its own `it`, and nothing
+ * THE CEILING BELONGS TO THE CASE. A case that waits (one that starts processes, or drives
+ * a terminal, or walks every source the product has) says so at its own `it`, and nothing
  * lifts the ceiling the other two thousand are judged against.
  *
  * WHERE THIS COMES FROM. Cases of this suite went red under load and green on their own,
  * with a message that named no cost and no cause: the run simply stopped at five seconds.
- * The cheap repair is one line in the workspace's configuration, and it is the wrong one —
+ * The cheap repair is one line in the workspace's configuration, and it is the wrong one:
  * it buys silence for every case at once, so the next case that grows from two seconds to
  * nine arrives green and nobody learns it grew. A ceiling written at the `it` says WHICH
  * case waits, and the line beside it says on what.
@@ -14,7 +14,7 @@
  * everybody rather than at the one that was tempting:
  *
  *   - THE WORKSPACE'S OWN CONFIGURATION, which is the obvious one.
- *   - THE COMMAND LINE THE SUITE IS STARTED FROM — a script in a manifest, or a workflow in
+ *   - THE COMMAND LINE THE SUITE IS STARTED FROM: a script in a manifest, or a workflow in
  *     CI, which never passes through the configuration at all.
  *   - A CALL INSIDE A FILE, which raises it for every case in that file and is invisible to
  *     anybody reading the configuration.
@@ -23,13 +23,13 @@
  * workspace ships.
  *
  * WHAT THIS SCAN DOES NOT COVER, and where that went. The sentence here said the second
- * question — whether a case that waits actually HAS a ceiling of its own — "needs a DURATION,
+ * question, whether a case that waits actually HAS a ceiling of its own, "needs a DURATION,
  * and a scan over source has none", and then that it was "not something a guard can do without
  * becoming the thing it measures". THE FIRST HALF STANDS AND THE SECOND WAS FALSIFIED, by
  * building the thing it said could not be built: `.github/why-it-went-red/` reads the durations
  * off a run that already happened rather than measuring inside one. A reporter writes each
- * case's duration and the ceiling it actually ran under — vitest resolves `options.timeout` per
- * case, so the shared ceiling and a declared one arrive already told apart — and a reader
+ * case's duration and the ceiling it actually ran under (vitest resolves `options.timeout` per
+ * case, so the shared ceiling and a declared one arrive already told apart) and a reader
  * afterwards re-times, ALONE, every case that spent more of the shared ceiling than its budget.
  * The guard never becomes the thing it measures because it does not run inside the run.
  *
@@ -37,7 +37,7 @@
  * the three shapes that lift the ceiling for everybody are text, and text is what it reads.
  *
  * AND THE DURATIONS WERE READ, on 21 Aug 2026, because CI reaching this trunk made them
- * available for the first time. Of 3484 cases, 3286 wait under the shared five seconds — read
+ * available for the first time. Of 3484 cases, 3286 wait under the shared five seconds: read
  * off the run rather than counted in the source, since a positional argument also closes a
  * `beforeAll` and the source count says 215 where the cases say 198. The slowest of the 3286,
  * over two runner runs and four local configurations:
@@ -57,10 +57,10 @@
  * was: *refuses a tail a live process is holding* waits out two full lock timeouts on purpose,
  * 4018 ms with the machine to itself against the shared 5000, and `why-it-went-red` reported it
  * on every run. It carries a ceiling of its own now, with the wait named beside it. The ban is
- * unchanged and this is what the ban is FOR — the repair was one line at one `it`, and the
+ * unchanged and this is what the ban is FOR: the repair was one line at one `it`, and the
  * cheap line would have hidden it behind a number nobody would have looked at again. TWO THINGS IN THAT TABLE ARE WORTH THE READING.
- * The runner is not the slow machine — 1595 ms at its worst against this workstation's 1635 ms,
- * near parity — even though the suite's wall clock there is around 3x slower (101-134 s against
+ * The runner is not the slow machine (1595 ms at its worst against this workstation's 1635 ms,
+ * near parity) even though the suite's wall clock there is around 3x slower (101-134 s against
  * 36 s). Fewer workers on fewer cores contend less, and the slowest cases are pty and screen
  * work that waits on the clock, so the two ratios pull opposite ways: a ceiling sized from the
  * wall-clock ratio would have been three times too loose. And coverage instrumentation charges
@@ -83,7 +83,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** This file, which the scan reaches and must not accuse. */
@@ -99,7 +99,7 @@ const HERE = fileURLToPath(import.meta.url);
  */
 const LIFTS_THE_CEILING = new RegExp(`${'test'}[-_]?${'timeout'}`, 'i');
 
-/** The extensions text is carried in here — sources, manifests, and CI's own files. */
+/** The extensions text is carried in here: sources, manifests, and CI's own files. */
 const TEXT = /\.(ts|mts|cts|js|mjs|cjs|json|ya?ml)$/;
 
 /** Every text file under `where`; `deep` walks it, and what is built or installed is not it. */
@@ -155,7 +155,7 @@ describe('the ceiling a case waits under is that case’s own', () => {
   });
 
   it('and would find one, in each of the three shapes that lift it', () => {
-    // Non-vacuity on text this case owns, one line per shape the ban is about — and each
+    // Non-vacuity on text this case owns, one line per shape the ban is about, and each
     // written in parts, because a sample spelled whole would put this file in the list.
     const key = ['test', 'Timeout'].join('');
     const flag = ['test', 'timeout'].join('-');

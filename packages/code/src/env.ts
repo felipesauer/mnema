@@ -3,7 +3,7 @@
  *
  * The core's resolution (`resolveTrees`) takes an injected {@link DiscoveryEnv} so
  * it stays pure and testable. This is the one place the surface reads the REAL
- * process environment to build that value — a transport concern, not domain logic.
+ * process environment to build that value: a transport concern, not domain logic.
  * A command never touches `process.env` itself; it receives the resolved env, so a
  * test drives it with a sandbox env instead.
  */
@@ -62,7 +62,7 @@ export const AGENT_KEY_VARIABLE = 'MNEMA_AGENT_KEY';
 /**
  * The agent a host file asked this server to sign as, or undefined where it asked none: unset,
  * empty (the plugin's option left at its default), or a placeholder the host did not substitute
- * (`${user_config.agent_key}` — a host that does not know the substitution leaves it as it was,
+ * (`${user_config.agent_key}`: a host that does not know the substitution leaves it as it was,
  * and a name made of it would be a folder that does not exist). Whether what is left is a name
  * this product enrols is asked where it is used, which says so on the second stream.
  */

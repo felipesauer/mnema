@@ -1,29 +1,29 @@
 /**
- * `mnema commit-hook` — an OPTIONAL `prepare-commit-msg` hook that suggests the
+ * `mnema commit-hook`: an OPTIONAL `prepare-commit-msg` hook that suggests the
  * `Mnema-Decision:` trailer, and the two acts that put it in a repository and take it out.
  *
  * NOTHING HERE RUNS UNLESS A PERSON ASKED. `install` is the only thing that writes a file, it
  * writes exactly one (`prepare-commit-msg`, in the hooks directory git itself would read), and
  * `init` never calls it. It will not touch a hook it did not write: an existing one that is not
  * byte for byte the script below is REFUSED, with its path, and `uninstall` removes the file only
- * under the same test — a hook somebody edited, or wrote, is theirs.
+ * under the same test; a hook somebody edited, or wrote, is theirs.
  *
  * WHERE THE HOOK GOES is where git would look: `core.hooksPath` when it is configured (a relative
  * one is relative to the work tree's top, which is where git runs hooks from), otherwise the
- * repository's own hooks directory — the common one, for a linked worktree.
+ * repository's own hooks directory, the common one, for a linked worktree.
  *
  * WHAT IT SUGGESTS, AND WHY IT CANNOT CHANGE A COMMIT. The suggestion is `#` comment lines
  * appended to the message file. Git's default cleanup drops them when the editor closes, so a
  * person who does not accept them gets the commit they would have got; one who does removes the
  * `# ` in front of a line and the line is the trailer. It is made only where that holds: when the
- * message has no source (an editor is about to open — `-m`, `-F`, a template, a merge, a squash
+ * message has no source (an editor is about to open: `-m`, `-F`, a template, a merge, a squash
  * and an amend all have one; a template may even be committed with no editor at all),
  * `commit.cleanup` is unset or a setting that strips comments, and `core.commentChar` is `#` or
  * `auto`. Elsewhere the comment would stay in the message, so nothing is written. A
  * `--cleanup=verbatim` typed on the command line is invisible to a hook, and keeps the block.
  *
- * WHAT IT SUGGESTS: the decisions in force that govern the staged files — the reading `mnema
- * rules` and the per-edit push share (`readRulesInForceAt`), not a second one — and, among those
+ * WHAT IT SUGGESTS: the decisions in force that govern the staged files, the reading `mnema
+ * rules` and the per-edit push share (`readRulesInForceAt`), not a second one, and, among those
  * rules, the ones that are decisions (a pattern governs too, and is not a thing a trailer cites).
  *
  * IT MUST NOT FAIL THE COMMIT. The script exits 0 whatever happens, and {@link suggest} turns every
@@ -57,7 +57,7 @@ export const HOOK_SCRIPT = [
   '',
 ].join('\n');
 
-/** What the acts need — injected so they are testable. */
+/** What the acts need: injected so they are testable. */
 export interface CommitHookContext {
   readonly cwd: string;
 }
@@ -96,7 +96,7 @@ function isOurs(path: string): boolean {
   }
 }
 
-/** Writes the hook — unless a hook that is not ours is already there. */
+/** Writes the hook, unless a hook that is not ours is already there. */
 export function installCommitHook(ctx: CommitHookContext): HookActed {
   const place = hookPlace(ctx.cwd);
   if (!place.ok) return place;
@@ -112,7 +112,7 @@ export function installCommitHook(ctx: CommitHookContext): HookActed {
   return { ok: true, path: place.path, state: 'installed' };
 }
 
-/** Removes the hook — only when it is the one this module wrote. */
+/** Removes the hook, only when it is the one this module wrote. */
 export function uninstallCommitHook(ctx: CommitHookContext): HookActed {
   const place = hookPlace(ctx.cwd);
   if (!place.ok) return place;

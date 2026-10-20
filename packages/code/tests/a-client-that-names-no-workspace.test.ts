@@ -1,9 +1,9 @@
 /**
- * A client that names no workspace is served the project it is working in — and a
+ * A client that names no workspace is served the project it is working in, and a
  * client that names an EMPTY one is not.
  *
- * WHAT WAS WRONG. A client that declares no `roots` capability — Cursor's command-line
- * agent declares only `elicitation` — gave the server no workspace, and the cascade sent
+ * WHAT WAS WRONG. A client that declares no `roots` capability, Cursor's command-line
+ * agent declares only `elicitation`, gave the server no workspace, and the cascade sent
  * every such session to the machine-global tree. Measured through the binary before
  * this: a note an agent took there was answered "Landed in the global tree", and came
  * back in the notes of a second project that client had never opened; a decision
@@ -15,7 +15,7 @@
  * `server.ts`) and a test of the resolver cannot see it:
  *
  *   - a client with no `roots` capability, whose server was started in a project, is
- *     served that project, and both readers are told where the project came from — the
+ *     served that project, and both readers are told where the project came from: the
  *     host's log line and the agent's own `bootstrap`;
  *   - a client that DECLARED `roots` and listed none is NOT: it said its workspace holds
  *     no folder, and serving the project at the working directory would serve one nobody
@@ -43,12 +43,12 @@ import { buildMcpServer } from '../src/mcp/server.js';
 import { decodedWhole } from './support/arriving.js';
 import { until } from './support/console.js';
 
-/** The built binary — what a host spawns when its configuration says `mnema mcp`. */
+/** The built binary: what a host spawns when its configuration says `mnema mcp`. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /**
  * The `initialize` Cursor's command-line agent (2026.09.18) sends, captured on the wire
- * and pasted here unchanged: `elicitation` and nothing else — no `roots`.
+ * and pasted here unchanged: `elicitation` and nothing else, no `roots`.
  */
 const CURSOR_INITIALIZE =
   '{"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"elicitation":{"form":{}}},"clientInfo":{"name":"Cursor","version":"1.0.0"}},"jsonrpc":"2.0","id":0}';
@@ -89,8 +89,8 @@ function makePlainDir(name: string): string {
  * The server the product builds, started in `cwd`, and a client connected to it.
  *
  * `roots` is what the client says about its workspace, and its three values are the
- * three clients this file is about: ABSENT is a client with no `roots` capability — the
- * capabilities are Cursor's, verbatim; a LIST is a client that declared the capability
+ * three clients this file is about: ABSENT is a client with no `roots` capability (the
+ * capabilities are Cursor's, verbatim); a LIST is a client that declared the capability
  * and answers with it, empty included; `'fails'` declared it and throws when asked.
  */
 async function connect(cwd: string, roots?: readonly string[] | 'fails'): Promise<Client> {
@@ -130,7 +130,7 @@ function textOf(reply: unknown): string {
   return content.map((block) => block.text ?? '').join('\n');
 }
 
-/** The kinds of every event in a tree — none when the tree holds nothing. */
+/** The kinds of every event in a tree: none when the tree holds nothing. */
 function kindsIn(root: string | undefined): string[] {
   if (root === undefined || !existsSync(root)) return [];
   return orderedEvents({ root }, catalogUpcasters()).map((event) => event.kind);
@@ -149,7 +149,7 @@ describe('a client with no `roots` capability is served the project it works in'
     expect(textOf(captured)).toContain('Landed in the private tree');
     const trees = resolveTrees(app, env);
     expect(kindsIn(trees.projectPrivate)).toContain('memory.captured');
-    // The tree it used to land in holds nothing — the note went where the work is.
+    // The tree it used to land in holds nothing: the note went where the work is.
     expect(kindsIn(trees.global)).toEqual([]);
 
     await client.close();
@@ -170,7 +170,7 @@ describe('a client with no `roots` capability is served the project it works in'
 
   it('tells the agent the same thing, in the reply it opens with', async () => {
     // The log is the host's, and whether anybody reads it is the host's business. The
-    // agent reads this — and it is the one landing the client did not ask for.
+    // agent reads this, and it is the one landing the client did not ask for.
     const app = makeProject('app');
     const client = await connect(app);
 
@@ -194,7 +194,7 @@ describe('a client with no `roots` capability is served the project it works in'
     expect(textOf(captured)).toContain('Landed in the global tree');
     expect(existsSync(join(plain, PROJECT_DIR))).toBe(false);
     expect(readdirSync(plain)).toEqual([]);
-    // And the log says why it is global — the one input a reader of it cannot see.
+    // And the log says why it is global: the one input a reader of it cannot see.
     expect(openedLine()).toContain(
       'project=(none — the global tree) (the client declared no workspace roots, and no ' +
         `project is at or above this server's working directory, ${plain})`,
@@ -207,12 +207,12 @@ describe('a client with no `roots` capability is served the project it works in'
 describe('the machine’s own data directory, reached from a workspace nobody initialized', () => {
   it('is not made by a session that only reads, and, where it is there, is never served as a project', async () => {
     // The global tree lives in `~/.mnema`, and a directory
-    // called `.mnema` is what a walk-up looks for — so every uninitialized workspace
+    // called `.mnema` is what a walk-up looks for, so every uninitialized workspace
     // under home would resolve to home, a "project" whose committed tree is this
     // machine's data. THIS SAID "the rung refuses a `.mnema/` that holds a key root"; the
     // refusal is now the core walk's, for every rung and verb, and the home itself is never
     // a project's root whatever its `.mnema/` holds. What this case asks of the product
-    // still matters, for the reading that reaches ANOTHER environment's data directory —
+    // still matters, for the reading that reaches ANOTHER environment's data directory:
     // the key root inside it.
     //
     // A SESSION THAT ONLY READS MAKES NONE OF IT. It used to make the key root, because
@@ -242,8 +242,8 @@ describe('the machine’s own data directory, reached from a workspace nobody in
   });
 });
 
-describe('a client that declared `roots` is served what it listed — empty included', () => {
-  it('does NOT take the working directory when it listed no roots — the window with no folder', async () => {
+describe('a client that declared `roots` is served what it listed: empty included', () => {
+  it('does NOT take the working directory when it listed no roots: the window with no folder', async () => {
     // THE TRAP. This client and the one above both used to reach the cascade as an empty
     // list; a fix keyed on the list would serve this one the project the server happens
     // to be started in, right after the client said its workspace holds no folder.
@@ -299,12 +299,12 @@ describe('a client that declared `roots` is served what it listed — empty incl
 
 /**
  * One JSON-RPC conversation with the built binary, the way a host that declares no
- * `roots` holds it: its `initialize`, byte for byte, then the calls — each one awaited
+ * `roots` holds it: its `initialize`, byte for byte, then the calls, each one awaited
  * before the next, and the pipe closed only after the last reply, because a close that
  * overtakes a write in flight ends the session the write needs.
  *
  * Bytes come off the pipes through the one collector (`support/arriving.ts`), and a
- * reply is waited for by polling what has arrived — never by a fixed sleep.
+ * reply is waited for by polling what has arrived, never by a fixed sleep.
  */
 async function overTheBinary(
   cwd: string,
@@ -364,7 +364,7 @@ function mnemaIn(cwd: string, ...argv: string[]): string {
 describe('the leak, through the binary a host spawns', () => {
   it('keeps a note taken in one project out of the notes of another', async () => {
     // Two projects founded the way a person founds one, and a server started in the
-    // first by a host that declares no `roots` — the handshake is that client's own.
+    // first by a host that declares no `roots`: the handshake is that client's own.
     const first = join(sandbox, 'first');
     const second = join(sandbox, 'second');
     mkdirSync(first);
@@ -382,10 +382,10 @@ describe('the leak, through the binary a host spawns', () => {
     // The other project's notes do not carry it. It used to come back here, and in the
     // opening of every project on the machine: the global tree is read by all of them.
     expect(mnemaIn(second, 'recall')).not.toContain(mark);
-    // And the first project's do — the absence above is about where it went, not about
+    // And the first project's do: the absence above is about where it went, not about
     // a note that went nowhere.
     expect(mnemaIn(first, 'recall')).toContain(mark);
-    // Five processes of the built binary — two founders, the server, two readers. Alone
+    // Five processes of the built binary: two founders, the server, two readers. Alone
     // this takes about a second and a half; under the whole suite, in a mutation battery,
     // it went past the five-second default with its assertions intact.
   }, 60_000);

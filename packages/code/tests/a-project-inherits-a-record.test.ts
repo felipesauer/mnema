@@ -1,5 +1,5 @@
 /**
- * A PROJECT CAN INHERIT ANOTHER REPOSITORY'S DECISIONS, AT ONE COMMIT — through the binary.
+ * A PROJECT CAN INHERIT ANOTHER REPOSITORY'S DECISIONS, AT ONE COMMIT: through the binary.
  *
  * The origin is a local git repository built in the sandbox with the product's own commands, so no
  * network is touched. What is asserted is what a person at a terminal sees: `inherit set` shows
@@ -107,7 +107,7 @@ function commit(dir: string): string {
 }
 
 describe('inheriting, as a person types it', () => {
-  it('shows, then points, then prints the decision under the origin’s name — and updates only on request', () => {
+  it('shows, then points, then prints the decision under the origin’s name, and updates only on request', () => {
     const source = join(sandbox, 'decisions');
     const project = join(sandbox, 'service');
     const homeS = join(sandbox, 'home-s');
@@ -174,7 +174,7 @@ describe('inheriting, as a person types it', () => {
 });
 
 /**
- * Appends to the origin's tail a line carrying `kind` and `v`, chained to the last one — what a
+ * Appends to the origin's tail a line carrying `kind` and `v`, chained to the last one: what a
  * newer writer leaves for this reader. Nothing else is wrong with it where the reading stops: a
  * line no contract reads is refused at the parse, before any signature is looked at.
  */

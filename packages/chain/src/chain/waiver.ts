@@ -3,7 +3,7 @@
  * can still answer.
  *
  * A tail that is simply gone leaves the verifier with nothing to say beyond an
- * ambiguity — measured on a real 402-event tail, deleting it whole produced ZERO
+ * ambiguity: measured on a real 402-event tail, deleting it whole produced ZERO
  * findings and the sentence `1 tail(s); no events yet`, which is also what a tail
  * that never wrote anything gets. The census note for the orphaned public key
  * already listed the three readings of that ("dropped by a botched merge, never
@@ -16,12 +16,12 @@
  * the reading that ENUMERATES the tails of a tree with the entries already in hand.
  * Written as separate readings, the day one of them counted a torn final line
  * differently from the others would be the day an honest waiver started being
- * refused — or a lying one accepted, or a listed tail said to hold a count the
+ * refused, or a lying one accepted, or a listed tail said to hold a count the
  * verb that cuts it disagrees with.
  *
  * WHY THE CHECK IS THE WRITER'S AND NEVER THE READER'S. The waiver exists to
  * survive the cut it authorizes, so a moment after it is honest, the tail it names
- * is gone. A reader applying this rule would refuse the waiver from then on — and
+ * is gone. A reader applying this rule would refuse the waiver from then on, and
  * refusing one line refuses the whole tail it lives on, forever, on an append-only
  * log. The reader's rule is the SHAPE of the payload (see parse.ts); this is the
  * writer's, and the asymmetry is the point rather than an oversight.
@@ -29,7 +29,7 @@
  * WHAT A WAIVER IS NOT: permission. Anyone who can write to a record can declare a
  * prune of any tail in it, exactly as anyone who can write can record any other
  * fact. The declaration is signed and attributed, so a forged one is a fact that
- * points at whoever forged it — which is the same posture the gates take ("they
+ * points at whoever forged it, which is the same posture the gates take ("they
  * protect the shape, not the contents; it is not access control").
  */
 
@@ -41,12 +41,12 @@ import { readTail } from './store.js';
 
 /** What the disk says about one tail right now: how it ends, how much it holds, whose it is. */
 export interface TailStanding {
-  /** The hash of the tail's last entry — the head a waiver names. */
+  /** The hash of the tail's last entry: the head a waiver names. */
   readonly throughHash: string;
   /** How many entries the tail holds. */
   readonly eventCount: number;
   /**
-   * The anchor the tail's LAST event authorized as — whose tail this is, and the
+   * The anchor the tail's LAST event authorized as: whose tail this is, and the
    * subject a waiver over it carries.
    *
    * The last rather than the first, because a waiver is written at the moment of the
@@ -59,7 +59,7 @@ export interface TailStanding {
 }
 
 /**
- * What the disk says about `tailId`, or undefined when there is nothing to say —
+ * What the disk says about `tailId`, or undefined when there is nothing to say:
  * the tail is absent, or it holds no entry at all.
  *
  * AN EMPTY TAIL ANSWERS UNDEFINED, and that is a decision rather than a fallout of
@@ -68,7 +68,7 @@ export interface TailStanding {
  * left one behind, and records committed then still carry them; a writer born today
  * makes the proof inside its first append, and only a crash between that birth and
  * the line leaves one. (This called it the NORMAL residue of a read, which it no longer
- * is.) There is nothing to account for in cutting it — no event was lost —
+ * is.) There is nothing to account for in cutting it (no event was lost)
  * and a waiver over it would put "pruned under authorization" on the census note of
  * the most innocent state there is.
  */
@@ -81,7 +81,7 @@ export function tailStanding(
 }
 
 /**
- * The same reading, over entries a caller ALREADY HAS — the rule itself, with the
+ * The same reading, over entries a caller ALREADY HAS: the rule itself, with the
  * disk access left to {@link tailStanding}.
  *
  * It exists for the reader that takes a whole TREE at once: listing what every tail
@@ -92,7 +92,7 @@ export function tailStanding(
  * for the narrower reason too: the second read happens later, so a tail appended to
  * in between would have its standing counted against entries nobody looked at.
  *
- * Everything the standing MEANS is stated on {@link TailStanding} — including why
+ * Everything the standing MEANS is stated on {@link TailStanding}, including why
  * the anchor is the last entry's and not the first's. Nothing is decided here that
  * was not decided there.
  */
@@ -114,7 +114,7 @@ export function standingOf(entries: readonly Entry[]): TailStanding | undefined 
  *     mistake that is easy to make by accident, since the writer's own tail is the
  *     one always at hand.
  *   - a waiver naming a tail with nothing on disk to check. Accepted, it would be a
- *     signature over an unfalsifiable claim — which is exactly what a waiver
+ *     signature over an unfalsifiable claim, which is exactly what a waiver
  *     accepted AFTER the cut would be.
  *   - a head hash that disagrees with the tail's last entry.
  *   - a count that disagrees with the tail's length.
@@ -165,7 +165,7 @@ export interface TailWaiver {
   readonly eventCount: number;
   /** Why it was cut, as recorded. */
   readonly reason: string;
-  /** The anchor that authorized it — the waiver event's own `who`. */
+  /** The anchor that authorized it: the waiver event's own `who`. */
   readonly who: string;
   /** The tail the waiver itself lives on, which is never {@link TailWaiver.tail}. */
   readonly declaredOn: string;
@@ -180,7 +180,7 @@ export interface TailWaiver {
  * that could disagree with the first.
  *
  * A waiver about a tail that is still HERE is collected like any other and simply
- * never consulted — the census only asks about keys with no tail at all. That is
+ * never consulted: the census only asks about keys with no tail at all. That is
  * what keeps a waiver from ever curing a break: a present, corrupt tail is verified
  * exactly as it always was, waiver or no waiver.
  */
@@ -204,7 +204,7 @@ export function tailWaiversIn(entriesByTail: ReadonlyMap<string, readonly Entry[
 }
 
 /**
- * The waivers that account for a committed key having no tail — those naming a tail
+ * The waivers that account for a committed key having no tail: those naming a tail
  * whose fingerprint prefix is that key.
  *
  * The match is by FINGERPRINT and not by tail id, because the census note is about
@@ -213,7 +213,7 @@ export function tailWaiversIn(entriesByTail: ReadonlyMap<string, readonly Entry[
  * part of the account of why the key stands alone.
  *
  * The order is the order the tails were read in, which is the sorted tail order the
- * store lists — so a note over two waivers reads the same on every machine.
+ * store lists, so a note over two waivers reads the same on every machine.
  */
 export function waiversForKey(
   fingerprint: string,

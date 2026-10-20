@@ -1,9 +1,9 @@
 /**
- * `mnema key sigstore <identity>` — record that this machine's identity is the one a Sigstore
- * certificate names: an e-mail address, or a GitHub Actions workflow.
+ * `mnema key sigstore <identity>`: record that this machine's identity is the one a Sigstore
+ * certificate names (an e-mail address, or a GitHub Actions workflow).
  *
  * WHY THE CLAIM IS NEEDED AT ALL. A Sigstore bundle says that whoever could sign in as that
- * e-mail (or run that workflow) countersigned a checkpoint digest — and anybody can compute the
+ * e-mail (or run that workflow) countersigned a checkpoint digest, and anybody can compute the
  * digest of any checkpoint of a public repository. So a bundle on its own dates a checkpoint
  * and says nothing about who wrote it. It speaks for a mnema identity only where that identity
  * said, in a signed and covered fact, that the certificate's identity is its own; this writes
@@ -27,7 +27,7 @@ import {
 import { linkAccount, openTreeForWriting } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
-/** What the claim needs — injected so it is testable. */
+/** What the claim needs: injected so it is testable. */
 export interface KeySigstoreContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;

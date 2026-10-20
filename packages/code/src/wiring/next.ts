@@ -1,7 +1,7 @@
 /**
  * The `mnema task next` wiring: what it declares, and what it prints.
  *
- * `mnema task next <task-id> [--json]` — the moves the workflow allows the
+ * `mnema task next <task-id> [--json]`: the moves the workflow allows the
  * task next. No actor: the answer is a property of the task's state. An unknown
  * id is refused honestly; a terminal task reports "no legal moves".
  *
@@ -42,7 +42,7 @@ export function registerNextActions(task: Command, wiring: Wiring): Declared {
       reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
       return;
     }
-    // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+    // BEFORE the answer, and on the other stream, so it survives a pipe, and so
     // `--json` stays the machine-readable thing it promises to be.
     for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
     if (opts.json === true) {

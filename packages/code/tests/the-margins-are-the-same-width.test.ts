@@ -1,5 +1,5 @@
 /**
- * THE MARGINS ARE THE SAME WIDTH — what the console leaves empty to the left of what it says is
+ * THE MARGINS ARE THE SAME WIDTH: what the console leaves empty to the left of what it says is
  * what it leaves empty to the right, at every width between the shortest window it draws on and
  * a very wide one.
  *
@@ -10,7 +10,7 @@
  * the session itself folded:
  *
  *   - the LEFT margin is the column the sent command's mark begins at;
- *   - the RIGHT margin is what is left of the width after the widest row of the roll — a command
+ *   - the RIGHT margin is what is left of the width after the widest row of the roll: a command
  *     that is one word wider than any page, so the fold has to break it and every row but the
  *     last runs as far as the page allows.
  *
@@ -36,7 +36,7 @@ import {
 } from './support/pty.js';
 import { theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */

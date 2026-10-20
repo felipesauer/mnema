@@ -2,8 +2,8 @@
  * `mnema brief` as the adapter sees it: which trees reach the document, when it
  * refuses, and that it touches nothing.
  *
- * The document's own properties — the same bytes for the same record, one line per
- * rule, what an empty record says, what it declares about its scope — belong to the
+ * The document's own properties (the same bytes for the same record, one line per
+ * rule, what an empty record says, what it declares about its scope) belong to the
  * printer and are asserted in `presentation/brief.test.ts`; the bytes a person gets
  * are asserted in the e2e suite. What is asserted here is what only this level can
  * show: a record written through the product's own writes, in three trees, and which
@@ -55,7 +55,7 @@ function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * Lands another working copy's committed tail in this one — the offline merge two
+ * Lands another working copy's committed tail in this one: the offline merge two
  * clones of a repository produce when their branches meet.
  *
  * It copies the tails and the public key material, which is what a clone of the
@@ -64,7 +64,7 @@ function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
  * the machine that owns it, and this is the moment they meet.
  *
  * It is the only way one chain comes to hold two `ADR-1`s. The label is numbered from
- * the writer's view of the chain, so a second decision on ONE machine is `ADR-2` — a
+ * the writer's view of the chain, so a second decision on ONE machine is `ADR-2`: a
  * fixture that wrote two `ADR-1`s into one tail would be a record the product cannot
  * produce, and the whole slice would be tested against a fiction.
  */
@@ -102,11 +102,11 @@ function digest(dir: string): string {
 }
 
 /**
- * Records a decision in `scope` and accepts it — the two moves that put one in force.
+ * Records a decision in `scope` and accepts it: the two moves that put one in force.
  *
  * It hands back what the WRITE reported: the id, and the `ADR-<n>` label the product
  * minted for it. The label is what makes a fixture across two trees provable rather
- * than assumed — a case that needs two trees to have numbered their first decision the
+ * than assumed: a case that needs two trees to have numbered their first decision the
  * same way reads the numbers off the product instead of asserting them by hand.
  */
 function accepted(
@@ -126,7 +126,7 @@ function accepted(
 }
 
 /**
- * Every decision in force in EVERY tree of the project, whichever one holds it — the
+ * Every decision in force in EVERY tree of the project, whichever one holds it: the
  * witness that a record the document leaves out is a record that exists.
  *
  * It reads the trees directly rather than asking the verb under test, because a
@@ -140,7 +140,7 @@ function everyInForce(repo: string, env: DiscoveryEnv): string[] {
   );
 }
 
-/** Creates a pattern in `scope` and adopts it — the three moves that make one served. */
+/** Creates a pattern in `scope` and adopts it: the three moves that make one served. */
 function adopted(
   here: { cwd: string; env: DiscoveryEnv },
   name: string,
@@ -164,7 +164,7 @@ describe('mnema brief (what governs the work here)', () => {
     // AGENTS.md`) and committed, so it carries the COMMITTED record: the team's calls,
     // which clone everywhere. A rule kept on this machine, or a personal convention in
     // the machine-global tree, governs the work of whoever holds it and is nobody
-    // else's business — and this file's readers are everyone who clones.
+    // else's business, and this file's readers are everyone who clones.
     //
     // This test asserted the opposite until the union was measured: three accepted
     // decisions, one of them `--scope private`, produced a document with a private
@@ -196,7 +196,7 @@ describe('mnema brief (what governs the work here)', () => {
       expect(emitted, `the answer carries ${absent}`).not.toContain(absent);
     }
     // And the two that are missing really are IN THE RECORD, each in force in its own
-    // tree — without this the answer above is the answer of an empty project. The
+    // tree: without this the answer above is the answer of an empty project. The
     // witness is the product's own report of the write: three decisions, three ids.
     expect(new Set([team.id, machine.id, mine.id]).size).toBe(3);
     expect(everyInForce(repo, env)).toEqual(expect.arrayContaining([team.id, machine.id, mine.id]));
@@ -207,7 +207,7 @@ describe('mnema brief (what governs the work here)', () => {
     // `ADR-<n>` is numbered within ONE chain and frozen at write time, so the first
     // decision of the public tree and the first of the private tree are both `ADR-1`.
     // Folding the trees put two different rules under one label in a governance
-    // document — and the label exists to be cited, so a reader could not name a rule
+    // document, and the label exists to be cited, so a reader could not name a rule
     // without ambiguity. The bytes of that document are asserted in the e2e suite; what
     // is asserted here is that the answer it is built from cannot contain the clash.
     const { repo, env } = setup();
@@ -216,7 +216,7 @@ describe('mnema brief (what governs the work here)', () => {
     const first = accepted(here, 'Round the tax once, over the invoice total', 'public');
     const second = accepted(here, 'Do NOT extract a shared billing package', 'public');
     const secret = accepted(here, 'The staging secret lives in the vault', 'private');
-    // The product minted the collision — read off its own reports, not assumed.
+    // The product minted the collision: read off its own reports, not assumed.
     expect([first.adr, second.adr, secret.adr]).toEqual(['ADR-1', 'ADR-2', 'ADR-1']);
 
     const result = runBrief(here);
@@ -231,7 +231,7 @@ describe('mnema brief (what governs the work here)', () => {
   it('declares the label two clones of one repository both minted, and renumbers neither', () => {
     // THE DEFECT THIS SLICE IS FOR, at the level where the write happens. Two clones of
     // one repository work while apart. Each records its first decision and the product
-    // freezes `ADR-1` into it — legitimately, from the only chain that machine could
+    // freezes `ADR-1` into it: legitimately, from the only chain that machine could
     // see. The branches meet, the tails land in one tree, and the committed document now
     // prints a citable handle that names two rules.
     //
@@ -246,7 +246,7 @@ describe('mnema brief (what governs the work here)', () => {
     const there = { cwd: theirs.repo, env: theirs.env };
     const ours = accepted(here, 'Round the tax once, over the invoice total', 'public');
     const yours = accepted(there, 'Round the tax per line, then sum', 'public');
-    // The PRODUCT minted the clash — read off its own two reports, not assumed.
+    // The PRODUCT minted the clash: read off its own two reports, not assumed.
     expect([ours.adr, yours.adr]).toEqual(['ADR-1', 'ADR-1']);
     expect(ours.id).not.toBe(yours.id);
 
@@ -265,7 +265,7 @@ describe('mnema brief (what governs the work here)', () => {
     expect(result.brief.collisions).toEqual([{ adr: 'ADR-1', ids: [ours.id, yours.id].sort() }]);
   });
 
-  it('says nothing about a public ADR-1 beside a private one — that is one chain each', () => {
+  it('says nothing about a public ADR-1 beside a private one; that is one chain each', () => {
     // The `ADR-<n>` is numbered inside one chain, so a project with a committed rule and
     // a rule of its own has an `ADR-1` in each tree, and neither citation is ambiguous:
     // the document carries the committed one alone. A read that compared labels across
@@ -275,7 +275,7 @@ describe('mnema brief (what governs the work here)', () => {
     const here = { cwd: repo, env };
     const team = accepted(here, 'What the team settled', 'public');
     const machine = accepted(here, 'What this machine settled', 'private');
-    // The record really holds the same label twice — this is the material a
+    // The record really holds the same label twice: this is the material a
     // cross-chain read would have fired on.
     expect([team.adr, machine.adr]).toEqual(['ADR-1', 'ADR-1']);
 
@@ -294,7 +294,7 @@ describe('mnema brief (what governs the work here)', () => {
     // THE SECOND HALF OF THIS TEST HAD TO BE REWRITTEN, and it is the same inversion
     // that broke the prefix device. It used to prove the refusal was about the LOCATION
     // by recording a `global` rule and showing that the same record served it from
-    // inside the project — which the committed-only document no longer does. So the
+    // inside the project, which the committed-only document no longer does. So the
     // witness is a rule in the tree the document does carry; the global one stays in
     // the fixture, because a refusal over a person who HAS conventions is the case that
     // matters (the answer would have looked plausible).
@@ -307,7 +307,7 @@ describe('mnema brief (what governs the work here)', () => {
 
     const refused = runBrief({ cwd: elsewhere, env });
     expect(refused).toEqual({ ok: false, reason: 'NO_PROJECT' });
-    // And the same record, asked from inside the project, answers — so the refusal is
+    // And the same record, asked from inside the project, answers, so the refusal is
     // about where it was asked from and nothing else.
     const served = runBrief({ cwd: repo, env });
     expect(served.ok && served.brief.decisions.map((d) => d.id)).toEqual([team.id]);
@@ -316,7 +316,7 @@ describe('mnema brief (what governs the work here)', () => {
     expect(everyInForce(repo, env)).toEqual(expect.arrayContaining([mine.id, team.id]));
   });
 
-  it('answers an empty project without refusing — the honest empty', () => {
+  it('answers an empty project without refusing: the honest empty', () => {
     // A founded project with nothing in it is not a broken one, and the document says
     // which kind of empty it is. A refusal would make "nobody has decided yet"
     // indistinguishable from "there is no project here".
@@ -326,7 +326,7 @@ describe('mnema brief (what governs the work here)', () => {
       ok: true,
       // EMPTY, and asserted rather than left out: a record this product wrote on its own
       // always chains, so a read that named a broken tail here would be a read talking
-      // about a record that cannot exist. It is the vacuity half of the notice — see
+      // about a record that cannot exist. It is the vacuity half of the notice: see
       // `record-integrity.ts`.
       linkBreaks: [],
       brief: {
@@ -350,7 +350,7 @@ describe('mnema brief (what governs the work here)', () => {
     });
   });
 
-  it('leaves every byte where it was — a read, and not a file writer', () => {
+  it('leaves every byte where it was: a read, and not a file writer', () => {
     // Two things at once, and the second is the point of the whole verb: it writes no
     // event and no cache (like every read here), AND it does not write the operator's
     // file. `mnema brief > AGENTS.md` is a redirection somebody else chooses; a verb

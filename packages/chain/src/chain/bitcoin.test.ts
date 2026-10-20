@@ -5,7 +5,7 @@
  * THE FORGERY IS THE INTERESTING CASE and it is why this file is longer than the
  * function it covers. A block header declares the difficulty it was mined at, so a
  * check that asks only "did it meet its own claim" is satisfied in a millisecond by
- * a header that claims nothing — mine one here, at the easiest target the format can
+ * a header that claims nothing: mine one here, at the easiest target the format can
  * express, and watch it be refused. Without the floor that refusal does not happen,
  * and the whole sidecar becomes forgeable at the cost of a loop.
  */
@@ -84,7 +84,7 @@ describe('a real block header', () => {
 describe('a header that met its own claim and nothing more', () => {
   const merkleRoot = Buffer.alloc(32, 7);
 
-  it('is mined here in microseconds — which is the whole problem', () => {
+  it('is mined here in microseconds, which is the whole problem', () => {
     const easy = mined(0x207fffff, merkleRoot);
     expect(headerCarriesItsOwnClaim(easy)).toBe(true);
   });
@@ -94,7 +94,7 @@ describe('a header that met its own claim and nothing more', () => {
   });
 
   it('is refused at every difficulty a millisecond can reach, not merely at the easiest', () => {
-    // Only the top of the compact range can be mined in a test — which is exactly
+    // Only the top of the compact range can be mined in a test, which is exactly
     // the range a forger works in too, and the reason the floor sits far below
     // anything reachable that way.
     for (const bits of [0x207fffff, 0x1f00ffff, 0x1e7fffff]) {
@@ -126,8 +126,8 @@ describe('a header that claims more than it did', () => {
 describe('the floor itself', () => {
   it('sits strictly between the two families of case above, so neither is vacuous', () => {
     // A bound tested only from one side can be satisfied by a rule that refuses
-    // everything. Both sides are exercised — the mined headers are refused, the real
-    // one is accepted — and this says WHY that is possible: the floor is harder than
+    // everything. Both sides are exercised (the mined headers are refused, the real
+    // one is accepted) and this says WHY that is possible: the floor is harder than
     // anything this test can mine and easier than the block the vector came from, so
     // an inverted comparison reddens the accepting case and a removed one reddens
     // the refusing cases.

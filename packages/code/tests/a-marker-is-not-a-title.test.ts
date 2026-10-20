@@ -1,12 +1,12 @@
 /**
- * A MARKER THE PRODUCT PRINTS WHERE A TITLE GOES IS REFUSED AS ONE — at the door of every write
+ * A MARKER THE PRODUCT PRINTS WHERE A TITLE GOES IS REFUSED AS ONE: at the door of every write
  * that names a record, and in a decision file the import reads.
  *
  * WHAT WAS WRONG. The product prints `mnema decision record <title> <rationale>`, `mnema skill
  * create "<name>" --body "<text>"` and `--topic "<t>"`. Pasted without the marker filled in, the
  * marker was recorded as the name of a decision, a skill or an observation, permanently: the rule
  * that refuses `<why>` as a reason was asked of the why alone. And a decision file left as a
- * template — `# <title>`, or `<why>` under its context — was read as a decision by the import.
+ * template (`# <title>`, or `<why>` under its context) was read as a decision by the import.
  *
  * WHAT IS CHECKED. Every marker the product writes after a command that creates, or after
  * `--topic`, is collected from its sources and pages, and each is typed at the binary's door as
@@ -26,7 +26,7 @@ import { ROOT } from './support/published-examples.js';
 /** A marker written where a title goes: `task create "<title>"`, `--topic "<t>"`. */
 const WRITTEN = /(?:task create|decision record|skill create|--topic)[ =]+["']?(<[^<>\n"']+>)/g;
 
-/** Every tracked file that is product source or a page — tests are the reading, not the read. */
+/** Every tracked file that is product source or a page: tests are the reading, not the read. */
 function theProductsText(): readonly string[] {
   const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf-8' }).split('\n');
   return tracked.filter(

@@ -1,15 +1,15 @@
 /**
- * THE FLAGS REACH THE IMPORT — `decision import`'s own `--which` and `--scope`, on the binary.
+ * THE FLAGS REACH THE IMPORT: `decision import`'s own `--which` and `--scope`, on the binary.
  *
  * WHAT WAS WRONG. `decision import` declares both flags and its `--help` lists them, and the
  * group above it declares the same two. commander hands a group every flag it knows wherever the
  * flag is written, so `mnema decision import docs/adr --which ci` gave `--which` to `decision`,
- * and the import's check for a flag written before the verb — which asked whether the GROUP held a
- * value — refused it. It refused the documented spelling for both flags, every time, and no test
+ * and the import's check for a flag written before the verb, which asked whether the GROUP held a
+ * value, refused it. It refused the documented spelling for both flags, every time, and no test
  * ran that spelling: the only one pinned was the refusal (`cli.golden.test.ts`).
  *
- * WHAT IS ASSERTED. Written after `import` — after the directory, between `import` and the
- * directory, and as `--flag=value` — each flag reaches what the import writes. The agent is on
+ * WHAT IS ASSERTED. Written after `import` (after the directory, between `import` and the
+ * directory, and as `--flag=value`) each flag reaches what the import writes. The agent is on
  * every fact it appends, read back through `mnema export`, the product's own feed of who executed
  * what; the tree is the one those facts land in, read from the same feed. Written before
  * `import`, each is still refused by name, and the record is left byte for byte as it was.
@@ -43,7 +43,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 let sandbox: string;
@@ -124,8 +124,8 @@ function aboutThese(ids: readonly string[]): FeedLine[] {
 }
 
 /**
- * Every directory and file the binary could have written — the project's `.mnema/`, and the
- * whole HOME it runs with, where this machine's global tree and its key live — each file with
+ * Every directory and file the binary could have written (the project's `.mnema/`, and the
+ * whole HOME it runs with, where this machine's global tree and its key live) each file with
  * its digest.
  */
 function onDisk(): string[] {
@@ -155,8 +155,8 @@ describe('written after `import`', () => {
     expect(imported.status, imported.stderr).toBe(0);
     const ids = recordedIds(imported.stdout);
     expect(ids).toHaveLength(2);
-    // Three facts per decision — the birth, its move into `proposed`, and the link to the file
-    // it was read from — and not one of them without the agent.
+    // Three facts per decision (the birth, its move into `proposed`, and the link to the file
+    // it was read from) and not one of them without the agent.
     const facts = aboutThese(ids);
     expect(facts).toHaveLength(6);
     expect(facts.map((fact) => fact.agent)).toEqual(Array(6).fill('ci-importer'));
@@ -171,7 +171,7 @@ describe('written after `import`', () => {
     const facts = aboutThese(recordedIds(imported.stdout));
     expect(facts).toHaveLength(6);
     expect(new Set(facts.map((fact) => fact.tree))).toEqual(new Set(['private']));
-    // Without an agent named, the record says a person acted — the flag's absence, unchanged.
+    // Without an agent named, the record says a person acted: the flag's absence, unchanged.
     expect(facts.map((fact) => fact.agent)).toEqual(Array(6).fill(undefined));
   });
 
@@ -226,7 +226,7 @@ describe('written before `import`', () => {
   ];
 
   for (const [line, flag] of LINES) {
-    it(`${line.join(' ')} — refused, naming ${flag}, and nothing is written`, () => {
+    it(`${line.join(' ')}: refused, naming ${flag}, and nothing is written`, () => {
       const before = onDisk();
       const refused = mnema(...line);
       expect(refused.status).toBe(1);

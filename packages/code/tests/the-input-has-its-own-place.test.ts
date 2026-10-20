@@ -1,17 +1,17 @@
 /**
- * THE INPUT HAS ITS OWN PLACE — two rules across the terminal, a badge in the corner, and
+ * THE INPUT HAS ITS OWN PLACE: two rules across the terminal, a badge in the corner, and
  * a hint short enough to read.
  *
  * IT CAME OUT OF THREE MARKS ON ONE SCREENSHOT: the input should look like the console it
  * was drawn from, there should be something about mnema in the right-hand corner, and the
- * hint should be short. The geometry was MEASURED off that console rather than guessed —
+ * hint should be short. The geometry was MEASURED off that console rather than guessed:
  * runs of the box-drawing rune of 3, 93, 63, 118, 120 and 120 on a screen 120 wide, the
  * last two being the input, which is therefore not a box but two rules with no sides; and
  * a mark on column 102 with the value beside it and the verb after a middle dot. So every
  * case here asserts against a MEASUREMENT rather than against a picture:
  *
  *   - THE RULES MEASURE THE TERMINAL. Three widths and a resize, on a real
- *     pseudo-terminal, on the SCREEN — a run that stopped short is the ragged edge the
+ *     pseudo-terminal, on the SCREEN: a run that stopped short is the ragged edge the
  *     panel had before it was drawn corner to corner.
  *   - THE BADGE ENDS ON THE LAST COLUMN. Right-aligned rather than at a column somebody
  *     chose, which is asked by watching where it starts move when the width does.
@@ -21,11 +21,11 @@
  *     caret ended up, which is why the model grew a cursor for this delivery.
  *   - THE AREA DEGRADES BY HEIGHT, and that is what keeps this delivery from opening a
  *     hole. The region went from three rows to five, and the height at which the layout
- *     library gives up on redrawing PART of the screen — and writes, inside what it does
- *     instead, the one erase this product refuses — moves with it. Measured again, in both
+ *     library gives up on redrawing PART of the screen (and writes, inside what it does
+ *     instead, the one erase this product refuses) moves with it. Measured again, in both
  *     directions, and the number went DOWN. AND THE BOUNDARY USED TO BE READ OFF THAT
  *     ERASE, which no longer reaches a terminal at any height: it is translated on the way
- *     out (`src/repl/page.ts`, `theEraseAsAScroll`). What it is read off now is the ANSWER —
+ *     out (`src/repl/page.ts`, `theEraseAsAScroll`). What it is read off now is the ANSWER:
  *     a page carried into the scrollback where no page could have been turned.
  *   - THE BADGE DOES NOT LIE. The worst level when the trees disagree, by the function
  *     that already folds them; nothing at all when there is no record to fold.
@@ -78,7 +78,7 @@ import {
 } from './support/pty.js';
 import { screenOf, theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** `packages/code/src`, for the guards that read the surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -108,7 +108,7 @@ const CLEARS_THE_LINE = '\u0003';
  *
  * Eighty columns, because that is the width every terminal has had since before any of
  * them were on a screen, and the one a reader can be assumed to have. It is the WIDTH the
- * hint is measured against — nothing here counts characters and compares the count to a
+ * hint is measured against: nothing here counts characters and compares the count to a
  * number somebody wrote down about the sentence.
  */
 const AN_ORDINARY_TERMINAL = 80;
@@ -181,8 +181,8 @@ const showingEverything = {
   unmoved: 0,
   palette: 0,
   // NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
-  // FLOW on the screen — everything the session had said that a reader could still see, which
-  // GREW as lines landed — because the list of words was budgeted against what the page had
+  // FLOW on the screen (everything the session had said that a reader could still see, which
+  // GREW as lines landed), because the list of words was budgeted against what the page had
   // left over. What a session says is not above the input area any anymore: it is a window onto
   // a roll, inside the middle region (`repl/scrolling.ts`), so what the list is budgeted against
   // is the fixed region at the TOP (`repl/area.ts`, `AreaRequest.header`). Nought here leaves the
@@ -193,10 +193,10 @@ const showingEverything = {
 describe('the area has forms, and the tallest one that fits is the one drawn', () => {
   it('gives up the badge first, then the rules, and never the row being typed', () => {
     // THE LADDER, at the heights that choose each rung. What is asserted is WHERE each
-    // form gives way — one row below its own threshold — rather than how tall it is.
+    // form gives way, one row below its own threshold, rather than how tall it is.
     // AND EVERY RUNG CAME DOWN A ROW, which is the boundary this delivery removed rather
     // than a threshold anybody re-tuned. A form used to have to fit with ONE ROW TO SPARE,
-    // because a region as tall as the viewport was one the library redrew whole — with the
+    // because a region as tall as the viewport was one the library redrew whole: with the
     // erase of the caller's history inside the sequence. The console owns the screen now and its
     // frame IS the viewport on every frame, so there is nothing to stay under: a form fits when
     // it fits (`repl/area.ts`).
@@ -211,7 +211,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
 
   it('moves every rung of that ladder by the height of the region above it', () => {
     // THE FIELD THAT WAS READ IN PRODUCTION AND EXERCISED NOWHERE. `header` is what the area
-    // has to fit UNDER, and `areaFor` subtracts it twice — once to choose the form, once to
+    // has to fit UNDER, and `areaFor` subtracts it twice, once to choose the form, once to
     // budget the list of words. Every case in this repository passed it as nought, so both
     // subtractions could be DELETED and nothing went red: measured, 119 cases across the five
     // files that call `areaFor` stayed green with `- request.header` removed from either site.
@@ -231,14 +231,14 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
       expect(at(rows, 3), `${rows} rows under a header of 3`).toBe(form);
       // NOT VACUOUS: the same height without the header is a rung further UP, so the two
       // readings really are of different arrangements rather than of one the header cannot
-      // reach. `full` at 8 is the exception by construction — it is `full` either way.
+      // reach. `full` at 8 is the exception by construction: it is `full` either way.
       if (form !== 'full') expect(at(rows, 0)).not.toBe(form);
     }
   });
 
   it('takes the same rows off the list of words, with the form held still', () => {
     // THE SECOND SUBTRACTION, isolated. Above the threshold the header also moves, the FORM
-    // moves with it and the row count says nothing about which arithmetic did it — so this
+    // moves with it and the row count says nothing about which arithmetic did it, so this
     // asks at a height where the form is the same either way and only the budget can differ.
     const roomFor = (header: number) =>
       areaFor({ ...showingEverything, rows: 30, palette: 40, header });
@@ -253,7 +253,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
 
   it('never draws the badge when there is none, at any height there is', () => {
     // NO PROJECT, NO BADGE, and it is the FORM that does not exist rather than a row drawn
-    // empty — so a session outside a project gets the ruled arrangement at every height
+    // empty, so a session outside a project gets the ruled arrangement at every height
     // the full one would have fitted.
     for (const rows of [200, 40, 5]) {
       const form = areaFor({ ...showingEverything, badge: 0, rows }).form;
@@ -271,8 +271,8 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     //
     // AND THERE IS ONE MORE ROW THAN THERE ARE WORDS, which is what this delivery added:
     // the list stands off what is under it by a blank row, so an OPEN palette costs its rows
-    // plus one. It is the same rule as everything else here — a row the layout draws is a row
-    // this arithmetic counts — and the shape of defect it prevents is the caret one row away
+    // plus one. It is the same rule as everything else here (a row the layout draws is a row
+    // this arithmetic counts) and the shape of defect it prevents is the caret one row away
     // from the line it is meant to be on.
     const tall = { ...showingEverything, rows: 5 };
     expect(areaFor(tall).form).toBe('full');
@@ -293,7 +293,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
   it('says how many rows sit above the row being typed, and it is one per row drawn', () => {
     // WHAT THE CARET IS PUT AT. The differences between the forms are what says so: the
     // badge and one rule for the full form, one rule for the ruled one, nothing for the
-    // bare one — and the palette's rows are above the typed one in all three.
+    // bare one, and the palette's rows are above the typed one in all three.
     const rows = THE_FLOOR.rows;
     const full = areaFor({ ...showingEverything, rows });
     const ruled = areaFor({ ...showingEverything, badge: 0, rows });
@@ -306,8 +306,8 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // told about a row that is drawn whether or not anything is written on it.
     // AND THE THIRD REQUEST USED TO BE A SHORT TERMINAL, which stopped being able to
     // answer the question: with the blank row counted, one row of palette on a terminal of
-    // four or six rows changes the FORM as well — the trade the area makes when it cannot hold
-    // both (`a-palette-for-the-words.test.ts`) — and a difference measured across two forms is
+    // four or six rows changes the FORM as well, the trade the area makes when it cannot hold
+    // both (`a-palette-for-the-words.test.ts`), and a difference measured across two forms is
     // the rule it gave up plus the rows it gained. The three here are three ARRANGEMENTS at a
     // height that holds all of them, which is what isolates the palette's own rows.
     for (const request of [
@@ -330,13 +330,13 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
 // ---------------------------------------------------------------------------
 
 /**
- * HOW WIDE THAT ROW IS, measured off the row the session really composes — for the reason the
+ * HOW WIDE THAT ROW IS, measured off the row the session really composes, for the reason the
  * other two widths above are: a number written down here would be ruling on a row nobody draws.
  */
 const UNMOVED_IS = widthOf(alreadyOnThePage());
 
 /**
- * AND IN EACH OF ITS TWO SENTENCES — the one a reader at the tail is told, and the one a reader who
+ * AND IN EACH OF ITS TWO SENTENCES: the one a reader at the tail is told, and the one a reader who
  * has walked back is told instead (`src/repl/session.ts`, `belowThePage`). The row is one row
  * whichever it holds, so every rule below about how wide it may be is a rule about both.
  */
@@ -374,15 +374,15 @@ describe('the row saying an answer left the page as it was is counted where it i
   });
 
   it('fits one row of the narrowest window this console draws a page on, in either sentence', () => {
-    // THE FLOOR IS WHERE IT MATTERS MOST — the window there is the shortest, so an answer outgrows
-    // it soonest — and a row wider than the floor would never be drawn exactly there.
+    // THE FLOOR IS WHERE IT MATTERS MOST: the window there is the shortest, so an answer outgrows
+    // it soonest, and a row wider than the floor would never be drawn exactly there.
     for (const [which, width] of EITHER_SENTENCE) {
       expect(width, `${which}: the row folds at the floor`).toBeLessThanOrEqual(THE_FLOOR.columns);
     }
   });
 
   it('keeps its row when the list wants the whole screen', () => {
-    // THE LIST GROWS INTO WHATEVER IS LEFT and the forms give way to it, down to the bare one — and
+    // THE LIST GROWS INTO WHATEVER IS LEFT and the forms give way to it, down to the bare one, and
     // the bare form still draws this row, so a list that counted it as room would make the area one
     // row taller than what is under the region above it.
     for (const header of [0, 14]) {
@@ -448,12 +448,12 @@ function rowHolding(page: string, what: string): string {
   return row as string;
 }
 
-/** Every SGR sequence on a line — what a renderer added to it. */
+/** Every SGR sequence on a line: what a renderer added to it. */
 function sgrIn(text: string): string[] {
   return text.match(new RegExp(`${ESC}\\[[0-9;]*m`, 'g')) ?? [];
 }
 
-/** The same line with every style sequence off — what a pipe would have received. */
+/** The same line with every style sequence off: what a pipe would have received. */
 function withoutSgr(text: string): string {
   return text.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
 }
@@ -463,7 +463,7 @@ function withoutSgr(text: string): string {
  * down.
  *
  * Two subtractions, and the second one is what the first draft got wrong. A severity adds
- * to a line that carries none, so the first subtraction is the bare line's own escapes —
+ * to a line that carries none, so the first subtraction is the bare line's own escapes,
  * that is the only way to name a hue without naming a colour, and it survives a renderer
  * that changes which red it writes (the shape `tests/the-panel.test.ts` uses to keep the
  * chrome's accent apart from the three). But what it adds is an opener AND A CLOSER, and
@@ -473,7 +473,7 @@ function withoutSgr(text: string): string {
  * add, and what is left is the code that IDENTIFIES this outcome.
  *
  * A severity that came to share its whole hue with another comes out EMPTY here, which is
- * why the case below asserts each of them is not — that is the non-vacuity, rather than a
+ * why the case below asserts each of them is not, that is the non-vacuity, rather than a
  * count of distinct sets, which after this subtraction is true by construction.
  */
 function hueOf(severity: Severity): string[] {
@@ -485,7 +485,7 @@ function hueOf(severity: Severity): string[] {
 }
 
 /**
- * One level per outcome the surface distinguishes — and the case that uses them asserts
+ * One level per outcome the surface distinguishes, and the case that uses them asserts
  * the set is COMPLETE against {@link SEVERITIES} rather than trusting this list.
  *
  * They are values the product produces: `fully-signed` is what a healthy record answers,
@@ -531,7 +531,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     // THE CASE THIS ROW COULD LIE IN. A record is more than one tree, and a corner that
     // showed the first of them would call a project fine while `mnema verify` calls it
     // otherwise. The trees are made to disagree the way the verdict's own cases make one
-    // disagree — the checkpoints of ONE tree emptied, which is a tree between its first
+    // disagree: the checkpoints of ONE tree emptied, which is a tree between its first
     // event and its first checkpoint and is a legitimate state. Nothing is WRITTEN into
     // the record here; a file the product wrote is emptied.
     const second = join(sandbox, 'disagreeing');
@@ -541,7 +541,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     try {
       await shell('init');
       await shell('task', 'create', 'a task in the committed tree');
-      // The one verb that writes the OTHER tree. A memory lands in the committed one — a
+      // The one verb that writes the OTHER tree. A memory lands in the committed one: a
       // record travels by its KIND (`the-record-travels.test.ts`), and only an explicit
       // scope puts a task in the private tree.
       await shell('task', 'create', 'a task that stays on this machine', '--scope', 'private');
@@ -558,7 +558,7 @@ describe('the badge says what the record proved, and the verb that says the rest
       const badge = rowHolding(await openedAt(120), MARK);
       expect(badge).toContain(worst);
       // And it is the worst rather than any of them: the level of the intact tree is on
-      // the page — the panel says one line per tree — and it is NOT the one in the corner.
+      // the page, the panel says one line per tree, and it is NOT the one in the corner.
       const other = levels.find((level) => level !== worst) as string;
       expect(other, 'both trees are at the same level after all').toBeDefined();
       expect(badge, `the corner named the other tree: ${badge}`).not.toContain(other);
@@ -592,14 +592,14 @@ describe('the badge says what the record proved, and the verb that says the rest
   const severityOf = (line: Line): Severity | undefined => line.parts[0]?.severity;
 
   it('carries the hue its level reads as, in each of the three outcomes', () => {
-    // THIS CASE USED TO ASSERT THE OPPOSITE — that the badge carries no style at all —
+    // THIS CASE USED TO ASSERT THE OPPOSITE (that the badge carries no style at all),
     // and it is renamed rather than edited, because a conserto that inverts an observable
     // leaves every device built on the old name asserting the new behaviour by accident.
     // What fell is in `repl/session.ts`, `badgeLine`: an unpainted corner is quiet while
     // the record is broken, and this is a tool for making tampering evident.
     //
     // ASSERTED AGAINST THE FUNCTION AND NEVER AGAINST A COLOUR. The hue of a severity is
-    // taken from the RENDERER — what a severity adds to a line that carries none — so no
+    // taken from the RENDERER, what a severity adds to a line that carries none, so no
     // escape and no colour word is written down here, and the case survives a renderer
     // that changes which red it writes.
     //
@@ -634,8 +634,8 @@ describe('the badge says what the record proved, and the verb that says the rest
 
   it('and stops carrying good news once its level has stopped covering the record', () => {
     // THE HUE OF THE OTHER FORM, AND IT IS A CASE BECAUSE A MUTATION FOUND NOTHING. Taking
-    // the caution out of `badgeLine` — leaving the degraded row painted by its level alone
-    // — left 57 cases green across the three files that read this row. A corner that says
+    // the caution out of `badgeLine` (leaving the degraded row painted by its level alone)
+    // left 57 cases green across the three files that read this row. A corner that says
     // `fully-signed as this opened` in the green a reader takes for *nothing to look at* is
     // the failure the whole delivery is named after, wearing one extra clause.
     //
@@ -707,7 +707,7 @@ describe('the hint is short enough to be one row, and promises nothing that is n
   it('fits an ordinary terminal without folding', () => {
     // ASSERTED AGAINST THE WIDTH and not against a number about the sentence. The hint used
     // to be five clauses and about a hundred and ten characters, which the terminal folded
-    // into two rows below ninety-seven columns — the row that exists to be glanced at was
+    // into two rows below ninety-seven columns: the row that exists to be glanced at was
     // the tallest thing in the region.
     expect(widthOf(tips())).toBeLessThanOrEqual(AN_ORDINARY_TERMINAL);
     // Not vacuous: it says something, and the measurement is of a real sentence.
@@ -725,8 +725,8 @@ describe('the hint is short enough to be one row, and promises nothing that is n
     // TO BAN THE PREFIX. The rule it held was right and it was about a PROMISE: a row under
     // the prompt is the most believed sentence on the surface, so a hint naming an
     // affordance that does not answer would be the console lying to the one reader who
-    // cannot check. What falsified the ban is the palette — a slash on an empty row now
-    // opens the list of the session's own words — so the case is renamed and inverted
+    // cannot check. What falsified the ban is the palette, a slash on an empty row now
+    // opens the list of the session's own words, so the case is renamed and inverted
     // rather than edited, because a case that keeps its name while its subject flips
     // leaves every device built on it asserting the new behaviour by accident.
     const said = renderPlain(tips());
@@ -738,12 +738,12 @@ describe('the hint is short enough to be one row, and promises nothing that is n
   });
 
   it('names no word of the session at all, because the list is where they are', () => {
-    // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over three deliveries —
-    // the word that clears the page, the key that clears the line, and the word that listed
-    // the verbs — and every one of them is one keystroke away behind the clause that stayed.
+    // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over three deliveries
+    // (the word that clears the page, the key that clears the line, and the word that listed
+    // the verbs) and every one of them is one keystroke away behind the clause that stayed.
     // IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What falsified it
     // first is that the slash listed `/help` itself; what falsifies it now is that `/help`
-    // does not exist — the list IS the answer that word used to print.
+    // does not exist: the list IS the answer that word used to print.
     const said = renderPlain(tips());
     for (const word of SESSION_WORDS) expect(said, `the hint names ${word}`).not.toContain(word);
     // THE LINK, so the absence above is a move and not a loss: every word the session answers
@@ -791,8 +791,8 @@ const times = (text: string, what: string): number => text.split(what).length - 
 /**
  * Whether a row of a screen is a rule and NOTHING else.
  *
- * IT WAS THE DISCRIMINANT BETWEEN THE INPUT'S RULES AND THE PANEL'S — the box had its frame at
- * both ends of every row of it, so a row made of nothing but the run belonged to the area — and
+ * IT WAS THE DISCRIMINANT BETWEEN THE INPUT'S RULES AND THE PANEL'S: the box had its frame at
+ * both ends of every row of it, so a row made of nothing but the run belonged to the area, and
  * the box has been gone for two deliveries. What it tells apart now is a SEAM of the page from
  * everything else on it, and there are three: the rule that closes the top region, and the two
  * the row being typed sits between (`src/repl/region.ts`, `theTop` and `Present`). Which of the
@@ -827,8 +827,8 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
   // THE NARROWEST OF THE THREE WAS SIXTY COLUMNS, AND NO CONSOLE IS DRAWN THERE ANY MORE. The
   // width was picked as an ordinary narrow window, on the premise every ladder of this surface
   // was written on: whatever the size, some arrangement is drawn. There is a FLOOR under the
-  // window now (`src/repl/floor.ts`) — under eighty by twenty-four the frame is a screen saying
-  // so, with no input area and therefore no rules — so sixty columns stopped being a width this
+  // window now (`src/repl/floor.ts`) (under eighty by twenty-four the frame is a screen saying
+  // so, with no input area and therefore no rules), so sixty columns stopped being a width this
   // case can measure anything at. It is the floor's own width instead, which is the narrowest
   // window there IS a rule on, and the case is stronger for it: the run has to reach the last
   // column of the smallest console anybody can open.
@@ -845,7 +845,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
         expect([...rule.replace(/ +$/, '')].length, `${columns}: a rule stops short`).toBe(columns);
       }
       // AND THERE ARE THREE OF THEM ON THE PAGE AND NO MORE, on a page drawn once. IT WAS TWO,
-      // and the third is the seam that closes the top region — the same drawing, in the same
+      // and the third is the seam that closes the top region: the same drawing, in the same
       // hue, put where the arrangement ends (`src/repl/region.ts`, `theTop`). What the count is
       // still worth is what it always was: a page whose rules had multiplied would be a page
       // drawn twice, and a page missing one would be a region with no edge.
@@ -864,7 +864,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
     // *narrower than it was*; what a caller drags to under eighty columns gets a screen saying the
     // window is too small (`src/repl/floor.ts`, `tests/a-floor-under-the-window.test.ts`), and a
     // page with no input area on it has no rule to measure. It shrinks to the floor's own width
-    // instead — still a shrink, still a redraw, and now the narrowest one there is.
+    // instead: still a shrink, still a redraw, and now the narrowest one there is.
     const rows = THE_FLOOR.rows;
     const narrower = 80;
     const ran = await inPty({
@@ -882,7 +882,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
     });
     // FOUND BY THE WIDTH IT WAS DRAWN AT, not by where the step ended. A resize produces more
     // than one frame and a step ends wherever the stream was quiet, so an index puts this read
-    // between them on a loaded machine — and what came back was the page at the OLD width, which
+    // between them on a loaded machine, and what came back was the page at the OLD width, which
     // the screen model then refused by name (*nothing on it was drawn 70 columns wide*). The
     // wait above is right; the index was not what the wait guaranteed
     // (`support/screen.ts`, {@link theSettledScreen}).
@@ -922,7 +922,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
   it('lands on the prompt rather than on the first row of the region', async () => {
     // THE ARITHMETIC, ASKED OF A SCREEN. The caret used to be put at the top of the redrawn
     // region because the row being typed WAS the top of it. There are two rows over it now
-    // in the full form, and how many is answered before the layout is reached — so an
+    // in the full form, and how many is answered before the layout is reached, so an
     // off-by-one there leaves a caller's caret on a rule.
     const columns = 100;
     const rows = THE_FLOOR.rows;
@@ -934,7 +934,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
         opens,
         {
           // WITH THE PAINT TAKEN OUT, because the row being typed is a line this product
-          // composes now — the prompt in the accent, the words in a weight of their own — so
+          // composes now (the prompt in the accent, the words in a weight of their own), so
           // `mnema> ver` is not a run of bytes on the wire (`tests/support/pty.ts`).
           types: typed,
           until: arrivedUnpainted(`${PROMPT} ${typed}`),
@@ -956,7 +956,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
     // right and the attribution was wrong. It was OURS: the position was handed over in a
     // passive effect, which runs after the frame it belongs to has been written, so every
     // frame carried the position of the one before it. Handed over while the frame is being
-    // composed (`repl/region.ts`), the caret is where the caller's next character goes —
+    // composed (`repl/region.ts`), the caret is where the caller's next character goes,
     // and the range becomes an exact column, which is what the opening frame needed too
     // (`tests/the-opening-fits-the-screen.test.ts`).
     expect(screen.cursor.column).toBe([...`${PROMPT} ${typed}`].length);
@@ -971,14 +971,14 @@ describe('the caret is left on the row being typed, under everything drawn over 
 // The height at which the area degrades, and the one the library gives up at
 // ---------------------------------------------------------------------------
 
-/** A window with room for the hint on one row — which is what makes the region two. */
+/** A window with room for the hint on one row, which is what makes the region two. */
 const WIDE_ENOUGH_FOR_THE_HINT = 100;
 
 describe('every terminal a caller can open gets the whole area', () => {
   it('draws the rules and the badge on a roomy window and at the floor alike', async () => {
     // IT WAS A CASE PER FORM AND IT IS A CASE PER HEIGHT, and the floor is what changed it. The
-    // second half of this case drove a THREE-ROW terminal and read the bare arrangement off it —
-    // no rules, no badge, a prompt and a hint — because every ladder of this surface was total and
+    // second half of this case drove a THREE-ROW terminal and read the bare arrangement off it
+    // (no rules, no badge, a prompt and a hint), because every ladder of this surface was total and
     // a page was drawn at any size a device reported. Under eighty by twenty-four there is no page
     // now (`src/repl/floor.ts`), so the shortest window this can be asked of is the floor, and
     // what it answers there is `full`: the arrangement holds at most a third of the screen
@@ -986,7 +986,7 @@ describe('every terminal a caller can open gets the whole area', () => {
     // is five. The height ladder is unchanged and it is asserted where it is a function of two
     // numbers, at the top of this file.
     //
-    // ONE WIDTH THROUGHOUT, so the only thing that differs between the runs is the height — and it
+    // ONE WIDTH THROUGHOUT, so the only thing that differs between the runs is the height, and it
     // is a width with room for the HINT, because the hint is a row of the arrangement and a window
     // that drops it is a window measuring a different ladder. IT USED TO BE SIXTY COLUMNS,
     // which stopped being such a width when the area learned to leave out a row the terminal would
@@ -998,7 +998,7 @@ describe('every terminal a caller can open gets the whole area', () => {
     };
     // A ROOMY WINDOW, AND IT WAS FORTY ROWS. Forty had room to spare while the floor was
     // twenty-four rows and is UNDER the floor now (`src/repl/floor.ts`), so a run at forty would
-    // be a run against the screen that says the window is too small — which draws no rules and no
+    // be a run against the screen that says the window is too small, which draws no rules and no
     // badge, and would have made this half of the comparison pass for the wrong reason.
     const full = await drawn(THE_FLOOR.rows + 19);
     expect(rulesOn(full), 'the full form has no rules').toHaveLength(3);
@@ -1020,13 +1020,13 @@ describe('every terminal a caller can open gets the whole area', () => {
 
   // THREE CASES STOOD HERE AND ALL THREE DIED WITH THE BOUNDARY THEY MEASURED, which is the
   // one thing worth writing down about them. They pinned the height at which the layout library
-  // stops redrawing PART of the page and starts the whole page over — *one row*, then *not at any
-  // height without the hint*, then *and it moves with the hint, to the column* — because that
+  // stops redrawing PART of the page and starts the whole page over (*one row*, then *not at any
+  // height without the hint*, then *and it moves with the hint, to the column*), because that
   // path was the one whose sequence carried the erase of the caller's history, and every number
   // in this file was chosen to keep the region one row short of it.
   //
   // THE CONSOLE'S FRAME IS THE VIEWPORT ON EVERY FRAME NOW. It is fullscreen at every height by
-  // construction, so the boundary is not something a session can be on one side of — and what
+  // construction, so the boundary is not something a session can be on one side of, and what
   // the three cases READ it off is gone too: they counted pages carried into the caller's
   // scrollback, which was this product's own answer to the erase, and nothing is carried anywhere
   // any more. What survives of the promise they were protecting is asked where it is now true:
@@ -1062,7 +1062,7 @@ function literalsOf(code: string): string[] {
 describe('the verb the badge tells a caller to run is spelled in one module', () => {
   it('is named once in the product, and it is where it is registered', () => {
     // BY THE DISCRIMINANT: a literal that IS the verb's name. The badge sends a caller
-    // to a verb, so the word it prints has to be the word commander routes — typed twice,
+    // to a verb, so the word it prints has to be the word commander routes: typed twice,
     // the day this verb is renamed is the day the corner of the console starts naming
     // something that does not exist.
     const naming = sourcesOf(SRC).filter((file) =>

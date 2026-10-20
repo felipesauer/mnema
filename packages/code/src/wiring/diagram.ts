@@ -1,12 +1,12 @@
 /**
  * The `mnema diagram` wiring: what it declares, and what it prints.
  *
- * `mnema diagram <subject> [id]` — mermaid text, on stdout, for something that draws it. A
+ * `mnema diagram <subject> [id]`: mermaid text, on stdout, for something that draws it. A
  * subject is one of the three state machines (`decision`, `skill`, `task`: derived from the
  * tables the gate enforces, so they take no id and need no project) or an entity's
  * `timeline` or `refs` (the two audit reads, drawn: they need the id and a project).
  *
- * IT IS A READ. It writes nothing — the redirection is the caller's, as with `brief` — and it
+ * IT IS A READ. It writes nothing (the redirection is the caller's, as with `brief`) and it
  * takes no option: a second spelling of a question `timeline` and `refs` already answer with
  * their own flags would be a second thing to keep in step. `refs` draws the default
  * neighbourhood. What a diagram line may hold is decided in `presentation/diagram.ts`.

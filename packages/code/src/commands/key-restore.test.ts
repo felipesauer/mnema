@@ -1,7 +1,7 @@
 /**
  * `mnema key restore` as an adapter: it resolves the project, resolves the path,
  * and forwards. The judgements it must NOT make of its own are the interesting
- * part — a refusal reaches the person in the core's own words, and no project
+ * part: a refusal reaches the person in the core's own words, and no project
  * means no restore, because the proof of membership lives in a project's record.
  *
  * The recovery itself (the anchor is the one from before the loss) is pinned in
@@ -53,7 +53,7 @@ function setup(): { repo: string; env: DiscoveryEnv; keyRoot: string } {
 
 /**
  * Inits a project, takes the vault copy of the cold backup key, and deletes the
- * machine's own private key — the state a person is in when they reach for this
+ * machine's own private key, the state a person is in when they reach for this
  * command: the disk is alive, the key is not.
  */
 function initThenLoseTheKey(
@@ -110,7 +110,7 @@ describe('mnema key restore', () => {
     expect(readFileSync(inside, 'utf-8')).toBe(readFileSync(lost.vaultCopy, 'utf-8'));
   });
 
-  it('refuses NO_PROJECT outside a project — the proof of membership lives in one', () => {
+  it('refuses NO_PROJECT outside a project: the proof of membership lives in one', () => {
     const { env } = setup();
     const bare = join(sandbox, 'not-a-project');
     mkdirSync(bare, { recursive: true });
@@ -123,13 +123,13 @@ describe('mnema key restore', () => {
     });
   });
 
-  it("forwards the core's refusal verbatim — the surface judges nothing itself", () => {
+  it("forwards the core's refusal verbatim: the surface judges nothing itself", () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     const stranger = join(sandbox, 'stranger.key');
     writeFileSync(stranger, generateKeyPair().privateKey.export({ type: 'pkcs8', format: 'pem' }));
 
-    // The machine still holds its key, so the core refuses KEY_PRESENT — and the
+    // The machine still holds its key, so the core refuses KEY_PRESENT, and the
     // adapter reports that code and message, inventing neither.
     const refused = runKeyRestore({ cwd: repo, env }, { privateKeyPath: stranger });
 

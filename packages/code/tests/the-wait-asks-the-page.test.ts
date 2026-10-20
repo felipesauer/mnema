@@ -7,7 +7,7 @@
  * cumulative: a line drawn once early in the step stays in that window for the rest of it,
  * however far the roll has since pushed it. So the two asked different questions of different
  * objects, the step ended on the first frame satisfying the weaker one, and the case read a page
- * that still held the line — 4 red in 6 runs of the seventeen files that drive a terminal, and
+ * that still held the line: 4 red in 6 runs of the seventeen files that drive a terminal, and
  * green whenever the file ran alone.
  *
  * IT WAS READ AS MACHINE CONTENTION FOR THREE DELIVERIES, and it is not: the failure carries an
@@ -21,7 +21,7 @@
  *
  * WHAT THIS FILE COVERS: the instrument's own contract. That the empirical rate went from 4 in 6
  * to 0 in 6, and the whole suite from red to 3455 of 3455 three times over, is in the delivery's
- * report — a rate is not a case.
+ * report: a rate is not a case.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -38,7 +38,7 @@ describe('a page is not asked about before there is one', () => {
 
   it('is still waiting while no frame has been drawn at all', () => {
     // THE HALF THAT MATTERS MOST. A replay that finds no frame has found no page, and a page
-    // that does not exist has not lost anything — answering `true` there would end the step
+    // that does not exist has not lost anything: answering `true` there would end the step
     // before the session had drawn, which is exactly how the sibling instrument was wrong before
     // it was given its presence half.
     const wait = aPageWithout(PROMPT, 80, 24, 'the oldest line');
@@ -49,8 +49,8 @@ describe('a page is not asked about before there is one', () => {
   it('is still waiting when a frame ended but no page was drawn at that width', () => {
     // THE PATH THE OTHER TWO CASES DO NOT REACH, and it took a mutation to notice: they stop at
     // the presence half and never get as far as the replay. `theSettledScreen` THROWS when no
-    // frame in the stream was drawn at the asked width — it refuses to read the end of the
-    // stream as a page — so the replay's refusal is a throw and not an empty answer, and the
+    // frame in the stream was drawn at the asked width, it refuses to read the end of the
+    // stream as a page, so the replay's refusal is a throw and not an empty answer, and the
     // step has to read it as "not yet" rather than as "gone".
     const framed = `${PROMPT} the oldest line${FRAME_IS_DRAWN}`;
     const wait = aPageWithout(PROMPT, 80, 24, 'the oldest line');

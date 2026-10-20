@@ -2,7 +2,7 @@
  * The `mnema trailer` wiring: what it declares, and what it prints.
  *
  * `mnema trailer <decision> [--id] [--json]` prints the commit trailer that ties a commit to a
- * decision — `Mnema-Decision: ADR-4` — and nothing else, so `$(mnema trailer ADR-4)` IS the line.
+ * decision (`Mnema-Decision: ADR-4`) and nothing else, so `$(mnema trailer ADR-4)` IS the line.
  * It writes no commit and records nothing; `commits`, `why` and `aging` read the trailers back out
  * of the git log when asked. A read: no `--actor`, `NO_PROJECT` outside a project.
  */

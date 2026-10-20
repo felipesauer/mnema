@@ -3,14 +3,14 @@
  *
  * A project's record is two trees: the committed one every clone gets, and this
  * machine's private one beside it. The verdict covered the first and said nothing
- * about the second, which held signed facts nobody ever verified — a task, a decision,
+ * about the second, which held signed facts nobody ever verified: a task, a decision,
  * a skill written `--scope private`. So the sentence read as a verdict over the record
  * while half the record was outside it, and the exit code agreed with the sentence.
  *
  * Every case here is driven through the CLI entry the binary uses, and BOTH channels
  * are asserted: the lines a person reads and the exit a CI step reads. The previous
- * delivery's lesson holds — a verdict that qualifies can become a verdict that
- * EXCUSES — so the cases that must stay red are here beside the ones that must go
+ * delivery's lesson holds (a verdict that qualifies can become a verdict that
+ * EXCUSES), so the cases that must stay red are here beside the ones that must go
  * green.
  *
  * THE CASE THIS FILE EXISTS TO PROTECT is the clone. The private tree is gitignored,
@@ -21,7 +21,7 @@
  * the second is the one that discriminates: a note that merely printed differently
  * would still pass the exit assertion.
  *
- * Every fixture is built by the PRODUCT — `mnema init`, `mnema task` — and then edited
+ * Every fixture is built by the PRODUCT (`mnema init`, `mnema task`) and then edited
  * on disk the way an adversary or a `git clone` would. Nothing writes an event by hand.
  */
 
@@ -106,7 +106,7 @@ async function found(): Promise<void> {
   await run(['init'], capture().io);
 }
 
-/** Records one task through the CLI, in the tree `scope` names — each one signed. */
+/** Records one task through the CLI, in the tree `scope` names: each one signed. */
 async function record(title: string, ...scope: readonly string[]): Promise<void> {
   const c = capture();
   await run(['task', 'create', title, ...scope], c.io);
@@ -166,7 +166,7 @@ describe('the record is two trees, and the verdict names both', () => {
   });
 
   it('FAILS on a break in the private tree, and says which tree it is in', async () => {
-    // The aggregate is the worst tree's. The committed tree is untouched here — a
+    // The aggregate is the worst tree's. The committed tree is untouched here: a
     // verdict that passed because that half is fine would be worse than no verdict.
     await found();
     await record('write the runbook');
@@ -208,7 +208,7 @@ describe('the record is two trees, and the verdict names both', () => {
     const bare = await verify();
     expect(lineFor(bare, 'public')).toContain('all events are signature-covered');
     expect(lineFor(bare, 'private')).toMatch(/event\(s\) above the last checkpoint/);
-    // Nothing is broken, so the default minimum still passes — that is the residual
+    // Nothing is broken, so the default minimum still passes, that is the residual
     // the product declares rather than fails on.
     expect(bare.failed).toBe(false);
 
@@ -226,7 +226,7 @@ describe('a line in the SECOND tree that will not parse', () => {
     // The verdict stopped being a parser message when it learned to name the tail and
     // the line. Reading a second tree must not undo that: an unreadable line in the
     // private tree has to come back as an issue against `private`, with the committed
-    // tree's own verdict still beside it — not as a stack out of the fold.
+    // tree's own verdict still beside it, not as a stack out of the fold.
     await found();
     await record('write the runbook');
     await record('rotate the local credentials', '--scope', 'private');
@@ -257,7 +257,7 @@ describe('a tree with nothing in it', () => {
     await found();
     await record('write the runbook');
     await record('rotate the local credentials', '--scope', 'private');
-    // What `git clone` gives you — the gitignored subtree is simply not in the copy.
+    // What `git clone` gives you: the gitignored subtree is simply not in the copy.
     rmSync(trees().privateRoot, { recursive: true, force: true });
 
     // A clean reading leaves that line out; `--verbose` is where a reader finds it said.
@@ -283,7 +283,7 @@ describe('a tree with nothing in it', () => {
   });
 });
 
-describe("this machine's global tree — only when asked", () => {
+describe("this machine's global tree, only when asked", () => {
   it('is left out by default and covered by --global, over the same broken record', async () => {
     // The flag's own wire test, and the decision under it: the global tree belongs to
     // no project and is present in every one, so a weakness there must not lower the

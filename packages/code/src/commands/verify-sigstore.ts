@@ -1,5 +1,5 @@
 /**
- * `mnema verify --against-sigstore` — what the Sigstore bundles in this record say, read
+ * `mnema verify --against-sigstore`: what the Sigstore bundles in this record say, read
  * offline against the trust root this binary carries.
  *
  * WHAT IT ADDS. A bundle in `witness/` is a second signature over a checkpoint, made with a
@@ -11,12 +11,12 @@
  * countersign a digest they can compute, which is any checkpoint of a public repository; a
  * bundle speaks for an identity of this record only where that identity named the same e-mail
  * or workflow in a signed, covered fact (`mnema key sigstore`), and the line says whether it did.
- * The time is Rekor's clock, signed with Rekor's key — not the Bitcoin work behind `witness stamp`.
+ * The time is Rekor's clock, signed with Rekor's key, not the Bitcoin work behind `witness stamp`.
  *
  * IT CHANGES NOTHING ABOUT THE VERDICT. It runs only when asked, after the verification, over the
  * trees that verified, and it answers in notes: never the level, never `--require witnessed`,
- * never the exit. A bundle that does not hold — another digest, a checkpoint this tail does not
- * prove, a certificate the carried root does not reach — is said by name, as NOT COVERED.
+ * never the exit. A bundle that does not hold (another digest, a checkpoint this tail does not
+ * prove, a certificate the carried root does not reach) is said by name, as NOT COVERED.
  *
  * WHAT IS READ, AND WHY ONLY THE SIGNED PART. A bundle counts only over a checkpoint the verifier
  * PROVED (`checkpointedThrough`), and the message it is checked against is recomputed from
@@ -39,7 +39,7 @@ import { type Scope, SIGSTORE_SERVICE, sigstoreAccountOf } from '@mnema/core';
 import { readSigstoreBundle, type SigstoreReading } from '../sigstore/read.js';
 import type { TreeReport } from './verify.js';
 
-/** What a bundle's file name ends in — the one place the suffix is known on this side. */
+/** What a bundle's file name ends in: the one place the suffix is known on this side. */
 const BUNDLE_SUFFIX = '.sigstore.json';
 
 /** One bundle, and what it says. */
@@ -51,7 +51,7 @@ export interface SigstoreFinding {
   readonly reading: SigstoreReading;
   /**
    * The identity of this record that signed the checkpoint, when it named the certificate's
-   * identity in a covered `account.linked` — absent when it did not.
+   * identity in a covered `account.linked`: absent when it did not.
    */
   readonly namedBy?: string;
   /** The identity that signed the checkpoint the bundle is over, when it is known. */

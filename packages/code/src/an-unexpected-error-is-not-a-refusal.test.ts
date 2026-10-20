@@ -1,5 +1,5 @@
 /**
- * AN UNEXPECTED ERROR IS NOT A REFUSAL — the last-resort catch of the program told them
+ * AN UNEXPECTED ERROR IS NOT A REFUSAL. The last-resort catch of the program told them
  * apart by nothing: a verb that said no on purpose and a verb that tripped over its own
  * code both came out as one red sentence and exit 1, so a bug looked exactly like the
  * product doing what it was asked.

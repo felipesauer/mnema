@@ -1,5 +1,5 @@
 /**
- * The synchronous sleep the writing path waits with — a busy tail, an installation id another
+ * The synchronous sleep the writing path waits with: a busy tail, an installation id another
  * process is still writing, a name the id's create keeps finding taken. What each of those waits
  * rests on is that it sleeps for the time asked and then returns, with nothing able to wake it
  * early.

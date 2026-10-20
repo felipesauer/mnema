@@ -1,5 +1,5 @@
 /**
- * THE SCREEN IS OURS — three regions, a roll of our own, and the caller's terminal handed back
+ * THE SCREEN IS OURS: three regions, a roll of our own, and the caller's terminal handed back
  * with everything the session said written onto it.
  *
  * THIS IS THE FILE FOR THE MODEL RATHER THAN FOR A DEFECT, and the model is one sentence: the
@@ -14,7 +14,7 @@
  *
  *   - the opening was the first item of a region written once and never redrawn, and it left the
  *     screen for good as soon as enough was printed (`a-page-that-opens-clean.test.ts`);
- *   - the input was put at the foot by ARITHMETIC — as many rows with nothing on them as the
+ *   - the input was put at the foot by ARITHMETIC, as many rows with nothing on them as the
  *     page had to spare (`the-gap-goes-under-the-box.test.ts`,
  *     `the-prompt-sits-at-the-foot.test.ts`);
  *   - a page was TURNED when the drawing a terminal would get was not the one on it, which
@@ -26,8 +26,8 @@
  * Not one of those questions can be asked of this console. What replaced each of them is asked
  * here, and the one promise that survived the model unchanged is asked here too: THE SEQUENCE
  * THAT ERASES THE CALLER'S HISTORY NEVER REACHES THEIR TERMINAL. It survived because taking the
- * screen does NOT make it harmless — the alternate buffer has no scrollback of its own, so an
- * erase issued from inside it reaches the primary's — and because the layout library goes on
+ * screen does NOT make it harmless (the alternate buffer has no scrollback of its own, so an
+ * erase issued from inside it reaches the primary's) and because the layout library goes on
  * writing it, in one constant with the screen erase, every time it starts the page over.
  *
  * FIVE THINGS ARE ASKED, and the last four of them of a real pseudo-terminal:
@@ -35,7 +35,7 @@
  *   - THE DOOR, THE ROLL AND THE WHEEL as values, with no terminal in them.
  *   - THE THREE REGIONS: the top does not move and the bottom does not move, asserted by the row
  *     each of them is on, before and after printing more than the screen can hold.
- *   - THE SCROLL: the keys and the wheel, up and back, with the fixed regions unmoved — and the
+ *   - THE SCROLL: the keys and the wheel, up and back, with the fixed regions unmoved, and the
  *     tail followed for a reader who has not walked back and NOT followed for one who has.
  *   - RESIZE in both directions and in sequence, with the regions still where they belong.
  *   - THE WAY OUT: the alternate screen given back, and everything the session said on the
@@ -94,7 +94,7 @@ import {
   theSettledScreen,
 } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
@@ -103,21 +103,21 @@ const PROMPT = 'mnema>';
 /** The mark a command that was SENT carries on the roll, where the row being typed carries {@link PROMPT}. */
 const SENT = '\u276f';
 
-/** What the opening always says, whatever the terminal is like — a row of the TOP region. */
+/** What the opening always says, whatever the terminal is like: a row of the TOP region. */
 const OPENED = 'a session over this project';
 
 /**
- * THE OLDEST LINE ON THE ROLL — the end of the one sentence the opening LANDS.
+ * THE OLDEST LINE ON THE ROLL: the end of the one sentence the opening LANDS.
  *
  * AN OPENING IS TWO HALVES AND THEY GO TO TWO PLACES (`src/repl/panel.ts`, `Opening.above`):
  * the arrangement is chrome and stays in the fixed region at the top, and this is what the
  * session SAYS, so it goes on the roll where everything else it says goes. Which is why walking
  * to the top of the roll ends here rather than on the first thing a caller typed.
  *
- * IT WAS THE FIRST WORDS OF THAT SENTENCE — `It runs the` — AND THEY ARE NOT ONLY ITS. The
+ * IT WAS THE FIRST WORDS OF THAT SENTENCE (`It runs the`) AND THEY ARE NOT ONLY ITS. The
  * session refuses a word it does not run with *It runs the reads of the record* (`src/repl/
  * gate.ts`), so every page below that shows a refusal answers *the oldest line is here* whether
- * it is or not — and the cases that walk to the top submit nothing but lines the session
+ * it is or not, and the cases that walk to the top submit nothing but lines the session
  * refuses. The end of the sentence is on the roll and nowhere else.
  *
  * AND IT IS THE OLDEST LINE ONLY WHERE THERE IS AN ARRANGEMENT. On a screen with no room for
@@ -148,13 +148,13 @@ const TO_THE_TOP = `${ESC}[H`;
 const TO_THE_TAIL = `${ESC}[F`;
 
 /**
- * A WINDOW WITH THREE REGIONS ON IT — the size every case about the fixed regions is driven
+ * A WINDOW WITH THREE REGIONS ON IT: the size every case about the fixed regions is driven
  * at, and it used to be a hundred by twenty-four.
  *
  * WHAT MOVED IT IS THE OPENING'S OWN SHARE. The region at the top holds at most a third of the
  * screen now (`src/repl/panel.ts`, `panelFor`): the arrangement this session opens with costs
  * fifteen rows under the mark and nine beside it, so twenty-four rows have room for NEITHER and
- * the whole opening goes on the roll instead — which is a page with two regions, and every case
+ * the whole opening goes on the roll instead, which is a page with two regions, and every case
  * below about a region that does not move would be a case about a region that is not there.
  *
  * IT IS A SIZE AND NOT A THRESHOLD. It is a window somebody has, with room to spare over what
@@ -176,7 +176,7 @@ const THREE_REGIONS = { columns: 120, rows: THE_FLOOR.rows } as const;
  * IT WAS THREE, AND THEN NINE, and the arithmetic under it is the same arithmetic as the size
  * above. The middle region was four rows while the arrangement held fifteen, so three answers
  * filled it twice over; nine was the answer for a window of thirty rows. The window is the
- * floor's now, and the floor followed the drawing down to forty-two — the arrangement beside the
+ * floor's now, and the floor followed the drawing down to forty-two; the arrangement beside the
  * mark costs eight of them and the input area five, so the middle is the twenty-nine that are
  * left, and a refused line is worth two rows: twenty-two of them are forty-four and the roll
  * clears the window by fifteen.
@@ -188,7 +188,7 @@ const THREE_REGIONS = { columns: 120, rows: THE_FLOOR.rows } as const;
 const ENOUGH_TO_OVERFLOW = 22;
 
 /**
- * HOW MANY LINES ARE SUBMITTED ONTO A WINDOW WITH FAR MORE ROOM THAN THEM — the other fixture,
+ * HOW MANY LINES ARE SUBMITTED ONTO A WINDOW WITH FAR MORE ROOM THAN THEM: the other fixture,
  * for the end of the roll where there is nothing to scroll to.
  *
  * FOUR RATHER THAN ONE, and the number is the arithmetic of the defect: a notch of the wheel is
@@ -199,7 +199,7 @@ const ENOUGH_TO_OVERFLOW = 22;
 const ENOUGH_TO_FILL = 4;
 
 /**
- * Backspace, as a terminal sends it — what takes a letter back off the row being typed.
+ * Backspace, as a terminal sends it: what takes a letter back off the row being typed.
  *
  * Spelled by its code point, like every control byte in this repository: a raw one in a
  * source file is a character an edit destroys without anybody seeing it happen.
@@ -255,7 +255,7 @@ describe('the erase of the caller’s history is taken out and nothing else is',
  *
  * How far back a reader may stand is bounded by what the window SHOWS, so landing a line takes
  * the region (`src/repl/scrolling.ts`, {@link landedIn}). Every line the helper below lands,
- * though, lands under a reader AT THE TAIL — and the tail is nought whatever the window holds,
+ * though, lands under a reader AT THE TAIL, and the tail is nought whatever the window holds,
  * so no number here can change what is built. A case about the ceiling names its own region at
  * the point it asks about one.
  */
@@ -337,7 +337,7 @@ describe('the roll the middle region is a window onto', () => {
   it('stops at both ends rather than running off either', () => {
     const roll = said(6);
     // PAST THE OLDEST LINE IS THE OLDEST LINE AT THE TOP OF A FULL WINDOW, and this case used
-    // to expect `['line-0']` — the whole of a three-row region spent on one line, with two rows
+    // to expect `['line-0']`: the whole of a three-row region spent on one line, with two rows
     // of nothing under it. That expectation was the defect written down: the end of a roll is
     // where the window is FULL, not where the roll runs out ({@link backAtMost}).
     expect(theWindowOn(scrolledBy(roll, 99, 3, 80), 3, 80)).toEqual(['line-0', 'line-1', 'line-2']);
@@ -355,7 +355,7 @@ describe('the roll the middle region is a window onto', () => {
   it('🆕 refuses to walk back at all when the whole roll is already on the page', () => {
     // THE DEFECT THIS DELIVERY IS ABOUT, in the smallest form it has. The window is taken from
     // the END backwards, so a `back` the region cannot pay for takes a line off the FOOT of the
-    // page and brings nothing down from above — and above a roll that fits entirely there is
+    // page and brings nothing down from above, and above a roll that fits entirely there is
     // nothing to bring. What the caller saw was their own output vanishing three lines at a time
     // from a page they had asked to see more of.
     const roll = said(4);
@@ -395,7 +395,7 @@ describe('the roll the middle region is a window onto', () => {
     ).toBe(7);
     expect(theWindowOn(toTheTop(roll, room, 80), room, 80)).toEqual(['line-0', 'line-1', 'line-2']);
     // AND EVERY LINE OF `back` UNDER THE CEILING TRADES ONE LINE AT THE FOOT FOR ONE AT THE HEAD,
-    // which is what scrolling IS — asserted by the window rather than by the number.
+    // which is what scrolling IS: asserted by the window rather than by the number.
     expect(theWindowOn(scrolledBy(roll, 1, room, 80), room, 80)).toEqual([
       'line-6',
       'line-7',
@@ -403,7 +403,7 @@ describe('the roll the middle region is a window onto', () => {
     ]);
     // A REGION THAT GREW FINDS THE READER LESS FAR BACK THAN IT LEFT THEM, and the window says so
     // rather than the state: the ceiling of the taller window is lower, so the same `back` is
-    // clamped where it is READ ({@link theWindowOn}) — which is the resize a reader who walked to
+    // clamped where it is READ ({@link theWindowOn}), which is the resize a reader who walked to
     // the top and then dragged their window taller does.
     const top = toTheTop(roll, room, 80);
     expect(theWindowOn(top, 5, 80), 'a taller window dropped lines off its own foot').toEqual([
@@ -417,7 +417,7 @@ describe('the roll the middle region is a window onto', () => {
 
   it('counts a line that FOLDS as the rows it takes, so a window is rows and not lines', () => {
     // A LINE IS NOT A ROW, and a window filled as though it were is a frame taller than the
-    // screen — which is the one thing this model may not produce. A line already folded at the
+    // screen, which is the one thing this model may not produce. A line already folded at the
     // width the session opened at becomes two rows the moment the caller narrows their window.
     const long = 'x'.repeat(120);
     expect(rowsForTheLine(long, 80)).toBe(2);
@@ -454,10 +454,10 @@ describe('the roll the middle region is a window onto', () => {
   it('🆕 keeps a reader inside the ceiling when the roll drops its oldest line', () => {
     // THE SITE THE LIST OF SITES DID NOT HAVE. Where a reader may stand is decided in four
     // places and the fourth is the one nobody scrolls with: a line LANDING walks a reader who had
-    // walked back one further, so the content under their eyes stands still — and while the roll
+    // walked back one further, so the content under their eyes stands still, and while the roll
     // is growing the ceiling grows with it, so the step is free. At {@link THE_CEILING} the roll
     // cannot grow: the oldest line falls off for every line that lands, so that one step is a
-    // step past the end. It costs nothing on a page — the window clamps what it reads — and it
+    // step past the end. It costs nothing on a page, the window clamps what it reads, and it
     // leaves the STATE holding a number no gesture can undo but a scroll all the way forward.
     const room = 3;
     const full = said(THE_CEILING);
@@ -609,11 +609,11 @@ function presses(what: string, keys: string): Step {
 }
 
 /**
- * ENOUGH LINES TO PUT MORE ON THE ROLL THAN THE WINDOW SHOWS — one step each, each one a
+ * ENOUGH LINES TO PUT MORE ON THE ROLL THAN THE WINDOW SHOWS: one step each, each one a
  * different line ({@link submits} says why).
  *
  * ONE FIXTURE AND THREE CASES, because every case about a WALK needs somewhere to walk to and
- * the three had it written out separately — two lines here, three there — which is three ideas
+ * the three had it written out separately (two lines here, three there), which is three ideas
  * of how big the roll has to be, all of them wrong the moment the window changes height.
  */
 function saidEnoughToScroll(): Step[] {
@@ -625,18 +625,18 @@ function saidEnoughToScroll(): Step[] {
  *
  * EVERY LINE HAS TO BE A DIFFERENT ONE, and that is a property of the model rather than a
  * habit of these cases. The layout writes NOTHING for a frame identical to the one on the
- * screen, and the window shows the last rows of the roll — so two runs of the same verb, once the
- * window has filled, leave the same rows in it. Measured — the second such step waited out the
+ * screen, and the window shows the last rows of the roll, so two runs of the same verb, once the
+ * window has filled, leave the same rows in it. Measured: the second such step waited out the
  * driver's whole budget and reported *the session never ran verify*, which is a defect of the case
  * and not of the console.
  *
  * IT SAID THE TWO RUNS *produce identical frames*, and that half is no longer true. A second
  * answer that leaves the window as it was now draws a row at the foot saying so
  * (`src/repl/console.ts`, `judged`), so such a step would end on that row instead of waiting out
- * the budget — the rule about identical frames did not move, the frame did
+ * the budget: the rule about identical frames did not move, the frame did
  * (`a-read-asked-again-draws-what-changed.test.ts`). The lines still differ, for the half of the
  * reason that survives: the cases here read what each line LANDED, and a same-verb step lands a
- * tail the page already showed — its frame says an answer ended and nothing about which one.
+ * tail the page already showed; its frame says an answer ended and nothing about which one.
  */
 function submits(line: string): Step {
   return { types: `${line}\r`, until: aFrameSince(PROMPT), what: `submitted ${line}` };
@@ -652,12 +652,12 @@ function says(which: number): string {
  *
  * READING BY POSITION IS ONLY HONEST AFTER A STEP THAT DRAWS EXACTLY ONE FRAME, and that is
  * measured rather than assumed. A step ends where the stream went quiet, so a step that draws
- * TWO frames can leave the boundary between them — and what is replayed is then the page from
+ * TWO frames can leave the boundary between them, and what is replayed is then the page from
  * before the thing the case is about. Measured, per event, at a hundred and twenty by forty:
  *
- *   - a key, an arrow, a notch of the wheel — **one** frame each;
- *   - a whole line submitted — **two** (the echo lands, then the answer);
- *   - a resize — **two**, because the layout library keeps its own watch and it is synchronous.
+ *   - a key, an arrow, a notch of the wheel: **one** frame each;
+ *   - a whole line submitted: **two** (the echo lands, then the answer);
+ *   - a resize: **two**, because the layout library keeps its own watch and it is synchronous.
  *
  * SO THIS IS USED AFTER KEYS AND AFTER THE OPENING, and nowhere else. Every read whose step is a
  * resize or a submitted line finds its page by what the page HOLDS instead
@@ -673,18 +673,18 @@ function rowOf(screen: Screen, what: string): number {
 }
 
 /**
- * The glyph the guide down the margin of the roll is drawn out of (`src/repl/region.ts`, `bar`) —
+ * The glyph the guide down the margin of the roll is drawn out of (`src/repl/region.ts`, `bar`):
  * spelled by code point, like every other unusual byte in this repository.
  */
 const THE_GUIDE = '\u2502';
 
-/** The rows of a page that are rows of the roll — the ones with the guide down their margin. */
+/** The rows of a page that are rows of the roll: the ones with the guide down their margin. */
 function rowsOfTheRoll(page: Screen): readonly string[] {
   return page.rows.filter((row) => row.includes(THE_GUIDE));
 }
 
 /**
- * HOW MANY ROWS OF THE PAGE HAVE ANYTHING ON THEM — the caller's own reading of the defect below.
+ * HOW MANY ROWS OF THE PAGE HAVE ANYTHING ON THEM: the caller's own reading of the defect below.
  *
  * *The text simply disappears from the middle* is a statement about a COUNT: a page with
  * twenty-three rows of words on it that answers a scroll with twenty is a page that lost three,
@@ -701,7 +701,7 @@ function rowsWithText(screen: Screen): number {
  *
  * The absence is the promise; the presence of the screen erase is what says the absence is
  * MERITED rather than vacuous. The library writes the two in one constant, and it reaches that
- * path on every session there is — it starts the page over while it is tearing down, because the
+ * path on every session there is: it starts the page over while it is tearing down, because the
  * frame it last drew filled the viewport, which every frame of this console does.
  */
 function theHistorySurvived(ran: Ran, what: string): void {
@@ -743,7 +743,7 @@ describe('the console takes the screen and draws three regions on it', () => {
     // AND THE PRINTED PAGE IS THE ONE THAT SETTLED, found by the width it was drawn at rather
     // than by the boundary of a step that draws two frames ({@link screenAt}).
     const printed = theSettledScreen(ran.bytes, columns, rows);
-    // THE ROW EACH REGION IS ON, before and after — which is the whole requirement, in one
+    // THE ROW EACH REGION IS ON, before and after, which is the whole requirement, in one
     // assertion each. In the model this replaces, the first of these fell off the top of the
     // screen and the second one was held down by arithmetic that had to be corrected four times.
     expect(rowOf(printed, OPENED), 'the top region moved when the session printed').toBe(
@@ -766,7 +766,7 @@ describe('the console takes the screen and draws three regions on it', () => {
 
   it('gives back the page that opened when the caller asks for a clean one', async () => {
     // THIS PROMISE OUTLIVED THE MODEL AND ALMOST LOST ITS GUARD. *A clean page is the page
-    // the session opened with* was asserted where a clean page was MADE — a screen of the
+    // the session opened with* was asserted where a clean page was MADE: a screen of the
     // caller's carried into their scrollback and the opening written over it
     // (`a-page-that-opens-clean.test.ts`, gone with that machinery). Clearing is the ROLL being
     // emptied now (`src/repl/scrolling.ts`), and a mutation that emptied it to NOTHING instead
@@ -782,8 +782,8 @@ describe('the console takes the screen and draws three regions on it', () => {
     // the echo is on; the page after the word that clears is the one the session left, because
     // nothing lands after it.
     // AND THE ECHO IS FOUND BY WHAT THE CALLER TYPED RATHER THAN BY THE WHOLE ROW. The echo is
-    // a composed line now — the prompt in the accent, the words in a weight of their own
-    // (`src/presentation/echo.ts`) — so the two are not contiguous bytes of a frame, and a
+    // a composed line now: the prompt in the accent, the words in a weight of their own
+    // (`src/presentation/echo.ts`), so the two are not contiguous bytes of a frame, and a
     // locator over the FRAME cannot strip escapes it is searching. What the caller typed is
     // unique to this run, so it names the frame exactly as the whole row did.
     const said = theFirstScreenWith(ran.bytes, says(0), columns, rows);
@@ -842,7 +842,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     expect(back.text, 'PgUp showed the same window as the tail').not.toBe(printed.text);
     // AND IT COMES BACK TO EXACTLY WHAT IT LEFT.
     expect(forward.text, 'PgDn did not come back to the window PgUp left').toBe(printed.text);
-    // THE WHEEL IS THE SAME AFFORDANCE BY ANOTHER ROAD — and this is the case that proves the
+    // THE WHEEL IS THE SAME AFFORDANCE BY ANOTHER ROAD, and this is the case that proves the
     // report really arrives in the form the decode expects, because nothing else could scroll it.
     expect(wheeled.text, 'the wheel moved nothing').not.toBe(printed.text);
     expect(tail.text, 'End did not come back to the tail').toBe(printed.text);
@@ -882,28 +882,28 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
   it('🆕 answers the wheel with nothing at all when the whole page already fits', async () => {
     // THE CASE THE CALLER FOUND, IN HIS OWN WORDS: *the mouse scroll makes the text simply
     // disappear from the middle*. He had a big window and a session that had printed less than it
-    // holds, and every notch of the wheel took three lines off the FOOT of the page — the window
+    // holds, and every notch of the wheel took three lines off the FOOT of the page: the window
     // is taken from the end backwards, so a `back` the region cannot pay for shortens it from
     // below and brings nothing down from above, because above a roll that fits there is nothing.
     // Measured here before the fix, at 190 by 64: twenty-three rows with text, then twenty, then
-    // seventeen — his own output gone from a page he had asked to see more of.
+    // seventeen, his own output gone from a page he had asked to see more of.
     const columns = 190;
     const rows = 64;
     const steps: Step[] = [opens];
     // MEASURED AFTER PRINTING, because a page that has just opened is the least representative
-    // instant there is — and four lines of it, so that a notch worth three lines is a loss the
+    // instant there is, and four lines of it, so that a notch worth three lines is a loss the
     // count can name rather than the whole of the roll at once.
     for (let at = 0; at < ENOUGH_TO_FILL; at += 1) steps.push(submits(says(at)));
     // EACH NOTCH IS ITS OWN STEP AND NONE OF THEM WAITS FOR A FRAME. What is under test is a
     // gesture that draws NOTHING: the layout writes nothing for a frame identical to the one on
     // the screen, so a step waiting for one here would wait for ever once the defect is gone
     // (`support/pty.ts`, {@link aFrameSince}). The wait is the stream going quiet, and what makes
-    // that honest is the step after them — a key that really does redraw, waited for properly, so
+    // that honest is the step after them: a key that really does redraw, waited for properly, so
     // every byte the three notches could have written is in front of it.
     //
     // AND IT STAYS NOTHING NOW THAT A ROW CAN SAY AN ANSWER LEFT THE PAGE AS IT WAS. That row is
     // the one thing on this page an unmoved answer draws, and it changes a frame only when an
-    // answer ends or when a key that is not a scroll is pressed (`src/repl/console.ts`, `key`) —
+    // answer ends or when a key that is not a scroll is pressed (`src/repl/console.ts`, `key`):
     // a notch of the wheel is neither, and no row is up here to take down.
     for (let at = 0; at < 3; at += 1) {
       steps.push({ types: WHEEL_UP, until: () => true, what: `turned the wheel ${at + 1}` });
@@ -934,7 +934,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     // AND NOT ONE FRAME WAS WRITTEN FOR ANY OF THEM. This is the byte-level half of the same
     // claim and the one a race cannot fake: bytes are ordered, so anything the three notches wrote
     // is inside this slice, which ends on a frame that was waited for. The one frame in it is the
-    // letter's own — nought would mean the letter never drew and the measurement is vacuous.
+    // letter's own: nought would mean the letter never drew and the measurement is vacuous.
     const gesture = ran.bytes.slice(
       ran.at[ENOUGH_TO_FILL] as number,
       ran.at[ENOUGH_TO_FILL + 4] as number,
@@ -950,7 +950,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     // THE OPPOSITE END, WHICH IS WHAT THE CASE ABOVE COULD HAVE BOUGHT ITSELF WITH. A ceiling
     // that stopped a reader early would answer the complaint and cost the affordance: whoever has
     // more roll than region must still reach the first line of it. And *reach* is the whole of the
-    // claim — the oldest line at the top of a FULL window, not alone on a page with room for four,
+    // claim: the oldest line at the top of a FULL window, not alone on a page with room for four,
     // which is what Home did before this and is the same defect wearing a key.
     const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
@@ -975,7 +975,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
       printed.text,
       'the whole roll still fits, so nothing here is about walking back',
     ).not.toContain(OLDEST);
-    // THE WHEEL REACHES THE FIRST LINE OF THE ROLL — asserted by the line, not by a count.
+    // THE WHEEL REACHES THE FIRST LINE OF THE ROLL: asserted by the line, not by a count.
     expect(wheeled.text, 'the wheel no longer reaches the oldest line on the roll').toContain(
       OLDEST,
     );
@@ -1000,7 +1000,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
   }, 240_000);
 
   it('keeps a reader who has walked back on the rows they were reading when something new lands', async () => {
-    // IT WAS *does not jump a reader who has walked back*, AND THE PAGE DOES MOVE NOW — BY A ROW AT
+    // IT WAS *does not jump a reader who has walked back*, AND THE PAGE DOES MOVE NOW: BY A ROW AT
     // THE FOOT, NOT BY A SCROLL. An answer asked from back there ends by raising a row that says
     // where its end went (`src/repl/console.ts`, `judged`), and that row takes its row from the top
     // of the window, as the list of words does: the window keeps the line it ends on and gives up
@@ -1016,7 +1016,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
         presses('walked back', PAGE_UP),
         // THE LINE IS TYPED AND SUBMITTED AS TWO STEPS, so the page it was typed over is a page of
         // its own. IT SAID a line landing here *changes NOTHING on the screen*, so a step waiting
-        // for a frame would wait for ever — and that half fell: the answer's end draws the row. What
+        // for a frame would wait for ever, and that half fell: the answer's end draws the row. What
         // survives is that the Return's own frame, the row being typed emptied, can come before the
         // row or together with it, and what is asserted below is true of either page.
         presses('typed a line while walked back', says(ENOUGH_TO_OVERFLOW)),
@@ -1030,7 +1030,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     const tail = screenAt(ran, ENOUGH_TO_OVERFLOW + 4, columns, rows);
     // THE WINDOW IS WHERE THE READER LEFT IT. What landed went onto the roll, under what they are
     // reading: the last row of the window is the row it was, and every row above it is a row that
-    // was there — all of them, or all but what the row at the foot took from the top.
+    // was there (all of them, or all but what the row at the foot took from the top).
     const before = rowsOfTheRoll(walked);
     const after = rowsOfTheRoll(landed);
     expect(after.at(-1), 'new output pulled the page out from under a reader').toBe(before.at(-1));
@@ -1053,14 +1053,14 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     const columns = 120;
     // EVERY HEIGHT IN THIS CASE IS ABOVE THE FLOOR, which is what the floor moving forced: the
     // sizes below were thirty, sixty-four, forty and thirty, and three of the four are under the
-    // floor now. What the case is about did not move — three regions surviving a resize — so
+    // floor now. What the case is about did not move, three regions surviving a resize, so
     // the shape is the one it had: four sizes, the third the one it opened at, and the last two
     // the same width at two heights.
     const rows = 55;
     // ONE OF THEM WAS EIGHTY BY TWENTY-FOUR AND ANOTHER NINETY BY THIRTY, and neither
     // has an arrangement any more: the opening may hold a third of the screen at most, and it
     // costs more than that at both ({@link THREE_REGIONS}). What this case is about is the three
-    // regions surviving a resize, so the sequence is sizes that HAVE three regions — the
+    // regions surviving a resize, so the sequence is sizes that HAVE three regions: the
     // narrowing and the widening are what it asserts, and a size with the opening on the roll is
     // the subject of `the-opening-fits-the-height.test.ts` instead. A shrink down to the floor is
     // still driven, one axis at a time, in the two cases under this one, where what is read is the
@@ -1069,7 +1069,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     // AND THE LAST TWO ARE THE SAME WIDTH AT TWO HEIGHTS, which is the one thing here chosen
     // rather than inherited. A page is located by the width it was drawn at, and a width is not
     // a size: with two of them a hundred and twenty columns wide, a reading that searched the
-    // WHOLE stream would answer *the page at 120x40* with the frame drawn at 120x30 — which is
+    // WHOLE stream would answer *the page at 120x40* with the frame drawn at 120x30, which is
     // what the reading below is bounded to stop, and what makes that bound provable instead of
     // waited for. It is also an ordinary thing to do to a window: narrow it, then shorten it.
     const sizes = [
@@ -1089,7 +1089,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
         submits(says(0)),
         // AND EACH STEP WAITS FOR THE SIZE TO HAVE BEEN DRAWN, not merely for a frame. A
         // frame names nothing about a size, so under load the frames still arriving from the
-        // step before end this one — and the next size is then set on top of a size the console
+        // step before end this one, and the next size is then set on top of a size the console
         // never got to draw. Measured in the full suite on a loaded machine: the read was refused
         // with *no frame in this stream was drawn 80 columns wide*, which was true and was the
         // case's own doing (`support/screen.ts`, {@link drewAt}).
@@ -1105,28 +1105,28 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
       // FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended, and this case
       // is the one that taught the lesson. A resize produces more than one frame and a step ends
       // wherever the stream was quiet, so on a loaded machine `ran.at[2 + index]` reads the page
-      // from BEFORE the resize — and the red says *the opening is not on the page*, which names
+      // from BEFORE the resize, and the red says *the opening is not on the page*, which names
       // neither the index nor the load (`support/screen.ts`, {@link theSettledScreen}).
       //
       // AND SEARCHED ONLY AS FAR AS THE STEP THAT ASKED FOR THE SIZE, which is the half the
       // sentence above was missing. A width is not a size, and this session is drawn at four
       // widths but SIX sizes: setting a window size is two calls, so the device passes through
-      // an intermediate one on the way to each ({@link resizedTo}) — and the intermediate keeps
+      // an intermediate one on the way to each ({@link resizedTo}), and the intermediate keeps
       // the width it is leaving. Measured directly, on a device driven the way this case drives
       // one: 110x30 → **110x64** → 190x64. That 110x64 frame is a correct page for a terminal
       // that really existed for a moment, and a search over the whole stream answers *the page
-      // at 110x30* with it — sixty-four rows replayed onto a thirty-row screen, reported as
+      // at 110x30* with it: sixty-four rows replayed onto a thirty-row screen, reported as
       // *the top region is not at the top: expected 25 to be 0*, an accusation against the
       // console for a page it drew right.
       //
       // THE BOUND IS NOT AN INDEX-READ, and the difference is what makes it honest: the page is
       // still located by a property of the FRAME, and all the bound does is leave out the frames
-      // a LATER step caused. A boundary that drifts early cannot answer wrongly either — the
+      // a LATER step caused. A boundary that drifts early cannot answer wrongly either: the
       // locator refuses when no frame at that width is inside it, and the step above cannot end
       // before the width has been drawn.
       const screen = theSettledScreen(asFarAs(ran, 2 + index), size.columns, size.rows);
       const where = `${size.columns}x${size.rows}`;
-      // THE TOP REGION BEGINS ON THE FIRST ROW, which is the claim a resize can falsify — and
+      // THE TOP REGION BEGINS ON THE FIRST ROW, which is the claim a resize can falsify, and
       // NOT that a given row of it stays put: which arrangement a width has room for is the
       // panel's own answer, so a narrower window really does put the text under the mark
       // instead of beside it and moves every row of the drawing (`src/repl/panel.ts`).
@@ -1142,11 +1142,11 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
   it('writes no frame taller than the screen it is on, not even a transient one', async () => {
     // THE GUARD THIS DELIVERY DID NOT HAVE, and the defect it was missing is the sharpest one
     // the model can produce. A frame that declares its own height is written onto whatever screen
-    // exists WHEN IT IS WRITTEN — and the layout library keeps its own watch on the size, which
+    // exists WHEN IT IS WRITTEN, and the layout library keeps its own watch on the size, which
     // is SYNCHRONOUS: it lays the tree out again and writes it without React having re-rendered
     // anything. So a shrink used to write the OLD height onto the NEW screen before the corrected
     // frame followed. Measured, 120×40 to 80×24: **40 rows written onto a 24-row screen**, which
-    // overflows by sixteen and scrolls the page — the top region off the top, for one frame.
+    // overflows by sixteen and scrolls the page (the top region off the top, for one frame).
     //
     // NOTHING ON THE SETTLED PAGE SHOWS IT. The corrected frame redraws every row from the top,
     // so a case that reads the page after the size settles is answered *correct* either way; what
@@ -1167,13 +1167,13 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
 });
 
 /**
- * A SHRINK ALONG ONE AXIS, AND EVERY FRAME AFTER IT HELD TO THE SCREEN IT WAS WRITTEN ONTO — in
+ * A SHRINK ALONG ONE AXIS, AND EVERY FRAME AFTER IT HELD TO THE SCREEN IT WAS WRITTEN ONTO: in
  * both axes, because a frame that fits the height and not the width is still a frame the screen
  * cannot hold.
  *
  * ONE AXIS, BECAUSE THEN THE DEVICE IS ONLY EVER TWO SIZES. A size is set in two calls, the height
  * and then the width (`support/pty.ts`, {@link resizedTo}), so a shrink along both axes passes
- * through the OLD width at the NEW height — and the console draws that page whenever it is
+ * through the OLD width at the NEW height, and the console draws that page whenever it is
  * scheduled between the two calls, correctly, because the terminal really was that shape. These
  * two cases were one, shrinking 120×55 to 80×42 and holding every frame to the final size, and
  * that accused the page drawn for the size in between. Measured with the case pinned to one core
@@ -1185,14 +1185,14 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
  * the final one along one axis.
  *
  * Shrunk along one axis, the call that sets the other has nothing to change, and the device says
- * nothing about a size that did not change — so the only screens the session is ever on are the
+ * nothing about a size that did not change, so the only screens the session is ever on are the
  * one it opened on and the one the case asked for, and *the screen it is on* is a size the case
  * names rather than one it has to guess at.
  *
  * THE SLICE IS TAKEN BEFORE THE RESIZE, which is the one way an index is honest here: it is the
  * boundary of a step that had already SETTLED, so nothing the resize caused can be in front of it.
  * Everything after it is the resize's own frames and the frames of a session that only ever got
- * smaller — so a boundary that drifts can only add correct frames, never hide a wrong one.
+ * smaller, so a boundary that drifts can only add correct frames, never hide a wrong one.
  */
 async function noFrameOutgrewTheShrink(
   from: { readonly columns: number; readonly rows: number },
@@ -1265,7 +1265,7 @@ describe('the way out gives the screen back and the transcript with it', () => {
     //
     // WITH THE STYLE OFF, and BOTH indices out of the same string: the transcript carries the
     // echo, the echo is a composed line, and its prompt is wrapped in the accent
-    // (`src/presentation/echo.ts`) — so the row is not contiguous in the raw stream. Taking the
+    // (`src/presentation/echo.ts`), so the row is not contiguous in the raw stream. Taking the
     // style out of the whole stream moves every index by the same bytes, which is what keeps a
     // comparison BETWEEN two of them true.
     // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
@@ -1289,8 +1289,8 @@ describe('the way out gives the screen back and the transcript with it', () => {
     // merely present: the echo of the verb comes before the verdict it produced.
     //
     // THE MARKER WAS `local integrity verified` AND THE OPENING SAYS THAT TOO. It said it
-    // before this delivery as well — in the arrangement at the top, which is not on the roll and
-    // therefore not in the transcript — and the opening lands on the roll whole at sizes with no
+    // before this delivery as well (in the arrangement at the top, which is not on the roll and
+    // therefore not in the transcript) and the opening lands on the roll whole at sizes with no
     // room for an arrangement, so the first occurrence became the opening's own and the order
     // read backwards. What is looked for is a clause only the VERB prints: the panel has room
     // for one line per tree and shows the clause that IS the verdict, dropping the ones that

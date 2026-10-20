@@ -1,12 +1,12 @@
 /**
- * The waiver: what it makes the verdict say, what it refuses at the door, and —
- * the half that matters most — everything it deliberately leaves alone.
+ * The waiver: what it makes the verdict say, what it refuses at the door, and,
+ * the half that matters most, everything it deliberately leaves alone.
  *
  * WHERE THE NEED CAME FROM, measured on a real 402-event tail before any of this
  * existed. Cut one line out of the middle: 102 findings (a seq gap, a range
  * mismatch, 100 checkpoint chain breaks in cascade). Cut the first hundred events:
  * 454. Delete the WHOLE tail: zero, `verified (T1 only)`, exit 0, and the sentence
- * `1 tail(s); no events yet` — the same one a tail that never wrote gets. The
+ * `1 tail(s); no events yet`: the same one a tail that never wrote gets. The
  * product punished the honest cut and could not see the dishonest one.
  *
  * So the cases below come in two halves, and the second is the reason the first is
@@ -90,7 +90,7 @@ function mergeInto(from: string, into: string): void {
   }
 }
 
-/** What the disk says about a merged tail — the claim an honest waiver carries. */
+/** What the disk says about a merged tail: the claim an honest waiver carries. */
 function standingOf(tail: string) {
   const standing = tailStanding({ root }, tail, upcasters);
   if (standing === undefined) throw new Error(`fixture: no standing for ${tail}`);
@@ -136,8 +136,8 @@ describe('a cut tail with a waiver: the note names the account', () => {
     expect(note.detail).toContain(
       `${standing.eventCount} event(s) through ${standing.throughHash}`,
     );
-    // WHO AUTHORIZED IT is the waiver's own `who` — the identity that signed the
-    // declaration — and not the anchor the cut tail served, which is the SUBJECT.
+    // WHO AUTHORIZED IT is the waiver's own `who`, the identity that signed the
+    // declaration, and not the anchor the cut tail served, which is the SUBJECT.
     // The two are different identities here on purpose: one person authorizing the
     // removal of another's tail is the case the whole thing exists for.
     expect(note.detail).toContain(`authorized by ${local.anchor}`);
@@ -150,7 +150,7 @@ describe('a cut tail with a waiver: the note names the account', () => {
   });
 
   it('moves neither the verdict nor the level: an authorized cut is not a break', () => {
-    // The same record twice — once with the waiver, once without it — cut the same
+    // The same record twice (once with the waiver, once without it) cut the same
     // way. What the waiver may change is the SENTENCE of the note; what it may never
     // change is whether the record verifies, or how far the proof got.
     const local = open(root);
@@ -188,7 +188,7 @@ describe('a cut tail with NO waiver: the note is what it always was', () => {
     const result = verify(root);
     const note = keyNote(result);
     // The exact sentence, not a fragment of it: this is the non-regression that
-    // protects the doctrine — three readings, and the disk cannot choose between
+    // protects the doctrine; three readings, and the disk cannot choose between
     // them. A waiver answers the third; with none, nothing is answered. It also says
     // that the record declares no backup for the key, because a declared backup is the
     // one key whose missing tail is expected (FORMAT.md section 6.5).
@@ -206,7 +206,7 @@ describe('a cut tail with NO waiver: the note is what it always was', () => {
 
   it('is not answered by a waiver for a DIFFERENT key', () => {
     // Two machines cut, one waiver. The note about the key that has none must not
-    // borrow the account of the key that does — the match is by fingerprint, and a
+    // borrow the account of the key that does: the match is by fingerprint, and a
     // note that read as accounted-for would be the worst possible false negative.
     const local = open(root);
     const waived = secondMachine(2);
@@ -323,7 +323,7 @@ describe('the door refuses a waiver the record does not bear out', () => {
 
   it('refuses every one of them in a BATCH too, leaving nothing behind', () => {
     // The second door onto a tail. A batch whose second event is a lying waiver must
-    // not leave the first one on the record — the atom holds for this refusal as it
+    // not leave the first one on the record: the atom holds for this refusal as it
     // does for the reader's.
     const local = open(root);
     const other = secondMachine(2);
@@ -347,7 +347,7 @@ describe('the door refuses a waiver the record does not bear out', () => {
 describe('what a waiver does not touch', () => {
   it('does not cure a break on a tail that is still there', () => {
     // A waiver speaks of an ABSENCE. A tail that is present and corrupt keeps every
-    // issue it had, waiver or no waiver — which is what keeps this from becoming a
+    // issue it had, waiver or no waiver, which is what keeps this from becoming a
     // way to sign away a tampering.
     const local = open(root);
     const other = secondMachine(3);
@@ -362,7 +362,7 @@ describe('what a waiver does not touch', () => {
     );
     local.checkpoint();
 
-    // Corrupt the tail the waiver names — in place, still present.
+    // Corrupt the tail the waiver names: in place, still present.
     const segment = segmentPath({ root }, other.tail, 1);
     const lines = readFileSync(segment, 'utf-8').split('\n').filter(Boolean);
     const tampered = (lines[1] as string).replace('task 0', 'task 0 edited');
@@ -407,11 +407,11 @@ describe('what a waiver does not touch', () => {
     expect(result.issues.length).toBeGreaterThan(1);
   });
 
-  it('cannot be written about an empty tail — the residue an older writer left at open', () => {
+  it('cannot be written about an empty tail: the residue an older writer left at open', () => {
     // The state that must never be read as a cut: a tail with its ownership proof and
     // zero events. THIS CASE CALLED IT "the empty tail a read-only session leaves",
     // because opening a write context minted the tail directory and its proof. Opening
-    // mints neither any more — a tail is born at its first append — but the tails an
+    // mints neither any more (a tail is born at its first append), but the tails an
     // older writer left that way are already in records, committed, and a crash between
     // a tail's birth and its first line still leaves one. So the rule is asked of that
     // shape, planted here as the older writer wrote it: the directory and the proof.
@@ -426,7 +426,7 @@ describe('what a waiver does not touch', () => {
     // There is nothing on disk to base a claim on, so no waiver can name it.
     expect(tailStanding({ root }, reader.tail, upcasters)).toBeUndefined();
 
-    // And it is not a key without a tail either — the tail is right there, which is
+    // And it is not a key without a tail either: the tail is right there, which is
     // why the census says nothing about it at all.
     const result = verify(root);
     expect(result.census.filter((note) => note.kind === 'key-without-tail')).toEqual([]);

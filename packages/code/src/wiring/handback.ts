@@ -4,7 +4,7 @@
  * `mnema handback` reads the payload a host hands a `SubagentStop` hook, on stdin, and prints the
  * reply that host reads: `{"decision":"block","reason":…}` when the subagent's final reply does not
  * end in the block the record asks for, `{}` otherwise. With `--schema` it prints the JSON Schema of
- * that block instead and reads nothing — the format is served by the program that checks it. The
+ * that block instead and reads nothing: the format is served by the program that checks it. The
  * command is `commands/handback.ts`; the plugin's handler runs it.
  *
  * A HOST RUNS IT, NOT A PERSON, so it is `tally`'s shape: it exits 0 on every outcome that is not a

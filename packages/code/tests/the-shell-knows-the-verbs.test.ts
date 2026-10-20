@@ -1,16 +1,16 @@
 /**
- * THE SHELL KNOWS THE VERBS — and the four ways a completion script goes wrong.
+ * THE SHELL KNOWS THE VERBS, and the four ways a completion script goes wrong.
  *
  *   - IT FALLS A VERSION BEHIND. A verb added tomorrow, a subcommand, an option: each is
  *     a word the script does not offer, and nothing fails, because a completion that
  *     omits a word looks exactly like a shell that has not been told about it. So the
- *     coverage below is enumerated from the PROGRAM — every command `everyCommandOf`
- *     reaches, every option name derived from `.options` and the parent chain — and never
+ *     coverage below is enumerated from the PROGRAM (every command `everyCommandOf`
+ *     reaches, every option name derived from `.options` and the parent chain) and never
  *     from a list written in this file. The verb nobody has written yet has its own case,
  *     over a program built here so the verbs that exist cannot satisfy it.
  *   - IT DOES NOT PARSE, AND SAYS NOTHING. A shell that cannot read a completion script
  *     does not complain: it completes nothing, which is the defect being fixed. So the
- *     bash script is fed to `bash -n` AND DRIVEN — its function is called in a real bash
+ *     bash script is fed to `bash -n` AND DRIVEN: its function is called in a real bash
  *     with `COMP_WORDS` set, and what this file reads for bash is what bash actually
  *     replied. The other two are checked by their own parser when it is on the machine,
  *     and NAMED when it is not: an unrun check is a note here, never a silence.
@@ -22,8 +22,8 @@
  *     and asserting the file was not created.
  *   - IT STARTS ANSWERING WHAT IT CANNOT KNOW. Completing an id or a transition means
  *     running mnema on every Tab, which costs more than the command. The boundary is
- *     asserted as a RULE — nothing is offered that is not a declared name or a value the
- *     declaration enumerates — and then as its consequence: none of the ten transitions
+ *     asserted as a RULE (nothing is offered that is not a declared name or a value the
+ *     declaration enumerates) and then as its consequence: none of the ten transitions
  *     is in any script, and the ten are read out of the sentence that names them rather
  *     than typed here.
  *     THE ID HALF OF THAT IS ABOUT A SHELL AND NOT ABOUT THE PRODUCT, and it stopped
@@ -97,8 +97,8 @@ const PATHS: readonly string[] = everyCommandOf(declared).map((command) =>
 /**
  * Every flag spelling a command reads, derived independently.
  *
- * From `.options` and the parent chain — NOT from the generator's own reading of the
- * help's `visibleOptions` — plus `-h`/`--help`, which every command answers to and no
+ * From `.options` and the parent chain, NOT from the generator's own reading of the
+ * help's `visibleOptions`, plus `-h`/`--help`, which every command answers to and no
  * command declares. A test that asked the production code what it should have produced
  * would assert nothing at all.
  *
@@ -133,7 +133,7 @@ function accepted(command: Command): readonly string[] {
  * Read here rather than through `wiring/enumerated.ts` on purpose: the generator gets
  * its values from that module, so a test that read the same registry would be asking
  * the code what it should have produced. These are the constants the machine enforces,
- * and the scopes — for which the core exports a type and no tuple, so the surface's is
+ * and the scopes: for which the core exports a type and no tuple, so the surface's is
  * the only one there is.
  */
 function everyDomainWord(): readonly string[] {
@@ -147,7 +147,7 @@ function everyDomainWord(): readonly string[] {
     ...REFERENCE_DIRECTIONS,
     // The one closed set here the DOMAIN does not own. A channel is a place this product
     // puts the record in front of a model unasked, and the core has no idea it pushes
-    // anything at all — so the vocabulary is the surface's (`src/record-framing.ts`), and
+    // anything at all, so the vocabulary is the surface's (`src/record-framing.ts`), and
     // it is derived from the union of channels rather than typed a second time.
     ...SWITCHABLE_CHANNELS,
     // And the two host sets `--host` takes, the surface's too, for the same reason: which host
@@ -259,7 +259,7 @@ function single(value: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// The coverage — asked of the program, never of a list here
+// The coverage: asked of the program, never of a list here
 // ---------------------------------------------------------------------------
 
 /** Every level driven in a real bash: the path, and what bash offered after it. */
@@ -268,7 +268,7 @@ const BASH_REPLIES = drivenBash(
   PATHS.map((path) => (path === '' ? [''] : [...path.split(' '), ''])),
 );
 
-/** What a shell offers at a level — bash by DRIVING it, the other two by reading. */
+/** What a shell offers at a level: bash by DRIVING it, the other two by reading. */
 function offered(shell: Shell, path: string): readonly string[] {
   if (shell === 'bash') return BASH_REPLIES.get(path === '' ? '' : `${path} `) ?? [];
   return shell === 'zsh' ? posixOffered(SCRIPT.zsh, path) : fishOffered(SCRIPT.fish, path);
@@ -324,7 +324,7 @@ describe('the script knows every verb the program declares', () => {
   });
 
   it('offers the implicit `help` command, which lives in neither .commands nor .options', () => {
-    // It is not in the walk — commander creates it on demand — and it IS in the help's
+    // It is not in the walk, commander creates it on demand, and it IS in the help's
     // own list, which is what the generator reads. A reader who sees `help` in
     // `mnema --help` and not in a Tab would conclude the tool has two answers.
     for (const shell of SHELLS) expect(offered(shell, ''), shell).toContain('help');
@@ -360,7 +360,7 @@ describe('the script knows every verb the program declares', () => {
     // The absence this asserts is the one that would cost a run: an ENTITY ID is in no
     // declaration and in no domain tuple, so the only way to offer one would be to
     // execute mnema on every Tab. A word here is either a name the parser answers to or
-    // a member of a closed set the machine owns — and nothing else, ever.
+    // a member of a closed set the machine owns, and nothing else, ever.
     const allowed = new Set<string>(['help', ...everyDomainWord()]);
     for (const command of everyCommandOf(declared)) {
       allowed.add(command.name());
@@ -385,13 +385,13 @@ describe('the script knows every verb the program declares', () => {
     expect(seen).toBeGreaterThan(400);
   });
 
-  it('offers every workflow action where a move takes one — and at no other level', () => {
+  it('offers every workflow action where a move takes one, and at no other level', () => {
     // THIS CASE USED TO ASSERT THE OPPOSITE, and the inversion is the point of the
     // slice it changed in: no transition reached any script, because the ten of them
     // existed only as a sentence typed by hand in `task move`'s help, and completing a
     // word by parsing prose would have been building on that defect. They are DECLARED
-    // now (`wiring/enumerated.ts`) without being validated by the parser — the gate
-    // still owns the vocabulary — so the Tab has a source and this is what it offers.
+    // now (`wiring/enumerated.ts`) without being validated by the parser, the gate
+    // still owns the vocabulary, so the Tab has a source and this is what it offers.
     // The old promise is dead and is not silently weakened: what is still never offered
     // is an id, which the case above asserts.
     const levels = ['task move', 'task guard'];
@@ -403,7 +403,7 @@ describe('the script knows every verb the program declares', () => {
       }
       // And only where a declaration takes one: an action is not a word the whole
       // surface answers to, so the root and a read that takes no action offer none.
-      // `start` is excluded because `mnema run start` DECLARES it as a subcommand — the
+      // `start` is excluded because `mnema run start` DECLARES it as a subcommand: the
       // rule is about the provenance of a word, not about the word.
       for (const level of ['', 'search', 'refs']) {
         for (const action of TASK_ACTIONS) {
@@ -432,7 +432,7 @@ describe('a verb nobody has written yet is completed by construction', () => {
 
   it('carries the new verb, its subcommand, its option and its enumerated value', () => {
     // Asserted through the readers rather than as raw text, because each shell SPELLS a
-    // flag its own way (`--deep` is `-l deep` to fish) — and because what matters is the
+    // flag its own way (`--deep` is `-l deep` to fish), and because what matters is the
     // LEVEL a word is offered at, not that the file mentions it somewhere.
     for (const shell of SHELLS) {
       const script = completionScript(later(), shell);
@@ -474,14 +474,14 @@ describe('the generated script is a file its shell can read', () => {
   it("is accepted by bash's parser even when it is the zsh script", () => {
     // A weak check and stated as one: bash and zsh share the grammar of everything
     // generated except two parameter expansions, so this catches an unbalanced quote or a
-    // broken `case` — which is the failure a description's apostrophe would cause — and
+    // broken `case` (which is the failure a description's apostrophe would cause) and
     // says nothing about `${(f)…}`. It is what there is when zsh is not installed.
     expect(complaintOf('bash', SCRIPT.zsh, 'as-bash.zsh')).toBe('');
   });
 
   it('is driven by a real bash, which is what the coverage above reads for bash', () => {
     expect(present('bash'), 'bash is not on this machine: the driven half cannot run').toBe(true);
-    // Every level answered something — a reply map with an empty entry would make every
+    // Every level answered something: a reply map with an empty entry would make every
     // `toContain` above fail loudly, but an entry that was never asked would not.
     expect(BASH_REPLIES.size).toBe(PATHS.length);
     for (const path of PATHS) {
@@ -527,7 +527,7 @@ describe('a declaration is English, and it goes into the script as text', () => 
       expect(carrying.length, shell).toBe(1);
       // The newline was COLLAPSED and not dropped: both halves are on the one line, and
       // what a shell would otherwise expand is on it as text. (The apostrophe is escaped
-      // by then, in each dialect's own way — that is the case below.)
+      // by then, in each dialect's own way, that is the case below.)
       expect(carrying[0], shell).toContain('and a second line');
       expect(carrying[0], shell).toContain('$HOME');
       // And it is the description OF that command: the word is on the same line, however
@@ -538,7 +538,7 @@ describe('a declaration is English, and it goes into the script as text', () => 
 
   it('and the bash script carries no description at all, which is the decision', () => {
     // bash's completion has nowhere to show one, so the tree's descriptions do not travel
-    // into it — and an option's description travels into NONE of the three, because
+    // into it, and an option's description travels into NONE of the three, because
     // `--which`'s is 340 characters against 76 for the longest command's.
     const script = completionScript(odd(), 'bash');
     expect(script).not.toContain("actor's note");

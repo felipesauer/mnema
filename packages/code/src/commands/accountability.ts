@@ -1,19 +1,19 @@
 /**
- * `mnema audit accountability [--from --to --who --which]` — who authorized what, and
+ * `mnema audit accountability [--from --to --who --which]`: who authorized what, and
  * which agent carried it out, over the whole record.
  *
  * The second INTELLIGENCE read: the derivation the proof exists FOR. It counts
- * every visible tree's record into a factual account of authorship — per
+ * every visible tree's record into a factual account of authorship: per
  * authorizing `who`, how many facts, of which kinds, executed by which agents.
  * Like `git shortlog -sn`, the DEFAULT is everything: with no filter it accounts
- * for the whole record. `--from`/`--to`/`--who`/`--which` only NARROW that — an
+ * for the whole record. `--from`/`--to`/`--who`/`--which` only NARROW that: an
  * optional window and author/agent filter, never a required one. An empty record
  * (or filters that exclude everything) yields a zero account, not an error.
  *
  * Read-only: it opens a cache per tree, brought forward from the one the tree keeps
  * (`CacheOptions.persist`), and sums the
  * grouped counts the context package's pure `accountability` composes. No writer, no
- * key. It needs no `--actor` — the `--who`/`--which` here are aggregation
+ * key. It needs no `--actor`: the `--who`/`--which` here are aggregation
  * FILTERS (which author, which agent to count), not the identity of the asker.
  * With no project at all it refuses `NO_PROJECT`, the same refusal the other
  * intelligence reads give.
@@ -29,7 +29,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 
-/** What the accountability command needs — injected so it is testable. */
+/** What the accountability command needs: injected so it is testable. */
 export interface AccountabilityContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -41,20 +41,20 @@ export interface AccountabilityContext {
 export interface AccountabilityDone {
   readonly ok: true;
   /**
-   * The account itself — total facts and one entry per authorizing `who`, each carrying the
+   * The account itself, total facts and one entry per authorizing `who`, each carrying the
    * foundings of its identity beside others (`WhoAccount.foundedBeside`): every one in a tree
    * where other identities were already founded, with the tree, the instant and who was there.
    * A person new to a team's record reads there as surely as one person who arrived under a
    * second key; the account says which identity, where and when, and the person reading it
    * knows which of the two it was. It is the same reading the write says at the moment it
-   * founds (`a-new-identity.ts`), asked of the whole record — and the same field the agent's
+   * founds (`a-new-identity.ts`), asked of the whole record, and the same field the agent's
    * account carries, from the one selection in the context package's fold.
    */
   readonly account: Accountability;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
@@ -62,7 +62,7 @@ export interface AccountabilityDone {
   readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
-/** The read was refused — no project to account for, or a `--who` that names none. */
+/** The read was refused: no project to account for, or a `--who` that names none. */
 export type AccountabilityRefused =
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   | {
@@ -87,14 +87,14 @@ export function runAccountability(
     return { ok: false, reason: 'NO_PROJECT' };
   }
   // The foundings beside others come in the account, off the same caches the counts do. They
-  // used to be read here a second time, straight off every tree — a whole replay per tree
+  // used to be read here a second time, straight off every tree: a whole replay per tree
   // beside the one each cache had just done, for a reading those caches already held.
   return withScopedCaches(trees, (sources) => {
     const anchors = anchorForms(sources);
     const linkBreaks = linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE);
     // `--who` takes the same value this read PRINTS, so it accepts the same short
     // form. Left unresolved, a prefix would filter on a `who` that matches nothing
-    // and come back as an account of zero facts — the one answer that looks like an
+    // and come back as an account of zero facts: the one answer that looks like an
     // answer and is not.
     if (input.who !== undefined) {
       const who = resolveTypedAnchor(input.who, anchors);

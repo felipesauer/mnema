@@ -19,7 +19,7 @@ import { anchorForms, anchorText, NO_ANCHORS, resolveTypedAnchor } from './ancho
 /** An anchor whose hex is `hex` padded out to the full 64 characters. */
 const anchorOf = (hex: string) => `mnid:${hex.padEnd(64, '0')}`;
 
-/** A source that knows exactly these authors — the only thing these reads ask it. */
+/** A source that knows exactly these authors: the only thing these reads ask it. */
 const knowing = (...authors: string[]) =>
   ({
     scope: 'public',
@@ -41,7 +41,7 @@ describe('resolving what a person typed', () => {
     const refused = resolveTypedAnchor('abcdef', forms);
     expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_ANCHOR' });
     const message = (refused as { message: string }).message;
-    // Every candidate it names has to be a value that then works — otherwise the
+    // Every candidate it names has to be a value that then works: otherwise the
     // refusal is a loop rather than a way out.
     for (const named of [one, two]) {
       const short = forms.get(named) as string;
@@ -67,7 +67,7 @@ describe('resolving what a person typed', () => {
     expect((refused as { message: string }).message).toContain('64 hex');
   });
 
-  it('names the accident when the value is empty — an unset variable', () => {
+  it('names the accident when the value is empty: an unset variable', () => {
     const anchor = anchorOf('a1b2c3d4');
     const forms = anchorForms([knowing(anchor)]);
     const refused = resolveTypedAnchor('  ', forms);

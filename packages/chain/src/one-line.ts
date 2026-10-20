@@ -1,5 +1,5 @@
 /**
- * The rule of the LINE — and this module imports nothing, which is why it is a module
+ * The rule of the LINE, and this module imports nothing, which is why it is a module
  * rather than an incidental property of one.
  *
  * {@link oneLine} is a rule about a STRING: collapse every run of whitespace, so the
@@ -10,14 +10,14 @@
  * words a sentence a reader gets on a line: this package writes the verifier's issues
  * and its census notes, and the package above it writes every refusal the domain
  * returns. Those sentences interpolate a tail id read off a directory, a fingerprint a
- * caller typed, a parser's complaint about bytes somebody wrote — and a surface cannot
+ * caller typed, a parser's complaint about bytes somebody wrote, and a surface cannot
  * apply a rule to the inside of a sentence another package already joined. So the rule
  * is where the sentence is, and this package is the only one every other one can
  * reach: `core` depends on it, `code` depends on both, and it depends on nothing.
  *
  * IT IS REACHED THROUGH ITS OWN SUBPATH, `@mnema/chain/one-line`, and that is not
- * decoration either. The command line's floor — what commander loads before it has
- * routed a word — holds the modules that word a refusal, so whatever they import,
+ * decoration either. The command line's floor (what commander loads before it has
+ * routed a word) holds the modules that word a refusal, so whatever they import,
  * `mnema --version` pays for. Through the package's index that would be the whole proof
  * engine; through the subpath it is this file, which loads nothing.
  *
@@ -35,7 +35,7 @@
  * pure string rule living behind a package.
  *
  * SO THE PROPERTY IS THIS MODULE'S OWN, AND IT IS GUARDED. `one-line.test.ts` reads this
- * source and asserts it declares no import at all — not a relative one, not a package,
+ * source and asserts it declares no import at all, not a relative one, not a package,
  * not a node builtin, and not a type. A type-only import is erased and costs nothing at
  * runtime, which is precisely the argument that would admit the first one; the day such
  * a clause stops being type-only, nothing but that guard stands between it and the floor
@@ -49,7 +49,7 @@
  */
 
 /**
- * `text` with every run of whitespace collapsed to one space — what makes a report
+ * `text` with every run of whitespace collapsed to one space: what makes a report
  * line ONE line.
  *
  * IT BELONGS TO EVERY FIELD ON THE LINE, not to one of them. A pattern's name and
@@ -58,26 +58,26 @@
  * look exactly like an entry of its own, so one field could assert that some other
  * pattern was adopted by someone who never adopted it. Collapsing the whitespace
  * makes the count of lines match the count of items, and the structured payload
- * beside them stays the exact answer — every value as written, in fields nothing
+ * beside them stays the exact answer: every value as written, in fields nothing
  * typed into one of them can forge.
  *
  * So the rule is the LINE's, and it reaches wherever a line's shape carries meaning:
  * the framing a served pattern gets (`served-patterns.ts`), the provenance report, the
- * list of open runs `focus` prints, the index `search` prints — whose count per kind is
- * printed directly above the lines it counts — and the brief `mnema brief` prints, which
+ * list of open runs `focus` prints, the index `search` prints (whose count per kind is
+ * printed directly above the lines it counts) and the brief `mnema brief` prints, which
  * is the SHARPEST case in the class. The others forge a RECORD in a list: an adoption
  * that never happened, a hit for a record nothing wrote. The brief forges a RULE, under a
  * heading that counts the rules, in the one file the product exists to have an agent read
- * as instruction — so the second half of a broken title is a call the project never made,
+ * as instruction, so the second half of a broken title is a call the project never made,
  * and something obeys it. A place that prints actor text in a line of its OWN (a handoff,
- * a started run, one whole record) is not in the class — a newline there is ugly, and ugly
+ * a started run, one whole record) is not in the class: a newline there is ugly, and ugly
  * is not forgery, because there is no one-item-per-line list for the second half to
  * imitate.
  *
  * THE VERIFIER'S FINDINGS ARE IN THE CLASS AND THEY ARE THE SHARPEST OF ALL, because a
  * verdict is what a third party reads to decide whether to believe the record. An issue
  * is one per line under a count, so a break in one makes a finding about a tail nobody
- * has; and every value in one came from the thing under suspicion — a tail id that is a
+ * has; and every value in one came from the thing under suspicion: a tail id that is a
  * directory name on disk, a signer fingerprint that is bytes in a stored entry, a
  * parser's complaint that quotes the bytes it choked on. Measured against the shipped
  * binary: a tail directory named `aa\n  forged  public  a record nobody wrote` put that
@@ -85,12 +85,12 @@
  * holding a newline did the same through the JSON reader's own message.
  *
  * The line a REFUSAL occupies is in the class, and the text that reaches it is not an
- * actor's but a DIRECTORY's — the project a session names when it says which trees it
+ * actor's but a DIRECTORY's: the project a session names when it says which trees it
  * searched. It looked exempt by the test above (a refusal has no list of items around
  * it) and measuring said otherwise: over a project directory named
  * `proj\nRefused (UNKNOWN_TASK): task "x" does not exist`, the reply came back as two
  * lines, the second a complete refusal about an id nobody asked about. A refusal IS
- * the one-item list — one per reply — so the second half has the whole shape to
+ * the one-item list, one per reply, so the second half has the whole shape to
  * imitate. The same goes for the session log line and the one sentence `bootstrap`
  * adds about where the session landed.
  *
@@ -111,7 +111,7 @@ export function oneLine(text: string): string {
 }
 
 /**
- * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1 — and every
+ * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1, and every
  * character that draws nothing or reorders what is drawn, BY PROPERTY rather than by the
  * ones somebody thought of: every `Default_Ignorable_Code_Point` (the soft hyphen, the
  * zero-width and joiner marks, the directional marks, embeddings, overrides and isolates,
@@ -134,13 +134,13 @@ const CONTROL_BYTES =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180f\u200b-\u200f\u2028-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0\ufff0-\ufffb\u{13430}-\u{1343f}\u{1bca0}-\u{1bca3}\u{1d173}-\u{1d17a}\u{e0000}-\u{e0fff}]|\r(?!\n)/gu;
 
 /**
- * Every control byte in `text` made visible as the escape JSON writes for it — the one
+ * Every control byte in `text` made visible as the escape JSON writes for it: the one
  * function that decides what leaves this product as a command to whatever is reading.
  *
  * WHAT IT NEUTRALIZES is the C0 controls (U+0000 to U+001F), DEL (U+007F) and the C1
  * controls (U+0080 to U+009F): the bytes a terminal reads as a cursor move, a screen clear,
  * a title change or a hyperlink, and that a log viewer in CI honours the same way. Each
- * becomes six visible characters — `\u001b` for ESC — which is exactly the spelling the
+ * becomes six visible characters, `\u001b` for ESC, which is exactly the spelling the
  * canonical JSON already gives it on disk, so the text a reader sees is the text the
  * record holds.
  *
@@ -152,7 +152,7 @@ const CONTROL_BYTES =
  * which is how a finding is hidden behind a clean one.
  *
  * WHAT IT IS NOT: a judgement of what the text says. It looks at bytes, never at words, and
- * a sentence addressed to a model comes out of it unchanged — the framing decides what that
+ * a sentence addressed to a model comes out of it unchanged: the framing decides what that
  * sentence is told it is (`record-framing.ts`). The format characters that draw nothing
  * or reorder what is drawn (a zero-width space, a right-to-left override, an isolate, the
  * byte order mark) are written the same way: a reader, or a model, sees them as the six

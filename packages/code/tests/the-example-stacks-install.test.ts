@@ -1,5 +1,5 @@
 /**
- * THE EXAMPLE STACKS INSTALL — held on the built binary, in a home that is a sandbox.
+ * THE EXAMPLE STACKS INSTALL: held on the built binary, in a home that is a sandbox.
  *
  * The stacks this repository ships as examples are installed by `mnema stack add` the way a person
  * installs one: the plan is read, the digest it shows is the digest the index lists, the files are

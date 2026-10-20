@@ -1,5 +1,5 @@
 /**
- * `mnema witness` — the layer that is not this machine's, asked for and read back.
+ * `mnema witness`: the layer that is not this machine's, asked for and read back.
  *
  * WHAT THE VERB IS FOR. T1 catches an edit that breaks the hash chain and T2/T4
  * catches an edit made without the signing key. Neither catches the person who HOLDS
@@ -8,21 +8,21 @@
  * that person cannot do is obtain an attestation dated before they started. So this
  * verb asks somebody outside to date a checkpoint, and `verify` reads the answer.
  *
- * ONE CHECKPOINT PER TAIL AND NOT ONE PER EVENT. Checkpoints chain — each signs the
- * hash of the previous one's signed message — so an attestation over the last one
+ * ONE CHECKPOINT PER TAIL AND NOT ONE PER EVENT. Checkpoints chain: each signs the
+ * hash of the previous one's signed message, so an attestation over the last one
  * dates every checkpoint below it. That is what makes the layer cheap enough to be
  * honest about: a stamp is one request, whatever the record holds.
  *
  * AND A STAMP DOES NOT EXPIRE WHEN THE RECORD GROWS. Writing more events makes the
  * checkpoint that was stamped no longer the last one, and for a while the product
- * read that as having nothing — it reported `nothing outside this machine attests
+ * read that as having nothing: it reported `nothing outside this machine attests
  * this record` about records holding a valid proof. The reading asks every checkpoint
  * the tail offers now and takes the newest one that is attested, so a stamp goes on
  * being worth what it was worth, with the count of what was written since.
  *
  * NOR WHILE IT IS STILL IN FLIGHT. A stamp is a request, and a calendar answers in
  * minutes or in half a day; for that whole window the record holds a proof that is not
- * yet coverage, and the walk used to drop it for exactly that reason — so the line
+ * yet coverage, and the walk used to drop it for exactly that reason, so the line
  * this verb prints, whose entire job is to show where the witness stands, said that
  * nothing attested a record somebody had just stamped. It now names the request and
  * the calendar it is with, which is what separates `wait` from `stamp again`. It is
@@ -31,7 +31,7 @@
  *
  * IT REFUSES TO STAMP A RECORD THAT IS NOT FULLY SIGNED, and the refusal is the
  * design rather than caution. An attestation is filed under the digest of a
- * checkpoint, and the verifier looks for one under the checkpoint IT PROVED — never
+ * checkpoint, and the verifier looks for one under the checkpoint IT PROVED, never
  * under the last line of a file it has not judged. On a fully-signed tree those are
  * the same checkpoint; on a tree with a break or a residual they can differ, and
  * stamping there would write a file nothing will ever read while telling somebody
@@ -45,14 +45,14 @@
  * existed.
  *
  * AND GOING BACK IS NOT ONE CHECKPOINT EITHER. Stamping asks about the head, which is
- * right — a new attestation belongs over the newest thing there is to date. Going back
+ * right: a new attestation belongs over the newest thing there is to date. Going back
  * asked about the head too, which was not: proofs accumulate under the digests they were
  * filed under, and the head moves on EVERY WRITE, so the request a person was waiting on
  * ended up somewhere `mnema witness upgrade` never looked.
  *
  * That sentence used to read "the head moves on every 64 events", and the premise behind
  * it was that the writer's ceiling sets the cadence. It does not: every writing path
- * signs what it wrote before it returns, so the head moves once per act — measured at
+ * signs what it wrote before it returns, so the head moves once per act, measured at
  * 1.03 events per checkpoint on a fresh record, not 64. The correction makes this
  * argument stronger rather than weaker, because it means a request goes stale after ONE
  * `mnema memory`, not after a bulk import. `verify` said an attestation
@@ -61,7 +61,7 @@
  * now, through the same {@link witnessWalk} the reading walks.
  *
  * AND THE ACT APPENDS NO EVENT. It would be natural to record that somebody asked
- * for an attestation — and it would be self-defeating: the event would seal a new
+ * for an attestation, and it would be self-defeating: the event would seal a new
  * checkpoint, which would make the checkpoint just stamped no longer the last one.
  * The witness files are the record of the act, they commit with the tree, and they
  * are named by what they attest.
@@ -108,7 +108,7 @@ import {
 } from '@mnema/core';
 import type { CheckpointToSign, SigstoreNetwork } from '../sigstore/sign.js';
 
-/** What every act of this verb needs — injected so it is testable. */
+/** What every act of this verb needs: injected so it is testable. */
 export interface WitnessContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
@@ -118,7 +118,7 @@ export interface WitnessContext {
    * IT FOLLOWS `verify`, and it has to: a witness exists to raise the level of a
    * VERDICT, and the verdict over a project does not cover the global tree unless the
    * caller asks (the tree belongs to no project and is present in every one). Stamping
-   * it by default would be work no reading of this project ever collects — and, worse,
+   * it by default would be work no reading of this project ever collects, and, worse,
    * a request sent about a tree the caller did not have in mind.
    */
   readonly global: boolean;
@@ -137,26 +137,26 @@ export interface TailWitnessLine {
 export interface WitnessListing {
   readonly lines: readonly TailWitnessLine[];
   /**
-   * The trees this looked in, which CAN be empty — and the sentence above it used to say
+   * The trees this looked in, which CAN be empty, and the sentence above it used to say
    * it could not.
    *
    * That sentence is true where it was written: `commands/tail-list.ts` answers with
    * `treesSearched(trees)` whole, and the machine-global tree always resolves. Here the
    * same list is filtered by `--global`, which every path of this group leaves off by
    * default, so outside a project there is nothing left. A reading that interpolated this
-   * printed `looked in .` — a list with no items and a full stop; the sentence the readings
+   * printed `looked in .`: a list with no items and a full stop; the sentence the readings
    * say now (`noTailHoldsEvents`, `presentation/tails.ts`) says why the list is empty instead.
    */
   readonly trees: readonly Scope[];
 }
 
-/** One tail, its tree, and where its chain lives — what both acts iterate over. */
+/** One tail, its tree, and where its chain lives: what both acts iterate over. */
 interface HeldChain {
   readonly scope: Scope;
   readonly tail: string;
   readonly layout: ChainLayout;
   /**
-   * How many events the tail holds — taken from the standing the enumeration already
+   * How many events the tail holds: taken from the standing the enumeration already
    * read, so the listing pays nothing extra for it.
    *
    * The reading needs it because the question T3 answers is how much of a record an
@@ -166,19 +166,19 @@ interface HeldChain {
 }
 
 /**
- * The checkpoints a tail has STORED, in the file's own order — what the reading and the
+ * The checkpoints a tail has STORED, in the file's own order: what the reading and the
  * act that completes an attestation are both given.
  *
  * ONE FUNCTION BECAUSE IT IS ONE LIST. `mnema witness` and `mnema witness upgrade`
- * are the two verbs a person alternates between — read where the witness stands, then go
- * back for what has not confirmed — and a listing that showed a request the act did not
+ * are the two verbs a person alternates between (read where the witness stands, then go
+ * back for what has not confirmed) and a listing that showed a request the act did not
  * walk to would be the same contradiction this delivery removes, one list over.
  *
  * IT IS THE STORED CHECKPOINTS AND NOT THE PROVEN ONES, deliberately, and it is where
  * these two part company with `verify`. A verdict may not rest on a line it has not
  * judged, so the verifier offers the reading only the checkpoints that VERIFIED; neither
  * of these two claims to have verified anything, and the act in particular files nothing
- * new — it completes a proof that is already on the disk, which is worth completing
+ * new: it completes a proof that is already on the disk, which is worth completing
  * whatever the signature over its checkpoint turns out to say.
  */
 function storedCheckpoints(
@@ -192,23 +192,23 @@ function storedCheckpoints(
 }
 
 /**
- * Every tail the trees visible from `ctx.cwd` hold, with the chain each lives in — counted
+ * Every tail the trees visible from `ctx.cwd` hold, with the chain each lives in: counted
  * the way `verify` counts them.
  *
  * IT IS `verify`'s ENUMERATION, `listTails`, AND IT USED TO BE `tail list`'s. It read the tails
- * through `tailsHeld`, which leaves out a tail with no event in it — the directory an older
+ * through `tailsHeld`, which leaves out a tail with no event in it: the directory an older
  * writer left with only its ownership proof, which records committed then still carry. That
  * is the right answer for the verbs that CUT a tail (there is nothing in one to account for),
  * and the wrong one here: the verifier counts every directory under `tails/`, and folds an
  * empty one into the witness level as a tail with nothing attested. Measured over a record
- * holding one, `verify` said `2 tail(s)` and this verb listed one — and the tail missing from
+ * holding one, `verify` said `2 tail(s)` and this verb listed one, and the tail missing from
  * the listing was the very one lowering the level, so the verb a reader opens to find out why
  * the witness stands where it does could not show them. Both walk the same directories, and
  * both ask the same question of each: {@link isEmptyTail}. A tail holding no event and no
- * checkpoint is not counted as a tail (FORMAT.md section 4) — not in the verdict's count, not
+ * checkpoint is not counted as a tail (FORMAT.md section 4), not in the verdict's count, not
  * in its witness level, and not here; `verify`'s census is where it is named.
  *
- * The events each tail holds are its standing's count — the same reading `tailsHeld` took,
+ * The events each tail holds are its standing's count: the same reading `tailsHeld` took,
  * asked of each tail once.
  */
 function heldChains(ctx: WitnessContext): {
@@ -240,16 +240,16 @@ function heldChains(ctx: WitnessContext): {
 }
 
 /**
- * Where the external witness stands, tail by tail — nothing is opened for writing,
+ * Where the external witness stands, tail by tail: nothing is opened for writing,
  * nothing is asked of anybody.
  *
  * It reads through the same function the verifier does ({@link witnessOfTail}), so a
- * tail this reports as covered is a tail `verify` will report as covered — there is
+ * tail this reports as covered is a tail `verify` will report as covered: there is
  * no second idea here of what a witness is or of where one lives. THIS SURFACE SAID
  * THE FALSE SENTENCE TOO: `nothing outside this machine attests this record`, printed
  * about a record holding an attestation over a checkpoint that is no longer the last
  * one. It was found by grepping for the sentence rather than for the function, which
- * is the only way it could have been found — the verdict and this listing share no
+ * is the only way it could have been found: the verdict and this listing share no
  * caller.
  *
  * WHAT THE TWO OFFER THE READING DIFFERS, deliberately. The verifier hands it the
@@ -257,8 +257,8 @@ function heldChains(ctx: WitnessContext): {
  * order, because a listing has never claimed to have verified anything and saying so
  * here would be a second, weaker verification standing beside the real one. That list
  * is {@link storedCheckpoints}, and {@link runWitnessUpgrade} is handed the SAME one:
- * the two verbs a person alternates between — read where the witness stands, then go
- * back for what has not confirmed — cannot be looking at different tails.
+ * the two verbs a person alternates between (read where the witness stands, then go
+ * back for what has not confirmed) cannot be looking at different tails.
  *
  * The head of that list is the checkpoint {@link checkpointToWitness} names for the one
  * act that still asks it, `stamp`, and `witness.test.ts` asserts that rather than
@@ -292,7 +292,7 @@ export interface WitnessOutcome {
    * What the act did, in one word a report can branch on.
    *
    * `failed` is the act's own, and it is not {@link WitnessOutcome.refusals}: a refusal
-   * names an address that was not reached — either because it would not answer, which is
+   * names an address that was not reached, either because it would not answer, which is
    * ordinary and expected (several calendars are asked precisely so one of them can be
    * down), or because this machine declined to ask it at all, which its `kind` says.
    * `failed` says this one proof could not be carried through at all, and it exists so
@@ -303,7 +303,7 @@ export interface WitnessOutcome {
   readonly detail: string;
   /** Where the tail stands after the act. */
   readonly reading: WitnessReading;
-  /** Every address not reached while this tail was worked on, and why — see `kind`. */
+  /** Every address not reached while this tail was worked on, and why: see `kind`. */
   readonly refusals: readonly WitnessRefusal[];
 }
 
@@ -321,7 +321,7 @@ export type WitnessAct =
  * a verified signature.
  *
  * `signed` and not `chained`, because below it the checkpoint the verifier proves and
- * the checkpoint this act would stamp can be different checkpoints — see this file's
+ * the checkpoint this act would stamp can be different checkpoints: see this file's
  * header.
  */
 const STAMPABLE: ProvenLevel = 'fully-signed';
@@ -345,7 +345,7 @@ export async function runWitnessStamp(
   // WHAT EACH TAIL WOULD STAMP IS READ BEFORE ANY TREE IS JUDGED, and the order is the
   // guarantee. The records are append-only, so a checkpoint read before a verification is
   // still there when it runs, and a tree that verifies fully signed proved every checkpoint
-  // it holds — this one included. Judged first and read after, the checkpoint could be one
+  // it holds: this one included. Judged first and read after, the checkpoint could be one
   // written in between, which no verdict here looked at.
   const stamping = chains.map((chain) => ({
     chain,
@@ -409,16 +409,16 @@ export async function runWitnessStamp(
 }
 
 /**
- * Goes back for the attestations this record is waiting on — ALL of them, wherever in
+ * Goes back for the attestations this record is waiting on: ALL of them, wherever in
  * the tail they were filed.
  *
  * THE PREMISE THIS FALSIFIES was the code under this very sentence: it asked
- * {@link checkpointToWitness} — the tail's LAST checkpoint — and so went back for at most
+ * {@link checkpointToWitness}, the tail's LAST checkpoint, and so went back for at most
  * one attestation, the head's. The sentence said `attestations`, plural, and was false.
  * The state it left behind was one the product could observe and contradict itself about:
  * with a request filed under an older checkpoint, `verify` reported that an attestation
  * had been requested and had not confirmed while this verb, in the same minute, reported
- * that nothing had been asked about it — and skipped. The reading learned to walk the
+ * that nothing had been asked about it, and skipped. The reading learned to walk the
  * whole tail one delivery ago; this is the act catching up, and the walk is now literally
  * the same one ({@link witnessWalk}).
  *
@@ -426,8 +426,8 @@ export async function runWitnessStamp(
  * client does: `ots upgrade` "adds the path to the Bitcoin blockchain to an INCOMPLETE
  * timestamp", over as many files as it is handed. Ours selected by position, and so
  * skipped exactly the thing the verb exists to repair. Incomplete here is
- * `pending` — a calendar that has not answered, or an anchor whose block header this
- * record does not carry — and both are states a return visit can end. A proof already
+ * `pending` (a calendar that has not answered, or an anchor whose block header this
+ * record does not carry) and both are states a return visit can end. A proof already
  * covered is not asked about again, and neither is one this machine REFUSES: an
  * unreadable file or a proof over another digest has nothing a calendar could complete,
  * and sending it would be network spent to write the same refusal back.
@@ -435,7 +435,7 @@ export async function runWitnessStamp(
  * NEWEST FIRST, AND IT STOPS AT THE FIRST ONE THAT CONFIRMS. Both halves are
  * {@link witnessWalk}'s and are argued there; what they cost is the point here. Every
  * incomplete proof is a round of requests, so a record with many open ones is many
- * requests — and the walk spends them in the order that pays first, then stops, because
+ * requests, and the walk spends them in the order that pays first, then stops, because
  * once something has confirmed no reading of this record will ever quote a proof below
  * it. A tail with K open requests therefore costs K rounds only in the world where none
  * of them confirms, which is the world where none of them would have helped.
@@ -446,8 +446,8 @@ export async function runWitnessStamp(
  *
  * A PROOF THAT CANNOT BE CARRIED THROUGH DOES NOT TAKE THE OTHERS WITH IT. Each proof is
  * written the moment its own return visit is done, so three that completed are on the
- * disk before a fourth is attempted — the same append-only honesty about partiality the
- * rest of this product has — and anything thrown while one is worked on becomes that
+ * disk before a fourth is attempted (the same append-only honesty about partiality the
+ * rest of this product has) and anything thrown while one is worked on becomes that
  * one's outcome, not the act's.
  */
 export async function runWitnessUpgrade(
@@ -521,7 +521,7 @@ async function upgradeTail(
     // Everything below a confirmed attestation dates a smaller prefix at a later
     // instant, so no reading of this record would ever quote it. Asked AFTER the write
     // rather than of the calendar's answer, because a block nobody could hand us the
-    // header for is still `pending` on this disk — and the disk is what a reader reads.
+    // header for is still `pending` on this disk, and the disk is what a reader reads.
     if (confirmed) break;
   }
   if (outcomes.length === 0) return [skipped(chain, 'nothing has been asked about this tail yet')];
@@ -539,7 +539,7 @@ function said(
 }
 
 /**
- * A TAIL an act had nothing to do to — no checkpoint, nothing asked about, a level too
+ * A TAIL an act had nothing to do to: no checkpoint, nothing asked about, a level too
  * low to stamp at. The reading is the sentence itself because there is no file to read:
  * these are the states in which nothing was ever written for one.
  */
@@ -563,7 +563,7 @@ export type SigstoreAct =
       readonly outcomes: readonly SigstoreOutcome[];
       readonly trees: readonly Scope[];
       /**
-       * Who the certificate names and who vouched for it — absent when nothing was sent,
+       * Who the certificate names and who vouched for it: absent when nothing was sent,
        * because every tail was skipped before Sigstore was asked.
        */
       readonly signer?: {
@@ -679,7 +679,7 @@ export async function runWitnessSigstore(
 }
 
 /**
- * Whether an identity of these trees says the Sigstore identity is its own — a signed
+ * Whether an identity of these trees says the Sigstore identity is its own: a signed
  * `account.linked` under a checkpoint, from the identity itself.
  */
 function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): boolean {

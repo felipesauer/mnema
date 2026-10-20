@@ -1,5 +1,5 @@
 /**
- * The operations the private `@mnema/sdk` calls — the same functions the command line calls, under
+ * The operations the private `@mnema/sdk` calls: the same functions the command line calls, under
  * one entry so a program can reach them without the binary.
  *
  * It adds no operation and no rule: each name below is a command's own function, or the

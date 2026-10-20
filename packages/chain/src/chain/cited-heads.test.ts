@@ -1,5 +1,5 @@
 /**
- * What a writer cites: the head of each other tail its own tail has not cited yet — and,
+ * What a writer cites: the head of each other tail its own tail has not cited yet, and,
  * read back, nothing when nothing new was read.
  */
 
@@ -90,7 +90,7 @@ describe('a writer cites what it read, once', () => {
     expect(b.write().after).toBeUndefined();
   });
 
-  it('with the note lost, it cites the heads again once — redundant, and harmless', () => {
+  it('with the note lost, it cites the heads again once: redundant, and harmless', () => {
     const a = machine();
     const b = machine();
     a.write();

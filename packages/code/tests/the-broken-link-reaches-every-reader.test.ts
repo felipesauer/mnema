@@ -3,7 +3,7 @@
  *
  * ## What it was
  *
- * Two reads said it — `search` and `status` on the command line. Fifteen others did
+ * Two reads said it: `search` and `status` on the command line. Fifteen others did
  * not, and the MCP did not at all: `grep -rn "linkBreak" packages/code/src/mcp/` came
  * back with nothing, so not one of the twenty-five tools told an agent that what it was
  * being handed came off a record whose proof had failed. By this product's own axis the
@@ -26,20 +26,20 @@
  *
  * ## The discriminant carried the blind spot, and that is the second half of this file
  *
- * It was the PROJECTION CACHE and nothing else — four ways of opening one — and the whole
+ * It was the PROJECTION CACHE and nothing else, four ways of opening one, and the whole
  * of the console fell outside it. `packages/code/src/repl/` serves the record by every
  * ordinary meaning of the word: the opening panel prints a verdict, the corner holds the
  * proven level on every frame of the session, and the feed shows what another process
  * appended while the page was up. It opens no cache to do any of it. It reaches the chain
- * directly — `runVerify` in `session.ts`, `chainExtent` and `readTailTip` in
- * `following.ts` — so `grep -rn "linkBreak" packages/code/src/repl/` came back with
+ * directly (`runVerify` in `session.ts`, `chainExtent` and `readTailTip` in
+ * `following.ts`), so `grep -rn "linkBreak" packages/code/src/repl/` came back with
  * nothing, and this file was green over it.
  *
  * What that cost is measured: with a duplicate of the tail's last entry appended during a
  * session, the body of the page printed `seq gap: expected 8, found 7` and the corner said
  * `fully-signed` in the SAME FRAME
  * (`the-corner-says-what-its-level-covers.test.ts`). A rule applied at N sites has an
- * N-plus-first, and here the N-plus-first was a whole surface — reached by a door the
+ * N-plus-first, and here the N-plus-first was a whole surface: reached by a door the
  * sweep did not know was a door. So there is a second list ({@link READS_THE_CHAIN}), and
  * a second reading that answers for it ({@link CARRIES_THE_FACT}): the console cannot ask
  * for a cache's breaks, because it holds no cache, and what it asks instead is whether the
@@ -47,7 +47,7 @@
  *
  * ## What it covers now, and what it covered before
  *
- * It was written for the READS and the MCP's writes were outside it — `recorded` and
+ * It was written for the READS and the MCP's writes were outside it: `recorded` and
  * `moved` composed their own envelope, and this file's own assertion was keyed on the
  * read's call site (`linkBreakBlock(sessionLinkBreaks(session))`), which is a guard
  * green over the hole it existed to find. That is the shape this bench names: a rule
@@ -61,7 +61,7 @@
  * ## What it does not answer
  *
  * That the notice is CORRECT, or that it reaches the stream it should. Both belong to
- * the behavioural half — `the-read-says-the-record-does-not-chain.test.ts` and
+ * the behavioural half: `the-read-says-the-record-does-not-chain.test.ts` and
  * `the-agent-is-told-the-record-does-not-chain.test.ts` for the reads,
  * `the-write-says-what-it-landed-on.test.ts` for the writes. This says the obligation
  * was not skipped.
@@ -87,7 +87,7 @@ const SRC = join(import.meta.dirname, '..', 'src');
  * IT GREW BY TWO AND THE REASON IS WORTH THE LINE. `withCache` and `withOpenedCaches`
  * arrived when the open and the close were paired into one call
  * (`the-record-is-opened-and-closed-together.test.ts`), and three of the doors this sweep
- * covers — `commands/guard.ts`, `commands/next-actions.ts`, `pinned-run.ts` — stopped
+ * covers (`commands/guard.ts`, `commands/next-actions.ts`, `pinned-run.ts`) stopped
  * writing `ProjectionCache.open(` on the same day. Left unamended this list would have
  * gone on passing while those three dropped out of the sweep entirely: a door is only a
  * door here if one of these strings is in it, and a guard that quietly stops asking is
@@ -101,7 +101,7 @@ const OPENS_A_RECORD = [
 ];
 
 /**
- * The reading every door that serves the record has to ask for — as a CALL, with its
+ * The reading every door that serves the record has to ask for, as a CALL, with its
  * open parenthesis, and that is not pedantry. Read as a bare identifier this matches the
  * IMPORT too, so a command that keeps `import { linkBreaksOf, type ScopedLinkBreak }` and
  * answers `linkBreaks: []` stays green. Measured: that mutation left this file silent and
@@ -119,7 +119,7 @@ const ASKS_THE_READING = 'linkBreaksOf(';
  * Keeping them apart is what lets the excuse for one be an honest sentence about the other.
  *
  * WHAT PUT IT HERE is that the first list was the whole universe and the console was
- * outside it — see the note at the top of this file. The names are the chain package's own
+ * outside it: see the note at the top of this file. The names are the chain package's own
  * entry points, read as CALLS for the reason {@link ASKS_THE_READING} is: a bare identifier
  * matches the import, so a file that keeps the import and calls nothing stays green.
  */
@@ -136,14 +136,14 @@ const READS_THE_CHAIN = [
 ];
 
 /**
- * The readings that CARRY the fact — either of which discharges the obligation.
+ * The readings that CARRY the fact: either of which discharges the obligation.
  *
  * There are two because the two kinds of door can answer different questions honestly, and
  * neither is a weaker form of the other. `linkBreaksOf` says which tails do not chain, off
  * a replay a read already paid for. `watchingTheProof` says that the record has moved past
- * what a verdict was formed over, off one `readdir` per tail — narrower, and the only thing
+ * what a verdict was formed over, off one `readdir` per tail (narrower, and the only thing
  * a surface that holds no cache can say without re-running a verifier that costs 54 ms to
- * 1.7 s — measured while it still walked the tail once per checkpoint, and a pass over
+ * 1.7 s) measured while it still walked the tail once per checkpoint, and a pass over
  * every event since it stopped (`repl/proving.ts` has both).
  *
  * A THIRD ONE IS A CLAIM AND NOT A CONVENIENCE: it would be a third answer about the same
@@ -151,7 +151,7 @@ const READS_THE_CHAIN = [
  */
 const CARRIES_THE_FACT = [ASKS_THE_READING, 'watchingTheProof('];
 
-/** Every `.ts` under `src`, as a path relative to it — tests excluded. */
+/** Every `.ts` under `src`, as a path relative to it: tests excluded. */
 function sources(dir = SRC, prefix = ''): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -174,14 +174,14 @@ const LF = '\n';
  * The body of a top-level function declaration, read by matching braces.
  *
  * It is read from the source rather than reasoned about from the module's exports
- * because what is being asserted is where a CALL sits — and a call is a fact about the
+ * because what is being asserted is where a CALL sits, and a call is a fact about the
  * text. Braces inside strings and comments are not discounted, which is sound here for
  * the reason it would not be in a parser: these four functions hold none.
  *
  * THE BODY OPENS AT THE FIRST BRACE THAT ENDS A LINE, and that is the whole care this
  * needs: every one of these signatures declares an object RETURN TYPE, so the first
  * brace after the parameter list opens `{ readonly content: … }` and not the body. The
- * first version took it and every case passed on the type — which is a guard reading the
+ * first version took it and every case passed on the type, which is a guard reading the
  * wrong text and reporting on it, the shape this bench calls an instrument that lies.
  */
 function bodyOf(source: string, name: string): string {
@@ -205,13 +205,13 @@ function bodyOf(source: string, name: string): string {
 const defines = (path: string): boolean =>
   CARRIES_THE_FACT.some((reading) => text(path).includes(`export function ${reading}`));
 
-/** Every file that opens a projection cache — the first kind of door. */
+/** Every file that opens a projection cache: the first kind of door. */
 const opens = sources().filter(
   (path) => !defines(path) && OPENS_A_RECORD.some((how) => text(path).includes(how)),
 );
 
 /**
- * Every file that reads the chain with no cache in between — the second kind, and the one
+ * Every file that reads the chain with no cache in between: the second kind, and the one
  * the console is in.
  *
  * A file already counted as a cache door is left out: it is one door, and listing it twice
@@ -224,13 +224,13 @@ const reads = sources().filter(
     READS_THE_CHAIN.some((how) => text(path).includes(how)),
 );
 
-/** Both kinds together — what an excuse may be written for, and nothing else. */
+/** Both kinds together: what an excuse may be written for, and nothing else. */
 const doors = [...opens, ...reads];
 
 describe('every read that opens the record either asks for the breaks or says why not', () => {
   // THE NON-VACUITY GUARD, and it runs first. A sweep whose pattern has stopped matching
-  // finds nothing and reports success — this repository has been bitten by exactly that
-  // — so the count is pinned above the number of doors the delivery covered.
+  // finds nothing and reports success (this repository has been bitten by exactly that),
+  // so the count is pinned above the number of doors the delivery covered.
   it('finds the doors at all', () => {
     expect(opens.length).toBeGreaterThanOrEqual(18);
   });
@@ -239,7 +239,7 @@ describe('every read that opens the record either asks for the breaks or says wh
     const asks = text(path).includes(ASKS_THE_READING);
     const excused = SERVES_NO_RECORD_CONTENT[path];
     // Asserted as the PAIR rather than as two conditions, so a red says which of the two
-    // it is: a file that does both is as wrong as one that does neither — an excuse
+    // it is: a file that does both is as wrong as one that does neither; an excuse
     // beside a call is an excuse nobody reads.
     expect({ path, asks, excused: excused !== undefined }).toStrictEqual({
       path,
@@ -270,8 +270,8 @@ describe('every read that opens the record either asks for the breaks or says wh
 describe('every read that reaches the CHAIN with no cache says it too, or says why not', () => {
   /**
    * THE NON-VACUITY GUARD, AND IT NAMES THE SITE THAT MOTIVATED THE LIST. A count alone is
-   * the shape this bench has been bitten by — a sweep whose pattern stopped matching finds
-   * nothing and reports success — and a count alone would also survive the one mutation
+   * the shape this bench has been bitten by, a sweep whose pattern stopped matching finds
+   * nothing and reports success, and a count alone would also survive the one mutation
    * that matters here: taking the console back out of the universe. `repl/session.ts` is
    * where the badge is composed and where the reading is asked, so it is named.
    */
@@ -297,7 +297,7 @@ describe('every read that reaches the CHAIN with no cache says it too, or says w
    * AND THE CONSOLE ASKS IT IN ONE PLACE, which is the half a per-file sweep cannot say.
    *
    * The corner is the surface's one statement about what the record proved. A second reading
-   * on the same clock — the feed composing an opinion of its own, say — would be one screen
+   * on the same clock (the feed composing an opinion of its own, say) would be one screen
    * holding two answers about the same bytes, which is exactly what the excuse written for
    * `repl/following.ts` promises does not happen.
    */
@@ -310,7 +310,7 @@ describe('every read that reaches the CHAIN with no cache says it too, or says w
 });
 
 describe('every wiring that prints such a read prints the notice', () => {
-  /** The command modules that answer with the breaks — read off their source. */
+  /** The command modules that answer with the breaks: read off their source. */
   const answering = sources()
     .filter((path) => path.startsWith('commands/') && text(path).includes('readonly linkBreaks:'))
     .map((path) => path.slice('commands/'.length, -'.ts'.length));
@@ -359,7 +359,7 @@ describe('the MCP composes no payload of its own', () => {
       .map((line, at) => ({ line: line.trim(), at: at + 1 }))
       .filter((row) => row.line.startsWith('return { content: ['))
       .filter((row) => !row.line.includes('Refused ('));
-    // ONE, and it is `rules_before_an_edit` — the hook reply, excused with its reason. The form
+    // ONE, and it is `rules_before_an_edit`: the hook reply, excused with its reason. The form
     // is matched up to the bracket and not up to the brace: the block it holds is made by
     // `block`, which neutralizes the bytes, and the brace this used to match was a literal.
     expect(handRolled.map((row) => row.at)).toHaveLength(
@@ -367,8 +367,8 @@ describe('the MCP composes no payload of its own', () => {
     );
     // THE FORM'S OWN NON-VACUITY, ASKED ONCE AND OUTSIDE THE LOOP. It used to be the
     // first line INSIDE the loop, as a `.test()` on a literal carrying `g`, and two
-    // things were wrong with it. It asked nothing about `tool` — the same question, N
-    // times — and a pattern with `g` carries `lastIndex` BETWEEN calls, so alternate
+    // things were wrong with it. It asked nothing about `tool` (the same question, N
+    // times) and a pattern with `g` carries `lastIndex` BETWEEN calls, so alternate
     // calls answer `false` over input that never changed. It never moved the verdict:
     // the `toContain` below is what catches a tool nothing registers. An assertion that
     // can pass by accident is one that eventually does, and this one was inherited.
@@ -376,7 +376,7 @@ describe('the MCP composes no payload of its own', () => {
     expect(declared.length).toBeGreaterThanOrEqual(
       Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT).length,
     );
-    // And each excused tool is a tool this server actually registers — an excuse for a
+    // And each excused tool is a tool this server actually registers: an excuse for a
     // name nothing registers is an excuse for nothing.
     for (const tool of Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT)) {
       expect(server, tool).toContain(`TheRecord('${tool}')`);
@@ -387,18 +387,18 @@ describe('the MCP composes no payload of its own', () => {
    * THE READING IS ASKED IN ONE PLACE, and every composer reaches that place.
    *
    * It used to assert the literal `linkBreakBlock(sessionLinkBreaks(session))`, which was
-   * true of the reads and said nothing about the writes — and the writes were exactly
+   * true of the reads and said nothing about the writes, and the writes were exactly
    * what was missing. Two composers built their own envelope beside `served` and neither
    * of them asked anything, so a guard keyed on the read's own call site was green over
    * the hole it was supposed to find.
    *
    * So it is keyed on the COUNT now: one call, in one function, that every composer goes
    * through. A composer added next year that asks the reading itself reddens this as
-   * surely as one that never asks at all — the second reading is the divergence the rule
+   * surely as one that never asks at all: the second reading is the divergence the rule
    * exists to prevent, and the missing one is the silence.
    *
    * THE PATTERN CARRIES A COMMA NOW, and that is not cosmetic. The reading takes which
-   * door is asking, because the two doors read the fact from different moments — the write
+   * door is asking, because the two doors read the fact from different moments: the write
    * from the chain as it stands, the read from the replay `CacheRegistry.get` just brought
    * forward. A call site that dropped the argument would not compile; one that passed the
    * wrong arm would compile and go quiet, which is why the two names are asserted below.
@@ -425,7 +425,7 @@ describe('the MCP composes no payload of its own', () => {
    * them by hand, and the first case above excused them by their text. That excuse was sound
    * for the record's link state, which a refusal never carried, and it was the hole for the
    * founding. A session opens its run in a tree before the operation decides, so a key whose
-   * first write there is refused founds its identity on the way in — and a hand-built refusal
+   * first write there is refused founds its identity on the way in, and a hand-built refusal
    * asked the session nothing, so the sentence owed at that write waited for a reply that a
    * connection closing right after never sent.
    *
@@ -439,7 +439,7 @@ describe('the MCP composes no payload of its own', () => {
     expect(door).toContain('session.founding.take()');
 
     // `registerTools` is bounded on the CODE, where the braces its descriptions hold inside
-    // strings are blank — `codeOnly` keeps every offset, so the bounds hold for the raw text,
+    // strings are blank: `codeOnly` keeps every offset, so the bounds hold for the raw text,
     // which is where the declarations' names are (a name is a string literal).
     const code = codeOnly(server);
     const start = code.indexOf('function registerTools(');
@@ -464,7 +464,7 @@ describe('the MCP composes no payload of its own', () => {
       });
       if (handler.includes('return refused(')) refusing += 1;
     }
-    // And the door is reached — by every tool that refuses today, which is most of them.
+    // And the door is reached: by every tool that refuses today, which is most of them.
     expect(refusing).toBeGreaterThanOrEqual(22);
     // The founding is taken by the two doors and by nothing else in this module: a third
     // taker would empty the watch where no reply carries it.
@@ -479,7 +479,7 @@ describe('the MCP composes no payload of its own', () => {
   });
 
   /**
-   * EVERY TOOL THIS SERVER REGISTERS ANSWERS THROUGH A COMPOSER — keyed on the
+   * EVERY TOOL THIS SERVER REGISTERS ANSWERS THROUGH A COMPOSER: keyed on the
    * DECLARATION and not on a list, so a tool added next year is classified or it is red.
    *
    * `mutatesTheRecord` and `readsTheRecord` are what every registration is wrapped in
@@ -512,7 +512,7 @@ describe('the MCP composes no payload of its own', () => {
 
 describe('the words have two openings and may not have three', () => {
   const words = text('record-integrity.ts');
-  /** How every opening of the block ends — the clause before it is what differs. */
+  /** How every opening of the block ends: the clause before it is what differs. */
   const OPENS = 'does not chain, so its proof is broken:';
 
   it('two, and both in the module that holds the words', () => {

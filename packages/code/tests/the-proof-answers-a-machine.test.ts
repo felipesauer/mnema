@@ -1,18 +1,18 @@
 /**
- * THE PROOF LAYER ANSWERS A MACHINE — and says what it does not answer.
+ * THE PROOF LAYER ANSWERS A MACHINE, and says what it does not answer.
  *
  * MEASURED against the built binary before this existed: of the reads this product
  * serves, `verify` and `witness` were the only two that REFUSED `--json`, both with
  * `mnema <verb> does not take "--json".` and exit 1. Every other read takes it
  * (`brief` is the one that does not, and it does not because markdown for an agent IS
- * its output format). So the one layer with no machine-readable answer was the PROOF —
+ * its output format). So the one layer with no machine-readable answer was the PROOF:
  * the layer whose whole value is that a stranger can check it.
  *
  * THE RESSALVA IS OBLIGATORY AND IT IS A FIELD. The verdict this makes legible is
  * knowingly insufficient: one tail removed whole while another remains comes out as a
  * census note with exit 0 (or as nothing, with its key removed too), and the newest
  * events cut with their checkpoint read as an honest record. Making an incomplete verdict machine-readable is better than prose, and the
- * delivery has to SAY it is incomplete — in the document a machine parses, not in a
+ * delivery has to SAY it is incomplete: in the document a machine parses, not in a
  * README it will not open. So the JSON carries `notAnswered`, read from the chain's own
  * constant, which is the one site the README says the same thing from.
  *
@@ -22,7 +22,7 @@
  *     that said nothing.
  *   - THE CONTRAST: the prose reading of the same record does not change. `--json`
  *     changes the SHAPE of the answer and never the answer, so the exit code and the
- *     level have to agree across the two shapes — which is also what stops the adapter
+ *     level have to agree across the two shapes, which is also what stops the adapter
  *     from becoming a second opinion about what the proof said.
  *   - `notAnswered` is the chain's constant and not a sentence written here, so a
  *     delivery that removed the declaration cannot leave this green.
@@ -82,8 +82,8 @@ function storedFiles(): { segment: string; checkpoints: string } {
 }
 
 /**
- * Rewrites a fact and RECOMPUTES the hash links with the product's own function — the
- * attacker who knows the format — then empties the checkpoints. The record is then
+ * Rewrites a fact and RECOMPUTES the hash links with the product's own function, the
+ * attacker who knows the format, then empties the checkpoints. The record is then
  * internally consistent and nothing contradicts it, which is why the default passes it.
  */
 function forge(needle: string, replacement: string): void {
@@ -110,7 +110,7 @@ function forge(needle: string, replacement: string): void {
   writeFileSync(checkpoints, '', 'utf-8');
 }
 
-/** Founds a project and records one task — signed as it is written. */
+/** Founds a project and records one task: signed as it is written. */
 async function record(title: string): Promise<void> {
   const founded = await mnema('init');
   if (founded.failed) throw new Error(`setup: init failed: ${founded.err}`);
@@ -118,7 +118,7 @@ async function record(title: string): Promise<void> {
   if (written.failed) throw new Error(`setup: task failed: ${written.err}`);
 }
 
-/** The verdict as JSON, parsed — a throw naming the output when it is not JSON at all. */
+/** The verdict as JSON, parsed: a throw naming the output when it is not JSON at all. */
 async function verdict(...argv: readonly string[]): Promise<{
   readonly said: Said;
   readonly json: {
@@ -170,7 +170,7 @@ describe('the proof answers a machine', () => {
     forge('as it was written', 'as somebody rewrote it');
     const forged = await verdict();
     // THE FIELD THAT DECIDES, BY NAME. The forgery is internally consistent, so the
-    // default still exits 0 — and the level says what was actually proven, which is
+    // default still exits 0, and the level says what was actually proven, which is
     // the value a CI step can branch on instead of reading a sentence.
     expect(forged.json.record.level).toBe('hash-chain-only');
     expect(forged.json.requirementMet).toBe(true);
@@ -209,12 +209,12 @@ describe('the proof answers a machine', () => {
   it('says what NO requirement answers, from the one site that declares it', async () => {
     await record('a fact');
     const said = await verdict();
-    // The chain's own constant, not a sentence written here — so the field cannot drift
+    // The chain's own constant, not a sentence written here, so the field cannot drift
     // from the declaration.
     expect(said.json.notAnswered).toEqual([...NOT_ANSWERED_BY_ANY_REQUIREMENT]);
     // AND THE DECLARATION ITSELF IS HELD, which the line above cannot do: it compares
     // the constant with itself, so emptying one entry moved BOTH sides and left the
-    // whole suite green — measured by mutation. There are
+    // whole suite green, measured by mutation. There are
     // FOUR measured holes, and each has to still be the same hole the README describes,
     // because "one site the README says the same thing from" is the reason the constant
     // exists. The phrase per row is that hole's DISCRIMINANT and nothing else. (There
@@ -243,7 +243,7 @@ describe('the proof answers a machine', () => {
       ).toHaveLength(1);
     }
     // And it is there at EVERY requirement, because choosing one does not shrink the
-    // list — it changes which forgery goes green.
+    // list: it changes which forgery goes green.
     for (const level of ['chained', 'signed', 'witnessed']) {
       const at = await mnema('verify', '--json', '--require', level);
       expect(JSON.parse(at.out).notAnswered, level).toEqual([...NOT_ANSWERED_BY_ANY_REQUIREMENT]);

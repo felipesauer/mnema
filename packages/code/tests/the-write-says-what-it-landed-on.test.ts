@@ -1,11 +1,11 @@
 /**
- * THE WRITE SAYS WHAT IT LANDED ON — over the real protocol.
+ * THE WRITE SAYS WHAT IT LANDED ON: over the real protocol.
  *
  * ## What it was
  *
  * The reads got the notice first (`the-agent-is-told-the-record-does-not-chain.test.ts`).
  * The WRITES were left out and the omission was declared as debt, which makes this the
- * second half of one rule rather than a new one — and the half where being told matters
+ * second half of one rule rather than a new one, and the half where being told matters
  * MOST. An agent hands `record_decision` a decision, is answered `Recorded decision …`,
  * and walks away believing it put a fact into an intact record. It put one onto a record
  * whose proof had already failed, and it is the reader who will cite that id later.
@@ -24,7 +24,7 @@
  * ## The case that decided the shape
  *
  * `A SESSION THAT ONLY WRITES` below. The breaks come from the caches this connection
- * has OPENED, and a write opens none — `writeContext` invalidates, it does not open. So
+ * has OPENED, and a write opens none: `writeContext` invalidates, it does not open. So
  * a connection whose very first call is a write is told nothing, and that is asserted
  * here as the measured limit rather than left for somebody to discover. Every other case
  * in this file seeds the record through a connection of its own and then measures a
@@ -78,14 +78,14 @@ async function connect(): Promise<Client> {
   return client;
 }
 
-/** Every text block of a tool result, in order — what the model is handed. */
+/** Every text block of a tool result, in order: what the model is handed. */
 function blocks(result: unknown): string[] {
   const content = (result as { content?: { type: string; text?: string }[] }).content ?? [];
   return content.filter((c) => c.type === 'text').map((c) => c.text ?? '');
 }
 
 /**
- * The trees this connection's writes land in — the public one IS the project dir, and
+ * The trees this connection's writes land in: the public one IS the project dir, and
  * the private one is a directory under it.
  */
 function treeRoot(scope: 'private' | 'public'): string {
@@ -93,7 +93,7 @@ function treeRoot(scope: 'private' | 'public'): string {
 }
 
 /**
- * The plant: the last entry of a tail, appended again — the same `seq`, the same `prev`.
+ * The plant: the last entry of a tail, appended again (the same `seq`, the same `prev`).
  *
  * It is a duplicate of the BOUNDARY entry, which is the shape a reading resumed from a
  * `seq` could not see at all. It is NOT what the two-writer race leaves: measured with
@@ -111,7 +111,7 @@ function breakTheTail(root: string): void {
 /** The sentence a WRITE is owed, by its opening words. */
 const LANDED = 'The record this landed on does not chain';
 
-/** The sentence a READ is owed — asserted here only to hold the two apart. */
+/** The sentence a READ is owed: asserted here only to hold the two apart. */
 const CAME_OFF = 'The record this answer came off does not chain';
 
 /** An entity of each kind, so the transitions have something to move. */
@@ -148,12 +148,12 @@ async function seed(client: Client): Promise<Seeded> {
 }
 
 /**
- * Every write of this server, with arguments that succeed — the ten tools declared
+ * Every write of this server, with arguments that succeed: the ten tools declared
  * `mutatesTheRecord` that answer a caller.
  *
  * `skills` is not here and is not missing: it is declared a write (it records that a
  * pattern was consulted) and answers through `served`, so it is covered by the reads'
- * half. `rules_before_an_edit` is not here either — its reply is a hook reply the HOST
+ * half. `rules_before_an_edit` is not here either: its reply is a hook reply the HOST
  * parses, and a notice in it would reach nobody; that claim lives in
  * `TOOLS_SERVING_NO_RECORD_CONTENT` and the structural guard holds it there.
  */
@@ -196,7 +196,7 @@ describe('over a record that chains, no write says anything about the chain', ()
 
 describe('over a record that does not chain, every write says so', () => {
   it('tells the agent, in the same reply, in every write of this server', async () => {
-    // Seeded and broken BEFORE the connection that is measured, and then READ once — a
+    // Seeded and broken BEFORE the connection that is measured, and then READ once; a
     // write opens no cache of its own, so what is measured here is the session an agent
     // actually has: one that has asked something before it records anything.
     const seeding = await connect();
@@ -211,7 +211,7 @@ describe('over a record that does not chain, every write says so', () => {
       const answered = await client.callTool({ name, arguments: args });
       expect((answered as { isError?: boolean }).isError, name).not.toBe(true);
       const said = blocks(answered);
-      // IN A BLOCK OF ITS OWN, after the acknowledgement — never folded into it.
+      // IN A BLOCK OF ITS OWN, after the acknowledgement, never folded into it.
       const notice = said.find((b) => b.includes(LANDED));
       expect(notice, name).toBeDefined();
       expect(notice as string, name).toMatch(/issue \[T1\] \S+ \S+#\d+: .+/);
@@ -302,7 +302,7 @@ describe('a session that only writes', () => {
    * with no cache yet. So a connection whose FIRST call is a write is told nothing.
    *
    * CLOSING IT MEANS OPENING, AND OPENING REPLAYS: 6.4 ms over a 197 KB record (210
-   * entries), 38.0 ms over 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297) — linear in the
+   * entries), 38.0 ms over 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297), linear in the
    * history, charged to the first write of every connection, and worst where the record is
    * biggest. Against a public that has not appeared: of 588 real sessions swept on this
    * machine, none opened with a write.
@@ -324,7 +324,7 @@ describe('a session that only writes', () => {
       arguments: { title: 'the first call of this connection' },
     });
     expect(blocks(answered).join(LF)).not.toContain(LANDED);
-    // And the very next read on the SAME connection is told — which is what proves the
+    // And the very next read on the SAME connection is told, which is what proves the
     // silence above is about what the session has opened, not about a break that is not
     // there.
     const read = await client.callTool({ name: 'focus', arguments: {} });
@@ -344,7 +344,7 @@ describe('a break that appears while this session is up', () => {
    * WHAT THIS CASE WAS WRITTEN TO CATCH, AND IT HAS NOW CAUGHT TWO THINGS.
    *
    * It first asserted that a retained cache is blind to a break appearing after its last
-   * full replay, through BOTH doors. The cause was in `@mnema/core`'s incremental reading —
+   * full replay, through BOTH doors. The cause was in `@mnema/core`'s incremental reading:
    * the frontier recorded the `seq` each tail was read to, and the walk that resumes from a
    * seq stops at the first entry carrying it, which a duplicate of the boundary entry
    * satisfies. Nothing arrived, so nothing was refused. That comment said IF IT IS FIXED,
@@ -358,10 +358,10 @@ describe('a break that appears while this session is up', () => {
    * WHAT CLOSED IT IS NOT WHAT THE PRICE HAD REFUSED. Refreshing the cache on the write
    * door was built and measured and reverted: ~2.5 ms over a 60-entry record, ~4.3 ms over
    * a 400-entry one, +12.7 ms and +21.3 ms for five writes and a read, GROWING with the
-   * history — the reader pays one catch-up where that paid five. A cheaper variant of the
+   * history; the reader pays one catch-up where that paid five. A cheaper variant of the
    * same idea is not merely dear but WRONG, and it is worth the line because it looks
    * right: catching up only on movement this connection did NOT cause, by comparing against
-   * the extent recorded when its own append landed, cannot see THIS case at all — the break
+   * the extent recorded when its own append landed, cannot see THIS case at all; the break
    * is planted BEFORE the write, so the extent written down at the append already contains
    * it and the comparison finds nothing moved.
    *
@@ -397,7 +397,7 @@ describe('a break that appears while this session is up', () => {
     });
     expect(blocks(wrote).join(LF)).toContain(LANDED);
 
-    // And it is the write's own wording, not the read's — the two doors say different
+    // And it is the write's own wording, not the read's: the two doors say different
     // sentences about the same tails, which is what `linkBreakBlockOnWrite` is for.
     expect(blocks(wrote).join(LF)).not.toContain(CAME_OFF);
 

@@ -2,7 +2,7 @@
  * The OpenTimestamps proof format, read and written here rather than depended on.
  *
  * A timestamp proof is a MERKLE PATH: it starts at a digest, applies a run of
- * operations (append these bytes, hash the result), and ends at an ATTESTATION —
+ * operations (append these bytes, hash the result), and ends at an ATTESTATION:
  * either a calendar server's promise that it is working on it, or a Bitcoin block
  * header's merkle root. Nothing in it is a claim by a server: the path either
  * folds to the root of a block that was actually mined, or it does not, and both
@@ -13,7 +13,7 @@
  * would move the trust rather than remove it: the library would be the thing
  * whose absence tomorrow makes yesterday's proof unreadable. The bytes are a few
  * hundred, the grammar is six operations and two attestations, and the file this
- * package writes is the ecosystem's own — a stranger runs `ots verify` on it and
+ * package writes is the ecosystem's own: a stranger runs `ots verify` on it and
  * gets the same answer without this product installed.
  *
  * WHAT THE FORMAT IS, in the order the bytes come:
@@ -23,14 +23,14 @@
  * and a `timestamp` is a node of a tree: a set of attestations, and a set of
  * operations each leading to another node. `0xff` separates the members; `0x00`
  * introduces an attestation; anything else is an operation tag. The LAST member
- * of a node carries no `0xff` in front of it, which is what ends the node — so a
+ * of a node carries no `0xff` in front of it, which is what ends the node, so a
  * parser that treats every `0x00` as "another attestation follows" reads past the
  * end of its node and into the next one's bytes. (Measured: it reported every
  * calendar response as truncated.)
  *
  * NO OPERATION HERE TOUCHES THE RECORD. The only thing a proof of this package's
- * ever commits to is the SHA-256 of a checkpoint's signed message — see
- * witness.ts — so nothing that travels can be read back into an event, a title or
+ * ever commits to is the SHA-256 of a checkpoint's signed message, see
+ * witness.ts, so nothing that travels can be read back into an event, a title or
  * an id.
  */
 
@@ -52,10 +52,10 @@ const MAJOR_VERSION = 1;
  * How deep a path may go before this reader refuses it.
  *
  * A PROOF COMES OUT OF SOMEBODY ELSE'S TREE. It is committed, so a clone reads whatever
- * the last person to write the repository put there — and the grammar makes depth cost
+ * the last person to write the repository put there, and the grammar makes depth cost
  * ONE BYTE: every `0x08` is another `sha256` step. Measured on the shipped reader, a
  * 30 KB file of nothing but that byte took the parse past V8's stack, and what reached
- * the verdict was `the stored proof is unreadable: Maximum call stack size exceeded` —
+ * the verdict was `the stored proof is unreadable: Maximum call stack size exceeded`:
  * survivable only because the catch around it happens to be untyped. Depth is a
  * PROPERTY OF THE FORMAT, so it is refused here, by name, before the stack has an
  * opinion.
@@ -79,7 +79,7 @@ export const MAX_PROOF_BYTES = 1 << 20;
  *
  * EVERY MESSAGE A REAL PROOF HOLDS IS ABOUT A HUNDRED BYTES: a digest is 32, a nonce
  * appended to it makes 48, and the next `sha256` takes it back to 32. What a path can
- * do instead is `append` a kilobyte a thousand times — each step COPIES, so a 979 KiB
+ * do instead is `append` a kilobyte a thousand times: each step COPIES, so a 979 KiB
  * file walks in 238 ms and ends holding a megabyte, measured. The end of that path can
  * attest nothing (a merkle root is 32 bytes), so the work was pure waste and the
  * refusal costs a real proof nothing: this is forty times the largest message one has.
@@ -107,7 +107,7 @@ export class UnreadableProofError extends Error {
   }
 }
 
-/** One step of the path — what it does to the message it is handed. */
+/** One step of the path: what it does to the message it is handed. */
 export type OtsOp =
   | { readonly op: 'append' | 'prepend'; readonly arg: Buffer }
   | { readonly op: 'sha1' | 'ripemd160' | 'sha256' | 'keccak256' | 'reverse' | 'hexlify' };
@@ -133,7 +133,7 @@ export interface OtsProof {
 }
 
 /**
- * An attestation with the message it attests — the pair a verifier needs.
+ * An attestation with the message it attests: the pair a verifier needs.
  *
  * The attestation alone says "block 900123"; what makes it a proof is the MESSAGE
  * the path folded to by the time it got there, which for a Bitcoin attestation is
@@ -159,7 +159,7 @@ class Cursor {
     return this.bytes[this.at++] as number;
   }
 
-  /** Puts back the byte just read — the format's tags are read then dispatched on. */
+  /** Puts back the byte just read: the format's tags are read then dispatched on. */
   back(): void {
     this.at -= 1;
   }
@@ -261,7 +261,7 @@ function readTimestamp(cursor: Cursor, depth = 0): OtsTimestamp {
 }
 
 /**
- * Reads a BARE timestamp — the grammar without the file header around it.
+ * Reads a BARE timestamp: the grammar without the file header around it.
  *
  * A calendar answers with exactly this: the node over the commitment it was handed,
  * with no magic, no version and no digest, because the caller already knows what it
@@ -341,7 +341,7 @@ function writeTimestamp(node: OtsTimestamp): Buffer {
 }
 
 /**
- * Writes a BARE timestamp — the wire form, without the file header.
+ * Writes a BARE timestamp: the wire form, without the file header.
  *
  * The mirror of {@link parseOtsTimestamp}, and exported for the same reason: it is
  * what a calendar's answer looks like, so anything that has to produce one produces
@@ -351,7 +351,7 @@ export function serializeOtsTimestamp(timestamp: OtsTimestamp): Buffer {
   return writeTimestamp(timestamp);
 }
 
-/** Writes a detached proof — the bytes an `.ots` file holds. */
+/** Writes a detached proof: the bytes an `.ots` file holds. */
 export function serializeOtsProof(digest: Buffer, timestamp: OtsTimestamp): Buffer {
   return Buffer.concat([
     MAGIC,
@@ -370,7 +370,7 @@ export function serializeOtsProof(digest: Buffer, timestamp: OtsTimestamp): Buff
  *
  * `ripemd160` is the one that can be UNAVAILABLE rather than wrong: OpenSSL 3
  * moved it behind the legacy provider, so a node built without it cannot run this
- * step. That is refused, never skipped — a path with a step nobody ran folds to
+ * step. That is refused, never skipped: a path with a step nobody ran folds to
  * the wrong message, and a wrong message compared against a merkle root would
  * simply not match, which reads as a broken proof rather than as a machine that
  * cannot check this one.
@@ -397,8 +397,8 @@ export function applyOtsOp(op: OtsOp, message: Buffer): Buffer {
 /**
  * Every attestation the proof reaches, each with the message the path folded to.
  *
- * The walk is TOTAL over the tree — a proof carries one path per calendar, and any
- * one of them reaching a block is enough — and it is where the digest actually
+ * The walk is TOTAL over the tree (a proof carries one path per calendar, and any
+ * one of them reaching a block is enough) and it is where the digest actually
  * enters the arithmetic: nothing below this function ever sees the digest again,
  * so an attestation reported here is one this proof genuinely commits to.
  */
@@ -417,7 +417,7 @@ export function reachedAttestations(proof: OtsProof): readonly ReachedAttestatio
   return out;
 }
 
-/** The SHA-256 of some bytes — the one hash this module's callers commit to. */
+/** The SHA-256 of some bytes: the one hash this module's callers commit to. */
 export function sha256(bytes: Buffer): Buffer {
   return createHash('sha256').update(bytes).digest();
 }

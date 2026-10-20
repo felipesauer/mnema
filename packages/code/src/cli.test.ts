@@ -3,8 +3,8 @@
  *
  * The two surfaces share one binary: `mnema mcp` serves an agent host over
  * stdio, and 24 other verbs do a short piece of work and exit. The MCP SDK is by
- * far the heaviest module in the product — loading it costs more than every other
- * import of the CLI put together — and only the one verb uses it. So it is
+ * far the heaviest module in the product (loading it costs more than every other
+ * import of the CLI put together), and only the one verb uses it. So it is
  * reached through a dynamic import inside that verb's action, and this suite
  * pins BOTH halves of that: nothing outside `src/mcp/` may load the SDK
  * statically, and the module the verb loads at call time must still build a
@@ -42,7 +42,7 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
 
   it('reaches the server module only through a dynamic import', () => {
     // Located rather than named: whichever file wires that verb is the one that may
-    // reach the server, and there must be exactly ONE of them — a second would be a
+    // reach the server, and there must be exactly ONE of them; a second would be a
     // second path to the SDK, which is what this guard exists to prevent.
     const naming = sourceFiles(srcDir)
       .filter((file) => !file.slice(srcDir.length).startsWith('mcp/'))
@@ -57,7 +57,7 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
 
   it('still builds a server from the module that verb loads', async () => {
     // Proves the lazily-loaded path resolves AND that what it exports is what
-    // the action destructures — the two things a dynamic import moves from build
+    // the action destructures: the two things a dynamic import moves from build
     // time to run time. Building registers every tool without a transport.
     const { buildMcpServer } = await import('./mcp/server.js');
     const built = buildMcpServer({

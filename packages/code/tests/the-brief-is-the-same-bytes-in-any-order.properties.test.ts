@@ -1,5 +1,5 @@
 /**
- * P4 — THE BRIEF IS A FUNCTION OF THE RECORD, held over generated records: the same decisions
+ * P4 (THE BRIEF IS A FUNCTION OF THE RECORD), held over generated records: the same decisions
  * read in any order the trees and their tails can be listed in print the same bytes.
  *
  * `the-document-is-a-function-of-the-record.test.ts` holds the half that asks what the printer
@@ -168,7 +168,7 @@ describe('P4: the brief prints the same bytes whatever order the record is met i
               expect(backward.bytes).toBe(forward.bytes);
               expect(reopened.bytes).toBe(forward.bytes);
 
-              // What is listed is what was accepted — read off the drawing, not off the reading.
+              // What is listed is what was accepted: read off the drawing, not off the reading.
               const accepted = [
                 ...first.flatMap((rule, index) =>
                   rule.outcome === 'accepted' ? [`Rule 0.${index}`] : [],

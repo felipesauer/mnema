@@ -1,5 +1,5 @@
 /**
- * What the git log says about a decision — read when asked, never written down.
+ * What the git log says about a decision: read when asked, never written down.
  *
  * A commit and a decision are two halves of one fact: the commit carries the change, the
  * record carries the reasoning. The bridge between them is a trailer the commit message
@@ -11,7 +11,7 @@
  * EVERY GIT IS `execFile` WITH AN ARGUMENT LIST, never a shell: a decision id, a path and a
  * commit name all come from a person or a record, and none of them is ever parsed by a shell.
  * Each read is bounded in time and in bytes, and each is read-only (no lock, no program of
- * the repository's run). A git that cannot answer — absent, not a repository, timed out — is
+ * the repository's run). A git that cannot answer (absent, not a repository, timed out) is
  * `null`, and {@link inAWorkTree} is the one question that tells "there is no git here" from
  * "there is git and it has nothing to say".
  */
@@ -61,17 +61,17 @@ export function git(root: string, args: readonly string[]): string | null {
   }
 }
 
-/** Whether `root` is inside a git work tree — false for no git at all and for no repository. */
+/** Whether `root` is inside a git work tree: false for no git at all and for no repository. */
 export function inAWorkTree(root: string): boolean {
   return git(root, ['rev-parse', '--is-inside-work-tree'])?.trim() === 'true';
 }
 
-/** Whether the history in `root` was cut short (a `--depth` clone) — what is counted is then only what it holds. */
+/** Whether the history in `root` was cut short (a `--depth` clone): what is counted is then only what it holds. */
 export function isShallow(root: string): boolean {
   return git(root, ['rev-parse', '--is-shallow-repository'])?.trim() === 'true';
 }
 
-/** Whether the work tree has a commit to read — a fresh repository has none. */
+/** Whether the work tree has a commit to read: a fresh repository has none. */
 function hasCommits(root: string): boolean {
   return git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']) !== null;
 }
@@ -82,7 +82,7 @@ const RECORD = '\x1e';
 /** The log format: sha, date, subject and the trailer values, fields apart by US, commits by RS. */
 const FORMAT = `--format=%H${FIELD}%cI${FIELD}%s${FIELD}%(trailers:key=${TRAILER},valueonly,unfold)${RECORD}`;
 
-/** A pathspec that is the path itself — never a glob, never magic. */
+/** A pathspec that is the path itself, never a glob, never magic. */
 function literal(path: string): string {
   return `:(literal)${path === '' ? '.' : path}`;
 }
@@ -104,7 +104,7 @@ export function parseCommits(text: string): Commit[] {
   return commits;
 }
 
-/** The commits that carry the trailer, newest first — `null` when git cannot answer. */
+/** The commits that carry the trailer, newest first: `null` when git cannot answer. */
 export function commitsWithTrailer(root: string, paths?: readonly string[]): Commit[] | null {
   if (!inAWorkTree(root)) return null;
   if (!hasCommits(root)) return [];
@@ -121,7 +121,7 @@ export function commitsWithTrailer(root: string, paths?: readonly string[]): Com
   return out === null ? null : parseCommits(out).filter((commit) => commit.cites.length > 0);
 }
 
-/** The newest commits that touched any of `paths`, `LISTED + 1` at most — `null` when git cannot answer. */
+/** The newest commits that touched any of `paths`, `LISTED + 1` at most: `null` when git cannot answer. */
 export function commitsTouching(root: string, paths: readonly string[]): Commit[] | null {
   if (!inAWorkTree(root)) return null;
   if (!hasCommits(root) || paths.length === 0) return [];
@@ -130,7 +130,7 @@ export function commitsTouching(root: string, paths: readonly string[]): Commit[
 }
 
 /**
- * How many commits since `since` touched any of `paths`, and how many were made at all —
+ * How many commits since `since` touched any of `paths`, and how many were made at all:
  * `null` when git cannot answer.
  */
 export function commitsSince(
@@ -158,7 +158,7 @@ export function resolveCommit(root: string, named: string): Commit | undefined {
   return out === null ? undefined : parseCommits(out)[0];
 }
 
-/** The files a commit changed, relative to `root`, at most {@link MOST_FILES} — and whether more were left. */
+/** The files a commit changed, relative to `root`, at most {@link MOST_FILES}, and whether more were left. */
 export function filesOf(
   root: string,
   sha: string,

@@ -1,5 +1,5 @@
 /**
- * The events about a few subjects, read off the chain itself, in the order every reader folds —
+ * The events about a few subjects, read off the chain itself, in the order every reader folds:
  * what a gate judges a move on, so that it judges what the record says and not what a file beside
  * the record says it says.
  *
@@ -13,7 +13,7 @@
  * session waiting behind two of them run out of the lock's wait (`TAIL_BUSY`).
  *
  * WHAT THIS DOES INSTEAD: it searches the BYTES of every segment for the subject's id as the
- * envelope writes it — `"subject":"<id>"` — and parses only the lines that contain it, through the
+ * envelope writes it (`"subject":"<id>"`) and parses only the lines that contain it, through the
  * same parse every reader uses. That is the whole set under three conditions, and each is held by
  * a case of `subject-events.test.ts`:
  *
@@ -31,15 +31,15 @@
  *      proof.
  *   3. EVERY LINE IT FINDS IS READ BY `parseCanonicalLine` ({@link parseStoredLine},
  *      {@link parseEntry}), and every line a reader accepts is canonical (FORMAT.md §4: a line
- *      that is not exactly the canonical serialization of the value it holds — a space, a key
- *      out of order, a letter written as an escape, another Unicode composition — is refused, by
+ *      that is not exactly the canonical serialization of the value it holds [a space, a key
+ *      out of order, a letter written as an escape, another Unicode composition] is refused, by
  *      both readers). So a line about the subject that names it some other way, and so is not
  *      found, is a line no reader accepts: the record is broken there for `verify` and for every
  *      read that reaches it, whatever this returns. And a line that is found is refused exactly
  *      where a replay would refuse it, torn last line included.
  *
- * A line that contains the bytes but is not about the subject — a payload object with a key of
- * that name; the id in free text does not match, since a quote inside a string is written `\"` —
+ * A line that contains the bytes but is not about the subject (a payload object with a key of
+ * that name; the id in free text does not match, since a quote inside a string is written `\"`)
  * is parsed and then dropped by the subject it really has. The search can only find too much,
  * never too little.
  *
@@ -116,7 +116,7 @@ export function writtenAsItself(id: string): boolean {
 
 /**
  * The events whose envelope `subject` is each of `ids`, in the order a replay of this tree folds
- * them — every one of them, and nothing else. An id with none maps to an empty list.
+ * them: every one of them, and nothing else. An id with none maps to an empty list.
  *
  * Throws what a replay throws on a line it finds: a line that does not parse is refused, and the
  * torn last line of a tail is dropped as it is everywhere.
@@ -272,7 +272,7 @@ interface Merged {
 }
 
 /**
- * Where each of `found` falls in the merge of every tail — the one order every reader folds,
+ * Where each of `found` falls in the merge of every tail: the one order every reader folds,
  * computed over keys read off the bytes ({@link keysOfTail}).
  */
 function mergedRank(
@@ -320,8 +320,8 @@ function mergedRank(
 
 /**
  * The merge's keys of every entry of one tail, by position, and `seen` told where each position's
- * line is. A position is a line a reader accepts — the empty piece after a final newline is none,
- * and a torn last line that does not parse is none — so the positions are the ones a replay has.
+ * line is. A position is a line a reader accepts (the empty piece after a final newline is none,
+ * and a torn last line that does not parse is none), so the positions are the ones a replay has.
  */
 function keysOfTail(
   files: readonly string[],

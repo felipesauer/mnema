@@ -47,7 +47,7 @@ describe('a verb that went under a noun is not a verb any more', () => {
   it('is not the name or alias of any command at any depth, unless it is the new one’s own', () => {
     // `focus` and `skills` and the rest answer to nothing; the only old name that is also a
     // new command's own name is `guard`/`exposure`/`accountability`/`antipatterns`, which are
-    // the LAST word of a path under their group, and that is allowed — what is not is a spelling
+    // the LAST word of a path under their group, and that is allowed: what is not is a spelling
     // that routes to a different place than the table says.
     for (const [old, now] of Object.entries(WENT_UNDER)) {
       const where = everyCommandOf(program)

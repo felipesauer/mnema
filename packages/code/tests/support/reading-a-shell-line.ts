@@ -1,5 +1,5 @@
 /**
- * READING A SHELL LINE — the words a person types, read the way the shell reads them.
+ * READING A SHELL LINE: the words a person types, read the way the shell reads them.
  *
  * WHY THIS FILE EXISTS AS A FILE. The reading below was the first half of
  * `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`, and that guard was its only
@@ -25,7 +25,7 @@ import { ROOT, read } from './published-examples.js';
  *
  * A BACKTICK IS NOT IN HERE, and the reason is measured. Legacy `` `…` `` substitution would
  * belong; but in a Markdown fence a backtick is as often prose as it is shell, and reading it
- * as an operator made the page sweep accuse a DIRECTORY DIAGRAM — `plugin/README.md` draws a tree
+ * as an operator made the page sweep accuse a DIRECTORY DIAGRAM: `plugin/README.md` draws a tree
  * whose leaf says ``runs `mnema brief`; silent when there is nothing to say``, which became a
  * 46th invocation out of a line nobody can type. `$(…)` is read and is the form in use; the
  * corpus of tracked pages contains no backtick substitution at all, and if one arrives it is
@@ -33,7 +33,7 @@ import { ROOT, read } from './published-examples.js';
  */
 const OPERATORS = ['&&', '||', '>>', '<(', '$(', '|', ';', '>', '<', '&', '(', ')'];
 
-/** Operators whose next word is a FILE and not a command — see {@link invocationsIn}. */
+/** Operators whose next word is a FILE and not a command: see {@link invocationsIn}. */
 const REDIRECTIONS = ['>', '>>', '<'];
 
 /** One word of a shell line, and whether the shell would read it as punctuation. */
@@ -46,12 +46,12 @@ interface Token {
  * A shell line as words, with quoted runs kept whole and a trailing comment dropped.
  *
  * The comment rule is the shell's: a `#` that opens a word. That is what makes the `#>`
- * lines this product's pages use for sample OUTPUT contribute nothing — they are comments to
- * `sh` as much as to a reader — and it is why a `#` inside quotes survives, which matters
+ * lines this product's pages use for sample OUTPUT contribute nothing (they are comments to
+ * `sh` as much as to a reader) and it is why a `#` inside quotes survives, which matters
  * because a published record body could hold one.
  *
  * An unterminated quote takes the rest of the line. A page with one is malformed shell, and
- * the alternative — throwing — would turn a typo into a guard that cannot run at all.
+ * the alternative, throwing, would turn a typo into a guard that cannot run at all.
  */
 export function tokenize(line: string): readonly Token[] {
   const tokens: Token[] = [];
@@ -134,7 +134,7 @@ export function invocationsIn(line: string): readonly (readonly string[])[] {
 }
 
 // ---------------------------------------------------------------------------
-// Sweeping the pages — the part that decides WHERE it was published
+// Sweeping the pages: the part that decides WHERE it was published
 // ---------------------------------------------------------------------------
 
 /** A command line a page publishes, with where it was found. */
@@ -207,7 +207,7 @@ export function publishedCommands(pages: readonly string[]): readonly PublishedC
   return pages.flatMap((page) => commandsOn(page, read(page)));
 }
 
-/** Every Markdown page this repository publishes — the reach, and never a list. */
+/** Every Markdown page this repository publishes: the reach, and never a list. */
 export function trackedPages(): readonly string[] {
   return execFileSync('git', ['ls-files', '-z', '*.md'], { cwd: ROOT, encoding: 'utf8' })
     .split('\0')
@@ -222,7 +222,7 @@ export function trackedPages(): readonly string[] {
  *
  * A line with an operator on it is refused rather than read: `mnema brief > MNEMA.md` is a
  * command and a file, and handing the file's name to the program as a word would be running
- * a line nobody typed. Only a double or single quote is undone — no escape, no expansion —
+ * a line nobody typed. Only a double or single quote is undone (no escape, no expansion)
  * which is exactly as much shell as {@link tokenize} reads.
  */
 export function argvOf(line: string): readonly string[] {

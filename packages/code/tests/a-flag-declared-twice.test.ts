@@ -1,5 +1,5 @@
 /**
- * A FLAG A GROUP AND ITS SUBCOMMAND BOTH DECLARE — where it was written, and who reads it.
+ * A FLAG A GROUP AND ITS SUBCOMMAND BOTH DECLARE: where it was written, and who reads it.
  *
  * commander parses a group's options out of the whole rest of the line, the part after a
  * subcommand's name included, because this program does not turn positional options on. So when
@@ -13,7 +13,7 @@
  *
  * Two things are asserted here.
  *
- * WHERE A FLAG WAS WRITTEN — `wiring/written-before.ts`, over the real `decision` group, with the
+ * WHERE A FLAG WAS WRITTEN: `wiring/written-before.ts`, over the real `decision` group, with the
  * import's action swapped for a capture so a line costs no process and touches no record. The
  * lines are the spellings a second tokenizer would have had to get right: `--flag=value`, a value
  * that is the verb's own name, a flag only the group declares, the program's own flag in between,
@@ -117,7 +117,7 @@ describe('where a flag was written is what commander read before the verb', () =
   it('holds for a flag that takes no value, the shape `witness` declares twice', async () => {
     // Built here rather than borrowed, and it said why: no group of the product declared a bare
     // flag its subcommand read through this function, and `--global` was the one that would. It
-    // is one now — the two `witness` acts read it this way, and
+    // is one now: the two `witness` acts read it this way, and
     // `the-witness-acts-cover-the-tree-asked-for.test.ts` runs them on the binary. The case stays
     // for what the product does not have: the short spelling, and a flag named by it.
     const answer = async (argv: string[]): Promise<readonly string[]> => {
@@ -138,8 +138,8 @@ describe('where a flag was written is what commander read before the verb', () =
   });
 
   it('never prints and never ends the process, and names nothing over a line no group could have read', () => {
-    // Unreachable through a real parse — a group's flag with nothing after it stops the line
-    // before any subcommand runs — so the line is handed over by hand, the way commander keeps it.
+    // Unreachable through a real parse, a group's flag with nothing after it stops the line
+    // before any subcommand runs, so the line is handed over by hand, the way commander keeps it.
     // This THREW, from a throwaway parsed with positional options on; the prefixes a default
     // parse is asked over find no subcommand in it, and a line with no subcommand in it has no
     // flag written before one. What stays is the half that mattered: nothing is printed and the
@@ -162,8 +162,8 @@ describe('where a flag was written is what commander read before the verb', () =
 
   it('answers nothing for the program, or for a verb whose only group is the program', () => {
     // Above a verb there is no group line to read, only the program's whole argv. No verb
-    // declares a flag the program does — the table below holds every pair, the program's
-    // included — so this nothing is true today, and it is the limit the module states.
+    // declares a flag the program does (the table below holds every pair, the program's
+    // included), so this nothing is true today, and it is the limit the module states.
     const { program } = buildProgram(silent);
     expect(ownFlagsWrittenBefore(program)).toEqual([]);
     expect(ownFlagsWrittenBefore(childNamed(program, 'decision'))).toEqual([]);
@@ -181,7 +181,7 @@ type Reading = 'where it was written' | 'its own copy, which the group takes';
  * because `witness` declares `--global` too and takes it. Measured on the binary, outside a project
  * and with one tail in the machine-global tree: `mnema witness --global` listed that tail, `mnema
  * witness stamp --global` answered `there is no tail here to witness`, and `mnema witness upgrade
- * --global` said `No tail holds events in any tree here — looked in .` — two sentences false for
+ * --global` said `No tail holds events in any tree here — looked in .`, two sentences false for
  * the tree that was asked for. It was recorded here and not repaired, because making the flag
  * reach the acts changes which tails the one verb that speaks to a public calendar sends out, and
  * whether the spelling before the act is honoured or refused was not this file's to decide.
@@ -217,7 +217,7 @@ const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
 /**
  * Every such flag in the program, read off the tree and off each action's own source.
  *
- * A subcommand reads one where it was written when its action asks `fromTheGroup` — the one reader
+ * A subcommand reads one where it was written when its action asks `fromTheGroup`: the one reader
  * that puts the question to `ownFlagsWrittenBefore` and then reads the value off the group. It
  * asked `ownFlagsWrittenBefore` in its own source, once; the question moved into that reader when
  * a second verb needed it.

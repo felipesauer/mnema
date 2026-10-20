@@ -10,7 +10,7 @@
  *
  * SO THE PROPERTY THAT MATTERS HERE IS THE REFUSAL. The sweep is right exactly when it speaks
  * only with the suite stopped, and the cases below pin both halves of that: it refuses when a
- * run is alive, and it does not refuse when none is — because a refusal that never lifts is a
+ * run is alive, and it does not refuse when none is, because a refusal that never lifts is a
  * sweep that reports nothing while looking like it works. Its own command line is the shape it
  * would mistake itself for, so that has a case of its own.
  *
@@ -88,7 +88,7 @@ describe('the sweep speaks only with the suite stopped', () => {
 
   it('reads the runner on disk and not the word, and never itself', () => {
     // ITS OWN CASE, AND THE TWO MISTAKES IT HAS ALREADY MADE. Excluding by NAME filtered out a
-    // real vitest whose command line named this test file — the `pkill -f` mistake. Matching
+    // real vitest whose command line named this test file: the `pkill -f` mistake. Matching
     // the bare WORD then refused on any process that merely mentioned it, including the probe
     // this delivery read the process list with, which is an instrument that only ever refuses.
     // The three runner rows are the shapes measured off a live run of this suite.
@@ -110,7 +110,7 @@ describe('the sweep speaks only with the suite stopped', () => {
 
   it('refuses to speak from inside the suite, on this very machine', () => {
     // THE PROPERTY, END TO END, WITH NO SEAM. This case is itself a run of the suite, so the
-    // real detector must find one and `main` must refuse — and it must refuse for THAT reason,
+    // real detector must find one and `main` must refuse, and it must refuse for THAT reason,
     // which is why the baseline it is handed is a good one. The seam every other case below
     // uses exists only because this one is right.
     plant(`${THE_FAMILY}whatever`);
@@ -208,7 +208,7 @@ describe('the sweep is wired where it can be right', () => {
 
   it('records before every run of the suite and reports after all of them', () => {
     // THE ORDER IS THE MECHANISM. A report placed before the last vitest step would read a
-    // /tmp the suite is still writing — the race this instrument exists to avoid — and the
+    // /tmp the suite is still writing, the race this instrument exists to avoid, and the
     // workflow would look correct while measuring nothing.
     const steps = workflow.split(/^ {6}- /m).slice(1);
     const at = (holds: (step: string) => boolean): number[] =>

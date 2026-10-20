@@ -1,13 +1,13 @@
 /**
- * THE PLUGIN SPAWNS WHAT THIS WORKSPACE INSTALLS — one name, read off the manifest that
+ * THE PLUGIN SPAWNS WHAT THIS WORKSPACE INSTALLS: one name, read off the manifest that
  * creates it, at every place that has to spell it.
  *
  * WHERE THIS COMES FROM. The plugin reaches the product through the PATH and through
- * nothing else: the handlers spawn a bare `mnema` — through the one module they share,
- * `hand-over.mjs`, which is the only hook file that spawns — and `plugin.json` tells the
+ * nothing else: the handlers spawn a bare `mnema` (through the one module they share,
+ * `hand-over.mjs`, which is the only hook file that spawns) and `plugin.json` tells the
  * host to start an MCP server through `server/launch.mjs`, which spawns a bare `mnema`. Neither string is
  * an import, so no module graph follows them, and the failure they produce is silent by
- * the handler's own design — "a failed spawn is silence", which is right for a hook and
+ * the handler's own design: "a failed spawn is silence", which is right for a hook and
  * wrong for a repository that would like to know. Rename the `bin` key of
  * `packages/code/package.json` and both surfaces of the plugin go mute with the whole
  * suite green.
@@ -20,13 +20,13 @@
  * `server.command` against the literal `'mnema'`, which is a second copy of the name
  * rather than a reading of it, and the hook's own constant is asserted by nothing at all.
  *
- * THE SITES WERE FOUND BY THE DISCRIMINANT — "a place that must spell the name of the
- * installed executable for it to run" — and not by a list. That found a THIRD site the
+ * THE SITES WERE FOUND BY THE DISCRIMINANT: "a place that must spell the name of the
+ * installed executable for it to run", and not by a list. That found a THIRD site the
  * list did not have: `cli.ts` names the program to commander, which is the name printed
  * on every usage line the product publishes. A `bin` renamed without it tells every
  * reader of `--help` to type a command that does not exist. The word `mnema` appears in
- * a dozen other places in this workspace — the data directory, the MCP server's advertised
- * name, the REPL prompt, the export producer — and NONE of them is this rule: they are
+ * a dozen other places in this workspace (the data directory, the MCP server's advertised
+ * name, the REPL prompt, the export producer) and NONE of them is this rule: they are
  * other things that happen to share a word, and grepping the word rather than the rule
  * would have swept them in.
  *
@@ -40,7 +40,7 @@
  *     that quietly asserts nothing;
  *   - it says nothing about whether `mnema` is on the PATH of any particular machine.
  *     That is the installer's business, and the handler is silent about it on purpose;
- *   - `.cmd` on Windows is npm's shim name and is INTENTION rather than measurement —
+ *   - `.cmd` on Windows is npm's shim name and is INTENTION rather than measurement:
  *     the handler's own comment says so, and nothing here has run on Windows. What is
  *     held is that the two spellings stay derived from ONE name, not that the derivation
  *     is right for that platform.
@@ -61,7 +61,7 @@ const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const INSTALLS = join(REPO, 'packages', 'code', 'package.json');
 
 /**
- * The one module of the plugin that spawns the binary — both `SessionStart` handlers hand
+ * The one module of the plugin that spawns the binary: both `SessionStart` handlers hand
  * a session what a verb prints through it.
  */
 const HOOK = join(REPO, 'plugin', 'hooks', 'hand-over.mjs');
@@ -152,8 +152,8 @@ describe('every place that spells the executable spells the one the package inst
   it('spawns from ONE module, so the name is spelled in one place', () => {
     // Two handlers run a verb as a session opens, and the rule that decides what reaches
     // the session is written once (`hand-over.mjs`). A handler that grew a spawn of its
-    // own would be a second spelling of the executable this file exists to keep single —
-    // and a second copy of the silence rule beside it — so every other file of the plugin
+    // own would be a second spelling of the executable this file exists to keep single,
+    // and a second copy of the silence rule beside it, so every other file of the plugin
     // is asked, and none may spawn.
     const others = readdirSync(HOOKS_DIR).filter(
       (name) => name.endsWith('.mjs') && join(HOOKS_DIR, name) !== HOOK,
@@ -195,7 +195,7 @@ describe('every place that spells the executable spells the one the package inst
 
   it('accuses a name that drifted, on each of the three sides', () => {
     // THE MUTATION, AS A CASE. Each side is fed a copy that says something else and the
-    // comparison has to come apart — otherwise the four above are assertions about
+    // comparison has to come apart: otherwise the four above are assertions about
     // nothing. The real files are never touched: these are strings.
     const hook = readFileSync(HOOK, 'utf-8');
     const drifted = hook.replace(

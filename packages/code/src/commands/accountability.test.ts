@@ -49,10 +49,10 @@ function digest(dir: string): string {
 }
 
 describe('mnema audit accountability (who authorized what)', () => {
-  it('with no filter accounts for the whole union — every author, every fact', () => {
+  it('with no filter accounts for the whole union: every author, every fact', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
-    // Two tasks across two trees — all authored by the same machine anchor here.
+    // Two tasks across two trees: all authored by the same machine anchor here.
     const a = runTask({ cwd: repo, env }, { title: 'a', scope: 'public' });
     const b = runTask({ cwd: repo, env }, { title: 'b', scope: 'global' });
     if (!a.ok || !b.ok) throw new Error('setup');
@@ -90,7 +90,7 @@ describe('mnema audit accountability (who authorized what)', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     runTask({ cwd: repo, env }, { title: 'a', scope: 'public' });
-    // The real author is the machine anchor — take it from the unfiltered account.
+    // The real author is the machine anchor: take it from the unfiltered account.
     const all = runAccountability({ cwd: repo, env }, {});
     if (!all.ok || all.account.byWho.length === 0) throw new Error('setup');
     const realWho = all.account.byWho[0]?.who as string;
@@ -121,7 +121,7 @@ describe('mnema audit accountability (who authorized what)', () => {
     const all = runAccountability({ cwd: repo, env }, {});
     expect(all.ok).toBe(true);
     if (!all.ok) return;
-    // One author (one machine), whose facts break down by executing agent —
+    // One author (one machine), whose facts break down by executing agent:
     // `null` is the person acting directly.
     const agents = all.account.byWho.flatMap((w) => w.byWhich).filter((c) => c.which !== null);
     expect(agents.map((c) => c.which)).toContain('ci-runner');
@@ -149,7 +149,7 @@ describe('mnema audit accountability (who authorized what)', () => {
     expect(result).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     runTask({ cwd: repo, env }, { title: 'x', scope: 'public' });

@@ -78,7 +78,7 @@ describe('mnema init', () => {
     expect(result.created).toBe(true);
     expect(result.root).toBe(join(repo, '.mnema'));
     expect(result.anchor.startsWith('mnid:')).toBe(true);
-    // The tree is really there, at the cwd — with its own .gitignore.
+    // The tree is really there, at the cwd: with its own .gitignore.
     expect(statSync(join(repo, '.mnema')).isDirectory()).toBe(true);
     expect(existsSync(join(repo, '.mnema', '.gitignore'))).toBe(true);
   });
@@ -141,20 +141,20 @@ describe('mnema init', () => {
 
     expect(existsSync(privateKeyPath)).toBe(true);
     expect(privateKeyPath.startsWith(repo)).toBe(false);
-    // This line used to read `includes('.mnema')` — the NAME standing in for "a project's
+    // This line used to read `includes('.mnema')`: the NAME standing in for "a project's
     // tree", which held only while the data directory came from `$XDG_DATA_HOME`. The data
     // directory is `~/.mnema` now, so the name says nothing; what is asked is the place.
     expect(privateKeyPath.startsWith(join(repo, PROJECT_DIR))).toBe(false);
     const keyRoot = join(sandbox, 'home', '.mnema', 'identity');
     expect(privateKeyPath.startsWith(join(keyRoot, 'backup'))).toBe(true);
-    // Exactly one private key in the key root's keys/ — the machine's own.
+    // Exactly one private key in the key root's keys/: the machine's own.
     expect(readdirSync(join(keyRoot, 'keys')).filter((n) => n.endsWith('.key'))).toHaveLength(1);
   });
 
   it('a project created LATER is born with the same backup enrolled', () => {
     // The gap this closes: enrollment is per-tree, the identity is per-machine. A
     // backup enrolled only where it was created would be a stranger in every
-    // project made afterwards — silently, until the day it was needed.
+    // project made afterwards: silently, until the day it was needed.
     const { repo, env } = setup();
     const first = found({ cwd: repo, env });
     const backupFp = first.identity?.backup?.fingerprint as string;
@@ -174,7 +174,7 @@ describe('mnema init', () => {
   it('reports the backup key with no tail as a census note, not as a break', () => {
     // A consequence worth pinning: a cold key never writes, so it never has a
     // tail, and the verifier's census flags a committed key without one. It is
-    // informational by construction — `ok` and `fullySigned` stay true. Asked with
+    // informational by construction: `ok` and `fullySigned` stay true. Asked with
     // no key root, as here, the census reads the record alone and cannot tell the
     // backup from a key whose tail went; `mnema verify` hands it this machine's, and
     // then says the key as a backup (`verify.test.ts`, "the machine the verdict is
@@ -205,7 +205,7 @@ describe('mnema init', () => {
     // Non-regression by the LIST of what init does, not by intention. It used to
     // end with "and the index still carries the project exactly once", which was the
     // index standing in for "the second run had an effect"; the substitute is
-    // stronger, because it says the effect is NONE — every file of the tree and of
+    // stronger, because it says the effect is NONE: every file of the tree and of
     // the app data directory is byte-identical afterwards.
     const { repo, env } = setup();
     const first = found({ cwd: repo, env });
@@ -220,7 +220,7 @@ describe('mnema init', () => {
     expect(second.anchor).toBe(first.anchor);
     // A second init appends nothing, so it has no identity to report.
     expect(second.identity).toBeUndefined();
-    // No second founding — the chain is untouched.
+    // No second founding: the chain is untouched.
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
     // Nothing moved on disk, inside the project or outside it.
     expect(contentsUnder(first.root)).toEqual(treeBefore);
@@ -232,13 +232,13 @@ describe('mnema init', () => {
     // This case used to be "re-registers a project whose index entry was lost": the
     // index was the DEVICE for observing that a second init still did something
     // useful after the cache went away. What it actually exercises is harsher than
-    // the cache — wiping the app data directory takes the KEY ROOT with it — and
+    // the cache (wiping the app data directory takes the KEY ROOT with it) and
     // that half survives the index: an existing project is still not re-founded, and
     // its chain is untouched, by a machine that lost its own key material.
     const { repo, env } = setup();
     const first = found({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
-    // The home's `.mnema/` IS the app data directory — it used to be `$XDG_DATA_HOME/mnema`,
+    // The home's `.mnema/` IS the app data directory: it used to be `$XDG_DATA_HOME/mnema`,
     // and a case that went on removing that path would have lost nothing at all.
     rmSync(join(sandbox, 'home', '.mnema'), { recursive: true, force: true });
 
@@ -250,15 +250,15 @@ describe('mnema init', () => {
 });
 
 /**
- * Where no project can be founded — the walk's own rule, asked before anything is made.
+ * Where no project can be founded: the walk's own rule, asked before anything is made.
  *
  * Each refusal is held the way a second init is: by what is on disk afterwards, not by
  * which functions ran. The data-directory case is the one that needed asking FIRST rather
  * than being a tidiness: the walk passes that `.mnema/` over, so without the question init
  * would find it already there and answer "Already a mnema project" about a directory that
- * is none — with the anchor of the project above it.
+ * is none, with the anchor of the project above it.
  */
-describe('mnema init — where no project can be founded', () => {
+describe('mnema init, where no project can be founded', () => {
   it('refuses in the home directory, and makes nothing there', () => {
     const home = join(sandbox, 'home');
     mkdirSync(join(home, 'work'), { recursive: true });
@@ -270,12 +270,12 @@ describe('mnema init — where no project can be founded', () => {
     expect(result).toEqual({ refused: 'home', root: join(home, '.mnema') });
     expect(existsSync(join(home, '.mnema'))).toBe(false);
     expect(filesUnder(home)).toEqual(before);
-    // The key root is untouched too: a refusal founds no identity anywhere — and the key
+    // The key root is untouched too: a refusal founds no identity anywhere, and the key
     // root is the home's own `.mnema/identity`, the directory the line above says was not made.
     expect(existsSync(join(home, '.mnema', 'identity'))).toBe(false);
   });
 
-  it('refuses there — where the home’s `.mnema/` would be the key’s directory', () => {
+  it('refuses there, where the home’s `.mnema/` would be the key’s directory', () => {
     // The case that put the private key in the project tree: the data directory IS
     // `~/.mnema`, so a project founded in the home shares one directory with the key.
     const home = join(sandbox, 'home');
@@ -287,7 +287,7 @@ describe('mnema init — where no project can be founded', () => {
     expect(existsSync(join(home, '.mnema'))).toBe(false);
   });
 
-  it('refuses at another environment’s data directory — and writes nothing into the project above it', () => {
+  it('refuses at another environment’s data directory, and writes nothing into the project above it', () => {
     const { repo, env } = setup();
     const founded = runInit({ cwd: repo, env });
     if (!('created' in founded)) throw new Error('setup: the project did not found');
@@ -304,7 +304,7 @@ describe('mnema init — where no project can be founded', () => {
     expect(filesUnder(join(theirs, '.mnema'))).toEqual([]);
   });
 
-  it('still founds under the home — a folder in it is not the home', () => {
+  it('still founds under the home: a folder in it is not the home', () => {
     const home = join(sandbox, 'home');
     const app = join(home, 'code', 'app');
     mkdirSync(app, { recursive: true });

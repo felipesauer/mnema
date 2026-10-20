@@ -1,5 +1,5 @@
 /**
- * The index of the last item `matches` accepts, or -1 — `Array.prototype.findLastIndex`, which the
+ * The index of the last item `matches` accepts, or -1: `Array.prototype.findLastIndex`, which the
  * compiler's ES2022 library does not declare, though every Node this runs on has it.
  */
 export function lastIndexWhere<T>(items: readonly T[], matches: (item: T) => boolean): number {

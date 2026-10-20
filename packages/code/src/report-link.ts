@@ -1,12 +1,12 @@
 /**
- * The link a person can follow to put a report in front of the project — and nothing else.
+ * The link a person can follow to put a report in front of the project, and nothing else.
  *
  * It is a STRING. mnema opens no browser and makes no request: the link is printed, and the
  * person who clicks it lands on GitHub's own form, with the report already in its fields,
  * where GitHub's "Submit" is the only consent there is. The destination is fixed here, in the
  * binary: no flag, variable or file names another one.
  *
- * WHAT IS IN IT is the text `renderReport` made (title and body) and the name of the form —
+ * WHAT IS IN IT is the text `renderReport` made (title and body) and the name of the form:
  * the same bytes the person was shown, percent-encoded, so there is no second rendering to
  * drift from the first. The form it opens (`.github/ISSUE_TEMPLATE/internal_error.yml`) has
  * one field the link fills, `report`, and one left to the person.
@@ -33,7 +33,7 @@ export const LINK_LIMIT = 6000;
 
 const NEW_ISSUE = `https://github.com/${ISSUE_REPO}/issues/new`;
 
-/** The form with nothing filled in — where a report too long for a link is pasted. */
+/** The form with nothing filled in, where a report too long for a link is pasted. */
 export function emptyForm(): string {
   return `${NEW_ISSUE}?template=${ISSUE_TEMPLATE}`;
 }

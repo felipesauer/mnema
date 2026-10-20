@@ -1,24 +1,24 @@
 /**
- * `mnema tally` — a fact about the session a hook fires in: how many files its own tool
+ * `mnema tally`, a fact about the session a hook fires in: how many files its own tool
  * calls wrote, and how many decisions were recorded since it opened.
  *
  * WHAT IT IS FOR. Measured in the field, an agent that edits a project records almost nothing
  * unless somebody asks, and it is the end of a response and the moment before a conversation is
  * compacted that nobody is looking. This says, at those two points, what the session did and
- * what the record holds from it — and nothing about what to do. The product has no standing to
+ * what the record holds from it, and nothing about what to do. The product has no standing to
  * tell a session its business, and a host reads text that is framed as an order differently from
  * text that states a fact (`record-framing.ts`); so the line is a count and the words around it
  * say what was counted.
  *
  * NO MODEL AND NO GUESSING. The files come from the transcript the host names in the payload
- * (`what-the-session-did.ts`); the decisions come from the record — every decision of the
+ * (`what-the-session-did.ts`); the decisions come from the record: every decision of the
  * project's own trees created at or after the instant the transcript opens. That instant is the
  * only thing tying a decision to a session, so the line says "recorded since it opened" and not
  * "recorded by it": a second session of the same project in the same hours is counted too, and
  * so is a decision a person recorded by hand.
  *
  * IT SPEAKS ONLY WHEN IT HAS SOMETHING TO COUNT. At `Stop` it speaks after a response that wrote a
- * file — the host fires that event after every response, and a line after a response that wrote
+ * file: the host fires that event after every response, and a line after a response that wrote
  * nothing would be noise a person learns to read past. Before a compaction it speaks whenever the
  * session wrote any file. Every other outcome is the empty reply `{}`: a hook that is not one of
  * these two, no project here, the channel switched off, a transcript this cannot read. What went
@@ -34,7 +34,7 @@ import { SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { whatTheSessionDid } from '../what-the-session-did.js';
 
-/** What the command needs — injected so it is testable. */
+/** What the command needs: injected so it is testable. */
 export interface SessionTallyContext {
   /** Where the host started the hook: the project is resolved from it. */
   readonly cwd: string;
@@ -45,7 +45,7 @@ export interface SessionTallyContext {
 /** The reply for the host, and what the run has to say beside it. */
 export interface SessionTallyDone {
   readonly ok: true;
-  /** The JSON the host reads on stdout — `{}` unless there is something to count. */
+  /** The JSON the host reads on stdout: `{}` unless there is something to count. */
   readonly reply: object;
   /** Lines for the second stream: why a count that could have been made was not. */
   readonly notes: readonly string[];

@@ -1,18 +1,18 @@
 /**
- * THE CLOSED SETS OF DOMAIN WORDS THE SURFACES TAKE — one source, and BOTH doors read
+ * THE CLOSED SETS OF DOMAIN WORDS THE SURFACES TAKE: one source, and BOTH doors read
  * it.
  *
  * An `<action>`, a `--scope`, a `direction`: each takes one word out of a set the DOMAIN
- * owns and a surface only forwards. Both surfaces used to re-type those words — the CLI
+ * owns and a surface only forwards. Both surfaces used to re-type those words (the CLI
  * in twenty-two declarations, the MCP in fourteen tool descriptions and nine `z.enum`
- * arrays — so the day a workflow gained an action, every one of them kept listing the old
+ * arrays), so the day a workflow gained an action, every one of them kept listing the old
  * set and nothing failed. A help that omits a word the gate accepts is worse than a help
  * that says nothing: the reader concludes the word does not exist.
  *
  * THE MCP's COPY WAS WORSE THAN PROSE, AND THAT IS WHY THIS MODULE IS HERE RATHER THAN
  * UNDER `wiring/`. The CLI validates a `--scope` through `parseScope`, which READS the
  * set below; the MCP validated it with `z.enum(['public', 'private', 'global'])` typed by
- * hand, and a `z.enum` does not describe — it ACCEPTS. So a fourth tree added to the
+ * hand, and a `z.enum` does not describe: it ACCEPTS. So a fourth tree added to the
  * domain would have reached the CLI's help, the CLI's Tab and the CLI's refusal, and the
  * MCP would have gone on refusing the word its own product accepts, in the SDK's voice,
  * on the surface agents use. That is not two prose styles drifting; it is two doors
@@ -20,26 +20,26 @@
  *
  * WHAT LIVES HERE, AND WHAT DOES NOT. This module is surface-NEUTRAL: the sets, the
  * gloss each scope carries, and the functions that turn a set into a phrase. It imports
- * from the domain and from nothing else — no commander, no zod — which is what lets both
+ * from the domain and from nothing else (no commander, no zod), which is what lets both
  * surfaces read it without either one reaching into the other. The commander channel
  * (which declaration takes which set, so the shell can complete it) is `wiring/
  * enumerated.ts`, and the zod schemas are `mcp/server.ts`'s own.
  *
  * NOTHING HERE VALIDATES, AND THAT IS MEASURED. commander's `.choices()` would enumerate
  * AND validate, moving ownership of the vocabulary from the gate to the parser: the
- * refusal a CLI caller gets today is the gate's own —
+ * refusal a CLI caller gets today is the gate's own.
  *
  *     $ mnema task move nonsense <id>
  *     Refused (UNKNOWN_ACTION): "nonsense" is not a workflow action
  *
- * — and `.choices()` would replace it with a usage error about an invalid argument. The
+ * And `.choices()` would replace it with a usage error about an invalid argument. The
  * MCP is the other way round by the protocol's nature: a tool's input schema IS the
  * contract the client checks against, so `z.enum` there is not a second opinion but the
  * only way to state the set. Both are served by ONE set, which is the whole point.
  *
  * WHAT IT COSTS THE FLOOR: the sets are values, so this module loads the domain while
  * commander is still being built. It is declared in
- * `the-floor-is-the-declaration.test.ts`, and it is free today — `wiring/options.ts`
+ * `the-floor-is-the-declaration.test.ts`, and it is free today: `wiring/options.ts`
  * already holds `@mnema/core` open for `--which`'s parser, and `pinned-run.ts` holds
  * `@mnema/chain`. Measured before and after: no change to `mnema --version`.
  */
@@ -64,7 +64,7 @@ import {
  * module.
  *
  * `DECISION_ACTIONS` is deliberately NOT among them, though this module reads it below:
- * no declaration takes the decision vocabulary whole — the CLI's `decision move` offers
+ * no declaration takes the decision vocabulary whole; the CLI's `decision move` offers
  * it minus `supersede`, which has a verb of its own, and the MCP's `action` is free text
  * with the words in its description. So the surface that needs the whole set reads it from
  * the domain, and this module publishes nothing a door does not take. That rule is
@@ -76,13 +76,13 @@ export { LEVEL_REQUIREMENTS, SEARCH_KINDS, SKILL_ACTIONS, TASK_ACTIONS };
 // The prose: a set, as a phrase
 // ---------------------------------------------------------------------------
 
-/** `a, b, c` — the members, in the order the machine declares them. */
+/** `a, b, c`: the members, in the order the machine declares them. */
 export function listed(values: readonly string[]): string {
   return values.join(', ');
 }
 
 /**
- * `a, b, or c` — the members as a sentence that ENDS at the list.
+ * `a, b, or c`: the members as a sentence that ENDS at the list.
  *
  * One member is itself, and two are `a, or b`: the comma before a two-member `or` is
  * what the surfaces already printed, and this function was factored out of the glossed
@@ -93,7 +93,7 @@ export function orListed(values: readonly string[]): string {
   return `${values.slice(0, -1).join(', ')}, or ${values[values.length - 1]}`;
 }
 
-/** `a and b`, `a, b, and c` — the same list where the sentence CONTINUES past it. */
+/** `a and b`, `a, b, and c`: the same list where the sentence CONTINUES past it. */
 export function andListed(values: readonly string[]): string {
   if (values.length < 2) return values.join('');
   if (values.length === 2) return values.join(' and ');
@@ -101,7 +101,7 @@ export function andListed(values: readonly string[]): string {
 }
 
 /**
- * `a/b/c` — the members as one token of a sentence about all of them.
+ * `a/b/c`: the members as one token of a sentence about all of them.
  *
  * The shape a rule reads best in ("block/cancel/reopen need a reason"), where a comma
  * would compete with the commas of the sentence around it.
@@ -111,7 +111,7 @@ export function slashed(values: readonly string[]): string {
 }
 
 /**
- * `a (why), b (why), or c (why)` — every member with its one-phrase gloss, as a
+ * `a (why), b (why), or c (why)`: every member with its one-phrase gloss, as a
  * sentence that ENDS at the list.
  *
  * The gloss is a total record over the set's own type, which is what makes a value
@@ -133,14 +133,14 @@ export function glossedList<T extends string>(
 }
 
 // ---------------------------------------------------------------------------
-// The scopes — the surfaces' view of the three trees
+// The scopes: the surfaces' view of the three trees
 // ---------------------------------------------------------------------------
 
 /**
  * What each scope MEANS, in the one phrase both doors print.
  *
  * Keyed by the core's `Scope`, so a fourth tree does not compile until this says what
- * it is — the totality lives here, in `src`, and not in an assertion. It is also the
+ * it is: the totality lives here, in `src`, and not in an assertion. It is also the
  * source of {@link SCOPES}: the core exports the type and no ordered tuple, so the key
  * order of this record IS the order the surfaces list them in (insertion order, which
  * the language guarantees for string keys).
@@ -150,7 +150,7 @@ export function glossedList<T extends string>(
  * tree PER PROJECT (in its repository's git directory, or `.mnema/private/` outside a
  * repository), so a machine with four projects has four
  * private trees and a fact written in one is not in the others. The CLI's shorter wording
- * was not a summary of that, it was a different claim — a reader who had it would expect
+ * was not a summary of that, it was a different claim: a reader who had it would expect
  * a private memory to follow them to the next repository. The more precise gloss won on
  * precision and not on age, and the CLI's help changed to it.
  */
@@ -174,7 +174,7 @@ export function scopeChoices(scopes: readonly Scope[]): string {
 }
 
 /**
- * The three scopes with their glosses, as ONE phrase — computed once, at load.
+ * The three scopes with their glosses, as ONE phrase: computed once, at load.
  *
  * A constant and not a call at each site because both surfaces want the identical bytes:
  * the CLI's `--scope` declarations and the MCP's four tool descriptions interpolate THIS,
@@ -187,7 +187,7 @@ export const SCOPE_CHOICES = scopeChoices(SCOPES);
  * The trees `decision import` writes its proposals into: every scope but the machine-global
  * one.
  *
- * A PROPOSAL CARRIES A PATH INSIDE THE PROJECT — the file it was read from — and that path is
+ * A PROPOSAL CARRIES A PATH INSIDE THE PROJECT: the file it was read from, and that path is
  * also how a second run knows the file is already imported. The global tree belongs to no
  * project and is read in every one, so a proposal written there hands its path to every
  * project on the machine, where the same path names that project's own file. Measured on the
@@ -208,13 +208,13 @@ export const IMPORT_SCOPES: readonly Scope[] = SCOPES.filter(
 );
 
 // ---------------------------------------------------------------------------
-// The window — one sentence, and the noun that says which axis
+// The window: one sentence, and the noun that says which axis
 // ---------------------------------------------------------------------------
 
 /**
  * What `--from` and `--to` narrow, in the one sentence every door prints.
  *
- * Three reads take a window and they were glossed in two wordings — *"include only
+ * Three reads take a window and they were glossed in two wordings: *"include only
  * facts at or after this ISO-8601 instant"* on `accountability` and `export`, *"only
  * records at or after"* on `search`. The two wordings were not a style drift: they name
  * two different AXES, because `accountability` and `export` select the facts themselves
@@ -223,12 +223,12 @@ export const IMPORT_SCOPES: readonly Scope[] = SCOPES.filter(
  *
  * So the sentence is one and the axis is the NOUN. It leads with the noun and then the
  * edge because that is the order a reader needs them in, and because a flag's gloss is
- * read in a column about sixty characters wide — the first version of this put the axis
+ * read in a column about sixty characters wide: the first version of this put the axis
  * in a trailing clause and the terminal folded the edge off the end of the line, which
  * is the one part of the sentence that cannot be guessed.
  *
- * The FULL declaration of what a window is over — including the clause that says a
- * record's instant is not when it last moved — is the domain's own
+ * The FULL declaration of what a window is over (including the clause that says a
+ * record's instant is not when it last moved) is the domain's own
  * {@link WINDOW_IS_OVER}, printed where there is room for it: the verb's own
  * description and the tool's.
  */
@@ -241,7 +241,7 @@ export function windowGloss(end: 'from' | 'to', subject: WindowSubject): string 
  * The whole declaration, for the help text under a verb that takes a window.
  *
  * A flag's gloss has a column; a paragraph under the flags does not, so this is where
- * the clause that cannot be shortened goes — that a record's instant is the one it was
+ * the clause that cannot be shortened goes: that a record's instant is the one it was
  * RECORDED at, and not the one it last moved at, nor anything about the state it is in
  * now. It is the sentence the measured defect needs: `search --kind decision --to <T>`
  * prints a decision with TODAY's state inside a window it was in force in, and a reader
@@ -250,17 +250,17 @@ export function windowGloss(end: 'from' | 'to', subject: WindowSubject): string 
  */
 export function windowHelp(subject: WindowSubject): string {
   // The breaks are the domain's own (see `WINDOW_IS_OVER`), so nothing here decides a
-  // width — this surface names the five modules that may, and a vocabulary is not one.
+  // width: this surface names the five modules that may, and a vocabulary is not one.
   return ['', 'The window:', ...WINDOW_IS_OVER[subject].map((line) => `  ${line}`)].join('\n');
 }
 
-/** The same sentence flat, for a door that wants one line — a tool's field description. */
+/** The same sentence flat, for a door that wants one line: a tool's field description. */
 export function windowDeclaration(subject: WindowSubject): string {
   return WINDOW_IS_OVER[subject].join(' ');
 }
 
 // ---------------------------------------------------------------------------
-// The machine-global tree — one axis, one sentence, four verbs
+// The machine-global tree: one axis, one sentence, four verbs
 // ---------------------------------------------------------------------------
 
 /**
@@ -268,14 +268,14 @@ export function windowDeclaration(subject: WindowSubject): string {
  *
  * FOUR VERBS ASK THE SAME QUESTION and it was spelled TWO ways: `witness` and its two
  * subcommands shared one string, and `verify` had a longer one of its own. A third
- * spelling was one verb away — `export` is the one that needed the flag next, and it is
+ * spelling was one verb away: `export` is the one that needed the flag next, and it is
  * the only read that leaves the machine, so the sentence a person reads before pushing
  * a feed to a SIEM would have been the newest of three.
  *
  * The SHARED half is why the tree is left out: it belongs to no project and is present
  * in every one, so including it by default would put the same personal record inside
  * every project's answer. The per-verb half is what that COSTS in that verb, and it
- * varies because the consequence does — a weakness lowers a verdict, a witness over a
+ * varies because the consequence does: a weakness lowers a verdict, a witness over a
  * tree no verdict reads is work with no reader, and a feed carries it off the machine.
  * That is the same shape `windowGloss` has: one sentence, and the clause that varies
  * named rather than left to whoever writes the next one.
@@ -304,7 +304,7 @@ interface WorkflowVocabulary {
 }
 
 /**
- * Every workflow, its vocabulary and its table — total over {@link Workflow}, so a
+ * Every workflow, its vocabulary and its table: total over {@link Workflow}, so a
  * fourth kind of move cannot be wired to a help that reads another one's table.
  */
 const WORKFLOWS: Readonly<Record<Workflow, WorkflowVocabulary>> = {
@@ -314,17 +314,17 @@ const WORKFLOWS: Readonly<Record<Workflow, WorkflowVocabulary>> = {
 };
 
 /**
- * The actions of `workflow` that cannot move without `field` — the list a proof flag's
+ * The actions of `workflow` that cannot move without `field`: the list a proof flag's
  * help, and a proof field's tool description, both name.
  *
  * It reads the TABLE, which is the only thing that knows: both surfaces used to say
  * "required by cancel, block, reopen" from memory, and there was nothing anywhere
  * comparing either sentence to the rows the gate enforces. In the vocabulary's own order,
- * so a flag's list and the `<action>` list above it read the same way round — and so the
+ * so a flag's list and the `<action>` list above it read the same way round, and so the
  * MCP's four sentences about proof read the same way round as the CLI's nine.
  *
  * An action legal from several states appears ONCE. It also assumes every row for one
- * action requires the same fields — true of all three tables, and asserted, because a
+ * action requires the same fields: true of all three tables, and asserted, because a
  * workflow where `cancel` needed a reason from one state and not another could not be
  * described by this sentence at all.
  */

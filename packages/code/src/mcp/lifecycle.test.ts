@@ -1,17 +1,17 @@
 /**
- * The triggers that tell a stdio server its connection ended — and that they fire
+ * The triggers that tell a stdio server its connection ended, and that they fire
  * exactly once.
  *
  * This is the half of the close that could not be tested before, and that is why it is
  * its own module: the previous mechanism was `transport.onclose`, installed inside
- * `connect()` on a transport `connect()` builds itself, over the real stdio — so no
+ * `connect()` on a transport `connect()` builds itself, over the real stdio, so no
  * in-process test could reach it, and the SDK never fired it either. It went six exit
  * modes without running and nothing went red.
  *
  * The lifecycle is INJECTED, so what is exercised here is the wiring itself: which
  * events are subscribed to, what happens when each fires, and what happens when two
- * fire together. The composition — that the closer really ends the session's runs on
- * disk — is proven where the session is (`mcp-session-close.test.ts`), and the whole
+ * fire together. The composition, that the closer really ends the session's runs on
+ * disk, is proven where the session is (`mcp-session-close.test.ts`), and the whole
  * path through the real transport is proven by the six-mode probe.
  */
 
@@ -59,13 +59,13 @@ function fakeLifecycle(): Lifecycle & {
   };
 }
 
-describe('armSessionClose — how a stdio server learns its connection ended', () => {
+describe('armSessionClose: how a stdio server learns its connection ended', () => {
   it('subscribes to stdin ending and to the catchable signals, and nothing else', () => {
     const lifecycle = fakeLifecycle();
     armSessionClose({ close: () => {}, lifecycle });
     // Both stdin events: which one arrives depends on how the other end let go.
     expect([...lifecycle.stdinSubscribed()].sort()).toEqual(['close', 'end']);
-    // SIGKILL is absent BY DESIGN — it cannot be caught. A session killed that way
+    // SIGKILL is absent BY DESIGN: it cannot be caught. A session killed that way
     // still leaves its run open, and this asserts the product does not pretend
     // otherwise by installing a handler that could never run.
     expect([...lifecycle.subscribed()].sort()).toEqual(['SIGINT', 'SIGTERM']);
@@ -108,7 +108,7 @@ describe('armSessionClose — how a stdio server learns its connection ended', (
   it('closes ONCE when two triggers fire together', () => {
     // The ordinary way a host disconnects: it closes the pipe AND terminates the
     // child. A run has exactly one end, and a second `run.ended` would be refused by
-    // the operation — but relying on a refusal to keep the record honest is not the
+    // the operation, but relying on a refusal to keep the record honest is not the
     // same as not writing twice.
     let closes = 0;
     const lifecycle = fakeLifecycle();

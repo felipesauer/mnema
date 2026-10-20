@@ -1,11 +1,11 @@
 /**
- * `mnema retract <id> --reason "<why>"` — take a note back.
+ * `mnema retract <id> --reason "<why>"`: take a note back.
  *
- * A note — a memory or an observation — is a point-in-time fact and cannot be edited: the
+ * A note, a memory or an observation, is a point-in-time fact and cannot be edited: the
  * record only grows. What it CAN be is taken back, by a later signed fact that says who did
  * it and why. The note stays in the record and `mnema show` still opens it, saying it was
- * retracted; what changes is that the reads that list notes — the opening of a session, the
- * search — no longer offer it.
+ * retracted; what changes is that the reads that list notes (the opening of a session, the
+ * search) no longer offer it.
  *
  * It follows the note to the tree it was written in, the way a decision's move follows the
  * decision, and takes no `--scope`: a retraction filed in another tree would leave the note's
@@ -25,7 +25,7 @@ import { openTreeForWriting, retractNote } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the retract command needs — injected so it is testable. */
+/** What the retract command needs: injected so it is testable. */
 export interface RetractContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -45,7 +45,7 @@ export interface NoteRetracted extends Replacement, Landed {
 /** The retraction was refused. */
 export type RetractRefused =
   /**
-   * No visible tree holds a record by this id — `UNKNOWN_NOTE` inside a project, and
+   * No visible tree holds a record by this id; `UNKNOWN_NOTE` inside a project, and
    * `NO_PROJECT` outside one, where the machine-global tree was looked in and held nothing
    * by that id either: the rule `show` answers by.
    */

@@ -1,7 +1,7 @@
 /**
  * The `mnema memory` wiring: what it declares, and what it prints.
  *
- * `mnema memory "<content>"` — capture a memory. The content is a positional:
+ * `mnema memory "<content>"`: capture a memory. The content is a positional:
  * this is quick capture (jrnl/todo.txt), where the content IS the command and
  * competes with no label, so it needs no flag.
  */

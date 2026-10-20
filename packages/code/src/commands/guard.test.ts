@@ -34,7 +34,7 @@ function setup(): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * A project with one task, and the machine's own identity — which every guard here
+ * A project with one task, and the machine's own identity, which every guard here
  * asks AS. The actor is not a label: a real move's `who` is derived from a key, so a
  * dry-run for a value naming no identity would answer for a move nobody can make,
  * and the surface refuses it.
@@ -97,7 +97,7 @@ describe('mnema task guard (dry-run of the gate)', () => {
   it('REFUSES MISSING_PROOF for a legal move whose required proof is absent', () => {
     const { repo, env, id, who } = projectWithTask();
     // cancel is legal from DRAFT but needs a reason; without it the gate refuses
-    // MISSING_PROOF — a USEFUL answer ("the move is legal, you are only missing
+    // MISSING_PROOF: a USEFUL answer ("the move is legal, you are only missing
     // the reason"), not "you cannot do this".
     const result = runGuard({ cwd: repo, env }, { id, action: 'cancel', actor: who });
     expect(result.ok).toBe(true);
@@ -109,7 +109,7 @@ describe('mnema task guard (dry-run of the gate)', () => {
   it('REFUSES ILLEGAL_TRANSITION for a move the task’s current state does not allow', () => {
     const { repo, env, id, who } = projectWithTask();
     // approve is not a legal move from DRAFT (a task must be submitted, started,
-    // and put in review first) — the gate refuses ILLEGAL_TRANSITION.
+    // and put in review first): the gate refuses ILLEGAL_TRANSITION.
     const result = runGuard(
       { cwd: repo, env },
       { id, action: 'approve', actor: who, proof: { note: 'looks good' } },
@@ -192,10 +192,10 @@ describe('mnema task guard (dry-run of the gate)', () => {
     }
   });
 
-  it('writes NOTHING — the sandbox is byte-identical before and after', () => {
+  it('writes NOTHING: the sandbox is byte-identical before and after', () => {
     const { repo, env, id, who } = projectWithTask();
     const before = digest(sandbox);
-    // Run every kind of guard — allowed, each refusal — none may write.
+    // Run every kind of guard (allowed, each refusal) none may write.
     runGuard({ cwd: repo, env }, { id, action: 'submit', actor: who });
     runGuard({ cwd: repo, env }, { id, action: 'cancel', actor: who });
     runGuard({ cwd: repo, env }, { id, action: 'approve', actor: who, proof: { note: 'x' } });

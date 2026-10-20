@@ -1,17 +1,17 @@
 /**
- * `mnema unlink <subject> <target> --rel <label> --reason "<why>"` — take a link back.
+ * `mnema unlink <subject> <target> --rel <label> --reason "<why>"`: take a link back.
  *
  * A link is a point-in-time fact and cannot be edited: the record only grows. What it CAN be is
  * taken back, by a later signed fact that names the edge the way the link did and says why. The
- * link's own event stays in the record; what changes is that every reader of links — the rules
- * that govern a path, the opening of a session, the census of a write — stops seeing the edge
+ * link's own event stays in the record; what changes is that every reader of links (the rules
+ * that govern a path, the opening of a session, the census of a write) stops seeing the edge
  * when nobody else asserts it.
  *
- * It names the edge exactly as `mnema link` takes it — two positionals and the `--rel` flag — and
+ * It names the edge exactly as `mnema link` takes it, two positionals and the `--rel` flag, and
  * resolves an `ADR-<n>` label on either end the way that verb does, so a link recorded by label is
  * taken back by the same label. It follows the link to the tree it was recorded in and takes no
  * `--scope`. An absolute path under the project root is found by the form `link` records it in
- * (relative), after the form typed — which keeps a link an earlier version recorded absolute
+ * (relative), after the form typed, which keeps a link an earlier version recorded absolute
  * retractable. Only the identity that recorded the link takes it back, with any key of it.
  */
 
@@ -23,7 +23,7 @@ import { locateLinkAsRecorded } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
-/** What the unlink command needs — injected so it is testable. */
+/** What the unlink command needs: injected so it is testable. */
 export interface UnlinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -31,7 +31,7 @@ export interface UnlinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   readonly env: DiscoveryEnv;
 }
 
-/** A link was taken back — the edge, as it was recorded (a link has no id). */
+/** A link was taken back: the edge, as it was recorded (a link has no id). */
 export interface LinkTakenBack extends Replacement, Landed {
   readonly ok: true;
   readonly subject: string;
@@ -41,7 +41,7 @@ export interface LinkTakenBack extends Replacement, Landed {
 
 /** The retraction was refused. */
 export type UnlinkRefused =
-  /** No visible tree holds a link of that edge — inside a project, or outside one. */
+  /** No visible tree holds a link of that edge: inside a project, or outside one. */
   | { readonly ok: false; readonly reason: 'UNKNOWN_LINK' | 'NO_PROJECT' }
   /** A label that names no decision or several, or the core's refusal: not the author, … */
   | {
@@ -51,7 +51,7 @@ export type UnlinkRefused =
       readonly message: string;
     };
 
-/** Retracts the link `subject —rel→ target` in the tree it was recorded in. */
+/** Retracts the link `subject -rel-> target` in the tree it was recorded in. */
 export function runUnlink(
   ctx: UnlinkContext,
   input: {

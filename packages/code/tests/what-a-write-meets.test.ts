@@ -1,10 +1,10 @@
 /**
- * What a write MEETS: the one decision every host's hook asks before a file is written — a
- * refusal, a pause for a person, or nothing.
+ * What a write MEETS: the one decision every host's hook asks before a file is written (a
+ * refusal, a pause for a person, or nothing).
  *
  * Two relations of the record can stop a write, and they are two powers: `asks-for-a-person`
  * holds it until somebody decides, `refuses-a-write` does not let it happen. Where both apply
- * — at one path, or at two paths of one write — the refusal is what the write meets, and that
+ * (at one path, or at two paths of one write), the refusal is what the write meets, and that
  * is decided in ONE function (`what-a-write-meets.ts`) so a host cannot ask where another
  * refuses for the same file. These cases drive that function over a project the command line
  * built, through the assembly the process-hook door uses (`withScopedCaches`), so the switches
@@ -146,7 +146,7 @@ describe('a rule that refuses a write', () => {
   });
 });
 
-describe('where a refusal and a pause for a person meet, the refusal wins — decided here', () => {
+describe('where a refusal and a pause for a person meet, the refusal wins: decided here', () => {
   it('refuses at a path where one rule refuses and another asks', async () => {
     const refusing = await ruleAt('Nobody writes the ledger', 'src/ledger', 'refuses-a-write');
     const asking = await ruleAt('Somebody looks at source', 'src', 'asks-for-a-person');
@@ -175,7 +175,7 @@ describe('where a refusal and a pause for a person meet, the refusal wins — de
 
     const verdict = meets('src/billing/invoice.ts');
     expect(verdict?.grade).toBe('ask');
-    // The same text the asking doors already send — this decision adds a grade above the
+    // The same text the asking doors already send: this decision adds a grade above the
     // asking and changes nothing below it.
     const asked = withScopedCaches(resolveTrees(repo, env), (sources) =>
       whatAWriteAsks(sources, { path: 'src/billing/invoice.ts', root: repo, from: repo }),

@@ -1,13 +1,13 @@
 /**
- * A SENT COMMAND IS A BAND AND AN ANSWER HAS A HEAD — what the roll of the console looks like once a
+ * A SENT COMMAND IS A BAND AND AN ANSWER HAS A HEAD: what the roll of the console looks like once a
  * caller has asked something, and what it never carries.
  *
  * IT REPLACES A GUIDE. Down the margin of every row of the roll there was a purple line, one column
  * wide, and a caller who looked at a screenshot of it asked for the style of the console they
  * already read in: the command they typed on a line of its own with a quiet background, the answer
  * opened by a neutral dot with its other rows two columns in, and under it a faint line saying how
- * long it took. The purple is for the places that say *this is mnema* — the top, the rules, the row
- * being typed — and nothing else.
+ * long it took. The purple is for the places that say *this is mnema* (the top, the rules, the row
+ * being typed) and nothing else.
  *
  * WHAT IS ASSERTED, each a measurement off the bytes or the page rather than a picture:
  *
@@ -21,7 +21,7 @@
  *     the plain renderer says of the same line.
  *   - THE ANSWER OPENS WITH A DOT that nothing paints, and every row after it recedes by two columns.
  *   - THE LINE UNDER IT SAYS ONLY WHAT WAS MEASURED, on the clock the session was handed: the verb,
- *     how long, the hour — and there is none under a command that answered with nothing.
+ *     how long, the hour, and there is none under a command that answered with nothing.
  *   - THE THREE GLYPHS ARE ONE COLUMN EACH, by the authority over columns, and no page is broken by
  *     them at any width from eighty to two hundred.
  *
@@ -55,7 +55,7 @@ import {
 import { aFrameSince, inPty, leavesTheSession, opensAConsole, type Step } from './support/pty.js';
 import { screenOf, theSettledScreen } from './support/screen.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** What the caller types in front of. */
@@ -214,7 +214,8 @@ interface Drive {
 
 /**
  * A session driven in THIS process over a pair of streams, and what it said: every byte, and the
- * transcript it hands the caller's own buffer once it has left — the roll, whole, one row to a line.
+ * transcript it hands the caller's own buffer once it has left (the roll, whole, one row to a
+ * line).
  *
  * IT IS THE INSTRUMENT FOR THE PAINT AND THE CLOCK, where the pseudo-terminal below is the one for
  * the GEOMETRY: what a case about a hue needs is the escapes around a row, and what a case about a
@@ -476,8 +477,8 @@ describe('the three glyphs are one column each and break no page', () => {
       const inside = insideTheMargin(columns);
       const sent = chooseRenderer(painting(inside))(sentLine('search money'));
       expect(widthOfText(plainOf(sent)), `${columns} columns`).toBe(inside);
-      // AND AN ANSWER IS FOLDED TO WHAT THE DOT AND THE INDENT LEAVE, so its widest row — the dot
-      // and a space in front of it — is never wider than the page inside the margin.
+      // AND AN ANSWER IS FOLDED TO WHAT THE DOT AND THE INDENT LEAVE, so its widest row, the dot
+      // and a space in front of it, is never wider than the page inside the margin.
       const answer = chooseRenderer({ ...painting(insideAnAnswer(columns)), when: 'never' })({
         indent: 0,
         parts: [{ role: 'field', text: 'word '.repeat(60).trim() }],

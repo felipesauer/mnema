@@ -7,27 +7,27 @@
  *
  * WHERE THIS COMES FROM, with a number. `cli.golden.test.ts` waited for the millisecond to
  * turn before every CLI invocation, and said so in the comment over the wait. One fixture
- * step is not an invocation — `appendUnscreenedMemory` writes straight to the tree, because
- * the finding it plants is unreachable through a surface that screens content — so it took
+ * step is not an invocation (`appendUnscreenedMemory` writes straight to the tree, because
+ * the finding it plants is unreachable through a surface that screens content), so it took
  * its instant with nothing in front of it. Measured on this workstation, it landed ONE
  * millisecond after the invocation before it. The sampler put the collision at 6 of 180 runs
  * over three nights: ranks 27 and 28 of the reads transcript, a `skill.transitioned` and that
  * memory, merging into one and dropping ranks 28 through 30 by one each.
  *
  * SO THE RULE IS: in a fixture of this kind, the clock is read in ONE place, and that place
- * waits. Not "every invocation ticks" — that is the rule the defect satisfied. A step that
+ * waits. Not "every invocation ticks", that is the rule the defect satisfied. A step that
  * needs an instant asks the gate for one, and a step that only needs the millisecond to turn
  * asks the same gate and drops the answer.
  *
  * AND THE GATE IS FOUND BY WHAT IT DOES, never by its name. A guard that named the function
- * would go green the day somebody renamed it — green over zero sites, which is the failure
+ * would go green the day somebody renamed it: green over zero sites, which is the failure
  * mode this file is most exposed to. A gate here is a function whose body SPINS on the clock;
  * rename it freely, delete the spin and this goes red.
  *
  * WHICH FILES IT COVERS is discovered the same way: the committed goldens are read, the ones
  * holding a ranked instant are kept, and the fixtures that pin them are the files the rule is
  * about. A second transcript of this kind added tomorrow is covered without anybody having to
- * remember this file — and if it arrives without a gate, this is what says so.
+ * remember this file, and if it arrives without a gate, this is what says so.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -35,7 +35,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The workspace root — this file is `packages/code/tests/…`. */
+/** The workspace root: this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
@@ -46,7 +46,7 @@ const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const RANKED_INSTANT = /<at:\d+>/;
 
 /**
- * A read of the REAL clock — the two spellings, and only the ones that take no argument. A
+ * A read of the REAL clock: the two spellings, and only the ones that take no argument. A
  * `new Date(ms)` is arithmetic on a value the caller already has; a `new Date()` is a fact
  * about when the process happened to get there, and that is the thing this rule counts.
  */
@@ -69,7 +69,7 @@ function filesUnder(where: string, deep: boolean): readonly string[] {
 }
 
 /**
- * Every file the workspace SHIPS, read once — the goldens and the sources both come out of it.
+ * Every file the workspace SHIPS, read once: the goldens and the sources both come out of it.
  *
  * Everything shipped is walked rather than left out by scope, so a ranked instant landing in a
  * tree nobody thought of is covered.
@@ -96,7 +96,7 @@ const RANKING_GOLDENS = SHIPPED.filter(
  * NAMING THE FILE IS NOT ENOUGH, and the first draft of this guard learned it the hard way:
  * `presentation/width.test.ts` reads all three goldens as a CORPUS, to measure the width of
  * every line the surface writes, and it was accused of pinning a transcript without a gate.
- * It holds no clock read and cannot merge an instant — it consumes bytes somebody else
+ * It holds no clock read and cannot merge an instant: it consumes bytes somebody else
  * produced. The rule belongs to whoever mints the instants, so the needle is the comparison
  * itself and not the mention.
  */
@@ -109,7 +109,7 @@ function fixturesFor(golden: string): readonly string[] {
 }
 
 /**
- * The bodies of every function declared in `source` that SPINS on the clock — the gates.
+ * The bodies of every function declared in `source` that SPINS on the clock: the gates.
  *
  * A gate is recognized by the loop, because that is the behaviour the rule is about: a
  * function that reads the clock and returns is not one, however it is named. The body is
@@ -198,7 +198,7 @@ describe('every instant a ranked transcript holds is its own', () => {
       'Date.now()',
     ]);
     expect('const t = new Date(atMs).toISOString();'.match(CLOCK_READ)).toBe(null);
-    // And a function that reads the clock without waiting on it is NOT a gate — which is what
+    // And a function that reads the clock without waiting on it is NOT a gate, which is what
     // keeps the rule from being satisfied by any helper that happens to hold a reading.
     expect(gatesIn('function g(): number {\n  return Date.now();\n}\n')).toEqual([]);
   });

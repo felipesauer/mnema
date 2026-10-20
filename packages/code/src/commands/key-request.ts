@@ -1,5 +1,5 @@
 /**
- * `mnema key request --anchor <id>` — ask to bring this machine into an identity.
+ * `mnema key request --anchor <id>`: ask to bring this machine into an identity.
  *
  * The first of the three steps that put a second machine on one identity, and the
  * only one that runs on the machine JOINING. It produces the line the person
@@ -8,18 +8,18 @@
  *
  * The anchor is named by the person because nothing local can name it for them. A
  * shared repository holds one identity per contributor, and this machine joins the
- * one belonging to ITS person — a choice made on their behalf would be a guess
+ * one belonging to ITS person: a choice made on their behalf would be a guess
  * about whose record this is. They already see the value they need: it is what
  * founding a project prints, and what `mnema audit accountability` lists.
  *
  * It may be named whole or by a prefix of an identity the record here knows, and
- * the request is always SIGNED over the whole value — a consent to join half an
+ * the request is always SIGNED over the whole value: a consent to join half an
  * identity is not a thing. A prefix is resolvable only where there is a record to
  * resolve it against, which on a joining machine there may not be; that is exactly
  * why the whole value goes on working with no record at all.
  *
- * It needs no project. Nothing about a request is per-tree — it is a key and a
- * signature over fixed values — so it works from a fresh clone, an empty
+ * It needs no project. Nothing about a request is per-tree (it is a key and a
+ * signature over fixed values), so it works from a fresh clone, an empty
  * directory, or a machine that has never run `mnema init`. What it may touch is
  * the key root, and only to mint this machine's key on first use.
  *
@@ -50,7 +50,7 @@ import {
 } from '@mnema/core/write';
 import { resolveAnchorInRecord } from '../anchors.js';
 
-/** What the request needs — injected so it is testable. */
+/** What the request needs: injected so it is testable. */
 export interface KeyRequestContext {
   /** The working directory: what a relative `--key` path is relative to. */
   readonly cwd: string;
@@ -63,7 +63,7 @@ export interface KeyRequestMade {
   readonly ok: true;
   /** The joining key's fingerprint, derived from the key itself. */
   readonly fingerprint: string;
-  /** The identity the request consents to join — and only that one. */
+  /** The identity the request consents to join, and only that one. */
   readonly anchor: string;
   /** The one line to hand to a machine that is already a member. */
   readonly request: string;
@@ -96,7 +96,7 @@ function placeOf(path: string): string {
 
 /**
  * Produces this machine's request to join `anchor`. With `privateKeyPath` the
- * request speaks for the key in that file instead of this machine's own — the path
+ * request speaks for the key in that file instead of this machine's own: the path
  * out of a machine that lost its key, minted another, and still holds a cold copy
  * of a key the identity already accepted. The file is read, never installed.
  */
@@ -164,8 +164,8 @@ export interface AgentRequestMade extends KeyRequestMade {
 
 /**
  * Produces an agent key's request to be enrolled in `anchor` under `name`: the key is made at the
- * agent's own key root — `<data directory>/agents/<name>`, in the clear, never beside the person's
- * key — and the line carries its public half and its consent to that one name in that one
+ * agent's own key root (`<data directory>/agents/<name>`, in the clear, never beside the person's
+ * key) and the line carries its public half and its consent to that one name in that one
  * identity. With `privateKeyPath` it speaks for the key in that file instead (read, never
  * installed).
  */
@@ -186,8 +186,8 @@ export function runAgentRequest(
   }
   const keyRoot = agentKeyRoot(ctx.env, input.name);
   // A key the record retired is never enrolled again, so asking for the agent's key again is asking
-  // for a new one: the retired key is put aside, not deleted — a key somebody may still hold is
-  // evidence — and the folder keeps one live key, which is the one every reader of it adopts.
+  // for a new one: the retired key is put aside, not deleted (a key somebody may still hold is
+  // evidence) and the folder keeps one live key, which is the one every reader of it adopts.
   const rotated =
     input.privateKeyPath === undefined
       ? setAsideTheRetiredKey(withAgentKey(trees, ctx.env, input.name), keyRoot)

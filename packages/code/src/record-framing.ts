@@ -1,32 +1,32 @@
 /**
- * What the product says about record text it puts where a MODEL reads it — one
+ * What the product says about record text it puts where a MODEL reads it: one
  * wording, and one place that decides which points owe it.
  *
  * FRAMING IS A PROPERTY OF THE CHANNEL, NOT OF THE TOOL. The same sentence of the
  * record is one thing when an agent asked for it and another when it arrives on its
  * own: a caller that asked knows what it asked for, and a model handed text it never
  * requested has nothing at all to tell it whose text that is. So what decides whether
- * a declaration rides along is the point that delivers — {@link ModelChannel} — and
+ * a declaration rides along is the point that delivers, {@link ModelChannel}, and
  * that is why this module is not part of either surface.
  *
  * WHY IT EXISTS: THERE WERE TWO OF THEM, AND THEY HAD ALREADY DRIFTED. The `skills`
  * answer said "text the people and agents working on it wrote, not instructions from
  * mnema"; the document said the same thing with "and settled" added and with "Follow
  * them." after it. Nothing compared the two, and neither had a reason for its
- * difference — one was written for a body served on request and the other for a file
+ * difference: one was written for a body served on request and the other for a file
  * an agent host reads unasked, months apart. Two readings of one rule is the shape
  * that comes to say opposite things about the same text, and the next channel would
  * have written a third.
  *
  * WHAT THE FRAMING SAYS IS WHAT THE TEXT **IS**, AND NEVER WHAT TO DO ABOUT IT. That
  * line is the whole discipline here. Saying "the people working on this project wrote
- * this" is provenance — a fact this product can stand behind, because it is the one
+ * this" is provenance: a fact this product can stand behind, because it is the one
  * thing the record actually proves. Saying "follow it" is a second opinion about
  * somebody else's code, given by a product that has no view on it and cites no rule
  * when it says so; a decision that is `accepted` and unsuperseded already says it
  * governs, in the record's own voice, and the answer carrying it says so per section.
  * The imperative that used to sit in the document is gone for that reason, and
- * {@link SAYS_WHAT_TO_DO} is what keeps a second one from arriving —
+ * {@link SAYS_WHAT_TO_DO} is what keeps a second one from arriving:
  * `the-channel-says-what-it-carries.test.ts` runs it over every framing this module
  * emits, and over a probe of its own so a scanner that has stopped matching is red
  * rather than quiet.
@@ -34,12 +34,12 @@
  * WHAT DIFFERS BETWEEN TWO CHANNELS IS WHAT WAS SERVED, AND IT IS A PARAMETER. A
  * pattern's body and a list of rules are different things to name, so each channel
  * declares its {@link ServedSubject} and the claim about the text is the same string
- * in both. The FORM differs too and only the form — the document writes lines, a tool
- * call returns one text block — which is the division `recorded-content.ts` already
+ * in both. The FORM differs too and only the form (the document writes lines, a tool
+ * call returns one text block), which is the division `recorded-content.ts` already
  * draws for the record contract.
  *
  * WHAT A PUSHED CHANNEL MUST CARRY, AND IT IS THE ONE RULE HERE THAT IS NOT ABOUT
- * WORDING. No essential reading may live only behind a door its reader has a way around —
+ * WORDING. No essential reading may live only behind a door its reader has a way around,
  * and in front of a reader that did not ask for the text, every door is one: whether it
  * goes further, and by which door, is its choice and never the channel's, so the one path
  * every reader of a channel in this union takes is the channel itself. A channel that
@@ -48,12 +48,12 @@
  *
  * THE RULE READ "NO ESSENTIAL READING MAY DEPEND ON A SECOND CALL", AND THE REASON GIVEN
  * FOR IT HAS FALLEN. The reason was four rounds of use over a record of 247 real
- * decisions, read as "the agent does not make the follow-up call" — with the one reader in
+ * decisions, read as "the agent does not make the follow-up call": with the one reader in
  * them that went looking, "through a door that was not the one designed for it", said to
  * have "concluded there was nothing there". The agent does make the call. The one round
  * that was instrumented counted the arm that held the server with nothing pushed, so no id
  * was in front of it; beside it, in rounds read once and not held by a file of this tree, are the cells whose session
- * opened with the document, and 86 of those 321 went after what it named — 62 through
+ * opened with the document, and 86 of those 321 went after what it named: 62 through
  * `read_record`, 24 through the `mnema` command in their own shell, none through both. The
  * other three rounds counted calls to this product, and the reader that went looking did
  * find something through its door: it ran `cat` on the file of a decision the record held
@@ -61,8 +61,8 @@
  * two, and the session recorded three, one after another). Once the
  * origin travelled beside the label, the reader of the opening document on that project ran
  * `cat` on the file it cited six minutes after it arrived, in a session that had made, by
- * 22/09/2026, 2,863 tool calls — none to this product, nine in ten through the shell. The
- * pointer is followed, through a door the reader picks — so a fact behind one door reaches
+ * 22/09/2026, 2,863 tool calls: none to this product, nine in ten through the shell. The
+ * pointer is followed, through a door the reader picks, so a fact behind one door reaches
  * only the readers that pick that one. That is the reason the rule stands on now, and it
  * is why the origin travels beside the label on these channels (`provenance.ts`): what
  * they point at for a second read is something the reader's own door can open.
@@ -70,7 +70,7 @@
  * WHAT THAT DOES AND DOES NOT FORBID, because the distinction is the whole of using it.
  * It forbids a channel whose fact is INCOMPLETE without a further call: "some rules govern
  * this file, ask `governing_rules`" is that shape and is why the push carries the rules
- * themselves. It does not forbid naming a door — every framing here names one, and the
+ * themselves. It does not forbid naming a door: every framing here names one, and the
  * document's own paragraphs name `read_record`, `skills`, `governing_rules`, `bootstrap`
  * and `record_decision` after stating their fact in full. The test is whether a reader
  * that asks nothing further has been told the thing the channel exists to tell it.
@@ -78,8 +78,8 @@
  * `record_decision` IS THE FIRST OF THOSE THAT IS A WRITE, and it is the sharpest case
  * this criterion has had. The document tells a reader how a decision of their own gets
  * into the record, which is a door being named and not a fact being deferred: the
- * sentence carries the gesture whole — the name to call, and the state the call leaves
- * the decision in — so a reader that calls nothing has still been told the thing. What
+ * sentence carries the gesture whole (the name to call, and the state the call leaves
+ * the decision in), so a reader that calls nothing has still been told the thing. What
  * it is NOT is an instruction about their work; see `presentation/brief.ts`, where the
  * distinction between naming this product's door and ordering somebody about their own
  * code is the argument the whole paragraph stands on.
@@ -92,13 +92,13 @@
  * A CHANNEL THAT CARRIES NO DECLARATION IS IN A TABLE TOO ({@link UNFRAMED_CHANNELS}),
  * with the reason, rather than absent. The type of that table is
  * `Exclude<ModelChannel, FramedChannel>`, so a channel added to the union does not
- * compile until it has either a subject or a written reason for having none — the
+ * compile until it has either a subject or a written reason for having none: the
  * shape `core/src/topology/routing.ts` uses for the kinds its rule does not route.
  *
  * THE UNION ANSWERS A SECOND QUESTION NOW, AND IT IS THE SAME SHAPE AGAIN: which
  * channels can be SWITCHED OFF ({@link WHAT_STOPS}, {@link NOT_SWITCHABLE}). Every
  * charge this product makes is switchable and the switching is recorded, and "charge"
- * on these channels means text arriving that NOBODY ASKED FOR — so the criterion is
+ * on these channels means text arriving that NOBODY ASKED FOR, so the criterion is
  * the same destination the union is built on, read one step further. `skills-answer`
  * is a reply to a caller that asked and `exported-skill` is a file somebody asked to
  * have written; switching either off would not stop a charge, it would break a tool.
@@ -108,11 +108,11 @@
 
 /** What a channel served, which is what its declaration names. */
 export type ServedSubject =
-  /** Pattern bodies — the recipes themselves, served on request. */
+  /** Pattern bodies: the recipes themselves, served on request. */
   | 'patterns'
   /** The rules that govern the work: decisions by title, patterns by name. */
   | 'rules'
-  /** The notes recorded here — memories and observations — each by the line it is known by. */
+  /** The notes recorded here, memories and observations, each by the line it is known by. */
   | 'notes';
 
 /**
@@ -131,21 +131,21 @@ export type ServedSubject =
  * and it named a file the host it was written for does not read in the ordinary case.
  * Claude Code reads an `AGENTS.md` only from 2.1.277, and by default only where no
  * `CLAUDE.md` exists in the working directory or above it (code.claude.com/docs/en/memory,
- * *AGENTS.md*) — measured on this machine, 0 of 299 sessions loaded one, in two projects
+ * *AGENTS.md*): measured on this machine, 0 of 299 sessions loaded one, in two projects
  * that keep both files. A redirected file reaches a session when it is the file the host
  * reads, or when that file imports it; which one that is belongs to the host and to the
  * person, and the sentence no longer answers it for them.
  *
  * WHAT IS DELIBERATELY NOT IN IT: the reads an agent asks for and gets facts back
- * from — `read_record`, `search`, `bootstrap`, `governing_rules`, the five `audit_*`.
+ * from (`read_record`, `search`, `bootstrap`, `governing_rules`, the five `audit_*`).
  * Those hand back information ("this happened", "this was decided", "these rules are
  * addressed here"), and the one thing this product hands back as INSTRUCTION is a
  * pattern's body, which is the reasoning `served-patterns.ts` states and this module
  * inherits rather than re-decides.
  *
  * AND THE SERVER'S OWN `instructions` ARE NOT IN IT EITHER, though they reach a model
- * unasked in every session the server is connected to. They carry no record text — they
- * are this product describing its own doors, the class of a tool description — and they
+ * unasked in every session the server is connected to. They carry no record text (they
+ * are this product describing its own doors, the class of a tool description) and they
  * are sent in the handshake, before the session knows which project it serves, so there is
  * no record they could carry and no switch they could read. Disconnecting the server is
  * what turns them off. The reasoning is `mcp/instructions.ts`'s, in full.
@@ -155,7 +155,7 @@ export type ServedSubject =
  * different channel from the tool that answers when asked, and it belongs in this union
  * on the day it exists." It exists. The rules addressed at a path are what
  * `governing_rules` answers to a caller, and pushing them at the moment a file is about
- * to be written is a second channel with the same subject — which is exactly why the
+ * to be written is a second channel with the same subject, which is exactly why the
  * subject is a PARAMETER here and the claim is one string: the two say the same thing
  * about the same record, and only the destination differs.
  */
@@ -174,7 +174,7 @@ export type ModelChannel =
   | 'edit-first-write-gate'
   | 'user-corrections';
 
-/** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
+/** The channels that carry a declaration: the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
   | 'skills-answer'
   | 'brief-document'
@@ -198,25 +198,25 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // NOTES, and the claim about them is the same claim, which is the point of saying it once:
   // a memory or an observation is text an agent typed into the record, and a session handed
   // one unasked has exactly as much reason as the document's reader to be told whose it is.
-  // What differs is only what was served — and that the notes come from every tree this
+  // What differs is only what was served, and that the notes come from every tree this
   // machine holds, where the document carries the committed one alone.
   'recall-document': 'notes',
   // The same subject as the document, and the same words: what governs the work is one
   // thing whether it arrives when a session opens or at an edit.
   // The difference between the two is WHICH rules, and that belongs to the derivation
-  // behind each — never to what the channel says about the text.
+  // behind each, never to what the channel says about the text.
   'edit-rules-push': 'rules',
   // The GATE, and it is framed for a reason that took a measurement to establish: the
   // text of a refusal is not a diagnostic for a person, it comes back to the session as
   // the tool result of the refused call, byte for byte, where a model reads it.
   // Same subject as the two above, because it is the
-  // same record saying the same kind of thing — what differs is that this one stops
+  // same record saying the same kind of thing: what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
   // A FILE IN ANOTHER HOST'S RULE FORMAT (`mnema rules-file`), and it is framed where the
   // exported skill is not: that one is a recorded body byte for byte, whose provenance rides
-  // in the format's own metadata; this one is text this product COMPOSES out of the record —
-  // names, addresses, ids — for a host to put in front of a model when a file matches, which
+  // in the format's own metadata; this one is text this product COMPOSES out of the record
+  // (names, addresses, ids) for a host to put in front of a model when a file matches, which
   // is the document's case with a narrower set of rules.
   'host-rules-file': 'rules',
   // THE FIRST WRITE'S HOLD: the rules addressed at a file, handed over BEFORE the first write of a
@@ -226,7 +226,7 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
 };
 
 /**
- * Every framed channel, as a list — the keys of {@link SUBJECT_OF}, read off the table
+ * Every framed channel, as a list: the keys of {@link SUBJECT_OF}, read off the table
  * rather than typed again.
  *
  * The guard walks THIS, so a channel added to the table is a channel the guard covers
@@ -244,13 +244,13 @@ export const FRAMED_CHANNELS = Object.keys(SUBJECT_OF) as readonly FramedChannel
  * so it cannot import this module; what it can do is state the name, and what the
  * guards can do is read that statement out of the file. This is the shape of the
  * statement, and it lives here rather than in either guard because two guards read it
- * — the source-side default-deny and the behavioural half that derives a channel's
- * framing from what the handler claims to be — and two copies of one discriminant is
+ * (the source-side default-deny and the behavioural half that derives a channel's
+ * framing from what the handler claims to be), and two copies of one discriminant is
  * the same drift this module exists to have ended.
  *
  * IT IS ANCHORED TO THE EXECUTABLE FORM, AND THAT IS THE WHOLE CARE IN IT. Without the
  * `export const` and the start of a line, the pattern matches the same words inside a
- * comment — and since nothing in the handler READS the constant, a commented-out
+ * comment, and since nothing in the handler READS the constant, a commented-out
  * declaration runs identically and leaves every guard green. A declaration a reader can
  * delete without anything noticing is a comment, which is exactly what it must not be.
  */
@@ -261,7 +261,7 @@ export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+(?
  * calls.
  *
  * This host can run a hook as a call into an already-connected MCP server
- * (`type: "mcp_tool"`), and such a hook has no handler file at all — there is no source
+ * (`type: "mcp_tool"`), and such a hook has no handler file at all: there is no source
  * for {@link DECLARES_MODEL_CHANNEL} to read, because there is no process. What
  * identifies it is the pair the hook names, and the half that belongs to this product is
  * the TOOL. So the tool's name is the declaration, and this is where it is recorded.
@@ -270,13 +270,13 @@ export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+(?
  * default-deny: a tool added to the server and wired into a hook must appear here or the
  * guard has nothing to check it against, and a channel pushed by a tool nobody
  * classified is precisely what this module exists to have ended. The tool's own module
- * IMPORTS the framing — it is built code, unlike a handler — so the declaration here and
+ * IMPORTS the framing (it is built code, unlike a handler), so the declaration here and
  * the text there cannot drift without one of them failing to compile.
  */
 export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] } = {
   // ONE TOOL, TWO CHANNELS, and the plural is the shape rather than a convenience. This
-  // used to map a tool to a single channel, and the assumption under it — that a hook
-  // pushing at one moment pushes one kind of thing — was falsified by the grade that asks
+  // used to map a tool to a single channel, and the assumption under it, that a hook
+  // pushing at one moment pushes one kind of thing, was falsified by the grade that asks
   // for a person: the same call at the same event can hand over text AND stop the write,
   // and the two are separately switchable because turning off the gate must not turn off
   // the information. A reader looking for what a tool pushes now gets every channel it
@@ -284,7 +284,7 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] 
   // sharing a key.
   //
   // AND MORE, LATER. The tool also answers `deny`, with the reason of a rule that refuses the write
-  // (`edit-refuses-a-write`). It is pushed by the tool — the reason is framed text a model reads —
+  // (`edit-refuses-a-write`). It is pushed by the tool (the reason is framed text a model reads)
   // and it is NOT counted in `channel.served`: this table says what a tool pushes, that type
   // (`CountedChannel`) says what is recorded as served, and a refusal is its own fact, so the two
   // are no longer the same list and the guard that held them equal now holds the difference.
@@ -297,7 +297,7 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] 
 };
 
 /**
- * The channels that carry no declaration, and why — one sentence each, because "this
+ * The channels that carry no declaration, and why: one sentence each, because "this
  * one owes nothing" is a claim that has to be answerable.
  *
  * Exported for the totality proof: the guard walks this table rather than a list kept
@@ -334,12 +334,12 @@ export const UNFRAMED_CHANNELS: {
 };
 
 /**
- * The channels that can be SWITCHED OFF — the ones that arrive without anybody asking.
+ * The channels that can be SWITCHED OFF: the ones that arrive without anybody asking.
  *
  * A closed union so the two tables over it are total, and a subset of {@link
  * ModelChannel} rather than a list of its own: what makes a channel switchable is what
  * makes it a channel at all, read one step further. The union's criterion is the
- * DESTINATION — text landing in front of a model — and this one adds the second half of
+ * DESTINATION, text landing in front of a model, and this one adds the second half of
  * a charge: that nobody asked for it.
  */
 export type SwitchableChannel =
@@ -358,8 +358,8 @@ export type SwitchableChannel =
  * The two switchable channels, each named once, so no consumer spells one.
  *
  * A CONSTANT AND NOT A LITERAL AT THE CALL SITE, and the reason is what a typo does here.
- * A channel is looked up by exact name — in the record, where a switch's subject is the
- * name somebody's command line sent, and against the tables above — so `'brief-documnet'`
+ * A channel is looked up by exact name (in the record, where a switch's subject is the
+ * name somebody's command line sent, and against the tables above), so `'brief-documnet'`
  * compiles, matches nothing, and leaves a channel that can never be switched off with
  * nothing red anywhere. Typed as {@link SwitchableChannel}, the same typo does not build.
  *
@@ -371,13 +371,13 @@ export type SwitchableChannel =
 export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
 
 /**
- * The channel that hands a session, as it opens, the notes recorded here — the ones near
+ * The channel that hands a session, as it opens, the notes recorded here: the ones near
  * what it touches first.
  *
  * ITS OWN SWITCH AND NOT A READING OF {@link DOCUMENT_CHANNEL}, for the reason
  * {@link ASKS_A_PERSON_CHANNEL} is its own: the two carry different things to the same
  * moment. The document is what governs, out of the committed record; this is what was
- * NOTED, out of every tree this machine holds — which is the one channel of this product
+ * NOTED, out of every tree this machine holds, which is the one channel of this product
  * whose content includes the private tree, because the reader is this machine's own session
  * and nothing it prints is written to be committed. A person who wants the rules and not the
  * notes, or the notes and not the rules, switches one; a single switch would make them give
@@ -389,21 +389,21 @@ export const RECALL_CHANNEL: SwitchableChannel = 'recall-document';
 export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
 
 /**
- * The channel that stops a file being written until a person looks — the only one of them
+ * The channel that stops a file being written until a person looks: the only one of them
  * whose being off changes what somebody is ABLE to do rather than what they are told.
  *
  * IT IS ITS OWN SWITCH AND NOT A READING OF {@link EDIT_PUSH_CHANNEL}, and the measurement
  * is why. Asking overrides every permission mode this host has, `bypassPermissions`
  * included, so this product's own switch is the ONLY way
  * out of a gate somebody inherited with a clone. A single switch covering both grades would
- * force whoever needed the way out to give up the rules as well — charging them the
- * information to escape the charge — and the tie that every charge be switchable would be
+ * force whoever needed the way out to give up the rules as well, charging them the
+ * information to escape the charge, and the tie that every charge be switchable would be
  * satisfied in the letter while trapping the person it exists for.
  */
 export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
 
 /**
- * The channel that REFUSES a write where a rule of the record refuses one — the strongest
+ * The channel that REFUSES a write where a rule of the record refuses one: the strongest
  * thing this product does to somebody else's work, and therefore the one whose switch matters
  * most.
  *
@@ -418,7 +418,7 @@ export const REFUSES_A_WRITE_CHANNEL: SwitchableChannel = 'edit-refuses-a-write'
 
 /**
  * The channel that lets an AGENT rule a decision in force: ON by default, because an agent
- * accepting a decision is free — with the record keeping who, the person told, and a switch for
+ * accepting a decision is free, with the record keeping who, the person told, and a switch for
  * whoever wants it off.
  *
  * IT IS A CHANNEL BECAUSE WHAT IT MOVES REACHES A MODEL, in both directions. On, the reply to an
@@ -429,7 +429,7 @@ export const REFUSES_A_WRITE_CHANNEL: SwitchableChannel = 'edit-refuses-a-write'
  * to stop arriving.
  *
  * THE POSITIONS ARE THE SAME AS THE OTHERS' IN SHAPE. Elsewhere off means "nothing arrives" and
- * here it means "an agent's accept is refused" — a gate closed — and a channel nobody switched is
+ * here it means "an agent's accept is refused", a gate closed, and a channel nobody switched is
  * on, which here is a gate open (`agent-accepts.ts` has the decision and who made it).
  */
 export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
@@ -439,8 +439,8 @@ export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
  * files the session's own tool calls wrote and how many decisions were recorded since it opened.
  *
  * A FACT AND NOT AN ORDER, in the voice the other hooks keep: it counts, and it says what it
- * counted. It is read from what the host and the record already hold — the transcript the host
- * names and the decisions the trees carry — and it calls no model. Its own switch, because the
+ * counted. It is read from what the host and the record already hold, the transcript the host
+ * names and the decisions the trees carry, and it calls no model. Its own switch, because the
  * person who wants the rules at an edit does not necessarily want a line after every response
  * that wrote a file.
  */
@@ -458,7 +458,7 @@ export const SUBAGENT_HANDBACK_CHANNEL: SwitchableChannel = 'subagent-handback';
 
 /**
  * The channel that holds the FIRST write of a session to a file a rule addresses, so that the rules
- * arrive before the write and not beside its result — and lets the same write, repeated, through.
+ * arrive before the write and not beside its result, and lets the same write, repeated, through.
  *
  * OFF UNTIL SOMEBODY SWITCHES IT ON, which is the one channel here that starts that way
  * ({@link STARTS_OFF}). What it does is hold a write once, which is a power the others do not have
@@ -469,7 +469,7 @@ export const SUBAGENT_HANDBACK_CHANNEL: SwitchableChannel = 'subagent-handback';
 export const FIRST_WRITE_GATE_CHANNEL: CountedChannel = 'edit-first-write-gate';
 
 /**
- * The switchable channels that begin OFF — every other begins on. Read by every consumer that asks
+ * The switchable channels that begin OFF: every other begins on. Read by every consumer that asks
  * where a channel stands, so "off until switched on" is one list and not a default repeated.
  */
 export const STARTS_OFF: readonly SwitchableChannel[] = [
@@ -479,7 +479,7 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 
 /**
  * The channel that reads what a PERSON typed into a session and records the corrections as
- * `proposed` decisions — off until somebody switches it on.
+ * `proposed` decisions: off until somebody switches it on.
  *
  * IT STARTS OFF BECAUSE IT IS THE ONE READER OF THIS PRODUCT THAT READS A TRANSCRIPT'S WORDS. The
  * rest of what reads a transcript reads its shape (`what-the-session-did.ts`), and a conversation is
@@ -489,7 +489,7 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
 
 /**
- * The switchable channels whose service the record COUNTS — the ones that append a
+ * The switchable channels whose service the record COUNTS: the ones that append a
  * `channel.served` when they speak, once per run.
  *
  * THEY ARE THE ONES THAT PUSH AT EACH EDIT, AND ONLY THOSE, which is what the fact says and all
@@ -497,7 +497,7 @@ export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
  * (`rules_before_an_edit`), because that is the one place something is pushed and something
  * can be appended in the same act. The two texts a session OPENS with are not counted, and
  * that is a decision rather than a gap left open: they are printed by reads, and a read writes
- * nothing — see {@link NOT_COUNTED_AS_SERVED} for each one's sentence. So a run with no
+ * nothing (see {@link NOT_COUNTED_AS_SERVED} for each one's sentence). So a run with no
  * `channel.served` says nothing about whether the opening texts arrived; it says that no edit
  * of that run was handed a rule, or that the push was off, or that the hook never ran.
  *
@@ -514,7 +514,7 @@ export type CountedChannel = Extract<
 >;
 
 /**
- * Why each switchable channel the record does NOT count is not counted — one sentence each,
+ * Why each switchable channel the record does NOT count is not counted: one sentence each,
  * because "this one leaves no fact" is a claim that has to be answerable.
  *
  * Exported for the same reason {@link UNFRAMED_CHANNELS} is: it is the totality proof, and the
@@ -553,7 +553,7 @@ export const NOT_COUNTED_AS_SERVED: {
 };
 
 /**
- * What stops arriving when each switchable channel is off — one sentence each, in the
+ * What stops arriving when each switchable channel is off: one sentence each, in the
  * words of what a reader would MISS rather than of the mechanism.
  *
  * A TABLE AND NOT A COMMENT because it is printed: `mnema switch` shows a person where
@@ -562,7 +562,7 @@ export const NOT_COUNTED_AS_SERVED: {
  * switchable union does not compile until it has answered that, which is the same
  * obligation {@link SUBJECT_OF} places on a framed one.
  *
- * The sentences say what the channel DOES and never what to do about it — they are
+ * The sentences say what the channel DOES and never what to do about it: they are
  * addressed to a person at a terminal rather than pushed at a model, so they are outside
  * what {@link SAYS_WHAT_TO_DO} rules on; that they read the same way anyway is not an
  * accident, since the product has no more standing to instruct a person than a model.
@@ -607,7 +607,7 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
 };
 
 /**
- * Every switchable channel, as a list — the keys of {@link WHAT_STOPS}, read off the
+ * Every switchable channel, as a list: the keys of {@link WHAT_STOPS}, read off the
  * table rather than typed again.
  *
  * The verb walks THIS, and so does the guard that requires each of them to have a
@@ -619,12 +619,12 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
 export const SWITCHABLE_CHANNELS = Object.keys(WHAT_STOPS) as readonly SwitchableChannel[];
 
 /**
- * The channels that CANNOT be switched off, and why — one sentence each, because "this
+ * The channels that CANNOT be switched off, and why: one sentence each, because "this
  * one is not a charge" is a claim that has to be answerable.
  *
  * Exported for the totality proof: the type is `Exclude<ModelChannel, SwitchableChannel>`,
  * so a channel added to the union fails to compile until it is classified one way or the
- * other. Both reasons are the same reason twice — the text answers a request — and that
+ * other. Both reasons are the same reason twice (the text answers a request) and that
  * they are two entries rather than one sentence is what makes a THIRD channel of that
  * kind have to say so for itself.
  */
@@ -643,22 +643,22 @@ export const NOT_SWITCHABLE: {
 };
 
 /**
- * WHOSE text it is — the one claim every framed channel makes, and the reason this
+ * WHOSE text it is: the one claim every framed channel makes, and the reason this
  * module exists.
  *
  * One sentence, and it is a statement about authorship rather than about standing:
  * the record holds what people and agents on this project wrote, and mnema neither
  * wrote it nor vetted it. A reader that assumed otherwise would be crediting this
- * product for a call somebody else made — and, on the channels that push, would be
+ * product for a call somebody else made, and, on the channels that push, would be
  * reading text an agent typed into the record as though the tool were saying it.
  *
  * IT ENDED IN A NEGATION, AND THE NEGATION IS GONE. The sentence read "…wrote, not
  * instructions from mnema." The intent was the authorship claim above; the words were
- * the construction the ecosystem uses to mark text a model must NOT act on — "data, not
+ * the construction the ecosystem uses to mark text a model must NOT act on: "data, not
  * instructions" is the canonical defence against prompt injection, and the system prompt
  * of the host this product ships a plugin for uses it to mark content to be ignored. So
  * the one sentence meant to say whose text this is also said, in the idiom
- * its reader is trained on, that the text is not to be acted on — at the top of a
+ * its reader is trained on, that the text is not to be acted on: at the top of a
  * document that goes on to name the door a reader's own decision goes through. The host's
  * guidance for text a hook adds points the same way from the other side: write it as
  * factual statements, because text framed as an out-of-band command "can trigger Claude's
@@ -675,7 +675,7 @@ export const NOT_SWITCHABLE: {
 const WHOSE_TEXT = 'They are text the people and agents working on it wrote.';
 
 /**
- * What was served, said before the claim about it — one sentence per subject.
+ * What was served, said before the claim about it: one sentence per subject.
  *
  * Split from {@link WHOSE_TEXT} rather than woven into it so that the claim is ONE
  * string: a subject spliced into the middle of the sentence would be two sentences
@@ -702,7 +702,7 @@ const WHOSE_TEXT_AT_AN_EDIT =
   'Recorded for this project: text the people and agents working on it wrote.';
 
 /**
- * The framing for a channel, as LINES — what a document writes.
+ * The framing for a channel, as LINES: what a document writes.
  *
  * Two lines, each a whole sentence, so neither medium has to wrap anything: the
  * document's fixed prose is hand-wrapped at its constants and a wrapper here would be
@@ -714,7 +714,7 @@ export function recordFraming(channel: FramedChannel): readonly string[] {
 }
 
 /**
- * The same framing as ONE line — what a text block carries.
+ * The same framing as ONE line: what a text block carries.
  *
  * The words are {@link recordFraming}'s, joined; there is no second wording here, and
  * that is the only difference between the two forms.
@@ -728,8 +728,8 @@ export function recordFramingBlock(channel: FramedChannel): string {
  * about it, each with the name of what it would be doing.
  *
  * A NAMED LIST AND NOT A JUDGEMENT. It cannot recognize a paraphrase, and it is not
- * meant to: what it catches is the sentence somebody adds because it seems helpful —
- * "Follow them", "you must apply these" — which is exactly how the imperative got into
+ * meant to: what it catches is the sentence somebody adds because it seems helpful
+ * ("Follow them", "you must apply these"), which is exactly how the imperative got into
  * the document the first time. It is a tripwire on the one text this module emits, not
  * a proof about English, and the guard says so.
  *

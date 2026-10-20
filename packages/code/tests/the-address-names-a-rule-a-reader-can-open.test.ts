@@ -13,12 +13,12 @@
  *     the edit gate          named one rule          right
  *
  * `3 govern this path` where ONE governs is the product asserting a false fact to the
- * stranger who clones — on its public surface, in a number that presents itself as a
+ * stranger who clones: on its public surface, in a number that presents itself as a
  * whole answer.
  *
  * AND THE TWO THAT WERE RIGHT WERE RIGHT BY ACCIDENT, which is why the fix is a NAMED
  * rule and not four repairs. `brief` and the gate narrow to what is IN FORCE, and an
- * unresolved subject has no state — so it fell out because it has no state, not because
+ * unresolved subject has no state, so it fell out because it has no state, not because
  * anything asked whether it resolved. A correctness nothing states is a correctness the
  * next reading does not inherit, and the two that were wrong are the demonstration.
  *
@@ -26,7 +26,7 @@
  *   - the four readings agree, over bytes that really travelled;
  *   - THE CONTRAST, without which the first would pass over a product that counted
  *     nothing at all: an address whose subject DOES resolve still counts, in all four;
- *   - the unreadable address is not dropped — it is counted and named in its own class,
+ *   - the unreadable address is not dropped: it is counted and named in its own class,
  *     because the record holds it and an absence nobody counted is one nobody fixes;
  *   - the WRITE says so, at the moment the person can still record the rule where the
  *     address is. That half is the other order the decision set, and it is the only
@@ -55,7 +55,7 @@ let sandbox: string;
 let env: DiscoveryEnv;
 let repo: string;
 
-/** A decision, accepted, in whichever tree is asked for — the shape a rule really has. */
+/** A decision, accepted, in whichever tree is asked for: the shape a rule really has. */
 function aRule(title: string, scope: 'public' | 'private'): string {
   const made = runDecision({ cwd: repo, env }, { title, rationale: 'Because so.', scope });
   if (!made.ok) throw new Error(`decision refused: ${made.reason}`);
@@ -78,7 +78,7 @@ function addressPublicly(rule: string, path: string): ReturnType<typeof runLink>
 }
 
 /**
- * The committed tree, copied ALONE — the way `git clone` delivers it.
+ * The committed tree, copied ALONE: the way `git clone` delivers it.
  *
  * The private subtree is left behind because that is what the `.gitignore` does: it is
  * inside the committed tree on disk and outside the repository.
@@ -151,7 +151,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
     expect(reading.governed.counts.stale).toBe(0);
 
     // AND THE FOUR READINGS AGREE. `brief` counts RULES and this counts ADDRESSES, so
-    // the numbers coincide here because each rule carries one address — which is what
+    // the numbers coincide here because each rule carries one address, which is what
     // makes this record the one where the disagreement was visible at all.
     const document = runBrief({ cwd: clone, env });
     if (!document.ok) throw new Error(`brief refused: ${document.reason}`);
@@ -159,7 +159,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
     expect(pushedIn(clone, 'src')).toHaveLength(1);
   });
 
-  it('still counts an address whose subject DOES resolve — the contrast', () => {
+  it('still counts an address whose subject DOES resolve: the contrast', () => {
     // Without this the case above is satisfied by a product that counts nothing.
     addressPublicly(aRule('Collate in one place', 'public'), 'src');
     addressPublicly(aRule('Name things once', 'public'), 'src');
@@ -209,7 +209,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
     const travelling = addressPublicly(aRule('Collate in one place', 'public'), 'src');
     expect(travelling.ok && travelling.subjectScope).toBe('public');
 
-    // And an id no tree holds is ABSENT rather than a scope — a rule nobody wrote is
+    // And an id no tree holds is ABSENT rather than a scope: a rule nobody wrote is
     // not a rule in some tree, and the two need different repairs.
     const nowhere = addressPublicly('01a08c99-0000-7000-8000-000000000000', 'src');
     expect(nowhere.ok && nowhere.subjectScope).toBeUndefined();
@@ -218,7 +218,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
   it('leaves the derivation one function, asked by every reading', () => {
     // The rule is applied at one site and the readings ask it. This drives the
     // context's own entry points directly, so a fifth surface added tomorrow gets the
-    // same answer without a line of its own — and a surface that grew a walk of its own
+    // same answer without a line of its own, and a surface that grew a walk of its own
     // would answer differently here than the reading above.
     addressPublicly(aRule('A private rule', 'private'), 'src');
     const clone = cloneOfTheCommittedTree();

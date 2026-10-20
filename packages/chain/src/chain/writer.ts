@@ -7,14 +7,14 @@
  * events unsigned.
  *
  * THE PREMISE THIS FILE HELD, AND WHAT FALSIFIED IT. It said: "Because each machine
- * writes only its own tail, there is never an in-file merge — concurrency across
+ * writes only its own tail, there is never an in-file merge; concurrency across
  * machines is resolved by reading many tails, not by locking one file." The first
  * half is still true and the conclusion was still wrong, because the sentence
  * reasons about MACHINES and the danger is between PROCESSES. Two sessions on one
  * machine in one project share the identity, so they share the installation id, so
  * they share the tail: they are not two machines, they are two writers of one file,
  * and "each machine writes only its own tail" never said anything about them. What
- * falsified it is a measurement rather than an argument — two concurrent
+ * falsified it is a measurement rather than an argument: two concurrent
  * `mnema decision` runs corrupted the chain in 15 of 20 rounds, and two MCP sessions
  * calling `record_observation` did the same, which is the plugin with two windows of
  * the host open on one project. So a tail IS locked now, for the window between
@@ -30,7 +30,7 @@
  * The tail id pairs the signing key's fingerprint with this installation's id,
  * `<fingerprint>-<installationId>`. WHICH key signs (the signer fingerprint)
  * comes from the key; WHO the writer speaks for (the anchor) is read from local
- * material — the anchor this installation founded (its own) or enrolled into
+ * material: the anchor this installation founded (its own) or enrolled into
  * (another key's), or, until one is recorded, the anchor it will found. Recording
  * that anchor and emitting the founding is the identity operation's job, not the
  * writer's; the writer only exposes the material (`anchor`, `hasAnchor`,
@@ -41,8 +41,8 @@
  * covers yet) is recovered from the END of the tail by the writer's first act, under
  * the lock, so a fresh process continues an existing tail correctly without re-reading
  * its history. (This said "on construction", which stopped being true when recovery
- * moved under the lock — see the constructor.) It is recovered AGAIN, under the lock,
- * whenever the tail's files turn out to have moved since this writer last looked —
+ * moved under the lock: see the constructor.) It is recovered AGAIN, under the lock,
+ * whenever the tail's files turn out to have moved since this writer last looked,
  * which is what makes the held state safe to keep between appends instead of being
  * re-read on every one. See {@link ChainWriter.mark}.
  *
@@ -88,17 +88,17 @@ export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
 
 /**
  * The most events one act of writing may leave unsigned before the writer signs on
- * its own. A CEILING, not the cadence — the sibling of {@link
+ * its own. A CEILING, not the cadence, the sibling of {@link
  * DEFAULT_MAX_SEGMENT_BYTES}, and read the same way: 4 MiB is not how big a segment
  * is, it is how big one may get.
  *
  * THE NAME USED TO BE `DEFAULT_MAX_UNSIGNED_EVENTS`, and the premise that rename
  * falsifies is written down here because it cost a whole reading of this file. That
- * name says "sign every 64 events", so the product's actual cadence — one signature
- * per act of writing, whatever its size — read as a mechanism that never fires, and it
+ * name says "sign every 64 events", so the product's actual cadence (one signature
+ * per act of writing, whatever its size) read as a mechanism that never fires, and it
  * was written down as DEAD CODE, "inert", in two separate places. It is not dead: it
  * fires whenever
- * ONE act writes more than this many events, and the product has such an act —
+ * ONE act writes more than this many events, and the product has such an act;
  * `mnema decision import --write` puts two events on the tail per ADR through a
  * single writer and signs once at the end, so a directory of 33 ADRs crosses it. That
  * is measured, on the real command, in `every-write-signs-what-it-wrote.test.ts`.
@@ -123,16 +123,16 @@ export interface WriterOptions {
 }
 
 /**
- * What this writer last left the tail's files looking like — the witness it asks,
+ * What this writer last left the tail's files looking like: the witness it asks,
  * under the lock, before it trusts the state it is holding.
  *
  * It exists to keep ONE cost from coming back. The obvious way to be safe against
  * another process is to re-read the tail's end before every append, but this writer's
  * recovery reads every event above the last checkpoint, and the ceiling on that
- * window is a thousand in this workspace's own tests — so a per-append recovery is
+ * window is a thousand in this workspace's own tests, so a per-append recovery is
  * quadratic in exactly the acts that write the most. Three `stat` calls answer the
  * only question that matters instead: did anything change since we looked? For a
- * process writing alone — which is nearly every process — the answer is always no,
+ * process writing alone (which is nearly every process) the answer is always no,
  * and the recovery runs once, as it did before.
  *
  * The three are not a sample, they are the complete set of ways another writer can
@@ -140,8 +140,8 @@ export interface WriterOptions {
  * roll onto the next one (a segment we do not know about appearing), or sign a
  * checkpoint (the coverage moving under our buffer).
  *
- * THIS COMMENT ONCE ARGUED that `nextSegment` was redundant — "a roll is always
- * preceded by growth we would have seen" — and the mutation battery falsified it:
+ * THIS COMMENT ONCE ARGUED that `nextSegment` was redundant ("a roll is always
+ * preceded by growth we would have seen") and the mutation battery falsified it:
  * blinding the mark to a new segment left ZERO tests red, which is a finding and not
  * a pass, and writing the case the argument said was unreachable turned it red. The
  * growth that pushes a segment over its cap happens BEFORE this writer's mark is
@@ -154,7 +154,7 @@ export interface WriterOptions {
 interface TailMark {
   /** Size of the segment this writer believes it is appending to, or -1 if absent. */
   readonly segmentBytes: number;
-  /** Whether the segment AFTER it exists — somebody else rolled. */
+  /** Whether the segment AFTER it exists: somebody else rolled. */
   readonly nextSegment: boolean;
   /** Size of `checkpoints.jsonl`, or -1 if absent. */
   readonly checkpointBytes: number;
@@ -167,10 +167,10 @@ export class ChainWriter {
   private segmentBytes = 0;
   /** Seq of the last event covered by a checkpoint, or -1 if none. */
   private lastCheckpointedSeq = -1;
-  /** Hash of the last checkpoint, or null if none — the link the next one signs. */
+  /** Hash of the last checkpoint, or null if none: the link the next one signs. */
   private lastCheckpointHash: string | null = null;
   /**
-   * The events appended since the last checkpoint, in seq order — exactly what
+   * The events appended since the last checkpoint, in seq order: exactly what
    * the next checkpoint signs. Held in memory so signing never round-trips
    * through the store: the writer already knows what it appended, and a fresh
    * process refills this from the END of the tail in `recover()`. Without it,
@@ -180,7 +180,7 @@ export class ChainWriter {
    * It holds the WRITTEN form, and that matters most for the entries `recover()`
    * puts here: those came off the disk and were lifted on the way. A checkpoint
    * folded over the lifted reading would be a signature over bytes that are not
-   * on the tail — signed by the real key, so no verifier could tell it from a
+   * on the tail: signed by the real key, so no verifier could tell it from a
    * forgery, and every one of them would report the range as broken. The buffer
    * a running process fills is the same form, so the two paths cannot drift.
    */
@@ -204,7 +204,7 @@ export class ChainWriter {
   private mark: TailMark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
 
   /**
-   * Whether this writer has already made sure its tail is born — see {@link ensureBorn}.
+   * Whether this writer has already made sure its tail is born: see {@link ensureBorn}.
    * Per writer, so the three checks run once per writer rather than once per append.
    */
   private born = false;
@@ -212,7 +212,7 @@ export class ChainWriter {
   /**
    * Whether this writer is inside {@link underTailLock} right now. It is what lets an act run
    * through {@link exclusively} append through the public doors without taking a lock it
-   * already holds — see {@link underTailLock}.
+   * already holds: see {@link underTailLock}.
    */
   private holding = false;
 
@@ -244,7 +244,7 @@ export class ChainWriter {
     //
     // Recovery cannot happen here, because it TRUNCATES a torn trailing fragment, and
     // cutting a file another process is appending to is the hazard the tail lock
-    // closed. So it runs under the lock, in the first act — the starting {@link mark}
+    // closed. So it runs under the lock, in the first act: the starting {@link mark}
     // is a value no real tail can produce, so that act always recovers.
     //
     // THIS COMMENT SAID BIRTH COULD NOT MOVE WITH IT: "taking the lock in a constructor
@@ -252,35 +252,35 @@ export class ChainWriter {
     // and the ownership proof are written here, unlocked." The reason holds against the
     // constructor and never held against the first APPEND, which already runs under the
     // lock. What moved birth there is a measurement. The surfaces open a writer before an
-    // operation's own door speaks — an oversize field, a name holding a credential, a
-    // move the gate refuses — so a key new to the tree that was refused left the tail's
+    // operation's own door speaks (an oversize field, a name holding a credential, a
+    // move the gate refuses), so a key new to the tree that was refused left the tail's
     // directory and its proof behind (with the key's public half, see
     // `openChainForWriting`), untracked, published by the next `git add -A`, and that
     // tail with no event in it changed every `verify` of the record after it. Born in
     // {@link ensureBorn}, a writer that appends nothing leaves nothing a clone receives.
     //
     // AND THE ONE UNGUARDED RACE THIS COMMENT EXCUSED IS GONE. Two fresh processes could
-    // both find the proof absent and both write it — benign only because the bytes are an
+    // both find the proof absent and both write it: benign only because the bytes are an
     // Ed25519 signature over the tail id, which is deterministic. Two processes of one
     // installation share the tail, hence the lock, so under it the second finds the proof
     // the first wrote.
   }
 
   /**
-   * Gives this tail what a clone needs in order to verify it — the key's public half in the
-   * chain, the tail's directory, and its proof of ownership — once, from inside the first act
+   * Gives this tail what a clone needs in order to verify it (the key's public half in the
+   * chain, the tail's directory, and its proof of ownership) once, from inside the first act
    * that appends: after that act's own refusals ({@link refuseUnreadable},
    * {@link refuseUnprovenWaiver}) and before its first byte.
    *
    * It is the ONE PLACE a tail is born, and the two append doors are the only callers, which
    * is what makes "a writer that appends nothing publishes nothing" a property of this class
-   * rather than of every operation that opens one — `writer.test.ts`, *a tail is born at its
+   * rather than of every operation that opens one: `writer.test.ts`, *a tail is born at its
    * first append, not when its writer opens*, asks it of both doors, of the writer's own
    * refusals and of a checkpoint with nothing to sign. Why here and not at open is the
    * constructor's comment.
    *
-   * Idempotent, like each of the three: a tail another process already gave birth to — or one
-   * this installation has been writing for years — is left exactly as it is.
+   * Idempotent, like each of the three: a tail another process already gave birth to (or one
+   * this installation has been writing for years) is left exactly as it is.
    */
   private ensureBorn(): void {
     if (this.born) return;
@@ -297,8 +297,8 @@ export class ChainWriter {
    * tail's lock, brings the held state back in line with the disk if another process
    * moved it, runs the act, and records where it left the files.
    *
-   * There is one of these rather than three because the rule — "read the end and
-   * append to it as one indivisible act" — is one rule, and a rule with three
+   * There is one of these rather than three because the rule, "read the end and
+   * append to it as one indivisible act", is one rule, and a rule with three
    * readings is the shape that produces the divergence nobody notices. The public
    * doors ({@link append}, {@link appendAll}, {@link checkpoint}, {@link exclusively})
    * are thin wrappers that do nothing but call this; the bodies of the first three
@@ -307,7 +307,7 @@ export class ChainWriter {
    * public {@link checkpoint}, for the reason it always did: it is already inside.
    *
    * THIS SAID THE SPLIT "is also what keeps the lock non-reentrant", and the lock file
-   * still is — a second writer of this tail, in this process or another, waits. What
+   * still is: a second writer of this tail, in this process or another, waits. What
    * changed is that THIS WRITER may now ask again while it holds it: an act run through
    * {@link exclusively} decides on the record and then appends through the public
    * doors, so the second ask runs the act at once, under the hold it is already in,
@@ -346,7 +346,7 @@ export class ChainWriter {
    * It is for an operation whose append DEPENDS ON WHAT IT READ: a move judged against the
    * state a decision is in, a label numbered from how many decisions there are, a founding
    * decided from whether the record already holds one. Read outside the lock and appended
-   * inside it, two sessions of one installation both read the same state and both append —
+   * inside it, two sessions of one installation both read the same state and both append:
    * measured on the built binary, `decision move accept` and `… reject` run together both
    * exited 0 in 19 of 20 rounds, and two concurrent `decision record` minted the same
    * `ADR-<n>` in 10 of 10. Read inside it, the second reads what the first appended.
@@ -364,7 +364,7 @@ export class ChainWriter {
 
   /**
    * Re-reads the tail's end if, and only if, its files are not where this writer left
-   * them. The cheap question that keeps the expensive one rare — see {@link TailMark}.
+   * them. The cheap question that keeps the expensive one rare: see {@link TailMark}.
    */
   private resyncIfMoved(): void {
     if (this.unmovedSinceLastHold()) return;
@@ -382,8 +382,8 @@ export class ChainWriter {
   /**
    * Writes this tail's proof of ownership once, at birth: the key signs a
    * statement naming its own tail id, so the verifier can tie the locally-chosen
-   * installation-id suffix to the key that owns it. Idempotent — a reopened tail
-   * already has one — and never overwrites, so it costs nothing after birth.
+   * installation-id suffix to the key that owns it. Idempotent (a reopened tail
+   * already has one) and never overwrites, so it costs nothing after birth.
    */
   private ensureTailProof(): void {
     const path = tailProofPath(this.layout, this.tailId);
@@ -393,7 +393,7 @@ export class ChainWriter {
   }
 
   /**
-   * The tail this writer owns — `<fingerprint>-<installationId>`.
+   * The tail this writer owns: `<fingerprint>-<installationId>`.
    *
    * Exposed for the one rule that is about a tail's IDENTITY rather than its
    * contents: a waiver may not name the tail it is written to, and an operation
@@ -405,7 +405,7 @@ export class ChainWriter {
   }
 
   /**
-   * The full fingerprint of the key this writer signs with — the `signerFp`
+   * The full fingerprint of the key this writer signs with: the `signerFp`
    * every event it writes must carry, and the same key its checkpoints bind.
    * Exposed so the operation that builds an event stamps the identity from the
    * very key that will sign it, never a value passed in from elsewhere.
@@ -415,10 +415,10 @@ export class ChainWriter {
   }
 
   /**
-   * The anchor id this writer authorizes as — WHO its events speak for. Read
+   * The anchor id this writer authorizes as, WHO its events speak for. Read
    * from LOCAL material (`keys/<fp>.anchor`): the anchor this installation
    * founded (its own) or one it enrolled into (another key's). When no anchor is
-   * recorded yet, it derives its own — the anchor it will found on first use —
+   * recorded yet, it derives its own (the anchor it will found on first use)
    * so a caller always reads a real anchor. A caller cannot supply it, so
    * identity comes from the local key or its recorded membership, never a typed
    * string.
@@ -439,21 +439,21 @@ export class ChainWriter {
    *   2. THE TIP, AND THE FRAGMENT IN IT. A crash mid-append can leave a partial
    *      line with no newline at the end of the last segment. The tip is read with
    *      that fragment still on disk, and a fragment that happens to PARSE is
-   *      left out of it, so it cannot become the head — a head the cut below
+   *      left out of it, so it cannot become the head: a head the cut below
    *      deletes, leaving the next append chained to a hash no reader can find.
-   *      One read of the END of the tail then answers the remaining questions —
+   *      One read of the END of the tail then answers the remaining questions:
    *      the last complete entry is the head, and the entries above the coverage
    *      are the events the next checkpoint owes a signature.
    *   3. THE CUT, ONLY ABOVE THE COVERAGE. THIS USED TO HEAL FIRST, before the
    *      checkpoint was read, and so cut whatever the end held: a signed line
    *      truncated by an edit, or one that had only lost its newline, went with
    *      the fragment, and the next append reused a seq the checkpoint had already
-   *      signed and then failed to sign — reporting a failure about a fact that
+   *      signed and then failed to sign, reporting a failure about a fact that
    *      had landed. A last complete line below the checkpoint's `toSeq` is not
    *      something a crash leaves ({@link TailDamagedError}), so then nothing is
    *      cut, and both append doors refuse. Above the coverage the fragment is the
-   *      crash's, and it is cut as it always was. (Readers that do not heal — the
-   *      verifier, the replay — still tolerate the fragment on read.)
+   *      crash's, and it is cut as it always was. (Readers that do not heal [the
+   *      verifier, the replay] still tolerate the fragment on read.)
    *
    * Every one of those reads enters its file from the END and stops at what it
    * came for, so none of them grows with the tail. That matters because the
@@ -495,7 +495,7 @@ export class ChainWriter {
     }
     this.damage = undefined;
     // Truncates back to the end of the last COMPLETE line, so the next append
-    // continues a clean tail instead of landing after the fragment — which
+    // continues a clean tail instead of landing after the fragment, which
     // would turn a once-benign torn line into a mid-file malformed line that
     // every later read throws on. Above the coverage, a complete append always
     // ends in a newline, so this only ever removes a genuine crash fragment.
@@ -514,7 +514,7 @@ export class ChainWriter {
   }
 
   /**
-   * Whether this installation has recorded the anchor it serves — the founding
+   * Whether this installation has recorded the anchor it serves: the founding
    * (its own) or an enrollment into another. The core founds a fresh
    * installation before its first fact so its events resolve; this lets that
    * check be made without re-reading the tail.
@@ -587,7 +587,7 @@ export class ChainWriter {
   /**
    * Appends several events as one atomic unit: either every line reaches the
    * tail or none does. The entries are sealed and chained in memory, serialized
-   * together, and written with a SINGLE append — so a birth pair (a
+   * together, and written with a SINGLE append, so a birth pair (a
    * `task.created` and its transition) can never land half-written, leaving a
    * created task with no state. A crash mid-write can still tear the LAST line
    * of the buffer, which the reader tolerates as an unterminated final entry, so
@@ -598,7 +598,7 @@ export class ChainWriter {
    *
    * EVERY event is checked against the reader's rule before ANY is sealed
    * ({@link refuseUnreadable}), so a batch whose second event is unreadable does
-   * not leave the first one on the tail — the atom holds for the refusal too.
+   * not leave the first one on the tail: the atom holds for the refusal too.
    *
    * The lock is taken ONCE for the whole batch, not once per event, so a birth pair
    * cannot be split by another process any more than it can by a crash.
@@ -668,9 +668,9 @@ export class ChainWriter {
   /**
    * Refuses a waiver whose claims the disk does not bear out, BEFORE it is sealed.
    *
-   * It sits beside {@link refuseUnreadable} and for the same reason — the two
+   * It sits beside {@link refuseUnreadable} and for the same reason (the two
    * append doors are every way onto a tail, so a check here holds for every writing
-   * path there is — but it asks a question that function cannot: the rule is about
+   * path there is), but it asks a question that function cannot: the rule is about
    * what is on DISK, and only the writer knows the layout and the tail it is landing
    * on. That is also why it is a method and not a free function.
    *
@@ -681,7 +681,7 @@ export class ChainWriter {
    *
    * It THROWS, on the same argument the unreadable refusal throws on: every field it
    * checks is one the writing operation read off the disk itself, so a mismatch means
-   * a producer assembled a claim it did not take from the record — a bug here, not an
+   * a producer assembled a claim it did not take from the record, a bug here, not an
    * input somebody got wrong.
    */
   private refuseUnprovenWaiver(event: CatalogEvent): void {
@@ -700,7 +700,7 @@ export class ChainWriter {
   /**
    * Holds the unsigned window under the ceiling: signs a checkpoint once one act of
    * writing has left more than {@link DEFAULT_MAX_UNSIGNED_EVENTS} events above the
-   * last one. Coverage stays contiguous — each checkpoint starts at the seq right
+   * last one. Coverage stays contiguous: each checkpoint starts at the seq right
    * after the previous one's end.
    *
    * It is NOT the product's cadence and does not set it. Every writing path signs
@@ -726,10 +726,10 @@ export class ChainWriter {
    * The events signed come from the writer's own buffer, never from a re-read of
    * the tail. The buffer is asserted against the range first: a checkpoint claims
    * `[fromSeq..toSeq]`, so signing a content root over a set that is not exactly
-   * that range would be a silent break of the proof — a verifier recomputing the
+   * that range would be a silent break of the proof; a verifier recomputing the
    * root from the bytes would then read an honest tail as tampered. It refuses
    * loudly instead. The mismatch is not reachable by any legitimate use: the
-   * buffer is appended to on every successful write and emptied only here — AND the
+   * buffer is appended to on every successful write and emptied only here, AND the
    * coverage it reads is brought back in line with the disk under the lock first, so
    * a range another process has already signed is not signed a second time.
    *
@@ -738,7 +738,7 @@ export class ChainWriter {
    */
   checkpoint(): Checkpoint | null {
     // NOTHING TO SIGN TAKES NO LOCK. A write signs inside the hold that wrote it, and a caller
-    // that signs once more afterwards — to cover a founding it cannot see, say — would otherwise
+    // that signs once more afterwards (to cover a founding it cannot see, say) would otherwise
     // queue for the lock a second time with its fact already on the tail: refused there, it
     // reported "not appended" about a fact that was. With nothing of this writer's unsigned and
     // the tail's files exactly where its last hold left them, there is provably nothing to sign
@@ -790,12 +790,12 @@ export class ChainWriter {
 
 /**
  * A tail whose end on disk falls short of what its last checkpoint signed: the last complete
- * line is below the checkpoint's `toSeq` — a signed line was cut, lost its newline, or is gone.
+ * line is below the checkpoint's `toSeq`; a signed line was cut, lost its newline, or is gone.
  *
  * A crash cannot leave a tail in this state. A line reaches its segment, newline and all, in one
  * durable append, and only then can a checkpoint sign it; so the only unterminated piece a crash
  * leaves is ABOVE the coverage, and that one the writer still cuts off and writes past. Below the
- * coverage the bytes are something else — an edit, a bad merge, a disk — and they are evidence:
+ * coverage the bytes are something else (an edit, a bad merge, a disk) and they are evidence:
  * `verify` fails on a cut or missing signed line. Cutting them back to the last newline erased that
  * evidence, chained the next event to a seq the checkpoint had already signed, and then failed
  * to sign it, so the write reported a failure about a fact that had landed. A signed line that
@@ -830,7 +830,7 @@ export class TailDamagedError extends CodedError {
  * Refuses an event that no reader could accept, BEFORE it is sealed.
  *
  * This is the narrowest point there is. An entry reaches a tail through exactly
- * two doors — {@link ChainWriter.append} and {@link ChainWriter.appendAll} — so a
+ * two doors, {@link ChainWriter.append} and {@link ChainWriter.appendAll}, so a
  * check here holds for every writing path that exists and every one that will be
  * added, including one written by a caller outside this workspace. The rule it
  * applies is not a rule of its own: {@link unreadableReason} IS the reader's
@@ -840,7 +840,7 @@ export class TailDamagedError extends CodedError {
  * It matters because the failure it closes is unrecoverable. An unreadable entry
  * on an append-only log cannot be taken back, and the replay refuses the whole
  * tail rather than the one line, so a single empty title left every later read of
- * that project — every search, every show, every timeline — failing forever while
+ * that project (every search, every show, every timeline) failing forever while
  * the write reported success.
  *
  * It THROWS, and that is deliberate: reaching it means a producer built an event
@@ -860,8 +860,8 @@ function refuseUnreadable(event: CatalogEvent): void {
 /**
  * A file's size in bytes, or -1 if it is not there.
  *
- * Absent and empty have to be TOLD APART here — a segment that does not exist yet and
- * one a recovery truncated to nothing are different states of the tail — so the
+ * Absent and empty have to be TOLD APART here (a segment that does not exist yet and
+ * one a recovery truncated to nothing are different states of the tail), so the
  * answer is a number a size can never be, not a zero that both would produce.
  */
 function sizeOf(filePath: string): number {
@@ -879,7 +879,7 @@ function ensureDir(filePath: string): void {
 
 /** The unterminated piece a segment ends in: where it begins, and whether it reads as an entry. */
 interface TornFragment {
-  /** The byte after the segment's last newline — where a cut leaves the segment. */
+  /** The byte after the segment's last newline, where a cut leaves the segment. */
   readonly start: number;
   /** Whether the piece parses: a line that lost only its newline does. */
   readonly parses: boolean;
@@ -887,13 +887,13 @@ interface TornFragment {
 
 /**
  * A segment's torn trailing fragment, or undefined when the segment ends in a newline (or is
- * empty). It reads; it does not cut — whether the piece may be cut is the coverage's to say
+ * empty). It reads; it does not cut: whether the piece may be cut is the coverage's to say
  * (`recover()`).
  *
  * It asks the backward walk for the file's LAST line and needs nothing else: an
  * intact file answers with the empty line that a trailing newline leaves, and a
  * torn one answers with the fragment, whose offset is where to cut. One chunk,
- * whatever the segment weighs — reading it whole would put the segment's full size
+ * whatever the segment weighs: reading it whole would put the segment's full size
  * back on every single write.
  *
  * Works in bytes, not characters: the offset is the byte after the last `\n`, so

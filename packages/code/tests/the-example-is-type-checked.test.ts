@@ -1,17 +1,17 @@
 /**
- * THE EXAMPLE A PACKAGE PUBLISHES IS TYPE-CHECKED — against what the package publishes.
+ * THE EXAMPLE A PACKAGE PUBLISHES IS TYPE-CHECKED: against what the package publishes.
  *
  * WHAT THE COMPARISON GUARD DOES NOT DO, MEASURED. `the-example-is-read-from-the-page`
  * proves the page and the body that runs are one text. It cannot prove that text is
  * CORRECT: two identical copies pass whether they compile or not. Measured on 11/09/2026
  * against `9248fec8`: putting `id: 'task-01'` back
- * into `createTask`'s input — one of the ten type errors the comparison guard's own
- * delivery had just fixed by hand — on the PAGE and in the CASE together left the suite at
+ * into `createTask`'s input (one of the ten type errors the comparison guard's own
+ * delivery had just fixed by hand) on the PAGE and in the CASE together left the suite at
  * `19 passed (19)` and `tsc -b` at exit 0. Nine of those ten can return the same way.
  *
  * WHY NOTHING ELSE SEES IT, and the three halves matter separately. The body that runs
  * lives in a `.test.ts`, and in this repository `tsc -b` EXCLUDES tests while vitest erases
- * types without checking them — so a type error inside a case is invisible to the build and
+ * types without checking them, so a type error inside a case is invisible to the build and
  * to the suite. The comparison is textual, so two wrong copies agree. And an excess
  * property is a type-only error: the example still RUNS, so the executing half of the guard
  * does not see it either.
@@ -19,13 +19,13 @@
  * WHAT THIS FILE IS, AND WHAT IT IS NOT. It is not the compiler checking itself: `tsc -b`
  * never reads a fenced code block, and adding the blocks to a project is not open to it
  * (they are Markdown). This file EXTRACTS each page's block, writes it into a sandbox of
- * its own as a module a stranger could have written, and runs `tsc` over it — the same
+ * its own as a module a stranger could have written, and runs `tsc` over it: the same
  * reading the comparison guard's delivery did by hand once and did not keep. The blocks are
  * checked as text handed to a compiler, never as part of this repository's build.
  *
  * WHAT THEY ARE CHECKED AGAINST, AND WHY IT IS THE BUILT `.d.ts`. The sandbox carries a
  * `node_modules/@mnema/<pkg>` symlink to each package directory, so every specifier on the
- * page — `@mnema/core` and `@mnema/core/write` alike — resolves through that package's own
+ * page, `@mnema/core` and `@mnema/core/write` alike, resolves through that package's own
  * `exports` map, to the declarations it publishes. A mapping written here instead would
  * make THIS file decide what `@mnema/core/write` means; the package decides. The cost is a
  * dependency on `dist` being current: a stale build makes this guard lie in both directions,
@@ -40,7 +40,7 @@
  *
  * THE PREAMBLE, AND WHY IT CANNOT ACCEPT ANYTHING. One page elides in prose the state its
  * example reads over, so its block names `cache` and `chainRoot` without declaring them and
- * is not a compilable unit alone. `pagePreamble` supplies them — and a preamble is exactly
+ * is not a compilable unit alone. `pagePreamble` supplies them, and a preamble is exactly
  * where a guard like this goes quietly vacuous, so two things hold it:
  *   - EVERY DECLARED NAME IS ONE THE PAGE NEEDS, AND NO OTHER. The same block is compiled a
  *     second time WITHOUT the preamble, and the names the compiler then cannot find must be
@@ -48,7 +48,7 @@
  *     accused; a name the page starts eliding and nobody declares is accused too.
  *   - THE DECLARED TYPE IS LOAD-BEARING. Measured, in this sandbox: with `cache: any` the
  *     compiler reports ZERO errors over the whole block, and `cache: never` also reports
- *     zero — so either one would silence every line below it. With a type the case does not
+ *     zero, so either one would silence every line below it. With a type the case does not
  *     produce, five. So the escape hatches are banned in text, and a case below compiles the
  *     block against a wrong type and requires it to go red, which is what says the ban is
  *     protecting something rather than decorating it.
@@ -56,13 +56,13 @@
  * A COMPILER THAT NEVER RAN LOOKS EXACTLY LIKE A CLEAN COMPILE, so one file in the sandbox
  * is written to be WRONG. `CANARY` below is a type error a stranger could not argue with,
  * and a case requires the compiler to have said so. Without it, a `tsc` that fails to start
- * — a missing binary, a sandbox that could not be written — hands back an empty report, and
+ * (a missing binary, a sandbox that could not be written) hands back an empty report, and
  * every case above reads "no diagnostics about my file" as success. This bench has twice
  * shipped a mutation matrix whose runner died before running anything and whose parser read
  * that silence as zero failures; this is the same hole in a different instrument.
  *
  * THE ROSTER IS SWEPT, NOT LISTED. The rule is "a published TypeScript block is checked",
- * so the discriminant is a ```ts fence in a tracked file — not a README under `packages/`.
+ * so the discriminant is a ```ts fence in a tracked file, not a README under `packages/`.
  * The comparison guard reconciles the README of each directory under `packages` and nothing
  * else: it is blind to `packages/chain/verifier/README.md` and `plugin/README.md`, to the
  * READMEs under `.github`, and to every other page. The case at the bottom sweeps every
@@ -196,7 +196,7 @@ const UNDEFINED_NAME = new Map<number, RegExp>([
  * Where the compiler is. This is a path and not a resolution because `typescript` does not
  * export `bin/tsc`: `createRequire(…).resolve('typescript/bin/tsc')` throws
  * ERR_PACKAGE_PATH_NOT_EXPORTED, measured. A path can go wrong when the install layout
- * changes — and when it does, this file goes RED rather than quiet, because the canary
+ * changes, and when it does, this file goes RED rather than quiet, because the canary
  * below requires the compiler to have spoken.
  */
 const COMPILER = join(ROOT, 'node_modules/typescript/bin/tsc');
@@ -219,7 +219,7 @@ function compile(dir: string, files: readonly string[]): Diagnostic[] {
     if (!parsed) continue;
     const file = (parsed[1] as string).replace(/^.*\//, '');
     // A diagnostic naming a file this run did not write is a fact about the instrument,
-    // not about a page — it is carried through so a case can accuse it rather than drop it.
+    // not about a page: it is carried through so a case can accuse it rather than drop it.
     said.push({
       file: files.includes(file) ? file : `UNATTRIBUTED:${parsed[1] as string}`,
       code: Number(parsed[2]),
@@ -229,7 +229,7 @@ function compile(dir: string, files: readonly string[]): Diagnostic[] {
   return said;
 }
 
-/** Every declared type replaced by one the case does not produce — see the header. */
+/** Every declared type replaced by one the case does not produce: see the header. */
 function withWrongTypes(preamble: readonly string[]): string[] {
   return preamble.map((line) =>
     line.replace(/^(declare const \w+\s*:).*$/, '$1 { readonly aTypeNoCaseProduces: true };'),
@@ -296,11 +296,11 @@ afterAll(() => {
 
 describe('the example a package publishes type-checks against what the package publishes', () => {
   for (const example of PUBLISHED_EXAMPLES) {
-    it(`${example.specifier} — the page's block compiles against the built declarations`, () => {
+    it(`${example.specifier}: the page's block compiles against the built declarations`, () => {
       expect(about(sourceName(example, '')).map((one) => `TS${one.code}: ${one.text}`)).toEqual([]);
     });
 
-    it(`${example.specifier} — the preamble declares every name the page needs, and no other`, () => {
+    it(`${example.specifier}: the preamble declares every name the page needs, and no other`, () => {
       const free = about(sourceName(example, '.free'));
       const names = new Set<string>();
       const unaccounted: string[] = [];
@@ -309,7 +309,7 @@ describe('the example a package publishes type-checks against what the package p
         const named = pattern ? pattern.exec(one.text)?.[1] : undefined;
         if (named) names.add(named);
         // Anything that is not "this name is not in scope" is a real error in the block
-        // that the preamble happens to be hiding — named rather than counted away.
+        // that the preamble happens to be hiding: named rather than counted away.
         else unaccounted.push(`TS${one.code}: ${one.text}`);
       }
       expect(unaccounted).toEqual([]);
@@ -320,9 +320,9 @@ describe('the example a package publishes type-checks against what the package p
 
 describe('the preamble cannot accept anything', () => {
   for (const example of PUBLISHED_EXAMPLES.filter((one) => one.pagePreamble.length > 0)) {
-    it(`${example.specifier} — a declared type the case does not produce turns the check red`, () => {
+    it(`${example.specifier}: a declared type the case does not produce turns the check red`, () => {
       // Without this, `pagePreamble` could hold any type at all and every case above would
-      // still be green — which is what `any` and `never` were measured to do.
+      // still be green, which is what `any` and `never` were measured to do.
       expect(about(sourceName(example, '.wrong')).length).toBeGreaterThan(0);
     });
   }
@@ -372,7 +372,7 @@ describe('the check is not laxer than the repository', () => {
 });
 
 describe('the roster is every TYPESCRIPT block this workspace publishes', () => {
-  it('the compiler ran, and said so — every case above is read from its report', () => {
+  it('the compiler ran, and said so: every case above is read from its report', () => {
     // Every other case in this file reads an ABSENCE of diagnostics as a page compiling.
     // This one reads a PRESENCE, so a `tsc` that never started cannot be mistaken for one
     // that found nothing.
@@ -408,7 +408,7 @@ describe('the roster is every TYPESCRIPT block this workspace publishes', () => 
 
   it('every file the sandbox was given was compiled, and nothing else was', () => {
     // A diagnostic naming a file this run did not write means the instrument read something
-    // it was not pointed at — the reading above would then be about the wrong text.
+    // it was not pointed at: the reading above would then be about the wrong text.
     expect(diagnostics.filter((one) => one.file.startsWith('UNATTRIBUTED:'))).toEqual([]);
     const expected =
       1 +
@@ -441,11 +441,11 @@ describe('the reading FIRES', () => {
     expect(reachesForSilence(['declare const x: Whenever;'])).toEqual([]);
   });
 
-  it('a hatch in the NAME is not a hatch — only the type is read', () => {
+  it('a hatch in the NAME is not a hatch, only the type is read', () => {
     expect(reachesForSilence(['declare const any: string;'])).toEqual([]);
   });
 
-  it('a page is found by its fence, in every spelling — not only the one in use', () => {
+  it('a page is found by its fence, in every spelling, not only the one in use', () => {
     // THE SPELLINGS ARE WRITTEN OUT, NOT READ FROM THE LIST UNDER TEST. They were read from
     // it first, and narrowing `TYPESCRIPT_FENCES` back to `ts` alone then left every case in
     // this file GREEN: a loop over the constant it is meant to hold narrows with it, which

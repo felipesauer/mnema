@@ -2,7 +2,7 @@
  * A write the record reports as written is on the disk: every append of an entry and of a
  * checkpoint is synced before it returns, and the directory of a file the append created too.
  *
- * What a sync does to the disk cannot be seen from a test — a power cut is not something the
+ * What a sync does to the disk cannot be seen from a test: a power cut is not something the
  * suite can stage. What can be seen is whether it is ASKED FOR, of which file, and before the
  * call returns, so that is what these count: the module is wrapped (an ESM namespace cannot be
  * spied on) and every `fsyncSync` is recorded with the path its descriptor was opened on.

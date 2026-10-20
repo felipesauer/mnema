@@ -1,8 +1,8 @@
 /**
  * A SESSION THAT LANDS IN A PROJECT BY A REFRESH SIGNS AS THE AGENT, ON A MACHINE THAT HOLDS ONLY ITS KEY.
  *
- * A session that opened outside any project and is then told its workspace — the client announced
- * its roots later — lands in the project's trees. Its `who` is decided there, as the opening decides
+ * A session that opened outside any project and is then told its workspace, the client announced
+ * its roots later, lands in the project's trees. Its `who` is decided there, as the opening decides
  * it, and the question has to be asked with the agent in the trees: asked without it, it falls to the
  * person's key, which this machine does not hold. What the session is and what its first write is
  * signed by must be the agent's.
@@ -106,7 +106,7 @@ describe('a session that opened outside any project and is told its workspace', 
     expect(session.inProject).toBe(true);
     expect(session.which).toBe('claude');
     // Who the session is here: the identity the agent joined, which the short form `audit` printed
-    // is the head of — not the anchor of a key the person never had on this machine.
+    // is the head of, not the anchor of a key the person never had on this machine.
     expect((session.who as string).slice(0, (identity as string).length)).toBe(identity);
 
     const done = runRecordDecision(session, { title: 'After the landing', rationale: 'because' });

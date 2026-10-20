@@ -1,11 +1,11 @@
 /**
- * EVERY COMMAND PATH THE PROGRAM ROUTES, AND A COMMAND LINE FOR EACH — synthesised from
+ * EVERY COMMAND PATH THE PROGRAM ROUTES, AND A COMMAND LINE FOR EACH: synthesised from
  * the declaration rather than listed.
  *
  * A guard that has something to say about "every verb" has two problems before it has
  * one assertion: knowing what the surface routes today, and knowing what to type at each
  * of them. The first is a walk of the program the entry builds. The second is the one
- * that usually becomes a hand-kept table — and a hand-kept table of invocations goes
+ * that usually becomes a hand-kept table, and a hand-kept table of invocations goes
  * stale in exactly the case it exists for, which is the subcommand somebody added last
  * week.
  *
@@ -15,7 +15,7 @@
  * module without an edit anywhere.
  *
  * WHAT A DECLARATION ANSWERS ABOUT ITS OWN VALUES, and the two places it is written.
- * This surface says "here is the closed set this takes" through `valuesDeclaredOn` — a
+ * This surface says "here is the closed set this takes" through `valuesDeclaredOn`: a
  * WeakMap keyed by the Argument, kept out of commander's `argChoices` on purpose, so the
  * generated help holds one list instead of two. ONE DECLARATION ON THE SURFACE DOES NOT
  * USE IT: `completion <shell>` is a plain `new Argument(...).choices([...SHELLS])`. Both
@@ -26,7 +26,7 @@
  * WHAT IT IS NOT. It does not decide whether a line SUCCEEDS: a caller that needs a real
  * id passes a fixture that holds one, and a caller exercising a surface with no project
  * behind it passes {@link NOTHING_FOUNDED} and gets placeholders. And it holds no
- * assertion of its own — what counts as a violation belongs to the guard that asks.
+ * assertion of its own: what counts as a violation belongs to the guard that asks.
  */
 
 import type { Argument, Command, Option } from 'commander';
@@ -36,7 +36,7 @@ import { everyCommandOf, pathOf, usageOf } from '../../src/wiring/misuse.js';
 
 /** One invocable command path, and the declaration that says what it takes. */
 export interface Routed {
-  /** The words a caller types after `mnema`, joined — `decision move`, `memory`. */
+  /** The words a caller types after `mnema`, joined: `decision move`, `memory`. */
   readonly path: string;
   /** The command commander holds, which is where the argument list is read from. */
   readonly command: Command;
@@ -48,17 +48,17 @@ export interface Routed {
  * Groups are included alongside their subcommands, because a group can be invocable in its
  * own right on this surface: `mnema switch` lists and `mnema witness` reads. (This said `mnema
  * task <title>` creates, until creating became `task create` and `task` alone stopped doing
- * anything — a group that answers its bare form with usage is still a path the walk reaches.)
+ * anything: a group that answers its bare form with usage is still a path the walk reaches.)
  *
  * THE WALK AND THE NAMING ARE THE PRODUCT'S OWN, not a second pair written here.
- * `wiring/misuse.ts` already answers both halves — {@link everyCommandOf} for which pages
- * this surface has and {@link pathOf} for the words a caller types to reach one — because
+ * `wiring/misuse.ts` already answers both halves ({@link everyCommandOf} for which pages
+ * this surface has and {@link pathOf} for the words a caller types to reach one), because
  * that module gives every command of the program the one voice and has to reach every
  * command to do it. Its own doc says why the two live together: the answer had been read
  * in five places, each with its own climb up `parent`, and two of those were production
  * spellings that disagreed about whether the program's own name is part of what they
  * return. A sixth spelling here would be the same drift with a test's name on it, and the
- * only difference it needs — the program itself is not an invocable path — is a filter.
+ * only difference it needs (the program itself is not an invocable path) is a filter.
  */
 export function routes(program: Command): Routed[] {
   return everyCommandOf(program)
@@ -66,7 +66,7 @@ export function routes(program: Command): Routed[] {
     .map((command) => ({ path: pathOf(command).join(' '), command }));
 }
 
-/** A port that writes nowhere — for building a program only to look at it. */
+/** A port that writes nowhere: for building a program only to look at it. */
 export const QUIET: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
 
 /** The program the binary parses with, walked. */
@@ -87,7 +87,7 @@ export const SERVES_A_CONNECTION: Readonly<Record<string, string>> = {
 };
 
 /**
- * A path that reaches ANOTHER MACHINE — except over a record that holds no tail.
+ * A path that reaches ANOTHER MACHINE, except over a record that holds no tail.
  *
  * `witness stamp` asks a calendar to attest a checkpoint, which is the one act of this
  * surface that goes out over the network, so no guard may exercise it over a record with
@@ -109,7 +109,7 @@ export const SERVES_OR_REACHES_OUT: Readonly<Record<string, string>> = {
 
 /** The values only a founded project can produce, and the ones a line takes as text. */
 export interface Fixture {
-  /** The identity `init` printed — what `--actor` and `--anchor` take. */
+  /** The identity `init` printed: what `--actor` and `--anchor` take. */
   readonly anchor: string;
   /** A task, for every path that names one. */
   readonly task: string;
@@ -119,7 +119,7 @@ export interface Fixture {
   readonly successor: string;
   /** A skill, for `skill move` and `skill export`. */
   readonly skill: string;
-  /** A tail this machine did not write — the only kind `tail prune` can name. */
+  /** A tail this machine did not write: the only kind `tail prune` can name. */
   readonly foreignTail: string;
   /** A directory of decision files, inside the project, for `decision import`. */
   readonly decisionFiles: string;
@@ -127,7 +127,7 @@ export interface Fixture {
   readonly note: string;
 }
 
-/** The values a path is given where no project is founded — placeholders, and legible ones. */
+/** The values a path is given where no project is founded: placeholders, and legible ones. */
 export const NOTHING_FOUNDED: Fixture = {
   anchor: `mnid:${'0'.repeat(64)}`,
   task: '00000000-0000-7000-8000-000000000000',
@@ -193,13 +193,13 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
 };
 
 /**
- * WHAT THE GATE REQUIRES THAT THE DECLARATION DOES NOT — the proof flags, and one more.
+ * WHAT THE GATE REQUIRES THAT THE DECLARATION DOES NOT: the proof flags, and one more.
  *
  * A move's `--note` and a supersede's `--reason` are declared as plain options so a
  * sibling command does not inherit them as mandatory, and the requirement is the
  * WORKFLOW's: the gate refuses the move without them. `--body` is the same shape on
  * `skill create`, and the text of `decision record`, `memory` and `observe` is too: each of those takes it from
- * the line, a pipe or a file, so none is declared required. `--write` is required by nothing — it is what makes
+ * the line, a pipe or a file, so none is declared required. `--write` is required by nothing: it is what makes
  * `decision import` record instead of print, and a caller that needs the path to write
  * has to ask for it.
  *
@@ -261,7 +261,7 @@ export function lineFor(routed: Routed, fixture: Fixture): string[] {
  *
  * It is the third of the parser's three answers and the only one that carries no usage
  * line, so {@link theParserAnswered} would miss it on the line's shape alone. The
- * discriminant is the CODE's namespace and not the sentence — `commander.` is an
+ * discriminant is the CODE's namespace and not the sentence: `commander.` is an
  * identifier, and the sentence after it is a dependency's English.
  *
  * `wiring/report.ts` frames a refusal this way for the product's own codes too
@@ -283,19 +283,19 @@ export const A_CODE_NOBODY_WORDED = 'Refused (commander.';
  * `wiring/misuse.ts` gives every command of the program one voice for a misuse and puts
  * {@link usageOf} under the sentence; commander heads the help with `Usage: ` and the same
  * line. So the line to type is what both of the parser's answers carry and a verb's own
- * refusal never does — and calling `usageOf` is what keeps this from drifting from the
+ * refusal never does, and calling `usageOf` is what keeps this from drifting from the
  * shape it is looking for.
  *
  * WHAT THAT COST WHEN IT WAS A LITERAL, since this function exists because of it. The
  * guard used to look for `Usage: mnema`, which the help carries and the misuse voice does
  * NOT: the prefix is commander's help formatter's, added outside `usageOf`. All seven
- * worded codes therefore read as "the parser did not answer" — measured against the built
+ * worded codes therefore read as "the parser did not answer": measured against the built
  * binary, `mnema task`, `mnema decision <title>`, `mnema link a b --rel` and
  * `mnema completion powershell` each print their sentence and an indented usage line with
  * no `Usage:` anywhere on it.
  *
  * `said` is what went to the stream a refusal goes to. Both of the parser's answers are
- * written there — the misuse voice by `speakUsageErrors`, and the help shown INSTEAD of an
+ * written there: the misuse voice by `speakUsageErrors`, and the help shown INSTEAD of an
  * error by commander itself.
  */
 export function theParserAnswered(routed: Routed, said: string): boolean {

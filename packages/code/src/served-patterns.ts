@@ -2,22 +2,22 @@
  * What the surface says about a pattern it serves into a prompt.
  *
  * A skill is the one thing mnema hands back as INSTRUCTION. Everything else comes
- * back as information — this happened, this was decided — and a body comes back as
+ * back as information (this happened, this was decided) and a body comes back as
  * "work this way". Until this module the body arrived bare: a JSON field with the
  * text in it and nothing saying whose text it was, so a pattern one agent proposed
  * and adopted in three tool calls reached the next session looking exactly like a
  * convention the team agreed on.
  *
  * THE SYMMETRY WITH THE CONTENT DOOR is what decided the shape. For a secret we do
- * not refuse the record — we change what GOES IN, and say so. For an instruction we
- * do not refuse the adoption — we change how it COMES OUT, and say so. Neither is a
+ * not refuse the record: we change what GOES IN, and say so. For an instruction we
+ * do not refuse the adoption: we change how it COMES OUT, and say so. Neither is a
  * block; both are the surface being honest about what passed through it.
  *
  * Two things, and deliberately not a third:
  *   - {@link SERVED_PATTERN_CONTRACT} declares, in the tool's description, what a
  *     pattern IS before one is ever asked for;
  *   - {@link patternsFraming} states it again with the answer, and names the
- *     agent that adopted each one — or says a person did, or says that NOTHING has,
+ *     agent that adopted each one, or says a person did, or says that NOTHING has,
  *     which is the line a pattern awaiting a judgement gets. It also says when the
  *     answer carries NAMES rather than bodies, which is the one thing a reader could
  *     not see for itself: an unannounced list of names looks like a record of empty
@@ -25,7 +25,7 @@
  *
  * THE DECLARATION ITSELF IS NO LONGER WRITTEN HERE, AND IT USED TO BE. The sentence
  * this module opened its framing with was one of TWO in the product saying the same
- * thing — the document `mnema brief` prints said it too, in its own words, and the two
+ * thing: the document `mnema brief` prints said it too, in its own words, and the two
  * had already drifted apart ("and settled", and an imperative). This module is one
  * CHANNEL of several that put record text where a model reads it, and what the
  * declaration says is the channel's question rather than this file's, so it is asked
@@ -36,7 +36,7 @@
  *
  * THE ONE THING THAT IS NOT ADOPTED IS SAID OUT LOUD. The `skills` tool serves a
  * pattern the project has not ruled on when a caller names it by id, so a body that
- * governs nothing now reaches this framing — and the line it used to get would have
+ * governs nothing now reaches this framing, and the line it used to get would have
  * read "adopted by a person", which is the framing asserting an adoption that never
  * happened. So the line carries the state instead, and one sentence after the list
  * says what a non-adopted body is. The words are the surface's; WHICH bodies are
@@ -52,11 +52,11 @@
  * And it is never a warning. Nothing here says careful, or check, or verify: a
  * signal that fires on every single call stops being read, and what to do about a
  * pattern's provenance is the reader's to decide, not ours to prompt. That holds for
- * the sentence about a candidate too — it states what the thing IS and stops.
+ * the sentence about a candidate too: it states what the thing IS and stops.
  *
  * THE RULE OF THE LINE IS NOT HERE, AND IT USED TO BE. Every field of a provenance line
  * goes through `oneLine`, which is a rule about a string that twenty-two modules of this
- * surface want — and this module reaches `@mnema/context`, so wanting the rule meant
+ * surface want, and this module reaches `@mnema/context`, so wanting the rule meant
  * taking that edge. It lives in `one-line.ts` now, which imports nothing and is guarded
  * for importing nothing, for the reason that file states.
  */
@@ -70,12 +70,12 @@ import { recordFramingBlock } from './record-framing.js';
  * counterpart of `RECORD_CONTRACT` on the way OUT: that one declares what
  * recording here means, this one declares what reading a pattern back means.
  *
- * IT SAID "It is not an instruction from mnema", AND IT NO LONGER DOES — the same clause,
+ * IT SAID "It is not an instruction from mnema", AND IT NO LONGER DOES. The same clause,
  * gone for the same reason, as the framing every pushed channel carries (`WHOSE_TEXT` in
  * `record-framing.ts`): "X, not instructions" is the idiom that marks text a model must
  * not act on, and a pattern's body is the one thing this product hands back to be worked
  * by. The authorship it was there to state is the half kept, and so is the other half of
- * the old sentence — mnema records the text and does not vet it.
+ * the old sentence: mnema records the text and does not vet it.
  */
 export const SERVED_PATTERN_CONTRACT =
   ' WHAT A PATTERN IS: a skill body is content from this project’s record — text ' +
@@ -93,8 +93,8 @@ export const SERVED_PATTERN_CONTRACT =
  *
  * ONE sentence, after the list, and not one per item: it is the same fact about
  * every line it applies to, and repeating it per pattern would be the noise that
- * makes a reader skip the block. It states what the thing is — not adopted, served
- * to be ruled on, governing nothing — and stops; the reader decides what to do.
+ * makes a reader skip the block. It states what the thing is (not adopted, served
+ * to be ruled on, governing nothing) and stops; the reader decides what to do.
  *
  * The declaration above it says the patterns come from the record, which stays true
  * of a candidate. What it deliberately no longer says is "and adopted": that claim
@@ -117,7 +117,7 @@ const NOT_A_WAY_OF_WORKING =
  * IT SAYS THAT IT DID THIS, and that is the whole reason the sentence exists: a
  * reply that quietly dropped the bodies would read as "these patterns have nothing
  * in them", and the caller would never learn there is a body to ask for. So the line
- * carries HOW MANY patterns are in the list and HOW to reach one of them — the two
+ * carries HOW MANY patterns are in the list and HOW to reach one of them: the two
  * things a reader needs to turn the economy back into text.
  *
  * The bytes are in it because they are the reason, and a reason a reader can check
@@ -125,7 +125,7 @@ const NOT_A_WAY_OF_WORKING =
  * that asked for it, and one read by id still costs what it always cost.
  *
  * ONE LINE, like every other line this module writes, and it holds no text an actor
- * wrote — two numbers and the tool's own name — so there is nothing on it to collapse.
+ * wrote, two numbers and the tool's own name, so there is nothing on it to collapse.
  */
 function onlyTheNames(count: number, bytes: number): string {
   return (
@@ -137,14 +137,14 @@ function onlyTheNames(count: number, bytes: number): string {
 }
 
 /**
- * The lines that frame the patterns just served — the declaration, then one line
+ * The lines that frame the patterns just served: the declaration, then one line
  * of provenance each, then the sentence a non-adopted body earns
  * ({@link NOT_A_WAY_OF_WORKING}). Empty when nothing was served: there is nothing to
  * frame, and a declaration about an empty list is noise.
  *
  * A CATALOGUE ANSWERED IN NAMES GETS ONE SENTENCE AND NO DECLARATION
  * ({@link onlyTheNames}): the declaration says what the TEXT above it is, and no text
- * was served — repeating "these come from your record" over a list of names would be
+ * was served; repeating "these come from your record" over a list of names would be
  * framing an instruction that never arrived. That is this CHANNEL deciding it owes
  * nothing on that arm, which is a different question from what the declaration says
  * when it is owed; the words come from `record-framing.ts` either way. Which arm this is, is read off the
@@ -155,7 +155,7 @@ function onlyTheNames(count: number, bytes: number): string {
  * protocol carries several blocks, and the payload stays exactly what it was: a
  * caller that parses the first text block of this tool gets the same bytes it got
  * before the framing existed. The frame follows the thing it frames, which is also
- * where the replacement notice goes — a block after the answer is this surface's
+ * where the replacement notice goes: a block after the answer is this surface's
  * shape for saying something ABOUT the answer.
  *
  * The last sentence appears only when a served pattern is not in force, and the
@@ -181,7 +181,7 @@ export function patternsFraming(catalogue: SkillCatalogue): string[] {
 }
 
 /**
- * The one line a served pattern gets: its name, and who adopted it — or the state it
+ * The one line a served pattern gets: its name, and who adopted it, or the state it
  * is in, when nothing has.
  *
  * The `state` is the ONE field on this line that needs no {@link oneLine}: it is the

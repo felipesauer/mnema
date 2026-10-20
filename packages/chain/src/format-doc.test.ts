@@ -8,7 +8,7 @@
  *   - a VERSION TAG typed into prose. The document names the two hash domains and
  *     the checkpoint scheme. Bumping one in the code would leave the document
  *     describing the old one, so the tags are read out of the source here and the
- *     document is checked against them — never the other way round.
+ *     document is checked against them, never the other way round.
  *   - a CITATION that no longer resolves. Every behavioural claim in the document
  *     names the test that holds it; a renamed or deleted test turns that citation
  *     into a claim with nothing behind it, which is the exact thing the citations
@@ -61,12 +61,12 @@ describe('FORMAT.md names the versions the code hashes under', () => {
     // The pattern is the CLASS, not the instance: this codebase has more than one
     // `mnema-<thing>/<n>` scheme, and a document that grew a section about another one
     // would name a version no guard here read. So any scheme tag the document writes has
-    // to be a constant the code exports — a new section has to export its own before it
+    // to be a constant the code exports: a new section has to export its own before it
     // can name it.
     //
     // THE TAIL PROOF IS THE SECTION THAT ARRIVED. This case expected exactly the
-    // checkpoint's scheme for as long as the document said nothing about `tailproof.json`
-    // — which is how an artifact sat in every tail directory, signed, with no description
+    // checkpoint's scheme for as long as the document said nothing about `tailproof.json`,
+    // which is how an artifact sat in every tail directory, signed, with no description
     // anywhere. An independent verifier written from this document found it and had to try
     // five candidate messages to learn what it signs (gap G10). The document has a section
     // for it now, so the expected set is both exported constants, and a THIRD scheme still
@@ -85,7 +85,7 @@ describe('FORMAT.md cites tests that exist', () => {
 
   it('names at least one test per section that makes a claim', () => {
     // The document has eight sections that assert behaviour. The floor is not the
-    // section count — sections move — but it is high enough that a rewrite which
+    // section count (sections move), but it is high enough that a rewrite which
     // dropped the citations cannot pass.
     expect(cited.length).toBeGreaterThanOrEqual(6);
   });
@@ -100,7 +100,7 @@ describe('FORMAT.md cites tests that exist', () => {
  * THERE ARE TWO ARTIFACTS NOW, and the rule is the same for both: the document, the
  * module that resolves the file, and the file on disk are three names for one thing,
  * and three names are three things that can come to differ. `event-schema.json`
- * arrived with §4.1 — the vectors are exemplars, the schema is the declarations —
+ * arrived with §4.1 (the vectors are exemplars, the schema is the declarations)
  * and it reaches a stranger the same way, by being in the repository.
  */
 const ARTIFACTS = [
@@ -137,7 +137,7 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
     // needed: a path that a `.gitignore` swallowed would publish nothing while every
     // other case here stayed green, and this tree ignores whole directories by name
     // (`dist/`, `scripts/`), so the hazard is real rather than
-    // theoretical. `git` is asked directly. The tarball half is somebody else's case —
+    // theoretical. `git` is asked directly. The tarball half is somebody else's case:
     // `packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`
     // packs the package and runs the verifier out of it.
     const relative = fileURLToPath(file).slice(REPO.length);

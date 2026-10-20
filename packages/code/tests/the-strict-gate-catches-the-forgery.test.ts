@@ -5,7 +5,7 @@
  * non-zero when the record is broken", and a reader takes that as a promise about
  * forgery. Measured against the built binary in an isolated sandbox: a record whose
  * fact was rewritten, whose hash links were RECOMPUTED with this product's own
- * `entryHash`, and whose `checkpoints.jsonl` was emptied, exits **0** — and `search`
+ * `entryHash`, and whose `checkpoints.jsonl` was emptied, exits **0**, and `search`
  * serves the forged fact. Nothing is broken there, which is the point: the chain is
  * internally consistent and the signatures that would have contradicted it are gone.
  *
@@ -13,22 +13,22 @@
  * the help as *expect this to fail while a session is in flight*. It fails in no state
  * this product reaches: every path that writes seals a checkpoint, so the residual that
  * sentence rested on is empty whenever nothing is mid-write. What it DOES fail on is
- * the forgery above — so one record, read at two declared minimums, is where both
+ * the forgery above, so one record, read at two declared minimums, is where both
  * sentences are settled, and that is why the two live in one file.
  *
  * WHY THE CRUDE EDIT IS HERE. Case 1 asserts an exit of **0**, and an exit of 0 is what
- * a product that never fails at all would also give. The `sed`-style edit — the same
- * fact rewritten, the hash links left alone — is the contrast that makes it a finding
+ * a product that never fails at all would also give. The `sed`-style edit (the same
+ * fact rewritten, the hash links left alone) is the contrast that makes it a finding
  * about the ATTACK and not about the gate being dead: it exits 1, through the same
  * verb, over the same record, differing only in whether the attacker rehashed.
  *
  * WHAT IT DOES NOT CLAIM. `--require=signed` catches one of three ways to forge this
  * record; the other two (removing a whole tail, or writing a fact after the edit) go
  * green at every value of `--require`, and `README.md` states that beside the promise.
- * Nothing here is a case for them — they are named so this file is not read as proving
+ * Nothing here is a case for them: they are named so this file is not read as proving
  * more than it does.
  *
- * The fixture is built by the PRODUCT — `mnema init`, `mnema task` — and then edited on
+ * The fixture is built by the PRODUCT (`mnema init`, `mnema task`) and then edited on
  * disk the way an adversary would. Nothing writes an event by hand.
  */
 
@@ -97,7 +97,7 @@ function lines(file: string): string[] {
  * Rewrites `needle` to `replacement` in every stored event of the one tail.
  *
  * `rehash` is the whole discriminant of this file. With it, the T1 chain is rebuilt
- * with the product's own `entryHash` — the attacker who knows how the format works —
+ * with the product's own `entryHash`, the attacker who knows how the format works,
  * and every link recomputes to what it claims. Without it, the stored hash still
  * commits to the bytes that were there, which is the `sed` a verifier catches.
  */
@@ -117,7 +117,7 @@ function rewriteFact(needle: string, replacement: string, opts: { rehash: boolea
     entry.event = JSON.parse(after);
     if (opts.rehash) {
       entry.link.prev = prev;
-      // The written form is the canonical value the line carries — see chain/hash.ts.
+      // The written form is the canonical value the line carries: see chain/hash.ts.
       entry.link.hash = entryHash({
         event: { value: entry.event } as Parameters<typeof entryHash>[0]['event'],
         tail: entry.link.tail,
@@ -132,7 +132,7 @@ function rewriteFact(needle: string, replacement: string, opts: { rehash: boolea
   return touched;
 }
 
-/** Founds a project and records one task carrying `title` — signed as it is written. */
+/** Founds a project and records one task carrying `title`: signed as it is written. */
 async function record(title: string): Promise<void> {
   const founded = await mnema('init');
   if (founded.failed) throw new Error(`setup: init failed: ${founded.err}`);
@@ -163,8 +163,8 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('the forged record — the one the README used to promise a non-zero exit on', () => {
-  it('1 — rehashed and stripped of its checkpoints: the DEFAULT exits 0 and search serves it', async () => {
+describe('the forged record: the one the README used to promise a non-zero exit on', () => {
+  it('1 (rehashed and stripped of its checkpoints): the DEFAULT exits 0 and search serves it', async () => {
     await record('the fact as it was written');
     expect(rewriteFact('as it was written', 'as somebody rewrote it', { rehash: true })).toBe(1);
     writeFileSync(storedFiles().checkpoints, '', 'utf-8');
@@ -175,7 +175,7 @@ describe('the forged record — the one the README used to promise a non-zero ex
     expect(said.failed).toBe(false);
     expect(said.out).toContain('local integrity verified (T1 only) — no signature was checked');
 
-    // And the reader downstream serves the forgery without a word — which is why the
+    // And the reader downstream serves the forgery without a word, which is why the
     // exit code above is the whole of what a CI step learns.
     const found = await mnema('search', 'as somebody rewrote it');
     expect(found.failed).toBe(false);
@@ -185,7 +185,7 @@ describe('the forged record — the one the README used to promise a non-zero ex
     expect(found.out).not.toContain('as it was written');
   });
 
-  it('2 — the same record under --require=signed: exits 1, and names what it wanted', async () => {
+  it('2 (the same record under --require=signed): exits 1, and names what it wanted', async () => {
     // THE PROMISE THE README NOW MAKES, over the same bytes as case 1. Only the
     // declared minimum differs, which is what makes this a fact about the gate.
     await record('the fact as it was written');
@@ -198,7 +198,7 @@ describe('the forged record — the one the README used to promise a non-zero ex
     expect(gated.err).toContain('this record is hash-chain-only');
   });
 
-  it('3 — the CONTRAST: the same edit WITHOUT the rehash is caught by the default', async () => {
+  it('3 (the CONTRAST): the same edit WITHOUT the rehash is caught by the default', async () => {
     // Without this case, case 1 would pass over a `verify` that never fails at all.
     // The attacker's rehash is the only difference between the two records.
     await record('the fact as it was written');
@@ -213,12 +213,12 @@ describe('the forged record — the one the README used to promise a non-zero ex
 });
 
 describe('the strict gate in the state the help said it would fail in', () => {
-  it('passes with a run OPEN and a fact pinned to it — the premise that was false', async () => {
+  it('passes with a run OPEN and a fact pinned to it: the premise that was false', async () => {
     // The help read *expect this to fail while a session is in flight*, so this is the
     // state it named, built through the product: a run open, and a fact written INTO
     // it. Every write seals a checkpoint, so the residual the sentence rested on is
     // never there. Asserted as an exit code, because the sentence is not what was
-    // wrong — the behaviour it described never existed.
+    // wrong: the behaviour it described never existed.
     await record('a fact written before the run');
     const started = await mnema('run', 'start', '--which', 'a-person-at-a-terminal');
     expect(started.failed, started.err).toBe(false);
@@ -234,7 +234,7 @@ describe('the strict gate in the state the help said it would fail in', () => {
     expect(gated.failed).toBe(false);
     expect(gated.err).toBe('');
     // Non-vacuity, both halves. The gate really did rule on a record with coverage to
-    // check — a verdict over an empty tree would pass too — and the run really was
+    // check (a verdict over an empty tree would pass too) and the run really was
     // still open at the moment it ruled, which `run end` is what can say: it names the
     // run it closed, and it has nothing to close unless one was open.
     expect(gated.out).toContain('all events are signature-covered');

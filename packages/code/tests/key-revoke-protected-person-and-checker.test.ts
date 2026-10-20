@@ -1,7 +1,7 @@
 /**
  * `key revoke` and `key revoke --checker` with the key of the person protected and no passphrase
  * to hand: `KEY_IS_PROTECTED`, in words for a person at a terminal, with no advice for a host that
- * signs for an agent (a key of its own) — a retirement is signed by THEIR key, and the agent's
+ * signs for an agent (a key of its own); a retirement is signed by THEIR key, and the agent's
  * key has nothing to do with it. Each way of retiring is proved on its own.
  */
 

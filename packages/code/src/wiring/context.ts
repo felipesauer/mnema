@@ -2,7 +2,7 @@
  * Where a command runs: the working directory and the discovery environment.
  *
  * Every verb resolves the same two values the same way, and it resolves them
- * INSIDE its action rather than when the program is built — a directory read at
+ * INSIDE its action rather than when the program is built: a directory read at
  * registration time would be the directory the process started in, which is the
  * same one only by luck (a test that drives two projects in one process would see
  * the first one twice).

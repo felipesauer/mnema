@@ -6,7 +6,7 @@
  * `transport.onclose` with no production caller, `configProject` documented and set
  * by no flag. Every one of them passed every test of the code UNDER the gap, because
  * that code was right: the resolver honoured the value it was handed, and nobody
- * handed it one. No review catches this class, because the defect is an ABSENCE —
+ * handed it one. No review catches this class, because the defect is an ABSENCE:
  * there is nothing to look at.
  *
  * THE FOURTH NAME CAME OFF THIS LIST, and what it was replaced with is worth more
@@ -32,7 +32,7 @@
  *     alive for as long as it existed, and the four link relations named in a tool
  *     description would have kept a dead vocabulary constant looking wired. So
  *     comments and string literals are blanked before anything is counted.
- *   - not a RE-EXPORT. Plumbing a value out to the surface is not consuming it —
+ *   - not a RE-EXPORT. Plumbing a value out to the surface is not consuming it,
  *     which is exactly why a barrel cannot be the caller that saves it.
  *   - not its own DECLARATION. `export const X = …` is not a use of X; a later
  *     line in the same file is.
@@ -48,8 +48,8 @@
  *     no guard. Enumeration is by RUNTIME KEY, so a type cannot enter by accident:
  *     it is gone before this file runs.
  *   - IT COVERS ONE OF THREE SHAPES. This one is a whole VALUE exported with no
- *     caller. The second is a FIELD of an options object that nobody sets — what
- *     `configProject` and `transport.onclose` were — and catching that one
+ *     caller. The second is a FIELD of an options object that nobody sets (what
+ *     `configProject` and `transport.onclose` were) and catching that one
  *     mechanically means enumerating every option interface and every setter of
  *     it, which is frailer; it already has a per-case mould in
  *     `mcp-flag-reaches-the-server.test.ts`, which asserts that a flag REACHES
@@ -57,9 +57,9 @@
  *
  *     THE THIRD SHAPE IS AN ARM of a public record whose whole value IS called: it
  *     lives at the bottom of this file, and it is here because it was found the way
- *     the other two were — by a defect. `ALIAS_PREFIXES` declared `task`, `epic` and
+ *     the other two were, by a defect. `ALIAS_PREFIXES` declared `task`, `epic` and
  *     `sprint`; production passed `'task'` at all four call sites and never the other
- *     two. The value had a caller, so this guard was silent and right to be — an arm
+ *     two. The value had a caller, so this guard was silent and right to be: an arm
  *     is not a value, and enumeration is by runtime key of the MODULE, not of the
  *     records inside it. Whether the third shape deserves a general sweep is a
  *     NUMBER, and the number says no: exactly two public exports are flat records
@@ -71,8 +71,8 @@
  *     caller SELECTS.
  *
  *     THE FRAILTY IS NOW A NUMBER, and the number is why the second shape still has
- *     no guard. Asked from the READ end rather than the setter end — a field READ in
- *     production and written as `<name>:` by no production file — the sweep over
+ *     no guard. Asked from the READ end rather than the setter end (a field READ in
+ *     production and written as `<name>:` by no production file) the sweep over
  *     packages/*​/src sees 345 optional-field declarations under 100 distinct names and accuses
  *     SIX. Five of the six would have to be excused on the day it was born: `json`,
  *     `require` and `allowNoRecord` are fed by the commander from `--json`,
@@ -84,7 +84,7 @@
  *
  *     THE SIXTH IS REAL AND IS NAMED WHERE IT LIVES: `CacheOptions.dbPath`, public on
  *     `@mnema/core`, read in `core/src/projections/cache.ts`, and set by no
- *     production caller — the production sites pass `upcasters` alone, and the command
+ *     production caller; the production sites pass `upcasters` alone, and the command
  *     line's pass `persist: true` beside it, which is the option that DOES have a caller.
  *     It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
  *     prove persistence across a close and re-open through. Its own doc now says so,
@@ -128,7 +128,7 @@ type ExportTarget = string | { readonly default?: string };
 
 /**
  * Every package under `packages/`, with its entry points taken from its own
- * manifest — never from a list kept here. A package added tomorrow, or a subpath
+ * manifest, never from a list kept here. A package added tomorrow, or a subpath
  * export added to one, is covered without this file being edited; the floor table
  * below is what makes the addition VISIBLE instead of silent.
  *
@@ -168,7 +168,7 @@ function workspacePackages(): Package[] {
 
 /** An `export { … }` clause, with or without a `from`: the plumbing, not a use. */
 const EXPORT_CLAUSE = /export\s+(?:type\s+)?\{[^}]*\}(?:\s*from)?/g;
-/** A value's own declaration head — the name it introduces is not a use of it. */
+/** A value's own declaration head: the name it introduces is not a use of it. */
 const DECLARATION =
   /((?:export\s+)?(?:default\s+)?(?:async\s+)?(?:abstract\s+)?(?:const|let|var|function\s*\*?|class|enum)\s+)[A-Za-z_$][\w$]*/g;
 /** Any identifier. */
@@ -177,14 +177,14 @@ const IDENTIFIER = /[A-Za-z_$][\w$]*/g;
 /**
  * The identifiers a file references: what is left after the comments, the string
  * literals, the re-export clauses and its own declaration heads are gone. A
- * property access (`writer.append`) is dropped too — it names a member, not the
+ * property access (`writer.append`) is dropped too: it names a member, not the
  * exported value that happens to share the name.
  *
  * A SPREAD IS A REFERENCE, and reading it as a property access is what this guard did
  * until `ADDRESS_RELATIONS` was accused: the pair of path relations is defined once and
  * spread into the recommended set in the very next statement, and `...NAME` ends in the
- * same character `obj.NAME` does. The accusation was the instrument's, not the code's —
- * the value had a caller three lines below its declaration — so the two dots are told
+ * same character `obj.NAME` does. The accusation was the instrument's, not the code's
+ * (the value had a caller three lines below its declaration), so the two dots are told
  * apart here rather than the source being written to suit the reader.
  */
 function referencedIdentifiers(source: string): Set<string> {
@@ -205,7 +205,7 @@ function referencedIdentifiers(source: string): Set<string> {
 /** An `import { … } from '<specifier>'` statement, anchored so a commented one cannot match. */
 const IMPORT_CLAUSE = /^[ \t]*import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/gm;
 /**
- * A `const { … } = await import('<specifier>')` — the CLI's way of loading a verb's
+ * A `const { … } = await import('<specifier>')`: the CLI's way of loading a verb's
  * work when the verb runs, so the floor stays the declaration (see
  * `wiring/verb.ts`).
  *
@@ -259,7 +259,7 @@ function reExportedNames(source: string): string[] {
 }
 
 /**
- * The names a barrel exports AS TYPES — either `export type { … }` or a `type`
+ * The names a barrel exports AS TYPES: either `export type { … }` or a `type`
  * modifier inside a clause. `verbatimModuleSyntax` makes the modifier mandatory, so
  * this reads the whole type surface, not a sample of it.
  */
@@ -307,7 +307,7 @@ function productionFiles(packages: readonly Package[]): ProductionFile[] {
 const PACKAGE_LIST = workspacePackages();
 const PRODUCTION = productionFiles(PACKAGE_LIST);
 
-/** One entry point's exported values — its runtime keys, so no type is among them. */
+/** One entry point's exported values: its runtime keys, so no type is among them. */
 interface Surface {
   readonly package: string;
   readonly specifier: string;
@@ -339,7 +339,7 @@ function specifierOwner(specifier: string, reader: string): string {
 /**
  * Whether some production file references this package's value.
  *
- * A file of the package itself counts — unless it imported that very name from
+ * A file of the package itself counts, unless it imported that very name from
  * ANOTHER package, in which case the identifier in it is the other package's
  * export and attributing it here would be the collision this guard exists to
  * avoid. A file of a different package counts only if it imported the name from
@@ -383,16 +383,16 @@ function unwired(): string[] {
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
  *
- * IT HELD THE PURE FOLDS — `projectTasks`, `projectRuns`, `projectSkills` — for as long as a
+ * IT HELD THE PURE FOLDS (`projectTasks`, `projectRuns`, `projectSkills`) for as long as a
  * write took its state from the projection the tree keeps and nothing in production called them.
  * A gate folds its subject's own events by them now, read off the chain, so they left. The
- * entry before them was `@mnema/core listProjects` — the reader of a machine-local project index that
+ * entry before them was `@mnema/core listProjects`: the reader of a machine-local project index that
  * `init` wrote on every founding and nothing ever read, while telling the person it
  * had happened. It was removed rather than wired, because what a read covers comes
  * from the trees the client announces.
  *
  * An empty table also ERASES the proof that declaring an exception works, which is
- * the vacuity this file warns about elsewhere — a guard whose escape hatch is
+ * the vacuity this file warns about elsewhere: a guard whose escape hatch is
  * untested is a guard whose next legitimate residue discovers it broken. So
  * {@link reconcile} is the mechanism as one function, and it is exercised on
  * SYNTHETIC input in both directions. The synthetic entries live in that test, never
@@ -415,9 +415,9 @@ const UNWIRED: Readonly<Record<string, string>> = {
 
 /** What an exception table tolerates, and what it does not. */
 interface Reconciliation {
-  /** Accused and NOT declared — the guard's teeth. */
+  /** Accused and NOT declared: the guard's teeth. */
   readonly accused: readonly string[];
-  /** Declared and no longer accused — a declaration that outlived its reason. */
+  /** Declared and no longer accused: a declaration that outlived its reason. */
   readonly stale: readonly string[];
 }
 
@@ -425,7 +425,7 @@ interface Reconciliation {
  * Reconciles the accusations against the declarations, in both directions at once.
  *
  * The second direction is the auto-pruning: a declared value that GAINED a caller,
- * or stopped being exported, is no longer accused and must leave the table — so a
+ * or stopped being exported, is no longer accused and must leave the table, so a
  * declaration cannot quietly outlive the reason written next to it. It is a
  * function, not an inline comparison, so the mechanism can be driven by a test
  * with input of its own on the day the real table is empty.
@@ -450,7 +450,7 @@ function reconcile(
  * fails instead. `@mnema/code`'s zero is DECLARED: the published package is a
  * binary and an MCP server, and nothing imports it as a library.
  *
- * A key missing here, or one too many, fails as well — that is how a new package
+ * A key missing here, or one too many, fails as well, that is how a new package
  * or a new subpath export announces itself.
  */
 const SURFACE_FLOOR: Readonly<Record<string, number>> = {
@@ -477,14 +477,14 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
 describe('every public value has a caller', () => {
   it('accuses nothing but what is declared unwired', () => {
     // One assertion, both directions: an export that loses its last caller lands in
-    // `accused`, and a declared one that gained a caller — or stopped being exported
-    // — lands in `stale` until its entry leaves the table.
+    // `accused`, and a declared one that gained a caller (or stopped being exported)
+    // lands in `stale` until its entry leaves the table.
     expect(reconcile(unwired(), UNWIRED)).toEqual({ accused: [], stale: [] });
   });
 
   it('reads a spread as a use and a member access as none', () => {
     // The instrument's own case, because a scanner that errs by ACCUSING is as broken
-    // as one that errs by staying silent — and this one did, on the exact shape a
+    // as one that errs by staying silent, and this one did, on the exact shape a
     // single-site constant takes when a second list is built from it. Both directions,
     // so a fix that simply stopped dropping members would fail here.
     const referenced = referencedIdentifiers(
@@ -498,7 +498,7 @@ describe('every public value has a caller', () => {
 
   it('tolerates a declared value and still accuses an undeclared one', () => {
     // The mechanism's own non-vacuity, on input this test owns. With the real table
-    // empty the assertion above says only "nothing is accused" — it exercises neither
+    // empty the assertion above says only "nothing is accused": it exercises neither
     // half of the exception, so the day a legitimate residue needs one, nothing has
     // ever proved it works. These names are not real exports and never enter the
     // product's table.
@@ -509,7 +509,7 @@ describe('every public value has a caller', () => {
       accused: ['@mnema/core notCalledTwo'],
       stale: [],
     });
-    // Declaring both leaves nothing to report — which is what "the table works" means.
+    // Declaring both leaves nothing to report, which is what "the table works" means.
     expect(
       reconcile(accused, {
         '@mnema/core notCalledOne': 'the reason',
@@ -543,11 +543,11 @@ describe('every public value has a caller', () => {
     for (const entry of SURFACE) expect(entry.source.endsWith('.ts')).toBe(true);
   });
 
-  it('never accuses a type — only values are subject to the rule', () => {
+  it('never accuses a type: only values are subject to the rule', () => {
     // Not one hand-picked example: EVERY name the barrels export as a type, checked
     // against the subject set. If a type ever entered, the rule would start asking
     // for a caller of something that cannot have one, the accusations would arrive
-    // in bulk, and the guard would be switched off — which is worse than not having
+    // in bulk, and the guard would be switched off, which is worse than not having
     // it. Enumeration is by runtime key, so this holds by construction; the
     // assertion is what makes the construction provable instead of asserted.
     const types = SURFACE.flatMap((entry) =>
@@ -599,7 +599,7 @@ describe('every public value has a caller', () => {
   it('reads a reference in code, and only in code', () => {
     // The extractor's own non-vacuity: each exclusion has a case that fails if the
     // exclusion goes away, and each inclusion has one that fails if it stops
-    // counting. Without the first pair the guard is vacuous — a `{@link}` alone kept
+    // counting. Without the first pair the guard is vacuous: a `{@link}` alone kept
     // `disambiguate` looking alive, and prose in a tool description would keep a
     // dead vocabulary constant looking wired.
     const references = (source: string): string[] => [...referencedIdentifiers(source)];
@@ -633,8 +633,8 @@ describe('every public value has a caller', () => {
     // A commented-out import is not an import.
     expect(importedNames("// import { x } from '@mnema/core';").size).toBe(0);
     expect(importedNames(" * import { x } from '@mnema/core';").size).toBe(0);
-    // A verb loads its work when it runs, and that attributes the name just the same
-    // — the shape this guard did not know until a caller moved inside an action.
+    // A verb loads its work when it runs, and that attributes the name just the same,
+    // the shape this guard did not know until a caller moved inside an action.
     expect(
       importedNames("      const { requiredLevel } = await import('@mnema/chain');")
         .get('@mnema/chain')
@@ -668,7 +668,7 @@ const THE_KIND_IT_PASSES = /^deriveAlias\(\s*'([^']*)'/;
  * The kind is a string literal, so the blanker this file uses everywhere else is the
  * wrong reader for it: `codeOnly` exists to blank literals, and the argument is one.
  * It is still the thing that decides whether a call is CODE, because it preserves
- * positions — a `deriveAlias(` that survives blanking is at the same offset in the
+ * positions: a `deriveAlias(` that survives blanking is at the same offset in the
  * raw source, and one written inside a doc-comment is not there at all. So the two are
  * read together: the blanked text says WHERE a real call is, and the raw text at that
  * offset says WHAT it passes. Nothing in the shared scanner had to change to ask this,
@@ -677,7 +677,7 @@ const THE_KIND_IT_PASSES = /^deriveAlias\(\s*'([^']*)'/;
  * IT TAKES A SOURCE RATHER THAN WALKING THE TREE, and that is not tidiness. Asked over
  * production only, the blanking step is redundant TODAY: no production comment happens
  * to spell a call with a literal kind, so replacing `codeOnly(source)` with `source`
- * changes nothing and leaves the guard at ZERO — measured by mutation. A step whose
+ * changes nothing and leaves the guard at ZERO, measured by mutation. A step whose
  * removal reddens nothing is a step nothing proves. So
  * the reader is a function over text, and the case below drives it on prose it owns; the
  * same mutation now reddens that case instead of passing in silence.
@@ -706,7 +706,7 @@ function kindsProductionPasses(): Set<string> {
 describe('every arm of a selected vocabulary has a caller', () => {
   it('production passes every kind `ALIAS_PREFIXES` declares, and no other', () => {
     // The enumeration comes from the value itself, so an arm added tomorrow is subject
-    // to this without the file being edited — which is the whole point, since the two
+    // to this without the file being edited, which is the whole point, since the two
     // arms this replaces were added once and never fed. Both directions: an arm nobody
     // passes fails on the left, and a kind production passes that the map does not
     // declare fails on the right (the compiler would refuse it first, and this says so
@@ -719,7 +719,7 @@ describe('every arm of a selected vocabulary has a caller', () => {
     // uses. A new instrument gets one because this series has been accused BY one: the
     // reader that finds a call has to tell a call from a sentence about a call, and
     // `alias.ts`'s own doc-comment names the function repeatedly. Over production alone
-    // this direction is unprovable — nothing there spells a call in prose — so the input
+    // this direction is unprovable, nothing there spells a call in prose, so the input
     // is owned here, which is what makes the blanking step's removal visible.
     expect([
       ...kindsPassedIn("/** Something like deriveAlias('epic', id) used to work. */"),
@@ -733,7 +733,7 @@ describe('every arm of a selected vocabulary has a caller', () => {
   it('finds the call sites at all', () => {
     // Non-vacuity of the sweep: a scanner that found nothing would make the assertion
     // above compare two empty sets on the day the map went empty, and pass. Four sites
-    // is what production has — two on each surface, task birth and task move.
+    // is what production has: two on each surface, task birth and task move.
     expect(kindsProductionPasses().size).toBeGreaterThan(0);
     expect(Object.keys(ALIAS_PREFIXES).length).toBeGreaterThan(0);
   });

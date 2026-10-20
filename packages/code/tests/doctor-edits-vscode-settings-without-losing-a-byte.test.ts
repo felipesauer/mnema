@@ -1,8 +1,8 @@
 /**
- * `src/commands/doctor-vscode.ts` — the one edit `mnema doctor --fix vscode` makes to a person's
+ * `src/commands/doctor-vscode.ts`: the one edit `mnema doctor --fix vscode` makes to a person's
  * `settings.json`. The file is JSONC, so the cases are the shapes a real one has: comments, a
  * trailing comma, the key absent, the key present with a stale entry. What is asserted is the
- * TEXT that comes out — every comment still there, and the file still reading — and that a second
+ * TEXT that comes out (every comment still there, and the file still reading) and that a second
  * run changes nothing.
  */
 

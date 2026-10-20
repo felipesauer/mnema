@@ -3,8 +3,8 @@
  * not written and the model is handed the rule that refused it, and where a rule asks for a person
  * the write is held and the model is told who asked. Where one path is both, the refusal wins.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — which door answers `deny` and which
- * answers `ask`, and the words — is `a-rule-that-refuses-a-write.test.ts` and
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (which door answers `deny` and which
+ * answers `ask`, and the words) is `a-rule-that-refuses-a-write.test.ts` and
  * `the-record-asks-for-a-person.test.ts`. What the host does with an answer is the host's, and it
  * is read here with the real binary: the file that does not appear, and the error the host hands
  * back as the result of the call. The session is headless, so there is nobody to ask: the host

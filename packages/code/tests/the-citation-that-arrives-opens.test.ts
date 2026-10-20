@@ -4,21 +4,21 @@
  *
  * WHAT WAS WRONG, MEASURED ON A REAL PROJECT OF 247 IMPORTED DECISIONS. `mnema decision
  * import` freezes its own `ADR-<n>` into each decision, so a file named `ADR-008` becomes
- * `ADR-2` in the record. That is deliberate and stays — two projects can each hold an
- * ADR-1, and a label re-derived on read would silently cite a different decision — but it
+ * `ADR-2` in the record. That is deliberate and stays (two projects can each hold an
+ * ADR-1, and a label re-derived on read would silently cite a different decision), but it
  * means the label does not name the file: 241 of the 247 diverged, and five of the six
  * rules the committed document printed pointed at a document that is not theirs.
  *
  * The record already held the answer, as a `derived-from` edge the import wrote, and
  * `the-origin-travels-beside-the-label.test.ts` put it on the three reads somebody ASKS
  * for. This is the N+1 site of that rule, and it is the side that matters more: those
- * three are doors a reader chose to open. These channels arrive unasked — the committed
+ * three are doors a reader chose to open. These channels arrive unasked (the committed
  * document a session opens with, the rules pushed at each edit, and the charge that STOPS
- * a write — and until now each of them handed its reader a name, an
+ * a write) and until now each of them handed its reader a name, an
  * address and a uuid, with this product the only way to reach the argument. This paragraph
  * used to end "Four measurements of this bench say that tool is not called", about
  * `read_record`, and they do not: the cells that opened with a uuid called it 62 times.
- * What the measurement does support is the door — on a real project the reader followed
+ * What the measurement does support is the door: on a real project the reader followed
  * the opening document's citation with `cat` and made none of its calls to this product
  * (`packages/code/src/record-framing.ts` records both).
  *
@@ -26,7 +26,7 @@
  *   - THE PATH OPENS. Every case below reads the printed path off the channel's own bytes
  *     and OPENS it from disk, so what is proved is not that a field is present but that a
  *     reader holding `cat` can follow it. The three reads deliberately do not probe a
- *     disk, so nothing in the product can make this claim — only a case can.
+ *     disk, so nothing in the product can make this claim, only a case can.
  *   - THE DIVERGENCE IS ASSERTED BESIDE IT. The record's label is `ADR-1` and the file is
  *     `ADR-008`. A case that only checked for a path would pass over the one record for
  *     which this whole item is invisible: the one whose label happens to agree.
@@ -58,7 +58,7 @@ import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 import { sourceFiles } from './support/reading-source.js';
 
-/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+/** The clause that says who accepted a rule: held where the lines say it, ignored where they are not about it. */
 const bare = (line: string | undefined): string | undefined =>
   line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
 
@@ -71,7 +71,7 @@ const GATEWAY_BODY = 'Retries were duplicating charges, so every write carries a
  * belongs to rather than whether it printed one.
  *
  * MEASURED: without a second imported decision, a derivation that dropped the subject
- * from its query — serving every provenance the tree holds to every rule — left this file
+ * from its query, serving every provenance the tree holds to every rule, left this file
  * entirely green. That mutation is the defect this delivery exists to fix, arriving from
  * the other side, and one fixture cannot see it.
  */
@@ -79,7 +79,7 @@ const LEDGER = 'ADR-011-the-ledger-is-append-only.md';
 /** What the second file says. */
 const LEDGER_BODY = 'Nothing is edited in place, so an auditor can replay the whole of it.';
 
-/** `packages/code/src` — the tree the last case walks. */
+/** `packages/code/src`: the tree the last case walks. */
 const SOURCE = fileURLToPath(new URL('../src', import.meta.url));
 
 let sandbox: string;
@@ -112,7 +112,7 @@ async function mnema(...argv: string[]): Promise<Said> {
   return { out, err, failed };
 }
 
-/** The id in the parentheses of an echo — never the leading `ADR-<n>`, which is display. */
+/** The id in the parentheses of an echo, never the leading `ADR-<n>`, which is display. */
 function idIn(said: Said): string {
   const id = said.out.join('\n').match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said.out.join(' / ')}`);
@@ -123,15 +123,15 @@ function idIn(said: Said): string {
  * Imports the ADR directory for real, accepts every decision it proposed, and returns
  * them keyed by the file each came out of.
  *
- * A decision an import proposes is born `proposed` — structurally, because a repository
- * that already decided is not this product's to accept on its behalf — so each has to be
+ * A decision an import proposes is born `proposed` (structurally, because a repository
+ * that already decided is not this product's to accept on its behalf), so each has to be
  * accepted before any of these channels carries it at all.
  */
 async function importedAndAccepted(): Promise<Map<string, string>> {
   const imported = await mnema('decision', 'import', 'docs/adr', '--write');
   expect(imported.failed, imported.err.join(' / ')).toBe(false);
   // The echo names each proposal on one line and the file it came out of on the NEXT, so
-  // the id is carried forward rather than looked for twice — the pairing is the echo's own
+  // the id is carried forward rather than looked for twice: the pairing is the echo's own
   // and a case that matched both on one line would silently find neither.
   const byFile = new Map<string, string>();
   let last: string | undefined;
@@ -276,8 +276,8 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     // AND THE PAIRING IS ASSERTED, which is the half a field alone does not buy: each
     // bullet carries the source THAT rule came out of, so a derivation serving every
     // provenance the tree holds to every rule cannot pass here.
-    // Sorted, because the ORDER of the two bullets is the document's own — most recently
-    // settled first — and this case is about the PAIRING on each line, not about that.
+    // Sorted, because the ORDER of the two bullets is the document's own, most recently
+    // settled first, and this case is about the PAIRING on each line, not about that.
     // Without the `accepted by` clause the document now ends each bullet with: that is about WHO
     // ruled, which `a-rule-says-who-ruled-it.test.ts` holds, and this case is about the pairing.
     expect(
@@ -290,7 +290,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
         `- **ADR-2 — The ledger is append-only** · \`${rules.get(LEDGER) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${LEDGER}\``,
       ].sort(),
     );
-    // AND THEY OPEN. Not "a path is printed" — the bytes behind each are read back, and
+    // AND THEY OPEN. Not "a path is printed": the bytes behind each are read back, and
     // they are the bytes of the document that rule was made from.
     expect(opened(`docs/adr/${GATEWAY}`)).toContain(GATEWAY_BODY);
     expect(opened(`docs/adr/${LEDGER}`)).toContain(LEDGER_BODY);
@@ -309,9 +309,9 @@ describe('a rule that arrives unasked carries a path that opens', () => {
       `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
-    // reader could follow, and it opens through this product alone — the door the reader
+    // reader could follow, and it opens through this product alone: the door the reader
     // in the field does not take. The only `ADR-` on the line is inside the FILE NAME, and
-    // it is the source's own number — 008, not the 1 the record froze. A case asserting the
+    // it is the source's own number: 008, not the 1 the record froze. A case asserting the
     // absence of the string would now be asserting the absence of the fix.
     expect(collate).not.toContain('ADR-1 ');
     expect(collate).toContain('ADR-008');
@@ -381,7 +381,7 @@ describe('a rule the record derives from more than one source', () => {
   }, async () => {
     const rules = await importedAndAccepted();
     const gateway = rules.get(GATEWAY) as string;
-    // A second source for ONE of the two rules, linked by hand — the shape a document that
+    // A second source for ONE of the two rules, linked by hand: the shape a document that
     // MOVED leaves behind. Its target sorts BEFORE the imported one, so a channel taking
     // "the first row" and one taking "all of them" cannot agree by accident, and the rule
     // that did NOT get it says whether the extra source stayed where it was put.
@@ -391,7 +391,7 @@ describe('a rule the record derives from more than one source', () => {
 
     const both = ['docs/adr/0001-gateway-notes.md', `docs/adr/${GATEWAY}`];
     const text = await briefText();
-    // The rule that got the second source carries both, in the record's own order — and
+    // The rule that got the second source carries both, in the record's own order, and
     // the rule that did not carries exactly one, which is what says the extra source
     // stayed where it was put.
     expect(bullets(text).map(provenancesIn).sort()).toEqual([both, [`docs/adr/${LEDGER}`]]);
@@ -448,7 +448,7 @@ describe('the line of a pushed provenance is one line', () => {
   }, async () => {
     // THE N+1 SITE OF THE LINE RULE, and the two channels where it costs most. A
     // `derived-from` target reaches the chain without being checked to exist, so it is a
-    // caller's string on exactly the terms the rule's name is — and on these channels a
+    // caller's string on exactly the terms the rule's name is, and on these channels a
     // second line would read as a rule this project never made, in a text that arrives
     // while code is being written or that explains why somebody's work stopped. The
     // committed document's half of this is in `presentation/one-line-per-item.test.ts`;
@@ -487,7 +487,7 @@ describe('the word a provenance is introduced with has one source', () => {
     );
     expect(without.map((file) => file.slice(SOURCE.length + 1))).toEqual([]);
     // NOT VACUOUS, in the two ways it could be: the sweep finds the printers there are, and
-    // it is the ones this delivery named — plus the refusal, which arrived after it and
+    // it is the ones this delivery named, plus the refusal, which arrived after it and
     // prints a provenance the way the asking does.
     expect(reads.map((file) => file.slice(SOURCE.length + 1)).sort()).toEqual([
       'edit-asks-a-person.ts',
@@ -500,7 +500,7 @@ describe('the word a provenance is introduced with has one source', () => {
 
   it('is what every one of the four actually prints', { timeout: A_PROJECT_PER_CASE }, async () => {
     // The other half, and without it the case above passes on four modules that import a
-    // constant and print something else. Asserted on the BYTES of all four channels — the
+    // constant and print something else. Asserted on the BYTES of all four channels: the
     // three that push and the read that serves one record whole.
     const rule = await gatewayRule();
     await addressAt(rule, 'src/collate', 'governs');

@@ -1,12 +1,12 @@
 /**
  * The `mnema audit exposure` wiring: what it declares, and what it prints.
  *
- * `mnema audit exposure [--json]` — which records hold something shaped like a
+ * `mnema audit exposure [--json]`: which records hold something shaped like a
  * credential. The fourth intelligence read, and the only one about the record's
  * PAST: everything written before the content door existed was written with no
  * defense, and in a committed tree that past is what decides the damage.
  *
- * It prints WHERE and never WHAT — id, kind, tree, instant, class — in the human
+ * It prints WHERE and never WHAT (id, kind, tree, instant, class) in the human
  * summary and in `--json` alike. Printing the value would move the credential
  * into a CI log or a scrollback, which is to say it would make the report the
  * second disclosure. The read cannot do it: what it returns holds no value.

@@ -1,7 +1,7 @@
 /**
  * The `mnema resume` wiring: what it declares, and what it prints.
  *
- * `mnema resume --actor <id> [--json]` — where the actor left off: their latest
+ * `mnema resume --actor <id> [--json]`, where the actor left off: their latest
  * run (open OR ended), and the runs they still have open, one line each.
  *
  * It is also the answer to "what is this actor touching now", which used to be a verb of its
@@ -47,7 +47,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result);
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
@@ -58,7 +58,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       const actor = anchorText(result.anchors, result.resume.actor);
       if (lastRun === null) {
         // Not "no runs YET": for a person working the CLI directly that reads as
-        // a state about to change, and it never will — nor should it.
+        // a state about to change, and it never will, nor should it.
         io.out(`${actor} has no runs.`);
         writeLines(io, NO_RUNS_HINT.map(render));
         return;
@@ -72,7 +72,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       // this line inside the phrase. The goal is collapsed a second time here and that
       // is not redundancy to remove: `lastRunPhrase` collapses the goal because the
       // OTHER reading prints the phrase too (`presentation/runs.ts`), and this tag
-      // collapses whatever the phrase turns out to hold. Both are classified —
+      // collapses whatever the phrase turns out to hold. Both are classified:
       // `tests/a-line-of-success-is-one-line.test.ts` for this line,
       // `tests/the-line-a-reading-words-is-one-line.test.ts` for the phrase.
       io.out(onOneLine`${actor} ${lastRunPhrase(lastRun)}`);
@@ -84,7 +84,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       // The age and the idleness are what tell ten leftover runs apart from the one being worked
       // in, and they ride the run's OWN line. And WHAT each one wrote, from the same module,
       // because what tells two leftover runs apart is what happened inside them. The clause is
-      // `wroteSuffix`'s and not this file's — `status` prints the same words through
+      // `wroteSuffix`'s and not this file's: `status` prints the same words through
       // `lastRunPhrase`, and a second wording here is the drift that module exists to prevent.
       // `thisSession` is NOT printed: a read opens no run, so it is false in every line, and a
       // constant is noise rather than honesty.

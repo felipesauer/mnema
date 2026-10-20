@@ -7,14 +7,14 @@
  * calls; the pattern did.
  *
  * WHERE IT CAME FROM. `the-broken-link-reaches-every-reader.test.ts` carried one, inside a
- * loop, asking whether the MCP server declares the reading — the first of a pair, where
+ * loop, asking whether the MCP server declares the reading: the first of a pair, where
  * the second is what actually catches a missing tool. So it never moved a verdict, and
  * that is exactly the reason it is worth a guard rather than a fix: an assertion that
  * passes for a reason unrelated to what it asks is one that will keep passing when the
  * thing it asks about breaks, and nothing about the day it was written says which pair it
  * lands in next time.
  *
- * WHAT IS SWEPT. Every `.ts` of every package, tests INCLUDED — a test asserting shape is
+ * WHAT IS SWEPT. Every `.ts` of every package, tests INCLUDED: a test asserting shape is
  * where this shape lives, and the one occurrence there was is the proof of that. Prose is
  * excluded by the line, not by a blanker: a doc-comment explaining the rule has to be able
  * to write the rule down, and a line whose first non-space is `*`, `//` or `/*` is not
@@ -22,7 +22,7 @@
  *
  * ## What it does not answer
  *
- * A pattern built elsewhere and handed in — `someRegexArgument.test(x)` — and a flag
+ * A pattern built elsewhere and handed in, `someRegexArgument.test(x)`, and a flag
  * assembled at runtime. Both are reachable and neither is written here; what is swept is
  * the two forms the sweep that found this one covered, so the guard and the sweep say the
  * same thing rather than two.
@@ -35,12 +35,12 @@ import { describe, expect, it } from 'vitest';
 const PACKAGES = join(import.meta.dirname, '..', '..');
 
 /**
- * Every `.ts` under a directory, TESTS INCLUDED — which is why `sourceFiles` from
+ * Every `.ts` under a directory, TESTS INCLUDED, which is why `sourceFiles` from
  * `support/reading-source.ts` is not what walks here, and the difference is the whole
  * guard rather than a detail. That helper drops `.test.ts`, because the guards it serves
  * ask about what SHIPS; this one asks about a shape that lives in assertions, and the one
  * occurrence in this repository was in a `.test.ts`. Written on the shared walker, this
- * file would have been born blind to the defect that motivated it — measured: 320 files
+ * file would have been born blind to the defect that motivated it. Measured: 320 files
  * swept instead of 578, and zero of the guilty among them.
  */
 function everyTypeScriptFile(directory: string): string[] {
@@ -84,7 +84,7 @@ function codeLines(source: string): string {
     .join('\n');
 }
 
-/** One regex literal's body, as a fragment — escapes and character classes intact. */
+/** One regex literal's body, as a fragment: escapes and character classes intact. */
 const BODY = String.raw`(?:\\.|\[[^\]]*\]|[^/\n\\])+`;
 
 /** A literal that remembers, asked a yes-or-no question: `/…/g` immediately `.test(`. */
@@ -132,7 +132,7 @@ describe('no pattern that remembers is asked a yes-or-no question', () => {
     expect(guilty).toEqual([]);
   });
 
-  it('would accuse both forms — on the text the repository held', () => {
+  it('would accuse both forms: on the text the repository held', () => {
     // THE TEETH, and the probes are ASSEMBLED rather than written out: a file that spelled
     // the forbidden form would accuse itself, and an exception for this one file is where
     // the next hole goes. The first is the line that was really here, to the character.

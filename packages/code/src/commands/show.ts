@@ -1,5 +1,5 @@
 /**
- * `mnema show <id>` — one whole record, by the id a search gave.
+ * `mnema show <id>`: one whole record, by the id a search gave.
  *
  * The other half of `mnema search`: the index says what exists, this says what
  * it says. It looks in every visible tree (an id is minted once and lives in
@@ -11,13 +11,13 @@
  * instead. What differs there is the DOOR, not the body: that tool serves an adopted
  * pattern and one still awaiting a ruling, and refuses only the two states the
  * project has closed. Here every state is served, including those two, because a
- * person on the command line is CURATING — reading a deprecated pattern to see what
- * was dropped is the reason this surface exists — and refusing them the text of the
+ * person on the command line is CURATING (reading a deprecated pattern to see what
+ * was dropped is the reason this surface exists) and refusing them the text of the
  * thing they are deciding about would make the workflow unusable.
  *
  * That sentence is the one this product's rule for the agent's surface was widened
  * to match: it is about whoever JUDGES, not about whoever is human. What stays
- * one-sided is the RECORDING — and THE REASON GIVEN HERE USED TO BE FALSE. It read
+ * one-sided is the RECORDING, and THE REASON GIVEN HERE USED TO BE FALSE. It read
  * *"there is no session on the command line to attribute a consultation to"*, which was
  * true when it was written and stopped being true when `mnema run start` put a run on
  * this surface: a person reading here may well be inside one, and `MNEMA_RUN` would
@@ -27,18 +27,18 @@
  * A `skill.consulted` routes to the PUBLIC tree (`core/src/topology/routing.ts`), so a
  * third party who clones a repository and reads inside a run would append to the
  * committed record of the very people they are auditing. Any reader founds an identity
- * on the spot — `run start` does it — so there is no reader the mechanism could tell
+ * on the spot (`run start` does it), so there is no reader the mechanism could tell
  * apart and decline. And it would not close the hole it was for: whoever reads outside
  * a run goes on reading in silence. Under all three sits the structural half: no system
  * of proof makes the READER sign their own reading. Where a log of reading exists, what
- * records it is the system that SERVES — which is why `skill.consulted` works on the MCP
+ * records it is the system that SERVES, which is why `skill.consulted` works on the MCP
  * surface, which has a server, and cannot work here, where the person opens the file.
  *
  * That is also what kills a gate of the shape "you may only move what you have
- * consulted" — it would not be one rule across both surfaces, it would be a rule the
+ * consulted": it would not be one rule across both surfaces, it would be a rule the
  * auditor's surface cannot obey. What stands in its place is a REPORT that declares its
  * own scope: `mnema audit antipatterns` says whether the run that MOVED a pattern had been
- * served its body, and answers NOT OBSERVABLE — never "did not consult" — for every move
+ * served its body, and answers NOT OBSERVABLE (never "did not consult") for every move
  * whose run recorded no consultation at all, which is the state every move following a
  * read through this verb is in. `tests/what-the-record-can-witness.test.ts` drives that
  * exact sequence (`run start` → `show` → `skill move`) and holds the answer to being the
@@ -46,7 +46,7 @@
  *
  * Read-only: it opens a cache per tree, brought forward from the one the tree keeps
  * (`CacheOptions.persist`), and reads. No
- * writer, no key, no event — so no `--actor`.
+ * writer, no key, no event, so no `--actor`.
  *
  * IT STOPS AT THE HOLDER, unless the record it found is about more than itself.
  * An id is minted once, so the first tree that answers has THE answer and the
@@ -70,7 +70,7 @@ import {
 /** The trees a lookup reads, in a fixed order. An id lives in exactly one. */
 const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
 
-/** What the show command needs — injected so it is testable. */
+/** What the show command needs: injected so it is testable. */
 export interface ShowContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
@@ -85,7 +85,7 @@ export interface ShowDone {
   readonly record: RecordBody;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
-  /** How many runs consulted this pattern — present only for a skill. */
+  /** How many runs consulted this pattern: present only for a skill. */
   readonly consultations?: number;
   /**
    * Which of a decision's two actors the record's own agent key signed for: the agent is then
@@ -94,14 +94,14 @@ export interface ShowDone {
    */
   readonly attested?: { readonly recordedBy?: true; readonly acceptedBy?: true };
   /**
-   * The tails among those read that do not chain — empty for a sound record, which is
+   * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
   /**
-   * The moves of this record out of one state, on machines that had not seen each other — what two machines
+   * The moves of this record out of one state, on machines that had not seen each other: what two machines
    * moving one decision, pattern or task apart leave, and what a projection hides by keeping
    * the last `to` ({@link DivergentMove}). Empty for every record moved in one line, and for a
    * memory or an observation, which have no states. Read from the tree that holds the record,
@@ -115,7 +115,7 @@ export interface ShowRefused {
   readonly ok: false;
   /**
    * `UNKNOWN_RECORD` inside a project; `NO_PROJECT` outside one, where the global tree was
-   * read and does not hold it either — the person is most likely in the wrong directory,
+   * read and does not hold it either: the person is most likely in the wrong directory,
    * which is the news, and "No record <id> here" told them their record had lost it
    * (`outside-a-project-the-surface-says-so.test.ts`).
    */
@@ -126,7 +126,7 @@ export interface ShowRefused {
  * Reads the record with `id` from the first visible tree that holds it. An id
  * that belongs to a run, a handoff or a link is `UNKNOWN_RECORD`: those are
  * facts about other things, with no record of their own to show (a task's
- * handoffs are part of the task's story — `mnema timeline`).
+ * handoffs are part of the task's story: `mnema timeline`).
  */
 export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | ShowRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -150,13 +150,13 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
     const id = found.id;
     const divergent = (holder?.cache.divergentMoves() ?? []).filter((move) => move.entityId === id);
     // A DECISION NAMES WHO RECORDED AND WHO RULED IT, so it prints identities and reads the
-    // shortening from the tree it came off — the tree that holds the events naming them.
+    // shortening from the tree it came off: the tree that holds the events naming them.
     if (found.kind !== 'memory' && found.kind !== 'skill') {
       const anchors = found.kind === 'decision' ? anchorForms(opened) : NO_ANCHORS;
       const attested = holder === undefined ? {} : attestedActors(holder, found);
       // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
       // this verb stops at the first tree holding the id. That is the right answer and
-      // not a shortfall — the notice is about the record the answer came off, and a tail
+      // not a shortfall: the notice is about the record the answer came off, and a tail
       // this read never touched did not serve anything.
       return {
         ok: true,
@@ -185,7 +185,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
 /**
  * The actors of a decision that the record's own agent key signed for: the event that recorded
  * it, and the event that ruled it accepted (the latest), each checked the way the verifier holds
- * an agent key's facts — signed by a key enrolled as an agent of that identity, under the name the
+ * an agent key's facts, signed by a key enrolled as an agent of that identity, under the name the
  * fact carries. It reads the envelopes of the events this tree already indexes, never the chain.
  */
 function attestedActors(

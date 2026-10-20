@@ -7,7 +7,7 @@
  * fifth line, after the edge was already part of a chain that cannot be edited. A label that names
  * one decision is now turned into that decision's id before this is asked
  * (`label-as-address.ts`), so what reaches here still shaped like a label is one NO decision here
- * carries. It names nothing, and a link is refused rather than record it — on either end.
+ * carries. It names nothing, and a link is refused rather than record it: on either end.
  *
  * It refuses only that. A subject or a target that is not a label is not required to resolve: a link
  * is legitimately cross-tree, and an address may name a path the tree does not hold yet.

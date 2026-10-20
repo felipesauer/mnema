@@ -1,7 +1,7 @@
 /**
  * The `mnema refs` wiring: what it declares, and what it prints.
  *
- * `mnema refs <id> [--direction --depth] [--json]` — the graph reading of the
+ * `mnema refs <id> [--direction --depth] [--json]`, the graph reading of the
  * same index `timeline` reads: not the events that touch an entity but the
  * ENTITIES it connects to. One verb, two shapes: the default is the
  * neighbourhood (one hop, either way), and a direction with more depth is a
@@ -57,7 +57,7 @@ export function registerReferences(program: Command, wiring: Wiring): Declared {
       if (!result.ok) {
         // Through the SHARED refusal, wording only the reason this verb knows about.
         // It used to write both of its own by hand, one of them re-typing the funnel's
-        // own `NO_PROJECT` sentence — which is how a refusal ends up being the one line
+        // own `NO_PROJECT` sentence, which is how a refusal ends up being the one line
         // on the surface that does not look like a refusal. `said` is keyed by reason,
         // so the bad direction still names the value it refused.
         reportRefusal(
@@ -73,7 +73,7 @@ export function registerReferences(program: Command, wiring: Wiring): Declared {
         );
         return;
       }
-      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
