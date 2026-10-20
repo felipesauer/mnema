@@ -131,7 +131,7 @@ describe('the memory files of the host', () => {
     `---\nname: ${name}\ndescription: one line\nmetadata:\n  type: feedback\n---\n\n${body}\n`;
 
   it('reads a memory file by its name and body, and skips the index', () => {
-    put('memory/MEMORY.md', '- [x](x.md) — an index line\n');
+    put('memory/MEMORY.md', '- [x](x.md): an index line\n');
     put('memory/feedback_x.md', memory('No publish', 'Do not suggest publishing.'));
     const scan = scanBridge('claude-memory', join(sandbox, 'memory'));
     expect(scan.refused).toEqual([]);

@@ -169,7 +169,7 @@ export function sweep({ now, alive, baseline }) {
     return {
       verdict: 'ruler-broken',
       code: 2,
-      why: `no baseline was recorded, so what was already here cannot be told from what this run left — record one with --record before the suite`,
+      why: `no baseline was recorded, so what was already here cannot be told from what this run left: record one with --record before the suite`,
       alive,
       leftBehind: [],
     };
@@ -196,14 +196,14 @@ export function sweep({ now, alive, baseline }) {
  */
 export function asProse(result, where) {
   if (result.verdict === 'nothing-left-behind') {
-    return `NOTHING LEFT BEHIND — no new ${THE_FAMILY}* directory under ${where}.`;
+    return `NOTHING LEFT BEHIND: no new ${THE_FAMILY}* directory under ${where}.`;
   }
   if (result.verdict === 'ruler-broken') {
     const alive = result.alive.length > 0 ? `\n\n${result.alive.join('\n')}` : '';
-    return `RULER BROKEN — ${result.why}.${alive}`;
+    return `RULER BROKEN: ${result.why}.${alive}`;
   }
   return [
-    `LEFT BEHIND — ${result.leftBehind.length} sandbox(es) under ${where} outlived the run:`,
+    `LEFT BEHIND: ${result.leftBehind.length} sandbox(es) under ${where} outlived the run:`,
     '',
     ...result.leftBehind.map((name) => `  ${join(where, name)}`),
   ].join('\n');
@@ -248,7 +248,7 @@ export function main(
     alive = aliveNow();
   } catch (reason) {
     process.stdout.write(
-      `RULER BROKEN — the process list could not be read (${String(reason)}), so this sweep cannot prove the suite has stopped.\n`,
+      `RULER BROKEN: the process list could not be read (${String(reason)}), so this sweep cannot prove the suite has stopped.\n`,
     );
     return 2;
   }
@@ -257,19 +257,19 @@ export function main(
   try {
     now = sandboxesUnder(where, prefix);
   } catch (reason) {
-    process.stdout.write(`RULER BROKEN — ${where} could not be read (${String(reason)}).\n`);
+    process.stdout.write(`RULER BROKEN: ${where} could not be read (${String(reason)}).\n`);
     return 2;
   }
 
   if (argv.includes('--record')) {
     if (alive.length > 0) {
       process.stdout.write(
-        `RULER BROKEN — a run of the suite is alive, so this baseline would already hold its sandboxes.\n\n${alive.join('\n')}\n`,
+        `RULER BROKEN: a run of the suite is alive, so this baseline would already hold its sandboxes.\n\n${alive.join('\n')}\n`,
       );
       return 2;
     }
     writeFileSync(baselineAt, `${JSON.stringify({ where, prefix, names: now }, null, 2)}\n`);
-    process.stdout.write(`RECORDED — ${now.length} ${prefix}* directory(ies) under ${where}.\n`);
+    process.stdout.write(`RECORDED: ${now.length} ${prefix}* directory(ies) under ${where}.\n`);
     return 0;
   }
 

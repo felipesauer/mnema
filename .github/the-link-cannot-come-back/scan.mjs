@@ -229,7 +229,7 @@ export function authorsThatDiffer(commits) {
  * all produce zero commits, and zero commits carry no footer.
  */
 export const THE_CANARY =
-  'no commit was examined, so this reading would say the trunk is clean when what is actually true is that the range was empty — check the range and that the base commit was fetched';
+  'no commit was examined, so this reading would say the trunk is clean when what is actually true is that the range was empty: check the range and that the base commit was fetched';
 
 /**
  * THE PHRASE A SCAN WITH NO PULL REQUEST PRINTS. The body half is 19 of the 33 leaks this
@@ -237,7 +237,7 @@ export const THE_CANARY =
  * larger one's name.
  */
 export const NO_PULL_REQUEST =
-  'no pull request was handed to this scan, so the half of the rule that reads the description examined nothing — run it on a `pull_request` event, or pass --commits-only to say out loud that only the commits were read';
+  'no pull request was handed to this scan, so the half of the rule that reads the description examined nothing: run it on a `pull_request` event, or pass --commits-only to say out loud that only the commits were read';
 
 /**
  * EVERY FOOTER IN ONE TEXT: THE SINGLE READING OF THE RULE.
@@ -349,15 +349,15 @@ export function judge({ commits, pullRequest }) {
  * @returns {string}
  */
 export function asProse(result) {
-  if (result.verdict === 'ruler-broken') return `RULER BROKEN — ${result.why}.`;
+  if (result.verdict === 'ruler-broken') return `RULER BROKEN: ${result.why}.`;
   const examined = result.examinedPullRequest
     ? `${result.examinedCommits} commit(s) and the pull request as written`
     : `${result.examinedCommits} commit(s), with the pull request NOT examined`;
   if (result.verdict === 'clean') {
-    return `NO ATTRIBUTION FOOTER — none of the ${THE_FOOTERS.length} footers this trunk refuses appears in ${examined}.`;
+    return `NO ATTRIBUTION FOOTER: none of the ${THE_FOOTERS.length} footers this trunk refuses appears in ${examined}.`;
   }
   return [
-    `ATTRIBUTION FOUND — ${result.found.length} finding(s) against the footer and e-mail rules, out of ${examined}:`,
+    `ATTRIBUTION FOUND: ${result.found.length} finding(s) against the footer and e-mail rules, out of ${examined}:`,
     '',
     ...result.found.flatMap((one) => [
       one.at === 0 ? `  ${one.where}` : `  ${one.where}, line ${one.at}`,
@@ -527,7 +527,7 @@ export function main(argv = process.argv.slice(2), world = {}) {
       {
         verdict: 'ruler-broken',
         code: 2,
-        why: 'no range was given and the event on this runner names no pull request, so there is nothing to read — pass --range <base>..<head>',
+        why: 'no range was given and the event on this runner names no pull request, so there is nothing to read: pass --range <base>..<head>',
         examinedCommits: 0,
         examinedPullRequest: false,
         found: [],
@@ -546,7 +546,7 @@ export function main(argv = process.argv.slice(2), world = {}) {
       {
         verdict: 'ruler-broken',
         code: 2,
-        why: `the commits of ${range} could not be read (${String(reason)}), which on a runner usually means the base commit was never fetched — see \`fetch-depth\``,
+        why: `the commits of ${range} could not be read (${String(reason)}), which on a runner usually means the base commit was never fetched: see \`fetch-depth\``,
         examinedCommits: 0,
         examinedPullRequest: false,
         found: [],

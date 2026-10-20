@@ -8,7 +8,7 @@ import { Buffer as PageBuffer } from './buffer.js';
 
 describe('the page Buffer', () => {
   it('spells bytes the way Node does: hex, base64 and UTF-8, in both directions', () => {
-    const text = 'decisão ✓ — 4 bytes: \u0000ÿ';
+    const text = 'decisão ✓ – 4 bytes: \u0000ÿ';
     const node = Buffer.from(text);
     const page = PageBuffer.from(text);
     expect(Array.from(page)).toEqual(Array.from(node));
