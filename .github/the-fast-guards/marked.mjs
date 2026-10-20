@@ -18,7 +18,11 @@ export const MARK = '// @reads-the-tree';
 /** How far into a file the mark may sit: the first lines, before any import. */
 const HEAD_BYTES = 400;
 
-/** Every test file the main suite runs, relative to `root`, sorted. */
+/**
+ * Every test file the main suite runs, relative to `root`, sorted.
+ * @param {string} root
+ * @returns {string[]}
+ */
 export function testFiles(root) {
   // `--others`: a guard written a minute ago and not yet added is still one the next run must see.
   const args = ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--'];
@@ -32,7 +36,12 @@ export function testFiles(root) {
     .sort();
 }
 
-/** Whether the file carries the mark within its first bytes. */
+/**
+ * Whether the file carries the mark within its first bytes.
+ * @param {string} root
+ * @param {string} file
+ * @returns {boolean}
+ */
 export function isMarked(root, file) {
   const descriptor = openSync(join(root, file), 'r');
   try {
@@ -44,7 +53,11 @@ export function isMarked(root, file) {
   }
 }
 
-/** The marked test files, relative to `root`, sorted. */
+/**
+ * The marked test files, relative to `root`, sorted.
+ * @param {string} root
+ * @returns {string[]}
+ */
 export function markedGuards(root) {
   return testFiles(root).filter((file) => isMarked(root, file));
 }
