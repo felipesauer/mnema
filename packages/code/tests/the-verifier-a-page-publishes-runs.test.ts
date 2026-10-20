@@ -1,5 +1,5 @@
 /**
- * THE VERIFIER THE PAGE PUBLISHES IS A VERIFIER THAT RUNS: and prints what the page
+ * THE VERIFIER THE PAGE PUBLISHES IS A VERIFIER THAT RUNS, and prints what the page
  * says it prints.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT COST. `README.md` sells the second reader in its opening

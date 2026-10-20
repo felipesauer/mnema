@@ -4,7 +4,7 @@
  * ## What it was
  *
  * Over a tree `mnema verify` exits 1 on (`seq gap: expected 6, found 5`, which is
- * what two sessions appending to one tail at once used to leave) `mnema search
+ * what two sessions appending to one tail at once used to leave), `mnema search
  * --kind decision` exited 0 with no word, and `mnema status` did the same. Every fact
  * was served and the one thing wrong with the record was never mentioned. A product
  * whose subject is proof may not hand somebody a broken proof in silence.

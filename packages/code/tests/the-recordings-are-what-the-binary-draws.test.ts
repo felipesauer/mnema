@@ -452,7 +452,7 @@ function slicesOf(ran: Ran, count: number): string[] {
 }
 
 /**
- * THE SANDBOX'S HOME, SPELLED `~`: so the path the console's panel prints reads the way it would
+ * THE SANDBOX'S HOME, SPELLED `~`, so the path the console's panel prints reads the way it would
  * on a reader's machine. The only respelling the recording makes of the console's own bytes; the
  * last case below holds that it changes nothing on any page but that path.
  */

@@ -1,5 +1,5 @@
 /**
- * THE SHELL KNOWS THE VERBS: and the four ways a completion script goes wrong.
+ * THE SHELL KNOWS THE VERBS, and the four ways a completion script goes wrong.
  *
  *   - IT FALLS A VERSION BEHIND. A verb added tomorrow, a subcommand, an option: each is
  *     a word the script does not offer, and nothing fails, because a completion that

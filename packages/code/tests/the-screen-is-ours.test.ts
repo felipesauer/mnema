@@ -114,7 +114,7 @@ const OPENED = 'a session over this project';
  * session SAYS, so it goes on the roll where everything else it says goes. Which is why walking
  * to the top of the roll ends here rather than on the first thing a caller typed.
  *
- * IT WAS THE FIRST WORDS OF THAT SENTENCE: `It runs the`, AND THEY ARE NOT ONLY ITS. The
+ * IT WAS THE FIRST WORDS OF THAT SENTENCE (`It runs the`) AND THEY ARE NOT ONLY ITS. The
  * session refuses a word it does not run with *It runs the reads of the record* (`src/repl/
  * gate.ts`), so every page below that shows a refusal answers *the oldest line is here* whether
  * it is or not, and the cases that walk to the top submit nothing but lines the session
@@ -842,7 +842,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     expect(back.text, 'PgUp showed the same window as the tail').not.toBe(printed.text);
     // AND IT COMES BACK TO EXACTLY WHAT IT LEFT.
     expect(forward.text, 'PgDn did not come back to the window PgUp left').toBe(printed.text);
-    // THE WHEEL IS THE SAME AFFORDANCE BY ANOTHER ROAD: and this is the case that proves the
+    // THE WHEEL IS THE SAME AFFORDANCE BY ANOTHER ROAD, and this is the case that proves the
     // report really arrives in the form the decode expects, because nothing else could scroll it.
     expect(wheeled.text, 'the wheel moved nothing').not.toBe(printed.text);
     expect(tail.text, 'End did not come back to the tail').toBe(printed.text);

@@ -30,7 +30,7 @@
  *     setting `PYTHON3_IS_THE_FLOOR`, and the last case here asks the interpreter itself for
  *     `sys.version_info[:2]`, so an image or an action that stopped putting the floor first on
  *     `PATH` turns the job red instead of green on the image's own Python. Everywhere else
- * (    a workstation, the matrix, the flake sampler) the same case asks only that it be no
+ * (a workstation, the matrix, the flake sampler) the same case asks only that it be no
  *     lower than the floor.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered:

@@ -1,5 +1,5 @@
 /**
- * OPENING A CACHE AND CLOSING IT ARE ONE CALL: and the guard is that nothing else in this
+ * OPENING A CACHE AND CLOSING IT ARE ONE CALL, and the guard is that nothing else in this
  * package writes the open.
  *
  * WHAT WAS MEASURED. Six modules of `code/src` opened a `ProjectionCache` directly. Three

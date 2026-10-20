@@ -1047,7 +1047,7 @@ describe('the record arrives unasked', () => {
     }
   });
 
-  it('hands this machine’s notes to its session: the private tree too, one line each', () => {
+  it('hands this machine’s notes to its session — the private tree too, one line each', () => {
     // WHAT THE SECOND HANDLER IS FOR: the note an agent records lands in the tree that
     // does not travel, and the document may not carry it. Here it arrives, the private
     // memory beside the committed one, and the observation arrives as the line the index
@@ -1126,7 +1126,7 @@ describe('the record arrives unasked', () => {
     // verb. What it guards is unchanged (every verb a handler reaches is a READ) and the
     // list says which two, so a third is a line somebody has to write.
     //
-    // A THIRD VERB ARRIVED, AND IT WRITES: so the sentence "every verb a handler reaches is a
+    // A THIRD VERB ARRIVED, AND IT WRITES, so the sentence "every verb a handler reaches is a
     // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
     // reader who knew the old name finds a different claim. VS Code runs only command hooks and
     // holds a write for a person when a command answers `ask` (measured on 30 Sep 2026), so the gate reaches it as a process: `mnema before-a-write

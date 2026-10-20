@@ -1,5 +1,5 @@
 /**
- * THE SENTENCE REACHES EVERY DOOR: and nine-of-ten is what this file exists to redden.
+ * THE SENTENCE REACHES EVERY DOOR, and nine-of-ten is what this file exists to redden.
  *
  * The promise this product makes lived in NINE places at once and nothing held them
  * together: the npm manifest of the published package, the `--help` of the binary, the

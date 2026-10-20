@@ -20,7 +20,7 @@
  *     the WEAKEST of them, so no project passes on another's proof;
  *   - a project with a break: it takes the aggregate down and the line says WHICH one,
  *     because an aggregate alone hides the project that pulled it there;
- *   - a path that holds NO record, not a pass and not a break. Counting it as verified
+ *   - a path that holds NO record: not a pass and not a break. Counting it as verified
  *     would let an empty directory carry a CI gate, which is the no-op `verify` has
  *     already been once; counting it as broken would say a chain failed to replay when
  *     none was read. It is reported, left out of the LEVEL, and counted at the end.

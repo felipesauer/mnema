@@ -130,7 +130,7 @@ interface Outcome {
   readonly failed: boolean;
 }
 
-/** A port that keeps the two streams apart, which stream a line went to is the point. */
+/** A port that keeps the two streams apart: which stream a line went to is the point. */
 function capture(): { io: CliIo; outcome: () => Outcome } {
   const out: string[] = [];
   const err: string[] = [];

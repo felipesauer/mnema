@@ -506,7 +506,7 @@ describe('a key that is the only key of both identities', () => {
     expect(theWayOutOf(said, founded).leftIn).toBe(y);
   }, 90_000);
 
-  it('done to the letter from the checkout that founded it (which had not pulled) the key speaks for the other, and verifies', () => {
+  it('done to the letter from the checkout that founded it (which had not pulled), the key speaks for the other, and verifies', () => {
     const { b, n, remote, atB, fp, founded, y } = theOnlyKeyOfBoth();
     const said = refusedIn(remote, b, 'first');
     // Before the way out, the checkout that founded goes on writing as the identity it founded.
@@ -703,7 +703,7 @@ describe('the revocation of this machine’s own key says what the record leaves
     expect(kept.stderr).not.toContain('Refused');
   }, 60_000);
 
-  it('where the checkout had not pulled, followed to the letter: the pull, the restore, and it writes as the other identity, and verifies', () => {
+  it('where the checkout had not pulled, followed to the letter: the pull, the restore; and it writes as the other identity, and verifies', () => {
     // THE CHECKOUT LEFT ALONE. The laptop's checkout last pulled before the old laptop vouched for
     // it into Y, and it lets its key go from there: another key takes this one's place in the
     // identity it founded, and the revocation reads a record that does not yet show Y. This said

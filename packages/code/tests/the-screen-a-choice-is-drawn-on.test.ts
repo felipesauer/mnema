@@ -225,7 +225,7 @@ describe('closing takes the page down, once, and gives every hook back', () => {
     const { screen, leaving } = await drawn();
     screen.close();
     const afterTheFirst = leaving.hooked();
-    // TWO OF THESE CAN FIRE ON ONE DEATH: a signal arriving while the normal path unwinds,
+    // TWO OF THESE CAN FIRE ON ONE DEATH (a signal arriving while the normal path unwinds),
     // so closing twice has to be closing once, and `armLeaving` requires it in writing.
     // AND THE GUARD IS NOT WHAT DELIVERS IT TODAY, which was this case's first premise and
     // is measured false: taking `restore`'s `if (closed) return` away reddens nothing,
