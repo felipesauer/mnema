@@ -203,6 +203,81 @@ describe('the front page is drawn from the console', () => {
     );
   });
 
+  // Each stroke below is one unit wide and off the grid, laid into a copy of a picture the script
+  // draws; the guard names it, by its tag, and nothing else in the picture.
+  it.each([
+    ['a cubic curve', '<path d="M10.5 10.5C20 10 30 10 40.5 10.5" stroke="#997dbf"/>', 'path'],
+    ['a quadratic curve', '<path d="M10.5 10.5Q20 30 40.5 10.5" stroke="#997dbf"/>', 'path'],
+    ['an arc', '<path d="M10.5 10.5A5 5 0 0 1 20.5 10.5" stroke="#997dbf"/>', 'path'],
+    ['a relative run across', '<path d="m0 48h880" stroke="#997dbf"/>', 'path'],
+    ['a relative run down', '<path d="M10.5 10.5l0.5 0v20" stroke="#997dbf"/>', 'path'],
+    ['the run that closes a path', '<path d="M10.5 10.5H40.5V20Z" stroke="#997dbf"/>', 'path'],
+    ['a line', '<line x1="0" y1="48" x2="880" y2="48" stroke="#997dbf"/>', 'line'],
+    ['a polyline', '<polyline points="10.5 10.5 40.5 10.5 40 30" stroke="#997dbf"/>', 'polyline'],
+    [
+      'a polygon',
+      '<polygon points="10 10.5 40.5 10.5 40.5 30.5 10 30.5" stroke="#997dbf"/>',
+      'polygon',
+    ],
+    [
+      'a shape a group moves by half a unit',
+      '<g transform="translate(0 0.5)"><path d="M0 48.5H880" stroke="#997dbf"/></g>',
+      'path',
+    ],
+    [
+      'a shape moved by its own transform',
+      '<rect transform="translate(0.5 0)" x="10.5" y="10.5" width="30" height="20" fill="none" stroke="#997dbf"/>',
+      'rect',
+    ],
+    [
+      'a shape a group scales to one unit',
+      '<g transform="scale(0.5)"><path d="M0 96H880" stroke="#997dbf" stroke-width="2"/></g>',
+      'path',
+    ],
+    [
+      'a shape a group rotates',
+      '<g transform="rotate(90)"><path d="M0 48.5H880" stroke="#997dbf"/></g>',
+      'path',
+    ],
+    ['a stroke painted by its group', '<g stroke="#997dbf"><path d="M0 48H880"/></g>', 'path'],
+    [
+      'a stroke whose width of one unit comes from its group',
+      '<g stroke-width="1"><path d="M0 48H880" stroke="#997dbf" stroke-width="inherit"/></g>',
+      'path',
+    ],
+    [
+      'a width of one unit set in its style',
+      '<path d="M0 48H880" stroke="#997dbf" stroke-width="2" style="stroke-width:1"/>',
+      'path',
+    ],
+    [
+      'a width this does not read',
+      '<path d="M0 48H880" stroke="#997dbf" stroke-width="1px"/>',
+      'path',
+    ],
+  ])('names %s that strokes one unit off the grid', (_, shape, tag) => {
+    const copy = (drawn['how-it-works-light.svg'] ?? '').replace('</svg>', `${shape}\n</svg>`);
+    const found = offTheGrid(copy);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(new RegExp(`^${tag}#\\d+ `));
+  });
+
+  it('refuses a picture whose stylesheet sets a stroke', () => {
+    const copy = (drawn['how-it-works-light.svg'] ?? '').replace(
+      '</style>',
+      '.w{stroke-width:1}</style>',
+    );
+    expect(offTheGrid(copy)).toEqual(['the stylesheet sets a stroke, which this does not read']);
+  });
+
+  it('holds a stroke of one unit on the grid under a group that moves it by whole units', () => {
+    const copy = (drawn['how-it-works-light.svg'] ?? '').replace(
+      '</svg>',
+      '<g transform="translate(3 4)"><path d="M0 48.5H880" stroke="#997dbf"/><line x1="10.5" y1="0" x2="10.5" y2="40" stroke="#997dbf"/></g><g stroke-width="2"><path d="M0 48H880" stroke="#997dbf"/></g>\n</svg>',
+    );
+    expect(offTheGrid(copy)).toEqual([]);
+  });
+
   it('draws every glyph of the wordmark the console has', () => {
     // A glyph the script skipped would leave the banner short of the console and the case above
     // green, so the counts are asked of the rows themselves: one filled cell per full block, two
@@ -721,7 +796,7 @@ function nodesOf(svg: string): Node[] {
   const groups: Record<string, string>[] = [];
   const body = svg.slice(svg.indexOf('</defs>'));
   for (const m of body.matchAll(
-    /<(\/?)(g|rect|path|ellipse|circle|text)\b([^>]*?)(\/?)>(?:([^<]*)<\/text>)?/g,
+    /<(\/?)(g|rect|path|ellipse|circle|line|polyline|polygon|text)\b([^>]*?)(\/?)>(?:([^<]*)<\/text>)?/g,
   )) {
     const [, closing, tag = '', written = '', selfClosing, text = ''] = m;
     if (tag === 'g') {
@@ -734,49 +809,204 @@ function nodesOf(svg: string): Node[] {
   return nodes;
 }
 
+/** A translate and a uniform scale, as one map of a point: k times the point, then moved by (dx, dy). */
+type Placement = { k: number; dx: number; dy: number };
+
 /**
- * Each stroke of one unit (a stroke with no width written is one) whose line does not lie on the
- * middle of a pixel: at a whole coordinate it spreads over two columns of pixels at one pixel per
- * unit and is half as strong as a border drawn on a half. A rectangle's four edges, and every
- * horizontal or vertical run of a path, are read; a circle, an ellipse, a diagonal or a curve
- * that strokes one unit is named as a shape this cannot hold to the grid.
+ * The placement a transform writes, when it is only translates and uniform scales (in a
+ * `transform` attribute, or a keyframe's `transform:`, whose numbers may carry `px`), or nothing
+ * when it is anything else.
+ */
+function placementOf(written: string | undefined): Placement | undefined {
+  const text = (written ?? '').trim();
+  const calls = [...text.matchAll(/(\w+)\(([^)]*)\)/g)];
+  if (text.replace(/(\w+)\(([^)]*)\)/g, '').trim() !== '') return undefined;
+  let p: Placement = { k: 1, dx: 0, dy: 0 };
+  for (const [, fn, args = ''] of calls.reverse()) {
+    const v = args
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map((a) => Number(a.replace(/px$/, '')));
+    if (v.length === 0 || v.length > 2 || !v.every(Number.isFinite)) return undefined;
+    const [a = 0, b] = v;
+    if (fn === 'translate') p = { k: p.k, dx: p.dx + a, dy: p.dy + (b ?? 0) };
+    else if (fn === 'scale' && (b === undefined || b === a))
+      p = { k: p.k * a, dx: p.dx * a, dy: p.dy * a };
+    else return undefined;
+  }
+  return p;
+}
+
+/**
+ * The straight runs a shape's outline is drawn along, each from one point to the next, or why it
+ * cannot be read as runs: a curve or an arc, a circle or an ellipse, a number or a command this
+ * does not read.
+ */
+function runsOf(node: Node): [number, number, number, number][] | string {
+  const { at } = node;
+  const num = (v: string | undefined): number => Number(v ?? 0);
+  const corners = (points: number[], closed: boolean): [number, number, number, number][] => {
+    const runs: [number, number, number, number][] = [];
+    for (let j = 0; j + 3 < points.length; j += 2)
+      runs.push(points.slice(j, j + 4) as [number, number, number, number]);
+    if (closed && points.length >= 4)
+      runs.push([
+        points[points.length - 2] as number,
+        points[points.length - 1] as number,
+        points[0] as number,
+        points[1] as number,
+      ]);
+    return runs;
+  };
+  if (node.tag === 'rect') {
+    const [x, y, w, h] = ['x', 'y', 'width', 'height'].map((k) => num(at[k])) as Box;
+    return corners([x, y, x + w, y, x + w, y + h, x, y + h], true);
+  }
+  if (node.tag === 'line') return [['x1', 'y1', 'x2', 'y2'].map((k) => num(at[k])) as Box];
+  if (node.tag === 'polyline' || node.tag === 'polygon') {
+    const points = (at.points ?? '')
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map(Number);
+    if (points.length % 2 !== 0) return 'has points this does not read';
+    return corners(points, node.tag === 'polygon');
+  }
+  if (node.tag !== 'path') return `is a ${node.tag}, which this cannot hold to the grid`;
+  const tokens = [
+    ...(at.d ?? '').matchAll(/[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?|[A-Za-z]/g),
+  ].map((m) => m[0]);
+  const runs: [number, number, number, number][] = [];
+  const arity: Record<string, number> = {
+    M: 2,
+    L: 2,
+    H: 1,
+    V: 1,
+    C: 6,
+    S: 4,
+    Q: 4,
+    T: 2,
+    A: 7,
+    Z: 0,
+  };
+  let [x, y, sx, sy] = [0, 0, 0, 0];
+  let command = '';
+  let i = 0;
+  while (i < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[i] as string)) command = tokens[i++] as string;
+    const up = command.toUpperCase();
+    const n = arity[up];
+    if (n === undefined) return `has a path command this does not read: ${command || tokens[i]}`;
+    const v = tokens.slice(i, i + n).map(Number);
+    if (v.length < n || !v.every(Number.isFinite)) return 'has path data this does not read';
+    i += n;
+    const [ox, oy] = command === up ? [0, 0] : [x, y];
+    if (up === 'Z') {
+      runs.push([x, y, sx, sy]);
+      [x, y] = [sx, sy];
+      if (i < tokens.length && !/[A-Za-z]/.test(tokens[i] as string))
+        return 'has path data this does not read';
+      continue;
+    }
+    if (['C', 'S', 'Q', 'T', 'A'].includes(up))
+      return `draws a curve (${command}), which this cannot hold to the grid`;
+    const [a = 0, b = 0] = v;
+    const [nx, ny] = up === 'H' ? [ox + a, y] : up === 'V' ? [x, oy + a] : [ox + a, oy + b];
+    if (up === 'M') {
+      [sx, sy] = [nx, ny];
+      command = command === up ? 'L' : 'l';
+    } else runs.push([x, y, nx, ny]);
+    [x, y] = [nx, ny];
+  }
+  return runs;
+}
+
+/**
+ * Each shape whose stroke, as drawn, is one unit wide and does not lie on the middle of a pixel:
+ * at a whole coordinate such a line spreads over two columns of pixels at one pixel per unit and
+ * is half as strong as a border drawn on a half.
+ *
+ * A shape's stroke and its width are its own or those of the nearest group that sets them, a
+ * `style` before an attribute, and the width is one unit when nothing sets it. The translates and
+ * uniform scales of the shape and of its groups are applied to its points and to its width, once
+ * for each place its groups' keyframes move it to. A rectangle's four edges, and every run of a
+ * path (absolute or relative, the run that closes it included), a line, a polyline and a polygon
+ * are read: a run across or down must lie on a half, and a diagonal is named. What this cannot
+ * hold to the grid is named, never passed: a curve or an arc, a circle or an ellipse, any other
+ * transform, a width, a number or a command this does not read, and a stylesheet that sets a
+ * stroke. Each shape is named once, by its first fault, as its tag and its place among the shapes.
  */
 function offTheGrid(svg: string): string[] {
   const half = (v: number) => Math.abs((((v % 1) + 1) % 1) - 0.5) < 0.001;
   const found: string[] = [];
+  const sheet = /<style>([\s\S]*?)<\/style>/.exec(svg)?.[1] ?? '';
+  if (/(?:^|[^-\w])stroke(?:-width)?\s*:/.test(sheet))
+    found.push('the stylesheet sets a stroke, which this does not read');
+  const frames = keyframesOf(svg);
+  const inherited = (node: Node, key: string): string | undefined => {
+    for (const at of [node.at, ...[...node.groups].reverse()]) {
+      const styled = new RegExp(`(?:^|;)\\s*${key}\\s*:\\s*([^;]+)`).exec(at.style ?? '')?.[1];
+      const value = styled?.trim() ?? at[key];
+      if (value !== undefined && value !== 'inherit') return value;
+    }
+    return undefined;
+  };
   nodesOf(svg).forEach((node, i) => {
-    const { at } = node;
-    if (!['rect', 'path', 'circle', 'ellipse'].includes(node.tag)) return;
-    if (at.stroke === undefined || at.stroke === 'none') return;
-    if (at['stroke-width'] !== undefined && Number(at['stroke-width']) !== 1) return;
+    if (node.tag === 'text') return;
     const name = `${node.tag}#${i}`;
-    if (node.tag === 'rect') {
-      const [x, y, w, h] = ['x', 'y', 'width', 'height'].map((k) => Number(at[k] ?? 0)) as Box;
-      if (![x, y, x + w, y + h].every(half))
-        found.push(`${name} has edges at ${x}, ${y}, ${x + w}, ${y + h}`);
-    } else if (node.tag === 'path') {
-      let cur: [number, number] = [0, 0];
-      for (const seg of (at.d ?? '').match(/[MLHVZ][^MLHVZ]*/g) ?? []) {
-        const [a = 0, b = 0] = (seg.slice(1).match(/-?\d*\.?\d+/g) ?? []).map(Number);
-        const next: [number, number] =
-          seg[0] === 'H'
-            ? [a, cur[1]]
-            : seg[0] === 'V'
-              ? [cur[0], a]
-              : seg[0] === 'Z'
-                ? cur
-                : [a, b];
-        if (seg[0] === 'H' && !half(cur[1])) found.push(`${name} runs along y=${cur[1]}`);
-        else if (seg[0] === 'V' && !half(cur[0])) found.push(`${name} runs along x=${cur[0]}`);
-        else if (seg[0] === 'L' && next[1] === cur[1] && !half(next[1]))
-          found.push(`${name} runs along y=${next[1]}`);
-        else if (seg[0] === 'L' && next[0] === cur[0] && !half(next[0]))
-          found.push(`${name} runs along x=${next[0]}`);
-        else if (seg[0] === 'L' && next[0] !== cur[0] && next[1] !== cur[1])
-          found.push(`${name} is a diagonal`);
-        cur = next;
+    const stroke = inherited(node, 'stroke');
+    if (stroke === undefined || stroke === 'none') return;
+    const written = inherited(node, 'stroke-width') ?? '1';
+    const width = /^\d*\.?\d+$/.test(written) ? Number(written) : Number.NaN;
+    if (!Number.isFinite(width)) {
+      found.push(`${name} has a stroke width this does not read: ${written}`);
+      return;
+    }
+    // Its own transform first, then each group's from the innermost out.
+    let placed: Placement | undefined = { k: 1, dx: 0, dy: 0 };
+    for (const t of [node.at.transform, ...[...node.groups].reverse().map((g) => g.transform)]) {
+      const p = placementOf(t);
+      placed = p &&
+        placed && { k: placed.k * p.k, dx: placed.dx * p.k + p.dx, dy: placed.dy * p.k + p.dy };
+    }
+    const moves = [node.at, ...node.groups]
+      .flatMap((g) => /animation-name:([^";]+)/.exec(g.style ?? '')?.[1]?.split(',') ?? [])
+      .flatMap((k) => frames.get(k) ?? [])
+      .filter((stop) => stop.value.startsWith('transform:'))
+      .map((stop) => placementOf(stop.value.slice('transform:'.length)));
+    const places = (moves.length === 0 ? [{ k: 1, dx: 0, dy: 0 }] : moves).map(
+      (m) =>
+        m &&
+        placed && { k: placed.k * m.k, dx: placed.dx * m.k + m.dx, dy: placed.dy * m.k + m.dy },
+    );
+    if (places.some((p) => p === undefined)) {
+      found.push(`${name} is under a transform this does not read`);
+      return;
+    }
+    for (const p of places as Placement[]) {
+      if (Math.abs(width * p.k - 1) > 0.001) continue;
+      const runs = runsOf(node);
+      if (typeof runs === 'string') {
+        found.push(`${name} ${runs}`);
+        return;
       }
-    } else found.push(`${name} is a ${node.tag} that strokes one unit`);
+      for (const run of runs) {
+        const [x1, y1, x2, y2] = run.map((v, j) => v * p.k + (j % 2 === 0 ? p.dx : p.dy));
+        const across = Math.abs((y1 as number) - (y2 as number)) < 0.001;
+        const down = Math.abs((x1 as number) - (x2 as number)) < 0.001;
+        const fault =
+          across && down
+            ? undefined
+            : across
+              ? !half(y1 as number) && `runs along y=${y1}`
+              : down
+                ? !half(x1 as number) && `runs along x=${x1}`
+                : `is a diagonal from ${x1}, ${y1} to ${x2}, ${y2}`;
+        if (fault) {
+          found.push(`${name} ${fault}`);
+          return;
+        }
+      }
+    }
   });
   return found;
 }
