@@ -265,7 +265,7 @@ function pickProject(session: Session, name: string): Picked {
 function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
   if (projects.length === 0) {
     return (
-      `project "${oneLine(name)}" is not a project this session can write to. This ` +
+      `project "${oneLine(name)}" is not a project this session can write to; this ` +
       'session resolved to no project, so there is none to name'
     );
   }
@@ -273,7 +273,7 @@ function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
   const listed = same.length > 0 ? same : projects;
   return (
     `project "${oneLine(name)}" is not an absolute path, and a write takes only the full ` +
-    `path of a project. Use the path: ${namedProjects(listed)}`
+    `path of a project; use the path: ${namedProjects(listed)}`
   );
 }
 
@@ -290,12 +290,12 @@ function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
 function noSuchProject(name: string, projects: readonly WriteTarget[]): string {
   if (projects.length === 0) {
     return (
-      `project "${oneLine(name)}" is not a project this session can write to. This ` +
+      `project "${oneLine(name)}" is not a project this session can write to; this ` +
       'session resolved to no project, so there is none to name'
     );
   }
   return (
-    `project "${oneLine(name)}" is not a project this session can write to. These are, ` +
+    `project "${oneLine(name)}" is not a project this session can write to; these are, ` +
     `by full path: ${namedProjects(projects)}`
   );
 }
