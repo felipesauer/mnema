@@ -10,7 +10,7 @@ process.stdout.write(
   JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
-      permissionDecision: 'allow',
+      permissionDecision: 'deny',
       additionalContext: process.argv[2],
     },
   }),
