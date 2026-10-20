@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A WRITE REFUSED, TYPED — the script the recording of a rule that refuses an agent's write is made
+# A WRITE REFUSED, TYPED: the script the recording of a rule that refuses an agent's write is made
 # from.
 #
 # It records one decision, accepts it, links it to `src/billing` as a rule that refuses a write

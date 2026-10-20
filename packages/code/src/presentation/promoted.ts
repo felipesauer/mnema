@@ -39,7 +39,7 @@ export function promotionCandidates(render: Render, listed: PromoteListed): stri
   for (const candidate of listed.candidates) {
     lines.push(
       subjectLine(
-        `${candidate.kind} "${oneLine(candidate.title)}" — in force in ${new Set(candidate.instances.map((i) => i.project)).size} projects`,
+        `${candidate.kind} "${oneLine(candidate.title)}": in force in ${new Set(candidate.instances.map((i) => i.project)).size} projects`,
       ),
     );
     for (const instance of candidate.instances) {

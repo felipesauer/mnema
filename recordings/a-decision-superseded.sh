@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A DECISION SUPERSEDED, TYPED — the script the recording of a call that changes is made from.
+# A DECISION SUPERSEDED, TYPED: the script the recording of a call that changes is made from.
 #
 # It records one decision and accepts it, prints the decisions the plugin hands the next agent
 # session, then records a second decision, accepts it and has it supersede the first. The opening

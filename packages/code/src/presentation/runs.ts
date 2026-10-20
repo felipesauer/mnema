@@ -76,7 +76,7 @@ export function lastRunPhrase(run: {
 }): string {
   return (
     `last run ${run.id} (${run.open ? 'open' : 'ended'})` +
-    (run.goal === undefined ? '' : ` — ${oneLine(run.goal)}`) +
+    (run.goal === undefined ? '' : `: ${oneLine(run.goal)}`) +
     (run.open ? runAgeSuffix(run) : '') +
     wroteSuffix(run)
   );

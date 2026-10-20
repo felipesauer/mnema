@@ -163,7 +163,7 @@ export function renderPage(model: SiteModel, verifier: string): string {
   const tails = model.tails
     .map(
       (tail) =>
-        `<details><summary><code>${escapeHtml(tail.id)}</code> — ${tail.events} event(s)</summary>` +
+        `<details><summary><code>${escapeHtml(tail.id)}</code>: ${tail.events} event(s)</summary>` +
         `<pre>${escapeHtml(tail.text)}</pre></details>`,
     )
     .join('\n');
@@ -190,7 +190,7 @@ this page carries, with no network request and no key of yours. It checks the ha
 checkpoint signature against the public keys carried with the files. It does not say that a key
 belongs to the person a list names, and it does not check the lists below against the files: they
 were written from those files by <code>mnema site</code>. Only the committed public tree is in this
-page — no private tree and no machine-global tree — and all of its text is.</p>
+page (no private tree and no machine-global tree), and all of its text is.</p>
 <h2>Decisions</h2>
 <p>${inForce} in force, ${others} not in force.</p>
 <input type="checkbox" id="all"><label for="all">Also show the rejected, superseded and proposed decisions</label>

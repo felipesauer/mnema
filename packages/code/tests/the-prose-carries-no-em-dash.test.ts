@@ -77,7 +77,7 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the security policy
   'SECURITY.md': 4,
   // the manual
-  'docs/': 387,
+  'docs/': 370,
   // @mnema/action
   'packages/action/': 28,
   // the page of @mnema/action
@@ -91,17 +91,15 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the page of @mnema/code
   'packages/code/README.md': 2,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 755,
+  'packages/code/src/': 585,
   // what it prints
-  'packages/code/src/presentation/': 43,
-  // the console
-  'packages/code/src/repl/': 4,
+  'packages/code/src/presentation/': 5,
   // the Sigstore reader
-  'packages/code/src/sigstore/': 6,
+  'packages/code/src/sigstore/': 5,
   // the verifier page it builds
-  'packages/code/src/site/': 7,
+  'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 905,
+  'packages/code/tests/': 784,
   // @mnema/context
   'packages/context/': 10,
   // the page of @mnema/context
@@ -114,14 +112,12 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/sdk/README.md': 1,
   // the page of @mnema/stacks
   'packages/stacks/README.md': 1,
-  // @mnema/vscode
-  'packages/vscode/': 1,
   // the page of @mnema/vscode
   'packages/vscode/README.md': 1,
   // the plugin for agent hosts
   'plugin/': 169,
   // the recordings and the scripts that make them
-  'recordings/': 71,
+  'recordings/': 6,
 };
 
 /**
@@ -150,10 +146,7 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
  * rather than as the character. It is not data; it waits for the sweep of what the product
  * prints, which decides what stands in its place. Held to an exact count, like the list above.
  */
-const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-  // the title of a problem report
-  'packages/code/src/problem-report.ts': 1,
-};
+const PRINTED_AND_NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * One directory is not ours to write: the test vectors other people wrote, copied byte for byte

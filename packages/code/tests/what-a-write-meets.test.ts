@@ -119,7 +119,7 @@ describe('a rule that refuses a write', () => {
     expect(verdict?.at[0]?.rules.map((one) => one.id)).toEqual([rule]);
     const reason = verdict?.reason ?? '';
     expect(reason).toContain(rule);
-    expect(reason).toContain('“Nobody writes the ledger by hand” — refuses a write at src/ledger');
+    expect(reason).toContain('“Nobody writes the ledger by hand”: refuses a write at src/ledger');
     expect(reason).toContain(`mnema show ${rule}`);
     expect(reason).toContain('whoever recorded it');
   });
@@ -245,7 +245,7 @@ describe('what the refusal says is what the record says', () => {
     // The framing, the sentence, ONE rule line, and the way to the rule: a fifth line would be
     // the second half of the name, read as a rule this project never made.
     expect(lines).toHaveLength(4);
-    const line = lines.find((one) => one.includes('— refuses a write at src/ledger'));
+    const line = lines.find((one) => one.includes(': refuses a write at src/ledger'));
     expect(line).toBeDefined();
     expect(line).toContain('Nobody writes');
     expect(line).toContain('the ledger');

@@ -549,7 +549,7 @@ describe('the plan says who signed, and that a signature is not safety', () => {
     const lines = planLines(plan);
     const at = lines.findIndex((l) => l.startsWith('  digest '));
     expect(lines.slice(at + 1, at + 3)).toEqual([
-      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files —',
+      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files:',
       '           that they are exactly these, not who wrote them',
     ]);
   });
