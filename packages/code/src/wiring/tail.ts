@@ -74,14 +74,14 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
   tail
     .command('list')
     .description(
-      'list the tails that hold events here — the ones a cut can name — with the id `prune` takes',
+      'list the tails that hold events here, the ones a cut can name, with the id `prune` takes',
     )
     .addHelpText(
       'after',
       [
         '',
         'What each line says, and why it is on it:',
-        '  The id is whole — it is what `mnema tail prune` takes.',
+        '  The id is whole: it is what `mnema tail prune` takes.',
         '  The tree is where a waiver over that tail has to land, so `prune` writes there.',
         '  The events and the head are what a waiver would claim; `prune` reads them again.',
         '  `cut authorized` means a waiver in that same tree already authorizes the cut.',
@@ -103,7 +103,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
     .option(
       '--which <agent>',
       'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-        'mnema — omit it when you are acting directly. It names the executor only: a ' +
+        'mnema: omit it when you are acting directly. It names the executor only: a ' +
         'waiver always follows the tail to the tree that holds it.',
       declaredAgent,
     )
@@ -146,7 +146,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       io.out(
         render(
           fact(
-            onOneLine`The tail is still on disk at ${result.tailDirectory} — nothing was removed.`,
+            onOneLine`The tail is still on disk at ${result.tailDirectory}: nothing was removed.`,
           ),
         ),
       );

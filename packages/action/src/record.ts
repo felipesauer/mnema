@@ -10,7 +10,7 @@
 
 /** One event of the record, reduced to what the report reads. */
 export interface RecordedEvent {
-  /** The link hash — what makes two lines the same event. */
+  /** The link hash: what makes two lines the same event. */
   readonly hash: string;
   readonly kind: string;
   readonly subject: string;
@@ -18,8 +18,8 @@ export interface RecordedEvent {
 }
 
 /**
- * The events of one JSONL file. A line that is not an event — a checkpoint, a blank line, text
- * that does not parse — is not one, and is left out rather than guessed at.
+ * The events of one JSONL file. A line that is not an event (a checkpoint, a blank line, text
+ * that does not parse) is not one, and is left out rather than guessed at.
  */
 export function readEvents(jsonl: string): RecordedEvent[] {
   const events: RecordedEvent[] = [];

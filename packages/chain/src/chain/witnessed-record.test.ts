@@ -121,7 +121,7 @@ describe('a record an outside witness has dated', () => {
     const result = verify(root, catalogUpcasters());
     expect(result.summary).toContain('local integrity verified (T1/T2/T4) and witnessed (T3)');
     expect(result.summary).toContain(
-      `external witness (T3): covered — Bitcoin block ${BLOCK} at ${new Date(ATTESTED_AT * 1000).toISOString()}`,
+      `external witness (T3): covered, Bitcoin block ${BLOCK} at ${new Date(ATTESTED_AT * 1000).toISOString()}`,
     );
   });
 

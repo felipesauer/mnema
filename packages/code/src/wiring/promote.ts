@@ -33,7 +33,7 @@ const PROMOTE_HELP = [
   '      lists what is in force, with the same words, in the committed record of two or',
   '      more of the projects you name. It writes nothing. The set is what you name and is',
   '      never searched for; a pattern or decision counts only if it is in force (adopted,',
-  '      accepted) and only through the committed tree — a project’s private tree is',
+  '      accepted) and only through the committed tree: a project’s private tree is',
   '      neither counted nor cited, because the copy goes where every project reads.',
   '  mnema promote <id> --evidence <path>:<id>',
   '      copies <id>, which is in the project you stand in, to this machine’s global tree;',

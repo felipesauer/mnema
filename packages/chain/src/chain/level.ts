@@ -262,9 +262,9 @@ export function weakerLevel(a: ProvenLevel, b: ProvenLevel): ProvenLevel {
  * that used to borrow the fully-proven sentence.
  */
 const LEVEL_HEADLINE: Readonly<Record<ProvenLevel, string>> = {
-  unreadable: 'local integrity FAILED — part of the record is UNREADABLE, see issues',
-  broken: 'local integrity FAILED — see issues',
-  'hash-chain-only': 'local integrity verified (T1 only) — no signature was checked',
+  unreadable: 'local integrity FAILED: part of the record is UNREADABLE, see issues',
+  broken: 'local integrity FAILED: see issues',
+  'hash-chain-only': 'local integrity verified (T1 only): no signature was checked',
   'signed-through-last-checkpoint': 'local integrity verified (T1/T2/T4) up to the last checkpoint',
   'fully-signed': 'local integrity verified (T1/T2/T4)',
   'externally-witnessed': 'local integrity verified (T1/T2/T4) and witnessed (T3)',

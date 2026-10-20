@@ -1122,7 +1122,7 @@ describe('the verbs, as typed', () => {
     const tail = readdirSync(join(repo, '.mnema', 'tails'))[0] as string;
     expect(act.out).toMatch(
       new RegExp(
-        `^${tail} \\(public\\): signed — countersigned checkpoint [0-9a-f]{64} — Rekor entry \\d+$`,
+        `^${tail} \\(public\\): signed: countersigned checkpoint [0-9a-f]{64}, Rekor entry \\d+$`,
         'm',
       ),
     );
@@ -1136,7 +1136,7 @@ describe('the verbs, as typed', () => {
     // Asked again, the checkpoint is skipped, nobody is asked and no signer is spoken of.
     const asked = sigstore.asked.length;
     const again = await typed('witness', 'sigstore');
-    expect(again.out).toMatch(/: skipped — checkpoint [0-9a-f]{64} is already countersigned$/m);
+    expect(again.out).toMatch(/: skipped: checkpoint [0-9a-f]{64} is already countersigned$/m);
     expect(again.out).not.toContain('The certificate names');
     expect(sigstore.asked.length).toBe(asked);
 
@@ -1155,7 +1155,7 @@ describe('the verbs, as typed', () => {
     const read = await typed('verify', '--against-sigstore');
     expect(read.out).toMatch(
       new RegExp(
-        `^ *sigstore: ${tail} checkpoint [0-9a-f]{12} — not covered: Sigstore's checks refused it: `,
+        `^ *sigstore: ${tail} checkpoint [0-9a-f]{12}: not covered: Sigstore's checks refused it: `,
         'm',
       ),
     );
@@ -1212,7 +1212,7 @@ describe('the verbs, as typed', () => {
     const read = await typed('verify', '--against-sigstore');
     expect(read.failed).toBe(true);
     expect(read.out).toContain(
-      'sigstore: the public tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled',
+      'sigstore: the public tree was not read: its verdict is a break, so which checkpoint a bundle is over is not settled',
     );
   });
 });

@@ -1128,7 +1128,7 @@ def _check_enrolment(
     for which, count in resolution.declared:
         report.note(
             "6.2",
-            f'{count} event(s) name the agent "{which}" — declared by the key that signed, '
+            f'{count} event(s) name the agent "{which}": declared by the key that signed, '
             "not attested",
         )
     # An agent key the record retired, after the facts it signed while it held the role: the same

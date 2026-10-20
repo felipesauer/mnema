@@ -4,7 +4,7 @@ Bytes are UTF-8; tokens are o200k_base, a relative measure and not what a Claude
 session start: brief --hook                  2462 B      660 tok
 session start: recall --hook                  811 B      200 tok
 file form: brief (what MNEMA.md carries)     2519 B      676 tok
-instructions                                 2044 B      470 tok
+instructions                                 2035 B      470 tok
 edit: rules pushed                            331 B       92 tok
 edit: asks for a person                       515 B      137 tok
 edit: refuses the write                       643 B      184 tok
@@ -24,31 +24,31 @@ tool answer: audit_exposure                    82 B       26 tok
 tool answer: audit_antipatterns               301 B       74 tok
 tool answer: record_decision                  149 B       48 tok
 tool answer: capture_memory                   143 B       44 tok
-tool definition: capture_memory              2125 B      456 tok
-tool definition: record_observation          2433 B      528 tok
-tool definition: retract_note                1841 B      416 tok
-tool definition: retract_link                2069 B      470 tok
-tool definition: record_handoff              2432 B      549 tok
-tool definition: link_knowledge              2751 B      611 tok
-tool definition: create_task                 2304 B      503 tok
-tool definition: task_transition             2025 B      447 tok
-tool definition: record_decision             3083 B      668 tok
-tool definition: decision_transition         2301 B      509 tok
-tool definition: create_skill                2477 B      545 tok
-tool definition: skill_transition            1929 B      437 tok
-tool definition: bootstrap                   2303 B      569 tok
-tool definition: skills                      2534 B      589 tok
-tool definition: focus                       1230 B      286 tok
-tool definition: resume                      1309 B      303 tok
-tool definition: next_actions                 842 B      194 tok
-tool definition: guard                       2898 B      676 tok
-tool definition: search                      2711 B      629 tok
-tool definition: read_record                 1386 B      322 tok
-tool definition: audit_timeline               981 B      225 tok
-tool definition: audit_refs                  1516 B      370 tok
-tool definition: governing_rules             1507 B      339 tok
-tool definition: rules_before_an_edit        2440 B      546 tok
-tool definition: audit_accountability        1997 B      440 tok
-tool definition: audit_exposure              1651 B      363 tok
-tool definition: audit_antipatterns          1465 B      314 tok
-tool definitions: all 27                    54568 B    12306 tok
+tool definition: capture_memory              2117 B      456 tok
+tool definition: record_observation          2425 B      528 tok
+tool definition: retract_note                1839 B      416 tok
+tool definition: retract_link                2064 B      470 tok
+tool definition: record_handoff              2415 B      549 tok
+tool definition: link_knowledge              2731 B      610 tok
+tool definition: create_task                 2293 B      503 tok
+tool definition: task_transition             2020 B      447 tok
+tool definition: record_decision             3060 B      668 tok
+tool definition: decision_transition         2290 B      509 tok
+tool definition: create_skill                2466 B      545 tok
+tool definition: skill_transition            1924 B      437 tok
+tool definition: bootstrap                   2291 B      570 tok
+tool definition: skills                      2508 B      589 tok
+tool definition: focus                       1221 B      286 tok
+tool definition: resume                      1300 B      302 tok
+tool definition: next_actions                 836 B      193 tok
+tool definition: guard                       2886 B      676 tok
+tool definition: search                      2682 B      629 tok
+tool definition: read_record                 1371 B      322 tok
+tool definition: audit_timeline               975 B      224 tok
+tool definition: audit_refs                  1502 B      369 tok
+tool definition: governing_rules             1501 B      339 tok
+tool definition: rules_before_an_edit        2426 B      546 tok
+tool definition: audit_accountability        1986 B      440 tok
+tool definition: audit_exposure              1626 B      364 tok
+tool definition: audit_antipatterns          1447 B      314 tok
+tool definitions: all 27                    54230 B    12303 tok

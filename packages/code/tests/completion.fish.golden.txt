@@ -90,7 +90,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules
 complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules addressed at a file as another host’s rules file, and why the rest are not'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'inherit' -d 'read another repository’s decisions, pinned to one of its commits'
-complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
+complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record: its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'check' -d 'give a rule a program that checks it, and record whether it held at a commit'
 complete -c mnema -f -n '__mnema_at ""' -a 'site' -d 'write the project\'s committed record as one HTML page that verifies itself in the browser (records nothing)'
@@ -100,7 +100,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'timeline' -d 'show an entity\'s hist
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
 complete -c mnema -f -n '__mnema_at ""' -a 'audit' -d 'ask the record who authorized what, what recurs, and what looks like a credential'
 complete -c mnema -f -n '__mnema_at ""' -a 'diagram' -d 'print a state machine, or an entity’s history or connections, as mermaid'
-complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)'
+complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only, never a body)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'resume' -d 'show where an actor left off, and the runs they still have open'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
@@ -519,7 +519,7 @@ complete -c mnema -f -n '__mnema_at "verify"' -l color -x -a 'auto always never'
 # mnema witness
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for every attestation this record is waiting on (T3)'
-complete -c mnema -f -n '__mnema_at "witness"' -a 'sigstore' -d 'countersign each tail\'s last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it'
+complete -c mnema -f -n '__mnema_at "witness"' -a 'sigstore' -d 'countersign each tail\'s last checkpoint with a Sigstore certificate: who signed in, and when Rekor logged it'
 complete -c mnema -f -n '__mnema_at "witness"' -l global
 complete -c mnema -f -n '__mnema_at "witness"' -l json
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
@@ -784,7 +784,7 @@ complete -c mnema -f -n '__mnema_at "key unprotect"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key unprotect"' -l color -x -a 'auto always never'
 
 # mnema tail
-complete -c mnema -f -n '__mnema_at "tail"' -a 'list' -d 'list the tails that hold events here — the ones a cut can name — with the id `prune` takes'
+complete -c mnema -f -n '__mnema_at "tail"' -a 'list' -d 'list the tails that hold events here, the ones a cut can name, with the id `prune` takes'
 complete -c mnema -f -n '__mnema_at "tail"' -a 'prune' -d 'record that one whole tail was authorized to be cut (it removes nothing)'
 complete -c mnema -f -n '__mnema_at "tail"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "tail"' -s h -l help

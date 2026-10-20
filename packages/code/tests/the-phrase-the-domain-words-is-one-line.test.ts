@@ -643,7 +643,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the id the caller named, from the argv or a tool argument',
     },
-  '@mnema/core knowledge/operations.ts «observation is retracted. A {} keeps its own lifecycle — » standing.what #1':
+  '@mnema/core knowledge/operations.ts «observation is retracted. A {} keeps its own lifecycle: » standing.what #1':
     {
       verdict: 'minted',
       why: 'the same word, one of three the retraction’s own table holds',
@@ -679,15 +679,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the anchor this installation writes as, read from a file at its key root',
     },
-  '@mnema/chain chain/verify.ts «a retraction of the link {} —{}→ {} » oneLine(event.subject) #1': {
+  '@mnema/chain chain/verify.ts «a retraction of the link {} -{}→ {} » oneLine(event.subject) #1': {
     verdict: 'collapsed',
     why: 'the subject of a stored link retraction, the edge’s origin',
   },
-  '@mnema/chain chain/verify.ts «a retraction of the link {} —{}→ {} » oneLine(rel) #1': {
+  '@mnema/chain chain/verify.ts «a retraction of the link {} -{}→ {} » oneLine(rel) #1': {
     verdict: 'collapsed',
     why: 'the relation a stored link retraction names, an open label',
   },
-  '@mnema/chain chain/verify.ts «a retraction of the link {} —{}→ {} » oneLine(target) #1': {
+  '@mnema/chain chain/verify.ts «a retraction of the link {} -{}→ {} » oneLine(target) #1': {
     verdict: 'collapsed',
     why: 'the target a stored link retraction names, unvalidated by design',
   },
@@ -764,17 +764,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name of a reference field, one of the rows `REFERENCES` holds',
   },
-  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and a reference is what every later reading looks it up by.» unreferenced #1':
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded: a record is permanent, and a reference is what every later reading looks it up by.» unreferenced #1':
     {
       verdict: 'composed',
       why: 'the reference refusal `a-reason-states-something.ts` words, whose two values are sites there',
     },
-  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.» unstated #1':
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded: a record is permanent, and its why is the part a later reader reads.» unstated #1':
     {
       verdict: 'composed',
       why: 'the reason refusal `a-reason-states-something.ts` words, whose two values are sites there',
     },
-  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its title is what every later reading finds it by.» unfilled #1':
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded: a record is permanent, and its title is what every later reading finds it by.» unfilled #1':
     {
       verdict: 'composed',
       why: 'the title refusal `a-reason-states-something.ts` words, whose two values are sites there',
@@ -890,12 +890,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the head of the identity a stored `agent.enrolled` names as its subject',
     },
-  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}" — declared by the key that signed, not attested» named.events #1':
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}": declared by the key that signed, not attested» named.events #1':
     {
       verdict: 'minted',
       why: 'a count the fold kept, of accepted facts that carry the `which`',
     },
-  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}" — declared by the key that signed, not attested» oneLine(named.which) #1':
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}": declared by the key that signed, not attested» oneLine(named.which) #1':
     {
       verdict: 'collapsed',
       why: 'the `which` stored events carry; the catalog requires a non-empty string and nothing more',
@@ -910,12 +910,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the checker key a stored retirement names',
     },
-  '@mnema/chain chain/verify.ts «{} retired it — authentic, since the key held the role when it » oneLine(retirement.by) #1':
+  '@mnema/chain chain/verify.ts «{} retired it: authentic, since the key held the role when it » oneLine(retirement.by) #1':
     {
       verdict: 'collapsed',
       why: 'the identity a stored retirement names as its signer',
     },
-  '@mnema/chain chain/verify.ts «{} retired it — authentic, since the key held the role when it » oneLine(retirement.by) #2':
+  '@mnema/chain chain/verify.ts «{} retired it: authentic, since the key held the role when it » oneLine(retirement.by) #2':
     {
       verdict: 'collapsed',
       why: 'the identity a stored agent retirement names as its signer, which is the anchor it retires from',
@@ -955,7 +955,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'a count the fold kept, of events stamped before what they cite',
     },
-  '@mnema/chain chain/verify.ts «{} s — the clock of its writer ran behind what it had read; » (behindByMs / 1000).toFixed(3) #1':
+  '@mnema/chain chain/verify.ts «{} s: the clock of its writer ran behind what it had read; » (behindByMs / 1000).toFixed(3) #1':
     {
       verdict: 'minted',
       why: 'a number of seconds the fold computed from two stored instants',
@@ -980,7 +980,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the commit a caller handed the operation, from outside this package',
     },
-  '@mnema/core checks/operations.ts «no decision "{}" is in this record — a check is declared on a rule» oneLine(input.rule) #1':
+  '@mnema/core checks/operations.ts «no decision "{}" is in this record: a check is declared on a rule» oneLine(input.rule) #1':
     {
       verdict: 'collapsed',
       why: 'the rule id a caller typed, which this record has no decision by',
@@ -990,7 +990,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint decoded from a request line a person pasted',
     },
-  '@mnema/core checks/operations.ts «the key {} is a member of an identity in this record — a checker » oneLine(fingerprint) #1':
+  '@mnema/core checks/operations.ts «the key {} is a member of an identity in this record: a checker » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint decoded from a request line a person pasted',
@@ -1010,7 +1010,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored retirement names as its signer',
     },
-  '@mnema/core checks/operations.ts «the record enrolls no checker key {} — give the full fingerprint » oneLine(fingerprint) #1':
+  '@mnema/core checks/operations.ts «the record enrolls no checker key {}: give the full fingerprint » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'the fingerprint a person typed, which the record does not enroll',
@@ -1020,19 +1020,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the anchor this installation serves, read back out of the record',
     },
-  "@mnema/core checks/operations.ts «this machine's key {} is not enrolled as a checker in this record — » oneLine(fingerprint) #1":
+  "@mnema/core checks/operations.ts «this machine's key {} is not enrolled as a checker in this record: » oneLine(fingerprint) #1":
     {
       verdict: 'collapsed',
       why: 'the fingerprint of the key this machine signs with, read from its key root',
     },
-  '@mnema/core checks/operations.ts «{} — a checker request is made for ONE identity» oneLine(anchor) #1':
+  '@mnema/core checks/operations.ts «{}: a checker request is made for ONE identity» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor this installation serves, read back out of the record',
     },
 
   // --- @mnema/chain: the verifier's findings --------------------------------------
-  '@mnema/chain chain/verify.ts «tail {} ends in a partial line that was dropped — the mark of a write » oneLine(tail) #1':
+  '@mnema/chain chain/verify.ts «tail {} ends in a partial line that was dropped: the mark of a write » oneLine(tail) #1':
     {
       verdict: 'collapsed',
       why: 'a directory name under `tails/` — anybody who can write the tree can choose it',
@@ -1100,17 +1100,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'a whole number the catalog requires of a checkpoint’s range',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): PENDING, which is not coverage — {}» witness.detail #1':
+  '@mnema/chain chain/verify.ts «external witness (T3): PENDING, which is not coverage: {}» witness.detail #1':
     {
       verdict: 'composed',
       why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): covered — {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
+  '@mnema/chain chain/verify.ts «external witness (T3): covered, {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
     {
       verdict: 'composed',
       why: 'the same reading, in the state that reaches the record’s top rung',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): not covered — {}» witness.detail #1': {
+  '@mnema/chain chain/verify.ts «external witness (T3): not covered, {}» witness.detail #1': {
     verdict: 'composed',
     why: 'the same reading, in the state every record is in until somebody asks for a witness',
   },
@@ -1238,15 +1238,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       why: 'the identity a stored retraction names as its signer',
     },
   // --- @mnema/chain: a move the workflow does not allow (FORMAT.md §6.7) ----------
-  '@mnema/chain chain/verify.ts «a {} of {}: {} — » event.kind #1': {
+  '@mnema/chain chain/verify.ts «a {} of {}: {}: » event.kind #1': {
     verdict: 'minted',
     why: 'the kind of the move, one of the four the workflow judges: the parse admitted it by its row',
   },
-  '@mnema/chain chain/verify.ts «a {} of {}: {} — » oneLine(event.subject) #1': {
+  '@mnema/chain chain/verify.ts «a {} of {}: {}: » oneLine(event.subject) #1': {
     verdict: 'collapsed',
     why: 'the subject a stored move names — bytes in a tail, not a value this run made',
   },
-  '@mnema/chain chain/verify.ts «a {} of {}: {} — » ruling.detail #1': {
+  '@mnema/chain chain/verify.ts «a {} of {}: {}: » ruling.detail #1': {
     verdict: 'composed',
     why: 'the ruling `events/workflow.ts` words — every value in it is a site of its own there',
   },
@@ -1285,7 +1285,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the state the writer saw, folded from `to` values read off the record',
     },
-  '@mnema/chain chain/verify.ts «write it ({} did) — only the identity that wrote a note takes it back, » oneLine(author) #1':
+  '@mnema/chain chain/verify.ts «write it ({} did): only the identity that wrote a note takes it back, » oneLine(author) #1':
     {
       verdict: 'collapsed',
       why: 'the identity a stored note names as its writer',
@@ -1339,19 +1339,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the limit this module declares, printed beside the count that exceeded it',
     },
-  '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by — » field #1':
+  '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by: » field #1':
     {
       verdict: 'minted',
       why: 'a field key of the content contract — `content/fields.ts` names them, not a caller',
     },
-  '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by — » classes #1':
+  '@mnema/core content/screen.ts «"{}" reads as {}, and it is a name the record is addressed by: » classes #1':
     {
       verdict: 'minted',
       why: 'the credential classes `content/secrets.ts` declares, joined here — never the value',
     },
 
   // --- @mnema/core: identity --------------------------------------------------------
-  '@mnema/core identity/handshake.ts «"{}" is not an identity id — an identity looks like » oneLine(input.anchor) #1':
+  '@mnema/core identity/handshake.ts «"{}" is not an identity id: an identity looks like » oneLine(input.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor a caller typed, in the refusal that says it is not one',
@@ -1366,7 +1366,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a path a caller typed — nothing has opened it, which is what the refusal says',
     },
-  "@mnema/core identity/membership.ts «this key belongs to more than one identity in that record ({}) — which one it should speak for here is not a choice to make on its behalf» oneLine(anchors.join(', ')) #1":
+  "@mnema/core identity/membership.ts «this key belongs to more than one identity in that record ({}): which one it should speak for here is not a choice to make on its behalf» oneLine(anchors.join(', ')) #1":
     {
       verdict: 'collapsed',
       why: 'the anchors the record proves this key joined, read back out of stored events',
@@ -1423,22 +1423,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',
     },
-  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
     {
       verdict: 'minted',
       why: 'words chosen between two constants of this module by how many identities hold the key',
     },
-  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» anchors.length === 2 ? 'the identity' : 'each identity' #1":
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» anchors.length === 2 ? 'the identity' : 'each identity' #1":
     {
       verdict: 'minted',
       why: 'words chosen between two constants of this module by the same count',
     },
-  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» opening #1':
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» opening #1':
     {
       verdict: 'composed',
       why: 'the refusal’s opening, worded by this same function — said before the way out either identity can take',
     },
-  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» revoke #1':
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record: the key then speaks for the identity left» revoke #1':
     {
       verdict: 'composed',
       why: 'the same composed command, in the way out either identity can take',
@@ -1473,22 +1473,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the command this function composed from the fingerprint — a site of its own',
     },
-  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» first #1':
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» first #1':
     {
       verdict: 'composed',
       why: 'the first way out, worded by this same function just above — a site of its own',
     },
-  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» how(kept) #1':
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» how(kept) #1':
     {
       verdict: 'minted',
       why: 'how the record proves the key in that identity, as one of two phrases this module holds',
     },
-  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» oneLine(kept) #1':
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» oneLine(kept) #1':
     {
       verdict: 'collapsed',
       why: 'the one anchor that keeps the key, out of stored events',
     },
-  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» through(kept, other) #1':
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead: {}, whose only key it is, so another key joins it first: {}» through(kept, other) #1':
     {
       verdict: 'composed',
       why: 'the way out this same function worded from the anchors above — a site of its own',
@@ -1501,72 +1501,72 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the sentences this same function worded from the record just above, each a site of its own',
   },
-  "@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key \"<its file>\"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore \"<the key file>\"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as' #1":
+  "@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key \"<its file>\"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore \"<the key file>\"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as' #1":
     {
       verdict: 'minted',
       why: 'a phrase chosen between two constants of this module by how the record proves the key there',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
     {
       verdict: 'collapsed',
       why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
     {
       verdict: 'collapsed',
       why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
     {
       verdict: 'collapsed',
       why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #4':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #4':
     {
       verdict: 'collapsed',
       why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
     {
       verdict: 'collapsed',
       why: 'the one identity the key is left in, out of stored events',
     },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
+  '@mnema/core identity/membership.ts «in {} {} from (which, if it is still there, goes on writing as {}): pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives, or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} (which, run there, prints where that machine keeps the key file), run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
     {
       verdict: 'composed',
       why: 'the revocation this function composed from the fingerprint — a site of its own',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchorPath(layout, fingerprint)) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one: there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchorPath(layout, fingerprint)) #1':
     {
       verdict: 'collapsed',
       why: 'the path of that anchor file, under the tree this checkout holds',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys: a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(proven.anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys: a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(proven.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the one identity the record proves the key in, out of stored events',
     },
-  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys, nor among the keys of any other identity here: it was retired — a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys, nor among the keys of any other identity here: it was retired: a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',
     },
-  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in» oneLine(anchor) #1":
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to: it is committed beside the enrollment that brought the key in» oneLine(anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the identity this checkout recorded, read from its local anchor file',
     },
-  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in» oneLine(publicKeyPath(layout, fingerprint)) #1":
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to: it is committed beside the enrollment that brought the key in» oneLine(publicKeyPath(layout, fingerprint)) #1":
     {
       verdict: 'collapsed',
       why: 'the path the key’s public half would have, under the same tree',
@@ -1581,12 +1581,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the ambiguity `ambiguityOf` words for the same key — a site of its own',
     },
-  '@mnema/core identity/membership.ts «this key was revoked from {} — a retired key that writes again » oneLine(retiredFrom) #1':
+  '@mnema/core identity/membership.ts «this key was revoked from {}: a retired key that writes again » oneLine(retiredFrom) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor a stored revocation names, on the same terms',
     },
-  '@mnema/core identity/membership.ts «nothing in that record proves the key {} belongs to an identity — » key.fingerprint #1':
+  '@mnema/core identity/membership.ts «nothing in that record proves the key {} belongs to an identity: » key.fingerprint #1':
     {
       verdict: 'minted',
       why: 'this machine’s own fingerprint, computed by hashing the key material it just read',
@@ -1596,12 +1596,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the path `key restore` was given, in the refusal that says it would not open',
     },
-  "@mnema/core identity/handshake.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at — » oneLine(input.privateKeyPath) #1":
+  "@mnema/core identity/handshake.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at: » oneLine(input.privateKeyPath) #1":
     {
       verdict: 'collapsed',
       why: 'the path a caller typed to `key request --agent --key`, in the refusal that says the file is protected',
     },
-  "@mnema/core identity/restore.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at — » oneLine(input.privateKeyPath) #1":
+  "@mnema/core identity/restore.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at: » oneLine(input.privateKeyPath) #1":
     {
       verdict: 'collapsed',
       why: 'the path `key restore --agent` was given, in the refusal that says the file is protected',
@@ -1620,12 +1620,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'one of this product’s own words, or the name of an algorithm that Node reports for a key it parsed',
     },
-  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's — » oneLine(keyPair.fingerprint) #1":
+  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's: » oneLine(keyPair.fingerprint) #1":
     {
       verdict: 'collapsed',
       why: 'the fingerprint re-derived from the private key file `key restore --agent` was handed',
     },
-  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's — » oneLine(found.anchor) #1":
+  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's: » oneLine(found.anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the identity the record proves the key a member of, named by whoever vouched for it',
@@ -1640,12 +1640,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
     },
-  '@mnema/core identity/restore.ts «{}, not as "{}" — a key keeps the name it was enrolled under, » oneLine(found.anchor) #1':
+  '@mnema/core identity/restore.ts «{}, not as "{}": a key keeps the name it was enrolled under, » oneLine(found.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity the record proves the key an agent of, named by whoever vouched for it',
     },
-  '@mnema/core identity/restore.ts «{}, not as "{}" — a key keeps the name it was enrolled under, » oneLine(input.name) #1':
+  '@mnema/core identity/restore.ts «{}, not as "{}": a key keeps the name it was enrolled under, » oneLine(input.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name a caller typed to `key restore --agent`, which the agent-name form has already held to one line',
@@ -1654,12 +1654,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
   },
-  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {} — » oneLine(input.name) #1':
+  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {}: » oneLine(input.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name a caller typed to `key restore --agent`, which the agent-name form has already held to one line',
     },
-  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {} — » oneLine(other) #1':
+  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {}: » oneLine(other) #1':
     {
       verdict: 'collapsed',
       why: 'a FILE NAME in the agent’s key root, stripped of its suffix — whatever the directory holds',
@@ -1669,22 +1669,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
     },
-  '@mnema/core identity/restore.ts «this machine already holds the private key {} — » oneLine(other) #1':
+  '@mnema/core identity/restore.ts «this machine already holds the private key {}: » oneLine(other) #1':
     {
       verdict: 'collapsed',
       why: 'a FILE NAME in the key root, stripped of its suffix — whatever the directory holds',
     },
-  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(keyPair.fingerprint) #1':
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {}: it signs » oneLine(keyPair.fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'the fingerprint re-derived from the private key file `key restore` was handed, in the refusal that says the key is an agent’s',
     },
-  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(found.anchor) #1':
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {}: it signs » oneLine(found.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the identity the record proves the key an agent of, named by whoever vouched for it',
     },
-  '@mnema/core identity/handshake.ts «"{}" is not an identity id — an identity looks like » oneLine(input.anchor) #2':
+  '@mnema/core identity/handshake.ts «"{}" is not an identity id: an identity looks like » oneLine(input.anchor) #2':
     {
       verdict: 'collapsed',
       why: 'the anchor a caller typed, in the refusal that says it is not one',
@@ -1699,12 +1699,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the `mnid:` prefix this product mints anchors with — a constant',
     },
-  '@mnema/core identity/roster.ts «"{}" for {} — an agent request is made for ONE » oneLine(anchor) #1':
+  '@mnema/core identity/roster.ts «"{}" for {}: an agent request is made for ONE » oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor of the identity this machine writes as, which the record names',
     },
-  '@mnema/core identity/roster.ts «"{}" for {} — an agent request is made for ONE » oneLine(request.name) #1':
+  '@mnema/core identity/roster.ts «"{}" for {}: an agent request is made for ONE » oneLine(request.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
@@ -1719,50 +1719,50 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «the key {} is already a member of an identity in this record — an agent » oneLine(fingerprint) #1':
+  '@mnema/core identity/roster.ts «the key {} is already a member of an identity in this record: an agent » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(anchor) #1': {
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}": » oneLine(anchor) #1': {
     verdict: 'collapsed',
     why: 'the anchor of the identity this machine writes as, which the record names',
   },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(fingerprint) #1':
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}": » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(held) #1': {
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}": » oneLine(held) #1': {
     verdict: 'collapsed',
     why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
   },
-  '@mnema/core identity/roster.ts «enrolled again — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+  '@mnema/core identity/roster.ts «enrolled again: \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
     },
-  '@mnema/core identity/roster.ts «in any tree it reaches from here — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+  '@mnema/core identity/roster.ts «in any tree it reaches from here: \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name an agent request carried, held to the agent-name form by the core’s own door before a tree is asked; the tag is the second fence',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(fingerprint) #1':
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {}: » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(held) #1':
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {}: » oneLine(held) #1':
     {
       verdict: 'collapsed',
       why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(proven.anchor) #1':
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {}: » oneLine(proven.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor of the identity the record proves the key a member of, which the record names',
     },
-  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(where) #1':
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {}: » oneLine(where) #1':
     {
       verdict: 'collapsed',
       why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
@@ -1777,12 +1777,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
     },
-  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(holder.anchor) #1':
+  '@mnema/core identity/roster.ts «the key {} is an agent key of {}: an agent is not » oneLine(holder.anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor of the identity the record holds the agent key for, which the record names',
     },
-  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(fingerprint) #1':
+  '@mnema/core identity/roster.ts «the key {} is an agent key of {}: an agent is not » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
@@ -1792,17 +1792,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {} — » oneLine(anchor) #1':
+  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {}: » oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor of the identity this machine writes as, which the record names',
     },
-  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {} — » oneLine(input.fingerprint) #1':
+  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {}: » oneLine(input.fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  "@mnema/core identity/roster.ts «this machine's key is not currently one of {}'s own — the record retired it, » oneLine(anchor) #1":
+  "@mnema/core identity/roster.ts «this machine's key is not currently one of {}'s own: the record retired it, » oneLine(anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the anchor of the identity this machine writes as, which the record names',
@@ -1822,12 +1822,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
     },
-  '@mnema/core identity/roster.ts «that request does not prove the key {} consented to join {} — » oneLine(fingerprint) #1':
+  '@mnema/core identity/roster.ts «that request does not prove the key {} consented to join {}: » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'a fingerprint decoded out of the request line a caller pasted in',
     },
-  '@mnema/core identity/roster.ts «that request does not prove the key {} consented to join {} — » oneLine(anchor) #1':
+  '@mnema/core identity/roster.ts «that request does not prove the key {} consented to join {}: » oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor `decideAnchor` read out of the record and this machine’s local files',
@@ -1837,39 +1837,39 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the same anchor, said a second time in the sentence that tells the reader what to check',
     },
-  "@mnema/core identity/roster.ts «this machine's key is not currently valid for {} — the record retired it, » oneLine(anchor) #1":
+  "@mnema/core identity/roster.ts «this machine's key is not currently valid for {}: the record retired it, » oneLine(anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the same anchor, in the refusal `key enroll` gets from a machine the record retired',
     },
-  "@mnema/core identity/roster.ts «this machine's key is not currently valid for {} — the record retired it, » oneLine(anchor) #2":
+  "@mnema/core identity/roster.ts «this machine's key is not currently valid for {}: the record retired it, » oneLine(anchor) #2":
     {
       verdict: 'collapsed',
       why: 'the same sentence again, worded for `key revoke` — the two differ after the dash',
     },
-  '@mnema/core identity/roster.ts «the record does not count {} as a key of {} — » oneLine(input.fingerprint) #1':
+  '@mnema/core identity/roster.ts «the record does not count {} as a key of {}: » oneLine(input.fingerprint) #1':
     {
       verdict: 'collapsed',
       why: 'THE MEASURED ONE: `key revoke`’s positional, which nothing validates before this',
     },
-  '@mnema/core identity/roster.ts «the record does not count {} as a key of {} — » oneLine(anchor) #1':
+  '@mnema/core identity/roster.ts «the record does not count {} as a key of {}: » oneLine(anchor) #1':
     {
       verdict: 'collapsed',
       why: 'the anchor that refusal is about',
     },
-  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's — retiring it would leave the » oneLine(input.fingerprint) #1":
+  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's: retiring it would leave the » oneLine(input.fingerprint) #1":
     {
       verdict: 'collapsed',
       why: 'the same positional, on the branch where the key IS a member and is the last one',
     },
-  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's — retiring it would leave the » oneLine(anchor) #1":
+  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's: retiring it would leave the » oneLine(anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the anchor that would be left unable to sign',
     },
 
   // --- @mnema/core: the write door and the gates -----------------------------------
-  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — an entry no read could open would » reason #1':
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded: an entry no read could open would » reason #1':
     {
       verdict: 'composed',
       why: 'the content door’s own refusals, whose five values are sites in `content/screen.ts`',
@@ -2028,31 +2028,31 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
   '@mnema/chain chain/enrollment.ts «{}|{}» anchor':
     'half a key of a `Set`, not a sentence — `restoreKey` pairs an anchor with a fingerprint',
   '@mnema/chain chain/enrollment.ts «{}|{}» fp': 'the other half of that same Set key',
-  '@mnema/chain chain/verify.ts «{} committed key(s) without a tail (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} committed key(s) without a tail (see census: informational, not a break)» count':
     'a clause of the verdict sentence, worded through a table of wordings per kind of note ' +
     'that this walk does not enter. It interpolates a COUNT and nothing else.',
-  '@mnema/chain chain/verify.ts «{} empty tail(s), which hold no event and are not counted (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} empty tail(s), which hold no event and are not counted (see census: informational, not a break)» count':
     'a clause of the verdict sentence, worded through a table of wordings per kind of note ' +
     'that this walk does not enter. It interpolates a COUNT and nothing else.',
   '@mnema/chain chain/verify.ts «{} backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} move(s) the workflow does not allow, not applied (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} move(s) the workflow does not allow, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} retired agent key(s) whose earlier facts are no longer vouched for (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} citation(s) of an entry this record does not hold, ignored in the order (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} tail(s) whose clock ran behind what it had read (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} tail(s) whose clock ran behind what it had read (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} agent key(s) attesting the agent their facts name (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} agent key(s) attesting the agent their facts name (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
@@ -2480,7 +2480,7 @@ describe('an ordinary value says what it always did', () => {
     expect(anchor).toBeDefined();
     const said = await invoke('key', 'revoke', 'not-a-real-fingerprint', '--reason', 'a reason');
     expect(said.err[0]).toBe(
-      `Refused (UNKNOWN_KEY): the record does not count not-a-real-fingerprint as a key of ${anchor} — it was never enrolled here, or it was retired already`,
+      `Refused (UNKNOWN_KEY): the record does not count not-a-real-fingerprint as a key of ${anchor}: it was never enrolled here, or it was retired already`,
     );
   }, 60_000);
 

@@ -45,6 +45,13 @@ exports.run = async () => {
       if (models.length === 0) await sleep(500);
     }
     log(`stand-in models: ${models.map((m) => m.id).join(', ') || 'NONE'}`);
+    // The agent offers the model the tools that are registered when the chat is opened, and the
+    // chat agent registers its own a moment after it activates. A chat opened before the file
+    // writer is there is answered with no call to make, and ends in 300 ms with nothing written.
+    // So wait, up to a ceiling, for the writer the stand-in model looks for in `extension.cjs`.
+    const writer = () => vscode.lm.tools.find((t) => /create_?file/i.test(t.name));
+    for (let i = 0; i < 120 && !writer(); i += 1) await sleep(250);
+    log(`file writer registered: ${writer()?.name ?? 'NONE'}`);
     // Not awaited: where the agent holds the write for a person, the response never completes, and
     // the command says so by returning the confirmation it stopped on.
     let held = false;

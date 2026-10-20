@@ -410,7 +410,7 @@ describe('the log says where the session landed', () => {
     await client.callTool({ name: 'focus' });
 
     expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
-      'project=(none — the global tree)',
+      'project=(none: the global tree)',
     );
 
     await client.close();
@@ -422,7 +422,7 @@ describe('the log says where the session landed', () => {
     await client.callTool({ name: 'focus' });
 
     expect(logged.find((line) => line.startsWith('session opened:'))).toContain(
-      'runs=(none — the first write to a tree opens that tree’s run)',
+      'runs=(none: the first write to a tree opens that tree’s run)',
     );
     expect(logged.some((line) => line.startsWith('session run '))).toBe(false);
 
@@ -492,7 +492,7 @@ describe('the session says how many projects it chose from', () => {
     // no other channel to learn what the names are. A count would leave it able to
     // tell that something is wrong and unable to say where the work belongs.
     expect(where).toBe(
-      `Workspace: this session knows of 2 projects — "${alpha}", "${beta}" — and it is ` +
+      `Workspace: this session knows of 2 projects ("${alpha}", "${beta}") and it is ` +
         `operating on ${alpha}. A write can name another of them with \`project\`; one ` +
         'that names none lands here. It is re-read whenever the client says the workspace ' +
         'changed, which it has said 0 times since this session opened.',

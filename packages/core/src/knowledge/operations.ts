@@ -543,7 +543,7 @@ export function retractNote(ctx: WriteContext, input: RetractInput): RetractOk |
             code: 'NOT_A_NOTE',
             message:
               `${standing.what} "${oneLine(input.id)}" is not a note: only a memory or an ` +
-              `observation is retracted. A ${standing.what} keeps its own lifecycle — ` +
+              `observation is retracted. A ${standing.what} keeps its own lifecycle: ` +
               `${ITS_OWN_LIFECYCLE[standing.what]}.`,
           },
         };

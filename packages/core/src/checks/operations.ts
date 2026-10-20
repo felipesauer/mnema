@@ -117,7 +117,7 @@ export function declareCheck(
     return {
       ok: false,
       code: 'UNKNOWN_RULE',
-      message: `no decision "${oneLine(input.rule)}" is in this record — a check is declared on a rule`,
+      message: `no decision "${oneLine(input.rule)}" is in this record: a check is declared on a rule`,
     };
   }
 
@@ -196,7 +196,7 @@ export function enrollChecker(
       ok: false,
       code: 'MALFORMED_REQUEST',
       message:
-        'that is not a checker request — hand over the whole line `mnema key request --checker --anchor <id>` ' +
+        'that is not a checker request: hand over the whole line `mnema key request --checker --anchor <id>` ' +
         'printed on the machine that will run the checks, unedited',
     };
   }
@@ -211,7 +211,7 @@ export function enrollChecker(
       code: 'UNPROVEN_REQUEST',
       message:
         `that request does not prove the key ${oneLine(fingerprint)} consented to check for ` +
-        `${oneLine(anchor)} — a checker request is made for ONE identity`,
+        `${oneLine(anchor)}: a checker request is made for ONE identity`,
     };
   }
   const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
@@ -231,7 +231,7 @@ export function enrollChecker(
       ok: false,
       code: 'A_MEMBER_KEY',
       message:
-        `the key ${oneLine(fingerprint)} is a member of an identity in this record — a checker ` +
+        `the key ${oneLine(fingerprint)} is a member of an identity in this record: a checker ` +
         'key signs check results only, so every other fact it signed would fail verification. ' +
         'Make a key of its own for the machine that runs the checks',
     };
@@ -346,7 +346,7 @@ export function runRuleChecks(
       ok: false,
       code: 'NOT_A_CHECKER',
       message:
-        `this machine's key ${oneLine(fingerprint)} is not enrolled as a checker in this record — ` +
+        `this machine's key ${oneLine(fingerprint)} is not enrolled as a checker in this record: ` +
         'run `mnema key request --checker --anchor <id>` here, and have a member enroll the line ' +
         'with `mnema key enroll --checker <the line>`',
     };
@@ -448,7 +448,7 @@ function retiredRefusal(
     code: 'RETIRED_CHECKER',
     message:
       `the key ${oneLine(fingerprint)} was retired as a checker by ${oneLine(by)}, and a retired ` +
-      'key signs nothing again — make a new key for the machine that runs the checks, and enroll ' +
+      'key signs nothing again: make a new key for the machine that runs the checks, and enroll ' +
       'its line with `mnema key enroll --checker <the line>`',
   };
 }
@@ -506,7 +506,7 @@ export function retireChecker(
       ok: false,
       code: 'NOT_A_CHECKER',
       message:
-        `the record enrolls no checker key ${oneLine(fingerprint)} — give the full fingerprint ` +
+        `the record enrolls no checker key ${oneLine(fingerprint)}: give the full fingerprint ` +
         'the enrolment printed (`Enrolled checker <fingerprint>`)',
     };
   }

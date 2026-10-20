@@ -105,7 +105,7 @@ export interface ScopedLinkBreak {
  * differs from.
  */
 const STILL_ON_THE_TAIL =
-  'the records above are all still on the tail — what broke is the proof that nothing ' +
+  'the records above are all still on the tail: what broke is the proof that nothing ' +
   'was inserted between them.';
 
 /** How a person at a terminal is sent to the verb that rules on the whole record. */
@@ -245,10 +245,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
   'commands/decision-transition.ts':
     'a move is a write, answered by the move; the one thing it reads first is where the ' +
     '`agent-accepts` switch stands, to turn an agent’s accept away, and it serves nothing of ' +
-    'the record to anybody — a notice about the chain would be said to a caller who asked to ' +
+    'the record to anybody: a notice about the chain would be said to a caller who asked to ' +
     'change it, and the reads that follow (`show`, `brief`) carry it',
   'moved-record.ts':
-    'it reads the one label a move echoes — the ADR number of a decision, the name of a skill — ' +
+    'it reads the one label a move echoes (the ADR number of a decision, the name of a skill) ' +
     'and whether a supersede’s successor is still proposed, after a write the caller asked for; ' +
     'it serves no record content, and a notice about the chain would be said to someone who ' +
     'asked to change it, while the reads that follow (`show`, `brief`) carry it',
@@ -261,23 +261,23 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'it serves the title and label of each governing decision into a commit message file the ' +
     'person edits, as `#` lines git drops; that file is not a reading anyone asked the record ' +
     'for, and a notice about the chain would be one more comment in a message, with the ' +
-    'hook’s own output sent to /dev/null so an error never costs the commit — `mnema verify` ' +
+    'hook’s own output sent to /dev/null so an error never costs the commit: `mnema verify` ' +
     'rules on the chain',
   'commands/before-a-write.ts':
-    'a host runs it before a write and reads one field of its reply — the reason a person ' +
-    'decides on — so a notice about the chain has nowhere to land; the same session opens ' +
+    'a host runs it before a write and reads one field of its reply (the reason a person ' +
+    'decides on), so a notice about the chain has nowhere to land; the same session opens ' +
     'with the document, which says it, and `mnema verify` rules on it',
   'commands/corrections.ts':
-    'a host runs it at the end of a response and reads one field of its reply — a line of ids — so a ' +
+    'a host runs it at the end of a response and reads one field of its reply (a line of ids), so a ' +
     'notice about the chain has nowhere to land; what it records goes through `runDecision`, a write ' +
     'whose own answer is the record, and the same session opens with the document, which says it',
   'commands/tally.ts':
-    'a host runs it at the end of a response and reads one field of its reply — a line of two ' +
-    'counts — so a notice about the chain has nowhere to land; the same session opens with the ' +
+    'a host runs it at the end of a response and reads one field of its reply (a line of two ' +
+    'counts), so a notice about the chain has nowhere to land; the same session opens with the ' +
     'document, which says it, and `mnema verify` rules on it',
   'commands/handback.ts':
-    'a host runs it when a subagent stops and reads one field of its reply — the reason the subagent ' +
-    'is sent back with — so a notice about the chain has nowhere to land; `mnema verify` rules on it',
+    'a host runs it when a subagent stops and reads one field of its reply (the reason the subagent ' +
+    'is sent back with), so a notice about the chain has nowhere to land; `mnema verify` rules on it',
   'anchors.ts':
     'it resolves a typed prefix into the anchor the CALLER was handed, and answers ' +
     'nobody: the verbs that use it are themselves on the list that owes the notice, so ' +
@@ -289,24 +289,24 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'said twice in one invocation',
   'pinned-run.ts':
     'it checks that the run `MNEMA_RUN` names exists before a write is allowed to cite ' +
-    'it — an ARGUMENT being validated, not an answer being served, and what it hands ' +
+    'it: an ARGUMENT being validated, not an answer being served, and what it hands ' +
     'back is a yes or a refusal about the caller’s own environment',
   'mcp/cache-registry.ts':
     'it opens the caches a connection keeps warm and serves nobody; the reads that ask ' +
     'it for one are what carry the fact (`sessionLinkBreaks`)',
   'commands/verify.ts':
-    'it IS the verdict this notice is a shortening of — it enumerates every issue a tail ' +
+    'it IS the verdict this notice is a shortening of: it enumerates every issue a tail ' +
     'holds, T1 included, and asking it for the notice would be the verb quoting itself',
   'wiring/verify.ts':
     'it words and prints what `commands/verify.ts` ruled and reads no record of its own; ' +
     'a notice here would be the verdict carrying a summary of a line already in it',
   'commands/verify-github.ts':
     'it runs after the verdict, over the trees the verdict ruled on, and reads only those whose ' +
-    'verdict was not a break — a tree whose chain does not close is named as not compared ' +
+    'verdict was not a break: a tree whose chain does not close is named as not compared ' +
     'instead, so the notice would be the verdict above it said a second time',
   'commands/verify-sigstore.ts':
     'it runs after the verdict, over the trees the verdict ruled on, and reads only those whose ' +
-    'verdict was not a break — a tree whose chain does not close is named as not read instead, ' +
+    'verdict was not a break: a tree whose chain does not close is named as not read instead, ' +
     'so the notice would be the verdict above it said a second time',
   'commands/witness.ts':
     'its acts write witness files and refuse a tree below fully signed by the verifier\u2019s own ' +
@@ -317,8 +317,8 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'census note to the page unchanged, so a notice about the chain would be that verdict ' +
     'carrying a summary of a line already in it',
   'repl/following.ts':
-    'it reports what somebody ELSE appended since the session opened and rules on nothing ' +
-    '— two equal extents mean nothing observable moved, never that the chain is intact. ' +
+    'it reports what somebody ELSE appended since the session opened and rules on nothing' +
+    ': two equal extents mean nothing observable moved, never that the chain is intact. ' +
     'What the console says about the PROOF is the badge in its corner, which asks ' +
     '`watchingTheProof` in one place (`repl/session.ts`); a second answer composed on this ' +
     'clock would be the same surface holding two opinions about the same bytes',

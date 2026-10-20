@@ -103,7 +103,7 @@ describe('mnema verify --against-github', () => {
     const v = await cli(['verify', '--against-github']);
     expect(v.failed()).toBe(false);
     expect(v.out.join('\n')).toMatch(
-      /github: mnid:[0-9a-f]{64} — not covered: no GitHub account is linked to this identity/,
+      /github: mnid:[0-9a-f]{64}: not covered: no GitHub account is linked to this identity/,
     );
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -121,7 +121,7 @@ describe('mnema verify --against-github', () => {
     expect(fetch.mock.calls.map((call) => call[0])).toEqual(['https://github.com/octocat.keys']);
     const said = v.out.join('\n');
     expect(said).toMatch(
-      /github: mnid:[0-9a-f]{64} is github\.com\/octocat — every key it signed with \(1\) is one that account publishes/,
+      /github: mnid:[0-9a-f]{64} is github\.com\/octocat: every key it signed with \(1\) is one that account publishes/,
     );
     expect(said).toMatch(/not that the key was that account’s when it signed/);
   });
@@ -139,7 +139,7 @@ describe('mnema verify --against-github', () => {
     expect(v.failed()).toBe(false);
     expect(v.out.slice(0, bare.out.length)).toEqual(bare.out);
     expect(v.out.join('\n')).toMatch(
-      /github: mnid:[0-9a-f]{64} — could not reach github\.com for github\.com\/octocat: fetch failed/,
+      /github: mnid:[0-9a-f]{64}: could not reach github\.com for github\.com\/octocat: fetch failed/,
     );
   });
 

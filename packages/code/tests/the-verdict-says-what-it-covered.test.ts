@@ -238,7 +238,7 @@ describe('a line in the SECOND tree that will not parse', () => {
 
     const said = await verify();
     expect(lineFor(said, 'private')).toContain(
-      'local integrity FAILED — part of the record is UNREADABLE',
+      'local integrity FAILED: part of the record is UNREADABLE',
     );
     expect(lineFor(said, 'public')).toContain('local integrity verified (T1/T2/T4)');
     const evidence = said.issues.join('\n');
@@ -264,7 +264,7 @@ describe('a tree with nothing in it', () => {
     expect(lineFor(await verify(), 'private')).toBeUndefined();
     const said = await verify('--verbose');
     expect(lineFor(said, 'private')).toBe(
-      'private: no record here — nothing has been written to this tree on this machine, ' +
+      'private: no record here: nothing has been written to this tree on this machine, ' +
         'so there is nothing to rule on',
     );
     // The note claims nothing: no level, no layer, and not the word a pass uses.

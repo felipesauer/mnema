@@ -20,7 +20,7 @@ $ mnema init
 ### run start
 $ mnema run start --which agent-alpha --goal 'set the record up'
 | Started run <run-first>
-|   for agent-alpha — set the record up
+|   for agent-alpha: set the record up
 |
 | export MNEMA_RUN=<run-first>
 |
@@ -81,27 +81,27 @@ $ mnema link <decision-runbook> docs/gone-away --rel governs
 ### the decisions the repository already wrote
 $ mnema decision import docs/adr
 | Read docs/adr: 1 decision(s) to propose.
-|   proposed — Keep the runbook where the work is
+|   proposed: Keep the runbook where the work is
 |       from docs/adr/0001-keep-the-runbook.md · the file says "Accepted" · names what it turned down
 | 2 file(s) produced nothing:
-|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
-|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+|   docs/adr/0002-replaced.md: the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md: no level-1 title; nothing names the decision
 | Nothing was written. Run it again with --write to record these as proposals.
 $ mnema decision import docs/adr --write
 | Recorded 1 decision(s) as proposals from docs/adr, in the public tree.
-|   ADR-3 (<decision-imported>) — Keep the runbook where the work is
+|   ADR-3 (<decision-imported>): Keep the runbook where the work is
 |       from docs/adr/0001-keep-the-runbook.md · the file says "Accepted" · names what it turned down
 | 2 file(s) produced nothing:
-|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
-|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+|   docs/adr/0002-replaced.md: the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md: no level-1 title; nothing names the decision
 | Each one is `proposed`. Accepting is a person’s move: `mnema decision move accept <id> --note "<why>"`.
 $ mnema decision import docs/adr --write
 | Recorded 0 decision(s) as proposals from docs/adr, in the public tree.
 | 1 file(s) already in the record, unchanged:
-|   docs/adr/0001-keep-the-runbook.md — <decision-imported>
+|   docs/adr/0001-keep-the-runbook.md: <decision-imported>
 | 2 file(s) produced nothing:
-|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
-|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+|   docs/adr/0002-replaced.md: the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md: no level-1 title; nothing names the decision
 $ mnema decision --scope private import docs/adr
 ! `decision import` takes its own --scope: put it after `import`, not before.
 [exit 1]
@@ -156,7 +156,7 @@ $ mnema run end --which agent-alpha --outcome 'the record is set up'
 |   Run that too: a shell pinned to a closed session cannot write.
 $ mnema run start --which agent-beta --goal 'read the record back'
 | Started run <run-second>
-|   for agent-beta — read the record back
+|   for agent-beta: read the record back
 |
 | export MNEMA_RUN=<run-second>
 |
@@ -168,7 +168,7 @@ $ mnema task create 'A task with a bad scope' --scope elsewhere
 ! Invalid --scope "elsewhere". Use one of: public, private, global.
 [exit 1]
 $ mnema task create 'A task an unnamed agent asked for' --which '   '
-! mnema task does not accept "   " for --which <agent>: it names no agent. Name the agent that executed this, or omit --which — omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
+! mnema task does not accept "   " for --which <agent>: it names no agent. Name the agent that executed this, or omit --which: omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
 !   mnema task [options] [command]
 [exit 1]
 $ mnema task move submit <task-runbook> --scope public
@@ -193,7 +193,7 @@ $ mnema run end --which agent-beta
 ! `mnema run end` needs a run: pass its id, or set MNEMA_RUN to the one `mnema run start` printed.
 [exit 1]
 $ mnema run end no-such-run
-! mnema run end needs --which <agent>: the agent closing this session — required: a close with no agent is credited to you
+! mnema run end needs --which <agent>: the agent closing this session; required: a close with no agent is credited to you
 !   mnema run end [options] [id]
 [exit 1]
 $ mnema search --limit 0
@@ -220,7 +220,7 @@ $ mnema task next no-such-id
 ! No task no-such-id here.
 [exit 1]
 $ mnema key enroll not-a-request
-! Refused (MALFORMED_REQUEST): that is not a key request — hand over the whole line the joining machine printed, unedited, with nothing added or trimmed
+! Refused (MALFORMED_REQUEST): that is not a key request: hand over the whole line the joining machine printed, unedited, with nothing added or trimmed
 [exit 1]
 $ mnema resume --actor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record (these are: <anchor-short>)
@@ -229,7 +229,7 @@ $ mnema key request --anchor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record (these are: <anchor-short>)
 [exit 1]
 $ mnema tail prune <tail-own> --reason 'cut myself'
-! Refused (TAIL_IS_OWN): Tail <tail-own> is the one this write lands on. A waiver has to outlive the cut it authorizes, so it is written from another tail — never from the tail being cut, which would take the waiver with it.
+! Refused (TAIL_IS_OWN): Tail <tail-own> is the one this write lands on. A waiver has to outlive the cut it authorizes, so it is written from another tail: never from the tail being cut, which would take the waiver with it.
 [exit 1]
 $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote anything'
 ! No tail <backup-key-fingerprint> holds events in any tree here.
@@ -241,9 +241,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -258,9 +258,9 @@ $ mnema switch
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        off  the rules addressed at a file, handed over at each edit of it, beside the result of that write  ·  switched off by <anchor-short>  <at:01>  reason: noisy while porting
-|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
-|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
-|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
+|   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
+|   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -270,10 +270,10 @@ $ mnema switch on edit-rules-push
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 |   edit-rules-push is now ON: it hands the record over as it did before.
 $ mnema switch off no-such-channel
-! mnema pushes no channel by that name — `mnema switch` lists them.
+! mnema pushes no channel by that name: `mnema switch` lists them.
 [exit 1]
 
-### refusals — what the parser turns down
+### refusals: what the parser turns down
 $ mnema decision record 'A decision with no rationale'
 ! the rationale is missing.: Give it as an argument, with --stdin, or with --body-file <path>.
 [exit 1]
@@ -286,7 +286,7 @@ $ mnema task create 'A task' --bogus
 !   mnema task create [options] <title>
 [exit 1]
 $ mnema task create 'A task' --which
-! mnema task needs a value after --which <agent>: the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared — by this flag, or by MNEMA_AGENT_KEY — never assumed; where that agent’s key signs, the fact names the agent as the record does. It names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+! mnema task needs a value after --which <agent>: the agent that executed this, when an agent (a script, a CI step) is driving mnema: omit it when you are acting directly. Declared (by this flag, or by MNEMA_AGENT_KEY), never assumed; where that agent’s key signs, the fact names the agent as the record does. It names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
 !   mnema task [options] [command]
 [exit 1]
 $ mnema tsk 'a verb nobody declared'
@@ -322,47 +322,47 @@ $ mnema tail prune <tail-own>
 !   mnema tail prune [options] <tail>
 [exit 1]
 
-### refusals — what no read could accept
+### refusals: what no read could accept
 $ mnema task create ''
-! Refused (UNREADABLE_EVENT): event "task.created" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "task.created" needs a non-empty string at payload.title. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema decision record '' 'a rationale with no title'
-! Refused (UNREADABLE_EVENT): event "decision.recorded" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "decision.recorded" needs a non-empty string at payload.title. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema skill create '' --body 'a body with no name'
-! Refused (UNREADABLE_EVENT): event "skill.created" needs a non-empty string at payload.name. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "skill.created" needs a non-empty string at payload.name. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema memory ''
-! Refused (UNREADABLE_EVENT): event "memory.captured" needs a non-empty string at payload.content. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "memory.captured" needs a non-empty string at payload.content. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema observe <task-runbook> --topic '' --text 'a note with no topic'
-! Refused (UNREADABLE_EVENT): event "observation.recorded" needs a non-empty string at payload.topic. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "observation.recorded" needs a non-empty string at payload.topic. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema task handoff '' agent-alpha agent-beta
-! Refused (UNREADABLE_EVENT): event "handoff.recorded" needs a non-empty string at subject. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "handoff.recorded" needs a non-empty string at subject. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema link <task-runbook> <decision-runbook> --rel ''
-! Refused (UNREADABLE_EVENT): event "knowledge.linked" needs a non-empty string at payload.rel. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "knowledge.linked" needs a non-empty string at payload.rel. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema run start --which agent-gamma --goal ''
-! Refused (UNREADABLE_EVENT): event "run.started" needs a non-empty string at payload.goal. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "run.started" needs a non-empty string at payload.goal. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema run end <run-second> --which agent-beta --outcome ''
-! Refused (UNREADABLE_EVENT): event "run.ended" needs a non-empty string at payload.outcome. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
+! Refused (UNREADABLE_EVENT): event "run.ended" needs a non-empty string at payload.outcome. The fact was NOT recorded: an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 
-### refusals — a reason that says nothing
+### refusals: a reason that says nothing
 $ mnema decision record 'Use UTC' '***'
-! Refused (NOT_A_REASON): the rationale "***" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+! Refused (NOT_A_REASON): the rationale "***" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded: a record is permanent, and its why is the part a later reader reads.
 [exit 1]
 $ mnema decision record 'Use UTC' 'one clock' --alternatives ---
-! Refused (NOT_A_REASON): the alternatives "---" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+! Refused (NOT_A_REASON): the alternatives "---" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded: a record is permanent, and its why is the part a later reader reads.
 [exit 1]
 $ mnema task move cancel <task-chore> --reason '<why>'
 ! Refused (NOT_A_REASON): the reason "<why>" is the marker a recipe prints where the words go, not the words: write the why in its place
 [exit 1]
 $ mnema switch off edit-rules-push --reason '<why>'
-! Refused (NOT_A_REASON): the reason "<why>" is the marker a recipe prints where the words go, not the words: write the why in its place. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+! Refused (NOT_A_REASON): the reason "<why>" is the marker a recipe prints where the words go, not the words: write the why in its place. The fact was NOT recorded: a record is permanent, and its why is the part a later reader reads.
 [exit 1]
 $ mnema task create 'A task the anchor claims to have executed' --which <anchor-short>
 ! Refused (WHO_IS_WHICH): the authorizing human and the executing agent must be different identities

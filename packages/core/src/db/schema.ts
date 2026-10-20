@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   -- What each move of this task SAID: the transitions' own fields, as JSON, in
-  -- the chain's order. NULL when no transition ever carried proof — the absence is
+  -- the chain's order. NULL when no transition ever carried proof: the absence is
   -- the fact, so it is never '[]'. It is prose that lives nowhere else in the
   -- cache: measured, a --note came out of "timeline --json" and out of nothing
   -- else, so "show" could not print it and the index could not find it.
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS runs (
   last_fact_at TEXT,
   -- WHAT was written in the run: the tally per event kind, JSON-encoded as the
   -- ordered array the projection produces ([] when the run wrote nothing, never
-  -- NULL — absence would say "unknown", and the fold always knows).
+  -- NULL: absence would say "unknown", and the fold always knows).
   --
   -- JSON in a column rather than a table of (run, kind, count) rows, and the
   -- reason is the query nobody makes: this tally is only ever read BESIDE its run,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS decisions (
   -- collision across offline clones is a label clash, reported not enforced.
   adr           TEXT NOT NULL,
   title         TEXT NOT NULL,
-  -- The why — the whole value of the record.
+  -- The why: the whole value of the record.
   rationale     TEXT NOT NULL,
   -- What was considered and turned down, and why not. NULL when the decision
   -- recorded none: the absence is the fact, so it is never the empty string.
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS observations (
   retracted_reason TEXT
 ) STRICT;
 
--- Speeds "the observations about entity X" — the natural query on an observation.
+-- Speeds "the observations about entity X": the natural query on an observation.
 CREATE INDEX IF NOT EXISTS idx_observations_about ON observations (about);
 
 CREATE TABLE IF NOT EXISTS handoffs (
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS handoffs (
 ) STRICT;
 
 -- Speeds "the handoffs on task X" and keeps the list ordered by time. Time is not a
--- total order over these rows — a handoff has no id, and two can share a millisecond —
+-- total order over these rows (a handoff has no id, and two can share a millisecond),
 -- so the read breaks the tie on 'rowid', which this index carries and which is the
 -- order the rebuild inserted in. See listHandoffs.
 CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs (task, recorded_at);
@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS links (
   -- relation falsified it. Whatever it is, it is stored as the caller wrote it
   -- and what it names is resolved on read.
   target    TEXT NOT NULL,
-  -- The relation label — an open literal string.
+  -- The relation label: an open literal string.
   rel       TEXT NOT NULL,
   -- The anchor that recorded it (the authorizing 'who').
   who       TEXT NOT NULL,
@@ -234,17 +234,17 @@ CREATE TABLE IF NOT EXISTS links (
 
 -- Both directions of the N:N relation are answerable: the primary key indexes
 -- the subject side; this index indexes the target side, so "what links into X"
--- is as fast as "what links out of X" — the bidirectional reachability the
+-- is as fast as "what links out of X": the bidirectional reachability the
 -- supersede's two columns give, generalized to an edge set.
 CREATE INDEX IF NOT EXISTS idx_links_target ON links (target);
 
--- The census of an edit asks for every edge of ONE label — governs, asks-for-a-person — and
+-- The census of an edit asks for every edge of ONE label (governs, asks-for-a-person) and
 -- the primary key and the target index both start from an endpoint, so without this the answer
 -- scanned the whole table and sorted it. The columns after the label are the order the query
 -- returns, so the index is read in order and nothing is sorted.
 CREATE INDEX IF NOT EXISTS idx_links_rel ON links (rel, target, subject);
 
--- WHO STILL ASSERTS EACH EDGE — one row per (subject, target, rel, who) whose
+-- WHO STILL ASSERTS EACH EDGE: one row per (subject, target, rel, who) whose
 -- assertion stands, in the order it came to stand ('rowid'). A 'link.retracted'
 -- withdraws its identity's row of the edge it names; the edge's row in 'links' is
 -- then the lowest row left here, or none. Read by nothing but the cache brought
@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS skills (
   -- The reusable pattern itself, from skill.created.
   body       TEXT NOT NULL,
   -- Current state: the 'to' of the skill's last transition. A skill is not
-  -- relational (no supersede columns) — replacement between skills is a link.
+  -- relational (no supersede columns): replacement between skills is a link.
   state      TEXT NOT NULL,
   -- PROVENANCE: the two acts that put a pattern in front of an agent. A skill's
   -- body is served as instruction, so who proposed it and who adopted it is what
@@ -299,7 +299,7 @@ CREATE INDEX IF NOT EXISTS idx_skills_state ON skills (state);
 -- only the text a PERSON wrote.
 --
 -- Two columns are indexed and four are not, and that split is the whole design.
--- Indexed: the entity's own title and the prose under it — the words someone
+-- Indexed: the entity's own title and the prose under it: the words someone
 -- chose. NOT indexed: kind, state, the instant, the id. Those are STRUCTURE, and
 -- structure is a filter, never a search term: matching an anchor id or a state
 -- name as if it were prose would bury the words a person actually looked for,
@@ -311,7 +311,7 @@ CREATE INDEX IF NOT EXISTS idx_skills_state ON skills (state);
 -- The title is weighted above the body at query time: a term in the name of a
 -- thing identifies it, the same term buried in a paragraph only mentions it.
 --
--- The tokenizer folds case AND diacritics, so "memoria" finds "memória" — the
+-- The tokenizer folds case AND diacritics, so "memoria" finds "memória": the
 -- record is written in whatever language the team works in, and an accent is not
 -- a distinction a searcher means to make. No stemmer: it would be one language's
 -- rules applied to all of them, and a prefix query covers the common case
@@ -326,14 +326,14 @@ CREATE VIRTUAL TABLE IF NOT EXISTS record_search USING fts5(
   tokenize = 'unicode61 remove_diacritics 2'
 );
 
--- The reference index: one row per (event, entity, ROLE) — every way an entity
+-- The reference index: one row per (event, entity, ROLE): every way an entity
 -- appears in a fact.
 --
 -- Unlike every other table here, this one is not a fold: it is one row per
 -- APPEARANCE, so the same event contributes a row for its subject and another
 -- for each entity it refers to. That single shape answers the two questions the
--- record is asked from opposite ends — "which events touch this entity" (its
--- history) and "which entities does this entity reach" (the graph) — because an
+-- record is asked from opposite ends: "which events touch this entity" (its
+-- history) and "which entities does this entity reach" (the graph), because an
 -- edge between two entities is nothing but two rows of one event: the subject
 -- row and a referring one.
 --
@@ -351,7 +351,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS record_search USING fts5(
 -- event.
 --
 -- The event column carries the fact as written, JSON-encoded. It is what lets a
--- history be answered from the index alone — the typed payload an auditor reads
+-- history be answered from the index alone: the typed payload an auditor reads
 -- (which action, which state, which relation label) exists nowhere else in the
 -- cache. It is duplicated onto the referring rows rather than joined back to
 -- the subject row: a referring row is a minority of the table, and a history is
@@ -360,7 +360,7 @@ CREATE TABLE IF NOT EXISTS refs (
   -- The event's position in this tree's ordered stream. Shared by every row of
   -- one event.
   ord     INTEGER NOT NULL,
-  -- The entity this row is about — the one the role names.
+  -- The entity this row is about: the one the role names.
   entity  TEXT NOT NULL,
   -- How the entity appears: 'subject', 'about', 'target' or 'by'.
   role    TEXT NOT NULL,
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS channel_switches (
 
 -- THE FOUR TABLES BELOW ARE NOT WHAT A READER ASKS FOR. They are what lets a cache that
 -- already holds a record take only what ARRIVED next, instead of folding it all again, so
--- they exist for one reader: the advance (advance.ts). Each is a projection like the rest —
+-- they exist for one reader: the advance (advance.ts). Each is a projection like the rest:
 -- derived, dropped and replayed with them, never authored.
 
 -- The accumulator of every entity the entity folds hold (tasks, runs, decisions, skills),
@@ -440,8 +440,8 @@ CREATE TABLE IF NOT EXISTS search_rows (
 
 -- The facts about who belongs to an identity (founded, enrolled, revoked), as the events
 -- themselves, in the record's order. They are the whole input of the two readings that ask
--- the order about them — which identities were founded beside others, and which keys count
--- for an anchor — and they are a handful in any record, where the order they were picked
+-- the order about them (which identities were founded beside others, and which keys count
+-- for an anchor), and they are a handful in any record, where the order they were picked
 -- from is the whole of it.
 CREATE TABLE IF NOT EXISTS membership_facts (
   ord   INTEGER PRIMARY KEY NOT NULL,
@@ -459,7 +459,7 @@ CREATE TABLE IF NOT EXISTS divergences (
 -- What the cache says about itself: the product's stamp it was built under, how far into
 -- the chain it reached (the frontier), the tails that did not chain, and a counter that
 -- moves with every change so a process that wrote can tell that another one did too. It is
--- not a projection and is never dropped by a rebuild — a rebuild rewrites it.
+-- not a projection and is never dropped by a rebuild. A rebuild rewrites it.
 CREATE TABLE IF NOT EXISTS cache_meta (
   key   TEXT PRIMARY KEY NOT NULL,
   value TEXT NOT NULL

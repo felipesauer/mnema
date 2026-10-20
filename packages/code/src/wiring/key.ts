@@ -96,7 +96,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         // are hex and `mnid:`: neither can hold a break.
         io.out(render(fact(onOneLine`private half installed at ${result.installedAt}`)));
         io.out(
-          render(fact(onOneLine`Your copy at ${file} was read, not moved — keep it where it is.`)),
+          render(fact(onOneLine`Your copy at ${file} was read, not moved: keep it where it is.`)),
         );
         return;
       }
@@ -119,7 +119,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .description('ask to bring this machine into an identity (run this on the joining machine)')
     .requiredOption(
       '--anchor <id>',
-      'the identity to join (the `mnid:…` its machine prints) — a prefix of one this ' +
+      'the identity to join (the `mnid:…` its machine prints): a prefix of one this ' +
         'record knows also names it; the request is signed over the whole value either way',
     )
     .option('--key <file>', "a private key to speak for instead of this machine's own")
@@ -140,7 +140,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, {
             reason: 'REFUSED',
             code: 'ONE_POWER',
-            message: '--agent and --checker ask for different powers — choose one',
+            message: '--agent and --checker ask for different powers: choose one',
           });
           return;
         }
@@ -174,7 +174,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           render(
             fact(
               result.source === 'file'
-                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${result.keyFile} — \`mnema key restore --agent ${result.name} <file>\` does that where the agent runs`
+                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${result.keyFile}; \`mnema key restore --agent ${result.name} <file>\` does that where the agent runs`
                 : onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
             ),
           ),
@@ -258,7 +258,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here). In the private tree and the global one, where the key lives on this machine and the tree speaks for another identity than the line's, the key's consent is made again under that tree's identity; the committed tree takes the line's identity or refuses.",
+      "enroll a key as an agent of this identity: in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here). In the private tree and the global one, where the key lives on this machine and the tree speaks for another identity than the line's, the key's consent is made again under that tree's identity; the committed tree takes the line's identity or refuses.",
     )
     .action(async (request: string, opts: { checker?: boolean; agent?: boolean }) => {
       if (opts.agent === true) {
@@ -266,7 +266,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, {
             reason: 'REFUSED',
             code: 'ONE_POWER',
-            message: '--agent and --checker enrol different powers — choose one',
+            message: '--agent and --checker enrol different powers: choose one',
           });
           return;
         }
@@ -280,8 +280,8 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             wrote
               ? `Enrolled agent ${result.name}: key ${result.fingerprint}`
               : result.alreadyAgent
-                ? `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`
-                : `Nothing recorded for the agent ${result.name}: key ${result.fingerprint} — a tree refused it`,
+                ? `Key ${result.fingerprint} is already the agent "${result.name}": nothing recorded.`
+                : `Nothing recorded for the agent ${result.name}: key ${result.fingerprint}; a tree refused it`,
           );
           // A machine that joined an identity writes its own trees under one of its own: the line
           // then says which identity each tree took the key for.
@@ -304,7 +304,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               reportRefusal(wiring, {
                 reason: 'REFUSED',
                 code: tree.code ?? 'REFUSED',
-                message: `the ${names[tree.scope]} did not take it, and what the others took stays — ${tree.why ?? ''}`,
+                message: `the ${names[tree.scope]} did not take it, and what the others took stays: ${tree.why ?? ''}`,
               });
               continue;
             }
@@ -319,7 +319,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
                       ? elsewhereIn(tree)
                         ? onOneLine`${names[tree.scope]}: already the agent for ${tree.anchor ?? ''}, nothing recorded`
                         : onOneLine`${names[tree.scope]}: already the agent, nothing recorded`
-                      : onOneLine`${names[tree.scope]}: skipped — ${tree.why ?? ''}`,
+                      : onOneLine`${names[tree.scope]}: skipped, ${tree.why ?? ''}`,
                 ),
               ),
             );
@@ -328,7 +328,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             io.out(
               render(
                 fact(
-                  onOneLine`the record already counts ${result.alsoUnderTheName.length} other active ${result.alsoUnderTheName.length === 1 ? 'key' : 'keys'} as "${result.name}" (${result.alsoUnderTheName.map((one) => one.slice(0, 12)).join(', ')}) — one per machine is expected; \`mnema key revoke --agent <fingerprint> --reason "<why>"\` retires one`,
+                  onOneLine`the record already counts ${result.alsoUnderTheName.length} other active ${result.alsoUnderTheName.length === 1 ? 'key' : 'keys'} as "${result.name}" (${result.alsoUnderTheName.map((one) => one.slice(0, 12)).join(', ')}): one per machine is expected; \`mnema key revoke --agent <fingerprint> --reason "<why>"\` retires one`,
                 ),
               ),
             );
@@ -370,7 +370,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         const result = runCheckerEnroll(here(), { request });
         if (result.ok) {
           if (result.alreadyChecker) {
-            io.out(`Key ${result.fingerprint} is already a checker — nothing recorded.`);
+            io.out(`Key ${result.fingerprint} is already a checker: nothing recorded.`);
             return;
           }
           io.out(`Enrolled checker ${result.fingerprint}`);
@@ -392,7 +392,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       const result = runKeyEnroll(here(), { request });
       if (result.ok) {
         if (result.alreadyMember) {
-          io.out(`Key ${result.fingerprint} is already in ${result.anchor} — nothing recorded.`);
+          io.out(`Key ${result.fingerprint} is already in ${result.anchor}: nothing recorded.`);
           return;
         }
         io.out(`Enrolled key ${result.fingerprint}`);
@@ -533,7 +533,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             reportRefusal(wiring, {
               reason: 'REFUSED',
               code: 'ONE_POWER',
-              message: '--agent and --checker retire different keys — choose one',
+              message: '--agent and --checker retire different keys: choose one',
             });
             return;
           }
@@ -542,7 +542,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           if (result.ok) {
             io.out(`Retired agent ${result.name}: key ${result.fingerprint}`);
             reportReplacement(result, io);
-            io.out(render(fact(`it signs nothing from here on — retired by ${result.anchor}`)));
+            io.out(render(fact(`it signs nothing from here on: retired by ${result.anchor}`)));
             const names = {
               public: 'committed tree',
               private: 'private tree',
@@ -553,7 +553,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
                 reportRefusal(wiring, {
                   reason: 'REFUSED',
                   code: tree.code ?? 'REFUSED',
-                  message: `the ${names[tree.scope]} did not take the retirement, and what the others took stays — ${tree.why ?? ''}`,
+                  message: `the ${names[tree.scope]} did not take the retirement, and what the others took stays: ${tree.why ?? ''}`,
                 });
                 continue;
               }
@@ -562,7 +562,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
                   fact(
                     tree.state === 'retired'
                       ? onOneLine`${names[tree.scope]}: retired, recorded in ${tree.root}`
-                      : onOneLine`${names[tree.scope]}: skipped — ${tree.why ?? ''}`,
+                      : onOneLine`${names[tree.scope]}: skipped, ${tree.why ?? ''}`,
                   ),
                 ),
               );
@@ -595,13 +595,13 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           if (result.ok) {
             if (result.alreadyRetired) {
               io.out(
-                `Key ${result.fingerprint} was retired as a checker by ${result.retiredBy} already — nothing recorded.`,
+                `Key ${result.fingerprint} was retired as a checker by ${result.retiredBy} already: nothing recorded.`,
               );
               return;
             }
             io.out(`Retired checker ${result.fingerprint}`);
             reportReplacement(result, io);
-            io.out(render(fact(`it signs nothing from here on — retired by ${result.retiredBy}`)));
+            io.out(render(fact(`it signs nothing from here on: retired by ${result.retiredBy}`)));
             io.out(
               render(
                 fact(
@@ -630,7 +630,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         if (result.ok) {
           io.out(`Revoked key ${result.fingerprint}`);
           reportReplacement(result, io);
-          io.out(render(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
+          io.out(render(fact(`from ${result.anchor}: ${result.remaining} key(s) left`)));
           if (result.self && result.keyFile !== undefined) {
             // The person just retired the key this machine signs with, and this checkout goes on
             // recording the identity it left. THIS SAID "anything it writes as that identity fails
@@ -739,7 +739,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       io.out(
         render(
           fact(
-            'Anything that signs now needs the passphrase: a terminal asks for it, and MNEMA_KEY_PASSPHRASE set to the same value answers where there is none. An agent’s host or a hook has no terminal and is not to be given it — give it a key of its own: `mnema key request --agent <name> --anchor <your identity>`, then `mnema key enroll --agent <the line it prints>`, then tell the host to sign with it (`mnema mcp --agent-key <name>`, the plugin’s `agent_key` option). The record and its verification are as they were.',
+            'Anything that signs now needs the passphrase: a terminal asks for it, and MNEMA_KEY_PASSPHRASE set to the same value answers where there is none. An agent’s host or a hook has no terminal and is not to be given it; give it a key of its own: `mnema key request --agent <name> --anchor <your identity>`, then `mnema key enroll --agent <the line it prints>`, then tell the host to sign with it (`mnema mcp --agent-key <name>`, the plugin’s `agent_key` option). The record and its verification are as they were.',
           ),
         ),
       );

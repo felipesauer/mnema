@@ -91,14 +91,14 @@ import { type Declared, readsTheRecord, type Wiring } from './verb.js';
  * and asserts both exit codes.
  */
 const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
-  chained: 'the default — fail only on a break, which is what a bare `verify` has always done',
+  chained: 'the default: fail only on a break, which is what a bare `verify` has always done',
   signed:
-    'also fail unless every event is covered by a verified signature — every write here ' +
+    'also fail unless every event is covered by a verified signature: every write here ' +
     'signs what it wrote, so it passes whenever nothing is mid-write, and what it catches ' +
     'is checkpoints that did not verify or were taken out from under the events they ' +
-    'signed — not a cut that took the newest events with their checkpoint',
+    'signed, not a cut that took the newest events with their checkpoint',
   witnessed:
-    'also fail unless an external witness dates the record — `mnema witness stamp` asks ' +
+    'also fail unless an external witness dates the record: `mnema witness stamp` asks ' +
     'for one, and it passes once a Bitcoin block carries it, never while it is pending',
 };
 
@@ -205,7 +205,7 @@ function parseRequirement(
  */
 const NO_RECORD_HEADLINE = 'no record here';
 const NO_RECORD_WHY =
-  ' — nothing has been written to this tree on this machine, so there is nothing to rule on';
+  ': nothing has been written to this tree on this machine, so there is nothing to rule on';
 const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
 
 /**
@@ -219,7 +219,7 @@ const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
  * run `mnema init` in or a path the caller mistyped.
  */
 const NO_PROJECT_THERE =
-  `${NO_RECORD_HEADLINE} — no \`.mnema/\` is at this path or above it, so there is ` +
+  `${NO_RECORD_HEADLINE}: no \`.mnema/\` is at this path or above it, so there is ` +
   'nothing to rule on';
 
 /**
@@ -258,9 +258,9 @@ function coverage(named: number, covered: number, without: number, tolerated: bo
       : '';
   return (
     `${named} path(s) named → ${distinct} distinct: ${set}. ` +
-    'Two names of one record are one project — the same directory twice, ' +
+    'Two names of one record are one project: the same directory twice, ' +
     'a subdirectory of one already named, or one reached through a symlink. A path that ' +
-    'holds no record is outside the LEVEL — nothing was replayed there — and the verdict ' +
+    'holds no record is outside the LEVEL (nothing was replayed there) and the verdict ' +
     'is the WEAKEST level any covered project reached. It is not outside the EXIT: ' +
     'naming a path is asserting that it is a project, so one holding no record makes ' +
     'this exit non-zero unless the caller says otherwise.' +
@@ -286,7 +286,7 @@ function coverage(named: number, covered: number, without: number, tolerated: bo
 function noRecordAtNamedPaths(dirs: readonly string[]): string {
   return (
     `not every named path holds a record: ${dirs.length} path(s) hold none ` +
-    `(${dirs.join(', ')}) — naming a path is asserting that it is a project. Run ` +
+    `(${dirs.join(', ')}): naming a path is asserting that it is a project. Run ` +
     '`mnema init` in one that should be, correct the path, or pass ' +
     `\`${ALLOW_NO_RECORD}\` to rule on the projects that were covered and leave these out.`
   );
@@ -305,7 +305,7 @@ function privateTreeVisible(
   named: string,
   seen: { readonly path: string; readonly gitignore: string },
 ): string {
-  return onOneLine`note [private tree] ${named}: git would stage ${seen.path} — no rule ignores it, so the next \`git add\` would commit what this machine keeps to itself. ${seen.gitignore} is where its \`/private/\` line belongs`;
+  return onOneLine`note [private tree] ${named}: git would stage ${seen.path}; no rule ignores it, so the next \`git add\` would commit what this machine keeps to itself. ${seen.gitignore} is where its \`/private/\` line belongs`;
 }
 
 /**
@@ -375,7 +375,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const verify = program
     .command(VERIFY_VERB)
-    .description("verify this project's record — its committed tree and its private one")
+    .description("verify this project's record: its committed tree and its private one")
     .option(
       '--global',
       globalTreeGloss('so a weakness in it would lower the verdict of every project on this disk'),
@@ -383,7 +383,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     .option(
       '--workspace <path...>',
       'verify the projects at these paths instead of this one, and give ONE verdict ' +
-        'over all of them — the aggregate is the weakest, so no project passes on ' +
+        'over all of them: the aggregate is the weakest, so no project passes on ' +
         "another's proof. The set is what you name and is never searched for: two " +
         'names of one record count once, and a path holding no record is reported, ' +
         'left out of the level, counted at the end, and makes the exit non-zero ' +
@@ -393,7 +393,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
       ALLOW_NO_RECORD,
       'for --workspace: accept a named path that holds no record, and rule on ' +
         'the projects that do. Off by default, because naming a path is asserting ' +
-        'that it is a project — so a mistyped path in a CI step is news rather than ' +
+        'that it is a project, so a mistyped path in a CI step is news rather than ' +
         'a silent pass. It tolerates ABSENCE and never a BREAK: a covered project ' +
         'that fails still exits non-zero',
     )
@@ -410,22 +410,22 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
       'also fail unless the committed record is the one <rev> held, grown at the end: ' +
         'every file it held under tails/ and keys/ is still here, and every segment and ' +
         'checkpoints.jsonl still begins with the bytes it held. Catches what no --require ' +
-        'can — a cut that took events with their checkpoint, a record founded again, a ' +
+        'can: a cut that took events with their checkpoint, a record founded again, a ' +
         'rewrite signed again. Reads git, never the network, so <rev> must be in this clone',
     )
     .option(
       AGAINST_GITHUB,
       'also compare the key each identity of this record signed with against the SSH keys ' +
         'the GitHub account it named (`mnema key github`) publishes at github.com/<name>.keys. ' +
-        'It proves the account publishes that key TODAY — not that it was the account’s when it ' +
-        'signed — and it takes github.com’s word for it. Goes to the network only when given; ' +
+        'It proves the account publishes that key TODAY (not that it was the account’s when it ' +
+        'signed), and it takes github.com’s word for it. Goes to the network only when given; ' +
         'what it finds is noted per identity and never moves the verdict or the exit',
     )
     .option(
       AGAINST_SIGSTORE,
       'also read the Sigstore bundles `mnema witness sigstore` filed beside the checkpoints: ' +
         'who signed in to Sigstore to countersign each one, and when Rekor logged it. Reads no ' +
-        'network — it checks against the Sigstore trust root this binary carries. A bundle ' +
+        'network: it checks against the Sigstore trust root this binary carries. A bundle ' +
         'speaks for an identity of this record only where that identity named the same e-mail ' +
         'or workflow (`mnema key sigstore`). Noted per bundle; never moves the verdict, the ' +
         'level, `--require witnessed` or the exit',
@@ -439,7 +439,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--json',
-      'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
+      'emit the verdict as JSON instead of prose: the whole reading, per tree, plus ' +
         'what NO --require value answers. The exit code is unchanged: this changes the ' +
         'shape of the answer, never the answer',
     )
@@ -608,7 +608,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
  */
 function reportSince(io: CliIo, render: Render, since: SinceReading): void {
   if (since.kind === 'refused') {
-    io.err(render(fact(onOneLine`since ${since.rev}: not compared — ${since.why}`)));
+    io.err(render(fact(onOneLine`since ${since.rev}: not compared: ${since.why}`)));
     return;
   }
   const at = `since ${since.rev} (${since.commit.slice(0, 12)})`;
@@ -617,8 +617,8 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       render(
         fact(
           finding.what === 'gone'
-            ? onOneLine`${at}: gone — ${finding.file} was in the record there and is not here`
-            : onOneLine`${at}: rewritten — ${finding.file} no longer begins with the bytes it held there`,
+            ? onOneLine`${at}: gone: ${finding.file} was in the record there and is not here`
+            : onOneLine`${at}: rewritten: ${finding.file} no longer begins with the bytes it held there`,
         ),
       ),
     );
@@ -627,7 +627,7 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
     io.out(
       render(
         fact(
-          onOneLine`${at}: the record only grew — ${String(since.held)} file(s) it held are here, and every segment and checkpoint file begins with its bytes`,
+          onOneLine`${at}: the record only grew: ${String(since.held)} file(s) it held are here, and every segment and checkpoint file begins with its bytes`,
         ),
       ),
     );
@@ -649,7 +649,7 @@ function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): 
     io.out(
       render(
         fact(
-          `sigstore: the ${scope} tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled`,
+          `sigstore: the ${scope} tree was not read: its verdict is a break, so which checkpoint a bundle is over is not settled`,
         ),
       ),
     );
@@ -658,7 +658,7 @@ function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): 
     io.out(
       render(
         fact(
-          'sigstore: not covered — no Sigstore bundle in this record (`mnema witness sigstore` files one)',
+          'sigstore: not covered: no Sigstore bundle in this record (`mnema witness sigstore` files one)',
         ),
       ),
     );
@@ -679,7 +679,7 @@ function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): 
 export function sigstoreLine(finding: SigstoreFinding): string {
   const at = onOneLine`sigstore: ${finding.tail} checkpoint ${finding.checkpoint.slice(0, 12)}`;
   const reading = finding.reading;
-  if (reading.kind === 'not-covered') return onOneLine`${at} — not covered: ${reading.why}`;
+  if (reading.kind === 'not-covered') return onOneLine`${at}: not covered: ${reading.why}`;
   const ran = reading.ran;
   const names =
     ran === undefined
@@ -694,7 +694,7 @@ export function sigstoreLine(finding: SigstoreFinding): string {
     names.length === 0
       ? ''
       : onOneLine`; its certificate names ${names.join(', ')}: a run, not the agent inside it`;
-  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})${certificate}`;
+  const signed = onOneLine`${at}: signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})${certificate}`;
   if (finding.namedBy !== undefined) {
     return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
   }
@@ -714,7 +714,7 @@ function reportGithub(io: CliIo, render: Render, reading: GithubReading): void {
     io.out(
       render(
         fact(
-          `github: the ${scope} tree was not compared — its verdict is a break, so who signed it is not settled`,
+          `github: the ${scope} tree was not compared: its verdict is a break, so who signed it is not settled`,
         ),
       ),
     );
@@ -737,24 +737,24 @@ function githubLine(author: GithubAuthor): string {
   const who = `github: ${author.anchor}`;
   const finding = author.finding;
   if (finding.kind === 'no-account') {
-    return `${who} — not covered: no GitHub account is linked to this identity (\`mnema key github <name>\` links one)`;
+    return `${who}: not covered: no GitHub account is linked to this identity (\`mnema key github <name>\` links one)`;
   }
   const at = onOneLine`github.com/${finding.account}`;
   switch (finding.kind) {
     case 'not-an-account':
-      return `${who} — not covered: ${at} is not a GitHub account name, so it was not asked`;
+      return `${who}: not covered: ${at} is not a GitHub account name, so it was not asked`;
     case 'no-such-account':
-      return `${who} — not covered: github.com has no account ${oneLine(finding.account)}`;
+      return `${who}: not covered: github.com has no account ${oneLine(finding.account)}`;
     case 'no-ed25519-key':
-      return `${who} — not covered: ${at} publishes no Ed25519 key`;
+      return `${who}: not covered: ${at} publishes no Ed25519 key`;
     case 'unreachable':
-      return `${who} — could not reach github.com for ${at}: ${oneLine(finding.detail)}`;
+      return `${who}: could not reach github.com for ${at}: ${oneLine(finding.detail)}`;
     case 'compared': {
       if (finding.unpublished.length === 0) {
-        return `${who} is ${at} — every key it signed with (${String(finding.published.length)}) is one that account publishes`;
+        return `${who} is ${at}: every key it signed with (${String(finding.published.length)}) is one that account publishes`;
       }
       const short = finding.unpublished.map((fp) => fp.slice(0, 12)).join(', ');
-      return `${who} — not covered: ${String(finding.unpublished.length)} of its ${String(author.keys.length)} key(s) (${short}) are not among the keys ${at} publishes`;
+      return `${who}: not covered: ${String(finding.unpublished.length)} of its ${String(author.keys.length)} key(s) (${short}) are not among the keys ${at} publishes`;
     }
   }
 }

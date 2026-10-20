@@ -145,7 +145,7 @@ export function enrollFromRequest(
       ok: false,
       code: 'MALFORMED_REQUEST',
       message:
-        'that is not a key request — hand over the whole line the joining machine ' +
+        'that is not a key request: hand over the whole line the joining machine ' +
         'printed, unedited, with nothing added or trimmed',
     };
   }
@@ -173,7 +173,7 @@ export function enrollFromRequest(
             ok: false,
             code: 'AN_AGENT_KEY',
             message:
-              `the key ${oneLine(fingerprint)} is an agent key of ${oneLine(holder.anchor)} — an agent is not ` +
+              `the key ${oneLine(fingerprint)} is an agent key of ${oneLine(holder.anchor)}: an agent is not ` +
               'a member that joins, and the record takes a key in one role only',
           },
         };
@@ -184,7 +184,7 @@ export function enrollFromRequest(
             ok: false,
             code: 'UNPROVEN_REQUEST',
             message:
-              `that request does not prove the key ${oneLine(fingerprint)} consented to join ${oneLine(anchor)} — ` +
+              `that request does not prove the key ${oneLine(fingerprint)} consented to join ${oneLine(anchor)}: ` +
               `a request is made for ONE identity, so check the joining machine asked to join ${oneLine(anchor)} ` +
               'and not some other',
           },
@@ -200,7 +200,7 @@ export function enrollFromRequest(
             ok: false,
             code: 'CANNOT_VOUCH',
             message:
-              `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
+              `this machine's key is not currently valid for ${oneLine(anchor)}: the record retired it, ` +
               'so a vouch it signed would be rejected. Enroll from a machine that is still a member',
           },
         };
@@ -334,7 +334,7 @@ export function revokeMember(
             ok: false,
             code: 'CANNOT_VOUCH',
             message:
-              `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
+              `this machine's key is not currently valid for ${oneLine(anchor)}: the record retired it, ` +
               'so a revocation it signed would have no effect. Revoke from a machine that is still a member',
           },
         };
@@ -345,7 +345,7 @@ export function revokeMember(
             ok: false,
             code: 'UNKNOWN_KEY',
             message:
-              `the record does not count ${oneLine(input.fingerprint)} as a key of ${oneLine(anchor)} — ` +
+              `the record does not count ${oneLine(input.fingerprint)} as a key of ${oneLine(anchor)}: ` +
               'it was never enrolled here, or it was retired already',
           },
         };
@@ -356,7 +356,7 @@ export function revokeMember(
             ok: false,
             code: 'LAST_KEY',
             message:
-              `${oneLine(input.fingerprint)} is the only key of ${oneLine(anchor)} that is not an agent's — retiring it would leave the ` +
+              `${oneLine(input.fingerprint)} is the only key of ${oneLine(anchor)} that is not an agent's: retiring it would leave the ` +
               'identity unable to sign anything again, including a repair. Enroll the replacement ' +
               'first, then retire this one',
           },
@@ -522,7 +522,7 @@ export function enrollAgentFromRequest(
       ok: false,
       code: 'MALFORMED_REQUEST',
       message:
-        'that is not an agent request — hand over the whole line `mnema key request --agent <name> --anchor <id>` ' +
+        'that is not an agent request: hand over the whole line `mnema key request --agent <name> --anchor <id>` ' +
         'printed on the machine that holds the agent key, unedited',
     };
   }
@@ -544,7 +544,7 @@ export function enrollAgentFromRequest(
             code: 'UNPROVEN_REQUEST',
             message:
               `that request does not prove the key ${oneLine(fingerprint)} consented to be ` +
-              `"${oneLine(request.name)}" for ${oneLine(anchor)} — an agent request is made for ONE ` +
+              `"${oneLine(request.name)}" for ${oneLine(anchor)}: an agent request is made for ONE ` +
               'identity under ONE name',
           },
         };
@@ -555,7 +555,7 @@ export function enrollAgentFromRequest(
             ok: false,
             code: 'CANNOT_VOUCH',
             message:
-              `this machine's key is not currently one of ${oneLine(anchor)}'s own — the record retired it, ` +
+              `this machine's key is not currently one of ${oneLine(anchor)}'s own: the record retired it, ` +
               'or it is an agent key, so a vouch it signed would be rejected. Enroll from a machine that is still a member',
           },
         };
@@ -588,7 +588,7 @@ export function enrollAgentFromRequest(
             ok: false,
             code: 'A_MEMBER_KEY',
             message:
-              `the key ${oneLine(fingerprint)} is already a member of an identity in this record — an agent ` +
+              `the key ${oneLine(fingerprint)} is already a member of an identity in this record: an agent ` +
               'key is a key of its own, made for the agent, and the record takes a key in one role only',
           },
         };
@@ -600,7 +600,7 @@ export function enrollAgentFromRequest(
             code: 'RETIRED_AGENT',
             message:
               `the key ${oneLine(fingerprint)} was taken out of an identity in this record and is never ` +
-              `enrolled again — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
+              `enrolled again: \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
               'makes the agent a new key, and `mnema key enroll --agent <the line it prints>` puts it in force',
           },
         };
@@ -632,7 +632,7 @@ function underAnotherName(
     ok: false,
     code: 'AGENT_UNDER_ANOTHER_NAME',
     message:
-      `the key ${oneLine(fingerprint)} is already ${oneLine(anchor)}'s agent "${oneLine(held)}" — ` +
+      `the key ${oneLine(fingerprint)} is already ${oneLine(anchor)}'s agent "${oneLine(held)}": ` +
       'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
   };
 }
@@ -671,7 +671,7 @@ export function agentKeyConflictIn(
         code: 'RETIRED_AGENT',
         message:
           `the key ${oneLine(fingerprint)} was retired in ${oneLine(where)} and is never enrolled again, ` +
-          `in any tree it reaches from here — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
+          `in any tree it reaches from here: \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
           'makes the agent a new key, and `mnema key enroll --agent <the line it prints>` puts it in force',
       };
     }
@@ -682,7 +682,7 @@ export function agentKeyConflictIn(
         ok: false,
         code: 'AGENT_UNDER_ANOTHER_NAME',
         message:
-          `the key ${oneLine(fingerprint)} is already ${oneLine(proven.anchor)}'s agent "${oneLine(held)}" in ${oneLine(where)} — ` +
+          `the key ${oneLine(fingerprint)} is already ${oneLine(proven.anchor)}'s agent "${oneLine(held)}" in ${oneLine(where)}: ` +
           'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
       };
     }
@@ -756,7 +756,7 @@ export function retireAgentKey(
             ok: false,
             code: 'UNKNOWN_AGENT',
             message:
-              `the record does not count ${oneLine(input.fingerprint)} as an agent key of ${oneLine(anchor)} — ` +
+              `the record does not count ${oneLine(input.fingerprint)} as an agent key of ${oneLine(anchor)}: ` +
               'it was never enrolled here, or it was retired already',
           },
         };

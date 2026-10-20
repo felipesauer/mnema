@@ -135,7 +135,7 @@ function refused(argv: readonly string[], sentence: string): void {
 }
 
 const TURNED_DOWN_AT_BIRTH =
-  'takes no --alternatives: what a decision turned down is recorded with the decision itself — ' +
+  'takes no --alternatives: what a decision turned down is recorded with the decision itself: ' +
   'pass it to `mnema decision record` with the title and the rationale.';
 
 describe('the decision group’s --alternatives', () => {

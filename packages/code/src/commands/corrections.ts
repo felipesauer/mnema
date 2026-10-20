@@ -82,7 +82,7 @@ function titleOf(sentence: string): string {
 /** The reason a proposal carries: what was said, the shape it matched, where it is from. */
 function rationaleOf(correction: Correction): string {
   return (
-    `The person corrected the agent in a session, in these words: “${correction.sentence}” — ` +
+    `The person corrected the agent in a session, in these words: “${correction.sentence}”, ` +
     `matched by the shape “${correction.shape}”. Nobody has ruled whether it is a decision to keep. ` +
     `Source: ${markerOf(correction)}.`
   );

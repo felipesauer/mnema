@@ -229,7 +229,7 @@ describe('mnema rules-file, as a person runs it', () => {
     ]);
     expect(printed.stdout).not.toContain('Left out');
     expect(printed.stderr).toContain(
-      '.cursor/rules/mnema.mdc: mnema rules-file --host cursor > .cursor/rules/mnema.mdc — the `>` replaces the whole of the file it names.',
+      '.cursor/rules/mnema.mdc: mnema rules-file --host cursor > .cursor/rules/mnema.mdc; the `>` replaces the whole of the file it names.',
     );
     expect(printed.stderr).toContain('Left out (1):');
     expect(printed.stderr).toContain('app/[id]');
@@ -283,7 +283,7 @@ describe('mnema rules-file, as a person runs it', () => {
     expect(printed.status).toBe(0);
     expect(printed.stdout).toBe('');
     expect(printed.stderr).toContain(
-      'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed — a `>` would have left its file empty.',
+      'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed: a `>` would have left its file empty.',
     );
   });
 

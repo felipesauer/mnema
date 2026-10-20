@@ -124,7 +124,7 @@ function fieldRefusal(
       return (STACK_SCOPES as readonly string[]).includes(text)
         ? undefined
         : refuse(
-            'a scope is one of the trees the record governs — public, private or global; a ' +
+            'a scope is one of the trees the record governs: public, private or global; a ' +
               'stack installed into a folder of its own records no fact',
           );
   }

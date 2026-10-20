@@ -56,7 +56,7 @@ import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** What a caller is told when they name something no channel answers to. */
-const NO_SUCH_CHANNEL = 'mnema pushes no channel by that name — `mnema switch` lists them.';
+const NO_SUCH_CHANNEL = 'mnema pushes no channel by that name: `mnema switch` lists them.';
 
 /**
  * What switching a channel off does NOT do, said on every off.
@@ -88,7 +88,7 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
         '  The name is what `switch off` and `switch on` take.',
         '  What it carries is what stops arriving when it is off.',
         '  An off switch says who made it and when, and whether a clone of this',
-        '  repository holds it — a switch recorded privately governs only this machine.',
+        '  repository holds it: a switch recorded privately governs only this machine.',
         '  A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.',
       ].join('\n'),
     )
@@ -128,7 +128,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
     .addOption(
       scopeOption(
         'switch',
-        'Defaults to public — the switch travels with the repository, so the team reads ' +
+        'Defaults to public: the switch travels with the repository, so the team reads ' +
           'it and the document a session opens with says so. A private switch governs ' +
           'only this machine and no committed file can report it.',
       ),

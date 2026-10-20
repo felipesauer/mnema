@@ -79,21 +79,21 @@ function memoryIn(
   where: { project?: string; scope?: 'public' | 'private' | 'global' } = {},
 ): string {
   const captured = runCaptureMemory(session, { content, ...where });
-  if (!captured.ok) throw new Error(`setup: capture refused — ${captured.message}`);
+  if (!captured.ok) throw new Error(`setup: capture refused: ${captured.message}`);
   return captured.id;
 }
 
 /** The search result, or a thrown setup error: the refusals have their own tests. */
 function search(session: Session, input: Parameters<typeof runSearchTool>[1]) {
   const found = runSearchTool(session, input);
-  if (!found.ok) throw new Error(`search refused — ${found.message}`);
+  if (!found.ok) throw new Error(`search refused: ${found.message}`);
   return found.value;
 }
 
 /** The account, or a thrown setup error: `NO_PROJECT` has its own test. */
 function account(session: Session, input: Parameters<typeof runAccountabilityTool>[1] = {}) {
   const result = runAccountabilityTool(session, input);
-  if (!result.ok) throw new Error(`accountability refused — ${result.message}`);
+  if (!result.ok) throw new Error(`accountability refused: ${result.message}`);
   return result.value;
 }
 

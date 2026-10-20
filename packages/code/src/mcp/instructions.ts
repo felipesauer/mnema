@@ -85,8 +85,8 @@
  * the wire and one here.
  */
 const LINES = [
-  'mnema is this project’s record of the decisions behind the work — each with its reasons',
-  'and the alternatives turned down — and of notes about the project: signed, append-only,',
+  'mnema is this project’s record of the decisions behind the work, each with its reasons',
+  'and the alternatives turned down, and of notes about the project: signed, append-only,',
   'kept with the repository. What is recorded here outlasts this session, and later sessions',
   'read it back.',
   '',
@@ -115,7 +115,7 @@ const LINES = [
   '',
   'With the mnema plugin, a session here opens with the decisions in force, the adopted',
   'patterns and the memories and observations this machine holds for the project, those near',
-  'the files and tasks the session touches first, unless someone switched that off — so a',
+  'the files and tasks the session touches first, unless someone switched that off, so a',
   'note recorded here comes back without anybody asking for it, and a decision does once it',
   'is accepted.',
 ];
