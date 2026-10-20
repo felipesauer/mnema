@@ -1031,7 +1031,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-test-file-is-type-checked.test.ts': 6,
-  'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
+  'packages/code/tests/every-tool-says-if-it-writes.test.ts': 17,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verb-that-writes-signs-as-its-agent-and-verify-agrees.test.ts': 8,
   'packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts': 6,
