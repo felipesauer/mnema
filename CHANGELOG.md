@@ -187,7 +187,7 @@ with its own changelog.
 
 ### Changed
 
-- **Two more lines read as they mean.** The first line of `mnema status` is now `<identity>, where things stand.`, because the identity already carries a colon (`mnid:<hex>`); and the description of the `rules_before_an_edit` tool has a comma before "and the host holds the write", so that it is the host that holds the write and a person that cites the rule's id. No word changed; the description weighs one byte more.
+- **Two more lines read as they mean.** The first line of what the status reading prints is now `<identity>, where things stand.`, because the identity already carries a colon (`mnid:<hex>`); and the description of the `rules_before_an_edit` tool has a comma before "and the host holds the write", so that it is the host that holds the write and a person that cites the rule's id. No word changed; the description weighs one byte more.
 - **The text the program prints reads better where the sweep of the em dash left a chain of colons or an ambiguous
   comma.** Only the punctuation changed, and no word: the `--global` line of `--help` (the parenthesis
   "(left out by default)"), the line `mnema completion --help` prints about where the script goes, the lines of
