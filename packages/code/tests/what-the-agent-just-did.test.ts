@@ -15,7 +15,7 @@
  *   - THE OCCURRENCE LANDS IN THE SCROLLBACK, like every line the session says. Never in
  *     the region the layout redraws: that region has a budget, and a list growing inside
  *     it walks the console into the height at which the library stops redrawing PART of
- *     the screen and starts redrawing all of it — the whole page rewritten over the
+ *     the screen and starts redrawing all of it, the whole page rewritten over the
  *     caller's, with the erase this product refuses inside the sequence it does it with
  *     (`a-page-that-opens-clean.test.ts` measures that boundary in both directions). It is
  *     asserted twice, and only the second one has teeth: the arrangement from the badge
@@ -23,8 +23,8 @@
  *     (measured: a mutation that put the occurrences in the palette left that case green);
  *     and the session is then run ON the boundary, where one more row of region IS that
  *     path, with the height bracketed rather than assumed. THE BOUNDARY USED TO BE
- *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now — it is
- *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`) — so what brackets
+ *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now; it is
+ *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`), so what brackets
  *     it is the library's own replay of what it keeps.
  *   - WHAT WAS ALREADY SAID IS NOT UNSAID. An occurrence about a record named ABOVE on the
  *     page lands UNDER it, because a surface whose whole argument is that the scrollback
@@ -97,8 +97,8 @@ const THE_VERDICT = 'local integrity verified';
  * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
- * was twenty-four rows. The floor is forty-two now — the height the name is drawn whole at,
- * worked out from the drawing rather than written down (`src/repl/floor.ts`) — so forty is under
+ * was twenty-four rows. The floor is forty-two now: the height the name is drawn whole at,
+ * worked out from the drawing rather than written down (`src/repl/floor.ts`), so forty is under
  * it, and a case that opened there would be driving
  * the screen that says the window is too small. Read off the product rather than retyped, so
  * the day the floor moves again these cases move with it.
@@ -315,8 +315,8 @@ describe('a session shows what another process wrote while it was open', () => {
   it('leaves the badge, the rules and the hint exactly where they were', () => {
     // ONE READING OF THE REGION, taken from the SCREEN rather than from the stream: what
     // the input area costs is rows on a terminal, and only a screen has any. What it covers
-    // is the arrangement from the badge DOWN — the two rules, the row being typed, the hint
-    // — which is what would move if an occurrence had landed among them.
+    // is the arrangement from the badge DOWN (the two rules, the row being typed, the hint),
+    // which is what would move if an occurrence had landed among them.
     //
     // IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
     // than left implied: the palette opens there, so a region that grew UPWARDS would leave
@@ -339,8 +339,8 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes.slice(0, ran.at[3])).toContain(first);
     expect(ran.bytes.slice(0, ran.at[1])).not.toContain(first);
     // AND THE ONE THING THE READING ABOVE NO LONGER LOOKS AT, asserted here so that taking
-    // it out is a narrowing and not a hole: the corner DID change, because the record moved
-    // — which is the whole of why its text is not part of the shape. What it says while the
+    // it out is a narrowing and not a hole: the corner DID change, because the record moved,
+    // which is the whole of why its text is not part of the shape. What it says while the
     // record has moved is `the-corner-says-what-its-level-covers.test.ts`'s subject; what
     // this needs is that it is not the same row, so the exclusion above is doing work.
     expect(theCorner(ran.bytes.slice(0, ran.at[3]))).not.toBe(
@@ -397,8 +397,8 @@ function entriesOfTheRecord(): string[] {
 }
 
 /**
- * THE TREES A SESSION OPENED HERE WOULD FOLLOW, out of the same call the opening pays for
- * — the committed one first, then this machine's private one.
+ * THE TREES A SESSION OPENED HERE WOULD FOLLOW, out of the same call the opening pays for:
+ * the committed one first, then this machine's private one.
  *
  * Asked of `runVerify` rather than joined out of path fragments, because that is where a
  * session takes them from: a case that spelled the directories would be asserting against

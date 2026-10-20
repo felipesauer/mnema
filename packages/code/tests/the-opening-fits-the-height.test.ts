@@ -93,7 +93,7 @@ const CLOSES_THE_ANSWER = '## Patterns adopted';
 const VERIFIED = 'local integrity verified';
 
 /**
- * The key that walks the roll to its oldest line, as a terminal sends it — built from the
+ * The key that walks the roll to its oldest line, as a terminal sends it, built from the
  * escape spelled by its code point, like every control byte in this repository's sources: a
  * character a reader cannot see is a character an edit destroys without anybody noticing.
  */
@@ -425,7 +425,7 @@ describe('the arrangement is chosen by the height as well as the width', () => {
       expect(formAt(columns, rows), `${columns}x${rows}`).toBe(form);
     }
     // NOT VACUOUS IN EITHER DIRECTION: the table really holds more than one answer, and the
-    // rule really is a function of BOTH numbers — the same width answers differently at two
+    // rule really is a function of BOTH numbers; the same width answers differently at two
     // heights, and the same height answers differently at two widths. A table of one answer
     // repeated seven times would pass every assertion above.
     expect(new Set(THE_GEOMETRIES.map(({ form }) => form)).size).toBeGreaterThan(1);
@@ -623,7 +623,7 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * the page a caller is left with is the page they are on ({@link theAnswerOn}). The sixteen
  * before it: two rows of the
  * answer moved BELOW the landmark when the patterns' heading started saying how many are
- * awaiting a judgement — this counts what is above `## Patterns adopted`, and the document now
+ * awaiting a judgement; this counts what is above `## Patterns adopted`, and the document now
  * carries a blank and a sentence under it. The window shows the same twenty-three rows of roll
  * it showed before; what moved is where the landmark sits in them.
  *
@@ -688,7 +688,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       SHOWS_OF_THE_ANSWER,
     );
     // AND WHAT THE SIX ROWS HOLD IS THE IDENTITY, not the logo: the fixed rows say what the
-    // session is, where it is standing and what the record proved — on the page that has printed,
+    // session is, where it is standing and what the record proved, on the page that has printed,
     // which is where the old console had lost all three.
     const chrome = asked.rows.slice(0, fixed).join('\n');
     expect(chrome, 'the fixed region does not say what the session is').toContain(OPENED);
@@ -762,7 +762,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       // and a second one would only move the row this case does not read.
       // AND THE ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
       // means what this case is about. A step that waited for *a frame* ended wherever the
-      // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
+      // stream was quiet (measured in whole-suite runs, twice): the page it left behind still
       // had the drawing and the sentence under it on the screen, so the walk had nothing to
       // walk back to and the case was red about its own instrument. An absence is waited for in
       // two parts and the first is a presence ({@link aFrameWithout}), so what this step ends on
@@ -797,8 +797,8 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     // AND IT IS ALL THERE AT THE TOP OF THE ROLL: the drawing, what the session is, where it is
     // standing and what the record proved.
     //
-    // IT WAS FOUND BY WHAT THE PAGE HOLDS — the FIRST screen of the whole stream carrying both
-    // the top of the opening and the echo of what was typed — on the premise that only two kinds
+    // IT WAS FOUND BY WHAT THE PAGE HOLDS (the FIRST screen of the whole stream carrying both
+    // the top of the opening and the echo of what was typed), on the premise that only two kinds
     // of page carry the opening at all, the one it was drawn on and the one the walk came back
     // to, and that the echo tells them apart. A SHORTER DRAWING FALSIFIED IT: with three rows
     // less of art the first answer no longer pushes the whole opening off, so a page exists in
@@ -831,8 +831,8 @@ describe('the answer a caller asked for is on the page, at the shortest window t
   it('draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
     // THE OTHER DIRECTION, which is what keeps the share a BOUND rather than a cost: a terminal
     // with the rows for the arrangement gets exactly the arrangement it got before this
-    // delivery — the text beside the mark, the biggest drawing, and the top region fixed at the
-    // top of the screen.
+    // delivery (the text beside the mark, the biggest drawing, and the top region fixed at the
+    // top of the screen).
     const columns = 190;
     const rows = 64;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });

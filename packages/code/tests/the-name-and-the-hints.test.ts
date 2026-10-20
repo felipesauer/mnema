@@ -126,9 +126,9 @@ const ID_ON_THE_PAGE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
  * WHAT THIS PROCESS ASKED OF THE FILESYSTEM: which door, and what path.
  *
  * The door is half the fact and it used to be thrown away. A chain is REACHED through
- * three calls — a whole file at once, a directory's names, and an `open` for the backward
- * walk that resumes a tail (which then reads by descriptor, so the path is only ever seen
- * here) — but they do not answer the same question. Two of them open a file and can say
+ * three calls (a whole file at once, a directory's names, and an `open` for the backward
+ * walk that resumes a tail, which then reads by descriptor, so the path is only ever seen
+ * here), but they do not answer the same question. Two of them open a file and can say
  * what is IN the record; the third can only say how far it reaches, which is what a
  * freshness probe asks and all it is allowed to know.
  */
@@ -196,8 +196,8 @@ const ofTheRecord = (touched: readonly Touched[]): string[] =>
  * It is not the record and the predicate above deliberately does not cover it: it sits
  * beside a tail under `keys/`, and the status line is allowed to read it, which is the
  * whole reason {@link RECORD} names the tail rather than the tree. It is counted on its
- * own because the value read out of it is now read TWICE — the panel is drawn with it,
- * and a verb that requires the asker's identity is given it (`repl/asking.ts`) — and
+ * own because the value read out of it is now read TWICE: the panel is drawn with it,
+ * and a verb that requires the asker's identity is given it (`repl/asking.ts`). And
  * "twice read, once resolved" is exactly the kind of promise that decays into a small
  * file opened on every line.
  */
@@ -342,7 +342,7 @@ async function openedAt(
  * The second is what says a page was really turned (`repl/page.ts` writes it, and nothing
  * else does), and waiting for it is what makes the helper below honest. ITS FIRST
  * DRAFT WAITED FOR THE STREAM TO GROW, which it does the instant a terminal changes size
- * — the layout library redraws the row being typed on its own — and then went on to the
+ * (the layout library redraws the row being typed on its own) and then went on to the
  * next width before this product had done anything at all. Every resize in that case was
  * a resize nothing happened for, and the case built on it could not go red.
  */
@@ -836,7 +836,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     });
     // N QUESTIONS READ EXACTLY WHAT ZERO QUESTIONS READ, which is the whole promise.
     expect(ofTheRecord(watching)).toEqual(ofTheRecord(briefly));
-    // NOT VACUOUS: the probe really was running, and it ran MORE in the longer window —
+    // NOT VACUOUS: the probe really was running, and it ran MORE in the longer window;
     // without this the case passes on a console that never asked anything at all.
     expect(listedInTheRecord(briefly).length).toBeGreaterThan(0);
     expect(listedInTheRecord(watching).length).toBeGreaterThan(listedInTheRecord(briefly).length);
@@ -932,7 +932,7 @@ describe('the session resolves who it is when it opens, and never again', () => 
     // asked of a verb that requires the identity, so the line that is filled in is the
     // line being counted. (This asked `status`, until `status` stopped requiring one: it answers
     // as the identity this machine writes as when no `--actor` is typed, and RESOLVES that itself,
-    // on each run, so a typed `status` reads the anchor file — a verb's own work, not the
+    // on each run, so a typed `status` reads the anchor file, a verb's own work, not the
     // session's, and not a frame's. `resume` still requires the flag, which the session fills.)
     const typing = await readingWhileTyping('resume\r', 'has no runs');
     expect(ofTheIdentity(typing)).toEqual([]);
@@ -964,7 +964,7 @@ describe('the drawing is a constant of the composer, and the layout only places 
       expect(inSource('repl', file), file).not.toContain('2588');
     }
     // Not vacuous, in both halves: the session's modules are read, and the glyph really
-    // is somewhere — in the one module whose whole subject it is.
+    // is somewhere, in the one module whose whole subject it is.
     expect(modules('repl').length).toBeGreaterThan(4);
     expect(modules('repl')).toContain('region.ts');
     expect(inSource('presentation', 'banner.ts')).toContain('2588');

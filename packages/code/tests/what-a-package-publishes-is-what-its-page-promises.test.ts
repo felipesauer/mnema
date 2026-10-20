@@ -14,7 +14,7 @@
  * THE DECISION THIS GUARD HOLDS, and it is the one the delivery had to make. `@mnema/chain`
  * is the package that is AUDITED, not merely used: the root page sells it as *"the code you
  * have to trust for tamper-evidence is auditable on its own"*, and what makes that checkable
- * is not the TypeScript — it is `FORMAT.md`, the two published artifacts, and the independent
+ * is not the TypeScript; it is `FORMAT.md`, the two published artifacts, and the independent
  * Python verifier written from the document. Copying `files: ["dist/"]` from `@mnema/code`
  * would have shipped the engine with none of them, which is a page promising what the
  * artifact does not carry. So the chain tarball carries them, and the case below RUNS the
@@ -221,9 +221,9 @@ describe('the workspace knows which packages it publishes', () => {
 
   it('the manifest that travels declares the concrete version of every sibling it needs', () => {
     // THE REASON THE PACKER HAD TO BE `pnpm`. `workspace:*` is a workspace protocol and a
-    // registry client refuses it outright — measured: `npm pack` leaves it raw and
+    // registry client refuses it outright (measured: `npm pack` leaves it raw and
     // `npm i -g` of that tarball dies with `EUNSUPPORTEDPROTOCOL` before the binary is ever
-    // reached. What is asserted is its absence from the PACKED manifest, never from the one
+    // reached). What is asserted is its absence from the PACKED manifest, never from the one
     // on disk, where `workspace:*` is correct and has to stay.
     const raw: string[] = [];
     for (const [name, tarball] of TARBALLS) {
@@ -488,7 +488,7 @@ describe('the proof engine carries what makes it checkable', () => {
 
   it('carries the second reader, all of it, and only its source', () => {
     // Against git rather than against a count: the verifier is twenty files today and the
-    // number is not the promise — that every module the repository tracks is in the tarball
+    // number is not the promise; that every module the repository tracks is in the tarball
     // is.
     const tracked = execFileSync('git', ['ls-files', '--', 'packages/chain/verifier'], {
       cwd: ROOT,

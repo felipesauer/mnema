@@ -2233,7 +2233,7 @@ describe('every value this layer puts on a line is classified', () => {
     // a mention in a comment. There are twenty-seven modules and fifteen are asked.
     //
     // IT WAS TWENTY-FOUR, then twenty-five: the authority over how many COLUMNS text takes
-    // (`width.ts`), which receives no record and words nothing — it is asked by the
+    // (`width.ts`), which receives no record and words nothing; it is asked by the
     // renderer, by the fold and by every table on the surface. The twenty-sixth is a
     // COMPOSER and the first whose subject is not the work but this product: `switches.ts`
     // says where each of the channels mnema pushes unasked stands, and the value on its
@@ -2241,7 +2241,7 @@ describe('every value this layer puts on a line is classified', () => {
     // to this layer is counted here the day it is written, which is what this number is for.
     // The twenty-ninth is `recall.ts`, a COMPOSER: the notes a session opens with, whose
     // values are the start of a memory and an observation's topic, both typed by somebody.
-    // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
+    // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record;
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
     expect(FOUND.composers.length + FOUND.machinery.length).toBe(35);
     expect(FOUND.composers.length).toBe(23);

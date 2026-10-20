@@ -19,7 +19,7 @@
  *   - the three surfaces, over one marker nothing else in the record contains, so a hit
  *     cannot come from the title.
  *   - THE CONTRAST, in the same shapes: a move that said nothing adds no line, no
- *     heading and no blank section — the absence has to survive, or "it prints the
+ *     heading and no blank section; the absence has to survive, or "it prints the
  *     proof" would be indistinguishable from "it prints a heading over nothing".
  *   - EVERY MOVE AND NOT THE LAST. A task completed, reopened with a reason and
  *     completed again holds three pieces of prose and the record holds all three. A

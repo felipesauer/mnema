@@ -214,7 +214,7 @@ describe('the proof answers a machine', () => {
     expect(said.json.notAnswered).toEqual([...NOT_ANSWERED_BY_ANY_REQUIREMENT]);
     // AND THE DECLARATION ITSELF IS HELD, which the line above cannot do: it compares
     // the constant with itself, so emptying one entry moved BOTH sides and left the
-    // whole suite green — measured by mutation. There are
+    // whole suite green, measured by mutation. There are
     // FOUR measured holes, and each has to still be the same hole the README describes,
     // because "one site the README says the same thing from" is the reason the constant
     // exists. The phrase per row is that hole's DISCRIMINANT and nothing else. (There

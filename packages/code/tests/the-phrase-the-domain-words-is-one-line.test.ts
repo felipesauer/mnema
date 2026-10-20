@@ -574,12 +574,12 @@ const UNWALKED: string[] = FOUND.flatMap((layer) =>
  *     read off this machine's disk, so it goes through `oneLine` HERE. The table does
  *     not decide this: the expression really does hold the call, and a value that stops
  *     going through it goes red.
- *   - `minted` — it is the product's own and cannot hold whitespace: a count, a `seq`, a
+ *   - `minted`: it is the product's own and cannot hold whitespace (a count, a `seq`, a
  *     byte total, a word of a closed union, a field path of the content contract, a
  *     constant of the module that prints it, a fingerprint this run computed by hashing
- *     a key. It must NOT be collapsed, so a value that quietly stops being the product's
+ *     a key). It must NOT be collapsed, so a value that quietly stops being the product's
  *     own cannot keep this verdict.
- *   - `composed` — it is not text from anywhere yet: another function of this package
+ *   - `composed`: it is not text from anywhere yet; another function of this package
  *     words it, and every value THAT function puts in it is a site of its own.
  *
  * A NOTE ON THE VERIFIER, because it is where nearly every verdict is `collapsed` and

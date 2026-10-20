@@ -8,8 +8,8 @@
  * `.gitignore`d, so `git ls-files` returns none of those files and nobody outside this
  * machine has one. And the citations SHIPPED: `tsconfig.base.json` sets no
  * `removeComments`, so `tsc` preserves doc-comments, and thirteen files of the built
- * `dist/` carried them — nine of `packages/code/dist/`, which `package.json` publishes as
- * `files: ["dist/"]`. An install put the name of an internal report onto somebody's disk,
+ * `dist/` carried them (nine of `packages/code/dist/`, which `package.json` publishes as
+ * `files: ["dist/"]`). An install put the name of an internal report onto somebody's disk,
  * and a product whose whole subject is a claim you can check was resting claims on
  * documents no reader could open.
  *

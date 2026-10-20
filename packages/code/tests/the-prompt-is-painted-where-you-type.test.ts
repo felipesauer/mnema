@@ -94,8 +94,8 @@ const SENDS_THE_LINE = '\r';
  * IT IS WHAT LETS THE SESSION LEAVE. The key that ends the input only ends it on a row with
  * nothing on it; on a row with something on it the same key deletes forward, which is what
  * every line editor does (`src/repl/editing.ts`). So a case that types a word has to give the
- * row back before it can ask the session to close, and one that does not hangs on the way out
- * — which is how the first draft of this file spent thirty seconds a case.
+ * row back before it can ask the session to close, and one that does not hangs on the way out,
+ * which is how the first draft of this file spent thirty seconds a case.
  */
 const CLEARS_THE_LINE = '\u0003';
 
@@ -594,7 +594,7 @@ describe('everything that puts the row being typed together, and everything that
     // IT WAS `.length` ALONE, and the delivery that gave this surface one authority over columns
     // renamed the operation (`presentation/width.ts`, `widthOfText`). Both spellings are the
     // discriminant now: the new one because that is what the site says today, and the OLD one
-    // because a caret counted in code points again is exactly the regression — the accent case
+    // because a caret counted in code points again is exactly the regression; the accent case
     // above is the number it moves, and this would name the file that moved it.
     const MEASURES_A_PROMPT = /\bprompt\b[^\n]*(?:\.length|widthOfText\()/;
     const counting = sources().filter((file) => MEASURES_A_PROMPT.test(file.code));

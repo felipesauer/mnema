@@ -37,8 +37,8 @@
  * AND IT USED TO BE ASKED FOR BY THE FIXTURE, which is the instrument this file gave back. The
  * setup wrote `FORCE_COLOR=1` into the process before anything imported the layout, because
  * that variable was the only thing the layout's own colour resolver would listen to and this
- * product had no way of reaching it. It has one now — the decision is handed over on that same
- * channel, once, before the library is loaded (`src/repl/painting.ts`) — so the two painted
+ * product had no way of reaching it. It has one now: the decision is handed over on that same
+ * channel, once, before the library is loaded (`src/repl/painting.ts`), so the two painted
  * cases below are painted because the invocation asked for colour, which is what they claim to
  * be about. Nothing here forces it any more.
  */
@@ -269,7 +269,7 @@ describe('the page has three rules, and they are the same drawing in the same hu
     expect(drawn.size, `the rules are not one drawing: ${[...drawn].join(' | ')}`).toBe(1);
     const rule = [...drawn][0] as string;
     // ONE HUE AND ITS CLOSER, and nothing else on the row: a rule carries no weight, because
-    // nothing composed it — it is an edge the library drew (`repl/region.ts`, `rule`).
+    // nothing composed it; it is an edge the library drew (`repl/region.ts`, `rule`).
     const escapes = sgrOf(rule);
     expect(escapes, 'a rule carries something other than one hue').toHaveLength(2);
     const [accent] = escapes as [string, string];
@@ -382,10 +382,10 @@ describe('the line a caller sent is told from the answer to it', () => {
     //
     // AND THE ACCENT THE LAYOUT DRAWS WITH GOES QUIET TOO, WHICH IS WHAT THIS CASE USED TO
     // DENY. It read: *the hue on a rule, on the guide and on the mark is the layout library's,
-    // and that resolver has no entry for this variable at all — measured on a real terminal, a
-    // session with it set writes thirty-two accents and not one byte from our renderer*. Both
+    // and that resolver has no entry for this variable at all (measured on a real terminal, a
+    // session with it set writes thirty-two accents and not one byte from our renderer)*. Both
     // halves of that were TRUE and the conclusion drawn from them was not: the library reads no
-    // `NO_COLOR` anywhere, so nothing was ever going to reach it by that name — what it does
+    // `NO_COLOR` anywhere, so nothing was ever going to reach it by that name; what it does
     // read is `FORCE_COLOR`, and this product's answer is handed to it on that channel before a
     // byte of the library is loaded (`repl/painting.ts`). Measured again after the fix, at this
     // size and with these steps: a hundred and twenty style sequences became NONE. The case
@@ -409,7 +409,7 @@ describe('the line a caller sent is told from the answer to it', () => {
       `${SENT} ${A_VERB}`,
     );
     // AND THE PAGE IS THE SAME PAGE: the row is the margin and the mark and the words, and
-    // NOTHING ELSE — what went with the colour is the band, which was never anything but tone, and
+    // NOTHING ELSE; what went with the colour is the band, which was never anything but tone, and
     // what is left is the mark a reader without colour finds their own line by.
     const echoed = screen.rows.find((row) => row.includes(`${SENT} ${A_VERB}`)) as string;
     expect(echoed.slice(THE_INSET).trimEnd(), 'the sent line is not the mark and the words').toBe(
@@ -562,8 +562,8 @@ function sources(): readonly { readonly where: string; readonly code: string }[]
 describe('every site that echoes, every site that draws an edge, every site that lists a tree', () => {
   it('puts the prompt in front of what was typed in ONE shape, in both places it happens', () => {
     // THE DISCRIMINANT IS THE COMPOSITION, never a list of files: anything that puts the prompt
-    // and the caller's words together. THE ECHO USED TO BE THREE OF THEM — `land(prompt + line)`
-    // at the three ways a row leaves the input, and the ROW BEING TYPED was a fourth, with the
+    // and the caller's words together. THE ECHO USED TO BE THREE OF THEM (`land(prompt + line)`
+    // at the three ways a row leaves the input), and the ROW BEING TYPED was a fourth, with the
     // reason written out: *it may not become a composed line, because the caret is an offset in
     // columns into it and escapes a terminal does not print would be arithmetic on the one number
     // that has to be exact.* The number is counted over the prompt and the typed text and never

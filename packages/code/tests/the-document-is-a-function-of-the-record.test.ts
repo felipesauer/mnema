@@ -41,7 +41,7 @@
  * else's function that does the reaching. `resolveTrees` walks the filesystem and
  * `systemClock` reads a clock, both are on `@mnema/core`'s surface, and neither net above sees
  * a layer that imports one: the specifier is a package of the workspace and the call names no
- * global. This file said closing it was "a different guard — which exports of `core` touch the
+ * global. This file said closing it was "a different guard, which exports of `core` touch the
  * world, derived from `core`'s own source rather than from a list that rots". The third net is
  * that guard, and it reaches further than `core` because the door does: every value a layer
  * imports from outside its own root is followed to its declaration, through every re-export,

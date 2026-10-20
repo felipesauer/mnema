@@ -420,7 +420,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
 
     // THE CONTRAST, and it comes first because it is what makes the case below about
     // the defect rather than about the section existing. Every document of the base is
-    // in the record, so there is nothing outside and the section is ABSENT — the rule
+    // in the record, so there is nothing outside and the section is ABSENT, the rule
     // the fifth section already follows, for its reason: a heading over no fact is this
     // surface asserting something it never asked.
     const settled = (await mnema('status', '--actor', anchor)).join('\n');
@@ -471,7 +471,7 @@ describe('mnema status: the opening read, over a record that reaches every cell'
 
   it('reports a base the record never named as ARRIVAL, under its own heading', async () => {
     // THIS CASE ASSERTED THE OPPOSITE AND WAS NAMED FOR IT: *"says nothing about bases the
-    // record never named — it guesses no directory"*. What it really held was that
+    // record never named; it guesses no directory"*. What it really held was that
     // `Not in the record:` stays silent, which is still true, so it would have gone on
     // passing over the whole of the section below: green, and blind, for the one change
     // that made its own title false. It is rewritten to hold BOTH halves.

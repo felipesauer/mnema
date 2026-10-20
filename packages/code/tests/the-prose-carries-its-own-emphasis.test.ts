@@ -213,7 +213,7 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
 
     // AND THE CORPUS REACHES THE FILE THAT COST THIS GUARD. Asserted here rather than left to
     // the counts above: narrowing the scan out of the helper tree leaves every one of them
-    // green, because a hundred other files under `packages/code/tests/` satisfy them — measured,
+    // green, because a hundred other files under `packages/code/tests/` satisfy them (measured),
     // and it is how a guard goes quiet without a case to say so.
     expect(
       READ.map((file) => file.where),

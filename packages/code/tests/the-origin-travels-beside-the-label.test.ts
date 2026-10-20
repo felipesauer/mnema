@@ -19,7 +19,7 @@
  *     file, which is the one record for which this whole item is invisible.
  *   - THE CONTRAST, and without it the first case passes on a product that stamps the
  *     field on everything: a decision recorded HERE, by hand, carries no `origin` at
- *     all — absent, not empty, so nobody reads `[]` as "derived from nothing".
+ *     all (absent, not empty, so nobody reads `[]` as "derived from nothing").
  *   - N EDGES. A subject may assert several provenances, and a read that reduced them
  *     to one would be choosing by row order: the defect class that made a verdict
  *     print either of two sentences depending on a third party's file order.
@@ -125,8 +125,8 @@ describe('the origin travels beside the label', () => {
 
     // 1 · `show`, as a value.
     expect(shown(decision.id).record.origin).toEqual([`docs/adr/${GATEWAY}`]);
-    // 2 · `show --json` is that same value serialized — the wiring prints `result.record`
-    //     — so what is asserted here is what a person READS.
+    // 2 · `show --json` is that same value serialized (the wiring prints `result.record`),
+    //     so what is asserted here is what a person READS.
     expect(printed(decision.id)).toContain(`  derived from docs/adr/${GATEWAY}`);
     // 3 · `read_record`, the door `brief` names.
     const active = session();

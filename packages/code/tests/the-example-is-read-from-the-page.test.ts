@@ -3,7 +3,7 @@
  *
  * WHAT WAS HERE BEFORE, AND WHY IT WAS NOT A GUARD. One package had a case called
  * `readme-example.test.ts` whose header said *"If this drifts from the README, fix one or
- * the other — the example must run."* That sentence is an intention, and the file was a
+ * the other; the example must run."* That sentence is an intention, and the file was a
  * parallel TRANSLATION of the page rather than a reading of it. Measured on 11/09/2026
  * against `a41a9ea8`: renaming `bootstrap` to `bootstrapZZZ` INSIDE the README's ```ts
  * block (an edit that makes the published example impossible to run) left the suite

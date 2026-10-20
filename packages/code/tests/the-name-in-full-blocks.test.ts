@@ -200,8 +200,8 @@ describe('the floor follows the drawing, because it is worked out from it', () =
  * A PAGE OF THE SHAPE THE CONSOLE OPENS WITH, composed out of the real modules.
  *
  * IT IS THE INSTRUMENT THAT MAKES THE CASE BELOW INDEPENDENT. The floor DECLARES what the page
- * it is defined against costs — the title, the place, the record's heading and the two trees a
- * project keeps (`repl/floor.ts`) — and a case that read those constants back would agree with
+ * it is defined against costs: the title, the place, the record's heading and the two trees a
+ * project keeps (`repl/floor.ts`); and a case that read those constants back would agree with
  * whatever they said. So the page is COMPOSED here instead, through the arrangement's own
  * chooser, the fold, and the input area, and the shortest screen the whole name survives on is
  * searched for through it.

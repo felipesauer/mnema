@@ -258,7 +258,7 @@ describe('the three answers the record can give about a pattern move', () => {
     expect(witness.consulted).toEqual([]);
 
     // TWO ASSERTIONS, and the second is the one this reading exists for: the page says
-    // the count, and it says nothing ABOUT this pattern — the accusing line is absent,
+    // the count, and it says nothing ABOUT this pattern; the accusing line is absent,
     // and so is the id it would have carried.
     const said = await page();
     expect(said).toContain('pattern moves in a run with no consultation at all: 1');

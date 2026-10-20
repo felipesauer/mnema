@@ -3,8 +3,8 @@
  * typed anything, and where it leaves the caret.
  *
  * IT CAME OUT OF USE: *"the console's UX is too broken"*. Measured against the reference it
- * was drawn from rather than argued about — this console's own opening, on a real
- * pseudo-terminal, replayed onto a screen (`support/screen.ts`) — and three of the eight
+ * was drawn from rather than argued about: this console's own opening, on a real
+ * pseudo-terminal, replayed onto a screen (`support/screen.ts`); and three of the eight
  * defects that measurement found are what this file holds:
  *
  *   - THE OPENING TOOK THE SCREEN. Twenty-two of twenty-four rows on an ordinary terminal,
@@ -21,7 +21,7 @@
  *     rather than written down.
  *
  * AND THE ONE ABOUT WHAT WENT: the box had a second section that named the word listing
- * the verbs, and it went — the row under the prompt says where every word is, and it says
+ * the verbs, and it went; the row under the prompt says where every word is, and it says
  * it in the place that does not scroll away. What may not happen is the INFORMATION going
  * with the copy, so one case opens a session, finds the word nowhere on the page, and then
  * presses the key that lists it.
@@ -230,7 +230,7 @@ const WIDE = 200;
 const ROOMY = 40;
 
 /**
- * What an ASCII mark is inked as — the same substitution the module makes, spelled here by
+ * What an ASCII mark is inked as, the same substitution the module makes, spelled here by
  * code point for the reason the module spells it: a glyph a reader cannot tell from its
  * neighbour is a glyph an edit destroys without anybody seeing it happen. It is the file's
  * own {@link INK}, so the two cannot come to name different blocks.
@@ -443,7 +443,7 @@ describe('every drawing but the biggest is a mask inked, and every mask is ASCII
     const masks = masksIn(readFileSync(BANNER, 'utf-8'));
     const forms = everyForm();
     // The instrument first: a mask was found for every form but the biggest, in the same
-    // order — a regular expression that matched nothing would otherwise pass this whole case
+    // order; a regular expression that matched nothing would otherwise pass this whole case
     // by having nothing to compare.
     //
     // IT USED TO BE ONE MASK PER FORM. The biggest drawing is written out rather than
@@ -485,7 +485,7 @@ describe('every drawing but the biggest is a mask inked, and every mask is ASCII
       THE_BIGGEST_DRAWING,
     );
     // Not vacuous: the copy really is the biggest form and not, say, the floor, and it is the
-    // drawing rather than a mask of one — every row of it holds a glyph no mask may hold.
+    // drawing rather than a mask of one; every row of it holds a glyph no mask may hold.
     expect(biggest.length).toBe(THE_BIGGEST_DRAWING.length);
     expect(biggest.length).toBeGreaterThan(1);
     for (const row of THE_BIGGEST_DRAWING) {
@@ -678,8 +678,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // and one site fewer holds it.
     // AND THREE NOW, which is the count going down for a blunter reason:
     // `a-page-that-opens-clean.test.ts` is GONE. Its whole subject was a page opened by scrolling
-    // the caller's own screen into their scrollback, and the console draws on a screen of its own
-    // — there is no page of theirs to carry away and nothing the file could still be asking. What
+    // the caller's own screen into their scrollback, and the console draws on a screen of its own:
+    // there is no page of theirs to carry away and nothing the file could still be asking. What
     // replaced it drives the pty through the shared instrument
     // (`the-screen-is-ours.test.ts`), which is why the list did not grow to make up for it.
     const drivers = readdirSync(TESTS)
@@ -747,8 +747,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
      * WHAT EACH `step.until(…)` IS HANDED, one string per call.
      *
      * IT WAS A REGULAR EXPRESSION and it read the wrong thing: `[^)]*` stops at the FIRST
-     * close paren, so `step.until(arriving.text(), since)` came back as `arriving.text(` — an
-     * argument list with no comma in it, and the guard accused a driver that was correct. The
+     * close paren, so `step.until(arriving.text(), since)` came back as `arriving.text(` (an
+     * argument list with no comma in it), and the guard accused a driver that was correct. The
      * parens are walked instead, which is the only way to read a call whose arguments are
      * themselves calls.
      */
@@ -797,7 +797,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
       }
       // AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
       // scored ZERO: reverting one driver's wait to the unscoped form left every other
-      // reading of this rule satisfied — the number was still read, still before the writing,
+      // reading of this rule satisfied; the number was still read, still before the writing,
       // and the rule was still imported. What is more, the compiler did not catch the local it
       // orphaned, because `tsc -b` does not type-check tests at all.
       //
@@ -817,7 +817,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // NOT VACUOUS, IN FOUR DIRECTIONS: the scope really would refuse a driver that read the
     // number nowhere, the walker really reads a call whose argument is itself a call, the
     // one-argument form really is told from the two-argument one, and the drivers that have
-    // steps really were asked something — a walker that found nothing would have approved them
+    // steps really were asked something; a walker that found nothing would have approved them
     // all in silence.
     expect(
       drivingIn('await theDeviceWasTheSizeAskedFor(x); child.stdin.write(k); } finally {'),
@@ -859,8 +859,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
  *
  * AND THE TWO ROWS ARE NO LONGER A HEIGHT EITHER, which the delivery that moved those blank
  * rows UNDER the box falsified in turn: they are between the page and the input now, so the
- * distance from the first drawn row to the last is the whole screen bar the row the layout keeps
- * — at every size, whatever is drawn. What the first row is still good for is whether the top of
+ * distance from the first drawn row to the last is the whole screen bar the row the layout keeps,
+ * at every size, whatever is drawn. What the first row is still good for is whether the top of
  * the opening is on the screen at all; how much the console SPENDS is counted instead
  * ({@link openedAt}).
  */
@@ -903,7 +903,7 @@ async function openedAt(
   const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
   expect(screen.text, `${columns}x${rows}: the session never opened`).toContain(PROMPT);
   // WHICH DRAWING IS ON THE SCREEN: the biggest one all of whose rows are, walked off the
-  // module rather than recognised by a glyph — a case that looked for one glyph could not
+  // module rather than recognised by a glyph; a case that looked for one glyph could not
   // tell the letterspaced form from the typed one.
   const drawing =
     everyForm().find((form) => form.every((row) => screen.text.includes(row.trimEnd()))) ??
@@ -1060,7 +1060,7 @@ describe('a console a hundred columns wide opens the biggest drawing', () => {
   // terminal of exactly a hundred columns was said to have fallen to a smaller drawing. It did not:
   // the two columns (the drawing with the text BESIDE it) want the drawing, the gap and the title
   // inside the margin, which is past a hundred whatever the version is, so at a hundred the biggest
-  // drawing opens STACKED over the text — before the version and after it. What is pinned is the
+  // drawing opens STACKED over the text, before the version and after it. What is pinned is the
   // part that must not move: the drawing a hundred columns is given, a column either side of it.
   const biggest = drawnAcross(WIDE);
   for (const columns of [99, 100, 101]) {
@@ -1206,7 +1206,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // `repl/session.ts`, the question `bannerFor` is asked). That threshold fires at sizes people
     // really open, and this is the ladder it makes.
     //
-    // SEARCHED, ONE ROW AT A TIME, AND NEVER WRITTEN DOWN — the same mould as the width ladder
+    // SEARCHED, ONE ROW AT A TIME, AND NEVER WRITTEN DOWN, the same mould as the width ladder
     // above: at the height a drawing gives way at it is drawn, one row shorter it is not, and
     // the ladder only ever gets simpler as the screen gets shorter.
     // AND THIS IS WHAT THE FLOOR MOVING COST THE LADDER, said as a measurement rather than as a
@@ -1283,7 +1283,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // AND THE SECOND HALF IS NO LONGER A SHORTER TERMINAL, WHICH IS WHAT THE FLOOR TOOK. The
     // pair used to be a hundred and twenty by thirty-six against the same width at twenty-four,
     // and the second of those is under the floor: the answer there is not a smaller drawing, it
-    // is NO PAGE — the screen that says the window is too small. So *and not on one without* is
+    // is NO PAGE, the screen that says the window is too small. So *and not on one without* is
     // asked one row under the floor, which is the only place a window without the room for the
     // whole name still exists.
     const biggest = drawnAcross(WIDE);
@@ -1476,8 +1476,8 @@ const THE_COMPARISON = new RegExp(`${AN_OPERATOR}(?:columns|rows)\\b`);
 describe('everything that chooses a shape by the size of the terminal is one of five', () => {
   it('is these five modules, and a sixth would be accused', () => {
     // BY THE DISCRIMINANT AND NOT BY A LIST FROM A HANDOFF. The rule this delivery
-    // extends — *a form gives way at its own measurement, never at a number somebody chose*
-    // — is applied in more than one place, so the places are FOUND rather than recalled.
+    // extends (*a form gives way at its own measurement, never at a number somebody chose*)
+    // is applied in more than one place, so the places are FOUND rather than recalled.
     //
     // THE FOURTH IS THE FINDING. The design of this delivery counted three: the name by
     // width, the panel by width, the input area by height. The palette is the fourth, and
@@ -1485,7 +1485,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     // is the row's own width.
     //
     // Each has a case that pins its threshold to the content:
-    //   - `presentation/banner.ts`  — width: `the-name-and-the-hints.test.ts`; height: here.
+    //   - `presentation/banner.ts`: width: `the-name-and-the-hints.test.ts`; height: here.
     //   - `repl/panel.ts`: `the-panel.test.ts`, at the width its content stops
     //                                  fitting at, and one column under it.
     //   - `repl/area.ts`: `the-input-has-its-own-place.test.ts`, the ladder and
@@ -1515,8 +1515,8 @@ describe('everything that chooses a shape by the size of the terminal is one of 
       ].sort(),
     );
     // The scan read something, and it would accuse a fifth module: the line somebody would
-    // write to add one, and the two shapes that must NOT be accused — a module that only
-    // carries a size, and prose about one.
+    // write to add one, and the two shapes that must NOT be accused (a module that only
+    // carries a size, and prose about one).
     expect(sourcesOf(SRC).length).toBeGreaterThan(50);
     expect(rulesOnTheSize('const form = widthOf(drawing) <= columns ? drawing : nothing;')).toBe(
       true,
@@ -1549,7 +1549,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     // much of a caller's screen may this hold for ever*.
     //
     // ONE SPELLING OF THE OPERATOR, shared with the scan above: two regular expressions for
-    // one rule is how the pair comes to disagree, and this one already did — the scan was
+    // one rule is how the pair comes to disagree, and this one already did; the scan was
     // taught not to accuse a fat arrow and this copy was not.
     const rulesOn = (file: string, what: 'columns' | 'rows'): boolean =>
       new RegExp(`${AN_OPERATOR}${what}\\b`).test(

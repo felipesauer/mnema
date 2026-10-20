@@ -205,8 +205,8 @@ const ROOMY = 64;
  * IT IS A DELIBERATELY SLOW CALLER AND NOT A WAIT FOR THE PAGE, and the difference is the one
  * this delivery measured. The page is on the wire and finished when the prompt is: sampled at
  * the prompt and again five, ten, twenty, forty, a hundred, three hundred and six hundred
- * milliseconds later, with no key pressed, the byte count did not move once — 1592 for the
- * plain console and 1776 for the painted one, at every sample. So there is nothing here to
+ * milliseconds later, with no key pressed, the byte count did not move once (1592 for the
+ * plain console and 1776 for the painted one, at every sample). So there is nothing here to
  * settle and no early read to fix; what a pause changes is what the LEAVING writes, because the
  * layout library picks how to clear the page out of its own throttle
  * (`support/console.ts`, {@link withoutLayout}).
@@ -307,7 +307,7 @@ function openingRows(page: string): string[] {
  *
  * TWO CHARACTERS, TWO RULES, AND NEITHER IS *any glyph of a box*. That distinction is the
  * whole instrument: the input area draws two rules of its own out of {@link RUN}, and a drawing
- * of the name is one edit away from being inked with {@link RULE} again — the isometric form
+ * of the name is one edit away from being inked with {@link RULE} again; the isometric form
  * was, and it made four cases of this surface mistake the art for the frame. So:
  *
  *   - A CORNER IS ALWAYS A FRAME. Nothing else on this surface turns a corner, and all four
@@ -481,7 +481,7 @@ function titleRow(page: string): string {
  * THE ACCENT AND THE ESCAPE THAT GIVES THE FOREGROUND BACK, read off the one row on the page
  * that carries nothing but them: a rule of the input area.
  *
- * IT WAS READ OFF THE BOX'S TOP EDGE — `boxLine`, found by the corner, and that worked for
+ * IT WAS READ OFF THE BOX'S TOP EDGE (`boxLine`, found by the corner), and that worked for
  * a reason the frame's departure took away: a border is nothing but accent, so the first two
  * escapes on that row were the accent and its closer, adjacent. Every row the accent is on now
  * also carries a WEIGHT, because everything the panel paints came through a renderer that
@@ -521,7 +521,7 @@ function rowHolding(page: string, what: string): string {
  *
  * Asking which characters the accent is around, rather than whether the accent is on the
  * row at all, is the only question worth asking here: what may not happen is the accent around
- * a word of the RECORD, and a row can carry chrome and a fact at once — the title's row does,
+ * a word of the RECORD, and a row can carry chrome and a fact at once; the title's row does,
  * beside the mark. THE REASON GIVEN USED TO BE THE FRAME: *a row of the box has the frame at
  * each end of it*, and the frame is gone; the question it justified is the one that survived.
  */
@@ -764,8 +764,8 @@ async function everyWidth(): Promise<ReadonlyMap<number, PanelForm>> {
 }
 
 /**
- * The narrowest terminal of the TOP band on which the drawing is still at least this rich
- * — walked down from the widest, so a band below a gap cannot be mistaken for this one.
+ * The narrowest terminal of the TOP band on which the drawing is still at least this rich,
+ * walked down from the widest, so a band below a gap cannot be mistaken for this one.
  */
 async function narrowestFor(richness: number): Promise<number> {
   const ladder = await everyWidth();
@@ -957,8 +957,8 @@ describe('the form comes out of the content, and the narrowest still says the es
     expect(page).toContain(VERIFIED);
     // IT ALSO ASKED FOR THE `Hints` HEADING HERE, and the comment said why it was the
     // heading rather than the sentence under it: the row that never scrolls away says the
-    // same words, so looking for THEM would be looking at the wrong row — measured, by a
-    // mutation that dropped the section and left this case green. The section is gone on
+    // same words, so looking for THEM would be looking at the wrong row (measured, by a
+    // mutation that dropped the section and left this case green). The section is gone on
     // purpose now, so the same reasoning inverts: the heading is what says it is gone from
     // the floor as well, and it is the one thing on this page that only the panel wrote.
     expect(page).not.toContain('Hints');
@@ -1065,7 +1065,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
   it('says the same thing to a caller who left at once and one who sat at the prompt', async () => {
     // THE TRUNK'S FIRST RED, AND WHAT IT WAS NOT. The case above went red on the machine and
     // green everywhere else, and the shape of the failure said one row of two hundred differed
-    // — the row where the tip line, the drawing and the identity meet — which read as the
+    // (the row where the tip line, the drawing and the identity meet), which read as the
     // PAINTING moving a gap. It was neither the painting nor a gap: the two renderers were
     // never the variable. ONE RENDERER DISAGREES WITH ITSELF, on how long the caller took.
     //

@@ -80,7 +80,7 @@ describe('the port writes to the process', () => {
       processIo.err('Refused (UNKNOWN_RUN): MNEMA_RUN names a run this project has no record of');
     });
 
-    // The bytes, whole: the line the caller passed and the newline the PORT adds — no
+    // The bytes, whole: the line the caller passed and the newline the PORT adds; no
     // presentation function returns one, so a line printed without this would run into
     // the next.
     expect(written.out).toEqual(['Captured memory 0198f0a4-0000-7000-8000-000000000000\n']);
@@ -104,7 +104,7 @@ describe('the port writes to the process', () => {
     const written = withTheProcessBorrowed(() => {
       // Cleared to the value `fail()` has to move it OFF, and given back by the same
       // `finally` the streams are: a case that set this and walked away would end the whole
-      // run non-zero with every assertion green — the shape that makes a suite lie in the
+      // run non-zero with every assertion green, the shape that makes a suite lie in the
       // direction nobody checks.
       process.exitCode = undefined;
       processIo.fail();

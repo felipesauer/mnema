@@ -14,7 +14,7 @@
  *
  * THE ALLOWLIST HAS THREE MEMBERS, each a question only somebody else can answer. The
  * outside WITNESS: T3 asks a calendar to attest a checkpoint digest, and what leaves is
- * a digest and nothing else — no id, no title, no body, no count. And the comparison
+ * a digest and nothing else (no id, no title, no body, no count). And the comparison
  * with GITHUB (`verify --against-github`): it asks `github.com/<name>.keys` for the
  * keys an account publishes, so what leaves is an account name the record already
  * holds in public, checked against GitHub's own rule before it is put in the address,
@@ -61,8 +61,8 @@ const TRACKED: readonly string[] = execFileSync(
   .filter((where) => where !== '');
 
 /**
- * The product: the sources that are published and run for a user — every package's
- * `src`, plus the plugin. Tests are out because a test that injects a fake fetcher
+ * The product: the sources that are published and run for a user (every package's
+ * `src`, plus the plugin). Tests are out because a test that injects a fake fetcher
  * is exactly how the one real network call is proved without one.
  */
 const PRODUCT: readonly string[] = TRACKED.filter(
