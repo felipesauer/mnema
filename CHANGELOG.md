@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **A `Release` workflow publishes the five packages after a person approves it, and only then tags.** It runs on a
+  push to `main` and by hand (`mode: publish` or `tag-only`). When the root version is not the one npm serves, it runs
+  the packed install on Node 24.15.0, 24 and 26, waits for the approval in the `npm` environment, and publishes the
+  five tarballs in the order chain, core, context, stacks, code with `--provenance`, with no token and no secret (npm
+  trusts the workflow through OIDC); a package already at the version is skipped. Only after the five are on npm does
+  it create the tag and the release, whose notes are the CHANGELOG section. While `@mnema/code` is not on npm, a push
+  publishes nothing and says the first publication is by hand; `tag-only` is for after it. `CONTRIBUTING.md` now
+  describes the procedure for the first version (written with `release:prepare 0.1.0`) and for the next ones. A test
+  reads the file and holds the triggers, the environment, the permissions, the absence of any secret, the order and the
+  tag coming after the publish. The workflow has not run: nothing was ever published, and the trusted publisher is set
+  on npmjs.com by a person.
 - **`pnpm release:prepare [x.y.z] [--check]` writes a release's one number everywhere and cuts the CHANGELOG.** It writes
   the number into every tracked `package.json`, `plugin.json` and `gemini-extension.json` that declares a version (found
   by asking git, not from a list), into `packages/code/src/version.ts`, `packages/chain/src/version.ts` and the

@@ -1240,6 +1240,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-refusal-of-an-unenrolled-agent-says-why-the-persons-key-cannot-sign.test.ts': 11,
   'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
   'packages/code/tests/the-release-prepare-writes-every-number.test.ts': 7,
+  'packages/code/tests/the-release-workflow-publishes-without-a-token.test.ts': 4,
   'packages/code/tests/the-rule-has-an-address.test.ts': 11,
   'packages/code/tests/the-rule-reaches-the-writing.test.ts': 15,
   'packages/code/tests/the-rulers-are-read-by-the-rules.test.ts': 6,
