@@ -207,6 +207,16 @@ with its own changelog.
 
 ### Changed
 
+- **The `Release` workflow publishes exactly the tarballs it tested, and asks for approval before it tags.** A job
+  without `id-token` now installs, builds and packs the five, and uploads the tarballs with their SHA-256; the packed
+  install installs those very files on Node 24.15.0, 24 and 26; the publish downloads them, checks the SHA-256 and
+  publishes them, installing and building nothing, so no install or build runs while a job can ask for the OIDC token.
+  The tag and the release also run in the `npm` environment, after a publish and in `mode: tag-only`, so nothing is
+  tagged or released without the reviewer's approval. `.github/the-packed-install/run.sh` takes an optional directory
+  of tarballs to install instead of packing its own. `CONTRIBUTING.md` says what to do when a publish stops halfway:
+  run the workflow again, which skips the packages already at the version. The test of the workflow holds the
+  environment in both jobs, no `id-token` in a job that installs or builds, the publish without install or build, the
+  publish needing the packed install and no `always()` in its `if`.
 - **The five published packages carry no source maps and say where in the repository they live.** `files` of each now
   leaves out `dist/**/*.map` (a map pointed at sources the package never shipped), and `repository.directory` names the
   package's folder. The packed install check runs on Node 24.15.0, 24 and 26, its script stops at nothing but still
