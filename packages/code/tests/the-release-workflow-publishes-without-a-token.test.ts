@@ -149,6 +149,22 @@ describe('the release workflow publishes without a token', () => {
     expect(release.indexOf('is not on npm')).toBeLessThan(release.indexOf('gh release create'));
   });
 
+  it('waits for npm to serve the five, up to a ceiling, before it tags', () => {
+    const release = job('release');
+    const step =
+      /- name: Wait until npm serves the five[^\n]*\n([\s\S]*?)\n {6}- name:/.exec(release)?.[1] ??
+      '';
+    expect(step).toMatch(/^ *tries=20$/m);
+    expect(step).toMatch(/^ *pause=30$/m);
+    expect(step).toMatch(/for attempt in \$\(seq 1 "\$tries"\); do/);
+    expect(step).toMatch(/sleep "\$pause"/);
+    expect(step.indexOf('npm view')).toBeGreaterThan(step.indexOf('for attempt in'));
+    expect(step.indexOf('sleep "$pause"')).toBeGreaterThan(step.indexOf('for attempt in'));
+    expect(step).toMatch(/exit 0/);
+    expect(step).toMatch(/is not on npm after \$\(\(.*\)\) minutes/);
+    expect(step.lastIndexOf('exit 1')).toBeGreaterThan(step.indexOf('done'));
+  });
+
   it('does not publish while the first publication is still by hand', () => {
     expect(job('plan')).toContain('E404');
     expect(job('plan')).toContain('action=first-by-hand');

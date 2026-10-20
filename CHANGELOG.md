@@ -20,6 +20,12 @@ with its own changelog.
   only what the MCP server on this machine answered. It is on until `mnema switch off tool-call-count`; on a machine
   with no key of its own yet nothing is kept and no directory is made.
 
+### Fixed
+
+- **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
+  accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
+  20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
+
 ## [0.1.1] - 2026-10-20
 
 ### Changed
