@@ -365,23 +365,23 @@ export function refusalOf(program: Command, argv: readonly string[]): CommanderE
  */
 export const THE_VERB_IS_NOT_WRITTEN: Readonly<Record<string, string>> = {
   'packages/code/src/repl/gate.ts: mnema {}':
-    'The console refuses a verb that writes and says to run it from the shell instead. The verb is the word the person typed, which the console has just matched against the declarations — it names a verb of this program by construction, and what it takes is what the person already typed.',
+    'The console refuses a verb that writes and says to run it from the shell instead. The verb is the word the person typed, which the console has just matched against the declarations: it names a verb of this program by construction, and what it takes is what the person already typed.',
   'packages/code/src/repl/session.ts: mnema {}':
     'The console asked for with no terminal names itself: the interpolation is the console’s own verb, read from the declaration that registered it, so it is a verb of this program by construction and it takes nothing.',
   'packages/code/src/repl/session.ts: mnema <verb>':
-    'The same refusal tells a person with a pipe to run the verb itself — any verb. `<verb>` stands for the whole program, and there is no single line to parse: every verb’s own line is checked where that verb is handed over.',
+    'The same refusal tells a person with a pipe to run the verb itself, any verb. `<verb>` stands for the whole program, and there is no single line to parse: every verb’s own line is checked where that verb is handed over.',
 };
 
 /** What a handed-over command carries that this guard does NOT rule on, and why each one. */
 export const NOT_CHECKED: Readonly<Record<string, string>> = {
   A_NAME_IS_NOT_A_LINE:
-    'A verb’s bare path is read as its NAME, and a name is checked only for naming a verb — the reading cannot tell a name from an instruction to type a bare line (one of the first twenty WAS one: `run start`’s "`mnema run end` closes it", a line now). So every name whose verb requires more than its path is on {@link NAMES_THAT_NEED_MORE}, looked at one by one with the reason it is a name, and reconciled with the corpus both ways: a new one is red until somebody says which it is.',
+    'A verb’s bare path is read as its NAME, and a name is checked only for naming a verb: the reading cannot tell a name from an instruction to type a bare line (one of the first twenty WAS one: `run start`’s "`mnema run end` closes it", a line now). So every name whose verb requires more than its path is on {@link NAMES_THAT_NEED_MORE}, looked at one by one with the reason it is a name, and reconciled with the corpus both ways: a new one is red until somebody says which it is.',
   A_VALUE_IS_NOT_A_NAME:
     'A marker is filled with a value nothing checks, and the mirror carries no value parser: which actions `task move` has, which shells `completion` knows and which scopes exist are the gate’s and the declaration’s answers about a value, and a marker is exactly what does not know it. `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` declares the same for the pages.',
   A_LINE_HEADED_BY_ANOTHER_PROGRAM:
-    'Without a backtick, a command is read only at the head of a line of text or after the colon `status` puts after a count. `source <(mnema completion bash)` in the completion help is a shell line whose head is `source`, and the reading does not look past it — a miss rather than an accusation, and the pages’ blocks, where the same line is published, are read by the shell reading.',
+    'Without a backtick, a command is read only at the head of a line of text or after the colon `status` puts after a count. `source <(mnema completion bash)` in the completion help is a shell line whose head is `source`, and the reading does not look past it: a miss rather than an accusation, and the pages’ blocks, where the same line is published, are read by the shell reading.',
   THE_SETTINGS_A_DECLARATION_DOES_NOT_SHOW:
-    'The mirror copies what commander lets a declaration be read back as: commands, arguments, options, mandatoriness, defaults, the version, and whether a command acts. A setting commander keeps with no getter — excess arguments, unknown options, positional or pass-through options, conflicts, implications, environment variables — is not copied. The program uses none of them, and a case below reads the source to keep that true.',
+    'The mirror copies what commander lets a declaration be read back as: commands, arguments, options, mandatoriness, defaults, the version, and whether a command acts. A setting commander keeps with no getter (excess arguments, unknown options, positional or pass-through options, conflicts, implications, environment variables) is not copied. The program uses none of them, and a case below reads the source to keep that true.',
   RUNNING_IS_NOT_READING:
     'Whether a line SUCCEEDS against a record: the roster that decides a revocation, the gate that decides a move, the run a close names. Parsing is what a line must pass before any of that is asked, and `the-refusal-names-the-way-out.test.ts` runs the one line whose success the words promise, in git clones, end to end.',
   TESTS_HAND_NOTHING_OVER:
@@ -554,11 +554,11 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   },
   'packages/code/src/wiring/key.ts: mnema key enroll': {
     times: 3,
-    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s request, once for a checker’s and once for an agent’s, which name the same verb with their flags',
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one: once for a member’s request, once for a checker’s and once for an agent’s, which name the same verb with their flags',
   },
   'packages/code/src/wiring/key.ts: mnema key revoke': {
     times: 3,
-    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s key, once for a checker’s and once for an agent’s, which name the same verb with their flags',
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one: once for a member’s key, once for a checker’s and once for an agent’s, which name the same verb with their flags',
   },
   'packages/code/src/wiring/verify.ts: mnema key github': {
     times: 1,
@@ -570,7 +570,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   },
   'docs/what-it-proves.md: mnema key sigstore': {
     times: 2,
-    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb — and the row that says the claim keeps an e-mail as its hash',
+    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb, and the row that says the claim keeps an e-mail as its hash',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -801,7 +801,7 @@ describe('the command handed over runs as handed', () => {
       for (const reading of one.readings) {
         if (reading.kind !== 'line') continue;
         const no = refusalOf(program, reading.argv);
-        if (no !== undefined) refused.push(`${where(one)}  — ${no.message}`);
+        if (no !== undefined) refused.push(`${where(one)}: ${no.message}`);
       }
     }
     expect(refused).toEqual([]);

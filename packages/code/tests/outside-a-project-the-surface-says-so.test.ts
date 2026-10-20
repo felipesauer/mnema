@@ -116,9 +116,9 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   witness: 'it reports on the tails it can see, and says so when there are none',
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',
   'before-a-write':
-    'a host runs it on every tool call of a session, and outside a project it answers `{}` — the silence a host reads — because that session is not the product’s to speak into',
+    'a host runs it on every tool call of a session, and outside a project it answers `{}`, the silence a host reads, because that session is not the product’s to speak into',
   corrections:
-    'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — and records nothing, because that session is not the product’s to speak into',
+    'a host runs it at every Stop of a session, and outside a project it answers `{}`, the same silence, and records nothing, because that session is not the product’s to speak into',
   'commit-hook suggest':
     'git runs it inside every commit made with the hook installed, and outside a project it writes nothing and exits zero, because a suggestion must never cost a commit',
   'stack list':
@@ -126,9 +126,9 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   'stack check':
     'the same receipts, checked against their files; with none installed there is nothing to depart from',
   tally:
-    'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
+    'a host runs it at every Stop of a session, and outside a project it answers `{}`, the same silence, because that session is not the product’s to speak into',
   handback:
-    'a host runs it whenever a subagent stops, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
+    'a host runs it whenever a subagent stops, and outside a project it answers `{}`, the same silence, because that session is not the product’s to speak into',
 };
 
 /**
