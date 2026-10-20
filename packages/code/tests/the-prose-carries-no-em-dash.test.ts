@@ -65,8 +65,7 @@ const ESCAPES: readonly string[] = [
  * a sweep lowers its own line, or deletes it when the area holds none. Each line has a comment of
  * its own above it, so two sweeps that delete different lines never touch neighbouring ones.
  */
-const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-};
+const NOT_YET_SWEPT: Readonly<Record<string, number>> = {};
 
 /**
  * WHERE THE CHARACTER IS DATA: how many escapes each file holds, exactly, and why. A count that
