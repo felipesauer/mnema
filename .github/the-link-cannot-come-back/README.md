@@ -23,7 +23,7 @@ machine.
 
 **The commit message** is the half everybody thinks of, and the dear one to repair.
 
-**The pull request body** is not git at all — it is a field of the GitHub API — and it carried
+**The pull request body** is not git at all: it is a field of the GitHub API, and it carried
 **19 of the 33** leaks. A guard over commits alone leaves the larger half open, so both go through
 one rule (`attributionIn`), and `packages/code/tests/the-link-cannot-come-back.test.ts` fails if
 either surface stops being handed to it.
@@ -32,8 +32,8 @@ either surface stops being handed to it.
 
 Two spellings, each declared with the shape it recognises rather than as a substring:
 
-- **a co-author trailer whose value names the tool or its vendor.** The line must *be* a trailer —
-  it starts with the key — and the value must name `anthropic` or `claude`;
+- **a co-author trailer whose value names the tool or its vendor.** The line must *be* a trailer:
+  it starts with the key, and the value must name `anthropic` or `claude`;
 - **the generated-with footer, by its bracketed name or by its link.** `claude.com/claude-code` is
   checked on its own, because the emoji, the spacing and the bracket text are cosmetic and the
   link is the thing this directory is named after.
@@ -52,7 +52,7 @@ load-bearing:
 
 - **the 13 `Co-authored-by: dependabot[bot]` trailers on the trunk.** There is **no allowlist**:
   `dependabot` is not named anywhere in the rule, and its trailer passes for the same reason a
-  human co-author's does — the value names neither the vendor nor the tool. An exemption would be
+  human co-author's does: the value names neither the vendor nor the tool. An exemption would be
   a hole with a name on it. A guard that blocks the next dependency bump is switched off that
   afternoon;
 - **upstream release notes that credit the tool for somebody else.** Three of those 13 embed
@@ -69,7 +69,7 @@ pnpm the-link-cannot-come-back --range <base>..<head> --commits-only
 ```
 
 On a runner it needs neither: the range and the description both come out of the event payload
-the runner wrote, read as a **file**. Nothing is interpolated into a shell — a description is text
+the runner wrote, read as a **file**. Nothing is interpolated into a shell: a description is text
 a stranger wrote, and on a public repository `${{ github.event.pull_request.body }}` inside a
 `run:` hands that stranger the runner.
 
@@ -87,7 +87,7 @@ the description was not examined. CI never passes it, and a case fails if it eve
 A scan that examined **zero commits** is the dangerous one: a shallow checkout, a base that was
 never fetched, or a range written backwards all read as *the trunk is clean*, because zero commits
 carry no footer. This bench has been bitten by that shape three times, so zero commits is a
-refusal with a phrase of its own — `THE_CANARY`, exported so a case pins it rather than a quoted
+refusal with a phrase of its own: `THE_CANARY`, exported so a case pins it rather than a quoted
 substring. So are *no pull request at all*, *no range*, and *git could not read the range*.
 
 ## In CI
@@ -97,11 +97,11 @@ mechanism rather than detail:
 
 - **`if: github.event_name == 'pull_request'`.** The guard exists to refuse the footer *before* it
   reaches the trunk. On `push` the commit is already in, so a red there repairs nothing and blocks
-  every merge behind it until the history is rewritten — which is the state this repository was in
+  every merge behind it until the history is rewritten, which is the state this repository was in
   for seven weeks. The description half does not exist on that event at all;
 - **`fetch-depth: 0`.** The scan reads `<base.sha>..<head.sha>`, and a default checkout on a
   `pull_request` is depth 1: the base is not there and `git rev-list` exits non-zero. That is a
-  refusal rather than a green, which is the canary working — but a guard whose normal state is
+  refusal rather than a green, which is the canary working, but a guard whose normal state is
   `RULER BROKEN` is a guard nobody reads. Measured here: 16.43 MiB packed and 601 commits on the
   trunk, a full clone against a depth-1 one is **0.59 s against 0.25 s** and 13 MB against 4 MB of
   `.git`, with no network in either;
@@ -126,7 +126,7 @@ fails if the condition goes away, if the checkout stops being deep, or if the st
   a false positive costs one red build and an amend, and a false negative cost 194 rewritten
   commits;
 - **the message typed into the squash box at merge time.** GitHub composes that body out of the
-  pull request and its commits, both of which this reads, so the default is covered — but a
+  pull request and its commits, both of which this reads, so the default is covered, but a
   maintainer who types a footer into the box at the moment of merging is past every pre-merge
   check there is. The thirteen generated-with lines on this trunk arrived as squash bodies
   composed from what the guard now reads, which is why the default being covered is worth

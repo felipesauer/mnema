@@ -19,8 +19,8 @@ private words for nothing.
 
 The host writes one JSON object per line. Claude Code keeps them under `~/.claude/projects/`, or
 under `$CLAUDE_CONFIG_DIR/projects/` where that is set, in a directory it names by flattening the
-path it started in. That name is lossy — `/`, `.` and `-` all become `-`, so a sibling project can
-share a prefix — so do not pick a session by directory name. A transcript belongs to a project when
+path it started in. That name is lossy: `/`, `.` and `-` all become `-`, so a sibling project can
+share a prefix, so do not pick a session by directory name. A transcript belongs to a project when
 the `cwd` recorded on its lines is the project's root or under it. `packages/code/src/transcripts.ts`
 in the mnema repository is the product's own reader of this store and the reference for each fact
 below; it reads token counts, never words, and this skill is the one place that reads words, on
