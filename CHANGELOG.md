@@ -620,8 +620,16 @@ with its own changelog.
   smaller at the same width. On a light page the glow, the tints and the faces under the accent are fainter, the
   newest cube of the banner is the accent itself with its faces parted by the page, and the chips of the steps are
   edged at 1.5; the dark pictures keep their paint, and the words and text alternatives do not change. The test that
-  holds a one-unit stroke to the middle of a pixel now reads curves, relative commands, lines, polylines, polygons,
-  transforms and inherited strokes, and names what it cannot hold instead of passing it.
+  holds a one-unit stroke to the middle of a pixel now reads every run of a path (absolute and relative), a
+  rectangle, a line, a polyline and a polygon, with the stroke and width a shape takes from its groups, under the
+  translates and uniform scales of `transform` attributes and of the keyframes a shape's style names; it names a
+  curve, a circle or an ellipse, any other transform and a width it does not read. It refuses whole, by name, a
+  picture with what it does not read: a `<use>`, a `<symbol>`, an `<svg>` inside the picture or any element it does
+  not know; a stroke, a stroke width or a transform on the outer `<svg>`, or a `viewBox` that does not start at 0 0;
+  `vector-effect`, `transform-origin` or `transform-box`; a transform, a translate, a rotate, a scale or the
+  `animation` shorthand in a `style` attribute; a stylesheet that sets a stroke,
+  moves a shape or gives it an animation outside a keyframes, or a keyframes it cannot parse; no `</defs>`, or a
+  shape before the `<defs>`; and an attribute not written as `name="value"`.
 
 ## [0.2.0-beta] - 2026-10-11
 
