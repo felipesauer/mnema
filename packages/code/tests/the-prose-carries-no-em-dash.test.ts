@@ -110,8 +110,6 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   'packages/vscode/README.md': 1,
   // the plugin for agent hosts
   'plugin/': 10,
-  // the recordings and the scripts that make them
-  'recordings/': 6,
 };
 
 /**
