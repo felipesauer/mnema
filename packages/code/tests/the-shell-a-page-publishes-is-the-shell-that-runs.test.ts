@@ -188,11 +188,11 @@ export function resolve(program: Command, words: readonly string[]): Resolution 
  */
 export const NOT_CHECKED: Readonly<Record<string, string>> = {
   ANOTHER_PROGRAM:
-    'A command whose head is not `mnema`. The pages publish `npm i -g @mnema/code` and `pnpm add -g @mnema/code` — both, because the install a reader reaches for depends on the client they already have — plus `npm view @mnema/code version` (which the install sections publish because whether the package resolves is a fact about the registry and not one a page can state), plus `claude plugin install mnema@mnema`, `cd`, `export`, `unset`, `source`, `diff` and `less`. Whether those verbs and flags exist is a fact about somebody else’s program, and the only way to ask is to run it.',
+    'A command whose head is not `mnema`. The pages publish `npm i -g @mnema/code` and `pnpm add -g @mnema/code`: both, because the install a reader reaches for depends on the client they already have, plus `npm view @mnema/code version` (which the install sections publish because whether the package resolves is a fact about the registry and not one a page can state), plus `claude plugin install mnema@mnema`, `cd`, `export`, `unset`, `source`, `diff` and `less`. Whether those verbs and flags exist is a fact about somebody else’s program, and the only way to ask is to run it.',
   A_VALUE_IS_NOT_A_NAME:
-    'The value of a positional argument or of a flag — `"$TASK"`, `mnid:c0fc3c71…`, `./skills`, `~/work/api`, a record body. They are ids that do not exist until somebody writes them, paths on somebody else’s disk, and prose. Nothing declarative can know them; a guard that tried would be asserting its own fixtures.',
+    'The value of a positional argument or of a flag: `"$TASK"`, `mnid:c0fc3c71…`, `./skills`, `~/work/api`, a record body. They are ids that do not exist until somebody writes them, paths on somebody else’s disk, and prose. Nothing declarative can know them; a guard that tried would be asserting its own fixtures.',
   A_GATE_DECIDES_THE_MOVE:
-    '`submit` in `mnema task move submit` is that command’s declared `<action>`, not a subcommand, so a misspelling of it is not visible here. Which moves exist is the gate’s answer over one record’s state, not the program’s declaration — asking it means founding a record, which is a different piece of work with a sandbox of its own.',
+    '`submit` in `mnema task move submit` is that command’s declared `<action>`, not a subcommand, so a misspelling of it is not visible here. Which moves exist is the gate’s answer over one record’s state, not the program’s declaration: asking it means founding a record, which is a different piece of work with a sandbox of its own.',
   THE_SHELL_IS_NOT_OURS:
     'Redirections, pipes and substitutions. The `>` in `mnema brief > MNEMA.md` belongs to the shell; the verb never learns there was a file. That hazard is ruled on by `the-recipe-says-what-it-overwrites.test.ts`, which requires every publisher of that recipe to say the file is replaced whole.',
   RUNNING_IS_NOT_READING:
@@ -200,7 +200,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   THE_OUTPUT_IS_A_SECOND_RULE:
     'The `#>` lines that show what a command prints. They are comments to the shell and they are dropped here. Whether the product really says those words is a different rule, and `cli.golden.test.ts` holds the bytes of every `--help` page against a committed transcript.',
   PROSE_IS_NOT_A_BLOCK:
-    'Inline code spans outside any fence are not read HERE. This entry used to say why not — "a reader copies a block; a span is a reference inside a sentence, and the reading that tells the two apart is the fence" — and that was false: a sentence on `packages/code/README.md`, and the refusal it describes, handed a person `mnema key revoke <fingerprint>` to run, and it could not run, because the verb requires `--reason`. Spans are read by `the-command-handed-over-runs-as-handed.test.ts`, with every sentence the product prints, and ruled on whole; this file keeps to its blocks.',
+    'Inline code spans outside any fence are not read HERE. This entry used to say why not ("a reader copies a block; a span is a reference inside a sentence, and the reading that tells the two apart is the fence") and that was false: a sentence on `packages/code/README.md`, and the refusal it describes, handed a person `mnema key revoke <fingerprint>` to run, and it could not run, because the verb requires `--reason`. Spans are read by `the-command-handed-over-runs-as-handed.test.ts`, with every sentence the product prints, and ruled on whole; this file keeps to its blocks.',
 };
 
 /**
@@ -243,7 +243,7 @@ describe('the shell a page publishes is the shell that runs', () => {
   it('every verb a page publishes is a verb this program has', () => {
     const invented = published
       .filter((one) => resolve(program, one.words).strays.length > 0)
-      .map((one) => `${where(one)}  — not a verb: ${resolve(program, one.words).strays.join(' ')}`);
+      .map((one) => `${where(one)}: not a verb: ${resolve(program, one.words).strays.join(' ')}`);
     expect(invented).toEqual([]);
   });
 
@@ -251,7 +251,7 @@ describe('the shell a page publishes is the shell that runs', () => {
     const invented: string[] = [];
     for (const one of published) {
       for (const option of resolve(program, one.words).options) {
-        if (!option.known) invented.push(`${where(one)}  — no such flag: ${option.flag}`);
+        if (!option.known) invented.push(`${where(one)}: no such flag: ${option.flag}`);
       }
     }
     expect(invented).toEqual([]);

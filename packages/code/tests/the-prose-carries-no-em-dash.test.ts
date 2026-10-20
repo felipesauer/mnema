@@ -66,8 +66,6 @@ const ESCAPES: readonly string[] = [
  * its own above it, so two sweeps that delete different lines never touch neighbouring ones.
  */
 const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
-  // the cases beside @mnema/code
-  'packages/code/tests/': 163,
 };
 
 /**

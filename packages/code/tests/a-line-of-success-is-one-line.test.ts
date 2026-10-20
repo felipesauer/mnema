@@ -285,7 +285,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'init.ts «identity: {}» #1': {
     verdict: 'minted',
-    why: 'an anchor this run derived — `mnid:` and 64 hex, so there is nothing to collapse',
+    why: 'an anchor this run derived: `mnid:` and 64 hex, so there is nothing to collapse',
   },
   'init.ts «identity: {}» #2': {
     verdict: 'minted',
@@ -378,7 +378,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'key.ts «recorded in {}» #2': {
     verdict: 'collapsed',
-    why: 'the project root, discovered from the cwd — the same value `init` prints',
+    why: 'the project root, discovered from the cwd: the same value `init` prints',
   },
   'key.ts «Created the key of the agent {}: {}» #1': {
     verdict: 'minted',
@@ -481,7 +481,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'check.ts «passed {}» #1': { verdict: 'minted', why: 'the id of a rule the record holds' },
   'check.ts «failed {}: {}» #1': {
     verdict: 'collapsed',
-    why: 'a rule id, and how the program failed — which names the program when it did not start',
+    why: 'a rule id, and how the program failed, which names the program when it did not start',
   },
   'check.ts «{} passed · {} failed at {}» #1': {
     verdict: 'minted',
@@ -493,7 +493,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'check.ts «recorded in {}» #1': {
     verdict: 'collapsed',
-    why: 'the project root, discovered from the cwd — the same value `init` prints',
+    why: 'the project root, discovered from the cwd: the same value `init` prints',
   },
   'commit-hook.ts «{}: {}» #1': {
     verdict: 'collapsed',
@@ -526,7 +526,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'next.ts «{} → {}{}» #1': {
     verdict: 'minted',
-    why: 'the transition table’s own words — an action, a state, the proof it requires',
+    why: 'the transition table’s own words: an action, a state, the proof it requires',
   },
   'resume.ts «{} has no runs.» #1': {
     verdict: 'minted',
@@ -625,7 +625,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   'tail.ts «Authorized the cut of tail {}» #1': {
     verdict: 'minted',
-    why: 'the tail the record was found holding — an unmatched one is refused earlier',
+    why: 'the tail the record was found holding: an unmatched one is refused earlier',
   },
   'tail.ts «{} event(s) through {}, the tail of {}» #1': {
     verdict: 'minted',
@@ -652,7 +652,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   // --- lines a value from outside reaches ----------------------------------------
   'key.ts «Linked {} to the Sigstore identity {}» #1': {
     verdict: 'collapsed',
-    why: 'the anchor, and the identity the caller typed — refused unless an e-mail or a workflow URI',
+    why: 'the anchor, and the identity the caller typed: refused unless an e-mail or a workflow URI',
   },
   'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1': {
     verdict: 'collapsed',
@@ -660,15 +660,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'key.ts «Linked {} to github.com/{}» #1': {
     verdict: 'collapsed',
-    why: 'the anchor, and the account name the caller typed — refused unless GitHub would issue it',
+    why: 'the anchor, and the account name the caller typed: refused unless GitHub would issue it',
   },
   'antipatterns.ts «{}» #1': {
     verdict: 'collapsed',
-    why: 'entity ids out of the record — the sibling reading collapsed them and this one did not',
+    why: 'entity ids out of the record: the sibling reading collapsed them and this one did not',
   },
   'antipatterns.ts «{} ({})» #1': {
     verdict: 'collapsed',
-    why: 'the id of a pattern moved without a consultation, and the action — both the record’s',
+    why: 'the id of a pattern moved without a consultation, and the action: both the record’s',
   },
   'antipatterns.ts «label naming more than one rule ({})» #1': {
     verdict: 'collapsed',
@@ -684,11 +684,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'antipatterns.ts «{}: {}» #1': {
     verdict: 'collapsed',
-    why: 'the id of the subject moved twice and the states each move went to — the record’s',
+    why: 'the id of the subject moved twice and the states each move went to: the record’s',
   },
   'resume.ts «{}» #1': {
     verdict: 'collapsed',
-    why: 'the agent a run names — text whoever opened the session wrote',
+    why: 'the agent a run names: text whoever opened the session wrote',
   },
   'resume.ts «: {}» #1': {
     verdict: 'collapsed',
@@ -696,11 +696,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'guard.ts «{} {} → {}» #1': {
     verdict: 'collapsed',
-    why: 'the id positional — not forgeable today (it had to match a task), closed as a rule',
+    why: 'the id positional: not forgeable today (it had to match a task), closed as a rule',
   },
   'guard.ts «REFUSED ({})» #1': {
     verdict: 'collapsed',
-    why: 'the gate’s own code — collapsed because it shares the line above’s tag, not its risk',
+    why: 'the gate’s own code: collapsed because it shares the line above’s tag, not its risk',
   },
   'handoff.ts «Recorded handoff on {}: {} → {}» #1': {
     verdict: 'collapsed',
@@ -708,7 +708,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'init.ts «Initialized mnema project at {}» #1': {
     verdict: 'collapsed',
-    why: 'the project root — a directory name is what this class was first measured on',
+    why: 'the project root: a directory name is what this class was first measured on',
   },
   'init.ts «Already a mnema project at {}: nothing to found.» #1': {
     verdict: 'collapsed',
@@ -720,7 +720,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'init.ts «a write to the public tree here is refused ({}): {}» #1': {
     verdict: 'collapsed',
-    why: 'the refusal a write here gets — its code, and the words the core wrote for it',
+    why: 'the refusal a write here gets: its code, and the words the core wrote for it',
   },
   'key.ts «{} {} of {} private key file(s)» #1': {
     verdict: 'minted',
@@ -740,15 +740,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'key.ts «recorded in {}» #1': {
     verdict: 'collapsed',
-    why: 'the project root, discovered from the cwd — the same value `init` prints',
+    why: 'the project root, discovered from the cwd: the same value `init` prints',
   },
   'link.ts «Linked {} -{}→ {}» #1': {
     verdict: 'collapsed',
-    why: 'subject, relation and target — none validated, and the relation is open by design',
+    why: 'subject, relation and target: none validated, and the relation is open by design',
   },
   'unlink.ts «Retracted link {} -{}→ {}» #1': {
     verdict: 'collapsed',
-    why: 'the edge as the link recorded it — the caller’s three values, which the link never validated',
+    why: 'the edge as the link recorded it: the caller’s three values, which the link never validated',
   },
   'next.ts «Task {} is terminal: no legal moves.» #1': {
     verdict: 'collapsed',
@@ -756,15 +756,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'next.ts «Task {}: {} legal move(s):» #1': {
     verdict: 'collapsed',
-    why: 'the id positional, HEADING the list — reachable only with an id that matched',
+    why: 'the id positional, HEADING the list: reachable only with an id that matched',
   },
   'observe.ts «Recorded observation {} about {}» #1': {
     verdict: 'collapsed',
-    why: '`about` is not validated — this is the door a forged value enters the record by',
+    why: '`about` is not validated: this is the door a forged value enters the record by',
   },
   'resume.ts «{} {}» #1': {
     verdict: 'collapsed',
-    why: 'the actor, and the phrase — whose goal `presentation/runs.ts` now collapses too',
+    why: 'the actor, and the phrase: whose goal `presentation/runs.ts` now collapses too',
   },
   'run.ts «for {}» #1': {
     verdict: 'collapsed',
@@ -780,7 +780,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'skill.ts «Proposed skill "{}" ({})» #1': {
     verdict: 'collapsed',
-    why: 'the name positional — the value `moved-record.ts` already collapses on a MOVE',
+    why: 'the name positional: the value `moved-record.ts` already collapses on a MOVE',
   },
   'tail.ts «The tail is still on disk at {}: nothing was removed.» #1': {
     verdict: 'collapsed',
@@ -788,7 +788,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'export.ts «covering: {}» #1': {
     verdict: 'minted',
-    why: 'the trees this feed covered, joined from the closed scope vocabulary — the declaration that lets a filtered feed be told from a complete one',
+    why: 'the trees this feed covered, joined from the closed scope vocabulary: the declaration that lets a filtered feed be told from a complete one',
   },
   'timeline.ts «No history recorded for {}.» #1': {
     verdict: 'collapsed',
@@ -796,7 +796,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'timeline.ts «{}: {} event(s):» #1': {
     verdict: 'collapsed',
-    why: 'the id positional HEADING the list — the one forgeable list header there is',
+    why: 'the id positional HEADING the list: the one forgeable list header there is',
   },
 
   // --- witness.ts: the act that speaks to somebody outside --------------------------
@@ -832,8 +832,8 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'witness.ts «{} {}: {}» #1': {
     verdict: 'collapsed',
     why:
-      'an address that was not reached — read off a proof FILE on the `upgrade` path, ' +
-      'never typed there — and somebody else’s error message or this product’s own reason',
+      'an address that was not reached (read off a proof FILE on the `upgrade` path, ' +
+      'never typed there) and somebody else’s error message or this product’s own reason',
   },
 
   // --- values another package worded, on a line this one lays out -------------------
@@ -843,7 +843,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'verify.ts «issue [{}] {} {}: {}» #1': {
     verdict: 'collapsed',
-    why: 'the chain’s finding, and the TAIL it is about — a directory name, chosen on disk',
+    why: 'the chain’s finding, and the TAIL it is about: a directory name, chosen on disk',
   },
   'verify.ts «since {}: not compared: {}» #1': {
     verdict: 'collapsed',
@@ -851,7 +851,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'verify.ts «{}: gone: {} was in the record there and is not here» #1': {
     verdict: 'collapsed',
-    why: 'the revision as typed, and a PATH git listed — a file name, chosen on disk',
+    why: 'the revision as typed, and a PATH git listed: a file name, chosen on disk',
   },
   'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
@@ -1142,18 +1142,18 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'stack.ts «{} hook {} was not approved. Nothing changed.» #1':
     'the same declared name as the line above',
   'unlink.ts «Retracted link {} -{}→ {}» #1':
-    'needs the edge already linked, so two verbs: `link` then `unlink` — driven in ' +
+    'needs the edge already linked, so two verbs: `link` then `unlink`, driven in ' +
     '`tests/a-link-can-be-retracted.test.ts`, through the same collapse as `link`’s line',
   'antipatterns.ts «{}» #1': 'needs a task reopened twice in the record',
   'antipatterns.ts «{} ({})» #1':
-    'needs a run that was served one pattern’s body and moved another — the MCP surface',
+    'needs a run that was served one pattern’s body and moved another: the MCP surface',
   'antipatterns.ts «label naming more than one rule ({})» #1': 'needs two decisions sharing an ADR',
   'antipatterns.ts «{}» #2': 'the same collision',
   'antipatterns.ts «moved twice out of one state ({} {})» #1':
     'needs two machines moving one decision out of one state, then merged',
   'antipatterns.ts «{}: {}» #1': 'the same divergence',
   'commit-hook.ts «{}: {}» #1': 'needs a repository whose hooks path holds a line break',
-  'resume.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `resume`',
+  'resume.ts «{}» #1': 'the run’s own line: driven by `run start`, read back by `resume`',
   'resume.ts «: {}» #1': 'the same line',
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
@@ -1161,7 +1161,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'init.ts «Already a mnema project at {}: nothing to found.» #1': 'the same directory',
   'init.ts «backup key: created and enrolled, private half at {}» #1': 'needs such a key root',
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
-    'needs a checkout its key has left — and the values inside the words are the core’s, ' +
+    'needs a checkout its key has left, and the values inside the words are the core’s, ' +
     'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
   'key.ts «{} {}» #1': 'a path under this machine’s own key root, which no caller names',
   'key.ts «Linked {} to github.com/{}» #1':
@@ -1211,31 +1211,31 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
   'run.ts «by {}» #1': 'needs an open run to close',
   'tail.ts «The tail is still on disk at {}: nothing was removed.» #1': 'needs a tail to cut',
-  'timeline.ts «{}: {} event(s):» #1': 'reached in two steps — see the case below',
+  'timeline.ts «{}: {} event(s):» #1': 'reached in two steps: see the case below',
   'verify.ts «census [{}] {} {}: {}» #1':
     'needs a committed key with no tail on disk, which is file surgery and not an argv',
   'verify.ts «since {}: not compared: {}» #1':
     'needs `--since` in a project; driven through the binary, with a revision the clone ' +
     'does not hold, in `the-ci-recipe-catches-what-verify-cannot.test.ts`',
   'verify.ts «{}: gone: {} was in the record there and is not here» #1':
-    'needs a git repository whose base commit held a file the disk lost — the same file',
+    'needs a git repository whose base commit held a file the disk lost: the same file',
   'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1':
-    'needs a base commit and a segment cut or rewritten after it — the same file',
+    'needs a base commit and a segment cut or rewritten after it: the same file',
   'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
-    'needs a base commit and a record that grew after it — the same file',
+    'needs a base commit and a record that grew after it: the same file',
   'verify.ts «issue [{}] {} {}: {}» #1':
-    'needs a fabricated tail DIRECTORY — driven, with the chain’s half of the same line, ' +
+    'needs a fabricated tail DIRECTORY, driven, with the chain’s half of the same line, ' +
     'in `the-phrase-the-domain-words-is-one-line.test.ts`',
   'witness.ts «{} ({}): {}: {}» #1':
-    'needs a tail whose DIRECTORY NAME holds a break — a name the writer mints from a ' +
+    'needs a tail whose DIRECTORY NAME holds a break: a name the writer mints from a ' +
     'fingerprint and a random suffix, never typed',
   'witness.ts «external witness (T3): {}: {}» #1':
     'the neighbour of that line, printed in the same breath and about the same tail',
   'witness.ts «{} ({}): {}: {}» #2':
-    'needs Sigstore to answer `witness sigstore`, which no argv reaches without the network — ' +
+    'needs Sigstore to answer `witness sigstore`, which no argv reaches without the network: ' +
     'the act is driven with doubles of Fulcio and Rekor in `sigstore/sigstore.test.ts`',
   'witness.ts «{}» #1':
-    'the sign-in address, said only once a browser sign-in starts — the same act',
+    'the sign-in address, said only once a browser sign-in starts: the same act',
   'witness.ts «The certificate names {}, vouched for by {}.» #1':
     'the same act, once Fulcio answered',
   'witness.ts «{}» #2': 'the same act, once Fulcio answered',
@@ -1244,7 +1244,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'witness.ts «{} {}: {}» #1':
     'needs a proof already on disk whose pending attestation names the address, which ' +
     'no argv puts there: `stamp` writes whatever the calendar ANSWERED with, so reaching ' +
-    'this from a command line means a calendar answering — driven, with both of its ' +
+    'this from a command line means a calendar answering, driven, with both of its ' +
     'verbs, in `commands/witness.test.ts`',
 };
 
