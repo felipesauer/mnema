@@ -720,7 +720,7 @@ describe('a reading already counts the window the switch was off for', () => {
       line.split('\n'),
     );
     const text = history.join('\n');
-    expect(text).toContain(`${EDIT_PUSH_CHANNEL} — 2 event(s)`);
+    expect(text).toContain(`${EDIT_PUSH_CHANNEL}: 2 event(s)`);
     expect(history.filter((line) => line.includes('channel.switched'))).toHaveLength(2);
     // Attributed and dated on every row, which is what makes the window readable: an
     // instant, the kind, the role the channel appears by, and the anchor that authorized it.

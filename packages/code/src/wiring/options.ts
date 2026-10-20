@@ -38,8 +38,8 @@ import { type Reporter, reportUsage } from './report.js';
  */
 export const WHICH_HELP =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-  'mnema — omit it when you are acting directly. Declared — by this flag, or by ' +
-  'MNEMA_AGENT_KEY — never assumed; where that agent’s key signs, the fact names the ' +
+  'mnema: omit it when you are acting directly. Declared (by this flag, or by ' +
+  'MNEMA_AGENT_KEY), never assumed; where that agent’s key signs, the fact names the ' +
   'agent as the record does. It names the executor. See --scope for where the fact lands. ' +
   'A value that names no agent (an unset variable) is refused, never credited to you.';
 
@@ -52,7 +52,7 @@ export const WHICH_HELP =
  * because nobody types three spaces: a variable that expanded to nothing.
  */
 export const BLANK_WHICH_MESSAGE =
-  'it names no agent. Name the agent that executed this, or omit --which — omitted, ' +
+  'it names no agent. Name the agent that executed this, or omit --which: omitted, ' +
   'the record says a person acted directly. (A `--which "$AGENT"` with the variable ' +
   "empty would otherwise credit you for an agent's work.)";
 
@@ -129,7 +129,7 @@ export const WHICH_ON_SUBCOMMAND_HELP = [
   '',
   'Also accepted here (declared on the parent group):',
   '  --which <agent>  the agent that executed this move, when an agent (a script,',
-  '                   a CI step) is driving mnema — omit it when you are acting',
+  '                   a CI step) is driving mnema: omit it when you are acting',
   '                   directly. It names the executor only: a move always follows',
   '                   the entity to the tree it was born in.',
 ].join('\n');

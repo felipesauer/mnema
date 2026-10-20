@@ -26,7 +26,7 @@
  * in for a rule.
  *
  * AND THE SITE THE HANDOFF NAMED AS THE WORST IS NOT FORGEABLE. `next-actions` prints
- * `Task <id> — 2 legal move(s):` with one line per move under it, which is the list shape
+ * `Task <id>: 2 legal move(s):` with one line per move under it, which is the list shape
  * `oneLine`'s doc names as the one a reader mis-attributes. But that line is reached only
  * when the id FOUND a task, and an id carrying a newline finds none: it is refused one
  * branch earlier, by the sentence the previous slice closed. The forgeable list header is
@@ -36,7 +36,7 @@
  * holding a break printed:
  *
  *     0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55
- *       start → doing — 1 event(s):
+ *       start → doing: 1 event(s):
  *       2026-08-17T15:06:09.760Z  observation.recorded  [about]  mnid:755798b3
  *
  * (where the second line is indented exactly as the item under it is, and carries the
@@ -170,7 +170,7 @@ function pastQuoted(text: string, at: number): number {
  * and whether the identifier immediately before its backtick is the tag.
  *
  * A nested template inside an interpolation is skipped rather than reported. It is a
- * value of the outer one: `${x ? ` — ${y}` : ''}` is ONE interpolation, and reporting
+ * value of the outer one: `${x ? `: ${y}` : ''}` is ONE interpolation, and reporting
  * it as a site of its own would ask a verdict about half of a value.
  */
 function readTemplate(
@@ -336,7 +336,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'key.ts «{}» #2': { verdict: 'minted', why: 'a ternary of two of this surface’s own clauses' },
   'key.ts «to join {}» #1': { verdict: 'minted', why: 'the anchor `--anchor` resolved to' },
-  'key.ts «Key {} is already in {} — nothing recorded.» #1': {
+  'key.ts «Key {} is already in {}: nothing recorded.» #1': {
     verdict: 'minted',
     why: 'a fingerprint decoded from the request, and an anchor',
   },
@@ -344,11 +344,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the fingerprint of a key the record enrolls as a checker, or the write refused',
   },
-  'key.ts «Key {} was retired as a checker by {} already — nothing recorded.» #1': {
+  'key.ts «Key {} was retired as a checker by {} already: nothing recorded.» #1': {
     verdict: 'minted',
     why: 'a fingerprint the record holds, and the anchor of the identity that retired it',
   },
-  'key.ts «it signs nothing from here on — retired by {}» #1': {
+  'key.ts «it signs nothing from here on: retired by {}» #1': {
     verdict: 'minted',
     why: 'the anchor of the identity that signed the retirement',
   },
@@ -360,7 +360,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint decoded out of the request that was vouched for',
   },
-  'key.ts «Key {} is already a checker — nothing recorded.» #1': {
+  'key.ts «Key {} is already a checker: nothing recorded.» #1': {
     verdict: 'minted',
     why: 'a fingerprint decoded from the request',
   },
@@ -406,11 +406,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the name the request carried, which the door held to the agent-name form where it is worded; the tag is the second fence',
     },
-  'key.ts «Key {} is already the agent "{}" — nothing recorded.» #1': {
+  'key.ts «Key {} is already the agent "{}": nothing recorded.» #1': {
     verdict: 'minted',
     why: 'a fingerprint computed from the key the request carried, and the name the record holds for it',
   },
-  'key.ts «Nothing recorded for the agent {}: key {} — a tree refused it» #1': {
+  'key.ts «Nothing recorded for the agent {}: key {}; a tree refused it» #1': {
     verdict: 'minted',
     why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
   },
@@ -426,7 +426,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, said by the one table that names them, and the anchor the tree speaks for',
   },
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {} — \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}; \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
     {
       verdict: 'collapsed',
       why: 'the path the person typed, which a directory name may break, and the agent’s key root, which `$MNEMA_HOME` may place anywhere',
@@ -439,11 +439,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, said by the one table that names them',
   },
-  'key.ts «{}: skipped — {}» #1': {
+  'key.ts «{}: skipped, {}» #1': {
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, and the reason this product wrote for leaving it out',
   },
-  'key.ts «{}: skipped — {}» #2': {
+  'key.ts «{}: skipped, {}» #2': {
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, and the reason this product wrote for leaving it out',
   },
@@ -456,7 +456,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint read from the name of a file in the agent’s key root, and the folder the file was moved to under it',
     },
-  'key.ts «the record already counts {} other active {} as "{}" ({}) — one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
+  'key.ts «the record already counts {} other active {} as "{}" ({}): one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
     {
       verdict: 'collapsed',
       why: 'a count, a word chosen from it, the name the record enrols the agent under, and the first characters of fingerprints the record holds',
@@ -469,7 +469,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name the record held for a key it counted as an agent, and the fingerprint matched against it',
   },
-  'key.ts «it signs nothing from here on — retired by {}» #2': {
+  'key.ts «it signs nothing from here on: retired by {}» #2': {
     verdict: 'minted',
     why: 'the anchor of the identity that signed the retirement',
   },
@@ -508,7 +508,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the roster matched it before this line: `roster.has` is what refuses the rest',
   },
-  'key.ts «from {} — {} key(s) left» #1': {
+  'key.ts «from {}: {} key(s) left» #1': {
     verdict: 'minted',
     why: 'the anchor the key was retired from, and a count of the roster',
   },
@@ -639,12 +639,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
   },
-  'verify.ts «github: the {} tree was not compared — its verdict is a break, so who signed it is not settled» #1':
+  'verify.ts «github: the {} tree was not compared: its verdict is a break, so who signed it is not settled» #1':
     {
       verdict: 'minted',
       why: 'the scope of a tree: one of the three names this product gives its trees',
     },
-  'verify.ts «sigstore: the {} tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled» #1':
+  'verify.ts «sigstore: the {} tree was not read: its verdict is a break, so which checkpoint a bundle is over is not settled» #1':
     {
       verdict: 'minted',
       why: 'the scope of a tree: one of the three names this product gives its trees',
@@ -690,7 +690,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the agent a run names — text whoever opened the session wrote',
   },
-  'resume.ts « — {}» #1': {
+  'resume.ts «: {}» #1': {
     verdict: 'collapsed',
     why: 'the run’s goal; the dash is a chunk so the collapse cannot eat its space',
   },
@@ -734,7 +734,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'a path under this machine’s key root',
   },
-  'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': {
+  'key.ts «Your copy at {} was read, not moved: keep it where it is.» #1': {
     verdict: 'collapsed',
     why: 'the positional itself, echoed back to say the copy was not consumed',
   },
@@ -750,11 +750,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the edge as the link recorded it — the caller’s three values, which the link never validated',
   },
-  'next.ts «Task {} is terminal — no legal moves.» #1': {
+  'next.ts «Task {} is terminal: no legal moves.» #1': {
     verdict: 'collapsed',
     why: 'the id positional; not forgeable today, and it heads a list on the next line',
   },
-  'next.ts «Task {} — {} legal move(s):» #1': {
+  'next.ts «Task {}: {} legal move(s):» #1': {
     verdict: 'collapsed',
     why: 'the id positional, HEADING the list — reachable only with an id that matched',
   },
@@ -770,9 +770,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the agent `--which` named, checked only for being blank',
   },
-  'run.ts « — {}» #1': {
+  'run.ts «: {}» #1': {
     verdict: 'collapsed',
-    why: 'the goal `--goal` named — free text, and the dash is a chunk of its own template',
+    why: 'the goal `--goal` named, free text, and the colon is a chunk of its own template',
   },
   'run.ts «by {}» #1': {
     verdict: 'collapsed',
@@ -782,7 +782,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name positional — the value `moved-record.ts` already collapses on a MOVE',
   },
-  'tail.ts «The tail is still on disk at {} — nothing was removed.» #1': {
+  'tail.ts «The tail is still on disk at {}: nothing was removed.» #1': {
     verdict: 'collapsed',
     why: 'a path under the project root',
   },
@@ -794,21 +794,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id positional, and this verb deliberately does not validate it',
   },
-  'timeline.ts «{} — {} event(s):» #1': {
+  'timeline.ts «{}: {} event(s):» #1': {
     verdict: 'collapsed',
     why: 'the id positional HEADING the list — the one forgeable list header there is',
   },
 
   // --- witness.ts: the act that speaks to somebody outside --------------------------
-  'witness.ts «{} ({}): {} — {}» #1': {
+  'witness.ts «{} ({}): {}: {}» #1': {
     verdict: 'collapsed',
     why: 'the TAIL ID, which is a directory name anybody who can write the tree chooses',
   },
-  'witness.ts «external witness (T3): {} — {}» #1': {
+  'witness.ts «external witness (T3): {}: {}» #1': {
     verdict: 'collapsed',
     why: '`@mnema/chain`’s reading, one of whose states quotes a calendar URI read off a file',
   },
-  'witness.ts «{} ({}): {} — {}» #2': {
+  'witness.ts «{} ({}): {}: {}» #2': {
     verdict: 'collapsed',
     why: 'the TAIL ID again, on the line `witness sigstore` prints per tail',
   },
@@ -845,19 +845,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the chain’s finding, and the TAIL it is about — a directory name, chosen on disk',
   },
-  'verify.ts «since {}: not compared — {}» #1': {
+  'verify.ts «since {}: not compared: {}» #1': {
     verdict: 'collapsed',
     why: 'the revision exactly as the caller typed it, and why git could not answer',
   },
-  'verify.ts «{}: gone — {} was in the record there and is not here» #1': {
+  'verify.ts «{}: gone: {} was in the record there and is not here» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a PATH git listed — a file name, chosen on disk',
   },
-  'verify.ts «{}: rewritten — {} no longer begins with the bytes it held there» #1': {
+  'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a path git listed',
   },
-  'verify.ts «{}: the record only grew — {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
+  'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
     {
       verdict: 'collapsed',
       why: 'the revision as typed; the count is the product’s, collapsed with it',
@@ -1074,9 +1074,9 @@ const PROBES: readonly Probe[] = [
     says: `No history recorded for ${VALUE}.`,
   },
   {
-    keys: ['run.ts «for {}» #1', 'run.ts « — {}» #1'],
+    keys: ['run.ts «for {}» #1', 'run.ts «: {}» #1'],
     argv: ['run', 'start', '--which', VALUE, '--goal', 'a goal'],
-    says: `for ${VALUE} — a goal`,
+    says: `for ${VALUE}: a goal`,
   },
 ];
 
@@ -1106,7 +1106,7 @@ describe('a value from outside cannot forge a second line', () => {
     const said = await invoke('link', ORDINARY, 'a-target', '--rel', 'relates-to');
     expect(said.out[0]).toBe(`Linked ${ORDINARY} -relates-to→ a-target`);
     const run = await invoke('run', 'start', '--which', 'an-agent', '--goal', 'a goal');
-    expect(run.out[1]).toBe('  for an-agent — a goal');
+    expect(run.out[1]).toBe('  for an-agent: a goal');
   });
 });
 
@@ -1154,7 +1154,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'antipatterns.ts «{}: {}» #1': 'the same divergence',
   'commit-hook.ts «{}: {}» #1': 'needs a repository whose hooks path holds a line break',
   'resume.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `resume`',
-  'resume.ts « — {}» #1': 'the same line',
+  'resume.ts «: {}» #1': 'the same line',
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
@@ -1171,7 +1171,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1':
     'the same refusal, and a hash is hex',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
-  'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
+  'key.ts «Your copy at {} was read, not moved: keep it where it is.» #1': 'the same restore',
   'key.ts «Your copy at {} was read, not moved.» #1': 'the same restore, for an agent’s key',
   'key.ts «private half installed at {}, in the clear» #1':
     'needs the PEM of an agent key the record enrols, to restore from',
@@ -1189,49 +1189,49 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the same data directory, for a machine that joined an identity; the anchor is an identity id of the record',
   'key.ts «{}: already the agent for {}, nothing recorded» #1':
     'three constant words and an identity id of the record, so no break reaches the line',
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {} — \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}; \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
     'needs a key file whose name holds a line break, which a request made from it would have to read as a private key',
-  'key.ts «{}: skipped — {}» #1':
+  'key.ts «{}: skipped, {}» #1':
     'the name is one of three constants and the reason is this product’s own sentence',
-  'key.ts «{}: skipped — {}» #2': 'the same, for the retirement',
+  'key.ts «{}: skipped, {}» #2': 'the same, for the retirement',
   'key.ts «Nothing signs with it until the host is told to: \\`mnema mcp --agent-key {}\\`, or the plugin’s \\`agent_key\\` option» #1':
     'the name is the one the request carried, held to the agent-name form by the door, so no break reaches the line',
   'key.ts «{}: retired, recorded in {}» #1': 'the same data directory, for the retirement',
   'key.ts «the key {} was retired by the record and is never enrolled again: it was put aside in {}, not deleted» #1':
     'the folder is under the agent’s key root, which a name of the agent-name form cannot break',
-  'key.ts «the record already counts {} other active {} as "{}" ({}) — one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
+  'key.ts «the record already counts {} other active {} as "{}" ({}): one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
     'the name is the agent-name form and the rest is a count and hex',
   "key.ts «its key lives in {}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at» #1":
     'needs a data directory whose NAME holds a line break',
   'check.ts «failed {}: {}» #1':
     'needs a checker key enrolled in the record, and a program that fails',
   'check.ts «recorded in {}» #1': 'the same checker run',
-  'next.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
-  'next.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
+  'next.ts «Task {} is terminal: no legal moves.» #1': 'the id must match a task',
+  'next.ts «Task {}: {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
   'run.ts «by {}» #1': 'needs an open run to close',
-  'tail.ts «The tail is still on disk at {} — nothing was removed.» #1': 'needs a tail to cut',
-  'timeline.ts «{} — {} event(s):» #1': 'reached in two steps — see the case below',
+  'tail.ts «The tail is still on disk at {}: nothing was removed.» #1': 'needs a tail to cut',
+  'timeline.ts «{}: {} event(s):» #1': 'reached in two steps — see the case below',
   'verify.ts «census [{}] {} {}: {}» #1':
     'needs a committed key with no tail on disk, which is file surgery and not an argv',
-  'verify.ts «since {}: not compared — {}» #1':
+  'verify.ts «since {}: not compared: {}» #1':
     'needs `--since` in a project; driven through the binary, with a revision the clone ' +
     'does not hold, in `the-ci-recipe-catches-what-verify-cannot.test.ts`',
-  'verify.ts «{}: gone — {} was in the record there and is not here» #1':
+  'verify.ts «{}: gone: {} was in the record there and is not here» #1':
     'needs a git repository whose base commit held a file the disk lost — the same file',
-  'verify.ts «{}: rewritten — {} no longer begins with the bytes it held there» #1':
+  'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1':
     'needs a base commit and a segment cut or rewritten after it — the same file',
-  'verify.ts «{}: the record only grew — {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
+  'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
     'needs a base commit and a record that grew after it — the same file',
   'verify.ts «issue [{}] {} {}: {}» #1':
     'needs a fabricated tail DIRECTORY — driven, with the chain’s half of the same line, ' +
     'in `the-phrase-the-domain-words-is-one-line.test.ts`',
-  'witness.ts «{} ({}): {} — {}» #1':
+  'witness.ts «{} ({}): {}: {}» #1':
     'needs a tail whose DIRECTORY NAME holds a break — a name the writer mints from a ' +
     'fingerprint and a random suffix, never typed',
-  'witness.ts «external witness (T3): {} — {}» #1':
+  'witness.ts «external witness (T3): {}: {}» #1':
     'the neighbour of that line, printed in the same breath and about the same tail',
-  'witness.ts «{} ({}): {} — {}» #2':
+  'witness.ts «{} ({}): {}: {}» #2':
     'needs Sigstore to answer `witness sigstore`, which no argv reaches without the network — ' +
     'the act is driven with doubles of Fulcio and Rekor in `sigstore/sigstore.test.ts`',
   'witness.ts «{}» #1':
@@ -1279,7 +1279,7 @@ describe('theListGainsNoItem', () => {
     // The COUNT the header states, and the number of rows under it, have to agree, which
     // is the whole promise of the form. Counting lines alone would pass a run where the
     // forged half became a header of its own.
-    const stated = /— (\d+) event\(s\):/.exec(lines[0] ?? '')?.[1];
+    const stated = /: (\d+) event\(s\):/.exec(lines[0] ?? '')?.[1];
     expect(stated, said.out.join(LF)).toBeDefined();
     const rows = lines.filter((line) => line.startsWith('  '));
     expect(rows).toHaveLength(Number(stated));

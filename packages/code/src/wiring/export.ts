@@ -31,7 +31,7 @@ export function registerExport(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const exported = program
     .command('export')
-    .description('emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)')
+    .description('emit the record as an OCSF audit feed (NDJSON, envelope only, never a body)')
     .option('--from <iso>', windowGloss('from', 'fact'))
     .option('--to <iso>', windowGloss('to', 'fact'))
     .addHelpText('after', windowHelp('fact'))

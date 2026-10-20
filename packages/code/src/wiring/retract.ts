@@ -21,7 +21,7 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
  */
 const WHICH_ON_A_RETRACTION =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-  'mnema — omit it when you are acting directly. It names the executor only: a ' +
+  'mnema: omit it when you are acting directly. It names the executor only: a ' +
   'retraction follows the note to the tree it was written in. A value that names no ' +
   'agent (an unset variable) is refused, never credited to you.';
 

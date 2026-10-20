@@ -110,7 +110,7 @@ const STOCK_HELP = new Help();
 
 /** What `mnema --identify` is for. It is not listed by `--help`. */
 const IDENTIFY_HELP =
-  'print this program’s package name and version — how the mnema plugin tells this `mnema` ' +
+  'print this program’s package name and version: how the mnema plugin tells this `mnema` ' +
   'from another program of the same name on the PATH';
 
 /**

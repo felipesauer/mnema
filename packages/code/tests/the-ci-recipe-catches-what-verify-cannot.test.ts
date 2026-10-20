@@ -262,15 +262,15 @@ describe('the CI recipe the page publishes', () => {
   });
 
   it.each([
-    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten \u2014 '],
-    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone \u2014 '],
-    ['the record erased and founded again', refounded, 0, 0, ': gone \u2014 '],
+    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten: '],
+    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone: '],
+    ['the record erased and founded again', refounded, 0, 0, ': gone: '],
     [
       'the middle rewritten and signed again by the key holder',
       rewrittenBySigner,
       0,
       0,
-      ': rewritten — ',
+      ': rewritten: ',
     ],
   ] as const)('catches %s', (name, change, bareExit, signedExit, says) => {
     const dir = changed(name.replace(/\W+/g, '-'), change);
@@ -287,7 +287,7 @@ describe('the CI recipe the page publishes', () => {
   it('fails, saying why, when the base is not in the clone: a comparison that was not made is not a pass', () => {
     const said = mnema(base, 'verify', '--since', 'no-such-revision');
     expect(said.status).not.toBe(0);
-    expect(said.out).toContain('since no-such-revision: not compared — no commit by that name');
+    expect(said.out).toContain('since no-such-revision: not compared: no commit by that name');
   });
 
   it('carries what it compared in --json, and leaves a verdict it was not asked for unchanged', () => {

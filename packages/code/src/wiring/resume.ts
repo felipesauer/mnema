@@ -95,11 +95,10 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
               // The run id is what `mnema run end` takes, and it is the half of this line
               // nobody reads: said as an id, it stops competing with the agent and the goal.
               asId(run.id),
-              // The dash before the goal is a chunk of its own template rather than the head of
-              // an interpolated fragment: a value is what gets collapsed, and a collapse would
-              // eat the space this one opens with.
+              // The colon before the goal is a chunk of its own template rather than the head of
+              // an interpolated fragment: a value is what gets collapsed.
               onOneLine`${run.agent}` +
-                (run.goal !== undefined ? onOneLine` — ${run.goal}` : '') +
+                (run.goal !== undefined ? onOneLine`: ${run.goal}` : '') +
                 runAgeSuffix(run) +
                 wroteSuffix(run),
             ]),

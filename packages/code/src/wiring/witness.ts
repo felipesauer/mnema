@@ -55,7 +55,7 @@ const GLOBAL_HELP = globalTreeGloss(
 /** What the acts say about the one thing a reader of `--help` wants to know. */
 const WHAT_TRAVELS = [
   "What leaves this machine: the SHA-256 of one checkpoint's signed message, and",
-  'nothing else — no id, no title, no body, no count. Each calendar is handed a hash',
+  'nothing else: no id, no title, no body, no count. Each calendar is handed a hash',
   'of that digest with a nonce of its own, so no two of them see the same value.',
 ].join('\n');
 
@@ -66,7 +66,7 @@ const WHAT_TRAVELS = [
 const WHAT_SIGSTORE_KEEPS = [
   'What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made',
   'for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a',
-  "signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the",
+  "signature over it, never the record's events. AND YOUR IDENTITY: the certificate names the",
   'e-mail you sign in with or, in GitHub Actions, the repository, the workflow, the commit and',
   'the run, and it goes',
   'into a public log that does not forget, and into the bundle the record commits.',
@@ -92,7 +92,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .option('--global', GLOBAL_HELP, false)
     .option(
       '--json',
-      'emit where the proof stands as JSON instead of prose — one entry per tail, ' +
+      'emit where the proof stands as JSON instead of prose: one entry per tail, ' +
         'with the reading as the verifier derived it',
     )
     .action(async (opts: { global: boolean; json?: boolean }) => {
@@ -123,7 +123,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .description("ask an outside witness to date each tail's last checkpoint (T3)")
     .option(
       '--calendar <url...>',
-      'the timestamp calendars to ask — several, because any one of them is enough ' +
+      'the timestamp calendars to ask: several, because any one of them is enough ' +
         'and a proof asked of one server is a proof that stops completing when that ' +
         'server does. Defaults to the public OpenTimestamps calendars.',
     )
@@ -177,7 +177,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         '',
         'Safe to repeat: a calendar with nothing yet answers so, and the proof comes back',
         'as it went in. A header this fetches is checked against the block it claims to be',
-        "— it hashes to that block's id — so a substituted one is not a matter of trust.",
+        "(it hashes to that block's id), so a substituted one is not a matter of trust.",
         '',
         'There is no --calendar here, and the reason is that there is nothing to choose:',
         'every request the walk finds NAMES the calendar that took it. Only `stamp` picks,',
@@ -186,7 +186,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         'The address a request names is checked before it is asked, because it was read off',
         'a FILE and a proof can arrive from anywhere: it has to be an https address at one',
         'of the public timestamp operators, and a redirect is followed only while it stays',
-        'on the same host. Anything else is reported by name and not contacted — a separate',
+        'on the same host. Anything else is reported by name and not contacted: a separate',
         'line from the one a calendar that is down gets, because they call for opposite',
         'responses.',
       ].join('\n'),
@@ -207,7 +207,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
   const sigstore = witness
     .command('sigstore')
     .description(
-      "countersign each tail's last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it",
+      "countersign each tail's last checkpoint with a Sigstore certificate: who signed in, and when Rekor logged it",
     )
     .addHelpText(
       'after',
@@ -248,7 +248,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
       return;
     }
     for (const outcome of act.outcomes) {
-      io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did} — ${outcome.detail}`);
+      io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did}: ${outcome.detail}`);
     }
     if (act.signer === undefined) return;
     io.out(
@@ -306,7 +306,7 @@ async function report(
     // list: the same origin `verify`'s findings collapse for. The rest of this line
     // is a word of a closed union or a sentence composed above, and the line is
     // collapsed WHOLE rather than value by value, which is what the tag is for.
-    io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did} — ${outcome.detail}`);
+    io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did}: ${outcome.detail}`);
     // The reading's own words are `@mnema/chain`'s, and one of them can quote a
     // calendar URI read off a file in the tree. That value goes through the chain's
     // one-line rule where it enters the sentence; this collapses again HERE for the
@@ -315,7 +315,7 @@ async function report(
     io.out(
       render(
         fact(
-          onOneLine`external witness (T3): ${witnessWord(outcome.reading.status)} — ${outcome.reading.detail}`,
+          onOneLine`external witness (T3): ${witnessWord(outcome.reading.status)}: ${outcome.reading.detail}`,
         ),
       ),
     );

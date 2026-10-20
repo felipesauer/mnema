@@ -48,7 +48,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
     .description('open a session for an agent (facts written in it are pinned to it)')
     .requiredOption(
       '--which <agent>',
-      'the agent this session is for — required: a run with no agent authorizes nothing',
+      'the agent this session is for; required: a run with no agent authorizes nothing',
       declaredAgent,
     )
     .option('--goal <text>', 'what this session sets out to do')
@@ -67,15 +67,14 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       // credential on the line directly above the one reporting it was replaced.
       //
       // Both are also text somebody wrote, an agent's NAME and a sentence of goal,
-      // and the dash between them is a chunk of its own template rather than the head
-      // of an interpolated fragment: the collapse trims what it is given, and a
-      // fragment beginning with a space would come back without it (see
+      // and the colon between them is a chunk of its own template rather than the head
+      // of an interpolated fragment: the collapse trims what it is given (see
       // {@link onOneLine}).
       io.out(
         render(
           fact(
             onOneLine`for ${result.agent}` +
-              (result.goal !== undefined ? onOneLine` — ${result.goal}` : ''),
+              (result.goal !== undefined ? onOneLine`: ${result.goal}` : ''),
           ),
         ),
       );
@@ -105,7 +104,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
     .argument('[id]', `the run to close; omitted, the one ${RUN_ENV} names`)
     .requiredOption(
       '--which <agent>',
-      'the agent closing this session — required: a close with no agent is credited to you',
+      'the agent closing this session; required: a close with no agent is credited to you',
       declaredAgent,
     )
     .option('--outcome <text>', 'a short note on how the session went')

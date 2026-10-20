@@ -67,7 +67,7 @@ export const WHO_MATCHES: { readonly [H in RulesFileHost]: string } = {
   claude:
     'Claude Code’s documentation says it loads a rule with a paths list when it reads, writes or edits a file matching one of them; that was not measured here, nor whether a directory’s “/**” reaches a name that starts with a dot.',
   vscode:
-    'VS Code’s agent lists this file to the model with its applyTo and leaves reading it to the model; it does not paste it in (measured on VS Code 1.137 with Copilot Chat 0.65). Where VS Code does match an applyTo — against a file attached to the chat — it puts “**/” before it, so a file of the same name under another directory matches too, and a directory’s “/**” also matches a directory of that name elsewhere.',
+    'VS Code’s agent lists this file to the model with its applyTo and leaves reading it to the model; it does not paste it in (measured on VS Code 1.137 with Copilot Chat 0.65). Where VS Code does match an applyTo, against a file attached to the chat, it puts “**/” before it, so a file of the same name under another directory matches too, and a directory’s “/**” also matches a directory of that name elsewhere.',
   cursor:
     'Cursor matches the globs of this file on its servers, which was not measured here, for a file or for a directory.',
 };

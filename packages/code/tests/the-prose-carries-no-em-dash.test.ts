@@ -69,17 +69,15 @@ const NOT_YET_SWEPT: Readonly<Record<string, number>> = {
   // the CI scripts, their pages and the workflows
   '.github/': 26,
   // the manual
-  'docs/': 19,
+  'docs/': 17,
   // the source of @mnema/code outside the areas below
-  'packages/code/src/': 427,
+  'packages/code/src/': 5,
   // what it prints
   'packages/code/src/presentation/': 5,
-  // the Sigstore reader
-  'packages/code/src/sigstore/': 5,
   // the verifier page it builds
   'packages/code/src/site/': 1,
   // the cases beside @mnema/code
-  'packages/code/tests/': 585,
+  'packages/code/tests/': 485,
   // @mnema/core
   'packages/core/': 5,
   // the plugin for agent hosts
@@ -98,12 +96,6 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
       'the Rekor checkpoint in this bundle is a C2SP signed note, whose signature line starts with ' +
       'U+2014 and a space; the bundle is JSON, so the character is written as its JSON escape, ' +
       'and `src/commands/stack-signature.test.ts` still verifies the checkpoint with it',
-  },
-  'packages/code/tests/the-ci-recipe-catches-what-verify-cannot.test.ts': {
-    times: 3,
-    why:
-      'the lines `verify --since` prints say `gone` or `rewritten`, a space, U+2014 and a space, ' +
-      'and the case matches them byte for byte, so the character is written as its escape',
   },
 };
 

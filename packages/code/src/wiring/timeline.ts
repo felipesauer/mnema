@@ -53,7 +53,7 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
         io.out(onOneLine`No history recorded for ${id}.`);
         return;
       }
-      io.out(onOneLine`${id} — ${result.entries.length} event(s):`);
+      io.out(onOneLine`${id}: ${result.entries.length} event(s):`);
       // One line per event (when, what kind, the role the queried entity appears
       // by, and who authorized it) and under it, INDENTED, what that move said when
       // it said anything. Both lines are composed in `presentation/occurrence.ts`,

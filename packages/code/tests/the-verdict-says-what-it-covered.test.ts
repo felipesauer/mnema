@@ -264,7 +264,7 @@ describe('a tree with nothing in it', () => {
     expect(lineFor(await verify(), 'private')).toBeUndefined();
     const said = await verify('--verbose');
     expect(lineFor(said, 'private')).toBe(
-      'private: no record here — nothing has been written to this tree on this machine, ' +
+      'private: no record here: nothing has been written to this tree on this machine, ' +
         'so there is nothing to rule on',
     );
     // The note claims nothing: no level, no layer, and not the word a pass uses.

@@ -37,7 +37,7 @@ export function registerDiagram(program: Command, wiring: Wiring): Declared {
       'after',
       [
         '',
-        'It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:',
+        'It prints mermaid text to stdout and writes nothing: GitHub and most editors draw it:',
         '  mnema diagram decision                 the states a decision moves through',
         '  mnema diagram task > task-states.md    the redirection is yours',
         '  mnema diagram timeline <id>            one entity’s events, in order',
@@ -82,7 +82,7 @@ export function registerDiagram(program: Command, wiring: Wiring): Declared {
           timelineDiagram(id, result.entries, (entry) => {
             const said = transitionProse(proofFields(entry.event));
             const head = `${entry.at} ${entry.kind} (${entry.role}) ${anchorText(result.anchors, entry.who)}`;
-            return said === '' ? head : `${head} — ${said}`;
+            return said === '' ? head : `${head}: ${said}`;
           }),
         );
         return;

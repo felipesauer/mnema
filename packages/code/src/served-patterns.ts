@@ -108,7 +108,7 @@ export const SERVED_PATTERN_CONTRACT =
 const NOT_A_WAY_OF_WORKING =
   'A pattern above that is not adopted is one this project has not ruled on: it was ' +
   'served so the ruling can be made on its text, and it is not how the work is done ' +
-  'here — following it as a rule would be following a call nobody has made.';
+  'here: following it as a rule would be following a call nobody has made.';
 
 /**
  * What the surface says when the bodies did not fit ONE read and the names were
