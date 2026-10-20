@@ -677,7 +677,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     expect(on(wide), 'a wide window did not get the whole name').toEqual(
       everyDrawing()[0] as readonly string[],
     );
-    // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE: which is where the ladder is reachable
+    // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE, which is where the ladder is reachable
     // and the reason this case may stop asserting it. Every width above the floor holds the
     // biggest drawing, because it is forty-eight columns and the narrowest page is the floor
     // less its margin; the widths that give it away are all under the floor, where no page is

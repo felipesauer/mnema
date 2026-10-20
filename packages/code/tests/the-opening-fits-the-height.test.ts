@@ -557,7 +557,7 @@ function rowsOfTheListOn(screen: Screen, under: number): number {
 }
 
 /**
- * HOW MANY ROWS AT THE TOP OF THE PAGE DID NOT MOVE: which is what *fixed region* MEANS,
+ * HOW MANY ROWS AT THE TOP OF THE PAGE DID NOT MOVE, which is what *fixed region* MEANS,
  * asked of two pages of one session rather than of an arithmetic.
  *
  * The arrangement is drawn again on every frame at the top of the screen and the roll under it

@@ -238,7 +238,7 @@ describe('the floor is the height the whole name is drawn at', () => {
       );
     }
 
-    // AND ONE ROW UNDER IT THERE IS NO PAGE AT ALL: which is what the floor being a floor
+    // AND ONE ROW UNDER IT THERE IS NO PAGE AT ALL, which is what the floor being a floor
     // means, and it is the declared cost of the decision rather than a degradation.
     const under = await openedAt(THE_FLOOR.columns, THE_FLOOR.rows - 1);
     expect(under.text, 'one row under the floor still drew a console').not.toContain(OPENED);

@@ -444,7 +444,7 @@ export interface Screen {
   /** The same rows with their trailing blanks off, joined: what a reader reads. */
   readonly text: string;
   /**
-   * WHETHER THE ALTERNATE SCREEN IS SHOWING: which is whether {@link rows} is the session's
+   * WHETHER THE ALTERNATE SCREEN IS SHOWING, which is whether {@link rows} is the session's
    * page or the caller's own.
    *
    * It is the first thing every case about this console asks, because it is the difference
