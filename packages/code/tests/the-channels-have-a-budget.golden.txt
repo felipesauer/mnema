@@ -47,8 +47,8 @@ tool definition: read_record                 1371 B      322 tok
 tool definition: audit_timeline               975 B      224 tok
 tool definition: audit_refs                  1502 B      369 tok
 tool definition: governing_rules             1501 B      339 tok
-tool definition: rules_before_an_edit        2426 B      546 tok
+tool definition: rules_before_an_edit        2427 B      546 tok
 tool definition: audit_accountability        1986 B      440 tok
 tool definition: audit_exposure              1626 B      364 tok
 tool definition: audit_antipatterns          1447 B      314 tok
-tool definitions: all 27                    54230 B    12303 tok
+tool definitions: all 27                    54231 B    12303 tok

@@ -27,7 +27,7 @@ describe("what OpenCode sends of the plugin's tools", () => {
     }
     expect({ count: mine.names.length, ...mine.all }).toEqual({
       count: 27,
-      bytes: 50_955,
+      bytes: 50_956,
       tokens: 11_498,
     });
   }, 180_000);

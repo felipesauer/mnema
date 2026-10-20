@@ -107,7 +107,7 @@ export function statusReport(
   asThisMachine = false,
 ): string[] {
   return [
-    `${actor}: where things stand.`,
+    `${actor}, where things stand.`,
     ...(asThisMachine
       ? [render(fact('The identity this machine writes as in this project.'))]
       : []),
