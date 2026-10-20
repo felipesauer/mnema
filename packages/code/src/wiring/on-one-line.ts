@@ -35,8 +35,8 @@
  *
  * THE LITERAL CHUNKS ARE THE PRODUCT'S WORDS, AND THE SPACES IN THEM MATTER. `oneLine`
  * trims, so a fragment composed before it reaches an interpolation loses the space it
- * opens with: `for ${agent}${goal === undefined ? '' : ` (${goal})`}` printed
- * `for a (g)` and would print `for a(g)`. The rule that follows is the one the call
+ * opens with, which is why the phrase is the template `for ${agent}: ${goal}` and never
+ * a fragment that carries its own separator. The rule that follows is the one the call
  * sites now hold (INTERPOLATE THE VALUE, never a fragment that carries its own
  * punctuation) and the two sites that used to (`run start`, `focus`) were rewritten so
  * the `: ` is a chunk of a template rather than the head of a value. Those two are the

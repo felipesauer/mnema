@@ -620,7 +620,7 @@ with its own changelog.
   VERIFIED when a tail's proof was left behind. Both now refuse it under FORMAT.md section 4, at every level of
   --require, with exit 1, and both still name each committed key with no tail (section 6.5). The product rules on the
   committed tree always, and on the private and global trees when they hold a key or a tail. A record init founded is
-  never in that shape, since init writes events and a checkpoint before it returns, a .mnema/ left half made by an
+  never in that shape, since init writes events and a checkpoint before it returns; a .mnema/ left half made by an
   init that failed is, and fails until a first public write founds it. The second reader keeps BROKEN for a path with
   no directory at it. One tail removed whole while another remains is unchanged: a census note, verified by both, with
   --require signed too. The list verify --json carries of what no requirement answers now says that, the newest
@@ -660,7 +660,7 @@ with its own changelog.
   bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
   a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
-  holds one row per host and one cell per rung; (a) the MCP server and a rules file, (b) the opening
+  holds one row per host and one cell per rung, (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person, each saying how it is known:
   held by a test, read once on the real host, or documented and not measured. The plugin's hooks
   files and manifests, a summary on the README and the whole table on `docs/evidence.md` are
