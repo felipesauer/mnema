@@ -56,6 +56,9 @@ on:
     paths:
       - '.github/workflows/flake-sampler.yml'
       - '.github/flake-sampler/**'
+      # A page is not the sampler: a change that touches only the prose of its README does not
+      # start thirty-odd checks. A change that also touches a script still matches the line above.
+      - '!.github/flake-sampler/**.md'
 
 permissions:
   contents: read

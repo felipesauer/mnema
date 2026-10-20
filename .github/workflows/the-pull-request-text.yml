@@ -1,0 +1,34 @@
+name: The pull request text
+
+# A workflow of its own, and not a job of `ci.yml`, because it must run again when the title or the
+# description is EDITED, and adding `edited` to `ci.yml` would re-run the whole matrix on every
+# edit. It is not a required check unless the repository settings make it one.
+#
+# The text is a stranger's: it is read from the event payload as a file by the script, and never
+# interpolated into a `run:`.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  the-pull-request-text:
+    name: the pull request text
+    runs-on: ubuntu-24.04
+    steps:
+      # `fetch-depth: 0` because the commits are read from `<base.sha>..<head.sha>`.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: The pull request text
+        run: node .github/the-pull-request-text/check.mjs
