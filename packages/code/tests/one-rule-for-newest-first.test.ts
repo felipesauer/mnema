@@ -5,28 +5,28 @@
  * SIX SITES HELD THE SAME COMPARISON AND THE SAME DEFECT. The search index's SQL and
  * its cross-tree merge, the opening context's work and awaiting lists, the focus
  * read's runs, the decisions-in-force list, and the usage listing's runs each wrote
- * *instant descending, then id* by hand — and every one of them broke the tie by id
+ * *instant descending, then id* by hand, and every one of them broke the tie by id
  * ASCENDING. An ascending id is OLDEST first (`mintId` puts a monotonic counter beside
  * the millisecond precisely so that it is), so a listing whose first clause says
  * newest-first and whose second says oldest-first served the oldest record of a
  * millisecond at the top. It was invisible in review at every site because the result
  * is a TOTAL order: the answer was stable, and a stable answer looks correct.
  *
- * The trunk went red on it on 22/08/2026 — `search.test.ts`, two memories written in
- * one millisecond, the newer one not first — and one site was fixed while five stayed
+ * The trunk went red on it on 22/08/2026 (`search.test.ts`, two memories written in
+ * one millisecond, the newer one not first) and one site was fixed while five stayed
  * wrong until this scan was written. That is the case for the scan and not for a
  * review checklist: a hand-written tie-break that is WRONG looks exactly like one that
  * is right, and there is no diff in which it stands out.
  *
  * WHAT THIS FILE USED TO BE, and what falsified it. It banned two spellings of a
- * descending ternary and NAMED the escapes it could not see — an argument-swapped
+ * descending ternary and NAMED the escapes it could not see: an argument-swapped
  * helper, a subtraction of two `Date.parse` results, a `.reverse()` over an ascending
  * sort. A named escape was then measured on the trunk: adding to `newest-first.ts`
  *
  *     return [...rows].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
  *
  * left this file at 2 passed. So the premise that a ban over SHAPES could hold the rule
- * was false, and it was false by construction rather than by an oversight — the set of
+ * was false, and it was false by construction rather than by an oversight: the set of
  * ways to spell *descending* is open, and a ban over an open set is a list of the ones
  * somebody thought of. The scan is now built the other way up.
  *
@@ -35,9 +35,9 @@
  *     through `sort`/`toSorted`, through `reverse`/`toReversed`, or through SQL. The
  *     first two are enumerated from the DIRECTORY, not from a list, and each one is
  *     matched against {@link THE_ORDERINGS}. A site that is not on it is red whatever
- *     it is spelled like — which is the half a shape ban cannot have.
+ *     it is spelled like, which is the half a shape ban cannot have.
  *   - AN ORDERING OVER AN INSTANT CARRIES A NAME. A comparator written inline at the
- *     call may not REACH an instant — not by naming one of its fields, and not by
+ *     call may not REACH an instant, not by naming one of its fields, and not by
  *     calling anything declared in `src` that does. So every ordering that could be the
  *     rule is forced to be a named function the roster can classify, which is what makes
  *     the roster's three classes exhaustive instead of aspirational. Both halves are
@@ -58,7 +58,7 @@
  *     pair of minted ids in `core/src/projections/newest-first.test.ts`, because a scan
  *     can only say the comparison is in one place; it cannot say that place is right.
  *
- * The old shape ban is KEPT, widened, as a backstop — see {@link DESCENDING_BY_HAND}.
+ * The old shape ban is KEPT, widened, as a backstop: see {@link DESCENDING_BY_HAND}.
  * It is the only thing watching the bodies of the OLDEST-first comparators: they must
  * reach an instant, so the check above them cannot apply, and they do not reach
  * `newestFirst` by design, so the check below them cannot either. They are the one class
@@ -69,7 +69,7 @@
  *     comparator, `sort` orders by the string form ASCENDING, and there is no argument
  *     it can be given to point the other way. It cannot express the rule.
  *   - An OLDEST-first comparator rewritten into a descending one has nothing above to
- *     catch it — it does not reach `newestFirst` by design — so it is held only by
+ *     catch it (it does not reach `newestFirst` by design), so it is held only by
  *     {@link DESCENDING_BY_HAND}, which is shape-limited. There is no shared rule to
  *     make it ask, because the four break their ties on four different second keys
  *     (id, who, `from`/`to`/role, id/scope/project) and the instant clause alone is
@@ -79,8 +79,8 @@
  *     `transcripts.ts` 2 (1), `switches.ts` 4 (3). The last figure REPLACES a premise
  *     this file used to state: `switches.ts` turned exactly 1 red and that one was this
  *     file's own backstop, because no behaviour case anywhere named `channelStates`.
- *     `context/src/context/switches.test.ts` falsified it — it asks the fold with two
- *     trees and in both source orders — and all four are now held by their own answers
+ *     `context/src/context/switches.test.ts` falsified it, it asks the fold with two
+ *     trees and in both source orders, and all four are now held by their own answers
  *     rather than three of them.
  *   - An instant read through a computed key (`a[field]`) is invisible to the check
  *     that an inline comparator names no instant. Measured: of the comparators in
@@ -93,7 +93,7 @@
  * WHAT IT COSTS, so the trade is on the record: an ordering added anywhere under a
  * package's `src` now has to be declared here, and a comparator over an instant has to
  * be a named function rather than an arrow at the call site. Three sites were renamed
- * to meet it — `transcripts.ts`, `switches.ts` and `search.ts`. The friction IS the
+ * to meet it: `transcripts.ts`, `switches.ts` and `search.ts`. The friction IS the
  * mechanism: the roster entry is where the author has to say which of the three
  * directions the new ordering means, and that sentence is the thing review can check.
  */
@@ -115,8 +115,8 @@ const THE_ONE_SITE = 'core/src/projections/newest-first.ts';
  * named them as possible.
  *
  * The swapped-helper term reads a PATH and not a bare field. Written `b.at` only, it
- * left `compare(b.row.switchedAt, a.row.switchedAt)` — the real shape of the one site
- * that reads its instant through a nested row — at zero red, which is the second time
+ * left `compare(b.row.switchedAt, a.row.switchedAt)`, the real shape of the one site
+ * that reads its instant through a nested row, at zero red, which is the second time
  * this file's shape half was measured short of what the product actually writes.
  *
  * This list is a BACKSTOP and not the guard: the set of ways to spell *descending* is
@@ -125,11 +125,11 @@ const THE_ONE_SITE = 'core/src/projections/newest-first.ts';
  * a shape that was measured escaping is worth a case even when the list around it can
  * never be complete.
  *
- * Matched against the file's CODE — comments and string literals removed, whitespace
- * flattened — because one of the six sites wrote its ternary across five lines and a
+ * Matched against the file's CODE (comments and string literals removed, whitespace
+ * flattened), because one of the six sites wrote its ternary across five lines and a
  * line-by-line scan saw nothing there, and because a scan that reads prose accuses the
  * doc-comment that names the escape (this file's own, on the first attempt). The field
- * is recognized by name — `at`, or anything ending in `At` — which is what every
+ * is recognized by name (`at`, or anything ending in `At`), which is what every
  * projection in this record calls its instant.
  */
 const DESCENDING_BY_HAND = [
@@ -159,7 +159,7 @@ interface Rostered {
 /**
  * EVERY named comparator installed at a `sort` in any package's `src`, and which of the
  * three directions it means. Enumerated from the directory below and compared against
- * this table, so a comparator that appears without an entry is red — the N+1 site the
+ * this table, so a comparator that appears without an entry is red: the N+1 site the
  * scan exists to catch.
  */
 const THE_ORDERINGS: readonly Rostered[] = [
@@ -204,8 +204,8 @@ const THE_ORDERINGS: readonly Rostered[] = [
  *
  * The third vector, and the one a comparator scan cannot see: reversing an ASCENDING
  * ordering serves newest-first without any descending comparison being written. None of
- * the five turns around an ordering — they are bytes, and two walks that read a tail
- * BACKWARDS and put back what they took — and a sixth has to be declared here before it
+ * the five turns around an ordering (they are bytes, and two walks that read a tail
+ * BACKWARDS and put back what they took) and a sixth has to be declared here before it
  * can exist.
  */
 const THE_REVERSALS: readonly (readonly [string, string])[] = [
@@ -222,8 +222,8 @@ const THE_REVERSALS: readonly (readonly [string, string])[] = [
  * whitespace flattened to single spaces.
  *
  * Both halves are load-bearing. Flattening is what let the five-line ternary be seen at
- * all. Stripping is what stops the scan reading PROSE — the first draft of the widened
- * shape list accused this very file, whose doc-comment spells the escape it names — and
+ * all. Stripping is what stops the scan reading PROSE (the first draft of the widened
+ * shape list accused this very file, whose doc-comment spells the escape it names) and
  * it is what makes brace counting safe enough to lift a function body out.
  */
 function codeOf(text: string): string {
@@ -348,7 +348,7 @@ function bodyOf(code: string, name: string): string | null {
  * Used for one thing: to answer *does this name read an instant*, about a name an inline
  * comparator CALLS. An arrow at the call site that reads no instant of its own but hands
  * the pair to a helper that does is a descending ordering with nothing of the rule in
- * sight — measured at zero red before this was written, and it is the shape the search
+ * sight: measured at zero red before this was written, and it is the shape the search
  * merge itself was written in until this delivery named it.
  */
 function declarationsIn(code: string): Map<string, string> {
@@ -423,7 +423,7 @@ const TOUCHES_AN_INSTANT = new Set(
 );
 
 /**
- * Whether this piece of code reaches an instant — by naming one of its fields, or by
+ * Whether this piece of code reaches an instant: by naming one of its fields, or by
  * calling something that does.
  *
  * The second half is the one that was measured missing. Asked of an arrow at a call
@@ -470,7 +470,7 @@ describe('the instrument itself', () => {
 });
 
 describe('one rule for newest first', () => {
-  it('finds the sources at all — the scan is over a record, not an empty directory', () => {
+  it('finds the sources at all: the scan is over a record, not an empty directory', () => {
     // The instrument's own case. A wrong root, or a `src` that moved, would empty the
     // list and every assertion below would pass by saying nothing.
     expect(SOURCES.length).toBeGreaterThan(200);
@@ -491,8 +491,8 @@ describe('one rule for newest first', () => {
     const rostered = THE_ORDERINGS.map((each) => asKey(each.file, each.by)).sort();
 
     // The N+1 site, whatever it is spelled like. A comparator reaches a reader only by
-    // being installed at a `sort`, so a new writing of the rule — by subtraction, by a
-    // swapped helper, by anything — has to appear here before it can matter.
+    // being installed at a `sort`, so a new writing of the rule (by subtraction, by a
+    // swapped helper, by anything) has to appear here before it can matter.
     expect(found).toEqual(rostered);
   });
 
@@ -508,7 +508,7 @@ describe('one rule for newest first', () => {
     // rule is forced to carry a name, and a name is what the table above classifies.
     // BOTH ways of reaching an instant are asked, because only asking the first left the
     // escape at ZERO red: an arrow that reads no instant itself and hands the pair to a
-    // helper that does — which is how the cross-tree search merge was written.
+    // helper that does, which is how the cross-tree search merge was written.
     expect(inline.length).toBeGreaterThanOrEqual(9);
     const reaching = inline.filter((each) => reachesAnInstant(each.argument));
     expect(reaching.map((each) => `${each.file} :: ${each.argument}`)).toEqual([]);
@@ -520,7 +520,7 @@ describe('one rule for newest first', () => {
     );
 
     // Reversing an ASCENDING ordering serves newest-first with no descending comparison
-    // written anywhere — the one vector a comparator scan is structurally blind to.
+    // written anywhere: the one vector a comparator scan is structurally blind to.
     expect(reversals.map((each) => each.file).sort()).toEqual(
       THE_REVERSALS.map(([file]) => file).sort(),
     );
@@ -532,7 +532,7 @@ describe('one rule for newest first', () => {
       if (body === null) return true;
       if (each.via === undefined) return !/\bnewestFirst\s*\(/.test(body);
       // Through a delegate: the body has to reach it, and the file that DECLARES the
-      // delegate has to reach the rule — so the chain is checked and not assumed.
+      // delegate has to reach the rule, so the chain is checked and not assumed.
       const declaring = SOURCES.filter(
         (file) => bodyOf(CODE.get(file) as string, each.via as string) !== null,
       );
@@ -545,11 +545,11 @@ describe('one rule for newest first', () => {
 
     // No shape in this assertion. A comparator rewritten into a `Date.parse` subtraction
     // stops reaching the rule and goes red without the scan knowing what a descending
-    // comparison looks like — which is the half the old ban could never have.
+    // comparison looks like, which is the half the old ban could never have.
     expect(notAsking.map((each) => asKey(each.file, each.by))).toEqual([]);
   });
 
-  it('holds the roster to its own classification — nothing else touches an instant', () => {
+  it('holds the roster to its own classification: nothing else touches an instant', () => {
     const lying = THE_ORDERINGS.filter((each) => each.means === OTHER).filter((each) => {
       const body = bodyOf(CODE.get(each.file) as string, each.by);
       return body === null || reachesAnInstant(body);
@@ -562,7 +562,7 @@ describe('one rule for newest first', () => {
     expect(lying.map((each) => asKey(each.file, each.by))).toEqual([]);
   });
 
-  it('leaves the oldest-first orderings alone — the control', () => {
+  it('leaves the oldest-first orderings alone: the control', () => {
     const oldest = THE_ORDERINGS.filter((each) => each.means === OLDEST);
 
     // These four order from the OLDEST, where an ascending tie-break is the one that

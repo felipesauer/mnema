@@ -2,11 +2,11 @@
  * COPILOT CLI OPENS WITH THE RECORD, REFUSES THE WRITE AND ASKS A PERSON, in the real Copilot CLI
  * with the plugin installed from this repository: the opening is in the first request, the mnema
  * server is listed, a write under a rule that refuses is not made and the model is handed the
- * rule, and a write under a rule that asks for a person is held — denied where no person is
+ * rule, and a write under a rule that asks for a person is held, denied where no person is
  * there (`copilot -p`), put to the person where one is.
  *
- * WHAT IS HELD HERE AND WHAT IS NOT. The product's half — what `mnema before-a-write --host
- * copilot` answers, and what `mnema brief --hook` prints — is `a-rule-that-refuses-a-write.test.ts`
+ * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (what `mnema before-a-write --host
+ * copilot` answers, and what `mnema brief --hook` prints) is `a-rule-that-refuses-a-write.test.ts`
  * and the brief's own cases. What Copilot does with them is Copilot's, read here off the requests
  * it sends a stand-in for the model and off the file that was or was not written.
  * NOT HELD: that the model reads what arrived; the ceiling of a hook's text and the timeout a

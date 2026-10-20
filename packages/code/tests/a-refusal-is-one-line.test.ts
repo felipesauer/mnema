@@ -3,7 +3,7 @@
  *
  * Eight verbs of this surface refuse an id they cannot find, and every one of them used
  * to put that id straight into the sentence. An id is whatever was typed after the
- * verb — nothing upstream removes a newline from one — so an argument holding a break
+ * verb, nothing upstream removes a newline from one, so an argument holding a break
  * printed a SECOND line with the entire shape of a refusal, about a record nobody
  * named. The rule is `one-line.ts`'s and it was already closed for a project's
  * DIRECTORY (`verify --workspace`, four sites in one function); this file is the same
@@ -11,7 +11,7 @@
  *
  * THE SITES ARE READ OFF THE SOURCE, NEVER LISTED HERE. That is the whole technique,
  * and the reason for it is in this delivery's own history: the debt was declared with a
- * hand-written list of SIX addresses, and re-running the discriminant found EIGHT — the
+ * hand-written list of SIX addresses, and re-running the discriminant found EIGHT; the
  * list held one refusal per file and `skill.ts` has two, and it did not have
  * `decision.ts` at all. So {@link sitesInSource} walks the source on every run and
  * {@link PROBES} is reconciled against it in both directions: a ninth site with no
@@ -21,7 +21,7 @@
  *
  *   - THE FORGERY. An id carrying a newline leaves the refusal one line, at every site.
  *     This is the defect itself.
- *   - THE WORDING. For an ordinary id, each verb prints the bytes it printed before —
+ *   - THE WORDING. For an ordinary id, each verb prints the bytes it printed before:
  *     written out as literals here, because the only thing a comparison against
  *     `noSuchRecord` could fail for is not being itself.
  *   - THE SHAPE. No source file of this surface builds that sentence by interpolation
@@ -41,7 +41,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
-/** `packages/code/src` — the surface that owns this sentence. */
+/** `packages/code/src`: the surface that owns this sentence. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 /** The repository's `packages`, for the reconciliation across the other ones. */
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url));
@@ -59,7 +59,7 @@ interface Site {
   readonly file: string;
   /** The kind named at the call. */
   readonly kind: string;
-  /** `<file> <kind> #<n>` — what a probe claims to cover. */
+  /** `<file> <kind> #<n>`: what a probe claims to cover. */
   readonly key: string;
 }
 
@@ -71,7 +71,7 @@ const WORDING = 'wiring/no-such-record.ts';
  *
  * Read line by line so a mention inside a doc-comment is not counted as a call: a
  * phantom site would fail the reconciliation for a reason that has nothing to do with
- * the product. What it does NOT tolerate is a call whose kind is a variable — that one
+ * the product. What it does NOT tolerate is a call whose kind is a variable: that one
  * would be invisible to this walk, so the count of calls is asserted against the count
  * of calls WITH A LITERAL, and they have to agree.
  */
@@ -120,7 +120,7 @@ const NAME = '<name>';
  *
  * `guard --actor` is proven against the record BEFORE the task is looked up, so a probe
  * that invented an actor met `UNKNOWN_ANCHOR` and never reached the site it claimed to
- * cover — one line, from the wrong refusal, passing for the right reason. It is read
+ * cover: one line, from the wrong refusal, passing for the right reason. It is read
  * off the record in {@link beforeAll}, and the case that caught it is the byte-for-byte
  * one below.
  */
@@ -129,7 +129,7 @@ const ACTOR = '<actor>';
 /**
  * How each of the nine sites is reached from the command line.
  *
- * The KEYS are reconciled against the source; the ARGV cannot be — no walk derives
+ * The KEYS are reconciled against the source; the ARGV cannot be: no walk derives
  * "this refusal is behind `skill export`" from a call inside an action. So the table
  * carries what only a reader knows and nothing else, and the part that rots (which
  * sites exist) is the part that is derived.
@@ -220,17 +220,17 @@ async function invoke(...argv: string[]): Promise<{
   return { out, err, failed };
 }
 
-/** This machine's identity, as the record writes it — read from the record, not typed. */
+/** This machine's identity, as the record writes it: read from the record, not typed. */
 let who = '';
 
 /** A probe's argv with a name in it, and with this machine's identity where one is asked. */
 const asked = (probe: Probe, name: string): string[] =>
   probe.argv.map((word) => (word === NAME ? name : word === ACTOR ? who : word));
 
-/** The opening of a probe's sentence, up to the name — `No task `. */
+/** The opening of a probe's sentence, up to the name: `No task `. */
 const opens = (probe: Probe): string => probe.says.slice(0, probe.says.indexOf(NAME));
 
-/** An id no record holds — well formed, so nothing refuses it for its shape. */
+/** An id no record holds: well formed, so nothing refuses it for its shape. */
 const ORDINARY = '0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55';
 
 /**
@@ -238,7 +238,7 @@ const ORDINARY = '0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55';
  * an id nobody asked about.
  *
  * The second half is a REFUSAL and not any old text, because that is the sentence the
- * product itself would print — a reader who met it on a second line has no way to tell
+ * product itself would print: a reader who met it on a second line has no way to tell
  * it apart from one the product decided.
  */
 const FORGED = `0198c2f1-4b7e-7a2d-8f31-6cd0a91e4b55${LF}No task deadbeef here.`;
@@ -285,7 +285,7 @@ describe('the sites are the source’s, not this file’s', () => {
   it('finds calls at all, and none whose kind it could not read', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
     // are equal. So the walk states its own scale, and it states that every call it
-    // counted is a call it could READ — a `noSuchRecord(kind, id)` with a variable
+    // counted is a call it could READ: a `noSuchRecord(kind, id)` with a variable
     // would be counted and not keyed, and the reconciliation would pass while the site
     // it belongs to went unprobed.
     expect(FOUND.files).toBeGreaterThan(40);
@@ -296,16 +296,16 @@ describe('the sites are the source’s, not this file’s', () => {
 
 describe('an id cannot forge a second line', () => {
   for (const probe of PROBES) {
-    it(`keeps the refusal to one line — ${probe.key}`, async () => {
+    it(`keeps the refusal to one line: ${probe.key}`, async () => {
       const said = await invoke(...asked(probe, FORGED));
       expect(said.failed, probe.key).toBe(true);
       expect(said.out, probe.key).toEqual([]);
       // THAT IT IS THIS SITE'S REFUSAL AND NOT SOME OTHER NO. Every refusal of this
       // surface is one line, so "one line" alone passes for a probe that never reached
-      // the site — which is what `guard --actor` did when the actor was invented.
+      // the site, which is what `guard --actor` did when the actor was invented.
       expect(said.err.join(LF), probe.key).toContain(opens(probe));
       // What the defect produced: TWO lines, the second a well-formed refusal. The
-      // count is the assertion — the whole stream, however the surface split it into
+      // count is the assertion: the whole stream, however the surface split it into
       // writes, is one line.
       expect(said.err.join(LF).split(LF), probe.key).toHaveLength(1);
     });
@@ -314,7 +314,7 @@ describe('an id cannot forge a second line', () => {
 
 describe('the wording is the one the surface already printed', () => {
   for (const probe of PROBES) {
-    it(`says it byte for byte — ${probe.key}`, async () => {
+    it(`says it byte for byte: ${probe.key}`, async () => {
       const said = await invoke(...asked(probe, ORDINARY));
       expect(said.failed, probe.key).toBe(true);
       expect(said.err.join(LF), probe.key).toBe(probe.says.replace(NAME, ORDINARY));
@@ -334,9 +334,9 @@ describe('the wording is the one the surface already printed', () => {
 });
 
 describe('nothing builds that sentence on its own', () => {
-  /** A refusal built by interpolation — `No task ${id} here.` */
+  /** A refusal built by interpolation: `No task ${id} here.` */
   const INTERPOLATED = /\bNo [A-Za-z][A-Za-z-]* \$\{/;
-  /** The same, built by concatenation — `'No task ' + id`. */
+  /** The same, built by concatenation: `'No task ' + id`. */
   const CONCATENATED = /\bNo [A-Za-z][A-Za-z-]* ['"] *\+/;
 
   /** Every non-test source file of a package, keyed by its path from `packages`. */
@@ -360,7 +360,7 @@ describe('nothing builds that sentence on its own', () => {
 
   it('words no refusal of this family outside the one function', () => {
     // The discriminant is the PHRASE and not the symbol, because a site written next
-    // year will not mention `noSuchRecord` — that is exactly what makes it a site.
+    // year will not mention `noSuchRecord`, that is exactly what makes it a site.
     const offenders = sourceFiles(SRC)
       .filter((file) => relative(SRC, file) !== WORDING)
       .filter((file) => {
@@ -390,7 +390,7 @@ describe('nothing builds that sentence on its own', () => {
     // caller's value into both. This case used to say the value could not go through the
     // rule, because `oneLine` was a module of THIS package and `core` cannot reach it.
     // The rule moved: it is `@mnema/chain/one-line` now, under both packages, and
-    // `core`'s two go through it where they are written — which is what the second half
+    // `core`'s two go through it where they are written, which is what the second half
     // of this case asserts, so the sentence is still walked and the collapse is what is
     // held. The classification of both values is in
     // `the-phrase-the-domain-words-is-one-line.test.ts`.

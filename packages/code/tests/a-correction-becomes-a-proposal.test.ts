@@ -1,6 +1,6 @@
 /**
  * A correction becomes a proposal: with `user-corrections` switched on, the places where a person
- * corrected the agent are recorded, at `Stop`, as `proposed` decisions in the private tree — once
+ * corrected the agent are recorded, at `Stop`, as `proposed` decisions in the private tree, once
  * each, citing the line they came from.
  *
  * WHAT IS HELD HERE. The product's half: that nothing is read or recorded while the channel is off
@@ -36,7 +36,7 @@ let originalCwd: string;
 let originalHome: string | undefined;
 let originalXdg: string | undefined;
 
-/** Runs `mnema <argv>` in process and refuses to continue if it failed — setup, not assertion. */
+/** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
 async function did(...argv: string[]): Promise<void> {
   const err: string[] = [];
   let failed = false;
@@ -146,7 +146,7 @@ afterEach(() => {
 });
 
 describe('the openings that correct', () => {
-  /** One prompt per shape, in each language where the shape has one — the probe of every row. */
+  /** One prompt per shape, in each language where the shape has one: the probe of every row. */
   const PROBES: Readonly<Record<string, readonly string[]>> = {
     'no, …': ['No, use pnpm here.', 'Não, o teste deve rodar antes.'],
     'stop …': ['Stop doing that in the controller.', 'Pare de mexer no lockfile.'],

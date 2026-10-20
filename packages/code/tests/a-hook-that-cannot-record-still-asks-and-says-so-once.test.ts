@@ -4,7 +4,7 @@
  * The person's key is protected by a passphrase, and the host's hook is asked to sign as an agent the
  * record does not enrol: nobody can sign there, so the asking cannot be recorded. The charge is
  * decided by reading, so the host is still told to ask, nothing is appended, and the reason says the
- * asking could not be recorded — once, and with one full stop where the cause already ended its
+ * asking could not be recorded, once, and with one full stop where the cause already ended its
  * sentence with one.
  */
 

@@ -1,6 +1,6 @@
 /**
  * What the two reads that fold TAILS look in when the workspace holds several
- * projects — and what each of them is allowed to merge.
+ * projects, and what each of them is allowed to merge.
  *
  * These two were the last reads answering about a workspace from one project's trees,
  * and the reason they stayed behind is mechanical rather than semantic: `exposure` and
@@ -10,13 +10,13 @@
  *
  * The defect is the worst shape an audit can take. In a workspace of three projects,
  * with a cleartext credential sitting in a sibling's record, `audit_exposure` answered
- * `{"findings": [], "scanned": 300}` — a denominator that reads as ground covered. And
+ * `{"findings": [], "scanned": 300}`: a denominator that reads as ground covered. And
  * the reads that promise NOTHING about values printed that same credential in full:
  * `search`, `read_record` and `audit_timeline` all span the workspace already. So the
  * defence was scoped to a project while the service was not, and the one read that
  * would have said "go and rotate this" was the one that stopped at the boundary.
  *
- * Widening it does NOT stop the leak — the record is the record, and a read of a
+ * Widening it does NOT stop the leak: the record is the record, and a read of a
  * neighbour's record serving its text is that read working. It makes the WARNING reach
  * as far as the service does.
  *
@@ -24,13 +24,13 @@
  * reads follow:
  *
  *   `exposure` returns BOTH shapes in one answer. Its findings are ITEMS, so they
- *   merge, each labelled with the project to go and rotate in — three repositories
+ *   merge, each labelled with the project to go and rotate in: three repositories
  *   all have a `public` tree, so the scope alone cannot say where. Its `scanned` is
  *   an AGGREGATE, so it decomposes: one count per record, which is what stops an
  *   empty `findings` from reading as "nothing is exposed" rather than "these records
  *   were read and hold nothing recognizable".
  *
- *   `antipatterns` returns aggregates only — counts with their evidence — so it
+ *   `antipatterns` returns aggregates only, counts with their evidence, so it
  *   decomposes whole. Its skill candidates make the reason concrete: a pattern is
  *   distilled by whoever is doing the work that kept reopening, so a candidate list
  *   pooled across projects points a person at somebody else's work.
@@ -38,7 +38,7 @@
  * HOW THE FIXTURES ARE BUILT, and why it cannot be otherwise: an agent CANNOT
  * produce an exposure finding through the surfaces. The content door and this audit
  * call the same `detectSecrets`, and the placeholder the door leaves is guarded
- * against re-matching — so a screened record is genuinely clean for the audit, by
+ * against re-matching, so a screened record is genuinely clean for the audit, by
  * design and with the reason stated. This read is entirely about HISTORY: a chain
  * imported, a record written before the door existed, events written by another
  * version. So a credential fixture is appended through the TREE'S OWN WRITER
@@ -66,7 +66,7 @@ import {
   runSkillTransition,
 } from '../src/mcp/tools.js';
 
-/** A recognized cloud key — the canonical example, and not a real credential. */
+/** A recognized cloud key: the canonical example, and not a real credential. */
 const SECRET = 'AKIAIOSFODNN7EXAMPLE';
 
 let sandbox: string;
@@ -94,7 +94,7 @@ function openOn(...roots: readonly string[]): Session {
  * through the tree's own writer, so the entry is hash-chained and signed by this
  * machine's key. Returns the subject id to look the finding up by.
  *
- * Deliberately not through a write tool — the door would clean it, and a screened
+ * Deliberately not through a write tool: the door would clean it, and a screened
  * record is clean for the audit too (the last test proves that agreement). Anything
  * that could be planted through a tool would not be the past this read exists for.
  */
@@ -122,7 +122,7 @@ function memoryIn(session: Session, content: string, where: { project?: string }
   return captured.id;
 }
 
-/** The exposure report, or a thrown setup error — `NO_PROJECT` has its own test. */
+/** The exposure report, or a thrown setup error: `NO_PROJECT` has its own test. */
 function reportOn(session: Session) {
   const result = runExposureTool(session);
   if (!result.ok) throw new Error(`exposure refused — ${result.message}`);
@@ -193,7 +193,7 @@ describe('audit_exposure spans every project of the workspace', () => {
     closeSession(session);
   });
 
-  it('never carries the value — not in the object, not in its JSON, not a prefix of it', () => {
+  it('never carries the value, not in the object, not in its JSON, not a prefix of it', () => {
     const here = makeProject('here');
     const there = makeProject('there');
     plantCredential(there, 'public', '019fa8b7-0410-717b-9af2-cfeb013fc4a2');
@@ -227,7 +227,7 @@ describe('audit_exposure spans every project of the workspace', () => {
 
   it('leaves the machine-global finding UNLABELLED, because it belongs to no project', () => {
     // A personal cross-project note reported as coming from whichever project the read
-    // reached it through would be a false claim about where to go and change a key —
+    // reached it through would be a false claim about where to go and change a key,
     // and the tree is shared, so every project would make that claim differently.
     const only = makeProject('only');
     const personal = plantCredential(only, 'global', '019fa8b7-0410-717b-9af2-cfeb013fc4a4');
@@ -243,8 +243,8 @@ describe('audit_exposure spans every project of the workspace', () => {
 
   it('keeps covering all THREE trees of the adopted project, told apart by scope', () => {
     // Non-regression on the dimension that was already right. The tree decides the
-    // situation — a public record is committed and clones to every machine, a private
-    // one is on this disk, a global one is on this disk and crosses projects — and
+    // situation (a public record is committed and clones to every machine, a private
+    // one is on this disk, a global one is on this disk and crosses projects) and
     // gaining the project must not cost the scope.
     const here = makeProject('here');
     const inPublic = plantCredential(here, 'public', '019fa8b7-0410-717b-9af2-cfeb013fc4a6');
@@ -294,7 +294,7 @@ describe('the empty answer says where it looked', () => {
     const report = reportOn(session);
 
     expect(report.findings).toEqual([]);
-    // Every project of the workspace, and the machine-global tree last — including the
+    // Every project of the workspace, and the machine-global tree last, including the
     // project nothing was ever written to, which at zero is distinguishable from a
     // project the read never opened.
     expect(report.scanned.map((entry) => entry.project)).toEqual([alpha, beta, gamma, undefined]);
@@ -307,7 +307,7 @@ describe('the empty answer says where it looked', () => {
     closeSession(session);
   });
 
-  it('is not broken by a root that is no project — it is not in the list either', () => {
+  it('is not broken by a root that is no project: it is not in the list either', () => {
     // A workspace regularly holds folders that are not projects (a scratch directory, a
     // checkout with no `.mnema/`). Such a root has no record to read, and naming it as
     // scanned would claim a search of something that does not exist.
@@ -325,7 +325,7 @@ describe('the empty answer says where it looked', () => {
 
   it('opens no tree of a project it only reads THROUGH, and writes nothing anywhere', () => {
     // Both reads now walk every announced project. A tree that has never been written
-    // does not exist on disk, and folding tails must leave it that way — these reads
+    // does not exist on disk, and folding tails must leave it that way: these reads
     // open no writer and no cache, so there is nothing for them to create.
     const here = makeProject('here');
     const untouched = makeProject('untouched');
@@ -345,7 +345,7 @@ describe('audit_antipatterns decomposes by record', () => {
   it('reports a deprecated skill under the project whose record holds it', () => {
     // The shapes are counts, so they are never merged. The skill was deprecated in one
     // project of three; pooling them would say the workspace deprecated something, and
-    // the candidate list — which points at work a person might distill a pattern from —
+    // the candidate list (which points at work a person might distill a pattern from)
     // would point them at another project's work.
     const first = makeProject('first');
     const second = makeProject('second');
@@ -389,7 +389,7 @@ describe('audit_antipatterns decomposes by record', () => {
     const shapes = shapesOn(session);
     const here = shapes.byProject.find((entry) => entry.project === only);
 
-    // The evidence is the events that make up the count — the transition itself.
+    // The evidence is the events that make up the count: the transition itself.
     const evidence = here?.deprecatedSkills[0]?.evidence ?? [];
     expect(evidence).toHaveLength(1);
     expect(evidence[0]?.kind).toBe('skill.transitioned');
@@ -404,7 +404,7 @@ describe('a one-project workspace does not regress, and the command line proves 
     // The regression that matters most: almost every session is one project, and the
     // union has nothing to add there. The witness is the COMMAND LINE, which resolves
     // one project from `cwd`, knows nothing of a workspace, and is untouched by this
-    // change — so the check is not this read restating its own numbers.
+    // change, so the check is not this read restating its own numbers.
     const only = makeProject('only');
     plantCredential(only, 'public', '019fa8b7-0410-717b-9af2-cfeb013fc4ac');
     plantCredential(only, 'global', '019fa8b7-0410-717b-9af2-cfeb013fc4ad');
@@ -414,7 +414,7 @@ describe('a one-project workspace does not regress, and the command line proves 
     const cli = runExposure({ cwd: only, env });
     if (!cli.ok) throw new Error('unreachable');
 
-    // The same findings in the same order — the project label is the ONLY difference.
+    // The same findings in the same order: the project label is the ONLY difference.
     expect(mine.findings.map(({ project, ...rest }) => rest)).toEqual(cli.report.findings);
     // And the arithmetic: the decomposition adds up to the one fold's denominator,
     // every event counted once.
@@ -448,7 +448,7 @@ describe('a one-project workspace does not regress, and the command line proves 
 describe('the door and the audit agree', () => {
   it('reports a SCREENED record as clean, which is the design and not a miss', () => {
     // The door and this audit call the same detector, and the placeholder is guarded
-    // against re-matching. So a record the door cleaned is genuinely clean here — and a
+    // against re-matching. So a record the door cleaned is genuinely clean here, and a
     // "fix" that made this report it would have the audit accusing the product of what
     // the product already prevented, on every write it protected.
     const only = makeProject('only');
@@ -458,7 +458,7 @@ describe('the door and the audit agree', () => {
     if (!captured.ok) throw new Error(`setup: capture refused — ${captured.message}`);
     expect(captured.replaced).toEqual(['aws-access-key']);
 
-    // The record holds the placeholder, permanently — the value never arrived.
+    // The record holds the placeholder, permanently: the value never arrived.
     const read = runReadRecordTool(session, { id: captured.id });
     if (!read.ok) throw new Error('unreachable');
     expect(JSON.stringify(read.value)).toContain('<SECRET:aws-access-key>');

@@ -1,5 +1,5 @@
 /**
- * A passphrase can be put on the private key at rest — and the record cannot tell.
+ * A passphrase can be put on the private key at rest, and the record cannot tell.
  *
  * WHAT WAS DECIDED: the key was never encrypted and never documented as not being (the
  * README's security page said nothing of where it lives). The person who owns the product asked
@@ -204,7 +204,7 @@ describe('signing with a protected key', () => {
 });
 
 describe('taking the passphrase off', () => {
-  it('puts every file back in the clear — or none of them, on a wrong passphrase', () => {
+  it('puts every file back in the clear, or none of them, on a wrong passphrase', () => {
     aProjectWithAProtectedKey();
     const kept = keyFiles().map((file) => readFileSync(file, 'utf-8'));
     const refused = mnema('wrong horse', 'key', 'unprotect');

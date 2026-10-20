@@ -1,5 +1,5 @@
 /**
- * A COMMAND TYPED WHERE THERE IS NO PROJECT SAYS SO, IN ONE SENTENCE — and the ones that
+ * A COMMAND TYPED WHERE THERE IS NO PROJECT SAYS SO, IN ONE SENTENCE: and the ones that
  * answer anyway are named, with the reason each of them can.
  *
  * `wiring/report.ts` states this as a rule: "one wording, because a person who ran the
@@ -7,7 +7,7 @@
  * verbs overriding the way BACK because a machine recovering an identity is not a machine
  * founding a project. Nothing checked THE RULE. What that cost was measured: of the
  * thirty-eight places on this surface that report a refusal, four had never been reached
- * by any test — `audit accountability`, `audit antipatterns`, `timeline` and `witness` — and for three
+ * by any test (`audit accountability`, `audit antipatterns`, `timeline` and `witness`) and for three
  * of them the reason is one reason, not three: their ONLY refusal is this one.
  *
  * WHAT WAS ALREADY RUN OUTSIDE A PROJECT, because the sentence above once said nothing
@@ -15,29 +15,29 @@
  * headed `### outside a project` and pins `search`, `exposure`, `brief`, `usage` and
  * `verify` there with their text and their exit code (`src/cli.reads.golden.txt`);
  * `the-floor-is-the-declaration.test.ts` runs `verify` outside one in a REAL process and
- * pins the exit status; and four more cases each drive one path — `resume`, `guard submit`
+ * pins the exit status; and four more cases each drive one path: `resume`, `guard submit`
  * and `key restore` (`cli-e2e.test.ts`), `brief` again, and `status`
  * (`where-things-stand.test.ts`). None of them is redundant with this file and none makes
  * it redundant: the golden pins the whole wording, the floor pins a process's status, the
- * four pin one path each — and what none of them asks is whether the rule holds over the
+ * four pin one path each, and what none of them asks is whether the rule holds over the
  * paths nobody thought to name, which is where all four unreached refusals were.
  *
  * SO THE GUARD IS THE RULE, not four cases. Every path the program routes is invoked in a
  * directory that is not a project, and each one lands in exactly one of four boxes:
  *
- *   1. IT SAYS THERE IS NO PROJECT — the sentence, read off `NO_PROJECT` rather than
+ *   1. IT SAYS THERE IS NO PROJECT: the sentence, read off `NO_PROJECT` rather than
  *      retyped, and a non-zero exit. This is where most of the surface goes.
- *   2. IT NAMES ITS OWN WAY BACK — the same opening sentence, continued by the verb.
+ *   2. IT NAMES ITS OWN WAY BACK: the same opening sentence, continued by the verb.
  *      Declared per verb, because the continuation is the whole point of the override.
  *   3. IT ANSWERS ANYWAY, and the reason is in the table: a read whose subject is the
  *      global tree is answering a legitimate question about whatever record there is, and
  *      `init` is the verb whose whole job is that there is not one yet.
- *   4. IT REFUSES SOMETHING ELSE FIRST — the parser, a missing session, or its own no.
+ *   4. IT REFUSES SOMETHING ELSE FIRST: the parser, a missing session, or its own no.
  *      Two of these WERE a finding, recorded here rather than repaired: `show` and `skill
  *      export` answered "No record … here" for an id in a directory that holds no record
  *      at all, which told a person in the wrong folder that their record was missing. They
  *      say there is no project now, as the others do, after reading the machine-global
- *      tree they read from anywhere — so they are in the first box.
+ *      tree they read from anywhere, so they are in the first box.
  *
  * All four boxes are reconciled against the walk in both directions, so a path that
  * changes box has to be moved by hand and a path that disappears cannot leave an excuse
@@ -45,14 +45,14 @@
  *
  * AND THE FOURTH OF THE FOUR UNREACHED REFUSALS IS HERE TOO, with an answer that is not
  * the reads'. `witness` refuses NO_TAIL, never "no project", so nothing about a missing
- * project would ever have reached it: what it needed was a record with nothing in it —
+ * project would ever have reached it: what it needed was a record with nothing in it,
  * which is what a directory nobody founded is. It is the one path exercised here and
  * nowhere else, because over a record holding a tail it would go out to a calendar, and
  * over one holding none it returns at its first line with no socket opened.
  *
  * WHAT IT DOES NOT COVER. The two paths that serve a connection instead of returning
  * (`support/the-line-a-path-takes.ts` names them and why), and the WORDING beyond its
- * first sentence for box 1 — the second half is `mnema init`, and that is the golden's.
+ * first sentence for box 1: the second half is `mnema init`, and that is the golden's.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -83,7 +83,7 @@ import { held } from './support/the-record-held.js';
 const THERE_IS_NO_PROJECT = `${NO_PROJECT.split('. ')[0]}.`;
 
 /**
- * The verbs that keep the sentence and change the way back — with the way back.
+ * The verbs that keep the sentence and change the way back: with the way back.
  *
  * A machine recovering an identity is not a machine founding a project, so `mnema init`
  * would be the wrong instruction and these three say their own. The continuation is
@@ -136,13 +136,13 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
  *
  * `witness` and `witness upgrade` are the two rows above whose reason is that they report
  * on the tails they can see and say so when there are none. This is what saying so IS. The
- * wording was written THREE times in `src` — `presentation/tails.ts`, `presentation/witness.ts`
- * and `wiring/witness.ts` — and is one function now (`noTailHoldsEvents`), which each of the
+ * wording was written THREE times in `src` (`presentation/tails.ts`, `presentation/witness.ts`
+ * and `wiring/witness.ts`) and is one function now (`noTailHoldsEvents`), which each of the
  * three paths below reaches.
  *
  * THE TREE LIST IS EMPTY HERE, and it used to be SAID as a list: outside a project the only tree
  * that resolves is this machine's global one, which every witness path leaves out unless asked,
- * so the sentence read `looked in .` — a list with no items and a full stop. It says why the list
+ * so the sentence read `looked in .`, a list with no items and a full stop. It says why the list
  * is empty now, and what asks for the one tree there is: `--global`, which the acts read off the
  * group (`wiring/from-the-group.ts`), and which `the-witness-acts-cover-the-tree-asked-for.test.ts`
  * runs on the binary.
@@ -164,7 +164,7 @@ const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
  * nothing for the same reason: a box that reconciles NAMES can say a path refused
  * something else first without ever reading what it said. `witness stamp` is the only
  * path that reaches it, and this is the only place on the surface it can be exercised at
- * all — over a record holding a tail it would go out to a calendar.
+ * all: over a record holding a tail it would go out to a calendar.
  */
 const NO_TAIL_TO_WITNESS =
   'Refused (NO_TAIL): there is no tail here to witness — nothing has been recorded in these trees';
@@ -176,7 +176,7 @@ const NO_TAIL_TO_WITNESS =
  * A reconciliation of NAMES can say a path refused something else first without ever
  * reading what it said, so every reason in the table beside it is a note to a reader. This
  * one is checked: `support/the-line-a-path-takes.ts` tells the parser's answer from a
- * verb's own — off the product's own `usageOf`, which both of the parser's answers carry —
+ * verb's own (off the product's own `usageOf`, which both of the parser's answers carry)
  * and the case below asserts it for each path declared with this string, and asserts it is
  * FALSE for every path that landed in box 1.
  *
@@ -189,14 +189,14 @@ const THE_PARSER_ANSWERED_FIRST =
   'a group whose bare form routes nothing: the parser answers with usage';
 
 /**
- * A path whose own refusal arrives before the project is ever missed — with what it says.
+ * A path whose own refusal arrives before the project is ever missed: with what it says.
  *
  * ALL OF THEM ARE STRUCTURE. `task`, `decision`, `skill`, `audit`, `run`, `key`, `tail` and `inherit` are groups
  * whose bare form routes nothing, so the parser answers before any action runs (the first
  * three created with a title typed after their name, until creating became a subcommand),
  * and `run end` with neither an id nor a variable has no session to be missing a project
- * for. Two rows here were a FINDING — `show` and `skill export` answered "No record <id>
- * here" in a directory with no record at all — and they left for the first box when they
+ * for. Two rows here were a FINDING, `show` and `skill export` answered "No record <id>
+ * here" in a directory with no record at all, and they left for the first box when they
  * began saying there is no project.
  */
 const NO_SUCH_STACK_HERE =
@@ -242,11 +242,11 @@ interface Answered {
   readonly path: string;
   readonly failed: boolean;
   readonly said: string;
-  /** Whether the PARSER answered rather than the path — read off the declaration. */
+  /** Whether the PARSER answered rather than the path: read off the declaration. */
   readonly parserAnswered: boolean;
 }
 
-/** What a declaration table tolerates, and what it does not — checked both ways. */
+/** What a declaration table tolerates, and what it does not: checked both ways. */
 function reconcile(
   found: readonly string[],
   declarations: Readonly<Record<string, string>>,
@@ -305,7 +305,7 @@ describe('outside a project the surface says so', () => {
     // sentence, and failed while saying it.
     const missedTheProject = answered.filter((one) => one.said.includes(THERE_IS_NO_PROJECT));
     expect(missedTheProject.filter((one) => !one.failed).map((one) => one.path)).toEqual([]);
-    // The three uncovered reads this file was written for are in it, by name — a rename
+    // The three uncovered reads this file was written for are in it, by name: a rename
     // that quietly dropped one of them from the walk would not be caught by a count.
     for (const read of ['audit accountability', 'audit antipatterns', 'timeline']) {
       expect(missedTheProject.map((one) => one.path)).toContain(read);
@@ -326,7 +326,7 @@ describe('outside a project the surface says so', () => {
     const answeredAnyway = answered.filter((one) => !one.failed).map((one) => one.path);
     expect(reconcile(answeredAnyway, ANSWERS_ANYWAY)).toEqual({ unexpected: [], stale: [] });
 
-    // AND TWO OF BOX 3 SAY THEIR LINE, whole — the half a reconciliation of names cannot
+    // AND TWO OF BOX 3 SAY THEIR LINE, whole: the half a reconciliation of names cannot
     // see. Each of the two is the only reader of one of the three copies of that wording in
     // `src`, so a copy that drifted, or one that stopped being printed at all, is red here
     // and named. Both are in box 3 by declaration, checked so that a path which started
@@ -353,8 +353,8 @@ describe('outside a project the surface says so', () => {
     });
 
     // AND THE ONE REASON IN BOX 4 THAT IS CHECKABLE IS CHECKED, both ways. A path declared
-    // as answered by the parser has to have been, and — the half that keeps it from being
-    // a discriminant that says yes to everything — no path in box 1 may look like one.
+    // as answered by the parser has to have been, and, the half that keeps it from being
+    // a discriminant that says yes to everything, no path in box 1 may look like one.
     // Three copies of that sentence were three notes to a reader before this.
     const byTheParser = answered.filter((one) => one.parserAnswered).map((one) => one.path);
     expect([...byTheParser].sort()).toEqual(
@@ -365,7 +365,7 @@ describe('outside a project the surface says so', () => {
     );
     expect(missedTheProject.filter((one) => one.parserAnswered).map((one) => one.path)).toEqual([]);
 
-    // The four boxes are the whole surface, and box 1 holds most of it — a walk that
+    // The four boxes are the whole surface, and box 1 holds most of it: a walk that
     // stopped finding paths would leave every reconciliation above passing over nothing.
     expect(answered.length).toBe(theSurface().length - Object.keys(SERVES_A_CONNECTION).length);
     expect(missedTheProject.length + answeredAnyway.length + refusedOtherwise.length).toBe(
@@ -386,7 +386,7 @@ describe('outside a project the surface says so', () => {
     expect(named.filter((path) => !surface.includes(path))).toEqual([]);
   });
 
-  it('reconcile tells the four cases apart — on rows of its own', () => {
+  it('reconcile tells the four cases apart: on rows of its own', () => {
     // The mechanism's non-vacuity: with the surface honest the case above only ever says
     // "nothing unexpected, nothing stale", which exercises neither direction.
     expect(reconcile(['a'], { a: 'the reason' })).toEqual({ unexpected: [], stale: [] });
@@ -403,7 +403,7 @@ describe('outside a project the surface says so', () => {
     // The one thing a walk of every verb could get wrong in a way nothing else notices:
     // `init` is in it, and so is every write. Each line runs where nothing has been
     // founded, so the only thing that may appear is what `init` founds in its OWN
-    // directory — measured, rather than assumed, over the sandbox as a whole.
+    // directory: measured, rather than assumed, over the sandbox as a whole.
     const sandbox = mkdtempSync(join(tmpdir(), 'mnema-untouched-'));
     const restore = { cwd: process.cwd(), home: process.env.HOME, xdg: process.env.XDG_DATA_HOME };
     try {

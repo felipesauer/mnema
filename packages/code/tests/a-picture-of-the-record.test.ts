@@ -1,5 +1,5 @@
 /**
- * `mnema diagram` — the record as mermaid text — and what holds it to the record.
+ * `mnema diagram`, the record as mermaid text, and what holds it to the record.
  *
  * Four properties, each with the case that would turn it red:
  *
@@ -8,7 +8,7 @@
  *      empty table cannot pass for an empty diagram.
  *   2. NOTHING FROM THE RECORD CAN WRITE SYNTAX. The values a diagram holds came out of the record
  *      (an id, a relation, a proof's words); a hostile one is written and the whole output is held
- *      to a grammar of its own — every line is one of four shapes and every label holds only the
+ *      to a grammar of its own: every line is one of four shapes and every label holds only the
  *      plain set and `#<code>;` entities. That checks the OUTPUT, so it does not share a mistake
  *      with the escape that produced it.
  *   3. THE FRONT PAGE DRAWS THIS OUTPUT. The page's diagram block is compared, line for line, with
@@ -48,7 +48,7 @@ async function invoke(
 
 /** What a diagram label may hold: the plain set, and mermaid's numeric entity for all the rest. */
 const LABEL = String.raw`(?:[\p{L}\p{M}\p{N} ._:/·,()-]|#\d+;)*`;
-/** Every line a diagram of this verb may have — nothing else is syntax the verb wrote. */
+/** Every line a diagram of this verb may have: nothing else is syntax the verb wrote. */
 const GRAMMAR = [
   /^(?:stateDiagram-v2|flowchart (?:TD|LR))$/u,
   /^ {4}direction LR$/u,

@@ -1,6 +1,6 @@
 /**
  * What the two reads that FIND and COUNT look in when the workspace holds several
- * projects — and what each of them is allowed to merge.
+ * projects, and what each of them is allowed to merge.
  *
  * The three reads keyed by an id already span every project: an id is minted once,
  * so widening the search can only turn a null into an answer. These two are not
@@ -8,28 +8,28 @@
  * changes what the ANSWER MEANS, and it means something different in each.
  *
  *   `search` returns ITEMS. Merging widens the list and nothing in it changes
- *   meaning — a hit is a hit, and each one now says which project holds it. Not
+ *   meaning: a hit is a hit, and each one now says which project holds it. Not
  *   finding what exists is the defect this whole sequence removes, and a search of
  *   one project that never said it looked in one project is that defect exactly.
  *
  *   `accountability` returns an AGGREGATE. Merging would SUM, and a summed total
  *   answers "how much is in this workspace" under the name of "how much is in this
- *   record" — the reader takes the wrong number with nothing warning them. So it
+ *   record": the reader takes the wrong number with nothing warning them. So it
  *   comes back DECOMPOSED: one account per project, each number meaning exactly
  *   what it meant when it was the only one. The sum is the reader's to make.
  *
  * What is tested here:
  *
  *   1. ONE test per read, so a union lost in one of the two fails naming that one;
- *   2. a ONE-project workspace does not regress — and the proof is the CLI, which
+ *   2. a ONE-project workspace does not regress, and the proof is the CLI, which
  *      resolves a single project from `cwd`, has no workspace, and is untouched:
  *      its answer and this one must reconcile exactly;
  *   3. a hit from a sibling project is FOUND and LABELLED;
- *   4. the limit that shuts a whole project out of the list SAYS SO — the honest
+ *   4. the limit that shuts a whole project out of the list SAYS SO: the honest
  *      half of a merged ranking, reported only when it happened;
  *   5. `accountability` never fuses: the same author in three projects is three
  *      accounts, not one sum, and there is no workspace total beside them;
- *   6. the machine-global tree — which every project resolves to the same path —
+ *   6. the machine-global tree, which every project resolves to the same path,
  *      is counted ONCE, whatever the project count.
  *
  * Every fact is written through the write tools and read back through the read
@@ -83,14 +83,14 @@ function memoryIn(
   return captured.id;
 }
 
-/** The search result, or a thrown setup error — the refusals have their own tests. */
+/** The search result, or a thrown setup error: the refusals have their own tests. */
 function search(session: Session, input: Parameters<typeof runSearchTool>[1]) {
   const found = runSearchTool(session, input);
   if (!found.ok) throw new Error(`search refused — ${found.message}`);
   return found.value;
 }
 
-/** The account, or a thrown setup error — `NO_PROJECT` has its own test. */
+/** The account, or a thrown setup error: `NO_PROJECT` has its own test. */
 function account(session: Session, input: Parameters<typeof runAccountabilityTool>[1] = {}) {
   const result = runAccountabilityTool(session, input);
   if (!result.ok) throw new Error(`accountability refused — ${result.message}`);
@@ -127,7 +127,7 @@ describe('a one-project workspace does not regress', () => {
   it('answers search with the same index the untouched command line answers', () => {
     // The regression that matters most: almost every session is one project, and the
     // union has nothing to add there. The proof is not this test restating its own
-    // numbers — it is the COMMAND LINE, which resolves one project from `cwd`, knows
+    // numbers: it is the COMMAND LINE, which resolves one project from `cwd`, knows
     // nothing of a workspace, and was not touched by this change. Its index and this
     // one must be the same list, hit for hit, with only the new label added.
     const only = makeProject('only');
@@ -142,7 +142,7 @@ describe('a one-project workspace does not regress', () => {
 
     expect(mine.total).toBe(3);
     expect(mine.total).toBe(cli.result.total);
-    // The same hits in the same order — the label is the ONLY difference.
+    // The same hits in the same order: the label is the ONLY difference.
     expect(mine.hits.map(({ project, ...hit }) => hit)).toEqual(cli.result.hits);
     // And the label is present rather than the shape changing with a project count:
     // the two trees of the project carry it, the machine-global tree carries none.
@@ -160,7 +160,7 @@ describe('a one-project workspace does not regress', () => {
 
   it('accounts for the one project and the machine-global tree, and reconciles with the command line', () => {
     // The shape DID change here, by decision: an aggregate cannot be merged, so it is
-    // decomposed. What must not change is the arithmetic — the numbers a one-project
+    // decomposed. What must not change is the arithmetic: the numbers a one-project
     // workspace reports are the numbers it always reported, split by which record
     // holds them and counted once each. The command line still folds its one project's
     // trees into a single total, and that total is what the entries have to add up to.
@@ -175,7 +175,7 @@ describe('a one-project workspace does not regress', () => {
     if (!cli.ok) throw new Error('unreachable');
 
     // Two records are visible: this project's trees, and the machine-global tree that
-    // belongs to no project — which is what the absent label says.
+    // belongs to no project, which is what the absent label says.
     expect(mine.byProject.map((entry) => entry.project)).toEqual([only, undefined]);
     expect(countOfKind(mine.byProject[0], 'memory.captured')).toBe(2);
     expect(countOfKind(mine.byProject[1], 'memory.captured')).toBe(1);
@@ -184,7 +184,7 @@ describe('a one-project workspace does not regress', () => {
     // agree to the unit.
     const sum = mine.byProject.reduce((n, entry) => n + entry.total, 0);
     expect(sum).toBe(cli.account.total);
-    // And there is no workspace total beside them — a summed number under this name
+    // And there is no workspace total beside them: a summed number under this name
     // is the reason the answer is decomposed at all.
     expect('total' in mine).toBe(false);
     closeSession(session);
@@ -238,7 +238,7 @@ describe('search spans every project of the workspace', () => {
 
   it('lists the personal note from the machine-global tree ONCE, with three projects open', () => {
     // Every project resolves the SAME machine-global tree, so iterating projects hands
-    // it over three times — and an index given one tree three times reports every hit
+    // it over three times, and an index given one tree three times reports every hit
     // in it three times, with nothing in the answer saying so.
     const session = openOn(makeProject('one'), makeProject('two'), makeProject('three'));
     const personal = memoryIn(session, 'my own habit, whatever the project', { scope: 'global' });
@@ -247,7 +247,7 @@ describe('search spans every project of the workspace', () => {
 
     expect(found.hits.map((hit) => hit.id)).toEqual([personal]);
     expect(found.total).toBe(1);
-    // The machine-global tree belongs to no project, so it is labelled with none —
+    // The machine-global tree belongs to no project, so it is labelled with none,
     // which is what distinguishes it from a fact that came from one.
     expect(found.hits[0]?.project).toBeUndefined();
     expect(found.hits[0]?.scope).toBe('global');
@@ -256,11 +256,11 @@ describe('search spans every project of the workspace', () => {
 
   it('says which project the limit shut out of the list entirely', () => {
     // The debt this read carries and now has to declare. Each tree ranks its own hits
-    // against its own corpus, so the merged order is an approximation — and the limit
+    // against its own corpus, so the merged order is an approximation, and the limit
     // can fill the list from one project and leave another INVISIBLE. `total` already
     // says the list was cut; it does not say the cut fell on a whole project, and a
     // reader who cannot tell the two apart concludes "nothing there" about a project
-    // that matched. Which project wins the ranking is not the claim here — that the
+    // that matched. Which project wins the ranking is not the claim here: that the
     // answer NAMES the one it dropped, and with its count, is.
     const first = makeProject('first');
     const second = makeProject('second');
@@ -289,7 +289,7 @@ describe('search spans every project of the workspace', () => {
 
 describe('accountability accounts for each project, and never sums them', () => {
   it('gives the same author one account per project, not one total across them', () => {
-    // One human, three codebases, one connection — the ordinary shape of the work this
+    // One human, three codebases, one connection: the ordinary shape of the work this
     // surface exists for. Summed, the answer says "42 facts" for a record that holds
     // 12: the same name over a different question. Decomposed, every number still
     // means what it meant when the project was the only one.
@@ -306,7 +306,7 @@ describe('accountability accounts for each project, and never sums them', () => 
     const mine = account(session);
 
     // One entry per project, in the order the workspace presents them, and the
-    // machine-global tree last — it belongs to none of them.
+    // machine-global tree last: it belongs to none of them.
     expect(mine.byProject.map((entry) => entry.project)).toEqual([
       legacy,
       laravel,
@@ -316,7 +316,7 @@ describe('accountability accounts for each project, and never sums them', () => 
     expect(mine.byProject.map((entry) => countOfKind(entry, 'memory.captured'))).toEqual([
       1, 2, 1, 0,
     ]);
-    // The SAME author authorized in all three, and appears in each — three accounts
+    // The SAME author authorized in all three, and appears in each: three accounts
     // of one person's work, not one number that lost track of where it happened.
     const asMe = mine.byProject.filter((entry) =>
       entry.byWho.some((who) => who.who === session.who),

@@ -3,7 +3,7 @@
  *
  * Driven the way the binary and an agent drive them, over a real project in a sandbox. Held:
  *   - a rule linked to a path refuses a write there, and once its only link is taken back the
- *     hook that runs before a write answers `{}` — the rule stopped acting;
+ *     hook that runs before a write answers `{}`: the rule stopped acting;
  *   - the edge is named as the link took it, an `ADR-<n>` label included, and the link's own
  *     event stays in the record beside the retraction;
  *   - an edge nobody linked, and one already taken back, are refused and append nothing.

@@ -4,16 +4,16 @@
  *
  * `cli.golden.test.ts` holds the bytes: it drives every page and compares the transcript
  * to `src/cli.help.golden.txt`. That file is what would go red if a page arrived unpinned
- * — the transcript would carry a section the committed file has not got — so a second
+ * (the transcript would carry a section the committed file has not got), so a second
  * mechanism is not what this adds. What it adds is the NAME. A golden's answer to a page
  * nobody pinned is a diff of the whole transcript; this one says `switch off`, in a second,
  * without founding a fixture.
  *
  * IT IS THE FAILURE THAT WAS ACTUALLY HAD. The list of pages in the golden was written by
- * hand — one array of verbs, one of `[verb, sub]` pairs — and it held 45 of the 52 pages
+ * hand (one array of verbs, one of `[verb, sub]` pairs) and it held 45 of the 52 pages
  * the program answers on. Nothing in it was stale: it was SHORT. Three of the seven missing
  * were one feature, `switch`, whose group and both acts shipped with nothing asserting a
- * byte of what they tell a person BEFORE they act — what `--scope` decides, and what a
+ * byte of what they tell a person BEFORE they act: what `--scope` decides, and what a
  * switch recorded privately costs. (What the act answers back was pinned all along, in the
  * writes transcript; it is the instructions that nothing held.) Every delivery between that
  * one and this one was green over it. That is what a hand-kept list of what a file
@@ -27,7 +27,7 @@
  *
  * AND THE PAGES COME OFF THE PROGRAM, never off a list here. `everyCommandOf` is the same
  * walk the parser's refusals and the completion tree use, and `pathOf` is the same reading
- * of what a caller types — one site each, in `wiring/misuse.ts`. A list in this file would
+ * of what a caller types: one site each, in `wiring/misuse.ts`. A list in this file would
  * be the defect it was written to catch.
  */
 
@@ -49,8 +49,8 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
  *
  * Read at module load, which under `vitest -u` can be one version behind the file the
  * golden is rewriting in the same run. The failure that buys is a red that clears on the
- * next run — a stale read can only report a page as unpinned that has just been pinned,
- * never the reverse — so it is named here rather than locked against.
+ * next run (a stale read can only report a page as unpinned that has just been pinned,
+ * never the reverse), so it is named here rather than locked against.
  */
 const GOLDEN = readFileSync(join(HERE, '../src/cli.help.golden.txt'), 'utf8');
 
@@ -69,8 +69,8 @@ function pagesOf(program: Command): readonly string[] {
 /**
  * The pages a transcript pins, read off the labels it writes for them.
  *
- * A LABEL AND NOT AN INVOCATION LINE. The golden holds both — `### mnema switch off --help`
- * and the `$ mnema switch off --help` under it — and the label is the one that says the
+ * A LABEL AND NOT AN INVOCATION LINE. The golden holds both, `### mnema switch off --help`
+ * and the `$ mnema switch off --help` under it, and the label is the one that says the
  * page has a SECTION rather than that some line somewhere ran the command.
  */
 function pagesPinnedIn(transcript: string): readonly string[] {
@@ -82,7 +82,7 @@ function pagesPinnedIn(transcript: string): readonly string[] {
   return found;
 }
 
-/** What each side has that the other has not — the whole of the rule, in one place. */
+/** What each side has that the other has not: the whole of the rule, in one place. */
 function reconcile(
   pages: readonly string[],
   pinned: readonly string[],
@@ -93,7 +93,7 @@ function reconcile(
   };
 }
 
-/** The program the binary builds, fresh — every call to `buildProgram` returns its own. */
+/** The program the binary builds, fresh: every call to `buildProgram` returns its own. */
 function declared(): Command {
   return buildProgram(silent).program;
 }
@@ -116,7 +116,7 @@ describe('every page of the CLI is pinned', () => {
   it('reads the golden it is given, rather than finding nothing in it', () => {
     // THE INSTRUMENT, ASKED WHETHER IT WORKS. Every assertion above is over what this
     // parser returned, so a regex that matched nothing would report the golden as pinning
-    // no page at all — which the case above WOULD catch (52 unpinned) but would report as
+    // no page at all, which the case above WOULD catch (52 unpinned) but would report as
     // a surface-wide defect rather than as a broken ruler. Asked here directly, over a
     // transcript written for it, so the two failures cannot be confused.
     expect(
@@ -129,7 +129,7 @@ describe('every page of the CLI is pinned', () => {
     expect(pagesPinnedIn(GOLDEN).length).toBeGreaterThan(0);
   });
 
-  it('names a page the program grew and the golden has not — over a program that grew one', () => {
+  it('names a page the program grew and the golden has not: over a program that grew one', () => {
     // NOT VACUOUS, and the way it is not is the point: the extra page is hung on a REAL
     // program, by the door a verb is added through, and it reaches the assertion through
     // the same walk the case above uses. An expectation that only ever saw the healthy

@@ -1,5 +1,5 @@
 /**
- * VS CODE'S AGENT, IN THIS CONTRACT, SHOWS NO HANDSHAKE OF THE PLUGIN'S MCP SERVER — so there is
+ * VS CODE'S AGENT, IN THIS CONTRACT, SHOWS NO HANDSHAKE OF THE PLUGIN'S MCP SERVER: so there is
  * nothing of what it hands a server to read here, and this says so by value rather than by silence.
  *
  * The editor is run the way every case of this directory runs it: the plugin listed in

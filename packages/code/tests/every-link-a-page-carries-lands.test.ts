@@ -1,5 +1,5 @@
 /**
- * EVERY LINK A PAGE CARRIES LANDS — a relative path on a file or directory the repository
+ * EVERY LINK A PAGE CARRIES LANDS: a relative path on a file or directory the repository
  * tracks, and an anchor on a heading the page it names has.
  *
  * WHAT WAS UNCHECKED. Nothing asked whether `[the plugin's page](plugin/README.md#in-vs-code-
@@ -10,8 +10,8 @@
  * WHAT IS CHECKED, AND NOTHING ASKS THE NETWORK. Every tracked Markdown page
  * ({@link trackedPages}, the reach and never a list), read outside its fenced blocks
  * ({@link linesOf}, the one reading of what is fenced), its code spans and its HTML comments:
- *   - every relative destination — an inline link or image, a reference definition, an HTML
- *     `href` or `src` — resolves to a path `git ls-files` holds, or to a directory of one;
+ *   - every relative destination (an inline link or image, a reference definition, an HTML
+ *     `href` or `src`) resolves to a path `git ls-files` holds, or to a directory of one;
  *   - every anchor names a heading of the page it points at, slugged the way GitHub renders a
  *     heading ({@link slugOf}), or an `<a name>`/`<a id>` on it; an anchor alone is asked of
  *     the page it sits on;
@@ -33,7 +33,7 @@
  *
  * WHAT IT DOES NOT CHECK:
  *   - the external links, above;
- *   - how a registry renders a package's page — it resolves the page's relative links against
+ *   - how a registry renders a package's page: it resolves the page's relative links against
  *     the repository, which is what is checked here, and that is read rather than measured;
  *   - a heading GitHub would derive from raw HTML other than an `<a name>` or `<a id>`;
  *   - a link whose destination holds a parenthesis, which the reading here stops at.
@@ -82,7 +82,7 @@ function lineAt(text: string, offset: number): number {
   return text.slice(0, offset).split('\n').length;
 }
 
-/** Every destination the prose of a page carries — inline, image, reference, HTML. */
+/** Every destination the prose of a page carries: inline, image, reference, HTML. */
 function destinationsOf(markdown: string): Destination[] {
   const prose = proseOf(markdown);
   const found: Destination[] = [];
@@ -124,7 +124,8 @@ function headingText(raw: string): string {
 /**
  * A heading's anchor, the way GitHub makes it: lower case, every character that is not a
  * letter, a mark, a number, a connector, a hyphen or a space dropped, and each space a hyphen.
- * Two spaces around a dropped dash make two hyphens, which is why `A — B` is `a--b`.
+ * Two spaces around a dropped dash make two hyphens, which is why `A`, an em dash and `B` make
+ * `a--b`.
  */
 function slugOf(heading: string): string {
   return headingText(heading)
@@ -169,7 +170,7 @@ function anchorsOf(markdown: string): Set<string> {
   return anchors;
 }
 
-/** What a sweep needs from the repository — the disk for the real one, a map for a case's own. */
+/** What a sweep needs from the repository: the disk for the real one, a map for a case's own. */
 interface Corpus {
   readonly pages: readonly string[];
   readonly tracked: ReadonlySet<string>;

@@ -1,5 +1,5 @@
 /**
- * EVERY GIT A TEST STARTS TO WRITE A REPOSITORY RUNS WITH AUTOMATIC MAINTENANCE OFF — through the
+ * EVERY GIT A TEST STARTS TO WRITE A REPOSITORY RUNS WITH AUTOMATIC MAINTENANCE OFF: through the
  * file `support/git-without-maintenance.ts` names, handed as `GIT_CONFIG_GLOBAL`, which is the one
  * channel the remote of a local push reads.
  *
@@ -11,7 +11,7 @@
  * WHAT IS ASSERTED:
  *   - the file is the one git reads, and it says what the module says it says;
  *   - behind it, a push that puts two loose objects in the remote's `objects/17` leaves them there,
- *     with no pack beside them — git 2.55's defaults repack such a remote about 30 ms after the
+ *     with no pack beside them: git 2.55's defaults repack such a remote about 30 ms after the
  *     push returns, which is the race;
  *   - every call that starts git, in every file of the workspace that starts one to write a
  *     repository, hands it that file. The calls are FOUND, never listed: a file starts git where a
@@ -20,12 +20,12 @@
  *     (`commit`, `merge`, `pull`, `fetch`, `am`, `rebase`, `cherry-pick`, `revert`), pushes into
  *     one (`push`, whose receiving side does), or copies one file by file (`clone`). A call that
  *     names its verb is read by it: one of those counts, and any other (`ls-files`, `show`) is a
- *     read that starts nothing. A call that names none — a helper forwarding its arguments —
+ *     read that starts nothing. A call that names none, a helper forwarding its arguments,
  *     counts wherever its file writes, because the verb is its callers'.
  *
  * WHAT IT DOES NOT SEE, said so a green is not read as more: a git started through a shell
  * (`sh -c "git …"`), or by a program the test starts; and a call whose environment is built
- * somewhere else and passed by name — the walk reads the call's own text. None of the three exists
+ * somewhere else and passed by name: the walk reads the call's own text. None of the three exists
  * in this workspace today; a file that needs one says why beside it.
  */
 
@@ -151,7 +151,7 @@ function scriptsUnder(directory: string): string[] {
 /** Where a call starts git: the name of the function, the `(`, and `'git'` as the first argument. */
 const STARTS_GIT = /\b(?:spawn|spawnSync|execFile|execFileSync)\(\s*(['"`])git\1/g;
 
-/** A verb, as a literal, whose git writes a repository — see the header for why each is here. */
+/** A verb, as a literal, whose git writes a repository: see the header for why each is here. */
 const WRITES = /(['"`])(?:commit|merge|pull|fetch|am|rebase|cherry-pick|revert|push|clone)\1/;
 
 /**
@@ -168,7 +168,7 @@ interface Call {
 }
 
 /**
- * Every call in `source` that starts git, each to its closing parenthesis — found on the source
+ * Every call in `source` that starts git, each to its closing parenthesis: found on the source
  * with comments and literals blanked (`codeOnly`), so a parenthesis inside a string does not end
  * a call, and a call written inside a string is not one. A call that never closes is the
  * scanner's failure, and says so.
@@ -181,7 +181,7 @@ function callsStartingGit(file: string, source: string): Call[] {
   const calls: Call[] = [];
   for (const match of source.matchAll(STARTS_GIT)) {
     const open = (match.index as number) + match[0].indexOf('(');
-    // A call written inside a literal — as the synthetic sources below are — is text, not a call.
+    // A call written inside a literal (as the synthetic sources below are) is text, not a call.
     if (code[open] !== '(') continue;
     let depth = 0;
     let close = -1;
@@ -217,7 +217,7 @@ function turnsMaintenanceOff(text: string): boolean {
 
 /**
  * The calls in one file that start git to write a repository without the file that turns automatic
- * maintenance off, as `file:line` — the whole rule, in the one function both cases below ask.
+ * maintenance off, as `file:line`: the whole rule, in the one function both cases below ask.
  */
 function bareCallsIn(file: string, source: string): string[] {
   if (!WRITES.test(source)) return [];

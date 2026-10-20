@@ -7,7 +7,7 @@
  * the one without it, and a hook that cannot find the program it runs is the commonest way for a
  * plugin to break one. The product's handlers are silent in that case
  * (`the-record-arrives-unasked.test.ts` runs each of them with no program); what the host does
- * with the one that is not a command — the call into the server, which cannot start — is the
+ * with the one that is not a command (the call into the server, which cannot start) is the
  * host's, and it is read here: the write is not stopped.
  *
  * THE CONTROL IS THE SAME RECORD WITH `mnema` ON THE PATH, refused in

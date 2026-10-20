@@ -7,24 +7,24 @@
  * actions misinforms a reader. A `z.enum(['public', 'private', 'global'])` typed by hand
  * REFUSES: an input schema is the contract the client validates against, so a fourth tree
  * added to the domain would have reached the CLI's help, its Tab and its refusal, and left
- * the agent-facing door rejecting a word the same product accepts — in the SDK's voice,
+ * the agent-facing door rejecting a word the same product accepts, in the SDK's voice,
  * with a schema error, on the surface agents use.
  *
  * Three things are asserted here, and they are different:
- *   - THE MCP ADVERTISES THE DOMAIN'S SETS. Read off `tools/list` — the JSON Schema the
- *     protocol actually hands a client — and compared against `@mnema/core` and the
+ *   - THE MCP ADVERTISES THE DOMAIN'S SETS. Read off `tools/list`, the JSON Schema the
+ *     protocol actually hands a client, and compared against `@mnema/core` and the
  *     surfaces' shared module, never against a list typed in this file.
  *   - WHAT IT ADVERTISES DID NOT CHANGE. Ten enums, the same ten values, in the same
  *     order. That is the acceptance criterion of this slice and not a side note: the whole
  *     change is meant to be functionally null today and impossible to drift tomorrow.
- *   - THE GLOSS IS ONE. Proved by pulling the phrase out of BOTH outputs — the real
- *     `--help` of the real binary, and the real description `tools/list` serves — and
+ *   - THE GLOSS IS ONE. Proved by pulling the phrase out of BOTH outputs (the real
+ *     `--help` of the real binary, and the real description `tools/list` serves) and
  *     comparing them to each other. Never to a sentence written here: a test that spelled
  *     the gloss out would pass while both doors said the same wrong thing.
  *
  * WHICH WORDING WON, AND WHY. `private` was "this machine" on the CLI and "this machine,
- * this project" on the MCP. The second is true — the private tree is `.mnema/private/`
- * INSIDE a project, so a machine with four projects has four of them — and the first was
+ * this project" on the MCP. The second is true (the private tree is `.mnema/private/`
+ * INSIDE a project, so a machine with four projects has four of them) and the first was
  * not a shorter way of saying it but a different claim, one a reader would act on by
  * expecting a private memory to follow them to the next repository. So the CLI's help
  * changed, at all seven births, and `cli.help.golden.txt` carries the diff.
@@ -60,7 +60,7 @@ import { actionsRequiring, listed, orListed, SCOPE_CHOICES, SCOPES } from '../sr
 import { valuesDeclaredOn } from '../src/wiring/enumerated.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
 
-/** The built CLI — the same file the `mnema` bin points at. */
+/** The built CLI: the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** A silent port: everything that reads declarations writes nothing. */
@@ -86,7 +86,7 @@ afterEach(() => {
 
 /** One property of one tool's input schema, as the protocol serves it. */
 interface Advertised {
-  /** `capture_memory.scope` — how a reader would name it. */
+  /** `capture_memory.scope`: how a reader would name it. */
   readonly where: string;
   /** The closed set the schema says the value comes from, or undefined. */
   readonly values: readonly string[] | undefined;
@@ -159,7 +159,7 @@ function cliOptionHelp(path: string, long: string): string {
   return option?.description ?? '';
 }
 
-/** The real `mnema <verb> --help`, unwrapped — commander breaks a description on width. */
+/** The real `mnema <verb> --help`, unwrapped: commander breaks a description on width. */
 function cliHelp(...args: string[]): string {
   const inherited = { ...process.env };
   delete inherited.MNEMA_RUN;
@@ -174,8 +174,8 @@ function cliHelp(...args: string[]): string {
 /**
  * The gloss each scope carries, pulled out of whatever text `where` produced.
  *
- * SHAPE, not content: the pattern is built from `SCOPES` — the domain's own set, in its
- * own order — and every gloss is a CAPTURE. So this function never states what a scope
+ * SHAPE, not content: the pattern is built from `SCOPES` (the domain's own set, in its
+ * own order) and every gloss is a CAPTURE. So this function never states what a scope
  * means, which is the whole point of comparing two doors with it: if it held the sentence,
  * both doors could be wrong together and it would still pass.
  */
@@ -194,7 +194,7 @@ function scopeGlossesIn(text: string): readonly string[] | undefined {
 describe('the MCP takes its sets from the domain', () => {
   it('advertises, at every enumerated field, exactly a set the machine owns', async () => {
     const { fields } = await advertised();
-    // Every closed set the protocol advertises, matched against the machine's own — by
+    // Every closed set the protocol advertises, matched against the machine's own: by
     // value, because JSON Schema is what crossed the wire and an array's identity does
     // not survive it. A field enumerating anything else lands in `foreign` and is red
     // there, named, rather than making some count wrong somewhere else.
@@ -209,7 +209,7 @@ describe('the MCP takes its sets from the domain', () => {
         ),
     );
     expect(foreign.map((field) => `${field.where} = ${JSON.stringify(field.values)}`)).toEqual([]);
-    // And there ARE enumerated fields — eight scopes, a kind, a direction. A schema that
+    // And there ARE enumerated fields: eight scopes, a kind, a direction. A schema that
     // stopped enumerating would satisfy the assertion above by having nothing to check.
     expect(enumerated).toHaveLength(10);
     expect(enumerated.filter((field) => field.where.endsWith('.scope'))).toHaveLength(8);
@@ -218,7 +218,7 @@ describe('the MCP takes its sets from the domain', () => {
   it('advertises the SAME values it advertised before, in the same order', async () => {
     const { fields } = await advertised();
     // THE ACCEPTANCE CRITERION. The nine hand-typed arrays and the set now read from the
-    // domain agree today — which is what makes this slice safe — so the values below are
+    // domain agree today (which is what makes this slice safe), so the values below are
     // the ones the protocol served before the change, written out ON PURPOSE: this is the
     // one assertion in the file that must NOT be derived, because deriving it from the
     // same source the production code reads would make it true by construction and say
@@ -249,7 +249,7 @@ describe('the MCP takes its sets from the domain', () => {
     const { fields } = await advertised();
     // The other half of "nothing validates". A `z.enum` on `action` would have the SDK
     // reject `nonsense` before any adapter ran, and the refusal an agent must get is the
-    // gate's own, with its own code — the same reason the CLI's `<action>` carries no
+    // gate's own, with its own code: the same reason the CLI's `<action>` carries no
     // `.choices()`. Three tools, one rule.
     for (const where of [
       'task_transition.action',
@@ -260,7 +260,7 @@ describe('the MCP takes its sets from the domain', () => {
       expect(fieldAt(fields, where).values, where).toBeUndefined();
     }
     // And the words are still SAID, which is how an agent learns a vocabulary the schema
-    // does not own: each transition tool names every member of its own workflow's set —
+    // does not own: each transition tool names every member of its own workflow's set,
     // whole, in one generated phrase, so a set listed short is red at whichever tool did
     // it. The `action` field of `guard` reads the task vocabulary too, from the tool
     // description that carries it.
@@ -287,7 +287,7 @@ describe('the MCP takes its sets from the domain', () => {
 
   it('names, in each proof field, exactly the actions the workflow table requires it for', async () => {
     const { fields } = await advertised();
-    // The MCP's ten proof descriptions, against the rows the gate enforces — derived HERE,
+    // The MCP's ten proof descriptions, against the rows the gate enforces: derived HERE,
     // independently of the production helper, over each workflow's own table. That
     // independence is the whole assertion and it was learned the hard way: a first version
     // read `actionsRequiring`, so inverting that function's filter left these ten cases
@@ -335,7 +335,7 @@ describe('the MCP takes its sets from the domain', () => {
       `Why it fell out of use (${requiring(SKILL_TRANSITIONS, SKILL_ACTIONS, 'reason')}).`,
     );
     // Each of those lists has to hold something, or the ten assertions above would pass
-    // on empty parentheses — which is what a table read the wrong way round produces.
+    // on empty parentheses, which is what a table read the wrong way round produces.
     for (const [table, actions, field] of [
       [TRANSITIONS, TASK_ACTIONS, 'reason'],
       [TRANSITIONS, TASK_ACTIONS, 'note'],
@@ -369,7 +369,7 @@ describe('one gloss, two doors', () => {
     // text would pass on the day they agree on something false.
     expect(fromCli).toEqual(fromMcp);
     // Non-vacuity in both directions. The extractor returns undefined when the shape is
-    // absent, and `[]`-of-empties when the glosses are blank — both would let the equality
+    // absent, and `[]`-of-empties when the glosses are blank: both would let the equality
     // above pass while proving nothing.
     expect(fromCli).toHaveLength(SCOPES.length);
     for (const gloss of fromCli ?? []) expect(gloss.length).toBeGreaterThan(0);
@@ -384,7 +384,7 @@ describe('one gloss, two doors', () => {
     const one = scopeGlossesIn(SCOPE_CHOICES);
     // FOUND, not listed: every advertised tool whose description carries the shape. A test
     // naming the four would go quietly vacuous the day a fifth write tool arrives without
-    // the gloss — which is the very drift this slice exists to close.
+    // the gloss, which is the very drift this slice exists to close.
     const glossing = tools.filter((tool) => scopeGlossesIn(toolDescription(tool)) !== undefined);
     for (const tool of glossing) {
       expect(scopeGlossesIn(toolDescription(tool)), tool).toEqual(one);
@@ -400,7 +400,7 @@ describe('one gloss, two doors', () => {
 
   it('extracts a gloss by SHAPE, and finds none where there is none', () => {
     // The extractor's own non-vacuity, on input this test owns. It has to read a gloss
-    // that contains a comma — which is exactly what the wording that won contains — and
+    // that contains a comma (which is exactly what the wording that won contains) and
     // it has to return undefined for a list with no glosses at all, or the comparison
     // above would be `undefined === undefined` on two doors that lost the gloss together.
     expect(scopeGlossesIn('born: public (a), private (b, c), or global (d)')).toEqual([
@@ -424,12 +424,12 @@ describe('the shared vocabulary publishes nothing plumbed to nowhere', () => {
     // glossed and exported with nothing taking it is the shape several defects of this series had:
     // the code under the gap is right, nothing feeds it, and every test passes because ABSENCE is
     // what there is to see. `every-public-value-has-a-caller.test.ts` walks the packages' ENTRY
-    // POINTS and cannot see an export of a module inside one — which is what this is, and it is the
+    // POINTS and cannot see an export of a module inside one, which is what this is, and it is the
     // second slice in a row where that had to be closed by hand.
     //
     // "Taken" means one of the two doors reaches it: a CLI declaration registered through
-    // the commander channel (by IDENTITY — the very array), or a set the MCP advertises in
-    // a schema (by VALUE — JSON Schema does not carry identity).
+    // the commander channel (by IDENTITY: the very array), or a set the MCP advertises in
+    // a schema (by VALUE: JSON Schema does not carry identity).
     const declared = everyCommandOf(buildProgram(silent).program).flatMap((command) => [
       ...command.registeredArguments.map((argument) => valuesDeclaredOn(argument)),
       ...command.options.map((option) => valuesDeclaredOn(option)),
@@ -457,7 +457,7 @@ describe('the shared vocabulary publishes nothing plumbed to nowhere', () => {
     expect(published.length).toBeGreaterThanOrEqual(5);
     expect(declared.filter((set) => set.length > 0).length).toBeGreaterThan(10);
     expect(advertisedSets).toHaveLength(10);
-    // A set nothing takes is refused by the same predicate — this file's own non-vacuity,
+    // A set nothing takes is refused by the same predicate: this file's own non-vacuity,
     // on a value the product does not produce.
     expect(taken(['reticulate', 'splines'])).toBe(false);
   });

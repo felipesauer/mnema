@@ -11,18 +11,18 @@
  * AND BETWEEN THE TWO OF US ONE DIRECTION IS STILL UNCOVERED, which is said here so the
  * pair is not read as closing the subject. This guard walks CLI options and asks for a
  * read; the sister walks exported values and asks for a caller. A field of a LIBRARY
- * options object — not a flag, so no parser enumerates it — is asked neither question.
+ * options object (not a flag, so no parser enumerates it) is asked neither question.
  * Measured rather than guessed: read-in-production-and-written-by-no-production-file
  * accuses 6 of 345 optional-field declarations, and 5 of the 6 are artefacts a guard
  * would have to excuse on its first day (three commander-fed flags, a commander hook,
- * a network seam). The count that would justify building it is therefore ONE —
- * `CacheOptions.dbPath` — and one instance gets the per-case treatment this file's
+ * a network seam). The count that would justify building it is therefore ONE,
+ * `CacheOptions.dbPath`, and one instance gets the per-case treatment this file's
  * own sister paragraph names, not a third guard. The full sweep is in the sister's
  * doc-comment.
  *
  * IT WAS BUILT BECAUSE THE SURFACE HELD ONE. `mnema witness upgrade --calendar` accepted
  * URLs, the wiring put them in `{ calendars }`, the adapter forwarded the object, and
- * `completeWitness` never read the key — while the help said `the calendars to ask, when
+ * `completeWitness` never read the key, while the help said `the calendars to ask, when
  * the defaults are not the ones used`. It is the fifth defect of that shape in this
  * product, and the first four were all found by somebody using them.
  *
@@ -35,7 +35,7 @@
  *
  * AND IT WAS BLIND TO A VALUE THE GROUP TAKES, which is the second amendment. `witness
  * stamp` and `witness upgrade` each declared `--global` and named `opts.global`, so both
- * were cleared as read by "the action itself" — and the value never arrived: `witness`
+ * were cleared as read by "the action itself", and the value never arrived: `witness`
  * declares `--global` too, and commander hands a flag to the ancestor that declares it,
  * wherever it is written, because this program does not turn positional options on. The
  * act's own copy is never filled, and naming it is a read of nothing. So an option an
@@ -52,7 +52,7 @@
  *     every one of those six. So the destination name is read off the action's own
  *     source and the trace follows THAT.
  *   - THE KEY IS READ, JUST NOT HERE. `.calendars` has a reader in the very file that
- *     ignores it — `stampCheckpoint`, which is `stamp`'s path, not `upgrade`'s. A scan
+ *     ignores it: `stampCheckpoint`, which is `stamp`'s path, not `upgrade`'s. A scan
  *     that asks "is this key read anywhere" answers yes and clears the defect. So the
  *     question is asked of the functions REACHABLE from this action and of no others,
  *     which is what separates the two acts that share a flag name and a file.
@@ -60,7 +60,7 @@
  * WHAT A "READ" IS: a property access, a destructuring, or an index of the destination
  * name, in the body of a function this action can reach. Comments and string literals
  * are blanked first (`support/reading-source.ts`, the same instrument the sister guard
- * uses), so a `{@link}` cannot stand in for a use — the mistake that kept `disambiguate`
+ * uses), so a `{@link}` cannot stand in for a use: the mistake that kept `disambiguate`
  * looking alive.
  *
  * WHAT IT DOES NOT CATCH, in a list, because a guard whose limits are not written down
@@ -80,20 +80,20 @@
  *     they are the second surface with the same rule.
  *   - A COMMAND WITH NO ACTION OF ITS OWN CANNOT BE TRACED, and there are two such
  *     options ({@link NOT_TRACEABLE}).
- *   - A FLAG ONLY THE GROUP DECLARES IS CLEARED BY THE GROUP'S ACTION, which reads it — and
+ *   - A FLAG ONLY THE GROUP DECLARES IS CLEARED BY THE GROUP'S ACTION, which reads it, and
  *     on a line that names a subcommand, that action does not run. Whether each subcommand
  *     reads the flag or refuses it is not a question about source: every such pair is run
  *     by `every-group-flag-is-read-or-refused.test.ts`.
  *   - AN ACTION THAT HANDS ITS OPTIONS OBJECT AWAY WHOLE is traced under the attribute's
  *     own name ({@link handsTheWholeObjectAway}), and the options object is taken to be
  *     the LAST parameter the handler declares. No handler on this surface has that shape
- *     today — all 94 traceable options are named by the action that received them — so
+ *     today (all 94 traceable options are named by the action that received them), so
  *     the clause is written against a future one and is exercised only by cases this
  *     file owns.
  *   - AN ACTION THAT REACHES ITS OPTIONS ONLY UNDER A COMPUTED NAME would be ACCUSED
  *     wrongly. `opts[flag]` writes no attribute, so the discriminant reads it as an
  *     option the action ignores. With the clause above it is the second and last way
- *     closing the hole can err, and it errs LOUDLY rather than quietly — the accusation
+ *     closing the hole can err, and it errs LOUDLY rather than quietly: the accusation
  *     names the option, and the answer is an entry in {@link NOT_TRACEABLE}. No handler
  *     on this surface reads options that way; `task guard`'s three fields are indexed at the
  *     far end (`fields[field]` in `core/workflow/gate.ts`), not in the action.
@@ -123,7 +123,7 @@ interface Body {
 /** A `function name(` head, exported or not, generator or not. */
 const FUNCTION_HEAD =
   /(?:^|\n)\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*[<(]/g;
-/** A `const name = (` head — the other way this workspace declares one. */
+/** A `const name = (` head: the other way this workspace declares one. */
 const ARROW_HEAD =
   /(?:^|\n)\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*(?:async\s*)?(?:<[^>]*>)?\(/g;
 /** Any call: `name(`. */
@@ -147,7 +147,7 @@ function matchingClose(code: string, open: number): number {
  *
  * `function heldChains(ctx: C): { chains: X; trees: Y } { … }` puts a brace group
  * between the parameters and the body, and taking the first one read the annotation as
- * the body — sixty characters of field names, no calls, no reads. A function whose body
+ * the body (sixty characters of field names, no calls, no reads). A function whose body
  * is missed contributes nothing to the graph, which is how this instrument would err by
  * ACCUSING. So a group whose close is followed by another brace was the annotation.
  */
@@ -177,7 +177,7 @@ function bodyBrace(code: string, from: number): number {
   return -1;
 }
 
-/** Every function of every package's `src`, by name — tests excluded. */
+/** Every function of every package's `src`, by name: tests excluded. */
 function productionBodies(): Map<string, Body[]> {
   const found = new Map<string, Body[]>();
   for (const directory of ['chain', 'code', 'context', 'core']) {
@@ -203,7 +203,7 @@ function productionBodies(): Map<string, Body[]> {
 
 const BODIES = productionBodies();
 
-/** Which functions each function calls — by NAME, which over-approximates on purpose. */
+/** Which functions each function calls: by NAME, which over-approximates on purpose. */
 const CALLS = new Map<string, Set<string>>();
 for (const [name, bodies] of BODIES) {
   const out = new Set<string>();
@@ -249,7 +249,7 @@ function readSites(names: ReadonlySet<string>, key: string): string[] {
 // Where an option's value goes, read off the action that received it
 // ---------------------------------------------------------------------------
 
-/** The `{ … }` spans holding no `;` — object literals rather than blocks. */
+/** The `{ … }` spans holding no `;`: object literals rather than blocks. */
 function objectLiterals(code: string): string[] {
   const spans: string[] = [];
   for (let i = 0; i < code.length; i += 1) {
@@ -279,7 +279,7 @@ function enclosingGroup(code: string, at: number): string | null {
 }
 
 /**
- * Where the action's own source NAMES the option — `something.attribute` — or -1.
+ * Where the action's own source NAMES the option, `something.attribute`, or -1.
  *
  * ONE FUNCTION AND TWO CALLERS, BECAUSE IT IS ONE QUESTION ASKED TWICE.
  * {@link destinationsOf} asks it to decide whether there is anything to trace, and
@@ -331,14 +331,14 @@ function signature(code: string): Signature {
  * Whether the action hands its OPTIONS OBJECT away whole, under no key of its own.
  *
  * `run(ctx, opts)` and `run(ctx, { ...opts })` forward every option at once, and the
- * value then travels under the attribute's OWN name — so there is a destination, it is
+ * value then travels under the attribute's OWN name, so there is a destination, it is
  * just not written down anywhere. Without this the amendment below would accuse every
  * option of such a command, which is the one way closing that hole could do damage.
  *
  * THE OPTIONS OBJECT IS TAKEN TO BE THE LAST PARAMETER the handler declares, because
  * commander calls `action(...operands, options, command)` and every handler in this
  * workspace stops at `options`. A handler that declared only operands would have its
- * last operand read as the options object here — a MISS, never an accusation, which is
+ * last operand read as the options object here: a MISS, never an accusation, which is
  * the direction this file errs in on purpose.
  */
 function handsTheWholeObjectAway(code: string): boolean {
@@ -355,7 +355,7 @@ function handsTheWholeObjectAway(code: string): boolean {
 /**
  * The names an option's value is handed away under, taken from the action's own source.
  *
- * An EMPTY answer means the action hands this value to nothing — either because it
+ * An EMPTY answer means the action hands this value to nothing: either because it
  * reads it in place, which is what every `--json` does, or because it never names it at
  * all. Those are opposites and this function does not tell them apart; {@link verdictOf}
  * does, with {@link namedAt}.
@@ -376,7 +376,7 @@ export function destinationsOf(actionSource: string, attribute: string): Set<str
     keys.add(match[1] as string);
   }
   // Two steps: `const NAME = <expression naming opts.attribute>`, then `{ …, NAME, … }`.
-  // The second clause is what keeps a call's ANSWER out of the set — `const result =
+  // The second clause is what keeps a call's ANSWER out of the set: `const result =
   // runTailPrune(…)` names the option and is not the option going anywhere. An `await`
   // binding is excluded for the same reason, one shape earlier.
   const literals = objectLiterals(code);
@@ -394,7 +394,7 @@ export function destinationsOf(actionSource: string, attribute: string): Set<str
   // Still nothing, and the value IS spent building something handed away: the option
   // decides which LITERAL is written rather than travelling itself, which is what
   // `opts.write === true ? { write: true } : {}` does. The keys of the innermost
-  // parenthesis group are the candidates — narrow enough that the sibling spread on the
+  // parenthesis group are the candidates: narrow enough that the sibling spread on the
   // next line is not one of them, which matters because that sibling is often read.
   if (keys.size === 0) {
     const group = enclosingGroup(code, used);
@@ -405,7 +405,7 @@ export function destinationsOf(actionSource: string, attribute: string): Set<str
   return keys;
 }
 
-/** The workspace functions an action calls — the entry points of its own path. */
+/** The workspace functions an action calls: the entry points of its own path. */
 function entryPoints(actionSource: string): Set<string> {
   const seeds = new Set<string>();
   for (const match of codeOnly(actionSource).matchAll(CALL)) {
@@ -428,8 +428,8 @@ interface Declared {
   /** The action that receives it, or undefined when the command declares none. */
   readonly action: string | undefined;
   /**
-   * The ancestor that declares the same flag, e.g. `mnema witness` — the one commander hands
-   * the value to — or undefined when no ancestor does.
+   * The ancestor that declares the same flag, e.g. `mnema witness`, the one commander hands
+   * the value to, or undefined when no ancestor does.
    */
   readonly takenBy: string | undefined;
 }
@@ -511,10 +511,10 @@ interface Verdict {
  * AN EMPTY SET OF DESTINATIONS HAS TWO OPPOSITE MEANINGS, and the discriminant is
  * whether the action's own source NAMES the option:
  *
- *   - IT NAMES IT AND FORWARDS NOTHING — the action is the reader, and there is no
+ *   - IT NAMES IT AND FORWARDS NOTHING: the action is the reader, and there is no
  *     second layer for anything to be dropped in. Every `--json` is this, fourteen of
  *     them, and they are the scenario the clause was written for.
- *   - IT NEVER NAMES IT — nothing read the value and nothing was handed it. The option
+ *   - IT NEVER NAMES IT: nothing read the value and nothing was handed it. The option
  *     is IGNORED, which is exactly what this file exists to refuse.
  *
  * READING THE SECOND AS THE FIRST IS THE HOLE THIS GUARD SHIPPED WITH. An option added
@@ -536,7 +536,7 @@ export function verdictOf(option: string, actionSource: string, attribute: strin
 }
 
 /**
- * Whether an action names its OWN options parameter's copy of an attribute — `opts.global`.
+ * Whether an action names its OWN options parameter's copy of an attribute: `opts.global`.
  *
  * For an option an ancestor also declares, that copy is never filled: the ancestor receives
  * the value wherever it is written. So this is the discriminant of the second amendment, and
@@ -585,10 +585,10 @@ function feedNothing(): string[] {
 }
 
 /**
- * The options this cannot trace, each with the reason — reconciled in both directions.
+ * The options this cannot trace, each with the reason: reconciled in both directions.
  *
  * THREE ENTRIES, AND ALL ARE THE PROGRAM'S OWN (`--identify` is the third). None hangs on a verb, so none has
- * an action for the trace to start from — and the walk finding them is the point: they
+ * an action for the trace to start from, and the walk finding them is the point: they
  * are options a caller can type, and a table that quietly skipped them would be a table
  * about a surface smaller than the one that exists.
  */
@@ -615,7 +615,7 @@ const NOT_TRACEABLE: Readonly<Record<string, string>> = {
     'reader is the plugin (`plugin/hooks/hand-over.mjs`), held by `the-record-arrives-unasked.test.ts`',
 };
 
-/** What a declaration table tolerates, and what it does not — both ways at once. */
+/** What a declaration table tolerates, and what it does not: both ways at once. */
 export function reconcile(
   accused: readonly string[],
   declared: Readonly<Record<string, string>>,
@@ -633,7 +633,7 @@ export function reconcile(
  * A guard over an ABSENCE goes green the day its enumerator breaks, and this one has
  * three ways to break quietly: the interception could stop capturing handlers, the walk
  * could stop descending into subcommands, and `buildProgram` could change shape. So the
- * count has a floor and four options are named — one per shape the enumeration has to
+ * count has a floor and four options are named, one per shape the enumeration has to
  * reach: a group's own option, a subcommand's, one declared multi-line, and the one
  * declared outside `wiring/` altogether.
  *
@@ -650,7 +650,7 @@ const OPTION_FLOOR = 90;
 const MUST_ENUMERATE = [
   // Declared multi-line, on a subcommand, in `wiring/witness.ts`.
   'mnema witness stamp --calendar <url...>',
-  // Its sibling on the other act — the one whose value went nowhere and was removed.
+  // Its sibling on the other act: the one whose value went nowhere and was removed.
   'mnema witness upgrade --blocks <url>',
   // `.requiredOption(`, which the grep above cannot see at all.
   'mnema task guard --actor <id>',
@@ -679,7 +679,7 @@ describe('every option the CLI declares feeds something', () => {
 
   it('read the product, not an empty string', () => {
     // The graph is the other thing that can break quietly. A body reader that finds
-    // nothing makes every read invisible and every option accused — loudly — but one
+    // nothing makes every read invisible and every option accused, loudly, but one
     // that finds a THIRD of them accuses only the unlucky ones.
     expect(BODIES.size).toBeGreaterThan(900);
     expect(BODIES.get('completeWitness')?.[0]?.body.length ?? 0).toBeGreaterThan(300);
@@ -697,7 +697,7 @@ describe('every option the CLI declares feeds something', () => {
     expect([
       ...destinationsOf('(opts) => run(ctx, { configProject: opts.project })', 'project'),
     ]).toEqual(['configProject']);
-    // Two steps, through a local that is then handed away by shorthand — `parseScope`.
+    // Two steps, through a local that is then handed away by shorthand: `parseScope`.
     expect([
       ...destinationsOf(
         '(opts) => { const scope = parseScope(opts.scope, w); run(ctx, { scope, id }); }',
@@ -722,7 +722,7 @@ describe('every option the CLI declares feeds something', () => {
   it('separates the option the action READS from the one it IGNORES', () => {
     // Both of these reach an EMPTY set of destinations, and they are opposite facts.
     // The action that NAMES the option is its reader, and there is no second layer for
-    // anything to be dropped in — every `--json` on the surface is this.
+    // anything to be dropped in: every `--json` on the surface is this.
     expect(
       verdictOf('mnema x --json', '(opts) => { if (opts.json === true) out(x); }', 'json').read,
     ).toEqual(['the action itself']);
@@ -734,7 +734,7 @@ describe('every option the CLI declares feeds something', () => {
     ).toEqual({ option: 'mnema x --nobody', destinations: [], read: [] });
     // And the same question of the product's own handler rather than a string this
     // test wrote, which is the form the defect actually took: an option declared on
-    // `witness upgrade` — a command that HAS an action — and named by nobody.
+    // `witness upgrade`, a command that HAS an action, and named by nobody.
     const action = OPTIONS.find((one) => one.where === 'mnema witness upgrade')?.action ?? '';
     expect(action).toContain('runWitnessUpgrade');
     expect(
@@ -748,7 +748,7 @@ describe('every option the CLI declares feeds something', () => {
   it('still clears an action that hands its options object away whole', () => {
     // The clause the discriminant must not break, and the ONE way closing the hole
     // could do damage: `run(ctx, opts)` writes no key, so the value travels under the
-    // attribute's own name — and asked of the real path, that name has a reader.
+    // attribute's own name, and asked of the real path, that name has a reader.
     expect([...destinationsOf('(opts) => runWitnessUpgrade(ctx, opts)', 'blockSource')]).toEqual([
       'blockSource',
     ]);
@@ -771,7 +771,7 @@ describe('every option the CLI declares feeds something', () => {
     // by the action that received it, so `handsTheWholeObjectAway` is exercised by the
     // cases just above and by nothing that ships. It is a case of its own, not a fifth
     // assertion in the one above, because a clause with no scenario is one nobody
-    // notices going wrong — and a neighbouring failure must not be able to hide it.
+    // notices going wrong, and a neighbouring failure must not be able to hide it.
     // The day a handler forwards its options whole this goes red, and the count on
     // {@link handsTheWholeObjectAway} has to be taken again.
     const unnamed = OPTIONS.filter(
@@ -787,7 +787,7 @@ describe('every option the CLI declares feeds something', () => {
 
   it('asks the question of THIS path and not of the workspace', () => {
     // The case the guard exists for, stated as the instrument's own. `.calendars` has a
-    // reader — `stampCheckpoint` — and that reader is on `stamp`'s path. Asked of what
+    // reader, `stampCheckpoint`, and that reader is on `stamp`'s path. Asked of what
     // `upgrade` can reach, the same key has none. A scan without this distinction
     // clears the defect this file was written for.
     const asked = reachableFrom(['runWitnessStamp']);
@@ -805,7 +805,7 @@ describe('every option the CLI declares feeds something', () => {
     expect(
       readsItsOwnCopy('async (opts) => { run(ctx, { global: opts.global }); }', 'global'),
     ).toBe(true);
-    // Read off the group instead — the one reader that knows where commander put it.
+    // Read off the group instead: the one reader that knows where commander put it.
     expect(
       readsItsOwnCopy(
         'async (opts) => { const given = await fromTheGroup(act, w); run(ctx, { global: given.global }); }',
@@ -854,7 +854,7 @@ describe('every option the CLI declares feeds something', () => {
   });
 
   it('tolerates a declared option and still accuses an undeclared one', () => {
-    // The exception mechanism, on input this test owns — the real table holds one entry
+    // The exception mechanism, on input this test owns: the real table holds one entry
     // and exercises neither half of the reconciliation on its own.
     const accused = ['mnema x --one', 'mnema x --two'];
     expect(reconcile(accused, { 'mnema x --one': 'the reason' })).toEqual({

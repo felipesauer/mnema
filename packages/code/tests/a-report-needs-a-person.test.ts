@@ -8,7 +8,7 @@
  *   - the PERSON is a terminal: without one `mnema report` prints no link and a failing verb
  *     offers nothing, and both are proved on the built binary, once with a pipe and once under a
  *     real pseudo-terminal;
- *   - the AGENT is told, in the handshake, to tell the person — and no tool of the server
+ *   - the AGENT is told, in the handshake, to tell the person, and no tool of the server
  *     reports, sends, accepts or declines.
  */
 

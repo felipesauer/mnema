@@ -1,5 +1,5 @@
 /**
- * That `--project` reaches the server — the half a behaviour test cannot see.
+ * That `--project` reaches the server: the half a behaviour test cannot see.
  *
  * `McpServerOptions.configProject` existed, was documented, and was passed all the
  * way down to the cascade; nothing ever set it. An option plumbed to the end and fed
@@ -9,7 +9,7 @@
  *
  * So this asserts the link itself. It is its own file because proving it means
  * standing in for the server module (`vi.mock` is file-global), and the file next to
- * it — `mcp-configured-project.test.ts` — drives the real one. Between the two, the
+ * it, `mcp-configured-project.test.ts`, drives the real one. Between the two, the
  * whole path is covered: the flag reaches the option here, and the option decides the
  * project there.
  */
@@ -47,14 +47,14 @@ async function mnema(...argv: string[]): Promise<Record<string, unknown>> {
   return only as Record<string, unknown>;
 }
 
-describe('mnema mcp --project — the flag reaches the server', () => {
+describe('mnema mcp --project: the flag reaches the server', () => {
   it('passes the directory through as the configured project', async () => {
     expect(await mnema('mcp', '--project', '/srv/pilot')).toMatchObject({
       configProject: '/srv/pilot',
     });
   });
 
-  it('passes it through AS TYPED — the rules about it are the resolver’s', async () => {
+  it('passes it through AS TYPED: the rules about it are the resolver’s', async () => {
     // A relative path is refused, and it is refused where the value is USED. Screening
     // it here as well would be one rule read in two places, and a server built any
     // other way would get whichever of the two readings this file happened to hold.
@@ -62,7 +62,7 @@ describe('mnema mcp --project — the flag reaches the server', () => {
   });
 
   it('sets NO configured project when the flag is absent', async () => {
-    // Absent, not present-and-undefined — and the reason is the compiler, not the
+    // Absent, not present-and-undefined, and the reason is the compiler, not the
     // cascade. The cascade branches on `!== undefined`, so a key present and holding
     // `undefined` would SKIP the rung and behave identically; the earlier note here
     // claimed such an object would take the refusing rung with nothing to refuse,
@@ -75,18 +75,18 @@ describe('mnema mcp --project — the flag reaches the server', () => {
   });
 });
 
-describe('mnema mcp — the working directory reaches the server', () => {
+describe('mnema mcp: the working directory reaches the server', () => {
   // `McpServerOptions.cwd` is the directory a client that declares no workspace roots is
   // served the project of, and it has no default on purpose: a server built without it
   // has nothing to walk up from. That makes this link the whole of the fix for such a
-  // client — the cascade honours a directory only if the one production caller hands it
+  // client: the cascade honours a directory only if the one production caller hands it
   // one, and the class this file exists for is an option plumbed to the end and fed by
   // nobody.
   it('passes the directory the process runs in', async () => {
     expect(await mnema('mcp')).toMatchObject({ cwd: process.cwd() });
   });
 
-  it('passes it beside a configured project, too — the flag decides, the directory waits', async () => {
+  it('passes it beside a configured project, too: the flag decides, the directory waits', async () => {
     expect(await mnema('mcp', '--project', '/srv/pilot')).toMatchObject({
       cwd: process.cwd(),
       configProject: '/srv/pilot',
@@ -94,7 +94,7 @@ describe('mnema mcp — the working directory reaches the server', () => {
   });
 });
 
-describe('mnema mcp --agent-key — the agent the server signs as reaches it', () => {
+describe('mnema mcp --agent-key: the agent the server signs as reaches it', () => {
   const variable = 'MNEMA_AGENT_KEY';
   let before: string | undefined;
   beforeEach(() => {

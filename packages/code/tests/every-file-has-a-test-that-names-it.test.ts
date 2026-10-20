@@ -1,5 +1,5 @@
 /**
- * EVERY PRODUCT FILE HAS A TEST THAT ASSERTS ABOUT IT — and the suite says which do not.
+ * EVERY PRODUCT FILE HAS A TEST THAT ASSERTS ABOUT IT: and the suite says which do not.
  *
  * COVERAGE ANSWERS A DIFFERENT QUESTION, and this repository measured the gap against
  * itself: FOUR files sat at 100% line coverage with no test naming them. A line that ran
@@ -13,8 +13,8 @@
  *     Does some assertion observe a VALUE this file produced?
  *
  * `support/witnessing.ts` answers it, and its module comment carries the argument. In
- * short: a test WITNESSES a file when it imports it through a relative specifier — the
- * only kind that reaches a package's SOURCE rather than its built `dist` — and an
+ * short: a test WITNESSES a file when it imports it through a relative specifier, the
+ * only kind that reaches a package's SOURCE rather than its built `dist`, and an
  * `expect(...)` in that file mentions something the imported bindings can reach, through
  * assignment, through a helper function, or through a collaborator HANDED to them.
  *
@@ -28,7 +28,7 @@
  *      largest hole and it is declared rather than papered over.
  *   2. A CORPUS WALK IS NOT A WITNESS. Guards here read every file under a directory and
  *      assert over the result. By the mutation standard that IS an assertion about each
- *      file — and counting it would make this guard vacuous, because the repo-wide sweeps
+ *      file, and counting it would make this guard vacuous, because the repo-wide sweeps
  *      already reach nearly every file in `packages/code/src`. What such a sweep pins is
  *      one structural fact, never a behaviour, and the whole distance between coverage
  *      and this property lives in that difference.
@@ -36,7 +36,7 @@
  *      round-trip. This says a property is pinned, never that it is a good one.
  *   4. THE UNIVERSE IS THE COVERAGE GATE'S, WHICH LEAVES SHIPPED CODE OUT OF IT.
  *      `plugin/hooks/session-start.mjs` is shipped and would be accused by the rule below
- *      if it were here — but the globs are `packages/**\/src/**\/*.ts`, read off
+ *      if it were here, but the globs are `packages/**\/src/**\/*.ts`, read off
  *      `vitest.config.ts` and asserted back. Writing a second definition of production
  *      here is the exact shape that produces two answers, so the plugin tree waits for the
  *      gate to cover it rather than for this file to disagree with the gate.
@@ -44,7 +44,7 @@
  *      struck out whole before the test runs, so the module is never loaded and nothing
  *      it would produce can have been observed. This counted as an import until the
  *      second reading of the scanner, and six files were called witnessed on the strength
- *      of it alone — `writer.ts`, `record-effect.ts`, `run-pin.ts`, `intelligence/
+ *      of it alone: `writer.ts`, `record-effect.ts`, `run-pin.ts`, `intelligence/
  *      events.ts`, `sources.ts` and `workflow/clock.ts`, each then a row below. FOUR of
  *      them still are: `run-pin.ts` was drained when the guard over a refused run began
  *      importing its sentinel as a VALUE and asserting about what a program handed it
@@ -56,13 +56,13 @@
  * once: a product file with no witness that is not in it is accused, an entry that has
  * GAINED a witness is accused, an entry whose stated reach no longer holds is accused, and
  * an entry whose path names no product file is accused. Every entry carries the reason for
- * THAT file — what reaches it today and what that reaches instead — so it can be drained
+ * THAT file, what reaches it today and what that reaches instead, so it can be drained
  * one row at a time. It can only shrink.
  *
  * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 71 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
- * names nothing — asserted below rather than assumed.
+ * names nothing: asserted below rather than assumed.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -95,7 +95,7 @@ const asPath = (absolute: string): string => relative(REPO, absolute).split(sep)
 // The two corpora
 // ---------------------------------------------------------------------------
 
-/** Every `.ts` under a package, tests included — the walk `sourceFiles` will not do. */
+/** Every `.ts` under a package, tests included: the walk `sourceFiles` will not do. */
 function everyTypeScript(directory: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -118,7 +118,7 @@ const WORKSPACE = readdirSync(PACKAGES, { withFileTypes: true })
  * A package this walk cannot read, kept rather than thrown at.
  *
  * `sourceFiles` opens `<package>/src`, so a package directory without one used to end this
- * file in an ENOENT during COLLECTION — a stack trace where the guard's own subject is a
+ * file in an ENOENT during COLLECTION: a stack trace where the guard's own subject is a
  * missing directory, and no case to name it. The walk skips them and a case below says
  * which, which is the difference between a guard reporting and a guard dying.
  */
@@ -130,7 +130,7 @@ const READABLE = WORKSPACE.filter((pkg) => !WITHOUT_SOURCE.includes(pkg));
  *
  * Not a definition of this file's own. `vitest.config.ts` already states which files the
  * product is measured over, and a second statement of it is how the two would come to
- * disagree — so the globs are read back below and this walk is asserted to implement
+ * disagree, so the globs are read back below and this walk is asserted to implement
  * them. Note what that means and what the plan's own inventory got wrong: the exclude is
  * `packages/**\/src/index.ts`, a PACKAGE's barrel, so the four nested barrels
  * (`wiring/`, `identity/`, `topology/`, `workflow/`) are production here.
@@ -152,7 +152,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
-/** How a file with no witness is reached today — the two shapes of the same debt. */
+/** How a file with no witness is reached today: the two shapes of the same debt. */
 type Reach = 'nobody imports it' | 'imported, and no assertion observes it';
 
 /** One row of the ledger: how it is reached, and why that leaves nothing asserted. */
@@ -176,13 +176,13 @@ function unwitnessed(): Map<string, Reach> {
   return found;
 }
 
-/** What a declaration tolerates and what it does not — all four ways at once. */
+/** What a declaration tolerates and what it does not: all four ways at once. */
 interface Reconciliation {
   /** No witness and no entry: a product file nobody asserts about, undeclared. */
   readonly undeclared: readonly string[];
   /** An entry that has gained a witness. It has to leave; the ledger only shrinks. */
   readonly stale: readonly string[];
-  /** An entry whose reach changed — imported since, or the importer removed. */
+  /** An entry whose reach changed: imported since, or the importer removed. */
   readonly misdescribed: readonly string[];
   /** An entry whose path is no product file: renamed, deleted, or mistyped. */
   readonly unknown: readonly string[];
@@ -216,7 +216,7 @@ const asRow = (one: Unresolved): string => `${one.from} -> ${one.specifier}`;
 interface Followed {
   /** A specifier that led nowhere and has no row: a deletion, or a typed path. */
   readonly unexplained: readonly string[];
-  /** A row nothing produces any more — it resolves now, or the import is gone. */
+  /** A row nothing produces any more: it resolves now, or the import is gone. */
   readonly obsolete: readonly string[];
 }
 
@@ -235,7 +235,7 @@ export function reconcileFollowed(
 /**
  * Every relative specifier this scanner follows and finds nothing at, with why.
  *
- * NOT A LIST OF EXCEPTIONS — a list of what the resolver cannot see, which is a narrower
+ * NOT A LIST OF EXCEPTIONS: a list of what the resolver cannot see, which is a narrower
  * thing. It looks for `<base>.ts`, `<base>` with `.js` swapped for `.ts`, and
  * `<base>/index.ts`, and only among the paths the two corpora walked. Everything below is
  * a specifier that is CORRECT and still cannot resolve for one of those two reasons; a
@@ -278,7 +278,7 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
  * Every product file no assertion observes a value from, with the reason for THAT file.
  *
  * A BOOK OF DEBT, NOT A DISPENSATION. Each row says what this file is, what reaches it
- * today, and what that reaching pins instead — so a row can be drained on its own by
+ * today, and what that reaching pins instead, so a row can be drained on its own by
  * someone who has read nothing else. Two rows never carry the same sentence; a shared
  * excuse is how a table like this becomes a rubber stamp, and it is what the guard over
  * the MCP's write tools found rotted the last time it was a hand-kept list of names.
@@ -286,7 +286,7 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
  * IT ONLY SHRINKS. `reconcile` reads it four ways at once: a file with no witness and no
  * row is accused, a row whose file has GAINED a witness is accused and has to leave, a row
  * whose stated reach no longer holds is accused, and a row whose path names nothing in
- * production is accused. A row cannot be added in silence either — the counts below move
+ * production is accused. A row cannot be added in silence either: the counts below move
  * with it.
  *
  * THE SHAPE OF WHAT IS LEFT, so the next slice can pick its ground: thirty-two modules
@@ -302,7 +302,7 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
  * and eighteen, and the sentence three paragraphs up said seventy-seven where the line
  * inside the case that reads it said seventy-nine: three numbers about this table, written
  * by hand, drifting each time a row was drained. They are counted now, by a case, off the
- * very keys — {@link THE_SHAPE_OF_WHAT_IS_LEFT} — so a shape this comment states and the
+ * very keys, {@link THE_SHAPE_OF_WHAT_IS_LEFT}, so a shape this comment states and the
  * table does not hold is red rather than stale prose.
  */
 const UNWITNESSED: Readonly<Record<string, Debt>> = {
@@ -645,7 +645,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
 // ---------------------------------------------------------------------------
 
 /**
- * THE SHAPE OF WHAT IS LEFT, as numbers a case can check — the header's own paragraph,
+ * THE SHAPE OF WHAT IS LEFT, as numbers a case can check: the header's own paragraph,
  * written where it can be read back.
  *
  * It is here and not in the prose because the prose drifted twice: a delivery drains rows
@@ -688,7 +688,7 @@ function groupOf(path: string): string {
  *
  * A line per file keeps what the numbers were for and moves the collision to where the change
  * is: two branches that change different files edit different lines. What made the numbers
- * worth writing stays — a change to one file's imports, a new file and a removed one are each
+ * worth writing stays: a change to one file's imports, a new file and a removed one are each
  * an edit someone makes on purpose, and the red names the file and the value it read. What
  * each step used to explain in prose lives in the commit that made it, beside its diff.
  *
@@ -740,7 +740,7 @@ function outOfOrder(lines: readonly string[]): string[] {
 
 /**
  * THE IMPORT CLAUSES OF EACH FILE OF THE TEST TREE, sorted by path, the files with none
- * included — so a new file with no line is red whatever it imports.
+ * included, so a new file with no line is red whatever it imports.
  *
  * HOW MANY, NOT AT LEAST HOW MANY. The case that reads this once said
  * `toBeGreaterThan(2000)`, and the clause grammar is one character away from losing real
@@ -1975,7 +1975,7 @@ describe('every file has a test that names it', () => {
 
   it('holds the shape its own header states, counted off the keys', () => {
     // THE HEADER SAID *counted off the rows below, not estimated* AND WAS NOT. Two of its
-    // three numbers had drifted a delivery behind the table — the paragraph up there says
+    // three numbers had drifted a delivery behind the table: the paragraph up there says
     // which, and this is what makes the sentence checkable instead of decorative. Every key
     // falls in exactly one group and the groups add up to the whole table, so a row drained
     // without the prose moving reddens HERE, on the group it left.
@@ -2009,7 +2009,7 @@ describe('every file has a test that names it', () => {
       obsolete: [],
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
-    // really does hold rows — a scanner returning nothing would satisfy the line above.
+    // really does hold rows; a scanner returning nothing would satisfy the line above.
     expect(unresolved.length).toBe(10);
     expect(Object.keys(LED_NOWHERE)).toHaveLength(10);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
@@ -2034,7 +2034,7 @@ describe('every file has a test that names it', () => {
 
   it('cannot be dissolved by the ledger that describes it', () => {
     // The keys below are 71 paths, and the production census names every product file.
-    // Naming requires an IMPORT, so listing a file here cannot witness it — and this file,
+    // Naming requires an IMPORT, so listing a file here cannot witness it, and this file,
     // which mentions every one of them, imports no product file at all.
     const self = TEST_TREE.find((one) =>
       one.path.endsWith('every-file-has-a-test-that-names-it.test.ts'),
@@ -2101,7 +2101,7 @@ describe('the scanner tells an assertion from an import', () => {
   });
 
   it('ACCUSES a file only a path literal names, however the literal is asserted', () => {
-    // A corpus walk or a declared list of module paths is not a witness here — see the
+    // A corpus walk or a declared list of module paths is not a witness here: see the
     // header. Both spellings of the literal are tried, because this is the exclusion the
     // ledger's own survival depends on.
     expect(scan("it('x', () => { expect(['pkg/src/store.ts']).toEqual(FLOOR); });")).toEqual({
@@ -2129,7 +2129,7 @@ describe('the scanner tells an assertion from an import', () => {
   });
 
   it('reports a specifier that led nowhere from a HELPER as well as from a case', () => {
-    // The rule has one site and TWO walks reach it. The corpus exercises the case half —
+    // The rule has one site and TWO walks reach it. The corpus exercises the case half:
     // put the wrong path back into `completion/lookups.test.ts` and the guard above
     // accuses it. The helper half has nothing live to exercise it, so it is stated here:
     // routing only the helper walk around that site left every case green, and this is
@@ -2147,7 +2147,7 @@ describe('the scanner tells an assertion from an import', () => {
       { from: 'pkg/tests/one.test.ts', specifier: './nowhere.js' },
     ]);
     // A package specifier is not a path this scanner claims to follow, so it is not a
-    // miss — the exclusion the module comment argues for, read from the other end.
+    // miss: the exclusion the module comment argues for, read from the other end.
     expect(
       witnessing(
         product,
@@ -2161,7 +2161,7 @@ describe('the scanner tells an assertion from an import', () => {
     // THE ORDER IS THE PROPERTY, and it is the defect that reached the PR this guard is:
     // `completion/lookups.test.ts` asked for a path no file has ever been at, and it asked
     // with `import type`. A walk that skips the erased clause before following it cannot
-    // see that, because whether esbuild erases the import decides if it is an IMPORT — it
+    // see that, because whether esbuild erases the import decides if it is an IMPORT: it
     // never decides whether the path is a path.
     //
     // Constructed rather than frozen, and that is declared: the live instance was the
@@ -2214,7 +2214,7 @@ describe('the scanner tells an assertion from an import', () => {
 
   it('relays nothing through a helper whose re-export a compiler erases', () => {
     // THE OTHER SIDE OF THE SAME LINE, and nothing asserted it: deleting the helper walk's
-    // skip outright — not reordering it, removing it — left all thirty-eight green, while
+    // skip outright (not reordering it, removing it) left all thirty-eight green, while
     // deleting the case walk's copy reddened three. The two walks were not equally covered,
     // and this is the half that had none.
     //
@@ -2288,7 +2288,7 @@ describe('the scanner tells an assertion from an import', () => {
   });
 
   it('keeps the value half of a mixed clause and drops the type half', () => {
-    // `import { open, type Held }` DOES load the module — only `Held` is struck out — so
+    // `import { open, type Held }` DOES load the module (only `Held` is struck out), so
     // the file is imported either way, and only the witness moves.
     const mixed = "import { open, type Held } from './store.js';\n";
     expect(scan(`${mixed}it('x', () => { expect(open(1)).toBe(2); });`)).toEqual({
@@ -2343,7 +2343,7 @@ describe('the scanner tells an assertion from an import', () => {
   });
 
   it('refuses to reach the assertion verb, which would answer every question yes', () => {
-    // `open(expect)` taints `expect` by the rule a fake needs — what a tainted callee is
+    // `open(expect)` taints `expect` by the rule a fake needs: what a tainted callee is
     // HANDED is observable through it. But `expect` is in every assertion statement there
     // is, so admitting it would make the next line witness the file no matter what it
     // asserted about. The assertion below is about `unrelated`, and nothing else.
@@ -2393,7 +2393,7 @@ describe('the scanner tells an assertion from an import', () => {
         universe,
       ),
     ).toEqual({ undeclared: [], stale: [], misdescribed: ['a.ts'], unknown: [] });
-    // An entry naming a file that is not production — a rename, or a typed path.
+    // An entry naming a file that is not production: a rename, or a typed path.
     expect(
       reconcile(
         found,
@@ -2410,7 +2410,7 @@ describe('the scanner tells an assertion from an import', () => {
       unexplained: [],
       obsolete: [],
     });
-    // A specifier that leads nowhere with nothing said about it — the shape that let a
+    // A specifier that leads nowhere with nothing said about it: the shape that let a
     // wrong path into this branch.
     expect(reconcileFollowed(missed, {})).toEqual({ unexplained: [row], obsolete: [] });
     // And the other direction: the path was fixed, so the row has to go with it.
@@ -2432,7 +2432,7 @@ describe('the source it reads is code, and a pattern is not code', () => {
   it('ends every file of the test tree in code, which is what a desync destroys', () => {
     // The strongest form of the property, and the one that was broken: append a statement
     // and ask whether it survived. A blanker still inside a literal at EOF has been
-    // swallowing source since wherever it lost its place — nine of these files, up to a
+    // swallowing source since wherever it lost its place: nine of these files, up to a
     // hundred and nineteen lines each, assertions included.
     const swallowed = TEST_TREE.filter(
       (one) => !codeOnly(`${one.text}\nconst zzSentinel = 1;\n`).includes('zzSentinel'),
@@ -2451,8 +2451,8 @@ describe('the source it reads is code, and a pattern is not code', () => {
 
   it('takes a slash inside a character class for a literal, not the pattern’s end', () => {
     // ON ONE LINE, and that is the whole case. Read without the class, `/[^/` ends at the
-    // slash inside it and the `/` after `]+` opens a SECOND pattern that swallows the rest
-    // — but a pattern cannot cross a newline, so a version of this written across two
+    // slash inside it and the `/` after `]+` opens a SECOND pattern that swallows the rest,
+    // but a pattern cannot cross a newline, so a version of this written across two
     // lines is rescued by that rule and stays green under the very mutation it is for.
     const source = 'const parts = split(/[^/]+/); const after = one(2);';
     expect(codeOnly(source)).toContain('const after = one(2);');
@@ -2462,7 +2462,7 @@ describe('the source it reads is code, and a pattern is not code', () => {
   it('takes a bracket inside a character class for a literal, so the class still closes', () => {
     // THE LINE IS FROZEN FROM THE ONE THAT WAS LIVE, byte for byte:
     // `one-source-for-a-vocabulary.test.ts:171` at 60d4df0f, the regex-escaping call whose
-    // class holds a `[`. The case above it is not this case — its class holds a single
+    // class holds a `[`. The case above it is not this case: its class holds a single
     // bracket, which is the one shape a depth counter reads correctly, so it stayed green
     // through the whole defect. Counted as depth, the class here never closes: everything
     // from the pattern to the end of the line was read as pattern text and
@@ -2476,7 +2476,7 @@ describe('the source it reads is code, and a pattern is not code', () => {
     expect(codeOnly(live)).not.toContain('^');
     expect(codeOnly(live)).not.toContain('$&');
     // And a statement sharing the line survives it, which is what the tree-wide sentinel
-    // below cannot see — a pattern dies at the newline, so a file ends in code either way.
+    // below cannot see: a pattern dies at the newline, so a file ends in code either way.
     expect(codeOnly(`${live} const after = one(2);`)).toContain('const after = one(2);');
   });
 
@@ -2540,7 +2540,7 @@ describe('the scanner’s parts, each on input of its own', () => {
   it('takes the whole assertion, subject and matcher, and nothing before it', () => {
     const found = assertionStatements('const a = 1;\nexpect(subject).toEqual(expected);\nafter();');
     expect(found).toEqual(['expect(subject).toEqual(expected)']);
-    // A chain broken across lines is one statement, not two — a matcher on its own line
+    // A chain broken across lines is one statement, not two: a matcher on its own line
     // is where half these assertions put the expected value.
     expect(assertionStatements('expect(one)\n  .toEqual(two);')).toEqual([
       'expect(one)\n  .toEqual(two)',
@@ -2582,7 +2582,7 @@ describe('the scanner’s parts, each on input of its own', () => {
         "import './side-effect.js';\n",
     );
     // The middle one is double-quoted. If it were not closed, its clause would run on and
-    // the `export` below would come back binding `b` and `d` instead of `e` — measured,
+    // the `export` below would come back binding `b` and `d` instead of `e`: measured,
     // and the reason both quotes are matched.
     expect(found.map((one) => one.specifier)).toEqual(['./one.js', './two.js', './three.js']);
     expect(found.map((one) => boundNames(one.clause))).toEqual([['a'], ['b', 'd'], ['e']]);
@@ -2592,7 +2592,7 @@ describe('the scanner’s parts, each on input of its own', () => {
   });
 
   it('never invents a clause out of a declaration, over the tree it actually reads', () => {
-    // NOT A WRITTEN EXAMPLE — the corpus, because the two files that carried this are in
+    // NOT A WRITTEN EXAMPLE: the corpus, because the two files that carried this are in
     // it and one of them is this one. A line-initial `export` that begins a declaration
     // has no `from`, so a lazily matched clause left the declaration and ran to somebody
     // else's: out of THIS file it produced a single clause opening at
@@ -2601,13 +2601,13 @@ describe('the scanner’s parts, each on input of its own', () => {
     // never read. It was 466 lines when measured at `60d4df0f`; that length is a property
     // of how long this file has since become, so the number is dated and the count below
     // is what this case pins instead. The case that was supposed to hold this was built on
-    // `export { e } from` — a clause that closes on its own line, the one shape that
+    // `export { e } from`: a clause that closes on its own line, the one shape that
     // cannot run on.
     const clauses = TEST_TREE.flatMap((one) =>
       importClauses(one.text).map((found) => ({ where: one.path, ...found })),
     );
     // A clause holds identifiers, `type`, `as`, `*`, commas, braces and whitespace. Any
-    // other character here means the match left the declaration it started in — a clause
+    // other character here means the match left the declaration it started in: a clause
     // that ran on. A clause the grammar never matched leaves nothing here to see at all,
     // which is the half the count below is for.
     const invented = clauses
@@ -2633,7 +2633,7 @@ describe('the scanner’s parts, each on input of its own', () => {
 
   it('does not see an import whose clause holds a comment, and that is the cost', () => {
     // THE DECLARED COST, WRITTEN DOWN ONCE IN THIS WORKSPACE. The grammar admits no `/`,
-    // so a comment between the braces and `from` is not matched wrong — it is not matched
+    // so a comment between the braces and `from` is not matched wrong: it is not matched
     // at all, and an import that goes missing whole is invisible to the case above, whose
     // filter can only speak about clauses that WERE matched.
     const commented = "export type {\n  // why these two\n  A,\n} from './x.js';\n";
@@ -2679,7 +2679,7 @@ describe('the scanner’s parts, each on input of its own', () => {
   it('takes the body and not a `readonly` return annotation, which is a type', () => {
     // FROZEN FROM A LIVE SIGNATURE: `the-page-shows-its-seams.test.ts` reads the surface
     // and returns `readonly { … }[]`. `readonly` is a modifier and what follows it is
-    // still the type, but every other word ended the wait for one — so the ANNOTATION's
+    // still the type, but every other word ended the wait for one, so the ANNOTATION's
     // brace read as the body, and a body of field names mentions no value a walk could
     // carry. Six declarations in this tree are shaped this way; the one case that reached
     // this extractor before used a signature with no annotation at all.

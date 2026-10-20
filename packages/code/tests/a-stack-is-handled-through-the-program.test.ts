@@ -1,5 +1,5 @@
 /**
- * A STACK IS HANDLED THROUGH THE PROGRAM — the `mnema stack` verbs driven in process.
+ * A STACK IS HANDLED THROUGH THE PROGRAM: the `mnema stack` verbs driven in process.
  *
  * The built-binary files (`a-stack-goes-where-nothing-is`, `a-stack-is-looked-at-against-its-receipt`,
  * `a-hook-is-turned-on-by-a-person`) are what a person runs; this one drives the same wiring in
