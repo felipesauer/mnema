@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 32, name: 47, flag: 1 },
+  'CHANGELOG.md': { line: 32, name: 48, flag: 1 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -699,6 +699,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
   'packages/code/src/commands/doctor.ts': { line: 8, name: 4 },
   'packages/code/src/commands/handback.ts': { line: 1 },
+  'packages/code/src/commands/init.ts': { name: 1 },
   'packages/code/src/commands/key-enroll.ts': { line: 2 },
   'packages/code/src/commands/key-request.ts': { line: 1 },
   'packages/code/src/commands/report.ts': { line: 3 },
