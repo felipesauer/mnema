@@ -59,7 +59,9 @@ document, delivered by the host instead of waited for.
   of a command start. Measured on one machine (version 0.1.1, 21 October 2026, a sandbox, 50 runs
   each, without the real host): about 1 ms at the median per edit in Claude Code, and the
   server's own start, 270 to 350 ms, is paid once per session; Cursor and VS Code start a process
-  per edit, about 200 ms at the median per edit, even where no rule addresses the file. This hook has the same 10,000-character
+  per edit, about 200 ms at the median per edit where that process starts `mnema`. Where no tree
+  holds a rule with an address, it no longer does (below), and it cost about 50 ms at the median in
+  a second measurement (one machine under load, 21 October 2026, 50 runs). This hook has the same 10,000-character
   ceiling as the opening ones (read on Claude Code 2.1.281), so past it the rules stop at a whole one and the text
   says how many it left out and that `governing_rules` serves them all.
 - **A second `PreToolUse` hook, for VS Code**, which pauses a write for a person where a rule
