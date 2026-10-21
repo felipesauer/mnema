@@ -558,6 +558,13 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
+/**
+ * How long a case that runs EVERY declared command may take: each is a real `node` and, for most, a
+ * real `mnema`, so the time grows with the hooks file. Twelve hooks took 5.1 s on a CI runner, over
+ * the default 5 s, and 2.7 s to 3.7 s here alone.
+ */
+const EVERY_HOOK_RUN = 30_000;
+
 describe('the record arrives unasked', () => {
   it('says nothing at all where there is no project', () => {
     // The assertion that protects the machine of whoever installs this. `mnema brief`
@@ -1284,7 +1291,7 @@ describe('the record arrives unasked', () => {
       expect(ran.status, command).toBe(handlerOf(command) === HANDBACK_HOOK ? 2 : 0);
     }
     expect(held(sandbox)).toEqual(before);
-  });
+  }, EVERY_HOOK_RUN);
 
   it('runs the verbs it names: two that read, and the gate, which writes only when it asks', () => {
     // The guard that keeps the write half out. The read half was delivered alone on
@@ -1364,7 +1371,7 @@ describe('the record arrives unasked', () => {
       'after-a-write: mutates',
       'handback: reads',
     ]);
-  });
+  }, EVERY_HOOK_RUN);
 
   it('declares a manifest, a marketplace and hooks the host can read', () => {
     // Validity against what the host publishes: the manifest layout and the
