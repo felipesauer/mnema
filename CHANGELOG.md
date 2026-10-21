@@ -28,7 +28,7 @@ with its own changelog.
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
 - **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
   P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
-  the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with `mnema key request --checker`, and nothing is recorded.
+  the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
 
 ## [0.1.1] - 2026-10-20
 
