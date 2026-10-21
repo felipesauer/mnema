@@ -12,6 +12,13 @@ with its own changelog.
 
 ### Added
 
+- **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
+  `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
+  verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a
+  tree that does not travel leave the folder as it was, and a README that is already there is never replaced. Only the README is
+  written this way, and only inside `.mnema/`: the `.prettierignore` is still edited by `mnema init` alone. The session brief
+  (`mnema brief --hook`, never the file a person redirects it into) gains one line where `mnema doctor` would add the line `.mnema/` to the
+  `.prettierignore` (the same function), saying the formatter can rewrite the signed record and that `mnema init` protects it.
 - **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
   lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
   and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed

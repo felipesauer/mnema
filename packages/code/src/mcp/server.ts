@@ -2403,6 +2403,9 @@ function replied(
       // there beside others, once per key per tree for an installation, and again for a fresh
       // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
+      // AND THE PAGE A WRITE LEFT IN A RECORD THAT HAD NONE: only a write that landed makes it,
+      // so a read or a call that made nothing composes the reply and leaves the folder as it was.
+      ...session.recordPage.settled(wrote),
       // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN: its run,
       // the edit hook's facts, which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
@@ -2468,6 +2471,8 @@ function refused(
   session: Session,
   refusal: { readonly code: string; readonly message: string },
 ): RefusalReply {
+  // A refusal landed nothing: what the write opened is forgotten and no page is made.
+  session.recordPage.settled(false);
   return {
     isError: true,
     content: [
