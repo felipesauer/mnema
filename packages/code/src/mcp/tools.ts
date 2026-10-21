@@ -1005,12 +1005,16 @@ export function runRetractNote(
   session: Session,
   input: { id: string; reason: string },
 ): RetractNoteResult {
-  const located = locateEntity(session, input.id, 'records');
-  if (located.outcome !== 'found') return refuseUnlocated(session, 'note', input.id, located);
+  // A label one decision carries becomes its id, so the refusal says what that is; one several
+  // carry is refused with their ids.
+  const named = addressedIn(session, input.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  const located = locateEntity(session, named.id, 'records');
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'note', named.id, located);
   const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractNote(ctx, {
-      id: input.id,
+      id: named.id,
       reason: input.reason,
       which,
       run,
@@ -1766,7 +1770,12 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
   // context marks the written tree stale; doing it the other way round would
   // make every call rebuild the tree it is about to read.
   const caches = sessionCaches(session);
-  const served = input.id === undefined ? undefined : lookupServedSkill(caches, input.id);
+  // A label one decision carries becomes its id, as in every tool that takes one; one several
+  // carry is refused with their ids.
+  const named = input.id === undefined ? undefined : addressedIn(session, input.id);
+  if (named !== undefined && !named.ok) return ambiguousLabel(named.message);
+  const id = named?.id;
+  const served = id === undefined ? undefined : lookupServedSkill(caches, id);
   if (served?.outcome === 'unknown') {
     return {
       ok: false,
@@ -1775,7 +1784,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // the trees the session can see, and a refusal claiming a search of every
       // project would claim more than it did. `input.id` is defined here: `served`
       // is undefined without it.
-      message: notFoundInSessionTrees(session, 'skill', input.id as string),
+      message: notFoundInSessionTrees(session, 'skill', id as string),
     };
   }
   if (served?.outcome === 'not-served') {
@@ -1799,7 +1808,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // the caller sent"). `input.id` is defined here: `served` is undefined without
       // it, the same narrowing the branch above relies on.
       message:
-        `skill "${oneLine(input.id as string)}" is ${served.state}: a pattern the ` +
+        `skill "${oneLine(id as string)}" is ${served.state}: a pattern the ` +
         'project turned down or retired is not served as a way of working',
     };
   }
