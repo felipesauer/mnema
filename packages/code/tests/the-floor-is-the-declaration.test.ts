@@ -437,6 +437,7 @@ const FLOOR_MODULES: readonly string[] = [
   // The host table the lists a `--host` enumerates are read off: data, and no imports.
   'host-names.ts',
   'wiring/accountability.ts',
+  'wiring/after-a-write.ts',
   'wiring/aging.ts',
   'wiring/antipatterns.ts',
   'wiring/audit.ts',

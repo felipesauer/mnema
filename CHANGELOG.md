@@ -12,6 +12,25 @@ with its own changelog.
 
 ### Added
 
+- **After a write in Claude Code, `mnema after-a-write` copies a note of the host's own memory into the private tree,
+  and names the door of a file that holds decisions.** A `PostToolUse` hook on `Write|Edit` runs it behind a shell that
+  reads the path out of the payload and starts nothing for any other path (about 6 ms per common write on a loaded
+  machine). A note under this project's own memory directory in Claude Code (`projects/<project>/memory/*.md`, with `<project>` the
+  main working tree's path as the host names it, so every worktree of a repository shares it, under `$CLAUDE_CONFIG_DIR` or
+  `~/.claude`, or where `autoMemoryDirectory` points in your own settings or the project's `.claude/settings.local.json`)
+  is recorded as a memory in this machine's private tree, with a marker naming the file and a hash of its content, once
+  per content, under a new channel, `host-memory-mirror`, which starts ON (`mnema switch off host-memory-mirror` stops it):
+  the one channel that writes without a verb and begins on, by a recorded decision. A note in
+  another project's directory, the index `MEMORY.md` and a note of `type: user` are never copied, and nothing goes to the public tree. A file under
+  `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file,
+  plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does, gets one line naming
+  `mnema decision import <the directory or file>` or `record_decision` when the record cites it nowhere, once per session and file; it records
+  nothing, and `mnema switch off decision-file-written` stops it. The line at `Stop` now also counts the notes copied
+  since the session opened. `readHostMemory` in `@mnema/core` is the one reading of a memory file, for this and for
+  `decision import --format claude-memory`. Two limits are known and left as they are: a project path longer than 200
+  characters is compared by its first 200 (the host cuts the name there and adds a hash this does not compute), so two
+  such projects that share those 200 are not told apart; and the name pattern `*plan*.md` also matches a name such as
+  `explanation.md`, whose new lines still have to open as a decision does before any line is given.
 - **The record carries an `.editorconfig`, and `mnema doctor` and the brief warn of the other tools that would rewrite it.** `.mnema/.editorconfig`
   sets `insert_final_newline`, `trim_trailing_whitespace`, `end_of_line`, `charset`, `indent_style` and `indent_size` to `unset`
   (no `root = true`, so nothing else of the folders above is cut); it is written where the README is (the founding, the `init`

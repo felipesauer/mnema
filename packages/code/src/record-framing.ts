@@ -173,6 +173,8 @@ export type ModelChannel =
   | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections'
+  | 'host-memory-mirror'
+  | 'decision-file-written'
   | 'choice-settled';
 
 /** The channels that carry a declaration: the ones {@link SUBJECT_OF} answers for. */
@@ -308,6 +310,14 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] 
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'host-memory-mirror':
+    'what it carries is the product’s own sentence that a note of the host’s memory was copied, ' +
+    'with the file’s name and the id of the memory it became, and none of the note’s words, so ' +
+    'there is nobody’s words to say whose they are',
+  'decision-file-written':
+    'what it carries is the product’s own sentence about a file just written, its path and the ' +
+    'command that reads it, and none of the file’s words, so there is nobody’s words to say whose ' +
+    'they are',
   'choice-settled':
     'what it carries is the product’s own sentence that a question to the person was answered and ' +
     'which tool records a choice, and no record text and nothing of the answer, so there is ' +
@@ -358,6 +368,8 @@ export type SwitchableChannel =
   | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections'
+  | 'host-memory-mirror'
+  | 'decision-file-written'
   | 'choice-settled'
   | 'tool-call-count';
 
@@ -495,6 +507,9 @@ export const FIRST_WRITE_GATE_CHANNEL: CountedChannel = 'edit-first-write-gate';
 export const STARTS_OFF: readonly SwitchableChannel[] = [
   'edit-first-write-gate',
   'user-corrections',
+  // NOT `host-memory-mirror`, which writes without a verb and begins ON all the same: ADR-39 decided
+  // it, named here because it is the one exception to "a channel that writes without a verb starts
+  // off", and the rule still holds for every other such channel.
 ];
 
 /**
@@ -507,6 +522,26 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
  * own sentence, so it goes to the tree that stays on this machine and never to the one a clone gets.
  */
 export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
+
+/**
+ * The channel that copies a note the host writes to its own memory (Claude Code's
+ * `memory/*.md`) into this machine's private tree of the project's record, as the host writes it.
+ *
+ * IT WRITES WITHOUT ANYBODY TYPING A VERB AND BEGINS ON, the one channel of that kind that does
+ * (ADR-39): a note the host keeps is a note about this project that the record would otherwise not
+ * hold, and nothing of it leaves this machine. `mnema switch off host-memory-mirror` stops it. What it
+ * copies goes to the PRIVATE tree and never to the one a clone gets: the host's memory is this
+ * machine's, and a note about the person (`type: user`) and the host's index (`MEMORY.md`) are not
+ * copied at all.
+ */
+export const HOST_MEMORY_MIRROR_CHANNEL: SwitchableChannel = 'host-memory-mirror';
+
+/**
+ * The channel that says, beside the result of a write to a file that holds decisions (an ADR, a
+ * plan, a ledger, a rules file) and that the record cites nowhere, which command reads it into the
+ * record. It writes nothing; on until switched off, like every channel that only says something.
+ */
+export const DECISION_FILE_WRITTEN_CHANNEL: SwitchableChannel = 'decision-file-written';
 
 /**
  * The channel that hands the agent one sentence of fact after a question it asked the person was
@@ -558,6 +593,13 @@ export const NOT_COUNTED_AS_SERVED: {
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
+  'host-memory-mirror':
+    'each note it copies is itself the recorded fact (a memory with its own event and its own ' +
+    'actor), so a second fact saying the channel served would repeat it',
+  'decision-file-written':
+    'the line is printed by `mnema after-a-write`, which reads the payload, the file and the ' +
+    'record and writes nothing for it (no event, no key, no run), so naming a file never moves ' +
+    'the record',
   'user-corrections':
     'each proposal it records is itself the recorded fact (a decision awaiting a judgement, ' +
     'with its own event and its own actor), so a second fact saying the channel served would ' +
@@ -637,6 +679,14 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the sentence handed to the agent after a question it asked the person was answered: that a ' +
     'choice may have been settled there and which tool records it. It reads which tool ran and ' +
     'writes nothing',
+  'host-memory-mirror':
+    'the copy of the host’s own memory: with it on, a `PostToolUse` hook copies each note Claude ' +
+    'Code writes to its memory directory into this machine’s private tree, once per content, ' +
+    'leaving out the index `MEMORY.md` and the notes about the person (`type: user`)',
+  'decision-file-written':
+    'the line beside a write to a file that holds decisions (an ADR, a plan, a ledger, a rules ' +
+    'file) the record cites nowhere, naming the command that reads it into the record, once per ' +
+    'session and file',
   'subagent-handback':
     'the return of a subagent that ends its final reply without the block of decisions the record ' +
     'asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; ' +
