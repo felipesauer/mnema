@@ -464,6 +464,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
       'session-tally.mjs:session-tally',
+      'subagent-start.mjs:brief-document',
     ]);
     expect(handlers()).toContain('hand-over.mjs');
   });
@@ -520,6 +521,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:command:edit-asks-a-person.mjs',
       'PostToolUse:command:choice-settled.mjs',
       'PostToolUse:command:after-a-write.mjs',
+      'SubagentStart:command:subagent-start.mjs',
       'SubagentStop:command:subagent-stop.mjs',
     ]);
   });

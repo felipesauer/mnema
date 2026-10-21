@@ -198,6 +198,11 @@ const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
  * one it says nothing; what it says is `a-settled-choice-is-said.test.ts`.
  */
 const SETTLED_HOOK = 'choice-settled.mjs';
+/**
+ * The handler that hands a subagent, as it starts, the document `mnema brief` prints: the same verb,
+ * the same channel and the same switch as the session's opening.
+ */
+const SUBAGENT_HOOK = 'subagent-start.mjs';
 
 /**
  * The command line each declared handler runs: what the recording shim must see it try.
@@ -221,6 +226,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [SETTLED_HOOK]: 'settled',
   [AFTER_A_WRITE_HOOK]: 'after-a-write',
   [HANDBACK_HOOK]: 'handback',
+  [SUBAGENT_HOOK]: 'brief --hook',
 };
 
 /**
@@ -583,6 +589,7 @@ describe('the record arrives unasked', () => {
       GATE_HOOK,
       SETTLED_HOOK,
       AFTER_A_WRITE_HOOK,
+      SUBAGENT_HOOK,
       HANDBACK_HOOK,
     ]);
   });
@@ -681,6 +688,38 @@ describe('the record arrives unasked', () => {
     // there is nothing to append, and `toBe(document)` is only evidence of that if
     // something asked.
     expect(brief(project).err).toBe('');
+  });
+
+  it('hands a subagent the same document as it starts, under the event the host routes by', () => {
+    // The brief of the session goes to the subagent that begins: the one verb, byte for byte, so
+    // there is no second place deciding what a subagent reads about what governs the work. The
+    // event is echoed as `SubagentStart`: a reply that names another is dropped by the host.
+    const document = cli('brief', '--hook');
+    expect(document).toContain(COMMITTED_TITLE);
+    const ran = runHook(hookRunning(SUBAGENT_HOOK), project);
+    expect(ran.err).toBe('');
+    expect(ran.status).toBe(0);
+    const said = JSON.parse(ran.out) as {
+      hookSpecificOutput?: { hookEventName?: string; additionalContext?: string };
+    };
+    expect(said.hookSpecificOutput?.hookEventName).toBe('SubagentStart');
+    expect(said.hookSpecificOutput?.additionalContext).toBe(document);
+  });
+
+  it('hands a subagent nothing when the document channel is switched OFF', () => {
+    // The same switch as the opening's, and not a second one: off, the verb refuses and every
+    // non-zero outcome of a handler is silence. Put back, as the case above it for the session.
+    const command = hookRunning(SUBAGENT_HOOK);
+    try {
+      cli('switch', 'off', 'brief-document', '--reason', 'this project keeps AGENTS.md by hand');
+      const ran = runHook(command, project);
+      expect(ran.out).toBe('');
+      expect(ran.status).toBe(0);
+      expect(ran.mnema).toEqual(callsOf(SUBAGENT_HOOK));
+    } finally {
+      cli('switch', 'on', 'brief-document');
+    }
+    expect(runHook(command, project).out).not.toBe('');
   });
 
   it('says that the record does not chain, when it does not', () => {
@@ -1282,6 +1321,7 @@ describe('the record arrives unasked', () => {
       'PreCompact',
       'PreToolUse',
       'PostToolUse',
+      'SubagentStart',
       'SubagentStop',
     ]);
 
@@ -1305,7 +1345,7 @@ describe('the record arrives unasked', () => {
       'after-a-write',
       'handback',
     ]);
-    expect([...reached]).toEqual(Object.values(VERB_OF));
+    expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
 
     // And each is on the side the PRODUCT declares it on. Read off the same declaration the
     // parser routes with, so a verb that ever changed sides would land here rather than in a
@@ -1409,6 +1449,7 @@ describe('the record arrives unasked', () => {
       'command:/hooks/edit-asks-a-person.mjs',
       'command:/hooks/choice-settled.mjs',
       'command:/hooks/after-a-write.mjs',
+      'command:/hooks/subagent-start.mjs',
       'command:/hooks/subagent-stop.mjs',
     ]);
 

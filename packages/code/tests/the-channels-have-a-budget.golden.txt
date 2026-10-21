@@ -3,6 +3,7 @@ Bytes are UTF-8; tokens are o200k_base, a relative measure and not what a Claude
 
 session start: brief --hook                  2557 B      682 tok
 session start: recall --hook                  812 B      200 tok
+subagent start: brief --hook                 2557 B      682 tok
 file form: brief (what MNEMA.md carries)     2614 B      698 tok
 instructions                                 2019 B      476 tok
 edit: rules pushed                            331 B       92 tok

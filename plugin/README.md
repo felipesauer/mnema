@@ -81,6 +81,13 @@ document, delivered by the host instead of waited for.
   decisions are those of the project since the session's first line, so a second session of the same
   project in the same hours is counted too. The line is the reply's `systemMessage`; which host shows
   it, and to whom, was not measured.
+- **A `SubagentStart` hook**, `mnema brief --hook`. A subagent starts with a context of its own and
+  does not see what the session was handed when it opened, so it is handed the same document: the
+  decisions in force and the adopted patterns, by name, byte for byte what the opening hands over,
+  under the event the host routes the reply by. It is the opening's channel and the opening's switch:
+  `mnema switch off brief-document` stops both. Held against the real Claude Code binary by
+  `a-subagent-starts-with-the-record.test.ts`; VS Code documents the event and reads this hooks file,
+  and was not measured on it (`docs/evidence.md`, the presence map).
 - **A `SubagentStop` hook**, `mnema handback`. A subagent hands the decisions it settled back in its
   final reply, and a reply that said only "done" lost them without a word. This asks the reply to end with
   one fenced block whose info string is `mnema-handback`, holding `{"decisions":[{"settled","why","turnedDown"}]}`,
@@ -440,7 +447,7 @@ plugin/
 ├── hooks/
 │   ├── hooks.json               Claude Code's hooks, and VS Code's and Cursor's beside them:
 │   │                            SessionStart, PreToolUse, PostToolUse, Stop, PreCompact,
-│   │                            SubagentStop
+│   │                            SubagentStart, SubagentStop
 │   ├── hooks.ids.json           a stable id for each hook of hooks.json
 │   ├── codex.json               Codex's hooks: SessionStart, PreToolUse, PostToolUse
 │   ├── copilot.json             Copilot CLI's hooks: SessionStart, PreToolUse, PostToolUse
@@ -453,6 +460,7 @@ plugin/
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
 │   ├── choice-settled.mjs       runs `mnema settled` after a question to the person is answered
+│   ├── subagent-start.mjs       runs `mnema brief --hook` when a subagent starts
 │   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops
 ├── opencode/mnema.js            OpenCode's plugin module, copied into a project
 ├── gemini/                      Gemini CLI's extension: its manifest, hooks file and script

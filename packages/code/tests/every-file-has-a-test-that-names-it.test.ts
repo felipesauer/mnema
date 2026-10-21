@@ -1050,6 +1050,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/host-contract/a-servers-instructions-are-cut-at-2048.test.ts': 3,
   'packages/code/tests/host-contract/a-settled-choice-reaches-the-model.test.ts': 8,
   'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts': 3,
+  'packages/code/tests/host-contract/a-subagent-starts-with-the-record.test.ts': 4,
   'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts': 3,
   'packages/code/tests/host-contract/an-editor-puts-a-hooks-text-in-the-result.vscode.test.ts': 2,
   'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts': 6,

@@ -43,6 +43,15 @@ with its own changelog.
   machine's private tree, titled `Answer: …`, with an email address in the title replaced by `<email>` as in the body. An
   answer that only assents or refuses ("yes", "ok", "go ahead", "pode") is not recorded. The channel is still off until
   somebody switches it on.
+- **A subagent that begins is handed the brief of the session.** The plugin gains a `SubagentStart` hook that runs
+  `mnema brief --hook` and hands the document to the subagent as it starts, byte for byte what the opening hands the session,
+  under the event the host routes the reply by. It is the opening's channel and the opening's switch (`mnema switch off
+  brief-document` stops both), and it is silent where there is no project. It is held against the real Claude Code binary; VS
+  Code documents the event and reads the same hooks file, and was not measured on it.
+- **`docs/evidence.md` carries a presence map.** For each host and each moment of the work (a choice settled with the person, the
+  host's own memory, a plan or decision file, the opening, an edit, the end of a response, a subagent's start and stop) it says
+  whether the host offers something the plugin could ride, and how that is known: held by a test, documented and not measured,
+  no channel, or not read. It is generated from the host table, and a copy edited by hand is red.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a

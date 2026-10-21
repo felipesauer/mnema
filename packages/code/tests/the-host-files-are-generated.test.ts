@@ -12,11 +12,17 @@
  * house's way of writing a golden, and the only one these files have.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { HOSTS } from '../src/host-names.js';
-import { GENERATED, generated, hostSummary, rungTable } from './support/the-host-files.js';
+import { HOSTS, PRESENCE, PRESENCE_HOSTS } from '../src/host-names.js';
+import {
+  GENERATED,
+  generated,
+  hostSummary,
+  presenceMap,
+  rungTable,
+} from './support/the-host-files.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 
@@ -109,5 +115,54 @@ describe('the host summary', () => {
     expect(row('Goose')).toContain('documented, not measured');
     expect(row('Goose')).not.toContain('read once');
     expect(row('Claude Code')).not.toMatch(/read once|documented/);
+  });
+});
+
+describe('the presence map', () => {
+  const map = presenceMap('../');
+  const rows = map
+    .split('\n')
+    .filter((line) => line.startsWith('| ') && !/^\| (Host|---) /.test(line));
+  const cell = (host: string, column: number): string =>
+    (rows.find((row) => row.startsWith(`| ${host} |`)) ?? '').split(' | ')[column] ?? '';
+
+  it('has a row for each host it was read for, and a cell for each moment', () => {
+    expect(rows.map((row) => row.split(' | ')[0]?.slice(2))).toEqual(
+      PRESENCE_HOSTS.map((name) => HOSTS[name].title),
+    );
+    for (const row of rows) expect(row.split(' | ')).toHaveLength(9);
+  });
+
+  it('says a moment is held only where a test of this tree holds it, with the file that does', () => {
+    expect(cell('Claude Code', 7)).toContain('held by a test');
+    expect(cell('Claude Code', 7)).toContain('a-subagent-starts-with-the-record.test.ts');
+    for (const [name, moments] of Object.entries(PRESENCE)) {
+      for (const [moment, held] of Object.entries(moments)) {
+        if (held.held !== 'a test') continue;
+        expect(existsSync(join(ROOT, held.by)), `${name} ${moment}: ${held.by}`).toBe(true);
+      }
+    }
+  });
+
+  it('marks what the hosts only document as not measured, and what none offers as no channel', () => {
+    // VS Code documents SubagentStart, and the hooks file reaches it: generated for, not held.
+    expect(cell("VS Code's agent", 7)).toContain('documented, not measured');
+    expect(cell("VS Code's agent", 7)).not.toContain('held by a test');
+    expect(cell('Gemini CLI', 7)).toBe('no channel');
+    expect(cell('OpenCode', 6)).toBe('not read');
+  });
+
+  it('is declared as a hook of the plugin where a host that reads that file has the event', () => {
+    const hooks = JSON.parse(generated('plugin/hooks/hooks.json', '')) as {
+      hooks: Record<string, { hooks: { command: string }[] }[]>;
+    };
+    expect(hooks.hooks.SubagentStart?.[0]?.hooks[0]?.command).toContain('hooks/subagent-start.mjs');
+  });
+
+  it('accuses a presence map edited by hand, and keeps the prose around it', () => {
+    const committed = readFileSync(join(ROOT, 'docs/evidence.md'), 'utf-8');
+    const edited = committed.replace('| Gemini CLI | AfterTool', '| Gemini CLI, held | AfterTool');
+    expect(edited).not.toBe(committed);
+    expect(generated('docs/evidence.md', edited)).toBe(committed);
   });
 });

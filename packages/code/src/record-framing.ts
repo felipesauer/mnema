@@ -644,8 +644,8 @@ export const NOT_COUNTED_AS_SERVED: {
  */
 export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'brief-document':
-    'the document `mnema brief` prints, which a session opens with: the decisions in ' +
-    'force and the adopted patterns of the committed record, by name',
+    'the document `mnema brief` prints, which a session opens with and a subagent starts with: ' +
+    'the decisions in force and the adopted patterns of the committed record, by name',
   'recall-document':
     'the notes `mnema recall` prints, which a session opens with: the memories and ' +
     'observations recorded for this project, from every tree this machine holds for it, ' +
