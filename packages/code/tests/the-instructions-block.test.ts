@@ -241,6 +241,9 @@ describe('mnema instructions --check', () => {
 describe('a write of the block to an instruction file', () => {
   it('is not a decision file: the block is the product’s words, not a call of the project’s', () => {
     expect(decisionFileAt('AGENTS.md', `${THEIRS}\n${INSTRUCTIONS_BLOCK}`)).toBeUndefined();
+    // A line inside the markers that opens as a call does is still the block's, not the person's.
+    const opensAsACall = `${beginMarker('v1')}\nDecision: never mind\n${INSTRUCTIONS_END}\n`;
+    expect(decisionFileAt('AGENTS.md', opensAsACall)).toBeUndefined();
     for (const path of OWN_INSTRUCTIONS_FILES) {
       expect(decisionFileAt(path, INSTRUCTIONS_BLOCK)).toBeUndefined();
     }
