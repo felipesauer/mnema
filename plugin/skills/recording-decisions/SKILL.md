@@ -30,7 +30,9 @@ once. Whoever dispatched you records it. Then skip the rest of this skill.
 1. Look first. `governing_rules` with a path lists what is already recorded for it, and `search`
    finds a record by the words written in it. A choice that is already recorded is not recorded again.
 2. Record it when it is settled, not in a batch at the end: `record_decision`, with the `rationale`
-   and, in `alternatives`, what was turned down and why.
+   and, in `alternatives`, what was turned down and why. Record it here even when it is also kept
+   elsewhere (a plan, a ledger, CLAUDE.md, the host's own memory): this is the signed copy, and the
+   one later sessions read back.
 3. A decision is born `proposed`. A person accepts it; it is in force here once accepted, and not before.
 4. Something learnt about this project that its code does not show, and that the next session
    would otherwise work out again, goes to `capture_memory`.

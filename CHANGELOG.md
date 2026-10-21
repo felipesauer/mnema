@@ -33,6 +33,7 @@ with its own changelog.
 
 ### Changed
 
+- **The server's instructions say to record here even what is also kept elsewhere.** The handshake text now asks that a decision or a note be recorded as the work happens and also when the same thing is already in a plan, a ledger, `CLAUDE.md` or the host's own memory, because this is the signed copy and the one later sessions read back. To stay under 2,048 characters (the text is now 2,013) it drops the sentence that the record outlasts the session, a parenthesis about the `mnid`, and shortens the last paragraph; the `recording-decisions` skill says the same in one sentence.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 
 ### Fixed
