@@ -234,6 +234,7 @@ jobs:
           packages/chain/src/chain/second-reader-names-a-refused-founding-once.test.ts
           packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts
           packages/chain/src/chain/the-promise-between-versions.test.ts
+          packages/code/tests/a-record-no-tail-holds-is-refused.test.ts
           packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts
           packages/code/tests/ten-writers-one-record.test.ts
           packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts
