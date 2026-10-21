@@ -389,7 +389,7 @@ describe('a machine that holds only the agent, and the record has retired it', (
 
 describe('a machine that holds only the agent, and the record proves its key a member of two identities', () => {
   it('opens, reads, and refuses each write as ambiguous', async () => {
-    await theTeamsRecord();
+    const { task } = await theTeamsRecord();
     const requested = await did(
       'key',
       'request',
@@ -432,15 +432,21 @@ describe('a machine that holds only the agent, and the record proves its key a m
     holdingOnlyTheAgent();
 
     let read: Reply | undefined;
+    let asked: Reply | undefined;
     const wrote: Reply[] = [];
     const log = await connected([repo], 'claude', async (client) => {
       read = await call(client, 'search', { term: 'parser' });
       wrote.push(await call(client, 'record_decision', { title: 'No', rationale: 'no' }));
       wrote.push(await call(client, 'capture_memory', { content: 'a note' }));
+      asked = await call(client, 'guard', { id: task, action: 'start' });
     });
 
     expect(log.join('\n')).not.toContain('could not open session');
     expect(read?.isError).not.toBe(true);
+    expect(asked?.isError).toBe(true);
+    expect(textOf(asked as Reply)).toContain(
+      'Refused (AMBIGUOUS_MEMBERSHIP): the agent key "claude" cannot sign:',
+    );
     for (const reply of wrote) {
       expect(reply.isError).toBe(true);
       expect(textOf(reply)).toContain(
@@ -507,6 +513,22 @@ describe('the guard of a session that has no one to sign', () => {
     expect(reply?.isError).toBe(true);
     expect(textOf(reply as Reply)).toContain(
       'Refused (AGENT_NOT_ENROLLED): the agent "claude" is not enrolled in this project\'s committed tree, and the key that would sign instead, yours, is not on this machine.',
+    );
+  });
+
+  it('answers a name no agent has with the refusal the write would have', async () => {
+    const { task } = await theTeamsRecord();
+    await theAgent(true);
+    holdingOnlyTheAgent();
+
+    let reply: Reply | undefined;
+    await connected([repo], 'Claude', async (client) => {
+      reply = await call(client, 'guard', { id: task, action: 'start' });
+    });
+
+    expect(reply?.isError).toBe(true);
+    expect(textOf(reply as Reply)).toContain(
+      'Refused (AGENT_NAME_REFUSED): the agent key "Claude"',
     );
   });
 

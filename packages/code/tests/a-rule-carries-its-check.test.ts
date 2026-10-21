@@ -15,6 +15,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -195,6 +196,30 @@ describe('mnema check', () => {
     expect(said.err.join('\n')).toContain('not enrolled as a checker');
     expect(events()).toHaveLength(before);
   });
+
+  it.each([
+    ['an EC', () => generateKeyPairSync('ec', { namedCurve: 'prime256v1' })],
+    ['an RSA', () => generateKeyPairSync('rsa', { modulusLength: 2048 })],
+  ])(
+    '%s key signs nothing: a checker key is an Ed25519 one, as an agent key is',
+    async (article, make) => {
+      const rule = await acceptedRule('Money is kept in integer cents');
+      await did('check', 'declare', rule, 'node', '--', '-e', 'process.exit(0)');
+      git('add', '-A');
+      git('commit', '-q', '-m', 'the record');
+      const keyFile = join(sandbox, 'not-ed25519.pem');
+      writeFileSync(keyFile, make().privateKey.export({ type: 'pkcs8', format: 'pem' }) as string);
+      const before = events().length;
+
+      const said = await mnema('check', 'run', '--key', keyFile);
+
+      expect(said.failed).toBe(true);
+      expect(said.err.join('\n')).toContain(
+        `is ${article} key, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; \`mnema key request --checker --anchor <your identity>\` makes a checker key`,
+      );
+      expect(events()).toHaveLength(before);
+    },
+  );
 
   it('a tree with changes outside the record runs nothing', async () => {
     const rule = await acceptedRule('Money is kept in integer cents');
