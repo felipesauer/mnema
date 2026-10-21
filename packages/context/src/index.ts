@@ -45,6 +45,7 @@ export {
   type AwaitingJudgement,
   type Bootstrap,
   bootstrap,
+  proposedDecisionsNewestFirst,
 } from './context/bootstrap.js';
 export {
   type Brief,
