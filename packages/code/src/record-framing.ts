@@ -150,6 +150,14 @@ export type ServedSubject =
  * no record they could carry and no switch they could read. Disconnecting the server is
  * what turns them off. The reasoning is `mcp/instructions.ts`'s, in full.
  *
+ * NOR IS THE BLOCK `mnema instructions` WRITES (`instructions-block.ts`, ADR-46), though a host
+ * reads it unasked in every session. It is the PERSON'S ACT, not a channel: a committed file in
+ * the person's tree cannot obey a switch, so it is put in by one command (`mnema init` at the
+ * founding, or `mnema instructions`) and taken out by another (`--remove`), and the switching is
+ * the person's own edit, in git. It carries no record text either: like the server's
+ * `instructions`, it names this product's doors and when to use them, conditioned on those
+ * doors being connected, and `the-instructions-block.test.ts` holds it to {@link SAYS_WHAT_TO_DO}.
+ *
  * THE DAY THE LAST SENTENCE PREDICTED HAS COME, and `edit-rules-push` is it. That
  * sentence read: "a hook that PUSHES any of those same answers into a prompt is a
  * different channel from the tool that answers when asked, and it belongs in this union

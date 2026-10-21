@@ -4,8 +4,13 @@ $ mnema init
 |   identity: <anchor>
 |   backup key: created and enrolled, private half at <backup-key-path>
 |   Move that file off this machine: a backup left on this disk is lost with it.
+| Created AGENTS.md, with the mnema instructions.
+| Created .claude/rules/mnema-instructions.md, with the mnema instructions.
+| Created .github/instructions/mnema-instructions.instructions.md, with the mnema instructions.
+| Created .cursor/rules/mnema-instructions.mdc, with the mnema instructions.
+| Each holds the mnema instructions an agent host reads at the start of a session: when to call the mnema tools, and what never goes in the record. `mnema instructions --remove` takes them out.
 |
-|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to
 |   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
 |   project in a file of its own (the `>` replaces the whole of the file it names), and
 |   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
@@ -69,12 +74,12 @@ $ mnema link <task-runbook> <task-chore> --rel derived-from
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> docs/runbook --rel governs
 | Linked <decision-runbook> -governs→ docs/runbook
-|   docs/runbook covers 1 of 1 file(s) counted in the working tree; not counted: .mnema.
+|   docs/runbook covers 1 of 5 file(s) counted in the working tree; not counted: .mnema.
 |   Files on disk, not edits: a directory nobody touches counts the same as a busy one.
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> docs/gone-away --rel governs
 | Linked <decision-runbook> -governs→ docs/gone-away
-|   docs/gone-away covers 0 of 1 file(s) counted in the working tree; not counted: .mnema.
+|   docs/gone-away covers 0 of 5 file(s) counted in the working tree; not counted: .mnema.
 |   Files on disk, not edits: a directory nobody touches counts the same as a busy one.
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 
@@ -392,8 +397,13 @@ $ mnema init
 | Initialized mnema project at <sandbox>/other-project/.mnema
 |   identity: <anchor>
 |   backup key: enrolled in this project
+| Created AGENTS.md, with the mnema instructions.
+| Created .claude/rules/mnema-instructions.md, with the mnema instructions.
+| Created .github/instructions/mnema-instructions.instructions.md, with the mnema instructions.
+| Created .cursor/rules/mnema-instructions.mdc, with the mnema instructions.
+| Each holds the mnema instructions an agent host reads at the start of a session: when to call the mnema tools, and what never goes in the record. `mnema instructions --remove` takes them out.
 |
-|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to
 |   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
 |   project in a file of its own (the `>` replaces the whole of the file it names), and
 |   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only

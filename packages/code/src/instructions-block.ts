@@ -109,7 +109,11 @@ export const INSTRUCTIONS_TARGETS: readonly InstructionsTarget[] = [
     own: '---\napplyTo: "**"\n---\n\n',
   },
   // Cursor reads only `.mdc` under `.cursor/rules`, and applies to every session what says `alwaysApply`.
-  { path: '.cursor/rules/mnema-instructions.mdc', when: 'always', own: '---\nalwaysApply: true\n---\n\n' },
+  {
+    path: '.cursor/rules/mnema-instructions.mdc',
+    when: 'always',
+    own: '---\nalwaysApply: true\n---\n\n',
+  },
 ];
 
 /** The paths of the files wholly mnema's, which never hold a decision of the project's. */

@@ -89,7 +89,10 @@ function opensAsACorrection(line: string): boolean {
  * @param rel The file's path from the repository's root, with `/` between its parts.
  * @param writtenWithTheBlock What this write put in the file: a `Write`'s content, an `Edit`'s new text.
  */
-export function decisionFileAt(rel: string, writtenWithTheBlock: string): DecisionFileReading | undefined {
+export function decisionFileAt(
+  rel: string,
+  writtenWithTheBlock: string,
+): DecisionFileReading | undefined {
   const written = withoutTheBlock(writtenWithTheBlock);
   if (rel === '' || rel.startsWith('../') || rel.startsWith('/') || theProductsOwn(rel)) {
     return undefined;

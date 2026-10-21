@@ -3816,11 +3816,14 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     await accept('A call in force');
     await output(['task', 'create', 'a piece of work this file is not about']);
 
+    // `init` wrote the mnema instructions beside the record; `brief` adds nothing to them.
+    const listed = readdirSync(repo).sort();
     const before = digestOf(sandbox);
     await output(['brief']);
     await output(['brief']);
     expect(digestOf(sandbox)).toBe(before);
-    expect(readdirSync(repo).sort()).toEqual(['.mnema']);
+    expect(readdirSync(repo).sort()).toEqual(listed);
+    expect(listed).not.toContain('MNEMA.md');
   });
 
   it('refuses outside a project, naming what to run', async () => {

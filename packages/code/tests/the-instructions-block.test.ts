@@ -24,6 +24,7 @@ import {
   removeInstructions,
   writeInstructions,
 } from '../src/commands/instructions.js';
+import { decisionFileAt } from '../src/decision-files.js';
 import {
   beginMarker,
   INSTRUCTIONS_BLOCK,
@@ -32,7 +33,6 @@ import {
   OWN_INSTRUCTIONS_FILES,
   withoutTheBlock,
 } from '../src/instructions-block.js';
-import { decisionFileAt } from '../src/decision-files.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
 let project: string;
@@ -63,7 +63,9 @@ describe('the text of the block', () => {
 
   it('is conditioned on the tools being connected, so a fork without mnema reads it as inert', () => {
     expect(INSTRUCTIONS_BODY).toContain('Where the mnema tools are connected:');
-    expect(INSTRUCTIONS_BODY).toContain('Where the tools are not connected and the `mnema` command is installed');
+    expect(INSTRUCTIONS_BODY).toContain(
+      'Where the tools are not connected and the `mnema` command is installed',
+    );
   });
 
   it('says the record changes with the work in the same line that says its files are not edited by hand', () => {
@@ -109,7 +111,9 @@ describe('mnema instructions in a project with no instruction file', () => {
 
   it('writes nothing a second time', () => {
     writeInstructions(project);
-    expect(new Set(writeInstructions(project).map((file) => file.did))).toEqual(new Set(['unchanged']));
+    expect(new Set(writeInstructions(project).map((file) => file.did))).toEqual(
+      new Set(['unchanged']),
+    );
   });
 
   it('removes what it created, directories included, leaving the project as it was', () => {
@@ -160,7 +164,9 @@ describe('mnema instructions in a file of the person’s', () => {
     expect(written?.did).toBe('refused');
     expect(written?.found).toMatchObject({ state: 'edited' });
     expect(text('AGENTS.md')).toBe(edited);
-    expect(removeInstructions(project).find((file) => file.path === 'AGENTS.md')?.did).toBe('refused');
+    expect(removeInstructions(project).find((file) => file.path === 'AGENTS.md')?.did).toBe(
+      'refused',
+    );
     expect(text('AGENTS.md')).toBe(edited);
   });
 
@@ -182,7 +188,9 @@ describe('mnema instructions in a file of the person’s', () => {
 
   it('refuses a block of a version it does not know', () => {
     put('AGENTS.md', `${beginMarker('v9')}\nfrom a newer mnema\n${INSTRUCTIONS_END}\n`);
-    expect(writeInstructions(project).find((file) => file.path === 'AGENTS.md')?.found).toMatchObject({
+    expect(
+      writeInstructions(project).find((file) => file.path === 'AGENTS.md')?.found,
+    ).toMatchObject({
       state: 'edited',
     });
   });
@@ -203,9 +211,7 @@ describe('mnema instructions in a file of the person’s', () => {
       'legacy',
     );
     expect(did(writeInstructions(project))['AGENTS.md']).toBe('replaced-legacy');
-    expect(text('AGENTS.md')).toBe(
-      `# notagrafo\n\n${INSTRUCTIONS_BLOCK}\nThe rest is theirs.\n`,
-    );
+    expect(text('AGENTS.md')).toBe(`# notagrafo\n\n${INSTRUCTIONS_BLOCK}\nThe rest is theirs.\n`);
   });
 
   it('writes a CLAUDE.md that links to AGENTS.md once', () => {

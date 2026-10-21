@@ -41,6 +41,8 @@ $ mnema
 !                   nothing
 !   rules-file      print the rules addressed at a file as another host’s rules
 !                   file, and why the rest are not
+!   instructions    write the mnema instructions into the files an agent host
+!                   reads (AGENTS.md and its kin), check them, or remove them
 !   switch          turn off, or back on, what mnema hands to a model unasked, and
 !                   whether an agent may accept a decision
 !   inherit         read another repository’s decisions, pinned to one of its
@@ -157,6 +159,8 @@ $ mnema --help
 |                   nothing
 |   rules-file      print the rules addressed at a file as another host’s rules
 |                   file, and why the rest are not
+|   instructions    write the mnema instructions into the files an agent host
+|                   reads (AGENTS.md and its kin), check them, or remove them
 |   switch          turn off, or back on, what mnema hands to a model unasked, and
 |                   whether an agent may accept a decision
 |   inherit         read another repository’s decisions, pinned to one of its
@@ -732,6 +736,29 @@ $ mnema rules-file --help
 |   --host <host>  the host whose rules-file format to print: claude, vscode,
 |                  cursor
 |   -h, --help     display help for command
+
+### mnema instructions --help
+$ mnema instructions --help
+| Usage: mnema instructions [options]
+|
+| write the mnema instructions into the files an agent host reads (AGENTS.md and
+| its kin), check them, or remove them
+|
+| Options:
+|   --check     say what each file holds of the instructions, and write nothing
+|   --remove    take the instructions out, leaving each file as it was before them
+|   -h, --help  display help for command
+|
+| The files:
+|   AGENTS.md, created where there is none; CLAUDE.md, .claude/CLAUDE.md and GEMINI.md where
+|   they exist; and three files of mnema’s own: .claude/rules/mnema-instructions.md,
+|   .github/instructions/mnema-instructions.instructions.md and
+|   .cursor/rules/mnema-instructions.mdc.
+|
+| The instructions sit between <!-- mnema:begin … --> and <!-- mnema:end -->, after what a
+| file of yours holds; nothing outside the markers is changed. A block whose text is not one
+| mnema wrote is left as it is and said, never overwritten. `mnema init` writes them when it
+| founds a project, and never again.
 
 ### mnema switch --help
 $ mnema switch --help

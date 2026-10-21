@@ -15,6 +15,7 @@
 
 import type { Command } from 'commander';
 import type { InitResult } from '../commands/init.js';
+import type { InstructionsFile } from '../commands/instructions.js';
 import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
@@ -46,15 +47,14 @@ export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
  * How this project's record reaches an agent: OFFERED to the person who just founded it,
  * and written into nothing.
  *
- * WHY IT IS PRINTED AND NOT WRITTEN, which is the decision this block stands on rather
- * than a shortcut it took. A block spliced into somebody's `AGENTS.md` or `CLAUDE.md`
- * would be text this product pushes at a model unasked, which is a CHANNEL by its own
- * criterion (`record-framing.ts`), and every channel it pushes can be switched off with
- * the switching recorded. Bytes already written to somebody's disk cannot go quiet when a
- * switch does. So the recipe and the line are offered and the person decides: `git status`
- * after `mnema init` holds one new item and it is `.mnema/`, which is this product's own
- * (`init.test.ts` digests every file this verb touches, and `cli.writes.golden.txt` pins
- * every line it prints).
+ * WHAT IT OFFERS IS THE RECORD'S CONTENT, AND THAT IS STILL PRINTED AND NOT WRITTEN. The
+ * document `mnema brief` prints changes with every decision, and a committed copy of it cannot
+ * go quiet when the switch that stops the plugin pushing it does, so the recipe and the line are
+ * offered and the person decides. What a founding DOES write outside `.mnema/` is said above
+ * this block, file by file: the `.prettierignore` line, and the block of standing instructions
+ * (ADR-46), which carries nothing of the record, only this product's doors and when to use them.
+ * So the first words say "no other file" whenever a founding wrote one (`init.test.ts` digests
+ * every file this verb touches, and `cli.writes.golden.txt` pins every line it prints).
  *
  * IT REPEATS `mnema brief --help` ON PURPOSE, including the half that page was corrected
  * to carry: the `>` replaces the whole of the file it names. That clause is not decoration
@@ -89,9 +89,10 @@ export const REACHES_AN_AGENT = [
 ];
 
 /**
- * The same block for a run that did write a file of the repository's (the `.prettierignore`,
- * and the output says so just above it): "no file of yours" would be false there, so the first
- * words say "no other file". Everything after them is the block above, word for word.
+ * The same block for a run that did write a file of the repository's (the `.prettierignore`, an
+ * instructions file, and the output says so just above it): "no file of yours" would be false
+ * there, so the first words say "no other file". Everything after them is the block above, word
+ * for word.
  */
 export const REACHES_AN_AGENT_AFTER_A_WRITE = [
   'mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to',
@@ -145,9 +146,10 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(render(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io, render);
         reportIgnore(io, result.around?.prettierIgnore);
+        const wroteInstructions = await reportInstructions(io, result.around?.instructions ?? []);
         io.out('');
         const reaches =
-          result.around?.prettierIgnore === undefined
+          result.around?.prettierIgnore === undefined && !wroteInstructions
             ? REACHES_AN_AGENT
             : REACHES_AN_AGENT_AFTER_A_WRITE;
         for (const line of reaches) io.out(render(fact(line)));
@@ -168,6 +170,28 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
       }
     });
   return mutatesTheRecord(init);
+}
+
+/** The line under the instructions a founding wrote: what they are, and the door that takes them out. */
+export const THE_INSTRUCTIONS_WERE_WRITTEN =
+  'Each holds the mnema instructions an agent host reads at the start of a session: when to call the mnema tools, and what never goes in the record. `mnema instructions --remove` takes them out.';
+
+/**
+ * Says what a founding did to the files a host reads standing instructions from, one line a file,
+ * and the line under them; a file left as it was because somebody edited its block is said too.
+ * Answers whether any file was written.
+ */
+async function reportInstructions(
+  io: Wiring['io'],
+  files: readonly InstructionsFile[],
+): Promise<boolean> {
+  const said = files.filter((file) => file.did !== 'unchanged');
+  if (said.length === 0) return false;
+  const { changeLine } = await import('../commands/instructions.js');
+  for (const file of said) io.out(changeLine(file));
+  const wrote = said.some((file) => file.did !== 'refused');
+  if (wrote) io.out(THE_INSTRUCTIONS_WERE_WRITTEN);
+  return wrote;
 }
 
 /** Says what init did to the `.prettierignore`, when it did something. */

@@ -71,7 +71,12 @@ interface Span {
 
 type Located =
   | { readonly kind: 'none' }
-  | { readonly kind: 'block'; readonly span: Span; readonly version: string; readonly inner: string }
+  | {
+      readonly kind: 'block';
+      readonly span: Span;
+      readonly version: string;
+      readonly inner: string;
+    }
   | { readonly kind: 'legacy'; readonly span: Span }
   | { readonly kind: 'broken'; readonly why: string };
 
@@ -112,7 +117,10 @@ function locate(text: string): Located {
   if (legacy !== undefined) {
     const close = lineAt(text, LEGACY_END, legacy.end);
     if (close !== undefined) {
-      return { kind: 'legacy', span: { start: legacy.start, end: pastTheNewline(text, close.end) } };
+      return {
+        kind: 'legacy',
+        span: { start: legacy.start, end: pastTheNewline(text, close.end) },
+      };
     }
   }
   return { kind: 'none' };
@@ -121,7 +129,9 @@ function locate(text: string): Located {
 /** The whole text of a file wholly mnema's, at a known version. */
 function ownText(own: string, version: string): string | undefined {
   const body = KNOWN_BODIES[version];
-  return body === undefined ? undefined : `${own}${beginMarker(version)}\n${body}${INSTRUCTIONS_END}\n`;
+  return body === undefined
+    ? undefined
+    : `${own}${beginMarker(version)}\n${body}${INSTRUCTIONS_END}\n`;
 }
 
 const EDITED =
@@ -198,7 +208,8 @@ function writeOne(project: string, target: InstructionsTarget): InstructionsFile
   const done = (did: InstructionsChange): InstructionsFile => ({ path: target.path, found, did });
   if (found.state === 'current') return done('unchanged');
   if (found.state === 'edited') return done('refused');
-  const whole = target.own !== undefined ? (ownText(target.own, INSTRUCTIONS_VERSION) as string) : undefined;
+  const whole =
+    target.own !== undefined ? (ownText(target.own, INSTRUCTIONS_VERSION) as string) : undefined;
   if (text === undefined) {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, whole ?? INSTRUCTIONS_BLOCK, 'utf-8');
@@ -254,9 +265,10 @@ function removeOne(project: string, target: InstructionsTarget): InstructionsFil
   const located = locate(text);
   if (located.kind !== 'block' && located.kind !== 'legacy') return done('unchanged');
   const { end } = located.span;
-  const start = located.span.start > 0 && text[located.span.start - 1] === '\n'
-    ? located.span.start - 1
-    : located.span.start;
+  const start =
+    located.span.start > 0 && text[located.span.start - 1] === '\n'
+      ? located.span.start - 1
+      : located.span.start;
   const left = `${text.slice(0, start)}${text.slice(end)}`;
   if (left === '' && located.span.start === 0) {
     unlinkSync(path);
@@ -312,6 +324,11 @@ export function changeLine(file: InstructionsFile): string {
     case 'refused':
       return `Left ${file.path} as it is: ${file.found.state === 'edited' ? file.found.why : 'it was not read'}. Put back the text mnema wrote, or take the block out by hand.`;
     default:
+      if (file.found.state === 'missing') {
+        return file.found.exists
+          ? `${file.path} holds no mnema instructions.`
+          : `${file.path} does not exist.`;
+      }
       return stateLine(file);
   }
 }
