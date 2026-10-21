@@ -55,9 +55,9 @@ describe('a note of the host’s memory is copied', () => {
     expect(result).toContain(
       `${ADDED} This note of the host’s memory, feedback_build.md, was copied`,
     );
-    expect(session.mnema('search', 'pnpm')).toMatch(
-      / private .*Builds use pnpm.*\[host memory feedback_build\.md/,
-    );
+    // The host stamps a note written into this project's memory directory (2.1.281 turned the name
+    // into `builds-use-pnpm`), so what is held is where the copy landed and the file it came from.
+    expect(session.mnema('search', 'pnpm')).toMatch(/ private .*\[host memory feedback_build\.md/);
   }, 120_000);
 
   it('adds nothing to a write elsewhere in the project', async () => {
