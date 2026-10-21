@@ -4,20 +4,31 @@
  * twice and held to one table here.
  */
 
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isOlderThan as theHooks } from '../../../plugin/hooks/hand-over.mjs';
 import { isOlderThan as theDoctors } from '../src/version.js';
 
+const HAND_OVER = join(
+  fileURLToPath(new URL('../../../', import.meta.url)),
+  'plugin',
+  'hooks',
+  'hand-over.mjs',
+);
+const { isOlderThan: theHooks } = (await import(pathToFileURL(HAND_OVER).href)) as {
+  isOlderThan: (version: string, than: string) => boolean;
+};
+
 const TABLE: ReadonlyArray<readonly [string, string, boolean]> = [
-  ['0.1.0', '0.1.1', true],
-  ['0.1.1', '0.1.1', false],
-  ['0.1.2', '0.1.1', false],
+  ['2.4.0', '2.5.0', true],
+  ['2.5.0', '2.5.0', false],
+  ['2.5.1', '2.5.0', false],
   ['0.9.9', '0.10.0', true],
   ['1.0.0', '0.99.99', false],
   ['0.2.0-beta', '0.2.0', false],
   ['0.1.9-beta', '0.2.0-beta', true],
-  ['unknown', '0.1.1', false],
-  ['0.1.0', 'unknown', false],
+  ['unknown', '2.5.0', false],
+  ['2.4.0', 'unknown', false],
   ['', '', false],
 ];
 
