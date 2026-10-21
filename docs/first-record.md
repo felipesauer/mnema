@@ -47,5 +47,10 @@ mnema verify
 
 `.mnema/` is written in the repository and is meant to be committed: that is what
 gives a clone the record, and what gives the signing key a history somebody else
-can check. `mnema verify` exits non-zero when a record is broken, so it drops into
+can check. The record changes with the work, so each change goes in the same commit as the work it
+describes. `init` leaves a `README.md` in the folder saying so, and, where the repository has a
+`.prettierignore` or declares prettier, adds the line `.mnema/` to it and says it did (the block above
+then reads "mnema writes no other file of yours"): a formatter that rewrote a byte of the record would
+break its signatures. Run again in a project founded before `init` did this, it adds what that project
+lacks and says so; where nothing is missing it answers as before. `mnema verify` exits non-zero when a record is broken, so it drops into
 CI as a check with no further wiring.

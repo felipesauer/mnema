@@ -617,8 +617,8 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       render(
         fact(
           finding.what === 'gone'
-            ? onOneLine`${at}: gone: ${finding.file} was in the record there and is not here`
-            : onOneLine`${at}: rewritten: ${finding.file} no longer begins with the bytes it held there`,
+            ? onOneLine`${at}: ${finding.file} was in the record there and is not here`
+            : onOneLine`${at}: ${finding.file} no longer begins with the bytes it held there`,
         ),
       ),
     );

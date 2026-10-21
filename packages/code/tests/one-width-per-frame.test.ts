@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * ONE WIDTH PER FRAME: the fold follows the window, like every other number on the page.
  *

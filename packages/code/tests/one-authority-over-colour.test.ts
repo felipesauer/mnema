@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * ONE AUTHORITY OVER COLOUR: the whole page obeys the caller, or none of it does.
  *

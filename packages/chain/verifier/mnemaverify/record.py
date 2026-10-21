@@ -212,7 +212,8 @@ def _check_declarations(
     declarations, the envelope had to be guessed at, and the only derivation available was
     the INTERSECTION of the top-level keys of the published vectors - which section 7 stated
     as a fact ("the seven top-level keys of an event are ...") and which is not the envelope
-    at all. `which` is carried by sixteen of the twenty-three vectors and `run` by three, so
+    at all. `which` was carried by sixteen of the twenty-three vectors published when this was found
+    (October 2026) and `run` by three, so
     this reader REFUSED an honest event for carrying one, on a record the product read as
     fine. Accepting too much is the loud failure of a second reader; refusing too much is the
     quiet one, because it looks like rigour.

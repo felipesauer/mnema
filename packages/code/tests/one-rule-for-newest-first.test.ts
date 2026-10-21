@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * One rule for "newest first": the comparison every recency listing in this product
  * makes, written once, and a scan that keeps a seventh writing from appearing.
@@ -167,6 +168,7 @@ const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'code/src/commands/verify-github.ts', by: 'byCodeUnit', means: OTHER },
   { file: 'code/src/repl/complete.ts', by: 'theOrder', means: OTHER },
   { file: 'code/src/transcripts.ts', by: 'oldestSessionFirst', means: OLDEST },
+  { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
   { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
   { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
   { file: 'context/src/context/decisions.ts', by: 'bySettledDesc', means: NEWEST },
@@ -482,7 +484,7 @@ describe('one rule for newest first', () => {
     // what makes a scan that suddenly matches nothing a failure rather than a pass.
     expect(INSTALLED.length).toBeGreaterThanOrEqual(44);
     expect(NAMED.length).toBeGreaterThanOrEqual(20);
-    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(8);
+    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(9);
     expect(THE_ORDERINGS.filter((each) => each.means === OLDEST)).toHaveLength(4);
   });
 

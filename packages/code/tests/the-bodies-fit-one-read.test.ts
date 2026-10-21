@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * The patterns fit ONE read: all the bodies, or all the names.
  *

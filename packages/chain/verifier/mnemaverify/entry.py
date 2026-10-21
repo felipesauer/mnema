@@ -25,9 +25,10 @@ ENTRY_DOMAIN = "mnema.entry.v1"
 
 # THE ENVELOPE IS NOT DECLARED HERE ANY MORE, and the reason is worth keeping. It used to be
 # a frozenset of seven keys - gap G14 - derived as the INTERSECTION of the top-level keys of
-# the 23 published vectors, because the document said the envelope was those seven names and
-# published nothing a reader could check. The intersection is not the envelope: `which` and
-# `run` are optional, sixteen and three of those same vectors carry them, and this reader
+# the published vectors (23 when this was found), because the document said the envelope was
+# those seven names and published nothing a reader could check. The intersection is not the
+# envelope: `which` and `run` are optional, sixteen and three of those same vectors carried
+# them, and this reader
 # consequently REFUSED an honest event for carrying `which` (gap G25). The declarations are
 # published now, so the envelope comes out of `event-schema.json` and an optional field is
 # spelled as one. `schema` reads it; nothing here guesses at it.

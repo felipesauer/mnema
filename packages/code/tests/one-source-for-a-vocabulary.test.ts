@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * One source for a vocabulary: the closed sets of domain words the CLI's declarations
  * take, and the two things that read them.

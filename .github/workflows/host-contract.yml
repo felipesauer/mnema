@@ -112,7 +112,7 @@ jobs:
           [ "$FPRS" = "$SIGNING_KEY" ] \
             || { echo "the signing key is $FPRS, not the one this job knows ($SIGNING_KEY)"; exit 1; }
           gpg --batch --status-fd 1 --verify manifest.json.sig manifest.json | tee verify.status
-          awk '$2=="VALIDSIG"{print $NF}' verify.status | grep -qx "$SIGNING_KEY" \
+          awk -v key="$SIGNING_KEY" '$2=="VALIDSIG" && $NF==key {found=1} END {exit !found}' verify.status \
             || { echo "the manifest is not signed by $SIGNING_KEY"; exit 1; }
           WANT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json','utf8')).platforms['linux-x64'].checksum)")
           GOT=$(sha256sum "$BIN" | cut -d' ' -f1)
@@ -364,7 +364,8 @@ jobs:
           npm install --ignore-scripts "@github/copilot@$VERSION"
           npm audit signatures
           BIN="$PWD/node_modules/@github/copilot-linux-x64/copilot"
-          REPORTED=$(COPILOT_AUTO_UPDATE=false "$BIN" --version | head -n 1)
+          VERSION_OUTPUT=$(COPILOT_AUTO_UPDATE=false "$BIN" --version)
+          REPORTED=${VERSION_OUTPUT%%$'\n'*}
           echo "$REPORTED"
           [ "$REPORTED" = "GitHub Copilot CLI $VERSION." ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
           {
@@ -437,7 +438,8 @@ jobs:
           npm install --ignore-scripts "opencode-ai@$VERSION"
           npm audit signatures
           BIN="$PWD/node_modules/opencode-linux-x64/bin/opencode"
-          REPORTED=$(OPENCODE_DISABLE_AUTOUPDATE=1 "$BIN" --version | head -n 1)
+          VERSION_OUTPUT=$(OPENCODE_DISABLE_AUTOUPDATE=1 "$BIN" --version)
+          REPORTED=${VERSION_OUTPUT%%$'\n'*}
           echo "$REPORTED"
           [ "$REPORTED" = "$VERSION" ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
           {
@@ -510,7 +512,8 @@ jobs:
           npm install --ignore-scripts "@google/gemini-cli@$VERSION"
           npm audit signatures
           BIN="$PWD/node_modules/.bin/gemini"
-          REPORTED=$(HOME="$RUNNER_TEMP/gemini-home" "$BIN" --version | head -n 1)
+          VERSION_OUTPUT=$(HOME="$RUNNER_TEMP/gemini-home" "$BIN" --version)
+          REPORTED=${VERSION_OUTPUT%%$'\n'*}
           echo "$REPORTED"
           [ "$REPORTED" = "$VERSION" ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
           {

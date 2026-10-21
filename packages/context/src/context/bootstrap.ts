@@ -476,6 +476,18 @@ function capped<T>(items: readonly T[]): {
 }
 
 /**
+ * Every decision awaiting a judgement, uncut, in the order `bootstrap` lists them (most recently
+ * moved first): what `mnema decision review` goes through. It is the same derivation and the same
+ * comparator as the awaiting list above, without the cut, so the review and `status` cannot
+ * disagree about which decisions wait or which comes first.
+ */
+export function proposedDecisionsNewestFirst(
+  caches: readonly ProjectionCache[],
+): DecisionAwaitingJudgement[] {
+  return decisionsAwaitingJudgement(caches).sort(byUpdatedDesc);
+}
+
+/**
  * Most recently touched first, by the core's {@link newestFirst}: this file names the
  * field the instant lives in and asks nothing else.
  *

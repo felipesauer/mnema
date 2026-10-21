@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * OPENING A CACHE AND CLOSING IT ARE ONE CALL, and the guard is that nothing else in this
  * package writes the open.
