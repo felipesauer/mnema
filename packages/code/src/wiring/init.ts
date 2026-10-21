@@ -146,7 +146,11 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(render(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io, render);
         reportIgnore(io, result.around?.prettierIgnore);
-        const wroteInstructions = await reportInstructions(io, result.around?.instructions ?? []);
+        const wroteInstructions = await reportInstructions(
+          io,
+          render,
+          result.around?.instructions ?? [],
+        );
         io.out('');
         const reaches =
           result.around?.prettierIgnore === undefined && !wroteInstructions
@@ -172,25 +176,30 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
   return mutatesTheRecord(init);
 }
 
-/** The line under the instructions a founding wrote: what they are, and the door that takes them out. */
-export const THE_INSTRUCTIONS_WERE_WRITTEN =
-  'Each holds the mnema instructions an agent host reads at the start of a session: when to call the mnema tools, and what never goes in the record. `mnema instructions --remove` takes them out.';
+/** The lines under the instructions a founding wrote: what they are, and the door that takes them out. */
+export const THE_INSTRUCTIONS_WERE_WRITTEN = [
+  'Each holds the mnema instructions an agent host reads at the start of a session: when to',
+  'call the mnema tools, and what never goes in the record. `mnema instructions --remove`',
+  'takes them out.',
+];
 
 /**
  * Says what a founding did to the files a host reads standing instructions from, one line a file,
- * and the line under them; a file left as it was because somebody edited its block is said too.
- * Answers whether any file was written.
+ * and the lines under them. A file left as it is, because somebody edited its block or it cannot
+ * be read or written, is said too, with why and the command that tries again: the founding is
+ * done by then, and no file here undoes it. Answers whether any file was written.
  */
 async function reportInstructions(
   io: Wiring['io'],
+  render: Render,
   files: readonly InstructionsFile[],
 ): Promise<boolean> {
   const said = files.filter((file) => file.did !== 'unchanged');
   if (said.length === 0) return false;
   const { changeLine } = await import('../commands/instructions.js');
-  for (const file of said) io.out(changeLine(file));
-  const wrote = said.some((file) => file.did !== 'refused');
-  if (wrote) io.out(THE_INSTRUCTIONS_WERE_WRITTEN);
+  for (const file of said) io.out(render(fact(changeLine(file))));
+  const wrote = said.some((file) => file.did !== 'refused' && file.did !== 'failed');
+  if (wrote) for (const line of THE_INSTRUCTIONS_WERE_WRITTEN) io.out(render(fact(line)));
   return wrote;
 }
 

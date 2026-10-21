@@ -1403,13 +1403,22 @@ is 1,524 characters.
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's
 mnema instructions --check    # say what each file holds; exits 1 where one lacks this version's block
-mnema instructions --remove   # take it out, leaving each file as it was before it
+mnema instructions --remove   # take it out of each file
 ```
 
 The block sits between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what your file
 holds, and nothing outside the markers changes; a file the block was all of is deleted by
-`--remove`. A block whose text is not one mnema wrote is your edit: it is left as it is, said, and
-the run exits 1. A block you took out stays out: `init` writes the instructions only when it founds a
+`--remove`, which takes out with the block the one line break that went in with it only where the
+block is the last thing in the file (a line you wrote after it is never glued to the one above), and
+says "as it was before them" only when putting the block back would give the file it found. A block
+whose text is not one mnema wrote is your edit: it is never overwritten, said, and the run exits 1.
+The same for a symbolic link that leaves the project or leads nowhere (the line says where it goes),
+and for a file that cannot be read or written (a directory named `AGENTS.md`, a read-only
+`CLAUDE.md`): that file is left as it is, said with why and the command to try again, the others are
+still written, and the run exits 1; `mnema init` prints the same lines and still founds the project.
+A link that resolves inside the project is followed. Line endings are kept: a block whose lines a
+checkout turned into CRLF is still the current one, and a rewrite uses the file's own. Markers shown
+inside a fenced code block (a README that documents them) are an example, not a block. A block you took out stays out: `init` writes the instructions only when it founds a
 project, and `mnema doctor` says where they are missing. The block an earlier, alpha version of mnema
 wrote between `<!-- MNEMA:START -->` and `<!-- MNEMA:END -->` is replaced in place.
 

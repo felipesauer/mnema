@@ -112,4 +112,31 @@ describe('mnema instructions', () => {
     expect(write.text).toContain('Left AGENTS.md as it is');
     expect(agents()).toBe(edited);
   });
+
+  it('founds the project and prints all it prints when AGENTS.md is a directory, saying which file it left and why', async () => {
+    mkdirSync(join(repo, 'AGENTS.md'));
+    const init = await mnema('init');
+    expect(init.text).toContain('Initialized mnema project at');
+    expect(init.text).toContain('backup key: created and enrolled');
+    expect(init.text).toContain('Move that file off this machine');
+    expect(init.text).toContain(
+      'Left AGENTS.md as it is: it could not be read: it is a directory, not a file. Once that is fixed, `mnema instructions` tries again.',
+    );
+    expect(init.text).toContain('Created .cursor/rules/mnema-instructions.mdc');
+    expect(init.text).not.toMatch(/EISDIR|\bat .*\.js/);
+    expect(init.failed).toBe(false);
+  });
+
+  it('refuses the file by name, with its reason, writes the others, and exits non-zero', async () => {
+    await mnema('init');
+    rmSync(join(repo, 'AGENTS.md'));
+    mkdirSync(join(repo, 'AGENTS.md'));
+    for (const args of [[], ['--check'], ['--remove']]) {
+      const run = await mnema('instructions', ...args);
+      expect(run.failed).toBe(true);
+      expect(run.text).toContain('AGENTS.md');
+      expect(run.text).toContain('it could not be read: it is a directory, not a file');
+      expect(run.text).not.toMatch(/EISDIR|\bat .*\.js/);
+    }
+  });
 });

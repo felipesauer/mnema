@@ -6,11 +6,13 @@
  */
 
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -19,7 +21,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  changeLine,
   checkInstructions,
+  type InstructionsFile,
   instructionsAreCurrent,
   removeInstructions,
   writeInstructions,
@@ -253,5 +257,199 @@ describe('a write of the block to an instruction file', () => {
     expect(decisionFileAt('AGENTS.md', `${INSTRUCTIONS_BLOCK}\nDecision: use pnpm.\n`)).toEqual({
       door: 'record-decision',
     });
+  });
+});
+
+describe('a file that cannot be read or written', () => {
+  it('is that file’s refusal or failure, with its reason, and every other file is still written', () => {
+    mkdirSync(at('AGENTS.md'));
+    put('.claude', 'a file where the directory of a rule should be');
+    const files = writeInstructions(project);
+    const byPath = Object.fromEntries(files.map((file) => [file.path, file]));
+    expect(byPath['AGENTS.md']?.did).toBe('refused');
+    expect(changeLine(byPath['AGENTS.md'] as InstructionsFile)).toMatch(
+      /Left AGENTS\.md as it is: it could not be read: it is a directory, not a file\..*`mnema instructions` tries again/,
+    );
+    expect(byPath['.claude/rules/mnema-instructions.md']?.did).toBe('refused');
+    expect(byPath['.cursor/rules/mnema-instructions.mdc']?.did).toBe('created');
+    expect(existsSync(at('.github/instructions/mnema-instructions.instructions.md'))).toBe(true);
+    for (const file of files)
+      expect(changeLine(file)).not.toMatch(/\bE(ISDIR|ACCES|NOTDIR|PERM|EXIST)\b|\bat .*\.js/);
+  });
+
+  it.skipIf(process.getuid?.() === 0)(
+    'says a file it could not write, by name, and writes the rest',
+    () => {
+      put('CLAUDE.md', '# Ours\n');
+      chmodSync(at('CLAUDE.md'), 0o444);
+      const files = writeInstructions(project);
+      const claude = files.find((file) => file.path === 'CLAUDE.md') as InstructionsFile;
+      expect(claude.did).toBe('failed');
+      expect(changeLine(claude)).toBe(
+        'Did not change CLAUDE.md: permission denied. Once that is fixed, `mnema instructions` tries again.',
+      );
+      expect(text('CLAUDE.md')).toBe('# Ours\n');
+      expect(files.find((file) => file.path === 'AGENTS.md')?.did).toBe('created');
+    },
+  );
+
+  it('is said by --check as a state of the file, not an error', () => {
+    mkdirSync(at('AGENTS.md'));
+    const checked = checkInstructions(project);
+    expect(checked.find((file) => file.path === 'AGENTS.md')?.found).toEqual({
+      state: 'blocked',
+      why: 'it could not be read: it is a directory, not a file',
+    });
+    expect(instructionsAreCurrent(checked)).toBe(false);
+  });
+});
+
+describe('a marker inside a fenced code block', () => {
+  const EXAMPLE = [
+    '# Using mnema',
+    '',
+    '```markdown',
+    beginMarker('v1'),
+    'anything',
+    INSTRUCTIONS_END,
+    '```',
+    '',
+    '~~~',
+    '<!-- MNEMA:START -->',
+    'alpha text',
+    '<!-- MNEMA:END -->',
+    '~~~',
+    '',
+  ].join('\n');
+
+  it('is an example: no block is found, one is added after it, and removing it leaves the example', () => {
+    put('AGENTS.md', EXAMPLE);
+    expect(checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found).toEqual({
+      state: 'missing',
+      exists: true,
+    });
+    expect(did(writeInstructions(project))['AGENTS.md']).toBe('added');
+    expect(text('AGENTS.md')).toBe(`${EXAMPLE}\n${INSTRUCTIONS_BLOCK}`);
+    expect(did(removeInstructions(project))['AGENTS.md']).toBe('removed');
+    expect(text('AGENTS.md')).toBe(EXAMPLE);
+    expect(withoutTheBlock(`${EXAMPLE}\n${INSTRUCTIONS_BLOCK}`)).toBe(`${EXAMPLE}\n\n`);
+  });
+
+  it('is not the legacy block either: the example is not replaced', () => {
+    put('AGENTS.md', EXAMPLE);
+    expect(
+      checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found.state,
+    ).not.toBe('legacy');
+    writeInstructions(project);
+    expect(text('AGENTS.md')).toContain('alpha text');
+  });
+});
+
+describe('taking the block out', () => {
+  it('never glues the person’s last line to what follows, and says the rest is as it was only when it is', () => {
+    put('AGENTS.md', 'one');
+    writeInstructions(project);
+    put('AGENTS.md', `${text('AGENTS.md')}written after\n`);
+    const removed = removeInstructions(project).find((file) => file.path === 'AGENTS.md');
+    expect(text('AGENTS.md')).toBe('one\nwritten after\n');
+    expect(removed?.asItWas).toBe(false);
+    expect(changeLine(removed as InstructionsFile)).not.toContain('as it was');
+  });
+
+  it('keeps what the person wrote above the block after it went in', () => {
+    put('AGENTS.md', 'one\n');
+    writeInstructions(project);
+    put('AGENTS.md', `written before\n${text('AGENTS.md')}`);
+    removeInstructions(project);
+    expect(text('AGENTS.md')).toBe('written before\none\n');
+  });
+
+  it('says it is as it was when putting the block back gives the file it found', () => {
+    put('AGENTS.md', 'no final newline');
+    writeInstructions(project);
+    const removed = removeInstructions(project).find((file) => file.path === 'AGENTS.md');
+    expect(text('AGENTS.md')).toBe('no final newline');
+    expect(changeLine(removed as InstructionsFile)).toContain('as it was before them');
+  });
+});
+
+describe('a file with CRLF line endings', () => {
+  const crlf = (value: string) => value.replace(/\n/g, '\r\n');
+
+  it('holds the current block when a checkout turned its line endings into CRLF', () => {
+    put('AGENTS.md', crlf(`${THEIRS}\n${INSTRUCTIONS_BLOCK}`));
+    const agents = checkInstructions(project).find((file) => file.path === 'AGENTS.md');
+    expect(agents?.found).toEqual({ state: 'current' });
+    expect(did(writeInstructions(project))['AGENTS.md']).toBe('unchanged');
+  });
+
+  it('adds the block in CRLF and takes it out to the very bytes', () => {
+    const theirs = crlf(THEIRS);
+    put('AGENTS.md', theirs);
+    writeInstructions(project);
+    expect(text('AGENTS.md')).toBe(`${theirs}\r\n${crlf(INSTRUCTIONS_BLOCK)}`);
+    const removed = removeInstructions(project).find((file) => file.path === 'AGENTS.md');
+    expect(removed?.did).toBe('removed');
+    expect(text('AGENTS.md')).toBe(theirs);
+  });
+
+  it('keeps the file’s line endings when it replaces the alpha’s block', () => {
+    put('AGENTS.md', crlf('# a\n\n<!-- MNEMA:START -->\nold\n<!-- MNEMA:END -->\n\nmine\n'));
+    writeInstructions(project);
+    expect(text('AGENTS.md')).toBe(crlf(`# a\n\n${INSTRUCTIONS_BLOCK}\nmine\n`));
+  });
+
+  it('leaves a file of its own alone when it holds the current text in CRLF', () => {
+    writeInstructions(project);
+    const path = OWN_INSTRUCTIONS_FILES[0] as string;
+    put(path, crlf(text(path)));
+    expect(writeInstructions(project).find((file) => file.path === path)?.did).toBe('unchanged');
+  });
+});
+
+describe('a symbolic link', () => {
+  let outside: string;
+  beforeEach(() => {
+    outside = mkdtempSync(join(tmpdir(), 'mnema-instructions-outside-'));
+  });
+  afterEach(() => {
+    rmSync(outside, { recursive: true, force: true });
+  });
+
+  it('whose target is outside the project is not written through, and the refusal says where it goes', () => {
+    writeFileSync(join(outside, 'theirs.md'), '# Elsewhere\n');
+    symlinkSync(join(outside, 'theirs.md'), at('CLAUDE.md'));
+    const files = writeInstructions(project);
+    const claude = files.find((file) => file.path === 'CLAUDE.md') as InstructionsFile;
+    expect(claude.did).toBe('refused');
+    expect(changeLine(claude)).toContain(realpathSync(outside));
+    expect(readFileSync(join(outside, 'theirs.md'), 'utf-8')).toBe('# Elsewhere\n');
+    expect(files.find((file) => file.path === 'AGENTS.md')?.did).toBe('created');
+  });
+
+  it('that leads nowhere is refused, and not created through', () => {
+    symlinkSync(join(outside, 'missing.md'), at('AGENTS.md'));
+    const agents = writeInstructions(project).find((file) => file.path === 'AGENTS.md');
+    expect(agents?.did).toBe('refused');
+    expect(changeLine(agents as InstructionsFile)).toContain('which does not exist');
+    expect(existsSync(join(outside, 'missing.md'))).toBe(false);
+  });
+
+  it('as a directory of a file of its own that leaves the project is not written through either', () => {
+    symlinkSync(outside, at('.claude'));
+    const rule = writeInstructions(project).find(
+      (file) => file.path === '.claude/rules/mnema-instructions.md',
+    );
+    expect(rule?.did).toBe('refused');
+    expect(existsSync(join(outside, 'rules'))).toBe(false);
+  });
+
+  it('that resolves inside the project is followed, and taking the block out leaves the file as it was', () => {
+    put('docs/rules.md', THEIRS);
+    symlinkSync('docs/rules.md', at('GEMINI.md'));
+    expect(did(writeInstructions(project))['GEMINI.md']).toBe('added');
+    expect(text('docs/rules.md')).toContain(INSTRUCTIONS_END);
+    removeInstructions(project);
+    expect(text('docs/rules.md')).toBe(THEIRS);
   });
 });

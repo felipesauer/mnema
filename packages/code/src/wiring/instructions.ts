@@ -26,7 +26,7 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       'write the mnema instructions into the files an agent host reads (AGENTS.md and its kin), check them, or remove them',
     )
     .option('--check', 'say what each file holds of the instructions, and write nothing')
-    .option('--remove', 'take the instructions out, leaving each file as it was before them')
+    .option('--remove', 'take the instructions out of each file')
     .addHelpText(
       'after',
       [
@@ -39,8 +39,10 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
         '',
         'The instructions sit between <!-- mnema:begin … --> and <!-- mnema:end -->, after what a',
         'file of yours holds; nothing outside the markers is changed. A block whose text is not one',
-        'mnema wrote is left as it is and said, never overwritten. `mnema init` writes them when it',
-        'founds a project, and never again.',
+        'mnema wrote is left as it is and said, never overwritten; so is a link that leaves the',
+        'project or leads nowhere, and a file that cannot be read or written (said with why, and',
+        'the command to try again). `mnema init` writes them when it founds a project, and never',
+        'again.',
       ].join('\n'),
     )
     .action(async (opts: { check?: boolean; remove?: boolean }) => {
@@ -73,7 +75,7 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       }
       const files = opts.remove === true ? removeInstructions(root) : writeInstructions(root);
       for (const file of files) io.out(render(fact(changeLine(file))));
-      if (files.some((file) => file.did === 'refused')) io.fail();
+      if (files.some((file) => file.did === 'refused' || file.did === 'failed')) io.fail();
     });
   return readsTheRecord(verb);
 }

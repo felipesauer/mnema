@@ -746,7 +746,7 @@ $ mnema instructions --help
 |
 | Options:
 |   --check     say what each file holds of the instructions, and write nothing
-|   --remove    take the instructions out, leaving each file as it was before them
+|   --remove    take the instructions out of each file
 |   -h, --help  display help for command
 |
 | The files:
@@ -757,8 +757,10 @@ $ mnema instructions --help
 |
 | The instructions sit between <!-- mnema:begin … --> and <!-- mnema:end -->, after what a
 | file of yours holds; nothing outside the markers is changed. A block whose text is not one
-| mnema wrote is left as it is and said, never overwritten. `mnema init` writes them when it
-| founds a project, and never again.
+| mnema wrote is left as it is and said, never overwritten; so is a link that leaves the
+| project or leads nowhere, and a file that cannot be read or written (said with why, and
+| the command to try again). `mnema init` writes them when it founds a project, and never
+| again.
 
 ### mnema switch --help
 $ mnema switch --help

@@ -12,11 +12,13 @@ mnema init
 #>   identity: mnid:eaacca5499e459f77de6c5f821336b4a…
 #>   backup key: created and enrolled, private half at …/identity/backup/9dd8d3df….key
 #>   Move that file off this machine: a backup left on this disk is lost with it.
-#> Created AGENTS.md, with the mnema instructions.
-#> Created .claude/rules/mnema-instructions.md, with the mnema instructions.
-#> Created .github/instructions/mnema-instructions.instructions.md, with the mnema instructions.
-#> Created .cursor/rules/mnema-instructions.mdc, with the mnema instructions.
-#> Each holds the mnema instructions an agent host reads at the start of a session: when to call the mnema tools, and what never goes in the record. `mnema instructions --remove` takes them out.
+#>   Created AGENTS.md, with the mnema instructions.
+#>   Created .claude/rules/mnema-instructions.md, with the mnema instructions.
+#>   Created .github/instructions/mnema-instructions.instructions.md, with the mnema instructions.
+#>   Created .cursor/rules/mnema-instructions.mdc, with the mnema instructions.
+#>   Each holds the mnema instructions an agent host reads at the start of a session: when to
+#>   call the mnema tools, and what never goes in the record. `mnema instructions --remove`
+#>   takes them out.
 #>
 #>   mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to
 #>   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
