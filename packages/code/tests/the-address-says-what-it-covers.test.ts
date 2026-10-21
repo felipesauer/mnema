@@ -182,14 +182,14 @@ describe('the command line says what an address covers', () => {
     expect(reachLine(await address('src/shallow'))).toContain('covers 2 of 23 file(s)');
   });
 
-  it('answers "outside this project" rather than a fraction of nothing', async () => {
+  it('refuses an address outside this project in every tree, rather than a fraction of nothing', async () => {
     file('src/a.ts');
-    // In the public tree such an address is refused; the private tree is one machine's own.
-    const said = await mnema('link', 'rule-1', '/etc', '--rel', 'governs', '--scope', 'private');
-    expect(said.failed, said.err.join(' / ')).toBe(false);
-    expect(reachLine(said)).toBe(
-      '  That address lies outside this project, so it covers nothing here.',
-    );
+    for (const scope of ['public', 'private', 'global']) {
+      const said = await mnema('link', 'rule-1', '/etc', '--rel', 'governs', '--scope', scope);
+      expect(said.failed, scope).toBe(true);
+      expect(said.err.join(' / '), scope).toContain('Refused (OUTSIDE_PROJECT)');
+      expect(reachLine(said), scope).toBeUndefined();
+    }
   });
 });
 
