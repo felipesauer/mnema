@@ -80,6 +80,7 @@ import {
   runTaskTransition,
   runTimelineTool,
 } from '../src/mcp/tools.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -1392,6 +1393,9 @@ describe('MCP session + tools: unit', () => {
         a.name.localeCompare(b.name),
       )) {
         const full = join(current, entry.name);
+        // The derived projection of the project the session serves is not what a read must
+        // leave alone (`support/the-cache-is-not-the-record.ts`).
+        if (isTheDerivedCache(full)) continue;
         if (entry.isDirectory()) {
           hash.update(`D:${full}\n`);
           walk(full);

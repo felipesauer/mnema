@@ -36,6 +36,7 @@ import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 /** The clause that says who accepted a rule: held where the lines say it, ignored where they are not about it. */
 const bare = (line: string | undefined): string | undefined =>
@@ -173,6 +174,8 @@ function digest(dir: string): string {
       a.name.localeCompare(b.name),
     )) {
       const full = join(current, entry.name);
+      // The derived projection is not what asking must leave alone.
+      if (isTheDerivedCache(full)) continue;
       if (entry.isDirectory()) {
         hash.update(`D:${relative(dir, full)}\n`);
         walk(full);
