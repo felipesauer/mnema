@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * WHAT THE AGENT JUST DID: the record moving under an open session, and the caller
  * seeing it.

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * The echo of a move NAMES the record it moved.
  *

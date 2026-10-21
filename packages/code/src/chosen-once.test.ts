@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * WHICH RENDERER, chosen once: the precedence, the flag that reaches it, and the
  * rule that keeps the question from being asked anywhere else.

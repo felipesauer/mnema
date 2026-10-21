@@ -7,6 +7,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -310,5 +311,83 @@ describe('mnema init, where no project can be founded', () => {
     mkdirSync(app, { recursive: true });
     const result = runInit({ cwd: app, env: { home } });
     expect(result).toMatchObject({ created: true, root: join(app, '.mnema') });
+  });
+});
+
+describe('mnema init, and the formatter that would rewrite the record', () => {
+  const ignoreFile = (repo: string): string => join(repo, '.prettierignore');
+
+  it('leaves a repository with no prettier alone: only .mnema/ is made, with its README', () => {
+    const { repo, env } = setup();
+    writeFileSync(join(repo, 'package.json'), '{"devDependencies":{"vitest":"1"}}');
+    const before = filesUnder(repo);
+    const result = found({ cwd: repo, env });
+    const made = filesUnder(repo).filter((path) => !before.includes(path));
+    expect(made.length).toBeGreaterThan(0);
+    expect(made.filter((path) => !path.startsWith('.mnema/'))).toEqual([]);
+    expect(existsSync(ignoreFile(repo))).toBe(false);
+    expect(result.around?.prettierIgnore).toBeUndefined();
+    const readme = readFileSync(join(repo, '.mnema', 'README.md'), 'utf-8');
+    expect(readme).toContain('same commit as the work\n  it describes');
+    expect(readme).toContain('mnema verify');
+  });
+
+  it('adds the line once to a .prettierignore that is already there', () => {
+    const { repo, env } = setup();
+    writeFileSync(ignoreFile(repo), 'dist\ncoverage');
+    const result = found({ cwd: repo, env });
+    expect(readFileSync(ignoreFile(repo), 'utf-8')).toBe('dist\ncoverage\n.mnema/\n');
+    expect(result.around?.prettierIgnore).toEqual({ path: ignoreFile(repo), did: 'added' });
+  });
+
+  it('does not repeat a line that says it already, spelled either way', () => {
+    for (const present of ['.mnema/', '.mnema']) {
+      const { repo, env } = setup();
+      writeFileSync(ignoreFile(repo), `dist\n${present}\n`);
+      const result = found({ cwd: repo, env });
+      expect(readFileSync(ignoreFile(repo), 'utf-8')).toBe(`dist\n${present}\n`);
+      expect(result.around?.prettierIgnore).toBeUndefined();
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it('creates the file when prettier is declared and none exists', () => {
+    const manifest = (repo: string, body: string): void =>
+      writeFileSync(join(repo, 'package.json'), body);
+    const declarations: Array<(repo: string) => void> = [
+      (r) => manifest(r, '{"dependencies":{"prettier":"3"}}'),
+      (r) => manifest(r, '{"devDependencies":{"prettier":"3"}}'),
+      (r) => manifest(r, '{"prettier":{"semi":false}}'),
+      (r) => writeFileSync(join(r, '.prettierrc.json'), '{}'),
+    ];
+    for (const declare of declarations) {
+      const { repo, env } = setup();
+      declare(repo);
+      const result = found({ cwd: repo, env });
+      expect(readFileSync(ignoreFile(repo), 'utf-8')).toBe('.mnema/\n');
+      expect(result.around?.prettierIgnore).toEqual({ path: ignoreFile(repo), did: 'created' });
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it('a second init writes nothing, the .prettierignore included', () => {
+    const { repo, env } = setup();
+    writeFileSync(join(repo, 'package.json'), '{"devDependencies":{"prettier":"3"}}');
+    found({ cwd: repo, env });
+    const before = contentsUnder(repo);
+    const again = runInit({ cwd: repo, env });
+    expect('refused' in again).toBe(false);
+    expect(contentsUnder(repo)).toEqual(before);
+  });
+
+  it('puts the line at the root of the repository when the project is founded below it', () => {
+    const { repo, env } = setup();
+    mkdirSync(join(repo, '.git'));
+    writeFileSync(join(repo, '.prettierrc'), '{}');
+    const below = join(repo, 'packages', 'app');
+    mkdirSync(below, { recursive: true });
+    found({ cwd: below, env });
+    expect(readFileSync(ignoreFile(repo), 'utf-8')).toBe('.mnema/\n');
+    expect(existsSync(ignoreFile(below))).toBe(false);
   });
 });

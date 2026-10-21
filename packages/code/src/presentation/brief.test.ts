@@ -289,8 +289,12 @@ describe('the brief costs one line per rule', () => {
     // of its own (two lines and a blank), because a refusal leaves nobody a way through at the
     // host and is the one thing a reader must be told before it happens. The specification of
     // that delivery took the decision to raise the bound; it did not come from this test.
-    expect(none).toBe(45);
-    expect(none).toBeLessThanOrEqual(45);
+    //
+    // 46 SINCE THE SAME-COMMIT FACT: the paragraph that says what is COMMITTED also says that
+    // recording changes `.mnema/` and that the change goes in the commit of the work it describes.
+    // The specification of that delivery took the decision to raise the bound by this line.
+    expect(none).toBe(46);
+    expect(none).toBeLessThanOrEqual(46);
   });
 
   it('grows by one line per rule however many sources the rule names', () => {

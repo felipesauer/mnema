@@ -12,6 +12,16 @@ with its own changelog.
 
 ### Added
 
+- **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
+  that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
+  is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
+  ignore it, and `FORMAT.md` section 4 lists it beside `.gitignore`. Where the repository has a `.prettierignore` or declares
+  prettier (a dependency, a `prettier` key in `package.json`, or a `.prettierrc*` at the root), `init` adds the line `.mnema/`
+  to the `.prettierignore` at the root of the repository, creating it only when prettier is declared, and says so; a repository
+  with no prettier is left as it is. The session brief gains one line saying that recording changes `.mnema/` and that the change
+  goes in the same commit as the work. Run again in a project that is already founded, `init` adds what that project
+  lacks of the README and the `.prettierignore` line, says what it added and touches nothing else of the record, and
+  `mnema doctor` points at either when it is missing (it writes nothing; the fix it names is `mnema init`).
 - **`mnema usage --tools` counts how many times each MCP tool was called, from a file this machine keeps.** For each call
   the server answers and counts it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
   the refusal) to `<data directory>/tool-calls/<digest of the project>.jsonl`, in the home and never in the repository.
@@ -35,7 +45,7 @@ with its own changelog.
   used to move there without a word.
 - **The agent a fact names, and a relation, are asked what a recipe prints in their place.** `--which "<name>"` was
   recorded as the executor; `--rel src/a.ts` as the relation. Both are refused with `NOT_A_REFERENCE`, by the door
-  every write passes (a `which` that is a marker, a relation holding a path separator).
+  every write passes (a `which` that is a marker, a relation that is one word holding a path separator).
 - **`resume`, `focus` and the resume inside `bootstrap` read the runs of every project of the workspace.** A session that
   wrote first in a project its client listed second was answered `lastRun: null` and no open run. While no identity signs
   for the session (a machine with no key, before the first write) the sentence about the connection now also says that
@@ -43,6 +53,7 @@ with its own changelog.
 - **`read_record` and `bootstrap` say when a record was moved twice out of one state by machines that had not seen each
   other.** `show` and the brief said it; the agent was served the last state alone. The sentence is the same
   function's, as a block beside the payload.
+- **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 
 ### Fixed
 
@@ -55,6 +66,26 @@ with its own changelog.
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
+- **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
+  P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
+  the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
+
+### Changed
+
+- **What `verify` says of a file when it is given a base commit is a sentence.** A file the record held at the base commit and no longer
+  holds, and a file that no longer begins with the bytes it held there, are said as `since <rev> (<commit>): <file> was
+  in the record there and is not here` and `since <rev> (<commit>): <file> no longer begins with the bytes it held
+  there`, without the `gone:` and `rewritten:` labels. The exit code and the JSON reading are unchanged.
+- **The pages say what the rules hook costs per edit, host by host.** Measured on one machine (version 0.1.1, a sandbox,
+  50 runs each, without the real host): about 1 ms at the median per edit in Claude Code, where the hook is a call on a
+  server already running (the server's own start, 270 to 350 ms, is paid once per session), and about 200 ms at the
+  median per edit in Cursor and VS Code, which start a process per edit even where no rule addresses the file. Before,
+  the pages gave only the orders of magnitude.
+- **The step that checks the manifest signature of Claude Code, and the steps that read a host's version, in the
+  host-contract workflow no longer rely on a pipe.** A host that printed more than one line could fail the step on a
+  broken pipe, and a signature check that reads its own output through a quiet `grep` could do the same.
+- **The Python reader no longer carries type aliases it never checked, and its comments no longer say how many vectors
+  carry a field.** The comments say how many were published when the finding was made (October 2026).
 
 ## [0.1.1] - 2026-10-20
 

@@ -239,6 +239,16 @@ mnema init
 #>   Move that file off this machine: a backup left on this disk is lost with it.
 #> …
 
+# `init` also leaves `.mnema/README.md`, a page for whoever opens the folder: the record changes with the
+# work and each change goes in the same commit as the work it describes, nothing in it is edited or
+# reformatted, and how to verify it. Neither reader counts it as part of the proof. In a repository that
+# has a `.prettierignore` or declares prettier (a dependency, a `prettier` key in `package.json`, or a
+# `.prettierrc*` at the root), `init` also adds the line `.mnema/` to the `.prettierignore` at the root of
+# the repository (creating it only when prettier is declared), and says so. It touches no other file outside
+# `.mnema/`, and nothing at all where prettier is not in play. Run again in a project that is already founded, it
+# adds only what that project lacks of these two (the README, the `.prettierignore` line), says what it added, and
+# touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
+
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
 # Create a task. It is named by its id; `t-0b76` is a display alias derived
@@ -363,8 +373,8 @@ census still names each committed key with no tail, so a record whose one tail w
 says whose. A record is never in that shape by being founded: `init` writes the founding and a
 checkpoint before it returns; it is in it when every tail was removed, by a merge, a sparse
 checkout or a commit (whether or not the keys went with them), and when `.mnema/` was left
-half made: an `init` that failed after creating the directory leaves `.gitignore` and
-`.gitattributes` and nothing else, and that project fails `verify` until a first write to the
+half made: an `init` that failed after creating the directory leaves `.gitignore`,
+`.gitattributes` and at most the `README.md` and nothing else, and that project fails `verify` until a first write to the
 public tree founds it (a second `init` answers that there is nothing to found, and does not).
 [`FORMAT.md`](../packages/chain/FORMAT.md) §4 is the rule, and the second reader refuses the
 same records under it.
@@ -822,6 +832,8 @@ mnema key enroll --checker <the line>
 mnema check run --key <the checker's private key file>
 ```
 
+The key file has to hold an Ed25519 key, like an agent's: any other kind is refused (`UNREADABLE_KEY`) before anything runs.
+
 `check run` starts each declared program from the project root with this process's environment, minus every
 `MNEMA_*` variable (that narrows what the program is handed, not what it can read from disk),
 stops it after `--timeout` seconds (300 by default) and records it as failed. It writes one
@@ -1070,6 +1082,10 @@ it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself na
 In a project inside a git repository it also names each worktree that still holds private notes
 in `.mnema/private/`, where they lived before the private tree moved into the repository's git
 directory: nothing reads them there, and removing that worktree deletes them.
+
+It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, or
+the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes neither: each finding says to run
+`mnema init`, which adds exactly that. (`--fix` takes a named target, and these two are not among them.)
 
 `mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
@@ -1353,7 +1369,8 @@ mnema brief
 #> …
 #> It carries what is COMMITTED to this project: the record a clone of the repository
 #> gets, and nothing kept privately on one machine or for one person. A rule recorded
-#> that way is not below, and each heading counts what is printed under it.
+#> that way is not below, and each heading counts what is printed under it. Recording
+#> changes `.mnema/`, and that change goes in the same commit as the work it describes.
 #> …
 #> 1 of the rules below has an ADDRESS: a path in this
 #> repository, recorded beside the rule. The rules addressed at a file arrive on their own

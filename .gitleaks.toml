@@ -1,0 +1,28 @@
+# Read by the `secrets` job of .github/workflows/scanners.yml. The default rules stay on; what
+# follows names only material that is public or made up, each with the reason it is not a secret.
+# A finding that is none of these is not added here: it is a leak to rotate and report.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Signature test vectors: public published values (RFC 8032, the Ed25519 vectors file) and key fingerprints the tests print."
+paths = [
+  '''packages/chain/conformance/vectors/.*''',
+  '''measurements/.*''',
+]
+
+[[allowlists]]
+description = "Fixtures that exist to be recognised as secrets by the content screen and by the refusal tests (synthetic tokens, a throwaway PEM, an AKIA-shaped id), and test-only constants of the older suites."
+paths = [
+  '''packages/core/src/content/(secrets|screen)\.test\.ts''',
+  '''packages/code/tests/(a-refusal-leaves-nothing|what-a-session-records-on-its-own-it-reports|the-answers-name-a-project-as-a-write-takes-it)\.test\.ts''',
+  '''packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8\.test\.ts''',
+  '''packages/chain/verifier/mutate\.py''',
+  '''tests/(unit|integration)/services/.*\.test\.ts''',
+]
+
+[[allowlists]]
+description = "The fingerprint of the vendor's published release signing key, which a workflow compares against."
+regexTarget = "match"
+regexes = ['''SIGNING_KEY: [0-9A-F]{40}''']

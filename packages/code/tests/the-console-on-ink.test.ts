@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE CONSOLE, IN A REAL PSEUDO-TERMINAL, because the promise it makes is about a
  * device, and a device is the one thing an in-process test does not have.

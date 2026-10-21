@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PROMPT IS PAINTED WHERE YOU TYPE: the same `mnema>` under the caller's fingers as in
  * the transcript above them.

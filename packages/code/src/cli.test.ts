@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * What the CLI must not make every command pay for.
  *
