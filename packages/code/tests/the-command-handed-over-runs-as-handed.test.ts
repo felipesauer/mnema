@@ -671,14 +671,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 37, name: 62, flag: 2 },
+  'CHANGELOG.md': { line: 37, name: 64, flag: 2 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 8, name: 12 },
-  'docs/first-record.md': { line: 1, name: 6 },
+  'docs/first-record.md': { line: 1, name: 5 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/install.md': { line: 3, name: 4 },
