@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 32, name: 50, flag: 1 },
+  'CHANGELOG.md': { line: 33, name: 53, flag: 1 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -715,7 +715,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/mcp/server.ts': { line: 1 },
   'packages/code/src/mcp/session.ts': { line: 2 },
   'packages/code/src/pinned-run.ts': { line: 1 },
-  'packages/code/src/presentation/brief.ts': { line: 1, name: 10 },
+  'packages/code/src/presentation/brief.ts': { line: 1, name: 11 },
   'packages/code/src/presentation/promoted.ts': { line: 4 },
   'packages/code/src/presentation/runs.ts': { line: 1 },
   'packages/code/src/presentation/site.ts': { name: 1 },
