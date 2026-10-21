@@ -21,10 +21,11 @@ with its own changelog.
   `.mnema/` out, each with the line to add, and say when a file could not be read well enough to confirm; none of those files is
   edited. The `.prettierignore` is now written where prettier is declared: the project's own directory or the nearest one above it up to
   the git root, instead of the git root alone. When `mnema verify` (and the second reader) refuses a line that differs from its
-  canonical bytes only in spaces, indentation, line ends or key order, and the hash it stores (an entry) or the signature it
-  carries (a tail proof) closes over that canonical form, the refusal says that is what a formatter does and that
-  `git checkout -- .mnema` restores a committed file; a line whose content was also changed gets the plain refusal, which in
-  the product also says that more than its layout differs. What either reader accepts is unchanged.
+  canonical bytes only in spaces, indentation, line ends or key order, and the record read with those lines as their canonical
+  bytes verifies in full (every event covered by a signed checkpoint, every tail proof signed by its tail's key), the refusal
+  says that is what a formatter does and that `git checkout -- .mnema` restores a committed file. A line carries its own hash,
+  so that hash proves nothing: a record that does not verify read that way keeps the plain refusal, and the product shows the
+  issues of that reading beside it. What either reader accepts is unchanged.
 - **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
   `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
   question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,
