@@ -15,6 +15,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, parse } from 'node:path';
+import { listPrivateKeyFingerprints } from '@mnema/chain';
 import { PROJECT_DIR } from '@mnema/core';
 
 /**
@@ -110,17 +111,6 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
   return declaresPrettier(dir) ? { path, did: 'created' } : undefined;
 }
 
-/**
- * Whether prettier is declared where the project sits and its `.prettierignore` does not leave
- * `.mnema/` alone: the only case in which a formatter can rewrite the record. By reading only.
- * It is `prettierIgnoreChange`'s own reading (the repository's root, the same lines), narrowed to
- * a declared prettier: a `.prettierignore` with no prettier declared is not a formatter at work.
- */
-export function prettierMayRewriteTheRecord(project: string): boolean {
-  const dir = nearestGitRoot(project) ?? project;
-  return declaresPrettier(dir) && prettierIgnoreChange(project) !== undefined;
-}
-
 /** What is missing in the project at `project`, by reading only. */
 export function whatIsMissing(project: string): Missing {
   const change = prettierIgnoreChange(project);
@@ -173,22 +163,44 @@ export function complete(project: string): Missing {
  * `.prettierignore` is `init`'s alone, and a file outside `.mnema/` is never touched here.
  */
 
-/** The size of every segment of every tail under the record at `root`: what a write grows. */
-export function markOf(root: string): string {
+/** The size of every segment of every tail under the record at `root`, by tail and segment. */
+export function markOf(root: string): ReadonlyMap<string, number> {
   const tails = join(root, 'tails');
-  const marks: string[] = [];
+  const marks = new Map<string, number>();
   try {
-    for (const tail of readdirSync(tails).sort()) {
-      for (const name of readdirSync(join(tails, tail)).sort()) {
+    for (const tail of readdirSync(tails)) {
+      for (const name of readdirSync(join(tails, tail))) {
         if (/^\d{6}\.jsonl$/.test(name)) {
-          marks.push(`${tail}/${name}:${statSync(join(tails, tail, name)).size}`);
+          marks.set(`${tail}/${name}`, statSync(join(tails, tail, name)).size);
         }
       }
     }
   } catch {
     // A record not there to read has not grown.
   }
-  return marks.join('\n');
+  return marks;
+}
+
+/**
+ * Whether a tail of a key THIS process signs with grew between `before` and now. A tail is named
+ * `<key fingerprint>-<installation>`, and only the keys under `keyRoots` are this process's: a
+ * pull from the remote that lands another key's tail in the middle of a read is the record
+ * growing, and it is not a write of ours. Read at the moment of asking, so the key a first
+ * write mints counts.
+ */
+function growthOfOurs(
+  root: string,
+  before: ReadonlyMap<string, number>,
+  keyRoots: readonly string[],
+): boolean {
+  const ours = new Set(
+    keyRoots.flatMap((keyRoot) => listPrivateKeyFingerprints({ root: keyRoot })),
+  );
+  for (const [segment, size] of markOf(root)) {
+    const tail = segment.slice(0, segment.indexOf('/'));
+    if (ours.has(tail.slice(0, tail.lastIndexOf('-'))) && size !== before.get(segment)) return true;
+  }
+  return false;
 }
 
 /** The one line a write says when it made the page. */
@@ -198,12 +210,16 @@ export const THE_PAGE_WAS_LEFT =
 
 /**
  * The lines owed by a write that ran since `before` was taken at `root` (a project's `.mnema/`):
- * the one above when the record grew and had no README, which it then creates, and none
+ * the one above when a tail of this process's own key grew and the record had no README, which it then creates, and none
  * otherwise. A README that is there is never replaced (the file is created, not written over).
  */
-export function leaveThePage(root: string, before: string): string[] {
+export function leaveThePage(
+  root: string,
+  before: ReadonlyMap<string, number>,
+  keyRoots: readonly string[],
+): string[] {
   const page = join(root, README_NAME);
-  if (existsSync(page) || markOf(root) === before) return [];
+  if (existsSync(page) || !growthOfOurs(root, before, keyRoots)) return [];
   try {
     // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
     writeFileSync(page, RECORD_README, { encoding: 'utf-8', flag: 'wx' });
@@ -220,11 +236,16 @@ export function leaveThePage(root: string, before: string): string[] {
  * a refusal composing one makes no page.
  */
 export class RecordPageWatch {
-  private watched = new Map<string, string>();
+  private watched = new Map<
+    string,
+    { readonly before: ReadonlyMap<string, number>; readonly keyRoots: readonly string[] }
+  >();
 
   /** Takes the mark of the record at `root` the first time it is opened since the last reply. */
-  opened(root: string | undefined): void {
-    if (root !== undefined && !this.watched.has(root)) this.watched.set(root, markOf(root));
+  opened(root: string | undefined, keyRoots: readonly string[]): void {
+    if (root !== undefined && !this.watched.has(root)) {
+      this.watched.set(root, { before: markOf(root), keyRoots });
+    }
   }
 
   /** The lines owed to this reply, only when it answers a write that landed. */
@@ -232,6 +253,6 @@ export class RecordPageWatch {
     const was = this.watched;
     this.watched = new Map();
     if (!wrote) return [];
-    return [...was].flatMap(([root, before]) => leaveThePage(root, before));
+    return [...was].flatMap(([root, { before, keyRoots }]) => leaveThePage(root, before, keyRoots));
   }
 }

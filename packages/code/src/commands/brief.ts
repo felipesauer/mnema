@@ -90,7 +90,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 import { type StacksHere, stacksHere } from './stack-inspect.js';
-import { prettierMayRewriteTheRecord } from './the-record-page.js';
+import { whatIsMissing } from './the-record-page.js';
 
 /** What the brief needs: injected so it is testable. */
 export interface BriefContext {
@@ -142,8 +142,8 @@ export interface BriefDone {
    */
   readonly stacks?: StacksHere;
   /**
-   * True when prettier is declared in the repository and its `.prettierignore` does not leave
-   * `.mnema/` out, so a formatter can rewrite the signed record. Present only when the caller asked
+   * True when `mnema doctor` and `mnema init` would add the line `.mnema/` to the
+   * `.prettierignore` (`whatIsMissing`, the same function), so a formatter can rewrite the signed record. Present only when the caller asked
    * ({@link runBrief}'s `outside`), for the reason {@link outside} is: it reads the disk. Nothing
    * is written for it: `mnema init` is what protects the record.
    */
@@ -266,7 +266,7 @@ export function runBrief(
       ...(asked.outside === true
         ? {
             stacks: stacksHere(ctx),
-            ...(prettierMayRewriteTheRecord(dirname(trees.projectPublic as string))
+            ...(whatIsMissing(dirname(trees.projectPublic as string)).prettierIgnore !== undefined
               ? { formatter: true as const }
               : {}),
             outside: {

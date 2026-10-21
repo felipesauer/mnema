@@ -860,6 +860,11 @@ function cascadeInput(
   return { ...workspace, env, ...(configProject !== undefined ? { configProject } : {}) };
 }
 
+/** The key roots a write in `trees` signs from: the person's, and the agent's where one signs. */
+function keyRootsOf(trees: ResolvedTrees): string[] {
+  return [trees.keyRoot, ...(trees.agent !== undefined ? [trees.agent.keyRoot] : [])];
+}
+
 /** What a write needs from its session: where to append, and what to pin it to. */
 export interface SessionWrite {
   /** The write context over the tree the write is going to. */
@@ -941,7 +946,7 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // answer, unchanged, and the whole of the non-regression: a call that says nothing
   // lands exactly where it landed before this parameter existed.
   const trees = target?.trees ?? session.trees;
-  session.recordPage.opened(trees.projectPublic);
+  session.recordPage.opened(trees.projectPublic, keyRootsOf(trees));
   const which = whichIn(trees, scope, session);
   const open = session.runs.get(chainRootForScope(trees, scope) as string);
   if (open !== undefined)

@@ -240,7 +240,7 @@ export function buildProgram(
   // was just registered, so a verb added to the list above arrives covered.
   speakUsageErrors(program, { io, render: resolved }, typed);
 
-  sayWhatAWriteFounded(program, io, resolved);
+  sayWhatAWriteFounded(program, io, resolved, verbs);
 
   return { program, render: resolved, io, verbs };
 }
@@ -267,10 +267,23 @@ export function buildProgram(
  * never be the reason an answer did not arrive: a throw here is swallowed, because a notice that
  * cannot be composed is a notice not given, which is what the product said before.
  */
-function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void {
+function sayWhatAWriteFounded(
+  program: Command,
+  io: CliIo,
+  render: Render,
+  verbs: readonly Declared[],
+): void {
+  const canWrite = (action: Command): boolean =>
+    verbs.some((verb) => verb.act.name() === topLevelVerbOf(action) && verb.effect === 'mutates');
   let before: import('./a-new-identity.js').AnchorsBefore | undefined;
   // The public record this verb may write to, and what it held: see `leaveThePage`.
-  let page: { readonly root: string; readonly mark: string } | undefined;
+  let page:
+    | {
+        readonly root: string;
+        readonly mark: ReadonlyMap<string, number>;
+        readonly keyRoots: readonly string[];
+      }
+    | undefined;
   program.hook('preAction', async (_program, action) => {
     before = undefined;
     page = undefined;
@@ -283,9 +296,15 @@ function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void
       const { cwd, env } = here();
       const trees = resolveTrees(cwd, env);
       before = anchorsBefore(treesOf(trees));
-      if (trees.projectPublic !== undefined) {
+      // ONLY A VERB THAT CAN WRITE ARMS THE PAGE: `mnema repl` and every read hold no mark, so a
+      // pull during a long one is not taken for a write.
+      if (trees.projectPublic !== undefined && canWrite(action)) {
         const { markOf } = await import('./commands/the-record-page.js');
-        page = { root: trees.projectPublic, mark: markOf(trees.projectPublic) };
+        page = {
+          root: trees.projectPublic,
+          mark: markOf(trees.projectPublic),
+          keyRoots: [trees.keyRoot, ...(trees.agent !== undefined ? [trees.agent.keyRoot] : [])],
+        };
       }
     } catch {
       // Nothing to compare with afterwards: no notice, and the verb answers as it always did.
@@ -304,7 +323,7 @@ function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void
       // only when the record grew (`commands/the-record-page.ts`), so a read says nothing.
       if (watched !== undefined) {
         const { leaveThePage } = await import('./commands/the-record-page.js');
-        for (const sentence of leaveThePage(watched.root, watched.mark)) {
+        for (const sentence of leaveThePage(watched.root, watched.mark, watched.keyRoots)) {
           io.err(render(fact(sentence, 0)));
         }
       }

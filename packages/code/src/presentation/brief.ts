@@ -783,7 +783,7 @@ function formatterSection(formatter: true | undefined): string[] {
   if (formatter === undefined) return [];
   return [
     '',
-    'Prettier is declared here and its `.prettierignore` does not leave `.mnema/` out: the formatter can rewrite the signed record and break its proof. `mnema init` protects it.',
+    'Prettier is not told to leave `.mnema/` alone (the `.prettierignore` lacks the line): the formatter can rewrite the signed record and break its proof. `mnema init` protects it.',
   ];
 }
 

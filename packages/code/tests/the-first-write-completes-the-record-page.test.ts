@@ -24,8 +24,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RECORD_README } from '../src/commands/the-record-page.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RECORD_README, RecordPageWatch } from '../src/commands/the-record-page.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -118,20 +118,22 @@ describe('the command line', () => {
   }, 60_000);
 });
 
+async function connectedTo(cwd: string, workspace: string, homeDir: string): Promise<Client> {
+  const { server } = buildMcpServer({ cwd, env: { home: homeDir }, log: () => {} });
+  const client = new Client(
+    { name: 'claude-code', version: '1.0.0' },
+    { capabilities: { roots: {} } },
+  );
+  client.setRequestHandler(ListRootsRequestSchema, () => ({
+    roots: [{ uri: pathToFileURL(workspace).href }],
+  }));
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+  return client;
+}
+
 describe('the server', () => {
-  async function connected(): Promise<Client> {
-    const { server } = buildMcpServer({ cwd: sandbox, env: { home }, log: () => {} });
-    const client = new Client(
-      { name: 'claude-code', version: '1.0.0' },
-      { capabilities: { roots: {} } },
-    );
-    client.setRequestHandler(ListRootsRequestSchema, () => ({
-      roots: [{ uri: pathToFileURL(repo).href }],
-    }));
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
-    return client;
-  }
+  const connected = () => connectedTo(sandbox, repo, home);
 
   function blocks(reply: unknown): string[] {
     return ((reply as { content?: { text: string }[] }).content ?? []).map((one) => one.text);
@@ -189,6 +191,75 @@ describe('the server', () => {
   }, 60_000);
 });
 
+describe('a tail that arrives while a verb or a call is open is not a write of this process', () => {
+  /** A record with one tail of ours (`aaaa`) and a key root that holds only our key. */
+  function arrangement(): { root: string; keyRoot: string; grow: (tail: string) => void } {
+    const root = join(sandbox, 'record');
+    const keyRoot = join(sandbox, 'keys-of-ours');
+    mkdirSync(join(keyRoot, 'keys'), { recursive: true });
+    writeFileSync(join(keyRoot, 'keys', 'aaaa.key'), 'k');
+    const grow = (tail: string) => {
+      mkdirSync(join(root, 'tails', tail), { recursive: true });
+      writeFileSync(join(root, 'tails', tail, '000001.jsonl'), `${'x'.repeat(40)}\n`, {
+        flag: 'a',
+      });
+    };
+    grow('aaaa-one');
+    return { root, keyRoot, grow };
+  }
+
+  it("makes no page and says nothing when another key's tail lands between arming and settling", () => {
+    const { root, keyRoot, grow } = arrangement();
+    const watch = new RecordPageWatch();
+    watch.opened(root, [keyRoot]);
+    grow('bbbb-two');
+    expect(watch.settled(true)).toEqual([]);
+    expect(existsSync(join(root, 'README.md'))).toBe(false);
+  });
+
+  it('still makes it, as the control, when a tail of our own key grew', () => {
+    const { root, keyRoot, grow } = arrangement();
+    const watch = new RecordPageWatch();
+    watch.opened(root, [keyRoot]);
+    grow('aaaa-one');
+    expect(watch.settled(true)).toHaveLength(1);
+    expect(existsSync(join(root, 'README.md'))).toBe(true);
+  });
+
+  it('makes none for a private write by the server while the public record grows from outside', async () => {
+    foundedWithoutThePage();
+    const client = await connectedTo(sandbox, repo, home);
+    await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'public first, so the key has a tail', scope: 'public' },
+    });
+    rmSync(readme());
+    // The pull lands right after the door armed the watch: another key's segment appears in the
+    // public record while this call, which writes only to the private tree, is in flight.
+    const original = RecordPageWatch.prototype.opened;
+    const arrives = vi.spyOn(RecordPageWatch.prototype, 'opened').mockImplementation(function (
+      this: RecordPageWatch,
+      ...args
+    ) {
+      original.apply(this, args);
+      const foreign = join(repo, '.mnema', 'tails', 'bbbbbbbbbbbbbbbb-other');
+      mkdirSync(foreign, { recursive: true });
+      writeFileSync(join(foreign, '000001.jsonl'), '');
+    });
+    const own = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'only on this machine', scope: 'private' },
+    });
+    const text = ((own as { content: { text: string }[] }).content ?? []).map((b) => b.text);
+    expect(text.filter((block) => block.includes(SAID))).toEqual([]);
+    expect(text[0]).toMatch(/^Captured memory /);
+    expect(arrives).toHaveBeenCalled();
+    arrives.mockRestore();
+    expect(existsSync(readme())).toBe(false);
+    await client.close();
+  }, 60_000);
+});
+
 describe('the brief a session opens with, about a formatter that can rewrite the record', () => {
   const LINE = 'the formatter can rewrite the signed record';
   const brief = () => mnema('brief', '--hook');
@@ -206,7 +277,7 @@ describe('the brief a session opens with, about a formatter that can rewrite the
     expect(existsSync(join(repo, '.prettierignore'))).toBe(false);
   }, 60_000);
 
-  it('says nothing once the .prettierignore leaves it out, and nothing where no prettier is declared', () => {
+  it('says nothing once the .prettierignore leaves it out, and nothing where there is neither prettier nor a file', () => {
     expect(mnema('init').status).toBe(0);
     expect(brief().stdout).not.toContain(LINE);
     declarePrettier();
@@ -214,6 +285,12 @@ describe('the brief a session opens with, about a formatter that can rewrite the
     expect(brief().stdout).toContain(LINE);
     writeFileSync(join(repo, '.prettierignore'), 'dist\n.mnema/\n');
     expect(brief().stdout).not.toContain(LINE);
+  }, 60_000);
+
+  it('also says it where the .prettierignore lacks the line and no prettier is declared, as the doctor does', () => {
+    expect(mnema('init').status).toBe(0);
+    writeFileSync(join(repo, '.prettierignore'), 'dist\n');
+    expect(brief().stdout).toContain(LINE);
   }, 60_000);
 
   it('is not in the file a person redirects the brief into', () => {
