@@ -1493,12 +1493,9 @@ any key of it: another identity is refused, and a retraction another identity si
 is not applied: the note is still served, and `mnema verify` names it in a census line,
 informational, not a break.
 
-**A link names a path inside the project or an id.** A target that is a path outside the project (`/etc/passwd`, `../x`) is
-refused with `OUTSIDE_PROJECT`, naming the tree, in every tree and under `derived-from` as under `governs`, `asks-for-a-person`
-and `refuses-a-write`: the committed tree reaches every clone, none of which can open it, and this machine's trees would hold a
-path nothing in the project can follow. An absolute path inside the project is recorded relative to its root in the committed
-tree. The relation is an open label, but one with a path separator in it (`--rel src/a.ts`) is the target typed in the wrong
-place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints where a value goes (`--rel "<rel>"`, `--which "<name>"`).
+**A relation is a label, and a recipe's marker is not a value.** The relation is open, but one word with a path separator in it
+(`--rel src/a.ts`) is the target typed in the wrong place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints
+where a value goes (`--rel "<rel>"`, `--which "<name>"`).
 
 **A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>
 <target> --rel <label> --reason "<why>"` (the `retract_link` tool) names the edge exactly as

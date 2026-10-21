@@ -20,23 +20,20 @@
  *     the one thing here that is a door rather than a tidiness.
  *
  * The record is written by the PRODUCT in every case: the proposals come from
- * `decision import` and the strange targets from the operation the `link` verb ends in.
- * The verb itself now refuses a citation of a path outside the project, but a record
- * arrives from clones, from older versions and from other tools, so the filter is still
- * tested against the edges such a record holds, written through the operation that
- * appends them.
+ * `decision import` and the strange targets from `link`, which is the verb a person
+ * uses to write one. Nothing here fabricates an edge, which is what keeps the filter
+ * being tested against input the product can actually produce.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters } from '@mnema/chain';
 import { adrFileNames, type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBrief } from './commands/brief.js';
 import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
+import { runLink } from './commands/link.js';
 import { basesNeverImported, decisionsOutsideTheRecord } from './outside-the-record.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE } from './presentation/brief.js';
 import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
@@ -188,12 +185,6 @@ describe('which decision documents this checkout holds that the record has none 
     // And an ABSOLUTE path whose tail, joined onto the root, is a directory that exists.
     adr(repo, 'etc/decisions/0001-absolute.md', 'A decision under a forged absolute');
 
-    const trees = resolveTrees(repo, env);
-    const ctx = {
-      writer: openTreeForWriting(trees, 'public'),
-      layout: { root: trees.projectPublic as string },
-      upcasters: catalogUpcasters(),
-    };
     for (const target of [
       '../outside/0001-elsewhere.md',
       'docs/../outside/0001-elsewhere.md',
@@ -201,7 +192,7 @@ describe('which decision documents this checkout holds that the record has none 
       '/etc/decisions/0001-absolute.md',
       'https://example.invalid/adr/0001.md',
     ]) {
-      const linked = linkKnowledge(ctx, { subject, target, rel: 'derived-from' });
+      const linked = runLink({ cwd: repo, env }, { subject, target, rel: 'derived-from' });
       expect(linked.ok, target).toBe(true);
     }
     // Not one of them became a base: the only directory named is the one the import wrote,

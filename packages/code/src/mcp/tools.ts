@@ -602,15 +602,14 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
-  // A target outside the project is refused in every tree, as the command line refuses it: the
-  // public tree travels to every clone, and the private and global trees would hold a path
-  // nothing here can follow.
-  const projectDir = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
-  const publicRoot = route.scope === 'public' ? projectDir : undefined;
+  // The public tree travels to every clone: a target no clone can open is refused there, as the
+  // command line refuses it. The private and global trees take any path.
+  const publicRoot =
+    route.scope === 'public' && trees.projectPublic !== undefined
+      ? dirname(trees.projectPublic)
+      : undefined;
   const outside =
-    projectDir === undefined
-      ? undefined
-      : outsideTheProject(input.rel, target.id, projectDir, route.scope);
+    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
   if (outside !== undefined) return { ok: false, code: 'OUTSIDE_PROJECT', message: outside };
   // What the public tree records is the target relative to the root when it was typed absolute.
   const recordedTarget =

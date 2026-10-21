@@ -15,7 +15,6 @@
 
 import { dirname, isAbsolute } from 'node:path';
 import type { UpcasterRegistry } from '@mnema/chain';
-import { DERIVED_FROM_RELATION } from '@mnema/chain';
 import type { RecordedAs } from '@mnema/context';
 import { ADDRESS_RELATIONS, locateLinkScope, type ResolvedTrees, type Scope } from '@mnema/core';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
@@ -40,40 +39,20 @@ export function linkRefusal(ends: {
 }
 
 /**
- * The relations whose target is asked whether it lies inside the project: the ones that carry an
- * ADDRESS, and `derived-from`, which cites the file a proposal was read out of. A file outside the
- * project is a name no clone can open and no reading of this project can follow, whichever tree
- * the link is written to.
- */
-const RELATIONS_THAT_NAME_A_PATH: readonly string[] = [...ADDRESS_RELATIONS, DERIVED_FROM_RELATION];
-
-/**
  * The sentence that refuses a link whose target is a path OUTSIDE the project, or `undefined` when
- * it is not one. Asked of a link in EVERY tree: the public tree reaches every clone, none of which
- * can open the path, and the private and global trees (this machine's own) would hold an address
- * that covers nothing here and a citation no one can follow, which the record cannot take back.
+ * it is not one. Asked only of a link born in the public tree, which is committed and reaches every
+ * clone: an address no clone can resolve is the one thing that tree must not carry. The private and
+ * global trees stay on one machine and are not asked.
  *
- * Only a relation that names a path is asked ({@link RELATIONS_THAT_NAME_A_PATH}), and only a
- * target shaped like one: an id has no `/` in it. "Outside" is the one idea the gates use
- * (`addressLiesOutside`).
+ * Only a relation that carries an ADDRESS is asked (`ADDRESS_RELATIONS`): `derived-from` cites the
+ * file a proposal was read out of, which may legitimately be a name no clone can open, and covers
+ * no region. Only a target shaped like a path is asked at all: an id has no `/` in it. "Outside" is
+ * the one idea the gates use (`addressLiesOutside`).
  */
-export function outsideTheProject(
-  rel: string,
-  target: string,
-  root: string,
-  scope: Scope = 'public',
-): string | undefined {
-  if (!RELATIONS_THAT_NAME_A_PATH.includes(rel)) return undefined;
+export function outsideTheProject(rel: string, target: string, root: string): string | undefined {
+  if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return undefined;
   if (!addressLiesOutside(target, root)) return undefined;
-  const why =
-    scope === 'public'
-      ? 'a link in the public tree reaches every clone, none of which can open that path'
-      : `a link in the ${scope} tree would hold a path nothing in this project can follow`;
-  const instead =
-    scope === 'public'
-      ? 'Link a path inside the project, or record the link with --scope private.'
-      : 'Link a path inside the project.';
-  return `"${oneLine(target)}" is outside this project, and ${why}. ${instead} Nothing was recorded.`;
+  return `"${oneLine(target)}" is outside this project, and a link in the public tree reaches every clone, none of which can open that path. Link a path inside the project, or record the link with --scope private. Nothing was recorded.`;
 }
 
 /**

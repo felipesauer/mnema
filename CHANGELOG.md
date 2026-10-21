@@ -33,11 +33,6 @@ with its own changelog.
 
 ### Changed
 
-- **A link whose target is a path outside the project is refused in every tree, and a `derived-from` citation too.**
-  Only a link in the committed tree was asked, and only under `governs`, `asks-for-a-person` and `refuses-a-write`:
-  the same path under `derived-from`, or in the private or global tree, was recorded and covered nothing. Both
-  doors that write a link (the `link` verb and `link_knowledge`) refuse it with `OUTSIDE_PROJECT`, naming the tree; a path inside
-  the project, an id, and any other relation are taken as before. Outside any project there is no root to be outside of.
 - **A write over MCP says the directory of the project it fell in, whether or not it named one.** `In the project at
   <path>.` followed only a write that carried a `project`. It now follows every write that landed in a project's tree
   (not the global one), a move by id (`task_transition`, `decision_transition`, `skill_transition`) and a retraction
