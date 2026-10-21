@@ -9,7 +9,7 @@
  * often marks nothing, and each session copied it from the file it was editing.
  *
  * THE BAN IS WHOLE. No file is excused: the first dash in any text the workspace holds is accused
- * at its line and column, except in the directory of copied vectors named below.
+ * at its line and column, except in the directory of copied vectors named below and the signed tails of the record, which no one can edit.
  *
  * WHERE THE CHARACTER IS DATA, it is written as an escape (a backslash, the letter u, then the
  * four digits of the code point), and only in the files {@link WHERE_THE_DASH_IS_DATA} names,
@@ -100,6 +100,9 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
  */
 const COPIED_BYTE_FOR_BYTE = 'packages/chain/conformance/vectors/';
 
+/** The signed tails of the repository's own record: append-only, people's words verbatim. */
+const THE_SIGNED_RECORD = '.mnema/tails/';
+
 /**
  * EVERYTHING THE WORKSPACE HOLDS, ASKED OF GIT: what is tracked and what is present and not
  * ignored, so a file written this minute is read before anybody stages it. A file listed but
@@ -114,7 +117,10 @@ const listed = (): readonly string[] =>
     .split('\n')
     .filter(
       (where) =>
-        where !== '' && !where.startsWith(COPIED_BYTE_FOR_BYTE) && existsSync(join(ROOT, where)),
+        where !== '' &&
+        !where.startsWith(COPIED_BYTE_FOR_BYTE) &&
+        !where.startsWith(THE_SIGNED_RECORD) &&
+        existsSync(join(ROOT, where)),
     );
 
 interface Read {
