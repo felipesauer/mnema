@@ -1207,15 +1207,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the directory name, on the branch where its `tailproof.json` would not parse',
   },
-  '@mnema/chain chain/verify.ts «tail {} ownership proof is invalid (bad-signature)» oneLine(tail) #1':
+  '@mnema/chain chain/verify.ts «tail {} has a malformed ownership proof: {}» oneLine((error as Error).message) #1':
     {
       verdict: 'collapsed',
-      why: 'the directory name, on the branch where a reflowed `tailproof.json` does not verify under its own key',
+      why: 'the JSON reader’s message over a WHOLE FILE, which quotes it: the second measured forgery',
     },
-  '@mnema/chain chain/verify.ts «tail {} has a malformed ownership proof: {}» oneLine(said) #1': {
-    verdict: 'collapsed',
-    why: 'the JSON reader’s message over a WHOLE FILE, which quotes it: the second measured forgery',
-  },
   '@mnema/chain chain/verify.ts «tail {} ownership proof cannot be checked: no committed public key» oneLine(tail) #1':
     {
       verdict: 'collapsed',
@@ -2093,8 +2089,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(300);
-    expect(FOUND[0]?.sites.length).toBe(109);
+    expect(SITES.length).toBe(299);
+    expect(FOUND[0]?.sites.length).toBe(108);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2145,11 +2141,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(205);
+    expect(count('collapsed')).toBe(204);
     expect(count('minted')).toBe(70);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      205,
+      204,
     );
   });
 

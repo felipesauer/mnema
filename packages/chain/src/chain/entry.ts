@@ -22,7 +22,7 @@
 import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { parseEvent } from '../events/parse.js';
-import { parseCanonicalLine, whyALineIsRefused } from '../events/stored-json.js';
+import { parseCanonicalLine } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { entryHash, type WrittenEvent, writtenAsBuilt, writtenAsStored } from './hash.js';
@@ -113,21 +113,7 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   try {
     raw = parseCanonicalLine(line);
   } catch (error) {
-    throw new EntryParseError(
-      whyALineIsRefused(error as Error, (canonical) => {
-        // The line as the writer would have written it: its hash is the one it stores, or it is not
-        // a reformatting of what was hashed.
-        const written = parseEntry(canonical, upcasters);
-        return (
-          entryHash({
-            event: written.written,
-            tail: written.link.tail,
-            seq: written.link.seq,
-            prev: written.link.prev,
-          }) === written.link.hash
-        );
-      }),
-    );
+    throw new EntryParseError((error as Error).message);
   }
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new EntryParseError('entry must be a JSON object');
