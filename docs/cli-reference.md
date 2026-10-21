@@ -1599,8 +1599,8 @@ the two is enough.
 
 In the handshake the server sends **instructions**, which a host that defers tools reads
 before it has chosen any: when a decision or a note is worth recording, which reads to
-make before deciding, what does not belong in the record, and what comes back to the next
-session. They are the same text for every connection, because they are sent before the
+make before deciding, what does not belong in the record, that it is the place for what is
+also kept elsewhere, and what comes back to the next session. They are the same text for every connection, because they are sent before the
 server knows which project it serves, and they stay under 2,048 characters, which is
 what Claude Code keeps of them up to 2.1.295 (4,096 since 2.1.296;
 `tests/the-agent-is-told-what-it-has.test.ts`,
