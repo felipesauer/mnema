@@ -9,8 +9,11 @@
  * holds a line that opens as a ruling or a decision does (`Ruling:`, `Decision:`, `Decisão:`) or as
  * a correction does (`user-corrections.ts`'s shapes: "never …", "do not …", "use … instead").
  *
- * NEVER ONE OF THE PRODUCT'S OWN: the record (`.mnema/`), `MNEMA.md`, and the rules files
- * `mnema rules-file` prints for a host to read. A file the person keeps out of git is NOT left out:
+ * NEVER ONE OF THE PRODUCT'S OWN: the record (`.mnema/`), `MNEMA.md`, the rules files
+ * `mnema rules-file` prints for a host to read, and the files of standing instructions
+ * `mnema instructions` writes. Nor the block it writes into a file of the person's: its lines say
+ * "never" and "record", and they are the product's words, not a call of the project's, so they are
+ * taken out of what was written before it is read. A file the person keeps out of git is NOT left out:
  * a plan kept beside the work and never committed is the case this is for.
  *
  * It reads a path and a text, and nothing else: whether the record already cites the file, and
@@ -19,6 +22,7 @@
 
 import { basename, dirname } from 'node:path/posix';
 import { WHERE_A_HOST_READS } from './host-rules-file.js';
+import { OWN_INSTRUCTIONS_FILES, withoutTheBlock } from './instructions-block.js';
 import { CORRECTION_SHAPES } from './user-corrections.js';
 
 /** Which door reads a decision file into the record. */
@@ -53,6 +57,7 @@ const A_RULING = /^\s*(?:[-*+]\s+)?Ruling:/m;
 function theProductsOwn(rel: string): boolean {
   if (rel === '.mnema' || rel.startsWith('.mnema/') || rel.includes('/.mnema/')) return true;
   if (basename(rel) === 'MNEMA.md') return true;
+  if (OWN_INSTRUCTIONS_FILES.includes(rel)) return true;
   return (Object.values(WHERE_A_HOST_READS) as readonly string[]).includes(rel);
 }
 
@@ -82,9 +87,10 @@ function opensAsACorrection(line: string): boolean {
  * `undefined` where it is not a decision file.
  *
  * @param rel The file's path from the repository's root, with `/` between its parts.
- * @param written What this write put in the file: a `Write`'s content, an `Edit`'s new text.
+ * @param writtenWithTheBlock What this write put in the file: a `Write`'s content, an `Edit`'s new text.
  */
-export function decisionFileAt(rel: string, written: string): DecisionFileReading | undefined {
+export function decisionFileAt(rel: string, writtenWithTheBlock: string): DecisionFileReading | undefined {
+  const written = withoutTheBlock(writtenWithTheBlock);
   if (rel === '' || rel.startsWith('../') || rel.startsWith('/') || theProductsOwn(rel)) {
     return undefined;
   }
