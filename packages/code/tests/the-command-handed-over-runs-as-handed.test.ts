@@ -672,7 +672,7 @@ export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
   'CHANGELOG.md': { line: 40, name: 65, flag: 2 },
-  'README.md': { line: 2, name: 7 },
+  'README.md': { line: 2, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
@@ -693,7 +693,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
   'docs/cli-reference.md': { line: 92, name: 112, flag: 2 },
-  'packages/code/README.md': { line: 1, name: 5 },
+  'packages/code/README.md': { line: 5, name: 9 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/after-a-write.ts': { line: 2 },
@@ -762,6 +762,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/usage.ts': { line: 1 },
   'packages/code/src/wiring/verify.ts': { line: 5, name: 7 },
   'packages/code/src/wiring/witness.ts': { line: 3, name: 1 },
+  'packages/context/README.md': { name: 2 },
   'packages/context/src/intelligence/pattern-moves.ts': { name: 1 },
   'packages/context/src/intelligence/promotion.ts': { flag: 1 },
   'packages/core/src/checks/operations.ts': { line: 4 },

@@ -39,6 +39,12 @@ pnpm test
   never signs with your key or writes to your own records
   ([`.github/a-home-of-its-own/`](.github/a-home-of-its-own/README.md)).
 
+Beside the suite, CI runs two scanners on every pull request and on `main`, outside the checks a
+pull request must carry: `gitleaks` reads the whole history for a committed credential, and
+`osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory (and again every
+Monday, against the lockfile as it is). `.gitleaks.toml` lists what is public or made up and why;
+a finding that is not on that list is a credential to rotate, not a line to add to it.
+
 `pnpm test:guards` runs only the cases that walk the whole tree (every page, every workflow,
 every file that needs a test), the ones a change breaks without touching them. Run it after
 a change to text, a page, the changelog or a list of files; it does not replace `pnpm test`.
