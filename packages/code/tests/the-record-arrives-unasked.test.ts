@@ -186,6 +186,12 @@ const CORRECTIONS_HOOK = 'session-corrections.mjs';
  */
 const HANDBACK_HOOK = 'subagent-stop.mjs';
 /**
+ * The handler that hands the agent one sentence after a question it asked the person was answered.
+ * It is handed the payload of that question tool: in a project it answers with the sentence, outside
+ * one it says nothing; what it says is `a-settled-choice-is-said.test.ts`.
+ */
+const SETTLED_HOOK = 'choice-settled.mjs';
+/**
  * The handler that hands a subagent, as it starts, the document `mnema brief` prints: the same verb,
  * the same channel and the same switch as the session's opening.
  */
@@ -210,6 +216,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor --agent-key cursor',
   [GATE_HOOK]: 'before-a-write --host vscode --agent-key vscode',
+  [SETTLED_HOOK]: 'settled',
   [HANDBACK_HOOK]: 'handback',
   [SUBAGENT_HOOK]: 'brief --hook',
 };
@@ -231,7 +238,10 @@ const ASKED_FIRST = '--identify';
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
   if (GATES.includes(handler)) return [];
-  return handler === TALLY_HOOK || handler === CORRECTIONS_HOOK || handler === HANDBACK_HOOK
+  return handler === TALLY_HOOK ||
+    handler === CORRECTIONS_HOOK ||
+    handler === SETTLED_HOOK ||
+    handler === HANDBACK_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -259,6 +269,15 @@ function stdinOf(command: string, at: string): string {
       hook_event_name: 'SubagentStop',
       stop_hook_active: false,
       last_assistant_message: 'Done.',
+      cwd: at,
+    });
+  }
+  // The question tool after it ran: tried wherever the hook's shell passes the payload on.
+  if (handlerOf(command) === SETTLED_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'AskUserQuestion',
+      tool_input: { questions: [] },
       cwd: at,
     });
   }
@@ -546,6 +565,7 @@ describe('the record arrives unasked', () => {
       TALLY_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
+      SETTLED_HOOK,
       SUBAGENT_HOOK,
       HANDBACK_HOOK,
     ]);
@@ -1277,6 +1297,7 @@ describe('the record arrives unasked', () => {
       'Stop',
       'PreCompact',
       'PreToolUse',
+      'PostToolUse',
       'SubagentStart',
       'SubagentStop',
     ]);
@@ -1297,6 +1318,7 @@ describe('the record arrives unasked', () => {
       'corrections',
       'before-a-write --host cursor --agent-key cursor',
       'before-a-write --host vscode --agent-key vscode',
+      'settled',
       'handback',
     ]);
     expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
@@ -1314,6 +1336,7 @@ describe('the record arrives unasked', () => {
       'corrections: mutates',
       'before-a-write --host cursor --agent-key cursor: mutates',
       'before-a-write --host vscode --agent-key vscode: mutates',
+      'settled: reads',
       'handback: reads',
     ]);
   });
@@ -1399,6 +1422,7 @@ describe('the record arrives unasked', () => {
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
+      'command:/hooks/choice-settled.mjs',
       'command:/hooks/subagent-start.mjs',
       'command:/hooks/subagent-stop.mjs',
     ]);

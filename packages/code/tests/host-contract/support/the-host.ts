@@ -152,6 +152,8 @@ export interface TheSpec {
   readonly servers?: Readonly<Record<string, string>>;
   /** Extra environment for the host. */
   readonly env?: Readonly<Record<string, string>>;
+  /** Extra arguments for the host, after the ones every session is started with. */
+  readonly args?: readonly string[];
 }
 
 /** Whether a `strace` is installed: without it the destinations cannot be read, so nothing starts. */
@@ -307,6 +309,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
     join(out, 'debug.txt'),
   ];
   if (spec.plugin !== false) args.push('--plugin-dir', PLUGIN);
+  if (spec.args !== undefined) args.push(...spec.args);
   if (spec.servers !== undefined) {
     const file = join(sandbox, 'servers.mcp.json');
     writeFileSync(

@@ -309,6 +309,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
       'agent-accepts',
       'brief-document',
+      'choice-settled',
       'edit-refuses-a-write',
       'recall-document',
       'session-tally',
@@ -452,6 +453,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
     // AND A FOURTH, Cursor's: the same verb with that host's name, which can only refuse.
     expect(named).toEqual([
+      'choice-settled.mjs:choice-settled',
       'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
       'edit-refuses-a-write.mjs:edit-refuses-a-write',
       'session-corrections.mjs:user-corrections',
@@ -513,6 +515,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
+      'PostToolUse:command:choice-settled.mjs',
       'SubagentStart:command:subagent-start.mjs',
       'SubagentStop:command:subagent-stop.mjs',
     ]);
