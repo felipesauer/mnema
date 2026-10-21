@@ -252,6 +252,12 @@ mnema init
 # `.mnema/`, and nothing at all where prettier is not in play. Run again in a project that is already founded, it
 # adds only what that project lacks of these two (the README, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
+#
+# A project founded before `init` left the README gets it without running `init` again: the first signed
+# write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and says so in one line
+# (on stderr for a verb). A read, a refused write and a write to a tree that does not travel leave the folder
+# as it was, and a README that is already there is never replaced. Only the README is made this way; the
+# `.prettierignore` is never edited outside `init`.
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
