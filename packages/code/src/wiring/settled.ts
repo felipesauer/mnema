@@ -10,7 +10,7 @@
  * a misuse of the verb itself. It is a read, and records nothing.
  */
 
-import { type Command, Option } from 'commander';
+import type { Command } from 'commander';
 import { here } from './context.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -22,11 +22,9 @@ export function registerSettled(program: Command, wiring: Wiring): Declared {
     .description(
       'say to the agent, after a question to the person was answered, which tool records a choice',
     )
-    .addOption(
-      new Option(
-        '--reply <shape>',
-        'the reply shape the host reads: flat is a top-level additionalContext',
-      ).choices(['flat']),
+    .option(
+      '--reply <shape>',
+      'flat: a top-level additionalContext, for a host that reads that and not the nested one',
     )
     .addHelpText(
       'after',
@@ -43,10 +41,11 @@ export function registerSettled(program: Command, wiring: Wiring): Declared {
         '  with `mnema switch off choice-settled`.',
       ].join('\n'),
     )
-    .action(async (options: { readonly reply?: 'flat' }) => {
+    .action(async (options: { readonly reply?: string }) => {
       const { runSettled } = await import('../commands/settled.js');
       const payload = io.input === undefined ? '' : await io.input();
-      const done = runSettled(here(), { payload, reply: options.reply });
+      const reply = options.reply === 'flat' ? 'flat' : undefined;
+      const done = runSettled(here(), { payload, reply });
       io.out(JSON.stringify(done.reply));
     });
   return readsTheRecord(verb);

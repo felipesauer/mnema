@@ -565,7 +565,9 @@ export function geminiHooksJson(): string {
     hooks: {
       SessionStart: [{ hooks: [hook('mnema-opening', 'open')] }],
       BeforeTool: [{ matcher: `^(${tools.join('|')})$`, hooks: [hook('mnema-gate', 'gate')] }],
-      AfterTool: [{ matcher: `^${ASKS_THROUGH.gemini}$`, hooks: [hook('mnema-settled', 'settled')] }],
+      AfterTool: [
+        { matcher: `^${ASKS_THROUGH.gemini}$`, hooks: [hook('mnema-settled', 'settled')] },
+      ],
     },
   };
   return `${printed(file)}\n`;
