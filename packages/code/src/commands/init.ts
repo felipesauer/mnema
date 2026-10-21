@@ -206,7 +206,10 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     // What the founding leaves beside the record, and a project founded before it did lacks:
     // completed here, and nothing else of the project is touched.
     const done = complete(ctx.cwd);
-    const completed = done.readme || done.prettierIgnore !== undefined ? { completed: done } : {};
+    const completed =
+      done.readme || done.editorconfig || done.prettierIgnore !== undefined
+        ? { completed: done }
+        : {};
     const recorded = recordedAnchorOf(asked);
     if (recorded === undefined) {
       return { created: false, root, anchor: authorizingAnchor(asked), ...completed };

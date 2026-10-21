@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { generateKeyPair } from './keys.js';
+import { canonicalBytes } from '../events/canonical.js';
+import { generateKeyPair, type KeyPair, sign } from './keys.js';
 import {
   parseTailProof,
   serializeTailProof,
   signTailProof,
+  type TailProof,
   TailProofParseError,
   verifyTailProof,
 } from './tailproof.js';
+
+/** Signs a proof's fields as they stand, whatever they name: what a writer could put on disk. */
+function signTailProofOver(proof: TailProof, keyPair: KeyPair): TailProof {
+  const { sig: _sig, ...fields } = proof;
+  const sig = Buffer.from(sign(canonicalBytes(fields), keyPair.privateKey)).toString('hex');
+  return { ...fields, sig };
+}
 
 describe('tail proof', () => {
   it('a proof the key signs over its own tail id verifies', () => {
@@ -35,6 +44,34 @@ describe('tail proof', () => {
     const proof = signTailProof(tail, owner);
     const verdict = verifyTailProof({ proof, tail, publicKey: other.publicKey });
     expect(verdict).toEqual({ ok: false, reason: 'bad-signature' });
+  });
+
+  it('refuses a proof another key signed naming itself, under the key the tail id names', () => {
+    const owner = generateKeyPair();
+    const other = generateKeyPair();
+    const tail = `${owner.fingerprint}-i1`;
+    const proof = signTailProof(tail, other);
+    expect(verifyTailProof({ proof, tail, publicKey: owner.publicKey })).toEqual({
+      ok: false,
+      reason: 'signer-mismatch',
+    });
+  });
+
+  it('refuses a proof the tail key signed that names another key as its signer', () => {
+    const owner = generateKeyPair();
+    const other = generateKeyPair();
+    const tail = `${owner.fingerprint}-i1`;
+    const proof = {
+      ...signTailProof(tail, owner),
+      signerFp: other.fingerprint,
+    };
+    // Re-signed by the owner over the message that names the other key, so the signature
+    // itself holds under the tail's key: only the claim is wrong.
+    const resigned = signTailProofOver(proof, owner);
+    expect(verifyTailProof({ proof: resigned, tail, publicKey: owner.publicKey })).toEqual({
+      ok: false,
+      reason: 'signer-mismatch',
+    });
   });
 
   it('rejects a tampered signature', () => {

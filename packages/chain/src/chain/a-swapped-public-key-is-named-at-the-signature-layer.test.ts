@@ -4,9 +4,10 @@
  *
  * The file is named by a fingerprint, and a forger can overwrite it with a key of their own.
  * The reader re-derives the loaded key's fingerprint and refuses when it is not the one the
- * checkpoint names. Other issues may follow from the same swap, so it is not enough that SOME
- * issue of the record sits at that layer: the one that names the swap must, and `layer` is
- * what a consumer filters the issues on.
+ * checkpoint names, or the one the tail id names for its ownership proof. Other issues may
+ * follow from the same swap, so it is not enough that SOME issue of the record sits at that
+ * layer: the ones that name the swap must, and `layer` is what a consumer filters the issues
+ * on.
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -56,8 +57,13 @@ describe('a public key swapped for another', () => {
     const result = verify(root);
     expect(result.ok).toBe(false);
     const swapped = result.issues.filter((issue) => issue.detail.includes('key was swapped'));
-    expect(swapped).toHaveLength(1);
-    expect(swapped[0]?.layer).toBe('T2/T4');
-    expect(swapped[0]?.detail).toContain(writer.signerFingerprint);
+    // Twice: the checkpoint's key, and the key the tail's ownership proof is checked under,
+    // which is the same file. Each says so at the signature layer, naming the fingerprint.
+    expect(swapped).toHaveLength(2);
+    for (const issue of swapped) {
+      expect(issue.layer).toBe('T2/T4');
+      expect(issue.detail).toContain(writer.signerFingerprint);
+    }
+    expect(swapped.filter((issue) => issue.detail.includes('ownership proof'))).toHaveLength(1);
   });
 });

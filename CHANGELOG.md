@@ -30,6 +30,15 @@ with its own changelog.
   characters is compared by its first 200 (the host cuts the name there and adds a hash this does not compute), so two
   such projects that share those 200 are not told apart; and the name pattern `*plan*.md` also matches a name such as
   `explanation.md`, whose new lines still have to open as a decision does before any line is given.
+- **The record carries an `.editorconfig`, and `mnema doctor` and the brief warn of the other tools that would rewrite it.** `.mnema/.editorconfig`
+  sets `insert_final_newline`, `trim_trailing_whitespace`, `end_of_line`, `charset`, `indent_style` and `indent_size` to `unset`
+  (no `root = true`, so nothing else of the folders above is cut); it is written where the README is (the founding, the `init`
+  that completes a founded project, and the first signed write that grows a record with none), never over an existing file and
+  never by a read or a refused write, and it is not part of the proof (`FORMAT.md` section 4). `mnema doctor` and the hook's brief
+  also name a `.pre-commit-config.yaml` with a rewriting hook, a Biome, dprint or lint-staged configuration that does not leave
+  `.mnema/` out, each with the line to add, and say when a file could not be read well enough to confirm; none of those files is
+  edited. The `.prettierignore` is now written where prettier is declared: the project's own directory or the nearest one above it up to
+  the git root, instead of the git root alone.
 - **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
   `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
   question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,
@@ -145,6 +154,15 @@ with its own changelog.
 - **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
   P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
   the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
+- **Both verifiers check a tail's proof of ownership under the key the tail id names, and nothing else.** The Python
+  verifier looked the key up by the proof's own `signerFp`, so a `tailproof.json` that another key of the record signed
+  over the tail's id was verified there and refused by `mnema verify`. `mnema verify` checked the signature under the
+  tail's key without comparing that key with the proof's `signerFp`, so a proof the tail's key signed naming another key
+  was accepted there and refused by the Python verifier. Both now refuse a proof whose `signerFp` is not the fingerprint
+  the tail id begins with, as `signer-mismatch`. `mnema verify` also recomputes the fingerprint of the key file it checks
+  a tail proof under, as it already did for a checkpoint's key: a tail with no checkpoint yet, whose key file held
+  another key that signed the proof, verified there and was refused by the Python verifier. No record a mnema binary
+  writes is touched: a tail's proof is signed at birth by the key its id is named for.
 
 ### Changed
 

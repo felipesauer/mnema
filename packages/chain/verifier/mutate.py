@@ -822,6 +822,83 @@ def tail_proof_removed(root: str) -> tuple[bool, str]:
     return True, "tailproof.json removed"
 
 
+def tail_proof_signed_by_another_project_key(root: str) -> tuple[bool, str]:
+    """The tail's proof replaced by one ANOTHER key of the record signed, naming itself.
+
+    Section 6.1: the proof is a signature under the key `signerFp` names, "which is the
+    fingerprint the tail id begins with". Here the second key is committed beside the owner's,
+    correctly named by its own material, and it genuinely signs a proof over the owner's tail
+    id with its own fingerprint as `signerFp`. The signature verifies under the key the proof
+    names, and that is not the key the tail id names. A reader that looks the key up by the
+    proof's own `signerFp` hands ownership of the tail to whichever key of the record wrote
+    the proof; the product looks it up by the tail id and refused this all along.
+    """
+    signer = _commit_the_unenrolled_key(root)
+    tail_dir = _tail_dir(root)
+    tail = os.path.basename(tail_dir)
+    if tail.rsplit("-", 1)[0] == signer:
+        return False, "the tail already belongs to the key that would sign the proof"
+    proof = {"scheme": TAILPROOF_SCHEME, "signerFp": signer, "tail": tail}
+    proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
+    return (
+        _rewrite(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)]),
+        f"the proof of {tail[:12]}... signed by {signer[:12]}..., another key of the record",
+    )
+
+
+def tail_proof_names_another_signer(root: str) -> tuple[bool, str]:
+    """The tail's OWN key signs its proof, and the proof names another key as its signer.
+
+    The mirror of the case above, and the one the product used to accept: it checked the
+    signature under the key the tail id names and never compared that key with the proof's
+    `signerFp`, which section 6.1 says IS the tail id's fingerprint. The record is founded
+    afresh under RFC 8032's first key so this tool can sign as the tail's owner, and the
+    second key is committed beside it.
+    """
+    _refound(root, "a record whose tail proof names a signer it was not signed by")
+    other = _commit_the_unenrolled_key(root, CHECKER_SECRET)
+    tail_dir = _tail_dir(root)
+    tail = os.path.basename(tail_dir)
+    proof = {"scheme": TAILPROOF_SCHEME, "signerFp": other, "tail": tail}
+    proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
+    return (
+        _rewrite(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)]),
+        f"the proof of {tail[:12]}... signed by its own key and naming {other[:12]}...",
+    )
+
+
+def tail_key_swapped_before_any_checkpoint(root: str) -> tuple[bool, str]:
+    """The tail's key file, under its own name, made to hold another key, which signs the proof.
+
+    No checkpoint is left, so the tail proof is the only signature the tail's key is asked for.
+    Section 6 says a verifier recomputes a key's name from its contents. The product did that
+    for a checkpoint's key and an enrolment's and not for the key a tail proof is checked
+    under: it took whatever the file named for the tail's fingerprint held, and a proof the
+    swapped-in key signed verified.
+    """
+    tail_dir = _tail_dir(root)
+    tail = os.path.basename(tail_dir)
+    owner = tail.rsplit("-", 1)[0]
+    key_file = os.path.join(root, "keys", owner + ".pub")
+    if not os.path.exists(key_file):
+        return False, "the tail's key is not committed"
+    for name in ("checkpoints.jsonl", "witness"):
+        path = os.path.join(tail_dir, name)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)
+    swapped, pem = _unenrolled_public()
+    with open(key_file, "w", encoding="utf-8") as handle:
+        handle.write(pem)
+    proof = {"scheme": TAILPROOF_SCHEME, "signerFp": owner, "tail": tail}
+    proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
+    return (
+        _rewrite(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)]),
+        f"keys/{owner[:12]}....pub made to hold {swapped[:12]}..., which signed the proof",
+    )
+
+
 def _respelled(root: str, respell, what: str) -> tuple[bool, str]:
     """One signed event line (seq 2) re-spelled by `respell`, its VALUE left exactly as it was.
 
@@ -1068,6 +1145,9 @@ MUTATIONS = {
     "reordered-lines": reordered_lines,
     "refounded-record": refounded_record,
     "tail-proof-removed": tail_proof_removed,
+    "tail-proof-signed-by-another-project-key": tail_proof_signed_by_another_project_key,
+    "tail-proof-names-another-signer": tail_proof_names_another_signer,
+    "tail-key-swapped-before-any-checkpoint": tail_key_swapped_before_any_checkpoint,
     "byte-order-mark-before-the-first-line": byte_order_mark_before_the_first_line,
     "whitespace-in-a-signed-line": whitespace_in_a_signed_line,
     "key-order-in-a-signed-line": key_order_in_a_signed_line,

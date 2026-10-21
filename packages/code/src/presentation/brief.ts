@@ -728,7 +728,7 @@ export function briefWithin(
   inherited?: InheritedReading,
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
   stacks?: StacksHere,
-  formatter?: true,
+  formatter?: readonly string[],
 ): string[] {
   const late = [
     ...notInTheRecord(outside),
@@ -775,16 +775,14 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
  * otherwise, which is every repository with no prettier or one that already leaves `.mnema/` out.
  *
  * IT IS THE HOOK'S COPY ONLY, for the reason {@link notInTheRecord} is: it is a fact about one
- * disk. One line, a fact and a door: the record is signed bytes, so a rewrite breaks the proof,
- * and the person's `mnema init` is what adds the line to the `.prettierignore`. Nothing here
+ * disk. One line for each tool, a fact and a door: the record is signed bytes, so a rewrite breaks
+ * the proof, and the person's `mnema init` is what adds the line to the `.prettierignore` (the
+ * other tools' files are the person's to edit, and each line says what to add). Nothing here
  * writes it, and the agent is not asked to.
  */
-function formatterSection(formatter: true | undefined): string[] {
-  if (formatter === undefined) return [];
-  return [
-    '',
-    'Prettier is not told to leave `.mnema/` alone (the `.prettierignore` lacks the line): the formatter can rewrite the signed record and break its proof. `mnema init` protects it.',
-  ];
+function formatterSection(formatter: readonly string[] | undefined): string[] {
+  if (formatter === undefined || formatter.length === 0) return [];
+  return ['', ...formatter];
 }
 
 /** The most stacks the opening names; past it the rest are counted, so a crowd cannot take the room. */

@@ -195,6 +195,7 @@ if they were events. The layout, which only ever appeared here incidentally in �
 ```
 <record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
+<record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on these bytes; written by `init`; not part of the proof
 <record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (§6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order
@@ -510,6 +511,14 @@ The signed message is the same shape as §6: the canonical bytes (§1) of the ob
 with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else. The
 signature is Ed25519 under the key `signerFp` names, which is the fingerprint the
 tail id begins with.
+
+So a reader takes the key from the **tail id**, recomputes its fingerprint from the
+committed material as §6 says, and refuses a proof whose `signerFp` is any other
+fingerprint: one another key of the record signed, naming itself, verifies under the
+key it names and proves nothing about who owns this tail, and one the tail's own key
+signed naming another key says what this section says it cannot. The two readers of
+this repository once each accepted one of the two, and both refuse them now, as
+`signer-mismatch` (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
 
 What it is for is the other half of §3's requirement. The fingerprint prefix of a
 tail id is a committed key, but the installation-id suffix is chosen locally and
