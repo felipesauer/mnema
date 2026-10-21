@@ -19,7 +19,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { QUESTION_TOOLS } from '../../src/commands/settled.js';
 import { writeToolsOf } from '../../src/host-hook.js';
-import { INSTRUCTIONS_BODY } from '../../src/instructions-block.js';
 import {
   type Capability,
   type Cell,
@@ -34,6 +33,7 @@ import {
   PRESENCE_HOSTS,
   type Presence,
 } from '../../src/host-names.js';
+import { INSTRUCTIONS_BODY } from '../../src/instructions-block.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
