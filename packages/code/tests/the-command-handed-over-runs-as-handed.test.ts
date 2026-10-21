@@ -458,8 +458,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the entry on a rule addressed at a directory; its `--help` hands the --host it needs',
   },
   'CHANGELOG.md: mnema site': {
-    times: 1,
-    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds',
+    times: 2,
+    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key',
   },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 37, name: 64, flag: 2 },
+  'CHANGELOG.md': { line: 37, name: 66, flag: 2 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
