@@ -21,8 +21,37 @@ with its own changelog.
   tool's input schema) never reaches the tool and is not counted. It is on until `mnema switch off tool-call-count`; on a machine
   with no key of its own yet nothing is kept and no directory is made.
 
+### Changed
+
+- **A link whose target is a path outside the project is refused in every tree, and a `derived-from` citation too.**
+  Only a link in the committed tree was asked, and only under `governs`, `asks-for-a-person` and `refuses-a-write`:
+  the same path under `derived-from`, or in the private or global tree, was recorded and covered nothing. Both
+  doors that write a link (`mnema link`, `link_knowledge`) refuse it with `OUTSIDE_PROJECT`, naming the tree; a path inside
+  the project, an id, and any other relation are taken as before. Outside any project there is no root to be outside of.
+- **A write over MCP says the directory of the project it fell in, whether or not it named one.** `In the project at
+  <path>.` followed only a write that carried a `project`. It now follows every write that landed in a project's tree
+  (not the global one), a move by id (`task_transition`, `decision_transition`, `skill_transition`) and a retraction
+  included: after a reload the workspace can hold another checkout of the same repository, and an id the clone also holds
+  used to move there without a word.
+- **The agent a fact names, and a relation, are asked what a recipe prints in their place.** `--which "<name>"` was
+  recorded as the executor; `--rel src/a.ts` as the relation. Both are refused with `NOT_A_REFERENCE`, by the door
+  every write passes (a `which` that is a marker, a relation holding a path separator).
+- **`resume`, `focus` and the resume inside `bootstrap` read the runs of every project of the workspace.** A session that
+  wrote first in a project its client listed second was answered `lastRun: null` and no open run. While no identity signs
+  for the session (a machine with no key, before the first write) the sentence about the connection now also says that
+  `actor` is empty because of that.
+- **`read_record` and `bootstrap` say when a record was moved twice out of one state by machines that had not seen each
+  other.** `mnema show` and the brief said it; the agent was served the last state alone. The sentence is the same
+  function's, as a block beside the payload.
+
 ### Fixed
 
+- **A title made only of spaces is refused, like one made only of punctuation.** `task create "   "` recorded a task
+  named with blanks (and a decision, a skill, an observation topic): `NOT_A_TITLE`, in words that do not echo the spaces.
+  The empty string stays refused as it was.
+- **`mnema retract` and the `retract_note` and `skills` tools take an `ADR-<n>` label like every other verb that takes an
+  id.** The label became the decision's id, which `retract` then names as a decision; a label two trees both carry is
+  refused with both ids (`AMBIGUOUS_LABEL`).
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
