@@ -49,6 +49,8 @@ with its own changelog.
 
 ### Changed
 
+- **The server's instructions say to record here even what is also kept elsewhere.** The handshake text now asks that a decision or a note be recorded as the work happens and also when the same thing is already in a plan, a ledger, `CLAUDE.md` or the host's own memory, because this is the signed copy and the one later sessions read back. To stay under 2,048 characters (the text is now 2,013) it drops the sentence that the record outlasts the session, a parenthesis about the `mnid`, and shortens the last paragraph; the `recording-decisions` skill says the same in one sentence.
+
 - **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
   of its cost was loading `mnema`, paid even in a project whose record addresses no path. The plugin's handler now reads the
   stored lines of the project's committed tree, of its private tree and of the machine's global tree itself, and where none
@@ -290,7 +292,7 @@ with its own changelog.
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
   definition of all 27 (49,903, 50,029, 50,956 and 56,729 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
   a relative measure), against 54,231 bytes and 12,303 tokens for the server's own listing; Codex carries none and
-  one `tool_search` entry that lists the server (2,882 bytes, 672 tokens), and what its search returns for each tool
+  one `tool_search` entry that lists the server (2,866 bytes, 678 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
   definition differently or a definition gains a word.
