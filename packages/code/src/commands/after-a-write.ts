@@ -4,8 +4,8 @@
  *
  * TWO FILES MEAN SOMETHING, AND EVERY OTHER IS SILENCE.
  *
- *   - A NOTE OF THE HOST'S OWN MEMORY (`host-memory.ts` says where it is). Where somebody switched
- *     `host-memory-mirror` on, the note is copied into this machine's PRIVATE tree as a memory,
+ *   - A NOTE OF THE HOST'S OWN MEMORY (`host-memory.ts` says where it is). Unless somebody switched
+ *     `host-memory-mirror` off, the note is copied into this machine's PRIVATE tree as a memory,
  *     whatever the agent does next: the host's memory is kept apart from the record, and a session
  *     that writes there has written down something it learnt about this project. The copy carries a
  *     marker with the file's name and a hash of its content, so a note is copied once per content and

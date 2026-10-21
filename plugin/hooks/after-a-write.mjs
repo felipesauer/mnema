@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * What a file the session just wrote means to the record: after a `Write` or an `Edit`, `mnema
- * after-a-write` copies a note of the host's own memory into this machine's private tree (only where
- * somebody switched `host-memory-mirror` on), or names, once per session and file, the command that
+ * after-a-write` copies a note of the host's own memory into this machine's private tree (unless
+ * somebody switched `host-memory-mirror` off), or names, once per session and file, the command that
  * reads a file of decisions the record cites nowhere.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to the verb byte for byte

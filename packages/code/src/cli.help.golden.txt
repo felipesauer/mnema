@@ -752,7 +752,7 @@ $ mnema switch --help
 |   What it carries is what stops arriving when it is off.
 |   An off switch says who made it and when, and whether a clone of this
 |   repository holds it: a switch recorded privately governs only this machine.
-|   A channel with no switch is on, except edit-first-write-gate, user-corrections and host-memory-mirror, which are off until switched on.
+|   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
 
 ### mnema inherit --help
 $ mnema inherit --help
@@ -1458,8 +1458,8 @@ $ mnema after-a-write --help
 |   A note of Claude Code’s own memory for this project (projects/<project>/memory/*.md,
 |   <project> named as the host names it after the main working tree, under
 |   $CLAUDE_CONFIG_DIR or ~/.claude, or the autoMemoryDirectory setting) is copied as a
-|   memory into this machine’s private tree, once per content, where
-|   `mnema switch on host-memory-mirror` was run. The index MEMORY.md and a note of
+|   memory into this machine’s private tree, once per content, unless
+|   `mnema switch off host-memory-mirror` was run. The index MEMORY.md and a note of
 |   `type: user` are never copied, and nothing goes to the public tree.
 |   A file that holds decisions (an ADR, a plan, a ledger, a rules file) that the record
 |   cites nowhere gets one line naming the command that reads it, once per session and

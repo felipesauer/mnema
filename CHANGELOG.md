@@ -19,7 +19,8 @@ with its own changelog.
   main working tree's path as the host names it, so every worktree of a repository shares it, under `$CLAUDE_CONFIG_DIR` or
   `~/.claude`, or where `autoMemoryDirectory` points in your own settings or the project's `.claude/settings.local.json`)
   is recorded as a memory in this machine's private tree, with a marker naming the file and a hash of its content, once
-  per content: only where `mnema switch on host-memory-mirror` was run, a new channel that starts off. A note in
+  per content, under a new channel, `host-memory-mirror`, which starts ON (`mnema switch off host-memory-mirror` stops it):
+  the one channel that writes without a verb and begins on, by a recorded decision. A note in
   another project's directory, the index `MEMORY.md` and a note of `type: user` are never copied, and nothing goes to the public tree. A file under
   `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file,
   plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does, gets one line naming

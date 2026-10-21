@@ -1,7 +1,7 @@
 /**
  * What a write means to the record: after a `Write` or an `Edit` in Claude Code, `mnema after-a-write`
- * copies a note of the host's own memory into the private tree (only where `host-memory-mirror` was
- * switched on), and beside a file that holds decisions the record cites nowhere, names once the
+ * copies a note of the host's own memory into the private tree (unless `host-memory-mirror` was
+ * switched off), and beside a file that holds decisions the record cites nowhere, names once the
  * command that reads it.
  *
  * WHAT IS HELD HERE. The directory is the host's (`$CLAUDE_CONFIG_DIR`, the `autoMemoryDirectory`
@@ -157,18 +157,20 @@ afterEach(() => {
 });
 
 describe('a note of the host’s memory', () => {
-  it('is not copied while the channel is off, which is how it starts', () => {
-    expect(STARTS_OFF).toContain('host-memory-mirror');
-    const file = wrote(
-      join(memoryDir(join(home, '.claude')), 'feedback_x.md'),
-      note('X', 'Use pnpm.'),
-    );
-    expect(answer(payload(file))).toEqual({});
-    expect(memoriesIn('projectPrivate')).toHaveLength(0);
+  it('is copied with nobody switching anything on, which is how it starts, and not once switched off', async () => {
+    // ADR-39: the one channel that writes without a verb and begins on.
+    expect(STARTS_OFF).not.toContain('host-memory-mirror');
+    const dir = memoryDir(join(home, '.claude'));
+    const first = wrote(join(dir, 'feedback_x.md'), note('X', 'Use pnpm.'));
+    expect(answer(payload(first))).toHaveProperty('systemMessage');
+    expect(memoriesIn('projectPrivate')).toHaveLength(1);
+    await did('switch', 'off', 'host-memory-mirror');
+    const second = wrote(join(dir, 'feedback_y.md'), note('Y', 'Use pnpm 10.'));
+    expect(answer(payload(second))).toEqual({});
+    expect(memoriesIn('projectPrivate')).toHaveLength(1);
   });
 
   it('is copied into the private tree, never the public one, once per content, and again when it changes', async () => {
-    await did('switch', 'on', 'host-memory-mirror');
     const file = wrote(
       join(memoryDir(join(home, '.claude')), 'feedback_x.md'),
       note('Builds use pnpm', 'The build runs with pnpm, never npm.'),

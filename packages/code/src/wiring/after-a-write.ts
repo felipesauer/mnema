@@ -2,7 +2,7 @@
  * The `mnema after-a-write` wiring: what it declares, and what it prints.
  *
  * `mnema after-a-write` reads the payload a host hands a `PostToolUse` hook on a write, on stdin.
- * Where the file is a note of the host's own memory and `host-memory-mirror` is on, it copies the
+ * Where the file is a note of the host's own memory and `host-memory-mirror` is on (it begins on), it copies the
  * note into this machine's private tree; where the file holds decisions the record cites nowhere,
  * it names the command that reads it in. It prints the reply the host reads, or `{}`. The command
  * is `commands/after-a-write.ts`; the plugin's handler runs it.
@@ -33,8 +33,8 @@ export function registerAfterAWrite(program: Command, wiring: Wiring): Declared 
         '  A note of Claude Code’s own memory for this project (projects/<project>/memory/*.md,',
         '  <project> named as the host names it after the main working tree, under',
         '  $CLAUDE_CONFIG_DIR or ~/.claude, or the autoMemoryDirectory setting) is copied as a',
-        '  memory into this machine’s private tree, once per content, where',
-        '  `mnema switch on host-memory-mirror` was run. The index MEMORY.md and a note of',
+        '  memory into this machine’s private tree, once per content, unless',
+        '  `mnema switch off host-memory-mirror` was run. The index MEMORY.md and a note of',
         '  `type: user` are never copied, and nothing goes to the public tree.',
         '  A file that holds decisions (an ADR, a plan, a ledger, a rules file) that the record',
         '  cites nowhere gets one line naming the command that reads it, once per session and',

@@ -187,9 +187,9 @@ const CORRECTIONS_HOOK = 'session-corrections.mjs';
 const HANDBACK_HOOK = 'subagent-stop.mjs';
 /**
  * The handler that runs after a write in Claude Code: it copies a note of the host's memory into the
- * private tree where `host-memory-mirror` was switched on, and names the door of a decision file.
- * Here it is handed a note of the host's memory, its shell passes it, and with the channel off it
- * answers `{}`; what it copies and says is `what-a-write-means-to-the-record.test.ts`.
+ * private tree unless `host-memory-mirror` was switched off, and names the door of a decision file.
+ * Here it is handed a note in a memory directory named after no project of these, its shell passes
+ * it, and it answers `{}`; what it copies and says is `what-a-write-means-to-the-record.test.ts`.
  */
 const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
 /**
@@ -282,7 +282,7 @@ function stdinOf(command: string, at: string): string {
     });
   }
   // The write after which a note of the host's memory would be copied: outside the project, so the
-  // shell in front passes it, and the channel that starts off keeps it from being copied.
+  // shell in front passes it, and the directory it is in is no project's here, so nothing is copied.
   if (handlerOf(command) === AFTER_A_WRITE_HOOK) {
     return JSON.stringify({
       hook_event_name: 'PostToolUse',

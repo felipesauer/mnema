@@ -826,13 +826,12 @@ export const PRESENCE = {
       by: HELD.claudeSettled,
       what: 'PostToolUse on the question tool',
     },
-    // HELD WITH THE CHANNEL SWITCHED ON, which is not how it ships: `host-memory-mirror` begins off,
-    // and the contract switches it on before it writes the note. The cell says both.
+    // HELD AS IT SHIPS: `host-memory-mirror` begins on (ADR-39), and the contract switches nothing.
     memory: {
       does: true,
       held: 'a test',
       by: HELD.claudeMemory,
-      what: 'PostToolUse on a write to this project’s memory folder, copied to the private tree by `host-memory-mirror`, which is off until switched on',
+      what: 'PostToolUse on a write to this project’s memory folder, copied to the private tree by `host-memory-mirror`, which is on until switched off',
     },
     file: {
       does: true,

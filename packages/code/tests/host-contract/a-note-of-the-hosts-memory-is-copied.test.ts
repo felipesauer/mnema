@@ -1,5 +1,6 @@
 /**
- * A NOTE OF THE HOST'S MEMORY IS COPIED, in the real host: where `host-memory-mirror` is switched on,
+ * A NOTE OF THE HOST'S MEMORY IS COPIED, in the real host, as it ships: `host-memory-mirror` begins on,
+ * nothing switches it here, and
  * the host's own write of a note into its memory directory runs the plugin's `PostToolUse` hook, the
  * note lands in the project's private tree, and the line naming the memory reaches the model with the
  * result of that write; a write anywhere else in the project adds nothing.
@@ -32,9 +33,6 @@ describe('a note of the host’s memory is copied', () => {
 
   it('copies a note written into the memory directory, and the line reaches the model with the result', async () => {
     const session = await start({
-      project: (project) => {
-        project.mnema('switch', 'on', 'host-memory-mirror');
-      },
       call: (project) => ({
         tool: 'Write',
         input: {
@@ -62,9 +60,6 @@ describe('a note of the host’s memory is copied', () => {
 
   it('adds nothing to a write elsewhere in the project', async () => {
     const session = await start({
-      project: (project) => {
-        project.mnema('switch', 'on', 'host-memory-mirror');
-      },
       call: writeTo('src/notes.ts'),
     });
     const result = theResultOfTheCall(session);

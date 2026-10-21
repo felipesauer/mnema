@@ -507,9 +507,9 @@ export const FIRST_WRITE_GATE_CHANNEL: CountedChannel = 'edit-first-write-gate';
 export const STARTS_OFF: readonly SwitchableChannel[] = [
   'edit-first-write-gate',
   'user-corrections',
-  // The copy of the host's memory: whether it begins on is a decision still open, and this line
-  // is where it is made.
-  'host-memory-mirror',
+  // NOT `host-memory-mirror`, which writes without a verb and begins ON all the same: ADR-39 decided
+  // it, named here because it is the one exception to "a channel that writes without a verb starts
+  // off", and the rule still holds for every other such channel.
 ];
 
 /**
@@ -527,7 +527,9 @@ export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
  * The channel that copies a note the host writes to its own memory (Claude Code's
  * `memory/*.md`) into this machine's private tree of the project's record, as the host writes it.
  *
- * IT WRITES WITHOUT ANYBODY TYPING A VERB, so where it begins is {@link STARTS_OFF}'s to say. What it
+ * IT WRITES WITHOUT ANYBODY TYPING A VERB AND BEGINS ON, the one channel of that kind that does
+ * (ADR-39): a note the host keeps is a note about this project that the record would otherwise not
+ * hold, and nothing of it leaves this machine. `mnema switch off host-memory-mirror` stops it. What it
  * copies goes to the PRIVATE tree and never to the one a clone gets: the host's memory is this
  * machine's, and a note about the person (`type: user`) and the host's index (`MEMORY.md`) are not
  * copied at all.
