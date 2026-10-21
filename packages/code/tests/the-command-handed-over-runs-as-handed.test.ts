@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 35, name: 59, flag: 2 },
+  'CHANGELOG.md': { line: 38, name: 60, flag: 2 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -692,7 +692,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 88, name: 110, flag: 2 },
+  'docs/cli-reference.md': { line: 90, name: 111, flag: 2 },
   'packages/code/README.md': { line: 1, name: 5 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -723,7 +723,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/presentation/site.ts': { name: 1 },
   'packages/code/src/presentation/status.ts': { line: 2 },
   'packages/code/src/presentation/usage.ts': { line: 1, name: 2 },
-  'packages/code/src/record-framing.ts': { line: 1, name: 7 },
+  'packages/code/src/record-framing.ts': { line: 1, name: 8 },
   'packages/code/src/record-integrity.ts': { name: 7 },
   'packages/code/src/repl/gate.ts': { unwritten: 2 },
   'packages/code/src/repl/promotable.ts': { line: 1 },
@@ -774,7 +774,7 @@ export const HANDED_OVER: Readonly<
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/README.md': { line: 11, name: 4 },
   'packages/vscode/src/stacks.ts': { line: 1 },
-  'plugin/README.md': { line: 27, name: 22, flag: 1 },
+  'plugin/README.md': { line: 30, name: 23, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 2 },

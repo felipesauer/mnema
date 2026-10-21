@@ -30,6 +30,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { STARTS_OFF } from '../src/record-framing.js';
 import { registerAfterAWrite } from '../src/wiring/after-a-write.js';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -289,7 +290,11 @@ describe('a note of the host’s memory', () => {
         {
           cwd,
           encoding: 'utf-8',
-          env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' },
+          env: {
+            ...process.env,
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+          },
         },
       );
       expect(ran.status, `git ${args.join(' ')}: ${ran.stderr}`).toBe(0);

@@ -192,6 +192,7 @@ const HANDBACK_HOOK = 'subagent-stop.mjs';
  * answers `{}`; what it copies and says is `what-a-write-means-to-the-record.test.ts`.
  */
 const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
+/**
  * The handler that hands the agent one sentence after a question it asked the person was answered.
  * It is handed the payload of that question tool: in a project it answers with the sentence, outside
  * one it says nothing; what it says is `a-settled-choice-is-said.test.ts`.
