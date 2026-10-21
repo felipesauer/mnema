@@ -20,6 +20,7 @@
  * {@link treesSearched}, for the reading that has to say where it looked.
  */
 
+export { gitPlaceOf } from './git-place.js';
 export {
   type BirthProbe,
   type HeldTail,

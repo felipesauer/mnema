@@ -310,7 +310,9 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'agent-accepts',
       'brief-document',
       'choice-settled',
+      'decision-file-written',
       'edit-refuses-a-write',
+      'host-memory-mirror',
       'recall-document',
       'session-tally',
       'subagent-handback',
@@ -333,6 +335,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
       const reason =
         channel === 'agent-accepts' ||
         channel === 'user-corrections' ||
+        channel === 'host-memory-mirror' ||
         ITS_OWN_FACT.includes(channel)
           ? WRITES_THE_FACT_ITSELF
           : 'writes nothing';
@@ -453,6 +456,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
     // AND A FOURTH, Cursor's: the same verb with that host's name, which can only refuse.
     expect(named).toEqual([
+      'after-a-write.mjs:host-memory-mirror+decision-file-written',
       'choice-settled.mjs:choice-settled',
       'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
       'edit-refuses-a-write.mjs:edit-refuses-a-write',
@@ -516,6 +520,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
       'PostToolUse:command:choice-settled.mjs',
+      'PostToolUse:command:after-a-write.mjs',
       'SubagentStart:command:subagent-start.mjs',
       'SubagentStop:command:subagent-stop.mjs',
     ]);

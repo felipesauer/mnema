@@ -324,6 +324,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // `{}` and records nothing. What it records is held with a transcript through the binary and the
   // plugin's command (`a-correction-becomes-a-proposal.test.ts`), and in the signing sweep.
   corrections: { argv: () => ['corrections'] },
+  // And the one that copies a note of the host's memory: in process it has no payload, answers `{}`
+  // and records nothing. What it records is held through the binary and the plugin's command
+  // (`what-a-write-means-to-the-record.test.ts`).
+  'after-a-write': { argv: () => ['after-a-write'] },
   verify: { argv: () => ['verify'] },
   repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
@@ -368,6 +372,10 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'answers a payload a host hands it on the standard input, and in process there is none: ' +
     'what it records is exercised with a transcript through the binary, and only once the channel ' +
     'that starts off is switched on',
+  'after-a-write':
+    'answers a payload a host hands it on the standard input, and in process there is none: ' +
+    'what it copies is exercised with a note of the host’s memory through the binary, and only ' +
+    'once the channel that starts off is switched on',
   // AND THE ONE THAT WRITES SOMETHING THIS INSTRUMENT CANNOT SEE. `witness` appends no
   // event and touches no key: it writes an ATTESTATION beside the checkpoints, which
   // changes what `verify` rules on and reaches neither of the two things counted here.
@@ -667,6 +675,7 @@ describe('every verb says if it writes', () => {
       'run',
       'before-a-write',
       'corrections',
+      'after-a-write',
     ]);
     expect(verbsThat('reads')).toEqual([
       'status',
