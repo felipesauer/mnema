@@ -214,13 +214,18 @@ const VERB_OF: Readonly<Record<string, string>> = {
  */
 const ASKED_FIRST = '--identify';
 
-/** Every command line a handler runs, in order: the question first, where it asks one. */
+/**
+ * Every command line a handler runs, in order: the question first, where it asks one.
+ *
+ * THE GATE RUNS NONE in the projects these cases share, nor outside one: it starts its verb only
+ * where a rule of the record can be met (`plugin/hooks/an-address-can-be-met.mjs`), and none of them
+ * addresses a path. Where one does (`addressed`) it runs its verb, which "runs the verbs it names"
+ * reaches, and `a-write-no-rule-can-meet-starts-no-mnema.test.ts` holds both halves.
+ */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return GATES.includes(handler) ||
-    handler === TALLY_HOOK ||
-    handler === CORRECTIONS_HOOK ||
-    handler === HANDBACK_HOOK
+  if (GATES.includes(handler)) return [];
+  return handler === TALLY_HOOK || handler === CORRECTIONS_HOOK || handler === HANDBACK_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -295,6 +300,8 @@ let project: string;
 let unnoted: string;
 /** A project whose rules in force print past what a hook carries. */
 let crowded: string;
+/** A project whose record addresses a path: the one a gate starts its verb in. */
+let addressed: string;
 
 /**
  * The titles of the crowded project's rules: long enough that four of them cross the host's
@@ -435,8 +442,9 @@ beforeAll(() => {
   project = join(sandbox, 'repo');
   unnoted = join(sandbox, 'unnoted');
   crowded = join(sandbox, 'crowded');
+  addressed = join(sandbox, 'addressed');
   shimDir = join(sandbox, 'bin');
-  for (const dir of [home, data, elsewhere, project, unnoted, crowded, shimDir]) {
+  for (const dir of [home, data, elsewhere, project, unnoted, crowded, addressed, shimDir]) {
     mkdirSync(dir, { recursive: true });
   }
 
@@ -492,6 +500,11 @@ beforeAll(() => {
       cliAt(crowded, 'observe', id, '--topic', LONG_TOPIC, '--text', 'measured in August');
     }
   }
+  // A project with a rule addressed at a path, so the gate has a rule it could meet.
+  cliAt(addressed, 'init');
+  const governing = idIn(cliAt(addressed, 'decision', 'record', 'The ledger is UTC', 'agreed'));
+  cliAt(addressed, 'decision', 'move', 'accept', governing, '--note', 'agreed in review');
+  cliAt(addressed, 'link', governing, 'src', '--rel', 'governs');
 }, 120_000);
 
 afterAll(() => {
@@ -513,11 +526,12 @@ describe('the record arrives unasked', () => {
       expect(ran.err, command).toBe('');
       expect(ran.status, command).toBe(0);
       // And it was TRIED. Without this line the case is green on a handler that runs
-      // nothing at all, which is the shape a broken command path has.
+      // nothing at all, which is the shape a broken command path has. The gate is the one that
+      // tries nothing here: outside a project no rule can be met (`callsOf`).
       expect(ran.mnema, command).toEqual(callsOf(handlerOf(command)));
     }
-    // Every handler, which is what "every command" has to mean now: the gate included, whose
-    // verb answers `{}` outside a project and whose handler writes no byte for it.
+    // Every handler, which is what "every command" has to mean now: the gate included, which
+    // starts no verb outside a project and writes no byte for it.
     expect(commands.map(handlerOf)).toEqual([
       DOCUMENT_HOOK,
       NOTES_HOOK,
@@ -1144,7 +1158,8 @@ describe('the record arrives unasked', () => {
 
     const reached = new Set<string>();
     for (const command of declaredCommands()) {
-      for (const line of runHook(command, project).mnema) reached.add(line);
+      const at = GATES.includes(handlerOf(command)) ? addressed : project;
+      for (const line of runHook(command, at).mnema) reached.add(line);
     }
     // The question the opening handlers ask first is not a verb: it reads nothing and is
     // answered before any verb is reached (`version.ts`, `IDENTITY`).

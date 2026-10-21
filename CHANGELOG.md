@@ -49,7 +49,7 @@ with its own changelog.
   used to move there without a word.
 - **The agent a fact names, and a relation, are asked what a recipe prints in their place.** `--which "<name>"` was
   recorded as the executor; `--rel src/a.ts` as the relation. Both are refused with `NOT_A_REFERENCE`, by the door
-  every write passes (a `which` that is a marker, a relation that is one word holding a path separator).
+  every write passes (a `which` that is a marker; a relation that is a path: one that starts with `/`, `./` or `../`, or has a separator and a file extension, or names a file or directory that exists in the project; `and/or` and `v1.2` stay labels).
 - **`resume`, `focus` and the resume inside `bootstrap` read the runs of every project of the workspace.** A session that
   wrote first in a project its client listed second was answered `lastRun: null` and no open run. While no identity signs
   for the session (a machine with no key, before the first write) the sentence about the connection now also says that
@@ -57,6 +57,17 @@ with its own changelog.
 - **`read_record` and `bootstrap` say when a record was moved twice out of one state by machines that had not seen each
   other.** `show` and the brief said it; the agent was served the last state alone. The sentence is the same
   function's, as a block beside the payload.
+- **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
+  of its cost was loading `mnema`, paid even in a project whose record addresses no path. The plugin's handler now reads the
+  stored lines of the project's committed tree, of its private tree and of the machine's global tree itself, and where none
+  holds a link under `governs`, `asks-for-a-person` or `refuses-a-write` it answers what `mnema` would answer there, nothing,
+  without starting it. A canonical line holds that relation byte for byte, so the search cannot miss one. Every doubt starts
+  `mnema` as before: a tree it cannot list, a line that is not UTF-8, not canonical, or not of a kind, a version and a shape
+  the first published reader declared (the plugin carries a copy of those declarations, held to the reader's by a test), so a
+  record `mnema` cannot read still refuses every write. Nothing is kept between two writes, so a rule that arrives by `git
+  pull` is met at the next one. Measured on one Linux machine under load, 50 runs each, in a project with one accepted rule and
+  no address: the handler went from about 330 ms (Cursor) and 290 ms (VS Code) at the median to about 50 ms; with a rule that
+  refuses, it costs what it did. Claude Code's hook, a call into the server, is unchanged.
 - **The links check after the merge reads `docs/` too, and `osv-scanner` runs weekly.** The job that asks the network for every address of the READMEs once a change is on `main` now also reads every Markdown page under `docs/`; it is still never a check on a pull request, and still opens one issue for the broken ones. `osv-scanner` now also runs on Mondays against the unchanged lockfile, so an advisory published against a dependency nobody touched shows up; a finding fails that run and shows in the Actions tab, and opens nothing else. `gitleaks` stays on pull requests and on `main`.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 

@@ -1,0 +1,304 @@
+{
+  "envelope": {
+    "v": "version",
+    "kind": "kind",
+    "at": "instant",
+    "who": "string",
+    "signerFp": "string",
+    "subject": "string",
+    "which": "string?",
+    "run": "string?",
+    "after": "hashes?"
+  },
+  "transitionFields": {
+    "reason": "string?",
+    "note": "string?",
+    "feedback": "string?",
+    "pr_url": "string?",
+    "links": "string[]?"
+  },
+  "contracts": [
+    {
+      "kind": "account.linked",
+      "v": 1,
+      "payload": {
+        "service": "string",
+        "account": "string"
+      }
+    },
+    {
+      "kind": "agent.enrolled",
+      "v": 1,
+      "payload": {
+        "agentFp": "string",
+        "name": "string",
+        "reverseSig": "string"
+      }
+    },
+    {
+      "kind": "agent.retired",
+      "v": 1,
+      "payload": {
+        "agentFp": "string",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "backup.declared",
+      "v": 1,
+      "payload": {
+        "backupFp": "string"
+      }
+    },
+    {
+      "kind": "channel.asked",
+      "v": 1,
+      "payload": {
+        "rule": "string",
+        "path": "string"
+      }
+    },
+    {
+      "kind": "channel.refused",
+      "v": 1,
+      "payload": {
+        "rule": "string",
+        "path": "string"
+      }
+    },
+    {
+      "kind": "channel.served",
+      "v": 1,
+      "payload": {}
+    },
+    {
+      "kind": "channel.switched",
+      "v": 1,
+      "payload": {
+        "on": "boolean",
+        "reason": "string?"
+      }
+    },
+    {
+      "kind": "check.declared",
+      "v": 1,
+      "payload": {
+        "command": "string",
+        "args": "string[]?"
+      }
+    },
+    {
+      "kind": "check.failed",
+      "v": 1,
+      "payload": {
+        "commit": "string",
+        "command": "string",
+        "args": "string[]?",
+        "failure": "string",
+        "output": "string?"
+      }
+    },
+    {
+      "kind": "check.passed",
+      "v": 1,
+      "payload": {
+        "commit": "string",
+        "command": "string",
+        "args": "string[]?",
+        "output": "string?"
+      }
+    },
+    {
+      "kind": "checker.enrolled",
+      "v": 1,
+      "payload": {
+        "checkerFp": "string",
+        "reverseSig": "string"
+      }
+    },
+    {
+      "kind": "checker.retired",
+      "v": 1,
+      "payload": {
+        "checkerFp": "string",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "decision.recorded",
+      "v": 1,
+      "payload": {
+        "title": "string",
+        "rationale": "string",
+        "adr": "string",
+        "alternatives": "string?"
+      }
+    },
+    {
+      "kind": "decision.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "by": "string?",
+        "fields": "fields?"
+      }
+    },
+    {
+      "kind": "handoff.recorded",
+      "v": 1,
+      "payload": {
+        "fromAgent": "string",
+        "toAgent": "string"
+      }
+    },
+    {
+      "kind": "identity.founded",
+      "v": 1,
+      "payload": {
+        "foundingFp": "string"
+      }
+    },
+    {
+      "kind": "key.enrolled",
+      "v": 1,
+      "payload": {
+        "newFp": "string",
+        "reverseSig": "string"
+      }
+    },
+    {
+      "kind": "key.revoked",
+      "v": 1,
+      "payload": {
+        "revokedFp": "string",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "knowledge.linked",
+      "v": 1,
+      "payload": {
+        "target": "string",
+        "rel": "string"
+      }
+    },
+    {
+      "kind": "link.retracted",
+      "v": 1,
+      "payload": {
+        "target": "string",
+        "rel": "string",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "memory.captured",
+      "v": 1,
+      "payload": {
+        "content": "string"
+      }
+    },
+    {
+      "kind": "note.retracted",
+      "v": 1,
+      "payload": {
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "observation.recorded",
+      "v": 1,
+      "payload": {
+        "about": "string",
+        "topic": "string",
+        "text": "string"
+      }
+    },
+    {
+      "kind": "run.ended",
+      "v": 1,
+      "payload": {
+        "outcome": "string?"
+      }
+    },
+    {
+      "kind": "run.started",
+      "v": 1,
+      "payload": {
+        "agent": "string",
+        "goal": "string?"
+      }
+    },
+    {
+      "kind": "skill.consulted",
+      "v": 1,
+      "payload": {}
+    },
+    {
+      "kind": "skill.created",
+      "v": 1,
+      "payload": {
+        "name": "string",
+        "body": "string"
+      }
+    },
+    {
+      "kind": "skill.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "fields": "fields?"
+      }
+    },
+    {
+      "kind": "stack.adopted",
+      "v": 1,
+      "payload": {
+        "name": "string",
+        "version": "string",
+        "digest": "string",
+        "scope": "string"
+      }
+    },
+    {
+      "kind": "stack.removed",
+      "v": 1,
+      "payload": {
+        "version": "string",
+        "digest": "string",
+        "scope": "string"
+      }
+    },
+    {
+      "kind": "tail.pruned",
+      "v": 1,
+      "payload": {
+        "tail": "string",
+        "throughHash": "string",
+        "eventCount": "count",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "task.created",
+      "v": 1,
+      "payload": {
+        "title": "string"
+      }
+    },
+    {
+      "kind": "task.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "fields": "fields?"
+      }
+    }
+  ]
+}
