@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PAGE SHOWS ITS SEAMS: where a region begins, where it ends, and which row is the
  * caller's own.

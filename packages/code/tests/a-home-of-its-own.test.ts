@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A home of its own: the guard every test process runs under catches what it says it catches.
  *

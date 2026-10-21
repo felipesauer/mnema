@@ -27,6 +27,23 @@ with its own changelog.
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
 
+### Changed
+
+- **`mnema verify --since` prints its findings as sentences.** A file the record held at the base commit and no longer
+  holds, and a file that no longer begins with the bytes it held there, are said as `since <rev> (<commit>): <file> was
+  in the record there and is not here` and `since <rev> (<commit>): <file> no longer begins with the bytes it held
+  there`, without the `gone:` and `rewritten:` labels. The exit code and the `--json` reading are unchanged.
+- **The pages say what the rules hook costs per edit, host by host.** Measured on one machine (version 0.1.1, a sandbox,
+  50 runs each, without the real host): about 1 ms at the median per edit in Claude Code, where the hook is a call on a
+  server already running (the server's own start, 270 to 350 ms, is paid once per session), and about 200 ms at the
+  median per edit in Cursor and VS Code, which start a process per edit even where no rule addresses the file. Before,
+  the pages gave only the orders of magnitude.
+- **The step that checks the manifest signature of Claude Code, and the steps that read a host's version, in the
+  host-contract workflow no longer rely on a pipe.** A host that printed more than one line could fail the step on a
+  broken pipe, and a signature check that reads its own output through `grep -q` could do the same.
+- **The Python reader no longer carries type aliases it never checked, and its comments no longer say how many vectors
+  carry a field.** The comments say how many were published when the finding was made (October 2026).
+
 ## [0.1.1] - 2026-10-20
 
 ### Changed

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A FLOOR UNDER THE WINDOW: the shortest terminal this console draws a page on, and what a
  * window under it is shown instead.

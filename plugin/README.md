@@ -56,7 +56,10 @@ document, delivered by the host instead of waited for.
   project's rules have an address, so a quiet edit means "none of them names this file"
   rather than "there is no mechanism". It is not a process: the host calls a tool on the
   MCP server this same plugin declares, which costs a call on an open connection instead
-  of a command start (on the order of a millisecond against on the order of a hundred). This hook has the same 10,000-character
+  of a command start. Measured on one machine (version 0.1.1, 21 October 2026, a sandbox, 50 runs
+  each, without the real host): about 1 ms at the median per edit in Claude Code, and the
+  server's own start, 270 to 350 ms, is paid once per session; Cursor and VS Code start a process
+  per edit, about 200 ms at the median per edit, even where no rule addresses the file. This hook has the same 10,000-character
   ceiling as the opening ones (read on Claude Code 2.1.281), so past it the rules stop at a whole one and the text
   says how many it left out and that `governing_rules` serves them all.
 - **A second `PreToolUse` hook, for VS Code**, which pauses a write for a person where a rule

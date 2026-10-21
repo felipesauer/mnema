@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * The read-only session, over the surface it is actually a session of.
  *

@@ -262,15 +262,15 @@ describe('the CI recipe the page publishes', () => {
   });
 
   it.each([
-    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten: '],
-    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone: '],
-    ['the record erased and founded again', refounded, 0, 0, ': gone: '],
+    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ' no longer begins with the bytes it held there'],
+    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ' was in the record there and is not here'],
+    ['the record erased and founded again', refounded, 0, 0, ' was in the record there and is not here'],
     [
       'the middle rewritten and signed again by the key holder',
       rewrittenBySigner,
       0,
       0,
-      ': rewritten: ',
+      ' no longer begins with the bytes it held there',
     ],
   ] as const)('catches %s', (name, change, bareExit, signedExit, says) => {
     const dir = changed(name.replace(/\W+/g, '-'), change);

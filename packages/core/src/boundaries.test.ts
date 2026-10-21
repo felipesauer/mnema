@@ -1,3 +1,4 @@
+// @reads-the-tree
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';

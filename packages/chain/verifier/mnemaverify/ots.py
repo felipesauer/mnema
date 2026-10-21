@@ -22,7 +22,7 @@ reject an exotic proof and never accept a hostile one is a limit worth having.
 from __future__ import annotations
 
 import hashlib
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
 from .verdict import Refusal
 
@@ -48,13 +48,12 @@ _TAG_BITCOIN = bytes.fromhex("0588960d73d71901")
 _TAG_LITECOIN = bytes.fromhex("06869a0d73d71b45")
 _TAG_ETHEREUM = bytes.fromhex("30fe8087b5c7ead7")
 
-Kind = Literal["bitcoin", "pending", "litecoin", "ethereum", "unknown"]
 
 
 class Attestation(NamedTuple):
     """One leaf of the proof: what it claims, and the message the path folded to there."""
 
-    kind: Kind
+    kind: str
     folded: bytes
     depth: int
     height: int | None = None

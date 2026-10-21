@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * The gate is decided in one place, and every door to it passes through that place.
  *

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY VALUE THE DOMAIN PUTS IN A SENTENCE, AND WHERE IT CAME FROM.
  *
