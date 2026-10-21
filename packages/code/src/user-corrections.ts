@@ -22,7 +22,9 @@
  * AN ANSWER TO THE AGENT'S QUESTION IS TAKEN WHATEVER ITS SHAPE ({@link ANSWER_TO_A_QUESTION}):
  * the agent asked because a choice was open, and the person's answer is the one who ruled it
  * ruling. It is quoted with the question it answers, because "yes" alone says nothing, and it is a
- * proposal like the rest.
+ * proposal like the rest. AN ANSWER THAT ONLY ASSENTS IS NOT ONE ({@link ONLY_ASSENTS}): "yes", "ok",
+ * "go ahead" or "pode" after a question of confirmation carries no choice of the person's, and a
+ * proposal from it would be noise for the person who rules on the list.
  */
 
 import type { WhatThePersonSaid } from './what-the-session-did.js';
@@ -80,6 +82,13 @@ function openingOf(text: string): string {
   return end === -1 ? flat : flat.slice(0, end + 1);
 }
 
+/**
+ * An answer that is nothing but assent or refusal, in English or Portuguese: the whole answer, with
+ * its closing punctuation, and nothing else. An answer with any further word is read as a choice.
+ */
+export const ONLY_ASSENTS =
+  /^\s*(yes|yep|yeah|no|nope|ok|okay|sure|go ahead|go on|do it|please do|sim|não|nao|pode|pode sim|pode ir|ok pode|claro|isso|beleza|manda|segue)\s*[.!]*\s*$/i;
+
 /** An answer and the question it answers, on one line, within {@link OPENING}. */
 function answerOf(text: string, question: string): string {
   const flat = `${text} (asked: ${question})`.trim().replace(/\s+/g, ' ');
@@ -94,6 +103,7 @@ export function correctionsIn(said: readonly WhatThePersonSaid[]): readonly Corr
   const found: Correction[] = [];
   for (const one of said) {
     if (one.question !== undefined) {
+      if (ONLY_ASSENTS.test(one.text)) continue;
       found.push({
         line: one.line,
         uuid: one.uuid,

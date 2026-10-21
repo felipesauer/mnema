@@ -995,7 +995,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sent-command-is-a-band-and-an-answer-has-a-head.test.ts': 18,
   'packages/code/tests/a-session-opens-where-nothing-signs.test.ts': 14,
   'packages/code/tests/a-session-says-what-it-wrote.test.ts': 13,
-  'packages/code/tests/a-settled-choice-is-said.test.ts': 12,
+  'packages/code/tests/a-settled-choice-is-said.test.ts': 13,
   'packages/code/tests/a-stack-goes-where-nothing-is.test.ts': 7,
   'packages/code/tests/a-stack-is-handled-through-the-program.test.ts': 6,
   'packages/code/tests/a-stack-is-looked-at-against-its-receipt.test.ts': 7,

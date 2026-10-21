@@ -381,6 +381,34 @@ describe('mnema corrections', () => {
     });
   });
 
+  it('keeps an email address out of the title it cuts from an answer, as out of the body', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      answered({ 'Who owns the billing alerts?': 'ana.souza@example.com' }),
+    ]);
+    answer(payload('Stop', file));
+    const [recorded] = decisionsIn('projectPrivate');
+    expect(recorded?.payload.title).toBe('Answer: <email> (asked: Who owns the billing alerts?)');
+    expect(JSON.stringify(recorded?.payload)).not.toContain('ana.souza@example.com');
+  });
+
+  it('does not take an answer that only assents for a choice, in either language', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      asks('Shall I run the migration now?'),
+      typed('yes'),
+      asks('Posso seguir?'),
+      typed('Pode.'),
+      answered({ 'Proceed with the release?': 'Go ahead' }),
+      asks('Do you want the cache in Redis or in memory?'),
+      typed('Yes, in memory'),
+    ]);
+    answer(payload('Stop', file));
+    expect(decisionsIn('projectPrivate').map((one) => one.payload.title)).toEqual([
+      'Answer: Yes, in memory (asked: Do you want the cache in Redis or in memory?)',
+    ]);
+  });
+
   it('records no answer while the channel is off, which is how it starts', () => {
     const file = transcript([
       asks('Redis or memory?'),

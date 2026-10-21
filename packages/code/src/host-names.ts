@@ -302,12 +302,13 @@ export const HOSTS = {
       at: `${CODEX_SOURCE}/codex-rs/hooks/src/events/stop.rs#L178-L206`,
       read: '9 October 2026',
     },
-    // Its question tool is `request_user_input`, then a `PostToolUse` hook: read in the host's own source or reference,
-    // not run.
+    // The question tool is `request_user_input` (`codex-rs/core/src/tools/handlers/
+    // request_user_input.rs`, line 30), and a `PostToolUse` hook hands the model
+    // `additional_contexts` (`post_tool_use.rs`, line 43). Read at the pinned commit, not run.
     afterAQuestion: {
       does: true,
       held: 'documentation',
-      at: `${CODEX_SOURCE}`,
+      at: `${CODEX_SOURCE}/codex-rs/hooks/src/events/post_tool_use.rs#L43`,
       read: '21 October 2026',
     },
     cells: {
@@ -369,12 +370,13 @@ export const HOSTS = {
       at: `${COPILOT_DOCS}/reference/hooks-reference.md#subagentstop--subagentstop`,
       read: '9 October 2026',
     },
-    // Its question tool is `AskUserQuestion`, then a `postToolUse` hook: read in the host's own source or reference,
-    // not run.
+    // The question tool is `ask_user`, handed to a PascalCase hook as `AskUserQuestion`; the
+    // `postToolUse` event and its payload are in the hooks reference, under its own heading.
+    // Read at the pinned commit, not run.
     afterAQuestion: {
       does: true,
       held: 'documentation',
-      at: `${COPILOT_DOCS}/reference/hooks-reference.md`,
+      at: `${COPILOT_DOCS}/reference/hooks-reference.md#posttooluse--posttooluse`,
       read: '21 October 2026',
     },
     cells: {
@@ -426,12 +428,13 @@ export const HOSTS = {
       'found in its documentation or in the source read. The model is any the host is pointed ' +
       'at, with no account, under the MIT license at ' +
       `[\`LICENSE\`](${OPENCODE_SOURCE}/LICENSE).`,
-    // Its question tool is `question`, then `tool.execute.after`: read in the host's own source or reference,
-    // not run.
+    // The question tool is `question` (`packages/opencode/src/tool/question.ts`, line 15), and
+    // `tool.execute.after` hands a plugin the tool's output to change (`packages/plugin/src/
+    // index.ts`, lines 274-280). Read at the pinned commit, not run.
     afterAQuestion: {
       does: true,
       held: 'documentation',
-      at: `${OPENCODE_SOURCE}`,
+      at: `${OPENCODE_SOURCE}/packages/plugin/src/index.ts#L274-L280`,
       read: '21 October 2026',
     },
     cells: {
@@ -484,12 +487,14 @@ export const HOSTS = {
       '`GEMINI_CLI_TRUST_WORKSPACE=true`, which the contract sets). The model is ' +
       'any the host is pointed at, with no account, under the Apache-2.0 license at ' +
       `[\`LICENSE\`](${GEMINI_SOURCE}/LICENSE).`,
-    // Its question tool is `ask_user`, then an `AfterTool` hook: read in the host's own source or reference,
-    // not run.
+    // The question tool is `ask_user` (`packages/core/src/tools/definitions/
+    // base-declarations.ts`, line 101), and an `AfterTool` hook answers with
+    // `hookSpecificOutput.additionalContext` (`packages/core/src/hooks/types.ts`, lines 527-533).
+    // Read at the pinned commit, not run.
     afterAQuestion: {
       does: true,
       held: 'documentation',
-      at: `${GEMINI_SOURCE}`,
+      at: `${GEMINI_SOURCE}/packages/core/src/hooks/types.ts#L527-L533`,
       read: '21 October 2026',
     },
     cells: {

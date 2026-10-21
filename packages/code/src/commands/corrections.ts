@@ -27,7 +27,7 @@
  */
 
 import { channelIsOn } from '@mnema/context';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type DiscoveryEnv, resolveTrees, scrubEmails } from '@mnema/core';
 import { STARTS_OFF, USER_CORRECTIONS_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { ANSWER_TO_A_QUESTION, type Correction, correctionsIn } from '../user-corrections.js';
@@ -74,9 +74,15 @@ function silent(notes: readonly string[] = []): CorrectionsDone {
 /** Whether a finding is an answer to the agent's question rather than a correction. */
 const isAnAnswer = (correction: Correction): boolean => correction.shape === ANSWER_TO_A_QUESTION;
 
-/** The title a proposal is given: the opening of what the person said, cut on one line. */
+/**
+ * The title a proposal is given: the opening of what the person said, cut on one line.
+ *
+ * AN EMAIL ADDRESS IN IT IS REPLACED, as it is in a body. A title is screened for credentials only,
+ * because it is a name somebody chose; this one is not chosen, it is cut from free text a person
+ * typed, so the screen a body gets is the one it gets.
+ */
 function titleOf(correction: Correction): string {
-  const { sentence } = correction;
+  const sentence = scrubEmails(correction.sentence).text;
   const cut =
     sentence.length <= TITLE_LENGTH
       ? sentence

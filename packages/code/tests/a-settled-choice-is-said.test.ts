@@ -31,6 +31,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { QUESTION_TOOLS, runSettled, SETTLED_SENTENCE } from '../src/commands/settled.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
+import { tellsWhatToDo } from '../src/record-framing.js';
 import { registerSettled } from '../src/wiring/settled.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -157,6 +158,12 @@ describe('mnema settled', () => {
         '`record_decision` records it in this project’s record, with the options not taken as ' +
         '`alternatives`; nothing has been recorded from this answer.',
     );
+  });
+
+  it('tells the agent nothing to do: no word the framing tripwire knows', () => {
+    expect(tellsWhatToDo(SETTLED_SENTENCE)).toBeUndefined();
+    // The tripwire is awake: the same sentence with an order in it is caught.
+    expect(tellsWhatToDo(`${SETTLED_SENTENCE} You must record it.`)).toBe('you must');
   });
 
   it('is silent for a tool that asks nothing, before a tool runs, and for what is not a payload', () => {
