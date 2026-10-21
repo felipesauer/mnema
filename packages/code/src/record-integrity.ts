@@ -278,6 +278,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
   'commands/handback.ts':
     'a host runs it when a subagent stops and reads one field of its reply (the reason the subagent ' +
     'is sent back with), so a notice about the chain has nowhere to land; `mnema verify` rules on it',
+  'commands/settled.ts':
+    'a host runs it after a question to the person was answered, and it opens the record only to ' +
+    'read one switch; its reply is one sentence of the product’s own, so a notice about the chain ' +
+    'has nowhere to land; the same session opens with the document, which says it',
   'anchors.ts':
     'it resolves a typed prefix into the anchor the CALLER was handed, and answers ' +
     'nobody: the verbs that use it are themselves on the list that owes the notice, so ' +
