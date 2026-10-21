@@ -62,8 +62,8 @@ import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tool
 import { type CliIo, run } from '../src/program.js';
 import {
   AGENT_ACCEPTS_CHANNEL,
-  CHOICE_SETTLED_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
+  CHOICE_SETTLED_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
