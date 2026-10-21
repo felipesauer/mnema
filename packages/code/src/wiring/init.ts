@@ -88,6 +88,16 @@ export const REACHES_AN_AGENT = [
 ];
 
 /**
+ * The same block for a run that did write a file of the repository's (the `.prettierignore`,
+ * and the output says so just above it): "no file of yours" would be false there, so the first
+ * words say "no other file". Everything after them is the block above, word for word.
+ */
+export const REACHES_AN_AGENT_AFTER_A_WRITE = [
+  'mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to',
+  ...REACHES_AN_AGENT.slice(1),
+];
+
+/**
  * The line that goes in a file this product did not write, printed at the depth that means
  * VERBATIM.
  *
@@ -141,7 +151,11 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
           );
         }
         io.out('');
-        for (const line of REACHES_AN_AGENT) io.out(render(fact(line)));
+        const reaches =
+          result.around?.prettierIgnore === undefined
+            ? REACHES_AN_AGENT
+            : REACHES_AN_AGENT_AFTER_A_WRITE;
+        for (const line of reaches) io.out(render(fact(line)));
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
         for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
       } else {
