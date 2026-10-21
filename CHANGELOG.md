@@ -10,6 +10,8 @@ with its own changelog.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-21
+
 ### Added
 
 - **After a write in Claude Code, `mnema after-a-write` copies a note of the host's own memory into the private tree,
@@ -1422,6 +1424,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.1.2]: https://github.com/felipesauer/mnema/releases/tag/v0.1.2
 [0.1.1]: https://github.com/felipesauer/mnema/releases/tag/v0.1.1
 [0.1.0]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0
 [0.2.0-beta]: https://github.com/felipesauer/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46

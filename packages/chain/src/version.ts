@@ -11,4 +11,4 @@
  * holds this constant to every manifest and to the program's own `VERSION`, so a release that
  * bumps one and not the other fails there.
  */
-export const READER_VERSION = '0.1.1';
+export const READER_VERSION = '0.1.2';
