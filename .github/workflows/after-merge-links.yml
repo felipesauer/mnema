@@ -1,7 +1,7 @@
 name: Links after the merge
 
-# WHAT THIS IS. A READMEs-on-main check: once a change is on `main`, every image and every absolute
-# link of the root README and of the README of each package is asked of the network, and one issue
+# WHAT THIS IS. A pages-on-main check: once a change is on `main`, every image and every absolute
+# link of the root README, of the README of each package and of every page under `docs/` is asked of the network, and one issue
 # says which ones answer with an HTTP error. The pages of the packages name their images and
 # links by the address on `main`, which answers only after the merge, so no check on a pull
 # request can ask it. `.github/the-links-after-the-merge/check.mjs` owns the rule and its comment
@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Ask every address of the READMEs
+      - name: Ask every address of the READMEs and the docs
         id: read
         run: |
           set -euo pipefail
