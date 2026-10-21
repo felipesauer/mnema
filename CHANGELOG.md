@@ -12,6 +12,20 @@ with its own changelog.
 
 ### Added
 
+- **After a write in Claude Code, `mnema after-a-write` copies a note of the host's own memory into the private tree,
+  and names the door of a file that holds decisions.** A `PostToolUse` hook on `Write|Edit` runs it behind a shell that
+  reads the path out of the payload and starts nothing for any other path (about 6 ms per common write on a loaded
+  machine). A note under Claude Code's memory directory (`projects/<project>/memory/*.md` under `$CLAUDE_CONFIG_DIR` or
+  `~/.claude`, or where `autoMemoryDirectory` points in your own settings or the project's `.claude/settings.local.json`)
+  is recorded as a memory in this machine's private tree, with a marker naming the file and a hash of its content, once
+  per content: only where `mnema switch on host-memory-mirror` was run, a new channel that starts off. The index
+  `MEMORY.md` and a note of `type: user` are never copied, and nothing goes to the public tree. A file under
+  `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file,
+  plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does, gets one line naming
+  `mnema decision import <the directory or file>` or `record_decision` when the record cites it nowhere, once per session and file; it records
+  nothing, and `mnema switch off decision-file-written` stops it. The line at `Stop` now also counts the notes copied
+  since the session opened. `readHostMemory` in `@mnema/core` is the one reading of a memory file, for this and for
+  `decision import --format claude-memory`.
 - **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
   lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
   and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed

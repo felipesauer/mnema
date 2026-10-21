@@ -119,6 +119,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
     'a host runs it on every tool call of a session, and outside a project it answers `{}`, the silence a host reads, because that session is not the product’s to speak into',
   corrections:
     'a host runs it at every Stop of a session, and outside a project it answers `{}`, the same silence, and records nothing, because that session is not the product’s to speak into',
+  'after-a-write':
+    'a host runs it after every write of a session, and outside a project it answers `{}`, the same silence, and copies nothing, because that session is not the product’s to speak into',
   'commit-hook suggest':
     'git runs it inside every commit made with the hook installed, and outside a project it writes nothing and exits zero, because a suggestion must never cost a commit',
   'stack list':

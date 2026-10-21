@@ -107,7 +107,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   "that is wrong", "use … instead", in English and Portuguese), and records each as a `proposed`
   decision in this machine's private tree, citing the session and the line, at most five at a time
   and never the same line twice. A match is a pattern and not a judgement, which is why it is
-  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. All eight are **silent** where there is no project, so a
+  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. The ninth is a `PostToolUse` hook on `Write|Edit`, in Claude Code, that runs `mnema after-a-write` behind a shell that reads the path out of the payload and starts nothing for a path that can be neither of its two kinds. A note of Claude Code's own memory (`projects/<project>/memory/*.md` under `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your own settings or the project's `.claude/settings.local.json`) is copied as a memory into this machine's **private** tree, with a marker naming the file and a hash of its content, so a note is copied once per content: this is **off until you switch it on** (`mnema switch on host-memory-mirror`), never copies the index `MEMORY.md` or a note of `type: user`, and never writes to the public tree. A file that holds decisions (under `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file, plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does) that the record cites nowhere gets one line beside the write naming the command that reads it, once per session and file; nothing is recorded for it, and `mnema switch off decision-file-written` stops it. The `Stop` line counts the notes copied since the session opened. All nine are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
@@ -115,7 +115,8 @@ CLI and the MCP tools behave identically, because they are the same call.
   `tests/a-session-says-what-it-wrote.test.ts`, the seventh in
   `tests/a-correction-becomes-a-proposal.test.ts`, and the eighth in
   `tests/a-subagent-hands-back-its-decisions.test.ts` and
-  `tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts`; the plugin's own page states what
+  `tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts`, and the ninth in
+  `tests/what-a-write-means-to-the-record.test.ts`; the plugin's own page states what
   it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
@@ -1521,7 +1522,7 @@ accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 11 channel(s), looked in public, private, global:
+#> 13 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, …
@@ -1529,6 +1530,8 @@ mnema switch
 #>   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s …
 #>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on, and nobody has
 #>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on, and nobody has
+#>   host-memory-mirror     off  the copy of the host’s own memory: … · off until switched on, and nobody has
+#>   decision-file-written  on   the line beside a write to a file that holds decisions …
 #>   tool-call-count        on   the local count of tool calls: with it off, the server keeps no line of the calls it answers …
 #>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```

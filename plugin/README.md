@@ -99,6 +99,23 @@ document, delivered by the host instead of waited for.
   proposal cites the session and the line, at most five are recorded at a `Stop`, and the same line
   is never recorded twice. A match is a pattern and not a judgement: that is why it is only
   proposed, and nothing is in force until a person accepts it. No model is called.
+- **A `PostToolUse` hook after a write, in Claude Code**, that runs `mnema after-a-write`. A shell in
+  front reads the path out of the payload and starts nothing for a path that can be neither of the two
+  kinds below, so a common write costs that shell and no process (about 6 ms, measured on a loaded
+  machine). **A note of Claude Code's own memory** (`projects/<project>/memory/*.md` under
+  `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your
+  own settings or in the project's `.claude/settings.local.json`; the checked-in `.claude/settings.json`
+  is ignored, as the host ignores it) is copied as a memory into your machine's **private** tree, with a
+  marker naming the file and a hash of its content: once per content, and again when the note changes.
+  It is off until you switch it on (`mnema switch on host-memory-mirror`); it never copies the index
+  `MEMORY.md` or a note of `type: user`, and never writes to the public tree. The agent is told the
+  memory's id in one line beside the write, you in the `systemMessage`, and the count at `Stop` says how
+  many notes were copied since the session opened. **A file that holds decisions** (under `docs/adr/`,
+  `docs/decisions/` or an `adr/` directory; or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, a host's rules
+  file, a plan, a handoff or a ledger whose new lines open as `Ruling:`, `Decision:` or a correction
+  does) that the record cites nowhere gets one line beside the write naming the command that reads it
+  (`mnema decision import <the directory or file>`, or `record_decision`), once per session and file, read off the transcript.
+  Nothing is recorded for it. `mnema switch off decision-file-written` stops the line.
 - **A hold on the first write of a session to a file a rule addresses**, off until you switch it
   on (`mnema switch on edit-first-write-gate`). With it on, the per-edit call into the server
   refuses that first write once, with the rules addressed at the file in the reason, so they
@@ -128,8 +145,8 @@ document, delivered by the host instead of waited for.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
-  the notes. All are on to begin with but two: `edit-first-write-gate` and `user-corrections`, below, are
-  off until you switch them on. The switch is a
+  the notes. All are on to begin with but three: `edit-first-write-gate`, `user-corrections` and
+  `host-memory-mirror`, above and below, are off until you switch them on. The switch is a
   **fact of your record** rather than a setting (signed, attributed, dated and scoped)
   because turning something off is legitimate and turning it off in silence is not: a reader
   of the record has to be able to tell *"no rule addressed that file"* from *"somebody had
@@ -171,6 +188,7 @@ file of this repository yet ([how each claim is held](../docs/evidence.md)).
 | **Every charge is a fact of your record** | The asking is an event before it is a charge: one `channel.asked` per rule that asked (or one `channel.refused` per rule that refused; the first-write hold records its own `channel.asked`), citing the rule and the path, appended and signed **before** the reply is composed. The charge does not depend on the fact: a rule that refuses or asks does so even when the record cannot take the fact, after waiting up to 7 s for a busy record, and then the reason says the fact could not be recorded and the record does not show it. The push that only informs records one `channel.served` per session and per channel, which is what makes a quiet edit readable. That fact counts what is pushed **at an edit** and nothing else: the two opening texts are reads and are not counted, so a session with no `channel.served` says nothing about whether they arrived. Both travel with the repository by default. *(`the asking is a FACT, and the service is one too`)* |
 | **The rules reach the file about to change** | Only the rules with an **address** (a path someone linked them to with `rel: "governs"`) and only the ones **still in force**. A superseded decision that addresses the file does not arrive; `governing_rules` still reports it, with its state, to whoever asks. A task or a memory given an address is not a rule and never arrives. What arrives is a name, an address and an **id**, never a body: the argument and the pattern text are a second read. *(`a rule with an address reaches the file about to be written`, `what does NOT reach the writing`)* |
 | **Corrections are recorded as proposals, only if you switch it on** | `user-corrections` is off until a tree switches it on, and `mnema switch` says so. On, a `Stop` records each opening that corrects the agent as a `proposed` decision in the private tree, citing the session and the line, once. The reply carries a count and the ADR labels and none of the person's words. Held by [`a-correction-becomes-a-proposal.test.ts`](../packages/code/tests/a-correction-becomes-a-proposal.test.ts): a probe per opening and the look-alikes that are not, once-only, the cap of five, silence while off, and the plugin's command run end to end. Not held: that every correction is found, or that a match is one: it is a net, and a person rules. |
+| **A note of the host's memory is copied, only if you switch it on** | `host-memory-mirror` is off until a tree switches it on. On, a write to Claude Code's memory directory copies the note into the private tree once per content; the index and a note about the person are never copied. A write to a file that holds decisions the record does not cite gets one line, once per session and file, and records nothing. Held by [`what-a-write-means-to-the-record.test.ts`](../packages/code/tests/what-a-write-means-to-the-record.test.ts): the directory under `$CLAUDE_CONFIG_DIR` and `autoMemoryDirectory`, the exclusions, once per content, private only, silence while off, a table of decision paths, and the hooks file's command run end to end. Not held: that a host runs this hook as written and hands the line to the agent: no case starts a host for it. |
 | **The first write can be held once, and only if you switch it on** | `edit-first-write-gate` is off until a tree switches it on, and `mnema switch` says so (*off until switched on, and nobody has*). On, the first write of a connection to a path a rule addresses is answered with `permissionDecision: "deny"` and the rules in the reason, and the same write repeated is not held. It is a fact first: one `channel.asked` per rule, appended before the refusal. Held by [`the-first-write-is-held-once.test.ts`](../packages/code/tests/the-first-write-is-held-once.test.ts) and `the reply cannot express any decision but asking`. Not held: that the host reads the refusal as it was read, in any host but Claude Code 2.1.281, VS Code 1.137 and Cursor's command-line agent 2026.09.18, where it was read. |
 | **A quiet edit means "no rule names this file"** | And that meaning is bought where it costs once: the opening document says how many of this project's rules have an address, **and how many of them ask for a person**. Injecting "nothing governs this file" on every edit was the alternative, and it was refused with a number: the median session on the machine this was measured on edits 34 files, the p90 edits 121, and one edited 3,424, with every injection staying in the context for the rest of the session. **THE SENTENCE ABOVE IS NOW TRUE OF ONE CASE FEWER AGAIN.** A quiet edit has FOUR readings, not three: no rule names this file, the rules were switched off, the gate was switched off, or the hook did not run. The opening document distinguishes the first three: when either is switched off in the **committed** record it says so, naming who switched it and when, and it stops claiming that the rules arrive or that anything waits. **What this still does not buy, said plainly:** a switch recorded `--scope private` is invisible to that document (it carries the committed record, and a fact about one machine in a committed file would make `mnema brief \| diff - MNEMA.md` report a difference that is not the record's), and *"the hook did not run"* is not distinguishable from either. `mnema switch` is the reading that spans every tree, and it is where a private switch is ever spelled. |
 | **It is a snapshot** | The opening context is: a decision accepted an hour into the session is not in what the `SessionStart` hook injected, and the live answer is one MCP call away. The per-edit hook is **not** a snapshot: it reads the record at the moment of the edit, so a rule accepted and addressed mid-session arrives at the next edit it applies to, beside the result of that write. |
@@ -394,7 +412,8 @@ plugin/
 ├── .github/plugin/plugin.json   Copilot CLI's manifest, naming hooks/copilot.json
 ├── hooks/
 │   ├── hooks.json               Claude Code's hooks, and VS Code's and Cursor's beside them:
-│   │                            SessionStart, PreToolUse, Stop, PreCompact, SubagentStop
+│   │                            SessionStart, PreToolUse, PostToolUse, Stop, PreCompact,
+│   │                            SubagentStop
 │   ├── hooks.ids.json           a stable id for each hook of hooks.json
 │   ├── codex.json               Codex's hooks: SessionStart, PreToolUse
 │   ├── copilot.json             Copilot CLI's hooks: SessionStart, PreToolUse
@@ -403,6 +422,7 @@ plugin/
 │   ├── session-recall.mjs       runs `mnema recall --hook`; silent when nothing is noted
 │   ├── session-tally.mjs        the count at the end of a response and before a compaction
 │   ├── session-corrections.mjs  the corrections at the end of a response
+│   ├── after-a-write.mjs        the copy of the host's memory, and the line beside a decision file
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
 │   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops

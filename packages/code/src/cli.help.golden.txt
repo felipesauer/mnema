@@ -103,6 +103,8 @@ $ mnema
 !                   wrote and recorded
 !   corrections     record what a person corrected in a session as proposed
 !                   decisions, for a Stop hook
+!   after-a-write   copy a note of the host’s memory into the private tree, or
+!                   name the door of a decision file, for a PostToolUse hook
 !   handback        check what a subagent hands back when it stops, or print the
 !                   format it is checked by
 !
@@ -215,6 +217,8 @@ $ mnema --help
 |                   wrote and recorded
 |   corrections     record what a person corrected in a session as proposed
 |                   decisions, for a Stop hook
+|   after-a-write   copy a note of the host’s memory into the private tree, or
+|                   name the door of a decision file, for a PostToolUse hook
 |   handback        check what a subagent hands back when it stops, or print the
 |                   format it is checked by
 |
@@ -742,7 +746,7 @@ $ mnema switch --help
 |   What it carries is what stops arriving when it is off.
 |   An off switch says who made it and when, and whether a clone of this
 |   repository holds it: a switch recorded privately governs only this machine.
-|   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
+|   A channel with no switch is on, except edit-first-write-gate, user-corrections and host-memory-mirror, which are off until switched on.
 
 ### mnema inherit --help
 $ mnema inherit --help
@@ -1430,6 +1434,28 @@ $ mnema corrections --help
 |   It does nothing until `mnema switch on user-corrections`, because it reads what a person
 |   typed. With the channel off, or outside a project, it records nothing.
 
+### mnema after-a-write --help
+$ mnema after-a-write --help
+| Usage: mnema after-a-write [options]
+|
+| copy a note of the host’s memory into the private tree, or name the door of a
+| decision file, for a PostToolUse hook
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it does:
+|   The JSON a host hands a PostToolUse hook after a Write or an Edit, on stdin.
+|   A note of Claude Code’s own memory (projects/<project>/memory/*.md under
+|   $CLAUDE_CONFIG_DIR or ~/.claude, or the autoMemoryDirectory setting) is copied as a
+|   memory into this machine’s private tree, once per content, where
+|   `mnema switch on host-memory-mirror` was run. The index MEMORY.md and a note of
+|   `type: user` are never copied, and nothing goes to the public tree.
+|   A file that holds decisions (an ADR, a plan, a ledger, a rules file) that the record
+|   cites nowhere gets one line naming the command that reads it, once per session and
+|   file. Nothing is written for it.
+|   On stdout, the reply the host reads, or {}.
+
 ### mnema handback --help
 $ mnema handback --help
 | Usage: mnema handback [options]
@@ -2091,7 +2117,8 @@ $ mnema switch off --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    host-memory-mirror, decision-file-written, subagent-handback,
+|                    tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2128,7 +2155,8 @@ $ mnema switch on --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    host-memory-mirror, decision-file-written, subagent-handback,
+|                    tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

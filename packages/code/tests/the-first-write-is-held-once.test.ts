@@ -135,7 +135,7 @@ afterEach(() => {
 
 describe('the channel starts off, and says so', () => {
   it('is one of the channels that begin off, and the listing says nobody switched it on', async () => {
-    expect(STARTS_OFF).toEqual([GATE, 'user-corrections']);
+    expect(STARTS_OFF).toEqual([GATE, 'user-corrections', 'host-memory-mirror']);
     const listed = (await did('switch')).split('\n').find((line) => line.includes(GATE)) ?? '';
     expect(listed).toContain(' off ');
     expect(listed).toContain('off until switched on, and nobody has');

@@ -185,6 +185,13 @@ const CORRECTIONS_HOOK = 'session-corrections.mjs';
  * standing and says nothing; what it sends back is `a-subagent-hands-back-its-decisions.test.ts`.
  */
 const HANDBACK_HOOK = 'subagent-stop.mjs';
+/**
+ * The handler that runs after a write in Claude Code: it copies a note of the host's memory into the
+ * private tree where `host-memory-mirror` was switched on, and names the door of a decision file.
+ * Here it is handed a note of the host's memory, its shell passes it, and with the channel off it
+ * answers `{}`; what it copies and says is `what-a-write-means-to-the-record.test.ts`.
+ */
+const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
 
 /**
  * The command line each declared handler runs: what the recording shim must see it try.
@@ -205,6 +212,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor --agent-key cursor',
   [GATE_HOOK]: 'before-a-write --host vscode --agent-key vscode',
+  [AFTER_A_WRITE_HOOK]: 'after-a-write',
   [HANDBACK_HOOK]: 'handback',
 };
 
@@ -225,7 +233,10 @@ const ASKED_FIRST = '--identify';
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
   if (GATES.includes(handler)) return [];
-  return handler === TALLY_HOOK || handler === CORRECTIONS_HOOK || handler === HANDBACK_HOOK
+  return handler === TALLY_HOOK ||
+    handler === CORRECTIONS_HOOK ||
+    handler === HANDBACK_HOOK ||
+    handler === AFTER_A_WRITE_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -253,6 +264,19 @@ function stdinOf(command: string, at: string): string {
       hook_event_name: 'SubagentStop',
       stop_hook_active: false,
       last_assistant_message: 'Done.',
+      cwd: at,
+    });
+  }
+  // The write after which a note of the host's memory would be copied: outside the project, so the
+  // shell in front passes it, and the channel that starts off keeps it from being copied.
+  if (handlerOf(command) === AFTER_A_WRITE_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Write',
+      tool_input: {
+        file_path: join(home, '.claude', 'projects', '-unasked', 'memory', 'project_unasked.md'),
+        content: '---\nname: Unasked\ntype: project\n---\nA note.\n',
+      },
       cwd: at,
     });
   }
@@ -540,6 +564,7 @@ describe('the record arrives unasked', () => {
       TALLY_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
+      AFTER_A_WRITE_HOOK,
       HANDBACK_HOOK,
     ]);
   });
@@ -1153,6 +1178,7 @@ describe('the record arrives unasked', () => {
       'Stop',
       'PreCompact',
       'PreToolUse',
+      'PostToolUse',
       'SubagentStop',
     ]);
 
@@ -1172,6 +1198,7 @@ describe('the record arrives unasked', () => {
       'corrections',
       'before-a-write --host cursor --agent-key cursor',
       'before-a-write --host vscode --agent-key vscode',
+      'after-a-write',
       'handback',
     ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
@@ -1189,6 +1216,7 @@ describe('the record arrives unasked', () => {
       'corrections: mutates',
       'before-a-write --host cursor --agent-key cursor: mutates',
       'before-a-write --host vscode --agent-key vscode: mutates',
+      'after-a-write: mutates',
       'handback: reads',
     ]);
   });
@@ -1274,6 +1302,7 @@ describe('the record arrives unasked', () => {
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
+      'command:/hooks/after-a-write.mjs',
       'command:/hooks/subagent-stop.mjs',
     ]);
 
