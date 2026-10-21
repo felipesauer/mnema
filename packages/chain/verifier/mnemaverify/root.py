@@ -19,21 +19,20 @@ still moves. `mutations` in the suite is that claim, run.
 
 from __future__ import annotations
 
-from typing import Iterable, Literal
+from typing import Iterable
 
 from .framed import digest
 
 ROOT_DOMAIN = "mnema.root.v1"
 
-Reading = Literal["raw", "hex"]
-READINGS: tuple[Reading, ...] = ("raw", "hex")
+READINGS: tuple[str, ...] = ("raw", "hex")
 
 
 def empty_root() -> str:
     return digest(ROOT_DOMAIN, "empty")
 
 
-def content_root(event_bytes: Iterable[bytes], reading: Reading = "raw") -> str:
+def content_root(event_bytes: Iterable[bytes], reading: str = "raw") -> str:
     acc = empty_root()
     for payload in event_bytes:
         carried = bytes.fromhex(acc) if reading == "raw" else acc
@@ -41,7 +40,7 @@ def content_root(event_bytes: Iterable[bytes], reading: Reading = "raw") -> str:
     return acc
 
 
-def which_reading_closes(event_bytes: list[bytes], expected: str) -> Reading | None:
+def which_reading_closes(event_bytes: list[bytes], expected: str) -> str | None:
     """Let the published digest decide, rather than deciding for it."""
     for reading in READINGS:
         if content_root(event_bytes, reading) == expected:

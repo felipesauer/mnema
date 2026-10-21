@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE CITATION THAT ARRIVES OPENS: the three channels that push a rule at a reader who
  * never asked for one carry the file the rule came from.

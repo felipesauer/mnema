@@ -73,9 +73,9 @@
     "@sigstore/verify": "4.1.2",
     "commander": "^15.0.0",
     "ink": "^7.1.1",
-    "react": "^19.3.0",
+    "react": "^19.3.1",
     "string-width": "^8.3.0",
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@sigstore/mock": "0.13.0",

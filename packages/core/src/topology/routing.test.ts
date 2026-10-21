@@ -1,7 +1,15 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type ChainLayout, catalogUpcasters, type EventKind, LATEST_VERSION } from '@mnema/chain';
+import {
+  type ChainLayout,
+  catalogUpcasters,
+  type EventKind,
+  KEY_PASSPHRASE_VARIABLE,
+  LATEST_VERSION,
+  loadOrCreateKeyPair,
+  protectPrivateKeys,
+} from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
@@ -11,6 +19,7 @@ import { type ResolvedTrees, resolveTrees } from './resolve.js';
 import {
   chainRootForScope,
   deferredWrite,
+  keyRefusalIn,
   openTreeForWriting,
   type RoutedKind,
   resolveScope,
@@ -345,5 +354,44 @@ describe('signerFor and deferredWrite: deciding before a writer exists', () => {
       'memory.captured',
     ]);
     expect(writer.checkpoint()).toBeNull();
+  });
+});
+
+describe('keyRefusalIn: the person’s key under a passphrase, asked before the write and met by it', () => {
+  const PASSPHRASE = 'correct horse';
+  let sandbox: string;
+  let trees: ResolvedTrees;
+  let before: string | undefined;
+
+  beforeEach(() => {
+    sandbox = mkdtempSync(join(tmpdir(), 'mnema-key-refusal-'));
+    mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
+    trees = resolveTrees(join(sandbox, 'repo'), { home: join(sandbox, 'home') });
+    loadOrCreateKeyPair({ root: trees.keyRoot });
+    protectPrivateKeys({ root: trees.keyRoot }, PASSPHRASE);
+    before = process.env[KEY_PASSPHRASE_VARIABLE];
+    delete process.env[KEY_PASSPHRASE_VARIABLE];
+  });
+
+  afterEach(() => {
+    if (before === undefined) delete process.env[KEY_PASSPHRASE_VARIABLE];
+    else process.env[KEY_PASSPHRASE_VARIABLE] = before;
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  it('refuses where no passphrase is at hand, and the write is refused the same way', () => {
+    expect(keyRefusalIn(trees, 'public')?.code).toBe('KEY_IS_PROTECTED');
+    expect(() => openTreeForWriting(trees, 'public')).toThrow(/passphrase/);
+  });
+
+  it('refuses nothing where the passphrase is at hand, and the write signs', () => {
+    process.env[KEY_PASSPHRASE_VARIABLE] = PASSPHRASE;
+    expect(keyRefusalIn(trees, 'public')).toBeUndefined();
+    const writer = openTreeForWriting(trees, 'public');
+    const created = createTask(
+      { writer, layout: { root: trees.projectPublic as string }, upcasters },
+      { title: 'signed with the passphrase from the environment' },
+    );
+    expect(created.ok).toBe(true);
   });
 });

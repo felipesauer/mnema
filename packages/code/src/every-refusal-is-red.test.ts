@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * EVERY NO IS RED, AND NOTHING IS RED ALONE.
  *

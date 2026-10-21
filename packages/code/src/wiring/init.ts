@@ -15,6 +15,7 @@
 
 import type { Command } from 'commander';
 import type { InitResult } from '../commands/init.js';
+import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
@@ -88,6 +89,16 @@ export const REACHES_AN_AGENT = [
 ];
 
 /**
+ * The same block for a run that did write a file of the repository's (the `.prettierignore`,
+ * and the output says so just above it): "no file of yours" would be false there, so the first
+ * words say "no other file". Everything after them is the block above, word for word.
+ */
+export const REACHES_AN_AGENT_AFTER_A_WRITE = [
+  'mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to',
+  ...REACHES_AN_AGENT.slice(1),
+];
+
+/**
  * The line that goes in a file this product did not write, printed at the depth that means
  * VERBATIM.
  *
@@ -133,16 +144,38 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io, render);
+        reportIgnore(io, result.around?.prettierIgnore);
         io.out('');
-        for (const line of REACHES_AN_AGENT) io.out(render(fact(line)));
+        const reaches =
+          result.around?.prettierIgnore === undefined
+            ? REACHES_AN_AGENT
+            : REACHES_AN_AGENT_AFTER_A_WRITE;
+        for (const line of reaches) io.out(render(fact(line)));
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
         for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
       } else {
-        io.out(onOneLine`Already a mnema project at ${result.root}: nothing to found.`);
+        if (result.completed === undefined) {
+          io.out(onOneLine`Already a mnema project at ${result.root}: nothing to found.`);
+        } else {
+          io.out(
+            onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
+          );
+          if (result.completed.readme) io.out('Added .mnema/README.md.');
+          reportIgnore(io, result.completed.prettierIgnore);
+        }
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
       }
     });
   return mutatesTheRecord(init);
+}
+
+/** Says what init did to the `.prettierignore`, when it did something. */
+function reportIgnore(io: Wiring['io'], change: PrettierIgnoreChange | undefined): void {
+  if (change === undefined) return;
+  const what = change.did === 'created' ? 'Created' : 'Added `.mnema/` to';
+  io.out(
+    onOneLine`${what} ${change.path}${change.did === 'created' ? ', with the line `.mnema/`' : ''}: a formatter that rewrote the record would break its signatures.`,
+  );
 }
 
 /**
