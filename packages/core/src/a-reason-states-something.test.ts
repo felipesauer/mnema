@@ -650,6 +650,32 @@ describe('every kind says where its references are, and the door asks it there',
     }
   });
 
+  it('refuses a path where a relation goes, and a marker where the executing agent goes', () => {
+    for (const rel of ['src/a.ts', '/etc/passwd', '../x', 'a\\b']) {
+      const before = count();
+      expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
+        ok: false,
+        code: 'NOT_A_REFERENCE',
+        message: expect.stringContaining('is a path, not a relation'),
+      });
+      expect(count(), rel).toBe(before);
+    }
+    const before = count();
+    expect(
+      linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel: 'governs', which: '<name>' }),
+    ).toMatchObject({
+      ok: false,
+      code: 'NOT_A_REFERENCE',
+      message: expect.stringContaining('the which "<name>" is the marker'),
+    });
+    expect(count()).toBe(before);
+    for (const rel of ['governs', 'relates-to', 'a.b', 'TODO']) {
+      expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
+        ok: true,
+      });
+    }
+  });
+
   it('records the same rows with a value in place, so the refusal is about the marker', () => {
     expect(
       linkKnowledge(ctx, { subject: ID, target: 'src/<id>/x.ts', rel: 'governs' }),

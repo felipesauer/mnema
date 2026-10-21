@@ -48,7 +48,9 @@
  * {@link REFERENCES} is where each kind keeps them and {@link referenceRefusal} asks
  * {@link isMarker} of each, again the same function. Only the marker is asked: a reference is a
  * string a caller owns (`src/**`, a path with a bracket in it), and what it holds is not a
- * judgment this door makes.
+ * judgment this door makes, with two exceptions: the executing agent (`which`), which is a
+ * reference on every kind, is asked the marker too, and a relation holding a path separator is
+ * refused, because that is the target typed in the relation's place.
  *
  * WHAT IT DOES NOT JUDGE is whether the words are a GOOD reason. `n/a` states something. A
  * person rules on prose; this rules only that there is some, and that it is not the blank a
@@ -377,10 +379,29 @@ export function unfilledReference(event: CatalogEvent): string | undefined {
   const payload = event.payload as Readonly<Record<string, unknown>>;
   const envelope = event as unknown as Readonly<Record<string, unknown>>;
   for (const site of REFERENCES[event.kind] as readonly string[]) {
-    const refused = referenceRefusal(site, site === 'subject' ? envelope.subject : payload[site]);
+    const value = site === 'subject' ? envelope.subject : payload[site];
+    const refused =
+      referenceRefusal(site, value) ?? (site === 'rel' ? pathAsRelation(value) : undefined);
     if (refused !== undefined) return refused.message;
   }
-  return undefined;
+  // The agent a fact names is a reference on EVERY kind, so it is asked here and not listed per
+  // kind: a `--which "<name>"` pasted from a recipe was recorded as the executor of the fact.
+  return referenceRefusal('which', envelope.which)?.message;
+}
+
+/**
+ * The refusal a relation earns when it is a path: a relation is an open label, so any word is
+ * accepted, but a value with a separator in it is the TARGET typed in the wrong place
+ * (`--rel src/a.ts`), and recorded it would label the edge with a file nobody can look a
+ * relation up by.
+ */
+function pathAsRelation(value: unknown): { readonly message: string } | undefined {
+  if (typeof value !== 'string' || !/[\\/]/.test(value)) return undefined;
+  return {
+    message:
+      `the rel "${oneLine(value.trim())}" is a path, not a relation: a relation is a label such as ` +
+      '`governs` or `relates-to`, and the path goes where the target goes',
+  };
 }
 
 /**
