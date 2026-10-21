@@ -125,7 +125,7 @@ function privateTreesAbove(dir) {
  * @returns {string | undefined}
  */
 function gitDirNamedBy(dotGit, at) {
-  const named = /^gitdir: *(.+?)\s*$/m.exec(readFileSync(dotGit, 'utf-8'))?.[1];
+  const named = readFileSync(dotGit, 'utf-8').match(/^gitdir: *(.+?)\s*$/m)?.[1];
   return named === undefined ? undefined : resolve(at, named);
 }
 
