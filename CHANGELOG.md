@@ -10,6 +10,25 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **`mnema init` writes the mnema instructions into the files agent hosts read, and `mnema instructions` writes,
+  checks and removes them.** A short block says when to call the mnema tools (`bootstrap` at the opening,
+  `governing_rules` before changing a file, `record_decision` when a choice is settled, `capture_memory` for what the
+  code does not show), that a decision is born `proposed` and a person accepts it, that a subagent hands its decisions
+  back, the shell command where the tools are not connected, and what never goes in the record; it applies only where
+  the mnema tools are connected. It goes into `AGENTS.md` (created where there is none), into `CLAUDE.md`,
+  `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
+  `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
+  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,525 characters,
+  between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
+  mnema did not write is left as it is and said (exit 1); `--remove` leaves each file as it was before the block and
+  deletes a file the block was all of; the alpha's `<!-- MNEMA:START -->` block is replaced in place. `init` writes the
+  instructions only when it founds a project, so a block you took out stays out; `mnema doctor` names each file that
+  lacks this version's block. The Gemini CLI extension carries the same text as its context file (`contextFileName`).
+- A write of the block into an instruction file is not taken for a decision written there, and `AGENTS.md`,
+  `CLAUDE.md` and `GEMINI.md` are not counted as decision documents of a directory `mnema decision import` reads.
+
 ## [0.1.2] - 2026-10-21
 
 ### Added

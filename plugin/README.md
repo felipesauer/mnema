@@ -467,7 +467,7 @@ plugin/
 │   ├── subagent-start.mjs       runs `mnema brief --hook` when a subagent starts
 │   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops
 ├── opencode/mnema.js            OpenCode's plugin module, copied into a project
-├── gemini/                      Gemini CLI's extension: its manifest, hooks file and script
+├── gemini/                      Gemini CLI's extension: its manifest, context file, hooks file and script
 ├── skills/                      the three skills the plugin installs
 ├── server/launch.mjs            starts `mnema mcp` from the binary the plugin is set to
 ├── captures/                    the scripts that read a host by hand, where no job can
