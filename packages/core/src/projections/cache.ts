@@ -98,10 +98,25 @@ import { getTask, listTasks, listTasksByState } from './task-store.js';
 /** How many times a refresh reads the arrivals again because another process advanced the file first. */
 const MAX_REFRESH_ATTEMPTS = 3;
 
-/** A database that lives for the process, with the schema in it. */
+/**
+ * The schema as a database image, made once per process and copied into every in-memory
+ * database that follows. Undefined until the first one is made, and null where the runtime
+ * cannot hand an image back (`serialize` is not on every Node this package runs on), which
+ * leaves each database to create its tables itself.
+ */
+let schemaImage: Uint8Array | null | undefined;
+
+/** A database that lives for the process, with the schema in it and nothing else. */
 function openMemory(): SqliteDatabase {
   const db = openDatabase(IN_MEMORY);
-  ensureSchema(db);
+  if (schemaImage === undefined) {
+    ensureSchema(db);
+    schemaImage = typeof db.serialize === 'function' ? db.serialize() : null;
+  } else if (schemaImage === null) {
+    ensureSchema(db);
+  } else {
+    db.deserialize(schemaImage);
+  }
   return db;
 }
 
@@ -236,6 +251,13 @@ export class ProjectionCache {
    * file carries rather than the one it remembers.
    */
   private generation = -1;
+  /**
+   * True while the database is a memory one that nothing has been written into since it was
+   * made with its tables, so that the first replay has nothing to drop: dropping them to make
+   * them again is what a replay of a database that HAD rows needs, and what every cold open
+   * paid twice.
+   */
+  private untouched: boolean;
 
   private constructor(
     private db: SqliteDatabase,
@@ -243,7 +265,9 @@ export class ProjectionCache {
     private readonly upcasters: UpcasterRegistry,
     /** Whether the database is a file other processes share: false for memory, and after a fallback to it. */
     private persisted: boolean,
-  ) {}
+  ) {
+    this.untouched = !persisted;
+  }
 
   /**
    * Opens a cache over the chain rooted at `chainRoot`. Ensures the schema
@@ -472,12 +496,13 @@ export class ProjectionCache {
       this.db,
       () => {
         const generation = readGeneration(this.db) + 1;
-        rebuild(this.db, replay.events);
+        rebuild(this.db, replay.events, { schemaPresent: this.untouched });
         this.store(replay.frontier, replay.linkBreaks, generation);
         return generation;
       },
       { immediate: true },
     );
+    this.untouched = false;
     this.frontier = replay.frontier;
     this.breaks = replay.linkBreaks;
   }
@@ -559,6 +584,7 @@ export class ProjectionCache {
       // A handle that will not close is one nothing more is asked of.
     }
     this.db = openMemory();
+    this.untouched = true;
     this.persisted = false;
     this.frontier = undefined;
     this.breaks = [];
