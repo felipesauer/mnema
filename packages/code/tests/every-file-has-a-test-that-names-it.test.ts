@@ -771,7 +771,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/a-writer-rotates-at-the-size-it-may-hold-and-comes-back-to-it.test.ts': 10,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
-  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 17,
+  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 16,
   'packages/chain/src/chain/causal-order-counts-a-forced-step-and-keeps-every-place-a-hash-sits.test.ts': 2,
   'packages/chain/src/chain/causal-order.properties.test.ts': 3,
   'packages/chain/src/chain/chain.test.ts': 18,
