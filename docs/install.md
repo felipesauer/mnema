@@ -150,8 +150,9 @@ The host asks you to consent to the install, and reads the extension from the ne
 extension starts the first `mnema` on the `PATH` as its MCP server, adds the document and the notes
 to the first turn of each session (the host escapes the angle brackets of that text), and refuses a
 `write_file` or a `replace` where a rule refuses it, handing the model the rule as the call's error.
-It pauses nothing, so a rule that only asks is let through, and it does nothing where `mnema` is
-missing or is another program. Its two hooks run one script that runs `mnema` as a process and waits
+After an `ask_user` question is answered, it names the tool that records the choice (documented, not
+measured). It pauses nothing, so a rule that only asks is let through, and it does nothing where `mnema` is
+missing or is another program. Its three hooks run one script that runs `mnema` as a process and waits
 for it, and the extension's hooks file gives each hook 15 seconds; on Windows `mnema.cmd` may not be
 run at all, since Node does not start a `.cmd` without a shell: the script is then silent; that was
 not run. A run without a person (`gemini -p`) in a folder the host does not trust does not start

@@ -33,7 +33,10 @@ at any time.
 - **A workflow and a write-time gate**: a fixed, typed state machine for tasks and
   for decisions. The gate is the single point of enforcement: it runs *before* an
   event is written and only lets a change through if it is authorized, legal, and
-  carries its required proof.
+  carries its required proof. Before that, every write passes one door that refuses
+  a text that names nothing: a title of blanks or of punctuation alone, a why with no
+  letter and no digit, a marker such as `<why>` a recipe printed for a value to fill
+  in, and a path typed where a relation goes.
 - **Identity**: `deriveAlias` (a short human-facing label like `t-3a9f`, derived
   from an id, never stored, and always shown beside it), and the canonical forms of a
   person (`canonicalIdentity`) and of an id (`canonicalId`) that keep what is
