@@ -1,7 +1,8 @@
 // Generated from packages/code/src/host-names.ts: change the table, not this file.
 //
 // What Gemini CLI runs for this extension's hooks: `open` hands a session the project's committed
-// mnema record as it starts, and `gate` refuses a write where a rule of that record refuses it.
+// mnema record as it starts, `gate` refuses a write where a rule of that record refuses it, and
+// `settled`, after a question to the person was answered, says which tool records a choice.
 // It runs `mnema` from the PATH, and every outcome that is not an answer, such as no `mnema`, no
 // project or a program of that name that is not @mnema/code, leaves the session as it would
 // have been without it: nothing on stdout, exit 0.
@@ -13,6 +14,9 @@ const THIS_PRODUCT = '@mnema/code ';
 
 /** The tools Gemini CLI writes a file through. */
 const WRITES = new Set(['write_file', 'replace']);
+
+/** The tool Gemini CLI asks the person a question through. */
+const ASKS = 'ask_user';
 
 /** How long `mnema` is given to answer, in milliseconds. */
 const WAIT = 15000;
@@ -59,7 +63,7 @@ function whatItSays(verb, cwd) {
 
 /**
  * What the hook answers for one payload, or nothing.
- * @param {string | undefined} mode `open` or `gate`
+ * @param {string | undefined} mode `open`, `gate` or `settled`
  * @param {string} raw what the host wrote to stdin
  */
 function answer(mode, raw) {
@@ -71,12 +75,19 @@ function answer(mode, raw) {
   }
   const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();
   if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;
+  if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;
   if (!isThisProduct(cwd)) return undefined;
   if (mode === 'open') {
     const text = ['brief', 'recall'].flatMap((verb) => whatItSays(verb, cwd)).join('\n\n');
     return text === ''
       ? undefined
       : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };
+  }
+  if (mode === 'settled') {
+    const ran = run(['settled'], cwd, raw);
+    if (ran.error !== undefined || ran.status !== 0) return undefined;
+    const said = JSON.parse(ran.stdout);
+    return said.hookSpecificOutput === undefined ? undefined : said;
   }
   if (mode !== 'gate') return undefined;
   const gate = ['before-a-write', '--host', 'gemini'];

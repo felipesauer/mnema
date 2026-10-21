@@ -107,6 +107,8 @@ $ mnema
 !                   name the door of a decision file, for a PostToolUse hook
 !   handback        check what a subagent hands back when it stops, or print the
 !                   format it is checked by
+!   settled         say to the agent, after a question to the person was answered,
+!                   which tool records a choice
 !
 ! Help:
 !   help            display help for command
@@ -221,6 +223,8 @@ $ mnema --help
 |                   name the door of a decision file, for a PostToolUse hook
 |   handback        check what a subagent hands back when it stops, or print the
 |                   format it is checked by
+|   settled         say to the agent, after a question to the person was answered,
+|                   which tool records a choice
 |
 | Help:
 |   help            display help for command
@@ -1426,8 +1430,11 @@ $ mnema corrections --help
 | What it reads and what it does:
 |   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
 |   prompts that open by correcting the agent ("no, …", "stop …", "do not …", "that is
-|   wrong", "use … instead", in English and Portuguese) and records each as a proposed
-|   decision in this machine’s private tree, citing the session and the line, at most five
+|   wrong", "use … instead", in English and Portuguese), and the answers the person gave to
+|   a question of the agent (the option chosen in the host’s question tool, or the prompt
+|   after a response that ended in a question mark, quoted with the question), and records
+|   each as a proposed decision in this machine’s private tree, citing the session and the
+|   line, at most five
 |   at a time and never the same line twice. No model is called; a match is a guess that a
 |   person accepts or rejects.
 |   On stdout, the reply the host reads: a `systemMessage` saying how many were recorded and
@@ -1447,7 +1454,8 @@ $ mnema after-a-write --help
 |
 | What it reads and what it does:
 |   The JSON a host hands a PostToolUse hook after a Write or an Edit, on stdin.
-|   A note of Claude Code’s own memory (projects/<project>/memory/*.md under
+|   A note of Claude Code’s own memory for this project (projects/<project>/memory/*.md,
+|   <project> named as the host names it after the main working tree, under
 |   $CLAUDE_CONFIG_DIR or ~/.claude, or the autoMemoryDirectory setting) is copied as a
 |   memory into this machine’s private tree, once per content, where
 |   `mnema switch on host-memory-mirror` was run. The index MEMORY.md and a note of
@@ -1479,6 +1487,28 @@ $ mnema handback --help
 |   no project here, or the reply cannot be read.
 |   It reads, and writes nothing. It can be switched off with
 |   `mnema switch off subagent-handback`.
+
+### mnema settled --help
+$ mnema settled --help
+| Usage: mnema settled [options]
+|
+| say to the agent, after a question to the person was answered, which tool
+| records a choice
+|
+| Options:
+|   --reply <shape>  flat: a top-level additionalContext, for a host that reads
+|                    that and not the nested one
+|   -h, --help       display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook after a tool ran (PostToolUse, or AfterTool in Gemini
+|   CLI) on stdin. When the tool is one a host asks the person a question through
+|   (AskUserQuestion, request_user_input, ask_user, question), it prints the reply the host
+|   reads: an additionalContext saying that a question was answered, that `record_decision`
+|   records a choice it settled, and that nothing was recorded from the answer. Otherwise,
+|   outside a project, or with the channel off, it prints {}.
+|   It reads which tool ran and never the answer, and writes nothing. It can be switched off
+|   with `mnema switch off choice-settled`.
 
 ### mnema decision record --help
 $ mnema decision record --help
@@ -2118,8 +2148,8 @@ $ mnema switch off --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    host-memory-mirror, decision-file-written, subagent-handback,
-|                    tool-call-count, session-tally)
+|                    choice-settled, host-memory-mirror, decision-file-written,
+|                    subagent-handback, tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2156,8 +2186,8 @@ $ mnema switch on --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    host-memory-mirror, decision-file-written, subagent-handback,
-|                    tool-call-count, session-tally)
+|                    choice-settled, host-memory-mirror, decision-file-written,
+|                    subagent-handback, tool-call-count, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

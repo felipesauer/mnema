@@ -174,7 +174,8 @@ export type ModelChannel =
   | 'edit-first-write-gate'
   | 'user-corrections'
   | 'host-memory-mirror'
-  | 'decision-file-written';
+  | 'decision-file-written'
+  | 'choice-settled';
 
 /** The channels that carry a declaration: the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -317,6 +318,10 @@ export const UNFRAMED_CHANNELS: {
     'what it carries is the product’s own sentence about a file just written, its path and the ' +
     'command that reads it, and none of the file’s words, so there is nobody’s words to say whose ' +
     'they are',
+  'choice-settled':
+    'what it carries is the product’s own sentence that a question to the person was answered and ' +
+    'which tool records a choice, and no record text and nothing of the answer, so there is ' +
+    'nobody’s words to say whose they are',
   'user-corrections':
     'what it carries is a count the product made and the ids of the proposals it recorded (no ' +
     'sentence of the person’s and no record text), so there is nobody’s words to say whose they are',
@@ -365,6 +370,7 @@ export type SwitchableChannel =
   | 'user-corrections'
   | 'host-memory-mirror'
   | 'decision-file-written'
+  | 'choice-settled'
   | 'tool-call-count';
 
 /**
@@ -507,8 +513,8 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 ];
 
 /**
- * The channel that reads what a PERSON typed into a session and records the corrections as
- * `proposed` decisions: off until somebody switches it on.
+ * The channel that reads what a PERSON typed into a session and records the corrections, and the
+ * answers to the agent's questions, as `proposed` decisions: off until somebody switches it on.
  *
  * IT STARTS OFF BECAUSE IT IS THE ONE READER OF THIS PRODUCT THAT READS A TRANSCRIPT'S WORDS. The
  * rest of what reads a transcript reads its shape (`what-the-session-did.ts`), and a conversation is
@@ -534,6 +540,14 @@ export const HOST_MEMORY_MIRROR_CHANNEL: SwitchableChannel = 'host-memory-mirror
  * record. It writes nothing; on until switched off, like every channel that only says something.
  */
 export const DECISION_FILE_WRITTEN_CHANNEL: SwitchableChannel = 'decision-file-written';
+
+/**
+ * The channel that hands the agent one sentence of fact after a question it asked the person was
+ * answered: that a choice may have been settled, which tool records one, and that nothing was
+ * recorded. ON until switched off, because it reads no words and writes nothing: it is told which
+ * tool ran, and that is all it looks at (`commands/settled.ts`).
+ */
+export const CHOICE_SETTLED_CHANNEL: SwitchableChannel = 'choice-settled';
 
 /**
  * The switchable channels whose service the record COUNTS: the ones that append a
@@ -588,6 +602,9 @@ export const NOT_COUNTED_AS_SERVED: {
     'each proposal it records is itself the recorded fact (a decision awaiting a judgement, ' +
     'with its own event and its own actor), so a second fact saying the channel served would ' +
     'repeat it',
+  'choice-settled':
+    'the sentence is printed by `mnema settled`, which reads the payload and the record’s switches ' +
+    'and writes nothing (no event, no key, no run), so a question answered never moves the record',
   'tool-call-count':
     'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
     'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
@@ -654,7 +671,12 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'user-corrections':
     'the proposals recorded from what a person typed into a session: with it on, a `Stop` hook ' +
     'reads the transcript, and each time the person corrected the agent a decision is recorded ' +
-    'as proposed in this machine’s private tree. Off until switched on',
+    'as proposed in this machine’s private tree, and so is each answer the person gave to a ' +
+    'question the agent asked. Off until switched on',
+  'choice-settled':
+    'the sentence handed to the agent after a question it asked the person was answered: that a ' +
+    'choice may have been settled there and which tool records it. It reads which tool ran and ' +
+    'writes nothing',
   'host-memory-mirror':
     'the copy of the host’s own memory: with it on, a `PostToolUse` hook copies each note Claude ' +
     'Code writes to its memory directory into this machine’s private tree, once per content, ' +

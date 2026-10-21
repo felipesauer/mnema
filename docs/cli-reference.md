@@ -72,7 +72,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares nine hooks and
+  from depending on somebody remembering to regenerate a file. It declares ten hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes**: the memories and observations recorded for the project, from every tree
@@ -104,10 +104,12 @@ CLI and the MCP tools behave identically, because they are the same call.
   measured. `mnema switch off session-tally` stops it. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
   (`mnema switch on user-corrections`): it reads the transcript's own words, the one reader here
   that does, finds the prompts that open by correcting the agent ("no, …", "stop …", "do not …",
-  "that is wrong", "use … instead", in English and Portuguese), and records each as a `proposed`
+  "that is wrong", "use … instead", in English and Portuguese), and the answers the person gave to
+  a question of the agent (the option chosen in the host's question tool, or the prompt after a
+  response that ended in a question mark, quoted with the question), and records each as a `proposed`
   decision in this machine's private tree, citing the session and the line, at most five at a time
   and never the same line twice. A match is a pattern and not a judgement, which is why it is
-  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. The ninth is a `PostToolUse` hook on `Write|Edit`, in Claude Code, that runs `mnema after-a-write` behind a shell that reads the path out of the payload and starts nothing for a path that can be neither of its two kinds. A note of Claude Code's own memory (`projects/<project>/memory/*.md` under `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your own settings or the project's `.claude/settings.local.json`) is copied as a memory into this machine's **private** tree, with a marker naming the file and a hash of its content, so a note is copied once per content: this is **off until you switch it on** (`mnema switch on host-memory-mirror`), never copies the index `MEMORY.md` or a note of `type: user`, and never writes to the public tree. A file that holds decisions (under `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file, plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does) that the record cites nowhere gets one line beside the write naming the command that reads it, once per session and file; nothing is recorded for it, and `mnema switch off decision-file-written` stops it. The `Stop` line counts the notes copied since the session opened. All nine are **silent** where there is no project, so a
+  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. The ninth is a `PostToolUse` hook on `AskUserQuestion` that runs `mnema settled`: after a question the agent asked the person was answered, it hands the agent one sentence beside the answer, that a choice may have been settled there and that `record_decision` records it, and it records nothing and reads which tool ran, never the answer. A shell in front of it starts nothing for any other tool, since VS Code runs a plugin's hooks whatever their matcher says. It is on until `mnema switch off choice-settled`, and held in Claude Code against the real binary; the hooks files of Codex (`request_user_input`), Copilot CLI (`AskUserQuestion`), Gemini CLI (`ask_user`) and OpenCode (`question`) carry the same hook, documented and not measured. The tenth is a `PostToolUse` hook on `Write|Edit`, in Claude Code, that runs `mnema after-a-write` behind a shell that reads the path out of the payload and starts nothing for a path that can be neither of its two kinds. A note of Claude Code's own memory for this project (`projects/<project>/memory/*.md`, `<project>` named as the host names it after the main working tree, so a note in another project's directory is never copied, under `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your own settings or the project's `.claude/settings.local.json`) is copied as a memory into this machine's **private** tree, with a marker naming the file and a hash of its content, so a note is copied once per content: this is **off until you switch it on** (`mnema switch on host-memory-mirror`), never copies the index `MEMORY.md` or a note of `type: user`, and never writes to the public tree. A file that holds decisions (under `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file, plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does) that the record cites nowhere gets one line beside the write naming the command that reads it, once per session and file; nothing is recorded for it, and `mnema switch off decision-file-written` stops it. The `Stop` line counts the notes copied since the session opened. All ten are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
@@ -116,7 +118,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   `tests/a-correction-becomes-a-proposal.test.ts`, and the eighth in
   `tests/a-subagent-hands-back-its-decisions.test.ts` and
   `tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts`, and the ninth in
-  `tests/what-a-write-means-to-the-record.test.ts`; the plugin's own page states what
+  `tests/a-settled-choice-is-said.test.ts` and
+  `tests/host-contract/a-settled-choice-reaches-the-model.test.ts`, and the tenth in
+  `tests/what-a-write-means-to-the-record.test.ts` and
+  `tests/host-contract/a-note-of-the-hosts-memory-is-copied.test.ts`; the plugin's own page states what
   it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
@@ -1531,7 +1536,7 @@ accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 13 channel(s), looked in public, private, global:
+#> 14 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, …
@@ -1539,6 +1544,7 @@ mnema switch
 #>   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s …
 #>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on, and nobody has
 #>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on, and nobody has
+#>   choice-settled         on   the sentence handed to the agent after a question it asked the person was answered: …
 #>   host-memory-mirror     off  the copy of the host’s own memory: … · off until switched on, and nobody has
 #>   decision-file-written  on   the line beside a write to a file that holds decisions …
 #>   tool-call-count        on   the local count of tool calls: with it off, the server keeps no line of the calls it answers …

@@ -43,7 +43,7 @@ describe('a note of the host’s memory is copied', () => {
             dirname(project),
             'claude-config',
             'projects',
-            '-contract',
+            project.replace(/[^a-zA-Z0-9]/g, '-'),
             'memory',
             'feedback_build.md',
           ),

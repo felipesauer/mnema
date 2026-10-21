@@ -49,9 +49,15 @@
       "index": 0,
       "runs": "hooks/edit-asks-a-person.mjs"
     },
-    "after-a-write": {
+    "choice-settled": {
       "event": "PostToolUse",
       "group": 0,
+      "index": 0,
+      "runs": "hooks/choice-settled.mjs"
+    },
+    "after-a-write": {
+      "event": "PostToolUse",
+      "group": 1,
       "index": 0,
       "runs": "hooks/after-a-write.mjs"
     },

@@ -15,17 +15,34 @@ with its own changelog.
 - **After a write in Claude Code, `mnema after-a-write` copies a note of the host's own memory into the private tree,
   and names the door of a file that holds decisions.** A `PostToolUse` hook on `Write|Edit` runs it behind a shell that
   reads the path out of the payload and starts nothing for any other path (about 6 ms per common write on a loaded
-  machine). A note under Claude Code's memory directory (`projects/<project>/memory/*.md` under `$CLAUDE_CONFIG_DIR` or
+  machine). A note under this project's own memory directory in Claude Code (`projects/<project>/memory/*.md`, with `<project>` the
+  main working tree's path as the host names it, so every worktree of a repository shares it, under `$CLAUDE_CONFIG_DIR` or
   `~/.claude`, or where `autoMemoryDirectory` points in your own settings or the project's `.claude/settings.local.json`)
   is recorded as a memory in this machine's private tree, with a marker naming the file and a hash of its content, once
-  per content: only where `mnema switch on host-memory-mirror` was run, a new channel that starts off. The index
-  `MEMORY.md` and a note of `type: user` are never copied, and nothing goes to the public tree. A file under
+  per content: only where `mnema switch on host-memory-mirror` was run, a new channel that starts off. A note in
+  another project's directory, the index `MEMORY.md` and a note of `type: user` are never copied, and nothing goes to the public tree. A file under
   `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file,
   plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does, gets one line naming
   `mnema decision import <the directory or file>` or `record_decision` when the record cites it nowhere, once per session and file; it records
   nothing, and `mnema switch off decision-file-written` stops it. The line at `Stop` now also counts the notes copied
   since the session opened. `readHostMemory` in `@mnema/core` is the one reading of a memory file, for this and for
   `decision import --format claude-memory`.
+- **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
+  `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
+  question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,
+  and that nothing was recorded from it. It records nothing and reads which tool ran, never the answer. The plugin declares it
+  as a `PostToolUse` hook on `AskUserQuestion`, behind a shell that starts no process for any other tool (VS Code runs the
+  plugin's hooks whatever their matcher says); the hooks files of Codex (`request_user_input`), Copilot CLI
+  (`AskUserQuestion`), Gemini CLI (`ask_user`, `AfterTool`) and OpenCode (`question`, `tool.execute.after`) carry the same
+  hook, documented and not measured. A new channel, `choice-settled`, is on until `mnema switch off choice-settled`. Held in
+  Claude Code against the real binary, where the sentence arrives inside the question's result.
+- **With `user-corrections` switched on, the answers the person gave to the agent's questions are proposals too.** At
+  `Stop`, besides the openings that correct, `mnema corrections` records the option the person chose in the host's question
+  tool (read from the result the host writes in the transcript, which the reader passed over before) and the prompt typed
+  right after a response that ended in a question mark, each quoted with its question, as a `proposed` decision in this
+  machine's private tree, titled `Answer: …`, with an email address in the title replaced by `<email>` as in the body. An
+  answer that only assents or refuses ("yes", "ok", "go ahead", "pode") is not recorded. The channel is still off until
+  somebody switches it on.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a

@@ -317,6 +317,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The same for the subagent's stop: in process it has no payload, answers `{}` and writes
   // nothing. What it answers to a payload is held in `a-subagent-hands-back-its-decisions.test.ts`.
   handback: { argv: () => ['handback'] },
+  // The same after a question: in process it has no payload, answers `{}` and writes nothing. What
+  // it answers to a payload is held in `a-settled-choice-is-said.test.ts`.
+  settled: { argv: () => ['settled'] },
   // The same, for the verb that WRITES when a host feeds it: in process it has no payload, answers
   // `{}` and records nothing. What it records is held with a transcript through the binary and the
   // plugin's command (`a-correction-becomes-a-proposal.test.ts`), and in the signing sweep.
@@ -701,6 +704,7 @@ describe('every verb says if it writes', () => {
       'completion',
       'tally',
       'handback',
+      'settled',
     ]);
     expect(verbsThat('mutates').length + verbsThat('reads').length).toBe(DECLARED.length);
   });

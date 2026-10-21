@@ -192,6 +192,11 @@ const HANDBACK_HOOK = 'subagent-stop.mjs';
  * answers `{}`; what it copies and says is `what-a-write-means-to-the-record.test.ts`.
  */
 const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
+ * The handler that hands the agent one sentence after a question it asked the person was answered.
+ * It is handed the payload of that question tool: in a project it answers with the sentence, outside
+ * one it says nothing; what it says is `a-settled-choice-is-said.test.ts`.
+ */
+const SETTLED_HOOK = 'choice-settled.mjs';
 
 /**
  * The command line each declared handler runs: what the recording shim must see it try.
@@ -212,6 +217,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor --agent-key cursor',
   [GATE_HOOK]: 'before-a-write --host vscode --agent-key vscode',
+  [SETTLED_HOOK]: 'settled',
   [AFTER_A_WRITE_HOOK]: 'after-a-write',
   [HANDBACK_HOOK]: 'handback',
 };
@@ -236,6 +242,7 @@ function callsOf(handler: string): string[] {
   return handler === TALLY_HOOK ||
     handler === CORRECTIONS_HOOK ||
     handler === HANDBACK_HOOK ||
+    handler === SETTLED_HOOK ||
     handler === AFTER_A_WRITE_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
@@ -277,6 +284,15 @@ function stdinOf(command: string, at: string): string {
         file_path: join(home, '.claude', 'projects', '-unasked', 'memory', 'project_unasked.md'),
         content: '---\nname: Unasked\ntype: project\n---\nA note.\n',
       },
+      cwd: at,
+    });
+  }
+  // The question tool after it ran: tried wherever the hook's shell passes the payload on.
+  if (handlerOf(command) === SETTLED_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'AskUserQuestion',
+      tool_input: { questions: [] },
       cwd: at,
     });
   }
@@ -564,6 +580,7 @@ describe('the record arrives unasked', () => {
       TALLY_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
+      SETTLED_HOOK,
       AFTER_A_WRITE_HOOK,
       HANDBACK_HOOK,
     ]);
@@ -1283,6 +1300,7 @@ describe('the record arrives unasked', () => {
       'corrections',
       'before-a-write --host cursor --agent-key cursor',
       'before-a-write --host vscode --agent-key vscode',
+      'settled',
       'after-a-write',
       'handback',
     ]);
@@ -1301,6 +1319,7 @@ describe('the record arrives unasked', () => {
       'corrections: mutates',
       'before-a-write --host cursor --agent-key cursor: mutates',
       'before-a-write --host vscode --agent-key vscode: mutates',
+      'settled: reads',
       'after-a-write: mutates',
       'handback: reads',
     ]);
@@ -1387,6 +1406,7 @@ describe('the record arrives unasked', () => {
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
+      'command:/hooks/choice-settled.mjs',
       'command:/hooks/after-a-write.mjs',
       'command:/hooks/subagent-stop.mjs',
     ]);

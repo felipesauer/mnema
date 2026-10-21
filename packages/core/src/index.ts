@@ -244,6 +244,7 @@ export {
   type Discovery,
   type DiscoveryEnv,
   discover,
+  gitPlaceOf,
   type HeldTail,
   type KeyChoice,
   keyChoiceIn,

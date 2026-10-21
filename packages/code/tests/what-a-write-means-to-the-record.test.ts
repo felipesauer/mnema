@@ -114,8 +114,16 @@ function everyEvent(): number {
     .reduce((n, root) => n + orderedEvents({ root }, catalogUpcasters()).length, 0);
 }
 
-/** The default directory of the host's memory for some project, under `config`. */
-const memoryDir = (config: string): string => join(config, 'projects', '-work-repo', 'memory');
+/**
+ * The name the host gives a project's directory under `projects/`, written out here from what the
+ * host's bundle and this machine's own `~/.claude/projects/` show: every character of the root that
+ * is not an ASCII letter or digit becomes `-` (`/home/u/.p/x` is `-home-u--p-x`).
+ */
+const hostName = (root: string): string => root.replace(/[^a-zA-Z0-9]/g, '-');
+
+/** The default directory of the host's memory for `root` (this project's, unless named), under `config`. */
+const memoryDir = (config: string, root = repo): string =>
+  join(config, 'projects', hostName(root), 'memory');
 
 beforeEach(async () => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-after-a-write-'));
@@ -252,6 +260,59 @@ describe('a note of the host’s memory', () => {
     const otherTool = wrote(join(config, 'memory', 'project_h.md'), note('H', 'Fact H.'));
     for (const file of [under, beside, otherTool]) expect(answer(payload(file)), file).toEqual({});
     expect(memoriesIn('projectPrivate')).toHaveLength(0);
+  });
+
+  it('is this project’s alone: a note in another project’s directory is not copied', async () => {
+    expect(hostName('/home/u/.projects/my repo')).toBe('-home-u--projects-my-repo');
+    await did('switch', 'on', 'host-memory-mirror');
+    const config = join(home, '.claude');
+    const other = wrote(
+      join(memoryDir(config, join(sandbox, 'other')), 'project_k.md'),
+      note('K', 'Fact K, of another project.'),
+    );
+    const forged = wrote(
+      join(config, 'projects', '-work-repo', 'memory', 'project_l.md'),
+      note('L', 'Fact L.'),
+    );
+    for (const file of [other, forged]) expect(answer(payload(file)), file).toEqual({});
+    expect(memoriesIn('projectPrivate')).toHaveLength(0);
+    const mine = wrote(join(memoryDir(config), 'project_m.md'), note('M', 'Fact M.'));
+    expect(answer(payload(mine))).not.toEqual({});
+    expect(memoriesIn('projectPrivate')).toHaveLength(1);
+  });
+
+  it('in a linked worktree is the main working tree’s, as the host names it', async () => {
+    const git = (cwd: string, ...args: string[]) => {
+      const ran = spawnSync(
+        'git',
+        ['-c', 'user.email=t@example.com', '-c', 'user.name=t', ...args],
+        {
+          cwd,
+          encoding: 'utf-8',
+          env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' },
+        },
+      );
+      expect(ran.status, `git ${args.join(' ')}: ${ran.stderr}`).toBe(0);
+    };
+    const main = join(sandbox, 'main');
+    const linked = join(sandbox, 'linked');
+    mkdirSync(main);
+    git(main, 'init', '-q');
+    git(main, 'commit', '-q', '--allow-empty', '-m', 'first');
+    git(main, 'worktree', 'add', '-q', linked);
+    process.chdir(linked);
+    await did('init');
+    await did('switch', 'on', 'host-memory-mirror');
+    const config = join(home, '.claude');
+    const asked = (file: string) =>
+      runAfterAWrite({ cwd: linked, env }, { payload: payload(file) }).reply;
+    const underItsOwnName = wrote(
+      join(memoryDir(config, linked), 'project_n.md'),
+      note('N', 'Fact N.'),
+    );
+    expect(asked(underItsOwnName)).toEqual({});
+    const underTheMain = wrote(join(memoryDir(config, main), 'project_o.md'), note('O', 'Fact O.'));
+    expect(asked(underTheMain)).toHaveProperty('systemMessage');
   });
 
   it('is counted by the line at Stop', async () => {
@@ -404,7 +465,9 @@ describe('the command the hooks file runs after a write', () => {
     const hooks = JSON.parse(readFileSync(HOOKS, 'utf-8')) as {
       hooks: { PostToolUse: { matcher: string; hooks: { command: string }[] }[] };
     };
-    const [group] = hooks.hooks.PostToolUse;
+    const group = hooks.hooks.PostToolUse.find((one) =>
+      one.hooks.some((hook) => hook.command.includes('after-a-write.mjs')),
+    );
     expect(group?.matcher).toBe('Write|Edit');
     return group?.hooks[0]?.command ?? '';
   };
