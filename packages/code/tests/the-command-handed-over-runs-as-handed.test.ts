@@ -743,6 +743,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/recall.ts': { line: 2, name: 4 },
   'packages/code/src/wiring/repl.ts': { flag: 1 },
   'packages/code/src/wiring/report.ts': { name: 2 },
+  'packages/code/src/wiring/review.ts': { line: 1 },
   'packages/code/src/wiring/run.ts': { line: 1, name: 2 },
   'packages/code/src/wiring/search.ts': { name: 1 },
   'packages/code/src/wiring/show.ts': { name: 1 },

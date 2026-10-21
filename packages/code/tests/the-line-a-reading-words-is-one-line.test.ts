@@ -1462,6 +1462,48 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the depth cap the walk applied, after clamping: a count',
   },
 
+  // --- reviewed.ts: what `decision review` shows of a proposed decision --------------
+  'reviewed.ts «Reviewed: {} accepted, {} rejected, {} skipped.» counts.accepted #1': {
+    verdict: 'minted',
+    why: 'how many decisions this review accepted: a count of the session',
+  },
+  'reviewed.ts «Reviewed: {} accepted, {} rejected, {} skipped.» counts.rejected #1': {
+    verdict: 'minted',
+    why: 'how many decisions this review rejected: a count of the session',
+  },
+  'reviewed.ts «Reviewed: {} accepted, {} rejected, {} skipped.» counts.skipped #1': {
+    verdict: 'minted',
+    why: 'how many decisions this review left as they were: a count of the session',
+  },
+  'reviewed.ts «Title: {}» oneLine(shown.title) #1': {
+    verdict: 'collapsed',
+    why: 'the decision’s title, typed by whoever recorded it',
+  },
+  'reviewed.ts «Turned down: {}» oneLine(shown.alternatives) #1': {
+    verdict: 'collapsed',
+    why: 'what the decision turned down, typed by whoever recorded it',
+  },
+  'reviewed.ts «Why: {}» oneLine(shown.rationale) #1': {
+    verdict: 'collapsed',
+    why: 'the decision’s reason, typed by whoever recorded it',
+  },
+  'reviewed.ts «{} ({})» shown.adr #1': {
+    verdict: 'minted',
+    why: 'the decision’s ADR label, which the product numbers',
+  },
+  'reviewed.ts «{} ({})» shown.id #1': {
+    verdict: 'minted',
+    why: 'the decision’s id, which the product mints',
+  },
+  'reviewed.ts «{} of {}» position #1': {
+    verdict: 'minted',
+    why: 'which decision of the review this is: a count of the session',
+  },
+  'reviewed.ts «{} of {}» total #1': {
+    verdict: 'minted',
+    why: 'how many decisions the review goes through: a count of the list',
+  },
+
   // --- rules.ts: which recorded rules govern a path -------------------------------
   'rules.ts subjectLine(oneLine(governed.relative ?? governed.path)) #1': {
     verdict: 'collapsed',
@@ -2283,8 +2325,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record;
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(35);
-    expect(FOUND.composers.length).toBe(23);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(36);
+    expect(FOUND.composers.length).toBe(24);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -2294,8 +2336,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted.
-    expect(FOUND.sites.length).toBe(437);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows.
+    expect(FOUND.sites.length).toBe(447);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2316,10 +2358,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(118);
-    expect(count('minted')).toBe(247);
+    expect(count('collapsed')).toBe(121);
+    expect(count('minted')).toBe(254);
     expect(count('composed')).toBe(72);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(118);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(121);
   });
 
   it('every reason says where the value comes from', () => {
