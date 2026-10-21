@@ -1701,9 +1701,9 @@ export function movedApartNotes(session: Session, asked?: string): readonly stri
   // One record, said ONCE: the same id held by two checkouts of a repository is one sentence that
   // names the projects it was seen in, not the sentence per project.
   const seenIn = new Map<string, Set<string>>();
-  for (const source of workspaceCaches(session)) {
-    const dir = source.target?.dir ?? session.project ?? '';
-    for (const move of source.cache.divergentMoves()) {
+  for (const tree of workspaceTrees(session)) {
+    const dir = tree.target?.dir ?? session.project ?? '';
+    for (const move of session.caches.get(tree.chainRoot).divergentMoves()) {
       if (move.entityId !== entityId) continue;
       const sentence = movedApartSentence(move);
       seenIn.set(sentence, (seenIn.get(sentence) ?? new Set()).add(dir));
