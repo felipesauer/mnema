@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { QUESTION_TOOLS } from '../../src/commands/settled.js';
 import { writeToolsOf } from '../../src/host-hook.js';
+import { INSTRUCTIONS_BODY } from '../../src/instructions-block.js';
 import {
   type Capability,
   type Cell,
@@ -43,6 +44,7 @@ export const GENERATED = [
   'plugin/hooks/copilot.json',
   'plugin/opencode/mnema.js',
   'plugin/gemini/gemini-extension.json',
+  'plugin/gemini/GEMINI.md',
   'plugin/gemini/hooks/hooks.json',
   'plugin/gemini/hooks/mnema.mjs',
   'plugin/.claude-plugin/plugin.json',
@@ -606,8 +608,20 @@ export function geminiExtensionJson(): string {
     mcpServers: {
       mnema: { command: 'mnema', args: ['mcp'], env: agentServerEnv('gemini') },
     },
+    contextFileName: 'GEMINI.md',
   };
   return `${printed(file)}\n`;
+}
+
+/**
+ * The extension's own context file, which Gemini CLI loads into every session the extension is
+ * enabled in (`contextFileName`): the text of the block `mnema instructions` writes into a
+ * project's files, byte for byte, so a session that also reads a project's `GEMINI.md` reads the
+ * same text twice rather than two versions of it. Without the markers: they name the command that
+ * takes a project's block out, and this file is the extension's, removed with it.
+ */
+export function geminiContextFile(): string {
+  return INSTRUCTIONS_BODY;
 }
 
 /** The line that runs the extension's script, from the folder the host installed it to. */
@@ -1312,6 +1326,8 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
       return opencodePlugin();
     case 'plugin/gemini/gemini-extension.json':
       return geminiExtensionJson();
+    case 'plugin/gemini/GEMINI.md':
+      return geminiContextFile();
     case 'plugin/gemini/hooks/hooks.json':
       return geminiHooksJson();
     case 'plugin/gemini/hooks/mnema.mjs':
