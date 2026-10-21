@@ -18,6 +18,11 @@
  * IT LOOKS AT THE OPENING OF A PROMPT ONLY: its first {@link OPENING} characters, because a
  * correction is said first, and a long prompt that mentions "wrong" in its fifth paragraph is
  * about something else.
+ *
+ * AN ANSWER TO THE AGENT'S QUESTION IS TAKEN WHATEVER ITS SHAPE ({@link ANSWER_TO_A_QUESTION}):
+ * the agent asked because a choice was open, and the person's answer is the one who ruled it
+ * ruling. It is quoted with the question it answers, because "yes" alone says nothing, and it is a
+ * proposal like the rest.
  */
 
 import type { WhatThePersonSaid } from './what-the-session-did.js';
@@ -51,6 +56,9 @@ export const CORRECTION_SHAPES: readonly CorrectionShape[] = [
   { name: 'use … instead', pattern: /\b(use|usa)\b.{1,80}\b(instead|em vez de|ao invés de)\b/i },
 ];
 
+/** The shape a proposal is given when the words answer a question the agent asked. */
+export const ANSWER_TO_A_QUESTION = 'an answer to the agent’s question';
+
 /** One correction found: where, the shape it matched, and the sentence it opens with. */
 export interface Correction {
   /** The line of the transcript, counted from 1. */
@@ -72,10 +80,29 @@ function openingOf(text: string): string {
   return end === -1 ? flat : flat.slice(0, end + 1);
 }
 
-/** The corrections among what a person said, in the order they said them. */
+/** An answer and the question it answers, on one line, within {@link OPENING}. */
+function answerOf(text: string, question: string): string {
+  const flat = `${text} (asked: ${question})`.trim().replace(/\s+/g, ' ');
+  return flat.length <= OPENING ? flat : `${flat.slice(0, OPENING - 1).trimEnd()}…`;
+}
+
+/**
+ * The corrections among what a person said, in the order they said them, and the answers they gave
+ * to the agent's questions, each under {@link ANSWER_TO_A_QUESTION}.
+ */
 export function correctionsIn(said: readonly WhatThePersonSaid[]): readonly Correction[] {
   const found: Correction[] = [];
   for (const one of said) {
+    if (one.question !== undefined) {
+      found.push({
+        line: one.line,
+        uuid: one.uuid,
+        session: one.session,
+        shape: ANSWER_TO_A_QUESTION,
+        sentence: answerOf(one.text, one.question),
+      });
+      continue;
+    }
     const sentence = openingOf(one.text);
     const shape = CORRECTION_SHAPES.find((candidate) => candidate.pattern.test(sentence));
     if (shape === undefined) continue;

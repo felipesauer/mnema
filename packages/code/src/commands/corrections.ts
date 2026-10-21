@@ -5,7 +5,8 @@
  * WHAT IT IS FOR. The moments a person says "no, use Y" are decisions made by the one with the
  * authority to make them, and they are the ones an agent least often records
  * (`user-corrections.ts` says how they are found, and what that does not claim). This reads the
- * transcript the host names, finds the openings that correct, and records each as a `proposed`
+ * transcript the host names, finds the openings that correct and the answers the person gave to a
+ * question of the agent, and records each as a `proposed`
  * decision, the state that exists for a person to accept or reject, citing the transcript line it
  * came from. No model is called.
  *
@@ -29,7 +30,7 @@ import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { STARTS_OFF, USER_CORRECTIONS_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
-import { type Correction, correctionsIn } from '../user-corrections.js';
+import { ANSWER_TO_A_QUESTION, type Correction, correctionsIn } from '../user-corrections.js';
 import { whatThePersonSaid } from '../what-the-session-did.js';
 import { runDecision } from './decision.js';
 
@@ -70,22 +71,31 @@ function silent(notes: readonly string[] = []): CorrectionsDone {
   return { ok: true, reply: {}, notes };
 }
 
+/** Whether a finding is an answer to the agent's question rather than a correction. */
+const isAnAnswer = (correction: Correction): boolean => correction.shape === ANSWER_TO_A_QUESTION;
+
 /** The title a proposal is given: the opening of what the person said, cut on one line. */
-function titleOf(sentence: string): string {
+function titleOf(correction: Correction): string {
+  const { sentence } = correction;
   const cut =
     sentence.length <= TITLE_LENGTH
       ? sentence
       : `${sentence.slice(0, TITLE_LENGTH - 1).trimEnd()}…`;
-  return `Correction: ${cut}`;
+  return `${isAnAnswer(correction) ? 'Answer' : 'Correction'}: ${cut}`;
 }
 
 /** The reason a proposal carries: what was said, the shape it matched, where it is from. */
 function rationaleOf(correction: Correction): string {
-  return (
-    `The person corrected the agent in a session, in these words: “${correction.sentence}”, ` +
-    `matched by the shape “${correction.shape}”. Nobody has ruled whether it is a decision to keep. ` +
-    `Source: ${markerOf(correction)}.`
-  );
+  const said = isAnAnswer(correction)
+    ? `The person answered a question the agent asked in a session, in these words: “${correction.sentence}”`
+    : `The person corrected the agent in a session, in these words: “${correction.sentence}”, ` +
+      `matched by the shape “${correction.shape}”`;
+  return `${said}. Nobody has ruled whether it is a decision to keep. Source: ${markerOf(correction)}.`;
+}
+
+/** How many of a kind, in the words the reply counts them in: `1 correction the person made`. */
+function counted(n: number, one: string, many: string, rest: string): string[] {
+  return n === 0 ? [] : [`${n} ${n === 1 ? one : many} ${rest}`];
 }
 
 /** Answers the hook payload `input.payload`: records the corrections it finds, or `{}`. */
@@ -124,16 +134,19 @@ export function runCorrections(
 
   const notes: string[] = [];
   const adrs: string[] = [];
+  let answers = 0;
   for (const one of candidates.slice(0, MOST_PER_STOP)) {
     const done = runDecision(ctx, {
-      title: titleOf(one.sentence),
+      title: titleOf(one),
       rationale: rationaleOf(one),
       scope: 'private',
       which: READER,
       whichIsOwn: true,
     });
-    if (done.ok) adrs.push(done.adr);
-    else {
+    if (done.ok) {
+      adrs.push(done.adr);
+      if (isAnAnswer(one)) answers += 1;
+    } else {
       notes.push(
         `The correction at line ${one.line} was not recorded: ${done.reason === 'REFUSED' ? done.message : done.reason}`,
       );
@@ -141,11 +154,15 @@ export function runCorrections(
   }
   if (adrs.length === 0) return silent(notes);
   const n = adrs.length;
+  const what = [
+    ...counted(n - answers, 'correction', 'corrections', 'the person made'),
+    ...counted(answers, 'answer', 'answers', 'the person gave to a question of the agent'),
+  ].join(' and ');
   return {
     ok: true,
     reply: {
       systemMessage:
-        `${n} ${n === 1 ? 'correction' : 'corrections'} the person made in this session ` +
+        `${what} in this session ` +
         `${n === 1 ? 'was' : 'were'} recorded as ${n === 1 ? 'a proposed decision' : 'proposed decisions'} in ` +
         `this machine’s private tree: ${adrs.join(', ')}.`,
     },

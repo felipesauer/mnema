@@ -498,8 +498,8 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 ];
 
 /**
- * The channel that reads what a PERSON typed into a session and records the corrections as
- * `proposed` decisions: off until somebody switches it on.
+ * The channel that reads what a PERSON typed into a session and records the corrections, and the
+ * answers to the agent's questions, as `proposed` decisions: off until somebody switches it on.
  *
  * IT STARTS OFF BECAUSE IT IS THE ONE READER OF THIS PRODUCT THAT READS A TRANSCRIPT'S WORDS. The
  * rest of what reads a transcript reads its shape (`what-the-session-did.ts`), and a conversation is

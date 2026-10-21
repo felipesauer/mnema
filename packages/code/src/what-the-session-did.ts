@@ -157,13 +157,25 @@ export interface WhatThePersonSaid {
   readonly uuid: string | undefined;
   /** The session the line belongs to, as the host wrote it. */
   readonly session: string | undefined;
-  /** The words, as the person typed them. */
+  /** The words, as the person typed them, or the option they chose in the host's question tool. */
   readonly text: string;
+  /**
+   * The question these words answer, where they answer one the agent asked: the question the host's
+   * question tool put, or the last sentence of a response that ended in a question mark.
+   */
+  readonly question?: string | undefined;
 }
 
 /**
- * Every prompt a person typed in the transcript at `path`, in order: the one place this module
- * reads WORDS and not the shape of a line, and it is why it is a function of its own.
+ * Every prompt a person typed in the transcript at `path`, in order, and every answer they gave to
+ * a question the agent asked: the one place this module reads WORDS and not the shape of a line,
+ * and it is why it is a function of its own.
+ *
+ * AN ANSWER IS READ TWO WAYS. The answer to the host's question tool is not a prompt: the host
+ * writes it as the tool's result, with the questions and the options chosen in `toolUseResult`
+ * (Claude Code's format), so that line is read for them and every other tool result is passed
+ * over. And a prompt typed right after a response whose last text ends in a question mark is an
+ * answer to that question, which is read off the end of that text: its last sentence, and no more.
  *
  * IT RETURNS PROSE, and the caller is `user-corrections.ts`, which quotes at most one sentence of
  * a prompt into a record that stays on this machine. Nothing else reads it, and nothing prints it:
@@ -172,10 +184,29 @@ export interface WhatThePersonSaid {
 export function whatThePersonSaid(path: string): readonly WhatThePersonSaid[] {
   const said: WhatThePersonSaid[] = [];
   let lines = 0;
+  // The question the last response ended in, until the next prompt answers it.
+  let asked: string | undefined;
   forEachLine(path, (line) => {
     lines += 1;
     const read = parsed(line);
-    if (read === undefined || read.type !== 'user' || !isAPrompt(read)) return true;
+    if (read === undefined) return true;
+    if (read.type === 'assistant' && read.isSidechain !== true) {
+      asked = questionEndingThe(read);
+      return true;
+    }
+    if (read.type !== 'user') return true;
+    const where = {
+      line: lines,
+      uuid: typeof read.uuid === 'string' ? read.uuid : undefined,
+      session: typeof read.sessionId === 'string' ? read.sessionId : undefined,
+    };
+    if (!isAPrompt(read)) {
+      const chosen = answersToTheQuestionTool(read);
+      if (chosen !== undefined) said.push({ ...where, ...chosen });
+      return true;
+    }
+    const question = asked;
+    asked = undefined;
     const content = asObject(read.message)?.content;
     const text =
       typeof content === 'string'
@@ -189,13 +220,45 @@ export function whatThePersonSaid(path: string): readonly WhatThePersonSaid[] {
               .join('\n')
           : '';
     if (text.trim() === '') return true;
-    said.push({
-      line: lines,
-      uuid: typeof read.uuid === 'string' ? read.uuid : undefined,
-      session: typeof read.sessionId === 'string' ? read.sessionId : undefined,
-      text,
-    });
+    said.push({ ...where, text, ...(question === undefined ? {} : { question }) });
     return true;
   });
   return said;
+}
+
+/**
+ * The question an assistant line ends in: the last sentence of its last text, when that ends in a
+ * question mark and no tool call follows it on the line. Anything else is `undefined`.
+ */
+function questionEndingThe(line: Record<string, unknown>): string | undefined {
+  const content = asObject(line.message)?.content;
+  if (!Array.isArray(content)) return undefined;
+  const blocks = content.map((block) => asObject(block));
+  const last = blocks.at(-1);
+  if (last?.type !== 'text' || typeof last.text !== 'string') return undefined;
+  const flat = last.text.trim().replace(/\s+/g, ' ');
+  if (!flat.endsWith('?')) return undefined;
+  const sentences = flat.split(/(?<=[.!?:])\s+/);
+  return sentences.at(-1);
+}
+
+/**
+ * What the person chose in the host's question tool, read off the line that carries its result:
+ * each question and its answer, joined, or `undefined` for any other line. A line the host injected
+ * or a subagent's is not the person's.
+ */
+function answersToTheQuestionTool(
+  line: Record<string, unknown>,
+): { text: string; question: string } | undefined {
+  if (line.isMeta === true || line.isSidechain === true) return undefined;
+  const answers = asObject(asObject(line['toolUseResult'])?.answers);
+  if (answers === undefined) return undefined;
+  const pairs = Object.entries(answers).filter(
+    (pair): pair is [string, string] => typeof pair[1] === 'string' && pair[1].trim() !== '',
+  );
+  if (pairs.length === 0) return undefined;
+  return {
+    text: pairs.map(([, chosen]) => chosen).join('; '),
+    question: pairs.map(([question]) => question).join('; '),
+  };
 }
