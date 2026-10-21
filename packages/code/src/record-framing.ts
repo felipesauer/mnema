@@ -172,7 +172,8 @@ export type ModelChannel =
   | 'session-tally'
   | 'subagent-handback'
   | 'edit-first-write-gate'
-  | 'user-corrections';
+  | 'user-corrections'
+  | 'choice-settled';
 
 /** The channels that carry a declaration: the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -307,6 +308,10 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] 
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'choice-settled':
+    'what it carries is the product’s own sentence that a question to the person was answered and ' +
+    'which tool records a choice, and no record text and nothing of the answer, so there is ' +
+    'nobody’s words to say whose they are',
   'user-corrections':
     'what it carries is a count the product made and the ids of the proposals it recorded (no ' +
     'sentence of the person’s and no record text), so there is nobody’s words to say whose they are',
@@ -353,6 +358,7 @@ export type SwitchableChannel =
   | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections'
+  | 'choice-settled'
   | 'tool-call-count';
 
 /**
@@ -503,6 +509,14 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
 
 /**
+ * The channel that hands the agent one sentence of fact after a question it asked the person was
+ * answered: that a choice may have been settled, which tool records one, and that nothing was
+ * recorded. ON until switched off, because it reads no words and writes nothing: it is told which
+ * tool ran, and that is all it looks at (`commands/settled.ts`).
+ */
+export const CHOICE_SETTLED_CHANNEL: SwitchableChannel = 'choice-settled';
+
+/**
  * The switchable channels whose service the record COUNTS: the ones that append a
  * `channel.served` when they speak, once per run.
  *
@@ -548,6 +562,9 @@ export const NOT_COUNTED_AS_SERVED: {
     'each proposal it records is itself the recorded fact (a decision awaiting a judgement, ' +
     'with its own event and its own actor), so a second fact saying the channel served would ' +
     'repeat it',
+  'choice-settled':
+    'the sentence is printed by `mnema settled`, which reads the payload and the record’s switches ' +
+    'and writes nothing (no event, no key, no run), so a question answered never moves the record',
   'tool-call-count':
     'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
     'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
@@ -614,7 +631,12 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'user-corrections':
     'the proposals recorded from what a person typed into a session: with it on, a `Stop` hook ' +
     'reads the transcript, and each time the person corrected the agent a decision is recorded ' +
-    'as proposed in this machine’s private tree. Off until switched on',
+    'as proposed in this machine’s private tree, and so is each answer the person gave to a ' +
+    'question the agent asked. Off until switched on',
+  'choice-settled':
+    'the sentence handed to the agent after a question it asked the person was answered: that a ' +
+    'choice may have been settled there and which tool records it. It reads which tool ran and ' +
+    'writes nothing',
   'subagent-handback':
     'the return of a subagent that ends its final reply without the block of decisions the record ' +
     'asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; ' +
