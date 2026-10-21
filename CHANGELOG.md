@@ -23,6 +23,17 @@ with its own changelog.
 
 ### Changed
 
+- **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
+  of its cost was loading `mnema`, paid even in a project whose record addresses no path. The plugin's handler now reads the
+  stored lines of the project's committed tree, of its private tree and of the machine's global tree itself, and where none
+  holds a link under `governs`, `asks-for-a-person` or `refuses-a-write` it answers what `mnema` would answer there, nothing,
+  without starting it. A canonical line holds that relation byte for byte, so the search cannot miss one. Every doubt starts
+  `mnema` as before: a tree it cannot list, a line that is not UTF-8, not canonical, or not of a kind, a version and a shape
+  the first published reader declared (the plugin carries a copy of those declarations, held to the reader's by a test), so a
+  record `mnema` cannot read still refuses every write. Nothing is kept between two writes, so a rule that arrives by `git
+  pull` is met at the next one. Measured on one Linux machine under load, 50 runs each, in a project with one accepted rule and
+  no address: the handler went from about 330 ms (Cursor) and 290 ms (VS Code) at the median to about 50 ms; with a rule that
+  refuses, it costs what it did. Claude Code's hook, a call into the server, is unchanged.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 
 ### Fixed

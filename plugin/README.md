@@ -309,6 +309,13 @@ What each one runs of it:
 | **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not, and no command hook of the plugin's carries them instead: VS Code would put a hook's text inside the result of the tool (measured), but the push records that it served once per session, and a process started for each write has no session to remember that by. VS Code gets the pause for a person, below, and not the rules | not run, for the same reason |
 | **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` (the file was written) while it honors `deny` |
 
+**What a write costs there.** In VS Code and Cursor the gate is a process started for each write. Its handler first reads
+the stored lines of the project's committed record, of its private tree on this machine and of the machine's global tree,
+and where none of them holds a link under `governs`, `asks-for-a-person` or `refuses-a-write`, it answers what `mnema`
+would answer there, nothing, without starting `mnema`. A tree it cannot list, or a line it cannot read the way `mnema` reads
+it, starts `mnema` as before, so a record `mnema` cannot read still refuses every write. It keeps nothing between two writes:
+a rule that arrives with a `git pull` is met at the next write.
+
 **How each loads it.** VS Code's agent loads it from a folder listed in its
 `chat.pluginLocations` setting, which is the route these rows were measured on. Without that
 setting it loads nothing: no hook runs and the agent works as if mnema were not there. Cursor's
