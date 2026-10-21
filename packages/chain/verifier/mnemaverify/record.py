@@ -43,13 +43,17 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import tempfile
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
 from .canonical import (
     CRLF,
     FORMATTER,
+    canonical_bytes,
     ends_in_crlf_only,
+    is_canonical_line,
     rewritten_as_a_formatter_does,
     utf16_order,
 )
@@ -89,18 +93,83 @@ class Coverage(NamedTuple):
         )
 
 
-def _signature_holds(
-    ring: dict[str, PublicKey], signer: str, signature: str, message: bytes
-) -> bool:
-    """Whether the signature verifies, said to nobody: the question a diagnosis asks before it
-    claims that a formatter, and nothing else, changed a file."""
-    key = ring.get(signer)
-    if key is None:
+def _read_as_canonical(root: str) -> str | None:
+    """A copy of the record with each line refused ONLY for its layout as its canonical bytes.
+
+    Returns the copy's directory (the caller removes it), or None when no line is such a line.
+    """
+    tails_dir = os.path.join(root, "tails")
+    if not os.path.isdir(tails_dir):
+        return None
+    rewrites: dict[str, bytes] = {}
+    for tail in sorted(os.listdir(tails_dir)):
+        directory = os.path.join(tails_dir, tail)
+        if not os.path.isdir(directory):
+            continue
+        for name in sorted(os.listdir(directory)):
+            proof = name == TAILPROOF_FILE
+            if not (proof or name == CHECKPOINTS_FILE or re.fullmatch(r"\d{6}\.jsonl", name)):
+                continue
+            with open(os.path.join(directory, name), "rb") as handle:
+                content = handle.read()
+            pieces = [content.rstrip(b"\n")] if proof else content.split(b"\n")
+            changed = False
+            for number, piece in enumerate(pieces):
+                if piece == b"":
+                    continue
+                try:
+                    canonical_ok, value = is_canonical_line(piece)
+                    if canonical_ok or not rewritten_as_a_formatter_does(piece):
+                        continue
+                    pieces[number] = canonical_bytes(value)
+                    changed = True
+                except (Refusal, RecursionError):
+                    continue
+            if changed:
+                rewrites[os.path.join("tails", tail, name)] = (
+                    pieces[0] + b"\n" if proof else b"\n".join(pieces)
+                )
+    if not rewrites:
+        return None
+    holder = tempfile.mkdtemp(prefix="mnema-layout-")
+    copy = os.path.join(holder, "record")
+    shutil.copytree(root, copy)
+    for relative, content in rewrites.items():
+        with open(os.path.join(copy, relative), "wb") as handle:
+            handle.write(content)
+    return copy
+
+
+def _layout_is_all_that_changed(root: str) -> bool:
+    """Whether the record, read with its layout-only lines as their canonical bytes, verifies in full.
+
+    THE PROOF IS THE WHOLE RECORD, NEVER A LINE: a line carries its own hash, and whoever edited its
+    content can recompute that and add a space. What cannot be forged is the rest, the next line's
+    prev, the content root a signed checkpoint holds, a tail proof's signature, so the same checks
+    are run over the copy and every event has to be covered by a signed checkpoint. A tail proof is
+    also required to be signed by the key its tail's id names.
+    """
+    copy = _read_as_canonical(root)
+    if copy is None:
         return False
     try:
-        return ed25519_verify(key.raw, bytes.fromhex(signature), message)
-    except ValueError:
+        probe = Report()
+        verify_record(copy, probe, "signed", probing=True)
+        if probe.verdict != "VERIFIED":
+            return False
+        tails_dir = os.path.join(copy, "tails")
+        for tail in os.listdir(tails_dir):
+            path = os.path.join(tails_dir, tail, TAILPROOF_FILE)
+            if os.path.isfile(path):
+                with open(path, "rb") as handle:
+                    named = json.loads(handle.read()).get("signerFp")
+                if named != tail.split("-")[0]:
+                    return False
+        return True
+    except (OSError, ValueError, AttributeError):
         return False
+    finally:
+        shutil.rmtree(os.path.dirname(copy), ignore_errors=True)
 
 
 def _lines(path: str) -> list[tuple[int, bytes]]:
@@ -214,9 +283,7 @@ def _read_entries(
                         f": {CRLF}"
                         if ends_in_crlf_only(raw)
                         else f": {FORMATTER}"
-                        if rewritten_as_a_formatter_does(raw)
-                        and entry_hash(entry.event_bytes, tail_id, entry.seq, entry.prev)
-                        == entry.stored_hash
+                        if report.layout_only and rewritten_as_a_formatter_does(raw)
                         else ", so the bytes on disk are not the bytes the entry hash was "
                         "taken over"
                     ),
@@ -431,7 +498,13 @@ def _check_checkpoints(
             report.fail(
                 "6",
                 "the stored checkpoint line is not canonical"
-                + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
+                + (
+                    f": {CRLF}"
+                    if ends_in_crlf_only(raw)
+                    else f": {FORMATTER}"
+                    if report.layout_only and rewritten_as_a_formatter_does(raw)
+                    else ""
+                ),
                 label,
                 "G13",
             )
@@ -593,11 +666,7 @@ def _check_tailproof(
                 f": {CRLF}"
                 if ends_in_crlf_only(raw)
                 else f": {FORMATTER}"
-                if rewritten_as_a_formatter_does(raw)
-                and proof.stored["tail"] == tail_id
-                and _signature_holds(
-                    ring, proof.stored["signerFp"], proof.stored["sig"], proof.message
-                )
+                if report.layout_only and rewritten_as_a_formatter_does(raw)
                 else ""
             ),
             tail_id,
@@ -877,11 +946,16 @@ def _check_requirement(
         )
 
 
-def verify_record(root: str, report: Report, require: str = "chained") -> None:
+def verify_record(
+    root: str, report: Report, require: str = "chained", probing: bool = False
+) -> None:
     declare_scope(report)
     if not os.path.isdir(root):
         report.break_out(f"there is no record at {root}")
         return
+
+    if not probing:
+        report.layout_only = _layout_is_all_that_changed(root)
 
     ring, misnamed, undecodable = load_keyring(root)
     for name, refusal in undecodable:

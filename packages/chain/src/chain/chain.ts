@@ -12,6 +12,7 @@
  */
 
 import { catalogUpcasters } from '../events/registry.js';
+import { FORMATTER_REFUSAL, NOT_CANONICAL_REFUSAL } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import {
   type ChainSigner,
@@ -22,6 +23,7 @@ import {
   signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
+import { discard, readAsCanonical } from './layout-only.js';
 import { type VerifyOptions, type VerifyResult, verifyChain } from './verify.js';
 import { ChainWriter, type WriterOptions } from './writer.js';
 
@@ -126,5 +128,53 @@ export function verify(
   upcasters: UpcasterRegistry = catalogUpcasters(),
   options: VerifyOptions = {},
 ): VerifyResult {
-  return verifyChain({ root }, upcasters, options);
+  const result = verifyChain({ root }, upcasters, options);
+  if (result.ok || !result.issues.some((issue) => issue.detail.includes(NOT_CANONICAL_REFUSAL))) {
+    return result;
+  }
+  return saidByWhatSurrounds(result, root, upcasters, options);
+}
+
+/**
+ * A record refused for lines that are not canonical, said by what the rest of it proves. Read with
+ * each such line (one that differs only in layout) as its canonical bytes, the record either
+ * verifies in full, and then the layout is all that changed and the refusals say what a formatter
+ * does; or it does not, and what it finds (a chain that breaks, a content root, a signature) is
+ * added beside the refusals instead of hiding behind them. Only the words and the issues listed
+ * change: `ok`, the level and the counts are the verifier's own, over the record as it is.
+ */
+function saidByWhatSurrounds(
+  result: VerifyResult,
+  root: string,
+  upcasters: UpcasterRegistry,
+  options: VerifyOptions,
+): VerifyResult {
+  const copy = readAsCanonical(root);
+  if (copy === undefined) return result;
+  let asCanonical: VerifyResult;
+  try {
+    asCanonical = verifyChain({ root: copy }, upcasters, options);
+  } finally {
+    discard(copy);
+  }
+  const wholly =
+    asCanonical.ok &&
+    (asCanonical.level === 'fully-signed' || asCanonical.level === 'externally-witnessed');
+  if (wholly) {
+    return {
+      ...result,
+      issues: result.issues.map((issue) => ({
+        ...issue,
+        detail: issue.detail.split(NOT_CANONICAL_REFUSAL).join(FORMATTER_REFUSAL),
+      })),
+    };
+  }
+  const known = new Set(result.issues.map((issue) => issue.detail));
+  const beside = asCanonical.issues
+    .filter((issue) => !known.has(issue.detail))
+    .map((issue) => ({
+      ...issue,
+      detail: `${issue.detail} (reading the lines refused for their layout as their canonical bytes)`,
+    }));
+  return { ...result, issues: [...result.issues, ...beside] };
 }

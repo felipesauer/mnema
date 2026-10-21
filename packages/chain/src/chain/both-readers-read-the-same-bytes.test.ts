@@ -44,11 +44,13 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { CanonicalValue } from '../events/canonical.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { parseCanonicalLine } from '../events/stored-json.js';
 import { verify } from './chain.js';
 import { parseCheckpoint } from './checkpoint.js';
 import { parseEntry } from './entry.js';
+import { entryHash, writtenAsStored } from './hash.js';
 import { parseTailProof } from './tailproof.js';
 import { readStoredWitness } from './witness.js';
 
@@ -432,8 +434,87 @@ describe('a line that is not the canonical serialization of its value is refused
       const swap = edits['a value swapped, then pretty-printed'] as Edit;
       const spaced = layouts['a space after the colons'] as (value: unknown) => string;
       const record = withLine((canonical) => spaced(swap(JSON.parse(canonical) as StoredEntry)));
-      expect(productSays(record)).toMatch(/more than its layout differs/);
+      expect(productSays(record)).toMatch(/entry hash mismatch/);
       expect(secondSays(record)).toMatch(/the entry hash is/);
+    });
+
+    /**
+     * THE LINE'S OWN HASH PROVES NOTHING: whoever edits the content can recompute it. Each case below
+     * edits an entry, recomputes the hash the line stores (and, where said, the chain after it), and
+     * reflows the line; none may be called a formatter's work, in either reader, because the record
+     * read with that line as its canonical bytes does not verify in full: the next line's `prev`, a
+     * checkpoint's signed content root, or the coverage of the last events says so.
+     */
+    describe("an entry edited with its own hash recomputed is not a formatter's", () => {
+      type Stored = {
+        event: { payload: { content?: string } & Record<string, unknown> };
+        link: { hash: string; prev: string | null; seq: number; tail: string };
+      };
+      const rehashed = (line: Stored): Stored => {
+        line.link.hash = entryHash({
+          event: writtenAsStored(line.event as unknown as CanonicalValue),
+          tail: line.link.tail,
+          seq: line.link.seq,
+          prev: line.link.prev,
+        });
+        return line;
+      };
+      /** Edits entry `at` (1-based) with its hash recomputed, optionally the chain after it, and reflows it. */
+      function tampered(at: number, afterwards: boolean, withoutLastCheckpoint = false): string {
+        const record = copyOf('witnessed-record');
+        const dir = tailOf(record);
+        const file = join(dir, '000001.jsonl');
+        const lines = readFileSync(file, 'utf-8').split('\n');
+        const entries = lines.slice(0, 4).map((line) => JSON.parse(line) as Stored);
+        const target = entries[at - 1] as Stored;
+        target.event.payload.content = `${target.event.payload.content ?? ''}!`;
+        rehashed(target);
+        if (afterwards) {
+          for (let next = at; next < entries.length; next++) {
+            const entry = entries[next] as Stored;
+            entry.link.prev = (entries[next - 1] as Stored).link.hash;
+            rehashed(entry);
+            lines[next] = JSON.stringify(entry);
+          }
+        }
+        lines[at - 1] = JSON.stringify(target).replace(/":/g, '": ');
+        writeFileSync(file, lines.join('\n'));
+        if (withoutLastCheckpoint) {
+          const cps = join(dir, 'checkpoints.jsonl');
+          const kept = readFileSync(cps, 'utf-8')
+            .split('\n')
+            .filter((line) => line !== '');
+          writeFileSync(cps, `${kept.slice(0, -1).join('\n')}\n`);
+        }
+        return record;
+      }
+      const both = (record: string) => ({
+        product: verify(record, catalogUpcasters())
+          .issues.map((issue) => issue.detail)
+          .join('\n'),
+        second: secondReading(record)
+          .refusals.map((f) => f.what)
+          .join('\n'),
+      });
+
+      it.each([
+        ['1a, in the middle of the tail', () => tampered(2, false)],
+        ['1b, the chain after it redone', () => tampered(2, true)],
+        ['1c, the last line', () => tampered(4, false)],
+        ['1d, the last line, no checkpoint covers it', () => tampered(4, false, true)],
+      ])('does not say it for %s', (_name, make) => {
+        const { product, second } = both(make());
+        expect(product).not.toMatch(/formatter/);
+        expect(second).not.toMatch(/formatter/);
+        expect(product).toMatch(/not the canonical serialization/);
+      });
+
+      it('shows what else is wrong beside the refusal, never the refusal alone (TS)', () => {
+        const { product } = both(tampered(2, false));
+        expect(product).toMatch(
+          /reading the lines refused for their layout as their canonical bytes/,
+        );
+      });
     });
 
     it('does the same for a tail proof reflowed AND edited: no formatter, and the signature is named', () => {
@@ -697,6 +778,8 @@ describe('the rule has one place', () => {
       "a registration file under this machine's key root: never committed, never read by the second reader, and no proof is taken over its bytes",
     [join('chain', 'key-protection.ts')]:
       "the wrapper of a protected key file under this machine's key root: never committed, never read by the second reader, and a changed byte fails the authentication of what it wraps",
+    [join('chain', 'layout-only.ts')]:
+      'finds the lines refused only for their layout, to write them as their canonical bytes into a scratch COPY of the record that the real readers then verify: no proof is taken over what it parses',
     [join('events', 'parse.ts')]:
       'parses an event the entry reader already took out of a canonical line, re-serialized in memory; it never reads a stored line itself',
   };

@@ -28,18 +28,6 @@ import { type CanonicalValue, canonicalStringify } from './canonical.js';
 /** A stored line that cannot be read as JSON the format accepts; `message` says why. */
 export class StoredJsonError extends Error {
   override readonly name = 'StoredJsonError';
-  /**
-   * Set when the line differs from its canonical bytes only in layout (spaces, indentation, line
-   * ends, key order): the canonical line the same value has. WHETHER THAT LAYOUT IS ALL THAT
-   * CHANGED is not known here, only a caller that can check the hash or the signature over it can
-   * say, through {@link whyALineIsRefused}.
-   */
-  readonly reformatted?: string;
-
-  constructor(message: string, reformatted?: string) {
-    super(message);
-    if (reformatted !== undefined) this.reformatted = reformatted;
-  }
 }
 
 const QUOTE = 0x22;
@@ -217,12 +205,7 @@ export function parseCanonicalLine(text: string): unknown {
     throw new StoredJsonError(`a value the format has no bytes for: ${(error as Error).message}`);
   }
   if (canonical !== text) {
-    const layoutOnly =
-      `${canonical}\r` !== text && differsOnlyAsAFormatterLeavesIt(text, canonical);
-    throw new StoredJsonError(
-      `${canonical}\r` === text ? CRLF_REFUSAL : NOT_CANONICAL_REFUSAL,
-      layoutOnly ? canonical : undefined,
-    );
+    throw new StoredJsonError(`${canonical}\r` === text ? CRLF_REFUSAL : NOT_CANONICAL_REFUSAL);
   }
   return parsed;
 }
@@ -237,7 +220,7 @@ export function parseCanonicalLine(text: string): unknown {
  * way changes the characters, and is not this. The second reader asks the same
  * (`rewritten_as_a_formatter_does` in its `canonical.py`).
  */
-function differsOnlyAsAFormatterLeavesIt(text: string, canonical: string): boolean {
+export function differsOnlyAsAFormatterLeavesIt(text: string, canonical: string): boolean {
   let bare = '';
   let inString = false;
   for (let i = 0; i < text.length; i++) {
@@ -259,39 +242,18 @@ function differsOnlyAsAFormatterLeavesIt(text: string, canonical: string): boole
   );
 }
 
-const NOT_CANONICAL_REFUSAL =
+/** What a refused line says when nothing is known of why its layout is the way it is. */
+export const NOT_CANONICAL_REFUSAL =
   'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
   'composition or spelling differ), so these are not the bytes the proof was taken over';
 
 /**
- * What a refused line says. The sentence about a formatter is a CLAIM that nothing but the layout
- * changed, so it is made only when `holds` confirms it: the hash the line stores (an entry) or the
- * signature (a tail proof) is the one of the CANONICAL line the same value has. A line that
- * differs in layout AND in what it holds gets the plain refusal, and says that more than its
- * layout differs. The line is refused either way: this only chooses the words.
+ * What it says INSTEAD when the record, read with every refused line as its canonical bytes,
+ * verifies in full: signed hash chain, checkpoints and tail proofs, every event covered. That is
+ * the one proof that the layout is all that changed, and it lives outside any one line (a line
+ * carries its own hash, which whoever edited it can recompute). See `layout-only.ts`.
  */
-export function whyALineIsRefused(
-  error: Error & { readonly reformatted?: string },
-  holds: (canonical: string) => boolean,
-): string {
-  const canonical = error.reformatted;
-  if (canonical === undefined) return error.message;
-  let confirmed = false;
-  try {
-    confirmed = holds(canonical);
-  } catch {
-    confirmed = false;
-  }
-  return confirmed
-    ? FORMATTER_REFUSAL
-    : `${error.message}; and what the line holds is not what its hash or signature covers, so more than its layout differs`;
-}
-
-/**
- * The refusal when what differs is what a formatter or an editor changes and the proof still
- * closes over the canonical line (see {@link whyALineIsRefused}): said as what it is, with the way back.
- */
-const FORMATTER_REFUSAL =
+export const FORMATTER_REFUSAL =
   'not the canonical serialization of what it holds: it differs only in spaces, indentation, ' +
   'line ends or the order of its keys, which is what a formatter or an editor does to a file, ' +
   'so these are not the bytes the proof was taken over; a file that is committed is restored ' +
