@@ -148,6 +148,7 @@ import {
   A_READ,
   A_WRITE,
   countsToolCalls,
+  movedApartNotes,
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
@@ -1455,7 +1456,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // so it is the cheapest place to learn that the workspace holds more than one
       // project, and the agent is the party that can pass that on to the person who
       // knows which one was meant.
-      return withRunState(active, context, [whereThisSessionIs(active)]);
+      return withRunState(active, context, [
+        ...movedApartBlock(active),
+        whereThisSessionIs(active),
+      ]);
     },
   );
 
@@ -1753,7 +1757,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, result.value);
+      return served(active, result.value, movedApartBlock(active, id));
     },
   );
 
@@ -2477,6 +2481,17 @@ function refused(
 /** The clause a run-state note adds while no identity signs for the session: see {@link withRunState}. */
 const NO_ACTOR_YET =
   ' No identity signs for this session yet, so `actor` is empty and no run is listed as yours.';
+
+/**
+ * The block a read owes when the record it served was moved apart: the sentences of
+ * `movedApartSentence`, as ONE block of their own beside the payload (see {@link withRunState}
+ * for why a fact about the record rides beside the JSON and never inside it), and none at all for
+ * a record moved in one line, which is every record one machine moved.
+ */
+function movedApartBlock(session: Session, entityId?: string): readonly string[] {
+  const said = movedApartNotes(session, entityId);
+  return said.length === 0 ? [] : [said.join('\n')];
+}
 
 function withRunState(
   session: Session,

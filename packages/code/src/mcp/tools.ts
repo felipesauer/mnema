@@ -174,7 +174,7 @@ import {
   type SwitchableChannel,
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
-import type { ScopedLinkBreak } from '../record-integrity.js';
+import { movedApartSentence, type ScopedLinkBreak } from '../record-integrity.js';
 import {
   type FellIn,
   forwardReplacement,
@@ -1671,6 +1671,33 @@ function sessionCaches(session: Session): ProjectionCache[] {
 function actorCaches(session: Session): ProjectionCache[] {
   return workspaceCaches(session).map((source) => source.cache);
 }
+
+/**
+ * The sentences a read owes about records moved apart (`movedApartSentence`): those of the one
+ * entity a read opened, or, with none named, of every entity in the session's own project, the
+ * trees the opening context is read from. Empty for every record moved in one line.
+ *
+ * A reading with many is cut at {@link MOVED_APART_SHOWN} so a record with a long history of
+ * divergence does not become the opening read's weight; the cut is said.
+ */
+export function movedApartNotes(session: Session, asked?: string): readonly string[] {
+  // The id as the read resolved it: a label one decision carries is that decision's id.
+  const named = asked === undefined ? undefined : addressedIn(session, asked);
+  const entityId = named?.ok ? named.id : asked;
+  const caches =
+    entityId === undefined ? sessionCaches(session) : workspaceCaches(session).map((s) => s.cache);
+  const moves = caches
+    .flatMap((cache) => cache.divergentMoves())
+    .filter((move) => entityId === undefined || move.entityId === entityId);
+  const said = moves.slice(0, MOVED_APART_SHOWN).map(movedApartSentence);
+  if (moves.length > MOVED_APART_SHOWN) {
+    said.push(`(${moves.length - MOVED_APART_SHOWN} more records moved apart are not listed here)`);
+  }
+  return said;
+}
+
+/** How many records moved apart one read lists. */
+const MOVED_APART_SHOWN = 5;
 
 /** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
