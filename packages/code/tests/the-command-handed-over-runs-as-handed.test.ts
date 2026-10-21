@@ -671,7 +671,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 32, name: 50, flag: 1 },
+  'CHANGELOG.md': { line: 33, name: 51, flag: 1 },
   'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -769,7 +769,7 @@ export const HANDED_OVER: Readonly<
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/README.md': { line: 11, name: 4 },
   'packages/vscode/src/stacks.ts': { line: 1 },
-  'plugin/README.md': { line: 25, name: 20, flag: 1 },
+  'plugin/README.md': { line: 26, name: 21, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 2 },

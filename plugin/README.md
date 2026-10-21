@@ -235,6 +235,20 @@ why. The MCP server the plugin declares is started by the host, not by the hooks
 runs that program; `which -a mnema` lists every `mnema` on the `PATH`, and the plugin runs the
 first.
 
+### A plugin and a `mnema` of different versions
+
+The two are installed apart, so one can be updated without the other. A `mnema` **older** than
+the plugin is the pair that breaks: the plugin may ask it for something it never learned. The
+hook that hands over the document answers `mnema --identify` with its version and, when it is
+older than the plugin's (the version in `.claude-plugin/plugin.json`), adds one line after the
+document, or alone where that binary printed nothing, saying so and giving the command that
+fixes it: `npm i -g @mnema/code@<the plugin's version>`. The hook still exits 0 and blocks
+nothing, and the line is context for the session, not a message the host shows a person on its
+own. A `mnema` **newer** than the plugin keeps every flag it took, so that pair works and nothing
+is added. The hook before a write is not told: it never says anything the host would not read as
+a reply. `mnema doctor` compares the version of the plugin Claude Code lists as installed with its
+own and says which side to update, with the command; it only reads.
+
 ### Running a particular `mnema`
 
 By default the plugin runs the first `mnema` on the `PATH`. To run another (one outside the

@@ -992,11 +992,96 @@ describe('the record arrives unasked', () => {
     const said = (
       JSON.parse(ran.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
     ).hookSpecificOutput.additionalContext;
-    expect(said).toBe(cliAt(project, 'brief', '--hook'));
+    // Run, and told it is older than the plugin: a build from before the question is older than
+    // every plugin there is.
+    expect(said.startsWith(cliAt(project, 'brief', '--hook'))).toBe(true);
+    expect(said).toContain('the mnema it runs is older than 0.1.0, which is older than the plugin');
     expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
       ASKED_FIRST,
       'brief --hook',
     ]);
+  });
+
+  describe('a binary and a plugin of different versions', () => {
+    /** A `mnema` that answers `--identify` with `version` and is the real CLI otherwise. */
+    function binaryAt(version: string, refusing: boolean): string {
+      const dir = join(sandbox, `binary-${version}-${refusing ? 'refusing' : 'whole'}`);
+      mkdirSync(dir, { recursive: true });
+      const shim = join(dir, 'mnema');
+      writeFileSync(
+        shim,
+        [
+          '#!/bin/sh',
+          'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+          `if [ "$1" = "${ASKED_FIRST}" ]; then printf '%s\\n' '@mnema/code ${version}'; exit 0; fi`,
+          ...(refusing
+            ? [`printf '%s\\n' 'error: unknown option' >&2`, 'exit 1']
+            : [`exec "${process.execPath}" "${CLI}" "$@"`]),
+          '',
+        ].join('\n'),
+      );
+      chmodSync(shim, 0o755);
+      return dir;
+    }
+
+    function ranWith(dir: string, file: string, at: string) {
+      const recordingTo = join(sandbox, `calls-${dir.split('/').pop()}-${file}.txt`);
+      const ran = spawnSync('sh', ['-c', hookRunning(file)], {
+        cwd: at,
+        env: {
+          ...hostEnv(recordingTo),
+          CLAUDE_PROJECT_DIR: at,
+          PATH: `${dir}:${process.env.PATH ?? ''}`,
+        },
+        encoding: 'utf-8',
+      });
+      const out = ran.stdout ?? '';
+      return {
+        status: ran.status,
+        stderr: ran.stderr ?? '',
+        said:
+          out === ''
+            ? ''
+            : (JSON.parse(out) as { hookSpecificOutput: { additionalContext: string } })
+                .hookSpecificOutput.additionalContext,
+      };
+    }
+
+    const pluginVersion = () => readJson<{ version: string }>(MANIFEST).version;
+
+    it('says a binary older than the plugin does not match it, after the document', () => {
+      const ran = ranWith(binaryAt('0.0.1', false), DOCUMENT_HOOK, project);
+      expect(ran.status).toBe(0);
+      expect(ran.stderr).toBe('');
+      expect(ran.said.startsWith(cliAt(project, 'brief', '--hook'))).toBe(true);
+      const line = ran.said.slice(cliAt(project, 'brief', '--hook').length).trim();
+      expect(line).toBe(
+        `The mnema plugin is ${pluginVersion()} and the mnema it runs is 0.0.1, which is older than the plugin: ` +
+          'what the plugin asks of it may not be understood and this session can open without the record. ' +
+          `Update it with \`npm i -g @mnema/code@${pluginVersion()}\` ` +
+          '(https://github.com/felipesauer/mnema/blob/main/docs/install.md); nothing is blocked meanwhile.',
+      );
+    });
+
+    it('says it alone where the old binary refuses what the plugin passes, and still exits 0', () => {
+      const ran = ranWith(binaryAt('0.0.1', true), DOCUMENT_HOOK, project);
+      expect(ran.status).toBe(0);
+      expect(ran.said.startsWith('The mnema plugin is ')).toBe(true);
+      expect(ran.said).toContain(`npm i -g @mnema/code@${pluginVersion()}`);
+      expect(ran.said).not.toContain(COMMITTED_TITLE);
+    });
+
+    it('says it once: the notes handler stays silent beside it', () => {
+      const dir = binaryAt('0.0.1', false);
+      expect(ranWith(dir, NOTES_HOOK, project).said).not.toContain('The mnema plugin is ');
+    });
+
+    it('says nothing for a binary that agrees, or is newer', () => {
+      for (const version of [pluginVersion(), '99.0.0']) {
+        const ran = ranWith(binaryAt(version, false), DOCUMENT_HOOK, project);
+        expect(ran.said).toBe(cliAt(project, 'brief', '--hook'));
+      }
+    });
   });
 
   it('carries the committed record by name, not the private tree, and not the bodies', () => {

@@ -12,6 +12,14 @@ with its own changelog.
 
 ### Added
 
+- **A plugin and a `mnema` of different versions now say so.** A `mnema` older than the plugin is the pair that breaks: the
+  plugin may ask it for something it never learned, and a refused hook was silence. The hook that opens a session now compares
+  the version `mnema --identify` answers with the plugin's own and, when the binary is the older, adds one line after the
+  document (or alone, where the binary printed nothing) saying the two do not match and giving the command that fixes it,
+  `npm i -g @mnema/code@<the plugin's version>`. The hook still exits 0 and blocks nothing. `mnema doctor` says the same for
+  the plugin Claude Code lists as installed, in the direction that applies: a binary older than the plugin gets the `npm`
+  command, and a binary newer than the plugin (which works) gets `claude plugin update`. A binary newer than the plugin adds
+  nothing to the session.
 - **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
   that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
   is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
