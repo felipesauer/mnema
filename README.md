@@ -94,7 +94,7 @@ other hosts and the first record, line by line, are in [`docs/install.md`](docs/
 
 1. **Record.** An agent over MCP, or you at the command line, writes a decision with its reasoning and the options turned down.
 2. **Rule.** A person accepts it, and `mnema link` addresses it at a path. The rule can govern that path, ask for a person there, or refuse a write.
-3. **Hand over.** With the plugin, each session opens with what is in force (in Claude Code, so does each subagent), and each edit meets the rules for its file.
+3. **Hand over.** With the plugin, each session opens with what is in force (in Claude Code, so does each subagent), and each edit meets the rules for its file. In Claude Code, a note of the host's own memory is also copied into this machine's private tree, until you switch that off.
 4. **Verify.** Every write ends in a signed checkpoint and is hash-chained; a reader's guarantee runs up to the last checkpoint. `mnema verify`, a second reader in Python, or the page `mnema site` writes checks it.
 
 More in [`docs/how-it-works.md`](docs/how-it-works.md); what a session is handed, word for word, is in
