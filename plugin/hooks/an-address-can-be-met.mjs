@@ -32,7 +32,7 @@
  * (every project's private tree), and the global tree under every place the data directory can be.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
@@ -60,22 +60,48 @@ class Doubt extends Error {}
  * could read from there was read here, no stored line of any holds a link with an address, and
  * every line reads as `mnema` reads it. Anything else is `true`.
  *
+ * WHERE IT STARTS IS WHERE `mnema` STARTS. The verb runs with `cwd` as its working directory, so
+ * the kernel resolves every link in it and the verb climbs the REAL path: from a link into a
+ * project, or from `<link>/..`, the written path climbs somewhere else. So the walks start from
+ * the real path, and from the written one too (reading more, never less); a `cwd` whose real
+ * path cannot be had is a doubt.
+ *
  * @param {string} cwd Where the verb would run.
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
  * @returns {boolean}
  */
 export function anAddressCanBeMet(cwd, env) {
   try {
-    const here = resolve(cwd);
-    const projects = projectTreesAbove(here);
+    // NOT `resolve(cwd)` first: it drops `<link>/..` as text, before the kernel follows the link.
+    const asGiven = isAbsolute(cwd) ? cwd : `${process.cwd()}/${cwd}`;
+    const starts = [...new Set([realpathSync.native(asGiven), resolve(cwd)])];
+    const projects = starts.flatMap(projectTreesAbove);
     // NO `.mnema/` ON THE WAY UP IS NO PROJECT, and the verb answers nothing outside one.
     if (projects.length === 0) return false;
     const schema = theSchema();
-    const roots = [...projects, ...privateTreesAbove(here), ...globalTrees(env)];
+    const roots = [...projects, ...starts.flatMap(privateTreesAbove), ...globalTrees(env)];
     return roots.some((root) => holdsAnAddress(root, 0, schema));
   } catch {
     return true;
   }
+}
+
+/**
+ * `path` as written and as the kernel resolves it, where it resolves: a path joined with a
+ * relative one climbs from the written spelling textually, and from the real one as the kernel
+ * would, so both are read.
+ *
+ * @param {string} path
+ * @returns {string[]}
+ */
+function bothSpellings(path) {
+  let real;
+  try {
+    real = realpathSync.native(path);
+  } catch {
+    return [path];
+  }
+  return real === path ? [path] : [path, real];
 }
 
 /**
@@ -108,9 +134,9 @@ function privateTreesAbove(dir) {
     const dotGit = join(at, '.git');
     const stat = statOrNothing(dotGit);
     if (stat !== undefined) {
-      const gitDir = stat.isDirectory() ? dotGit : gitDirNamedBy(dotGit, at);
-      if (gitDir !== undefined) {
-        found.push(join(gitDir, 'mnema'), join(commonDirOf(gitDir), 'mnema'));
+      const gitDirs = stat.isDirectory() ? [dotGit] : gitDirsNamedBy(dotGit, at);
+      for (const gitDir of gitDirs) {
+        found.push(join(gitDir, 'mnema'), ...commonDirsOf(gitDir).map((one) => join(one, 'mnema')));
       }
     }
     if (dirname(at) === at) return found;
@@ -118,32 +144,36 @@ function privateTreesAbove(dir) {
 }
 
 /**
- * The git directory a `.git` file names, or nothing where it names none.
+ * The git directory a `.git` file names, resolved against the directory holding it as written
+ * and as it really is, or none where it names none.
  *
  * @param {string} dotGit
  * @param {string} at
- * @returns {string | undefined}
+ * @returns {string[]}
  */
-function gitDirNamedBy(dotGit, at) {
+function gitDirsNamedBy(dotGit, at) {
   const named = readFileSync(dotGit, 'utf-8').match(/^gitdir: *(.+?)\s*$/m)?.[1];
-  return named === undefined ? undefined : resolve(at, named);
+  return named === undefined ? [] : bothSpellings(at).map((dir) => resolve(dir, named));
 }
 
 /**
- * The common git directory a linked worktree's names in `commondir`, or itself.
+ * The common git directory a linked worktree's names in `commondir`, resolved against it as
+ * written and as it really is, or itself.
  *
  * @param {string} gitDir
- * @returns {string}
+ * @returns {string[]}
  */
-function commonDirOf(gitDir) {
+function commonDirsOf(gitDir) {
   const commondir = join(gitDir, 'commondir');
-  if (statOrNothing(commondir) === undefined) return gitDir;
+  if (statOrNothing(commondir) === undefined) return [gitDir];
   const named = readFileSync(commondir, 'utf-8').trim();
-  return named.length > 0 ? resolve(gitDir, named) : gitDir;
+  if (named.length === 0) return [gitDir];
+  return bothSpellings(gitDir).map((dir) => resolve(dir, named));
 }
 
 /**
- * The global tree under every place the data directory can be.
+ * The global tree under every place the data directory can be, each as written and as it
+ * really is.
  *
  * @param {Readonly<Record<string, string | undefined>>} env
  * @returns {string[]}
@@ -152,11 +182,12 @@ function globalTrees(env) {
   const relocated = env.MNEMA_HOME ?? '';
   if (relocated !== '' && !isAbsolute(relocated)) throw new Doubt('MNEMA_HOME is relative');
   /** @type {string[]} */
-  const trees = relocated === '' ? [] : [join(relocated, 'global')];
+  const dataDirs = relocated === '' ? [] : bothSpellings(resolve(relocated));
   for (const home of [env.HOME, homedir(), accountHome()]) {
-    if (home !== undefined && isAbsolute(home)) trees.push(join(home, '.mnema', 'global'));
+    if (home === undefined || !isAbsolute(home)) continue;
+    for (const spelled of bothSpellings(home)) dataDirs.push(join(spelled, '.mnema'));
   }
-  return trees;
+  return dataDirs.map((dir) => join(dir, 'global'));
 }
 
 /** @returns {string | undefined} */

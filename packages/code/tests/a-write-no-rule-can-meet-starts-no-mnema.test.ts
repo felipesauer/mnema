@@ -23,6 +23,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -130,6 +131,7 @@ function aWrite(
   host: keyof typeof HOSTS,
   relative: string,
   at = repo,
+  projectDir?: string,
 ): { decision: string | undefined; reason: string; started: number } {
   rmSync(calls, { force: true });
   const ran = spawnSync('sh', ['-c', HOSTS[host].command()], {
@@ -141,6 +143,7 @@ function aWrite(
       PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
       MNEMA_CALLS: calls,
       CLAUDE_PLUGIN_ROOT: PLUGIN,
+      ...(projectDir === undefined ? {} : { CLAUDE_PROJECT_DIR: projectDir }),
       ...HOSTS[host].env,
     },
   });
@@ -335,6 +338,66 @@ describe('the gate of a host whose hooks are processes', () => {
       expect(met.started, what).toBe(1);
       expect(met.decision, what).toBe('deny');
     }
+  });
+});
+
+describe('where the session is named through a link', () => {
+  // THE VERB RUNS WITH THE SESSION'S DIRECTORY AS ITS OWN, so the kernel resolves every link in it
+  // and the verb climbs the REAL path. A handler that climbed the path as written would miss the
+  // project from a link into it, or from `<link>/..`, and from a worktree whose `.git` names its
+  // git directory relatively, and let the write through. Each case has a rule that refuses (met in
+  // Cursor) and one that asks for a person (met in VS Code).
+  async function twoRules(scope = 'public'): Promise<void> {
+    const refusing = await aRule('Nobody writes billing', scope);
+    await did('link', refusing, 'src/billing', '--rel', 'refuses-a-write', '--scope', scope);
+    const asking = await aRule('Refunds need finance', scope);
+    await did('link', asking, 'src/refunds', '--rel', 'asks-for-a-person', '--scope', scope);
+  }
+
+  function bothMet(root: string, projectDir: string): void {
+    const refused = aWrite('cursor', 'src/billing/invoice.ts', root, projectDir);
+    expect(refused.started, projectDir).toBe(1);
+    expect(refused.decision, projectDir).toBe('deny');
+    const asked = aWrite('vscode', 'src/refunds/r.ts', root, projectDir);
+    expect(asked.started, projectDir).toBe(1);
+    expect(asked.decision, projectDir).toBe('ask');
+  }
+
+  it('meets them from a link into the project', async () => {
+    await twoRules();
+    const link = join(sandbox, 'ws');
+    symlinkSync(join(repo, 'src'), link);
+    bothMet(repo, link);
+  });
+
+  it('meets them from `..` after a link, which climbs where the link leads', async () => {
+    await twoRules();
+    const link = join(sandbox, 'ws');
+    symlinkSync(join(repo, 'src'), link);
+    bothMet(repo, `${link}/..`);
+  });
+
+  it('meets them where the project directory is itself a link', async () => {
+    await twoRules('private');
+    const alias = join(sandbox, 'alias');
+    symlinkSync(repo, alias);
+    bothMet(repo, alias);
+  });
+
+  it('meets them in a worktree whose .git names its git directory relatively, through a link', async () => {
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'the record');
+    const tree = join(sandbox, 'wt');
+    git(repo, 'worktree', 'add', '-q', tree);
+    writeFileSync(join(tree, '.git'), 'gitdir: ../repo/.git/worktrees/wt\n');
+    mkdirSync(join(tree, 'src', 'billing'), { recursive: true });
+    mkdirSync(join(tree, 'src', 'refunds'), { recursive: true });
+    process.chdir(tree);
+    await twoRules('private');
+    const links = join(sandbox, 'links');
+    mkdirSync(links);
+    symlinkSync(tree, join(links, 'wt'));
+    bothMet(tree, join(links, 'wt'));
   });
 });
 
