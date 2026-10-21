@@ -249,7 +249,7 @@ $ mnema decision --help
 | Commands:
 |   record [options] <title> [rationale]   record a decision in the current project
 |   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
-|   review                                 go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit
+|   review                                 go through the decisions awaiting a judgement one by one, at a terminal
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <source>              propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
@@ -1527,8 +1527,7 @@ $ mnema decision move --help
 $ mnema decision review --help
 | Usage: mnema decision review [options]
 |
-| go through the decisions awaiting a judgement one by one, at a terminal: accept,
-| reject, skip or quit
+| go through the decisions awaiting a judgement one by one, at a terminal
 |
 | Options:
 |   -h, --help  display help for command

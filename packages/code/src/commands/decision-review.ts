@@ -9,10 +9,15 @@
  * machine and the refusal codes are the same ones).
  */
 
-import { decisionsAwaitingJudgement } from '@mnema/context';
-import { newestFirst, resolveTrees } from '@mnema/core';
-import { withScopedCaches } from '../tree-sources.js';
-import type { DecisionTransitionContext } from './decision-transition.js';
+import { proposedDecisionsNewestFirst } from '@mnema/context';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import {
+  caches,
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** One proposed decision, with what a person needs to judge it. */
 export interface ProposalToReview {
@@ -25,40 +30,43 @@ export interface ProposalToReview {
 
 /** What is waiting, or why there is nothing to read. */
 export type ProposalsToReview =
-  | { readonly ok: true; readonly proposals: readonly ProposalToReview[] }
+  | {
+      readonly ok: true;
+      readonly proposals: readonly ProposalToReview[];
+      /** The tails read that do not chain: what is shown came off a record whose proof is broken. */
+      readonly linkBreaks: readonly ScopedLinkBreak[];
+    }
   | { readonly ok: false; readonly reason: 'NO_PROJECT' };
 
 /** Every decision awaiting a judgement in the trees of the project here, newest move first. */
-export function proposalsToReview(
-  ctx: Pick<DecisionTransitionContext, 'cwd' | 'env'>,
-): ProposalsToReview {
+export function proposalsToReview(ctx: {
+  readonly cwd: string;
+  readonly env: DiscoveryEnv;
+}): ProposalsToReview {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
   return withScopedCaches(trees, (sources) => {
-    const waiting = sources
-      .flatMap((source) =>
-        decisionsAwaitingJudgement([source.cache]).map((item) => ({ item, source })),
-      )
-      .sort((a, b) =>
-        newestFirst(
-          { at: a.item.updatedAt, id: a.item.id },
-          { at: b.item.updatedAt, id: b.item.id },
-        ),
-      );
     const proposals: ProposalToReview[] = [];
-    for (const { item, source } of waiting) {
-      const decision = source.cache.getDecision(item.id);
-      if (decision === null) continue;
-      proposals.push({
-        id: decision.id,
-        adr: decision.adr,
-        title: decision.title,
-        rationale: decision.rationale,
-        ...(decision.alternatives !== undefined && decision.alternatives !== ''
-          ? { alternatives: decision.alternatives }
-          : {}),
-      });
+    for (const item of proposedDecisionsNewestFirst(caches(sources))) {
+      for (const { cache } of sources) {
+        const decision = cache.getDecision(item.id);
+        if (decision === null) continue;
+        proposals.push({
+          id: decision.id,
+          adr: decision.adr,
+          title: decision.title,
+          rationale: decision.rationale,
+          ...(decision.alternatives !== undefined && decision.alternatives !== ''
+            ? { alternatives: decision.alternatives }
+            : {}),
+        });
+        break;
+      }
     }
-    return { ok: true, proposals };
+    return {
+      ok: true,
+      proposals,
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+    };
   });
 }

@@ -45,6 +45,7 @@ export {
   type AwaitingJudgement,
   type Bootstrap,
   bootstrap,
+  proposedDecisionsNewestFirst,
 } from './context/bootstrap.js';
 export {
   type Brief,
@@ -74,7 +75,6 @@ export {
   type Acceptance,
   type DecisionRef,
   decisionDisposition,
-  decisionsAwaitingJudgement,
   ruleIdsInForce,
 } from './context/decisions.js';
 // The vocabulary the two accessors answer IN. A consumer that maps every disposition

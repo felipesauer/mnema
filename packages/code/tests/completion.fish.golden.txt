@@ -133,7 +133,7 @@ complete -c mnema -f -n '__mnema_at "init"' -l color -x -a 'auto always never'
 # mnema decision
 complete -c mnema -f -n '__mnema_at "decision"' -a 'record' -d 'record a decision in the current project'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'move' -d 'accept or reject a decision (follows the decision; takes no --scope)'
-complete -c mnema -f -n '__mnema_at "decision"' -a 'review' -d 'go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit'
+complete -c mnema -f -n '__mnema_at "decision"' -a 'review' -d 'go through the decisions awaiting a judgement one by one, at a terminal'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'supersede' -d 'supersede a decision with a later one (follows the decision; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'import' -d 'propose the decisions already written in this repository’s decision files'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'help' -d 'display help for command'

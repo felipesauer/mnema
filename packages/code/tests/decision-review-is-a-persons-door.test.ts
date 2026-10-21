@@ -8,13 +8,14 @@
  * printed about itself.
  */
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
+import { arrivedSince, inPty } from './support/pty.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
@@ -40,37 +41,40 @@ function mnema(...argv: string[]) {
   return { status: ran.status, out: ran.stdout, err: ran.stderr };
 }
 
-const quoted = (word: string): string => `'${word.replaceAll("'", "'\\''")}'`;
+/** Whether the next question, or the closing summary, has been drawn since the step began. */
+const nextAsked = (bytes: string, since: number): boolean =>
+  /\(q\)uit|Reviewed:/.test(bytes.slice(since));
 
 /**
- * The binary under a pseudo-terminal, answering the prompt number `n` (from zero) with
- * `answers[n]` as soon as it has been drawn. Gives back everything the terminal showed.
+ * The binary under a pseudo-terminal, typing `answers[n]` once the question before it has been
+ * drawn: the first answers the note, the rest the decisions in the order they are shown.
  */
-function atATerminal(
+async function atATerminal(
   answers: readonly string[],
-  argv: readonly string[],
   extra: Record<string, string> = {},
-): Promise<{ status: number | null; shown: string }> {
-  const command = [process.execPath, CLI, ...argv].map(quoted).join(' ');
-  const child = spawn('script', ['-qec', command, '/dev/null'], {
-    cwd: project,
-    env: env(extra),
-  });
-  let shown = '';
-  let answered = 0;
-  child.stdout.on('data', (chunk: Buffer) => {
-    shown += chunk.toString('utf-8');
-    const asked = (
-      shown.match(/(Note for the verdicts of this review|\(q\)uit; a note may follow)/g) ?? []
-    ).length;
-    while (answered < asked && answered < answers.length) {
-      child.stdin.write(`${answers[answered]}\n`);
-      answered += 1;
-    }
-  });
-  return new Promise((resolve) => {
-    child.on('close', (status) => resolve({ status, shown }));
-  });
+): Promise<{ code: number | undefined; shown: string }> {
+  const ran = await inPty(
+    {
+      cli: CLI,
+      verb: 'decision review',
+      project,
+      scratch: sandbox,
+      environment: env(extra),
+    },
+    {
+      columns: 120,
+      rows: 40,
+      steps: [
+        { until: arrivedSince('Note for the verdicts'), what: 'asked for the note' },
+        ...answers.map((typed) => ({
+          types: `${typed}\n`,
+          until: nextAsked,
+          what: 'asked the next question or closed',
+        })),
+      ],
+    },
+  );
+  return { code: ran.code, shown: ran.bytes };
 }
 
 const stateOf = (id: string): string =>
@@ -110,11 +114,8 @@ describe('mnema decision review, on the built binary', () => {
   }, async () => {
     const [first, second, third] = recordThree() as [string, string, string];
     // Newest first: the third is asked first, then the second, then the first.
-    const done = await atATerminal(
-      ['', 'a', 'r because it was dropped', 's'],
-      ['decision', 'review'],
-    );
-    expect(done.status).toBe(0);
+    const done = await atATerminal(['', 'a', 'r because it was dropped', 's']);
+    expect(done.code).toBe(0);
     expect(done.shown).toContain('third call');
     expect(done.shown).toContain('Why: why third call');
     expect(done.shown).toContain('Turned down: the other way');
@@ -129,7 +130,7 @@ describe('mnema decision review, on the built binary', () => {
 
   it('says what it wrote nothing of when the person quits', { timeout: 60_000 }, async () => {
     const ids = recordThree();
-    const done = await atATerminal(['', 'q'], ['decision', 'review']);
+    const done = await atATerminal(['', 'q']);
     expect(done.shown).toContain('Reviewed: 0 accepted, 0 rejected, 3 skipped.');
     for (const id of ids) expect(stateOf(id)).toBe('proposed');
   });
@@ -163,7 +164,7 @@ describe('mnema decision review, on the built binary', () => {
     expect(refused.err).toContain('--which');
     expect(stateOf(only)).toBe('proposed');
 
-    const done = await atATerminal(['', 'a', 'q'], ['decision', 'review'], {
+    const done = await atATerminal(['', 'a', 'q'], {
       MNEMA_AGENT_KEY: 'ci',
     });
     expect(done.shown).toContain('MNEMA_AGENT_KEY is set and is not used here');

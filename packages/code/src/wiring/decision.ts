@@ -218,9 +218,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // the group's `--which` is refused, and what is ruled is signed with the person's own key.
   const review = decision
     .command('review')
-    .description(
-      'go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit',
-    )
+    .description('go through the decisions awaiting a judgement one by one, at a terminal')
     .addHelpText(
       'after',
       '\nAsks for one note at the start, used for every verdict unless you write another after the\n' +
@@ -239,7 +237,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   review.action(async () => {
     const given = await fromTheGroup<object>(review, wiring);
     if (given === REFUSED) return;
-    const { reviewDecisions } = await import('./decision-review.js');
+    const { reviewDecisions } = await import('./review.js');
     await reviewDecisions(wiring);
   });
 

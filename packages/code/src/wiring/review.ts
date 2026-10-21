@@ -12,9 +12,9 @@
  */
 
 import { agentKeyFromEnvironment, discoveryEnv } from '../env.js';
-import { oneLine } from '../one-line.js';
 import { fact } from '../presentation/detail.js';
-import { noSuchRecord } from './no-such-record.js';
+import { proposalLines, reviewedSummary } from '../presentation/reviewed.js';
+import { linkBreakNotice } from './integrity.js';
 import { reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import type { Wiring } from './verb.js';
@@ -63,6 +63,7 @@ export async function reviewDecisions(wiring: Wiring): Promise<void> {
     reportRefusal(wiring, read);
     return;
   }
+  for (const line of linkBreakNotice(read.linkBreaks)) io.err(render(line));
   const { proposals } = read;
   if (proposals.length === 0) {
     io.out('Nothing awaiting a judgement.');
@@ -103,19 +104,12 @@ export async function reviewDecisions(wiring: Wiring): Promise<void> {
   const { runDecisionTransition } = await import('../commands/decision-transition.js');
   const { movedLine } = await import('../moved-record.js');
 
-  let accepted = 0;
-  let rejected = 0;
-  let skipped = 0;
-  let at = 0;
+  const counts = { accepted: 0, rejected: 0, skipped: 0 };
+  let position = 0;
   for (const proposal of proposals) {
-    at += 1;
+    position += 1;
     io.out('');
-    io.out(render(fact(`${proposal.adr} (${proposal.id}), ${at} of ${proposals.length}`, 0)));
-    io.out(render(fact(`Title: ${oneLine(proposal.title)}`)));
-    io.out(render(fact(`Why: ${oneLine(proposal.rationale)}`)));
-    if (proposal.alternatives !== undefined) {
-      io.out(render(fact(`Turned down: ${oneLine(proposal.alternatives)}`)));
-    }
+    for (const line of proposalLines(proposal, position, proposals.length)) io.out(render(line));
     let verdict: Verdict = { action: 'again' };
     while (verdict.action === 'again') {
       verdict = verdictOf(
@@ -123,11 +117,11 @@ export async function reviewDecisions(wiring: Wiring): Promise<void> {
       );
     }
     if (verdict.action === 'quit') {
-      skipped += proposals.length - at + 1;
+      counts.skipped += proposals.length - position + 1;
       break;
     }
     if (verdict.action === 'skip') {
-      skipped += 1;
+      counts.skipped += 1;
       continue;
     }
     const result = runDecisionTransition(
@@ -141,13 +135,13 @@ export async function reviewDecisions(wiring: Wiring): Promise<void> {
     );
     if (result.ok) {
       io.out(movedLine('decision', result.adr, result.id, result.to));
-      if (verdict.action === 'accept') accepted += 1;
-      else rejected += 1;
+      if (verdict.action === 'accept') counts.accepted += 1;
+      else counts.rejected += 1;
     } else {
-      reportRefusal(wiring, result, { UNKNOWN_DECISION: noSuchRecord('decision', proposal.id) });
-      skipped += 1;
+      reportRefusal(wiring, result);
+      counts.skipped += 1;
     }
   }
   io.out('');
-  io.out(`Reviewed: ${accepted} accepted, ${rejected} rejected, ${skipped} skipped.`);
+  io.out(reviewedSummary(counts));
 }

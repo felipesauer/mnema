@@ -84,7 +84,7 @@ _mnema_described() {
     'decision') printf '%s\n' \
       'record:record a decision in the current project' \
       'move:accept or reject a decision (follows the decision; takes no --scope)' \
-      'review:go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit' \
+      'review:go through the decisions awaiting a judgement one by one, at a terminal' \
       'supersede:supersede a decision with a later one (follows the decision; takes no --scope)' \
       'import:propose the decisions already written in this repository’s decision files' \
       'help:display help for command' ;;
