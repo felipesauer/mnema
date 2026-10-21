@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * Every error the product THROWS as a refusal leaves the MCP server as a refusal.
  *

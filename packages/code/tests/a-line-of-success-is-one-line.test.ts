@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * A LINE THIS SURFACE PRINTS ON SUCCESS IS ONE LINE, AND THE VALUES ON IT CAME FROM
  * SOMEWHERE.
@@ -849,11 +850,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the revision exactly as the caller typed it, and why git could not answer',
   },
-  'verify.ts «{}: gone: {} was in the record there and is not here» #1': {
+  'verify.ts «{}: {} was in the record there and is not here» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a PATH git listed: a file name, chosen on disk',
   },
-  'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1': {
+  'verify.ts «{}: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a path git listed',
   },
@@ -1217,9 +1218,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'verify.ts «since {}: not compared: {}» #1':
     'needs `--since` in a project; driven through the binary, with a revision the clone ' +
     'does not hold, in `the-ci-recipe-catches-what-verify-cannot.test.ts`',
-  'verify.ts «{}: gone: {} was in the record there and is not here» #1':
+  'verify.ts «{}: {} was in the record there and is not here» #1':
     'needs a git repository whose base commit held a file the disk lost: the same file',
-  'verify.ts «{}: rewritten: {} no longer begins with the bytes it held there» #1':
+  'verify.ts «{}: {} no longer begins with the bytes it held there» #1':
     'needs a base commit and a segment cut or rewritten after it: the same file',
   'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
     'needs a base commit and a record that grew after it: the same file',

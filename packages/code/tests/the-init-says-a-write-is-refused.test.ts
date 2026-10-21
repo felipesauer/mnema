@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * `mnema init` in a project that already exists says who this machine writes as here, and in a
  * checkout whose recorded identity no longer counts its key, it says that a write is refused, in

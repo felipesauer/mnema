@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE DOCUMENT IS A PURE FUNCTION OF THE RECORD: the property `mnema brief` is sold on,
  * guarded at the PATH and not only at the value.

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * Every TOOL says whether it can change the record, and the record says whether it told
  * the truth.

@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * WHERE THINGS STAND: the opening read, and the proof that there is only one of it.
  *
