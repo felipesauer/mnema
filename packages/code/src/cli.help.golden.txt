@@ -105,6 +105,8 @@ $ mnema
 !                   decisions, for a Stop hook
 !   handback        check what a subagent hands back when it stops, or print the
 !                   format it is checked by
+!   settled         say to the agent, after a question to the person was answered,
+!                   which tool records a choice
 !
 ! Help:
 !   help            display help for command
@@ -217,6 +219,8 @@ $ mnema --help
 |                   decisions, for a Stop hook
 |   handback        check what a subagent hands back when it stops, or print the
 |                   format it is checked by
+|   settled         say to the agent, after a question to the person was answered,
+|                   which tool records a choice
 |
 | Help:
 |   help            display help for command
@@ -1422,8 +1426,11 @@ $ mnema corrections --help
 | What it reads and what it does:
 |   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
 |   prompts that open by correcting the agent ("no, …", "stop …", "do not …", "that is
-|   wrong", "use … instead", in English and Portuguese) and records each as a proposed
-|   decision in this machine’s private tree, citing the session and the line, at most five
+|   wrong", "use … instead", in English and Portuguese), and the answers the person gave to
+|   a question of the agent (the option chosen in the host’s question tool, or the prompt
+|   after a response that ended in a question mark, quoted with the question), and records
+|   each as a proposed decision in this machine’s private tree, citing the session and the
+|   line, at most five
 |   at a time and never the same line twice. No model is called; a match is a guess that a
 |   person accepts or rejects.
 |   On stdout, the reply the host reads: a `systemMessage` saying how many were recorded and
@@ -1453,6 +1460,28 @@ $ mnema handback --help
 |   no project here, or the reply cannot be read.
 |   It reads, and writes nothing. It can be switched off with
 |   `mnema switch off subagent-handback`.
+
+### mnema settled --help
+$ mnema settled --help
+| Usage: mnema settled [options]
+|
+| say to the agent, after a question to the person was answered, which tool
+| records a choice
+|
+| Options:
+|   --reply <shape>  flat: a top-level additionalContext, for a host that reads
+|                    that and not the nested one
+|   -h, --help       display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook after a tool ran (PostToolUse, or AfterTool in Gemini
+|   CLI) on stdin. When the tool is one a host asks the person a question through
+|   (AskUserQuestion, request_user_input, ask_user, question), it prints the reply the host
+|   reads: an additionalContext saying that a question was answered, that `record_decision`
+|   records a choice it settled, and that nothing was recorded from the answer. Otherwise,
+|   outside a project, or with the channel off, it prints {}.
+|   It reads which tool ran and never the answer, and writes nothing. It can be switched off
+|   with `mnema switch off choice-settled`.
 
 ### mnema decision record --help
 $ mnema decision record --help
@@ -2092,7 +2121,8 @@ $ mnema switch off --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    choice-settled, subagent-handback, tool-call-count,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2129,7 +2159,8 @@ $ mnema switch on --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    choice-settled, subagent-handback, tool-call-count,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

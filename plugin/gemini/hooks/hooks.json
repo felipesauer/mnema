@@ -24,6 +24,19 @@
           }
         ]
       }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "^ask_user$",
+        "hooks": [
+          {
+            "name": "mnema-settled",
+            "type": "command",
+            "command": "node \"${extensionPath}/hooks/mnema.mjs\" settled",
+            "timeout": 15000
+          }
+        ]
+      }
     ]
   }
 }

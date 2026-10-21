@@ -296,6 +296,129 @@ describe('mnema corrections', () => {
     expect(decisionsIn('projectPrivate')).toHaveLength(7);
   });
 
+  /** An assistant line that ends its text in a question to the person. */
+  function asks(text: string): string {
+    return JSON.stringify({
+      type: 'assistant',
+      sessionId: 's-1',
+      message: { role: 'assistant', content: [{ type: 'text', text }] },
+    });
+  }
+
+  /** The line the host writes when the person answered its question tool, as Claude Code writes it. */
+  function answered(answers: Record<string, string>): string {
+    return JSON.stringify({
+      type: 'user',
+      sessionId: 's-1',
+      message: {
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'toolu_1',
+            content: 'Your questions have been answered.',
+          },
+        ],
+      },
+      toolUseResult: {
+        questions: Object.keys(answers).map((question) => ({ question, options: [] })),
+        answers,
+      },
+    });
+  }
+
+  it('records the answer the person gave to a question tool as a proposal, with the question', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      typed('Set up the store'),
+      assistant(),
+      answered({ 'Which store do we use?': 'SQLite' }),
+      assistant(),
+    ]);
+    const first = answer(payload('Stop', file));
+    expect(first.reply).toEqual({
+      systemMessage:
+        '1 answer the person gave to a question of the agent in this session was recorded as a proposed decision in this machine’s private tree: ADR-1.',
+    });
+    const [recorded] = decisionsIn('projectPrivate');
+    expect(recorded?.payload.title).toBe('Answer: SQLite (asked: Which store do we use?)');
+    expect(recorded?.payload.rationale).toContain(
+      'The person answered a question the agent asked in a session, in these words: “SQLite (asked: Which store do we use?)”',
+    );
+    expect(recorded?.payload.rationale).toContain('[host transcript, session s-1, line 3]');
+    expect(decisionsIn('projectPublic')).toHaveLength(0);
+    expect(JSON.stringify(first.reply)).not.toContain('SQLite');
+    expect(answer(payload('Stop', file))).toEqual({ reply: {}, notes: [] });
+    expect(decisionsIn('projectPrivate')).toHaveLength(1);
+  });
+
+  it('records the prompt that follows a response ending in a question, with the question', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      typed('Set up the store'),
+      asks('I looked at both. Should the cache live in Redis or in memory?'),
+      typed('In memory for now'),
+      assistant(),
+      typed('Thanks'),
+    ]);
+    answer(payload('Stop', file));
+    const titles = decisionsIn('projectPrivate').map((one) => one.payload.title);
+    expect(titles).toEqual([
+      'Answer: In memory for now (asked: Should the cache live in Redis or in memory?)',
+    ]);
+  });
+
+  it('says how many of each it recorded when a Stop finds both', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      typed('No, use pnpm instead of npm.'),
+      assistant(),
+      answered({ 'Which store?': 'SQLite' }),
+    ]);
+    expect(answer(payload('Stop', file)).reply).toEqual({
+      systemMessage:
+        '1 correction the person made and 1 answer the person gave to a question of the agent in this session were recorded as proposed decisions in this machine’s private tree: ADR-1, ADR-2.',
+    });
+  });
+
+  it('keeps an email address out of the title it cuts from an answer, as out of the body', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      answered({ 'Who owns the billing alerts?': 'ana.souza@example.com' }),
+    ]);
+    answer(payload('Stop', file));
+    const [recorded] = decisionsIn('projectPrivate');
+    expect(recorded?.payload.title).toBe('Answer: <email> (asked: Who owns the billing alerts?)');
+    expect(JSON.stringify(recorded?.payload)).not.toContain('ana.souza@example.com');
+  });
+
+  it('does not take an answer that only assents for a choice, in either language', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const file = transcript([
+      asks('Shall I run the migration now?'),
+      typed('yes'),
+      asks('Posso seguir?'),
+      typed('Pode.'),
+      answered({ 'Proceed with the release?': 'Go ahead' }),
+      asks('Do you want the cache in Redis or in memory?'),
+      typed('Yes, in memory'),
+    ]);
+    answer(payload('Stop', file));
+    expect(decisionsIn('projectPrivate').map((one) => one.payload.title)).toEqual([
+      'Answer: Yes, in memory (asked: Do you want the cache in Redis or in memory?)',
+    ]);
+  });
+
+  it('records no answer while the channel is off, which is how it starts', () => {
+    const file = transcript([
+      asks('Redis or memory?'),
+      typed('Memory'),
+      answered({ 'Which?': 'A' }),
+    ]);
+    expect(answer(payload('Stop', file))).toEqual({ reply: {}, notes: [] });
+    expect(decisionsIn('projectPrivate')).toHaveLength(0);
+  });
+
   it('ignores a line the host injected, a notification and a tool result', async () => {
     await did('switch', 'on', 'user-corrections');
     const file = transcript([

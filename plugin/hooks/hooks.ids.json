@@ -49,6 +49,12 @@
       "index": 0,
       "runs": "hooks/edit-asks-a-person.mjs"
     },
+    "choice-settled": {
+      "event": "PostToolUse",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/choice-settled.mjs"
+    },
     "subagent-stop": {
       "event": "SubagentStop",
       "group": 0,

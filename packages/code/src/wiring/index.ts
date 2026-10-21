@@ -251,6 +251,7 @@ import { registerRules } from './rules.js';
 import { registerRulesFile } from './rules-file.js';
 import { registerRun } from './run.js';
 import { registerSearch } from './search.js';
+import { registerSettled } from './settled.js';
 import { registerShow } from './show.js';
 import { registerSite } from './site.js';
 import { registerSkill } from './skill.js';
@@ -348,6 +349,7 @@ export const GROUPS: readonly Group[] = [
       registerTally,
       registerCorrections,
       registerHandback,
+      registerSettled,
     ],
   },
 ];

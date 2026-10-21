@@ -17,6 +17,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { QUESTION_TOOLS } from '../../src/commands/settled.js';
 import { writeToolsOf } from '../../src/host-hook.js';
 import {
   type Capability,
@@ -93,7 +94,7 @@ function version(): string {
 
 /** What the plugin's hooks file says it does, as the host shows it. */
 const HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent, and the answers the person gave to its questions, as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. And, after a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing, and reads which tool ran, never the answer). Each can be switched off with `mnema switch`, which records that it was.";
 
 /** A variable the HOST expands in the files it reads: written as the host spells it, never ours. */
 const hostVariable = (name: string): string => `$${'{'}${name}}`;
@@ -219,6 +220,39 @@ function beforeAWrite(name: HostName): readonly Json[] {
 /** Whether a host reads a hooks file of its own rather than `hooks/hooks.json`. */
 const readsItsOwn = (name: HostName): boolean => 'hooksFile' in HOSTS[name];
 
+/**
+ * The tool each host asks the person a question through, by the host's own name: the matcher of
+ * the hook after a question. Each must be one `mnema settled` answers, or nothing is generated.
+ */
+const ASKS_THROUGH = {
+  claude: 'AskUserQuestion',
+  codex: 'request_user_input',
+  copilot: 'AskUserQuestion',
+  gemini: 'ask_user',
+  opencode: 'question',
+} as const satisfies Partial<Record<HostName, string>>;
+for (const tool of Object.values(ASKS_THROUGH)) {
+  if (!QUESTION_TOOLS.has(tool)) throw new Error(`mnema settled does not answer ${tool}`);
+}
+
+/**
+ * The group after a question in the plugin's hooks file: matched to Claude Code's question tool,
+ * with the shell of {@link gate} in front, because VS Code reads this file too and runs every
+ * command whatever its matcher says, so the handler starts only for a payload that names the tool.
+ */
+const AFTER_A_QUESTION: Json = [
+  {
+    matcher: ASKS_THROUGH.claude,
+    hooks: [
+      {
+        type: 'command',
+        command: gate('choice-settled.mjs', [], undefined, [ASKS_THROUGH.claude]),
+        timeout: TIMEOUT,
+      },
+    ],
+  },
+];
+
 /** The hooks a session opens with, the same two on every host that opens. */
 const SESSION_START: Json = [
   { hooks: [command('session-start.mjs'), command('session-recall.mjs')] },
@@ -244,6 +278,7 @@ export function hooksJson(): string {
       Stop: [{ hooks: [command('session-tally.mjs'), command('session-corrections.mjs')] }],
       PreCompact: [{ hooks: [command('session-tally.mjs')] }],
       PreToolUse: ordered.filter((n) => !readsItsOwn(n)).flatMap(beforeAWrite),
+      PostToolUse: AFTER_A_QUESTION,
       ...(HOST_NAMES.some((n) => !readsItsOwn(n) && stopsASubagent(n))
         ? { SubagentStop: [{ hooks: [command('subagent-stop.mjs')] }] }
         : {}),
@@ -254,7 +289,7 @@ export function hooksJson(): string {
 
 /** What Codex's hooks file says it does, as the host shows it. */
 const CODEX_HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. After a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing). Each can be switched off with `mnema switch`, which records that it was.";
 
 /**
  * Codex's hooks file: the opening, and the gate before a patch, no end-of-response count and no
@@ -284,6 +319,7 @@ export function codexHooksJson(): string {
           hooks: [command('edit-refuses-a-write.mjs', ['--host', 'codex', ...signsAs('codex')])],
         },
       ],
+      PostToolUse: [{ matcher: ASKS_THROUGH.codex, hooks: [command('choice-settled.mjs')] }],
     },
   };
   return `${printed(file)}\n`;
@@ -291,7 +327,7 @@ export function codexHooksJson(): string {
 
 /** What Copilot CLI's hooks file says it does, as the host shows it. */
 const COPILOT_HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. After a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing). Each can be switched off with `mnema switch`, which records that it was.";
 
 /**
  * Copilot CLI's hooks file: the opening, and the gate before a write, no end-of-response count
@@ -329,6 +365,9 @@ export function copilotHooksJson(): string {
           ],
         },
       ],
+      PostToolUse: [
+        { matcher: ASKS_THROUGH.copilot, hooks: [command('choice-settled.mjs', handed)] },
+      ],
     },
   };
   return `${printed(file)}\n`;
@@ -355,8 +394,9 @@ export function opencodePlugin(): string {
   return [
     '// Generated from packages/code/src/host-names.ts: change the table, not this file.',
     '//',
-    "// Hands an OpenCode session the project's committed mnema record as it opens, and refuses a",
-    '// write where a rule of that record refuses it. Copy this file into `.opencode/plugins/` of the',
+    "// Hands an OpenCode session the project's committed mnema record as it opens, refuses a write",
+    '// where a rule of that record refuses it, and after a question to the person was answered says',
+    '// which tool records a choice it settled. Copy this file into `.opencode/plugins/` of the',
     '// project, or into `~/.config/opencode/plugins/`. It runs `mnema` from the PATH, and every',
     '// outcome that is not an answer, such as no `mnema`, no project or a program of that name that',
     '// is not @mnema/code, leaves the session as it would have been without it.',
@@ -367,6 +407,9 @@ export function opencodePlugin(): string {
     '',
     '/** The tools OpenCode writes a file through. */',
     `const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});`,
+    '',
+    '/** The tool OpenCode asks the person a question through. */',
+    `const ASKS = '${ASKS_THROUGH.opencode}';`,
     '',
     '/** How long `mnema` is given to answer, in milliseconds. */',
     `const WAIT = ${TIMEOUT * 1000};`,
@@ -448,6 +491,24 @@ export function opencodePlugin(): string {
     '        );',
     '      }',
     '    },',
+    "    'tool.execute.after': async (input, output) => {",
+    '      if (input.tool !== ASKS || !ours()) return;',
+    '      const ran = run(',
+    "        ['settled'],",
+    '        directory,',
+    "        JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: input.tool }),",
+    '      );',
+    '      if (ran.error !== undefined || ran.status !== 0) return;',
+    '      let said;',
+    '      try {',
+    '        said = JSON.parse(ran.stdout).hookSpecificOutput?.additionalContext;',
+    '      } catch {',
+    '        return;',
+    '      }',
+    "      if (typeof said === 'string' && typeof output.output === 'string') {",
+    "        output.output = [output.output, said].join('\\n\\n');",
+    '      }',
+    '    },',
     '  };',
     '};',
     '',
@@ -480,7 +541,7 @@ export function geminiExtensionJson(): string {
 }
 
 /** The line that runs the extension's script, from the folder the host installed it to. */
-const geminiRuns = (mode: 'open' | 'gate'): string =>
+const geminiRuns = (mode: 'open' | 'gate' | 'settled'): string =>
   `node "${hostVariable('extensionPath')}/hooks/mnema.mjs" ${mode}`;
 
 /**
@@ -494,7 +555,7 @@ const geminiRuns = (mode: 'open' | 'gate'): string =>
  */
 export function geminiHooksJson(): string {
   const tools = writeToolsOf('gemini');
-  const hook = (name: string, mode: 'open' | 'gate'): Json => ({
+  const hook = (name: string, mode: 'open' | 'gate' | 'settled'): Json => ({
     name,
     type: 'command',
     command: geminiRuns(mode),
@@ -504,6 +565,9 @@ export function geminiHooksJson(): string {
     hooks: {
       SessionStart: [{ hooks: [hook('mnema-opening', 'open')] }],
       BeforeTool: [{ matcher: `^(${tools.join('|')})$`, hooks: [hook('mnema-gate', 'gate')] }],
+      AfterTool: [
+        { matcher: `^${ASKS_THROUGH.gemini}$`, hooks: [hook('mnema-settled', 'settled')] },
+      ],
     },
   };
   return `${printed(file)}\n`;
@@ -527,7 +591,8 @@ export function geminiHookScript(): string {
     '// Generated from packages/code/src/host-names.ts: change the table, not this file.',
     '//',
     "// What Gemini CLI runs for this extension's hooks: `open` hands a session the project's committed",
-    '// mnema record as it starts, and `gate` refuses a write where a rule of that record refuses it.',
+    '// mnema record as it starts, `gate` refuses a write where a rule of that record refuses it, and',
+    '// `settled`, after a question to the person was answered, says which tool records a choice.',
     '// It runs `mnema` from the PATH, and every outcome that is not an answer, such as no `mnema`, no',
     '// project or a program of that name that is not @mnema/code, leaves the session as it would',
     '// have been without it: nothing on stdout, exit 0.',
@@ -539,6 +604,9 @@ export function geminiHookScript(): string {
     '',
     '/** The tools Gemini CLI writes a file through. */',
     `const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});`,
+    '',
+    '/** The tool Gemini CLI asks the person a question through. */',
+    `const ASKS = '${ASKS_THROUGH.gemini}';`,
     '',
     '/** How long `mnema` is given to answer, in milliseconds. */',
     `const WAIT = ${TIMEOUT * 1000};`,
@@ -585,7 +653,7 @@ export function geminiHookScript(): string {
     '',
     '/**',
     ' * What the hook answers for one payload, or nothing.',
-    ' * @param {string | undefined} mode `open` or `gate`',
+    ' * @param {string | undefined} mode `open`, `gate` or `settled`',
     ' * @param {string} raw what the host wrote to stdin',
     ' */',
     'function answer(mode, raw) {',
@@ -597,12 +665,19 @@ export function geminiHookScript(): string {
     '  }',
     "  const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();",
     "  if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;",
+    "  if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;",
     '  if (!isThisProduct(cwd)) return undefined;',
     "  if (mode === 'open') {",
     "    const text = ['brief', 'recall'].flatMap((verb) => whatItSays(verb, cwd)).join('\\n\\n');",
     "    return text === ''",
     '      ? undefined',
     "      : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };",
+    '  }',
+    "  if (mode === 'settled') {",
+    "    const ran = run(['settled'], cwd, raw);",
+    '    if (ran.error !== undefined || ran.status !== 0) return undefined;',
+    '    const said = JSON.parse(ran.stdout);',
+    '    return said.hookSpecificOutput === undefined ? undefined : said;',
     '  }',
     "  if (mode !== 'gate') return undefined;",
     "  const gate = ['before-a-write', '--host', 'gemini'];",
@@ -873,7 +948,11 @@ function withTheTable(page: string, base: string, path: string): string {
       host.subagentStop === undefined
         ? undefined
         : `When a subagent stops: ${cellText(host.subagentStop, base)}.`;
-    const said = [host.note, stops].filter((text) => text !== undefined);
+    const asked =
+      host.afterAQuestion === undefined
+        ? undefined
+        : `After a question to the person is answered: ${cellText(host.afterAQuestion, base)}.`;
+    const said = [host.note, stops, asked].filter((text) => text !== undefined);
     return said.length === 0 ? [] : [`**${host.title}.** ${said.join(' ')}`];
   });
   const under = notes.length === 0 ? '' : `${notes.join('\n\n')}\n\n`;

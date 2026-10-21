@@ -12,6 +12,22 @@ with its own changelog.
 
 ### Added
 
+- **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
+  `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
+  question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,
+  and that nothing was recorded from it. It records nothing and reads which tool ran, never the answer. The plugin declares it
+  as a `PostToolUse` hook on `AskUserQuestion`, behind a shell that starts no process for any other tool (VS Code runs the
+  plugin's hooks whatever their matcher says); the hooks files of Codex (`request_user_input`), Copilot CLI
+  (`AskUserQuestion`), Gemini CLI (`ask_user`, `AfterTool`) and OpenCode (`question`, `tool.execute.after`) carry the same
+  hook, documented and not measured. A new channel, `choice-settled`, is on until `mnema switch off choice-settled`. Held in
+  Claude Code against the real binary, where the sentence arrives inside the question's result.
+- **With `user-corrections` switched on, the answers the person gave to the agent's questions are proposals too.** At
+  `Stop`, besides the openings that correct, `mnema corrections` records the option the person chose in the host's question
+  tool (read from the result the host writes in the transcript, which the reader passed over before) and the prompt typed
+  right after a response that ended in a question mark, each quoted with its question, as a `proposed` decision in this
+  machine's private tree, titled `Answer: …`, with an email address in the title replaced by `<email>` as in the body. An
+  answer that only assents or refuses ("yes", "ok", "go ahead", "pode") is not recorded. The channel is still off until
+  somebody switches it on.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a

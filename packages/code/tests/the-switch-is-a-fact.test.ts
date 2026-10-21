@@ -54,6 +54,7 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runHandback } from '../src/commands/handback.js';
+import { runSettled } from '../src/commands/settled.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
@@ -62,6 +63,7 @@ import { type CliIo, run } from '../src/program.js';
 import {
   AGENT_ACCEPTS_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
+  CHOICE_SETTLED_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
@@ -474,6 +476,23 @@ const HONOURED: Readonly<
         { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
       );
       return 'systemMessage' in done.reply;
+    },
+  },
+  [CHOICE_SETTLED_CHANNEL]: {
+    // A SENTENCE AFTER A QUESTION, driven the way a host drives it: the payload of a `PostToolUse`
+    // of the question tool. "Speaks" is the reply carrying the sentence.
+    setUp: async () => {},
+    speaks: async () => {
+      const done = runSettled(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'PostToolUse',
+            tool_name: 'AskUserQuestion',
+          }),
+        },
+      );
+      return 'hookSpecificOutput' in done.reply;
     },
   },
   [SUBAGENT_HANDBACK_CHANNEL]: {
