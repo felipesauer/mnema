@@ -710,7 +710,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
   'packages/code/src/commands/doctor.ts': { line: 8, name: 7 },
   'packages/code/src/commands/handback.ts': { line: 1 },
-  'packages/code/src/commands/instructions.ts': { line: 1, name: 6 },
+  'packages/code/src/commands/instructions.ts': { line: 1, name: 5 },
   'packages/code/src/commands/key-enroll.ts': { line: 2 },
   'packages/code/src/commands/key-request.ts': { line: 1 },
   'packages/code/src/commands/report.ts': { line: 3 },
