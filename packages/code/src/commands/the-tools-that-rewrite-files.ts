@@ -73,30 +73,68 @@ function isObject(value: unknown): value is Record<string, unknown> {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The hooks of the pre-commit project and of the usual ones around it that rewrite a file. One
- * string split on spaces and not a list of literals: a quoted `black` among the product's strings
- * would be counted as a colour by the guard that holds the chrome to one hue.
+ * The hooks that rewrite files the record holds, and the kinds of file each applies to (the tags
+ * pre-commit's `identify` gives a file). A formatter of Python, Go or shell never touches a
+ * `.mnema/` file, so it is not here: a hook is judged by what it can reach, not by being a formatter.
  */
-const REWRITING_HOOKS = new Set(
-  'end-of-file-fixer trailing-whitespace mixed-line-ending pretty-format-json fix-byte-order-marker fix-encoding-pragma requirements-txt-fixer sort-simple-yaml prettier black isort ruff-format biome-format dprint shfmt gofmt go-fmt rustfmt fmt clang-format yamlfmt stylua taplo-format'.split(
-    ' ',
-  ),
-);
+const HOOKS_AND_THE_FILES_THEY_REWRITE: Readonly<Record<string, readonly string[]>> = {
+  'end-of-file-fixer': ['text'],
+  'trailing-whitespace': ['text'],
+  'mixed-line-ending': ['text'],
+  'fix-byte-order-marker': ['text'],
+  'pretty-format-json': ['json'],
+  prettier: ['json', 'markdown'],
+  'biome-format': ['json'],
+  dprint: ['json', 'markdown'],
+};
 
-const MNEMA_EXCLUDE = /\\?\.mnema/;
+/** The files a record holds, as pre-commit would see them, with their `identify` tags. */
+const THE_RECORDS_FILES: readonly { readonly path: string; readonly tags: readonly string[] }[] = [
+  { path: '.mnema/tails/t/000001.jsonl', tags: ['file', 'text', 'non-executable', 'jsonl'] },
+  { path: '.mnema/tails/t/tailproof.json', tags: ['file', 'text', 'non-executable', 'json'] },
+  { path: '.mnema/README.md', tags: ['file', 'text', 'non-executable', 'markdown'] },
+  { path: '.mnema/.editorconfig', tags: ['file', 'text', 'non-executable', 'editorconfig'] },
+];
+
+/** A pre-commit (Python) regex as a JavaScript one, or undefined when it cannot be read as one. */
+function regexOf(source: string): RegExp | undefined {
+  let pattern = source.trim();
+  if (pattern.startsWith('(?x)')) {
+    pattern = pattern
+      .slice(4)
+      .replace(/(^|\s)#.*$/gm, '')
+      .replace(/\s+/g, '');
+  }
+  try {
+    return new RegExp(pattern);
+  } catch {
+    return undefined;
+  }
+}
+
+interface HookInCommit {
+  id: string;
+  files?: string;
+  exclude?: string;
+  types?: readonly string[];
+  excludeTypes?: readonly string[];
+}
 
 const PRE_COMMIT_ADD = 'exclude: ^\\.mnema/';
 
 /**
- * Reads the config by its lines. `exclude` at the top level, and one at a hook's own indent
- * after its `id`, are looked at; anything past a hook's block belongs to the next one.
+ * Reads the config by its lines: the top-level `files` and `exclude`, and for each hook after its
+ * `id` the `files`, `exclude`, `types`, `types_or` and `exclude_types` at the hook's own indent.
+ * A hook reaches the record when one of the record's files passes every filter it and the top
+ * level set (pre-commit searches the regex in the path, an empty `files` matching everything).
+ * A regex this cannot read makes the answer "could not be confirmed".
  */
 function preCommit(file: string, text: string): Reach | undefined {
   const lines = text.split(/\r?\n/);
   const unsure: Reach = { tool: 'pre-commit', file, unsure: true, add: PRE_COMMIT_ADD };
   const valueAt = (index: number, indent: number): string => {
     const first = (lines[index] as string).replace(/^[^:]*:\s*/, '').replace(/\s+#.*$/, '');
-    if (!/^[|>][+-]?$/.test(first)) return first;
+    if (!/^[|>][+-]?$/.test(first)) return first.replace(/^(['"])(.*)\1$/, '$2');
     let rest = '';
     for (let i = index + 1; i < lines.length; i++) {
       const line = lines[i] as string;
@@ -105,33 +143,81 @@ function preCommit(file: string, text: string): Reach | undefined {
     }
     return rest;
   };
-  let topExcludes = false;
-  const hooks: { id: string; excluded: boolean; keyIndent: number }[] = [];
+  const listAt = (index: number, indent: number): string[] => {
+    const inline = /^[^:]*:\s*\[(.*)\]\s*(#.*)?$/.exec(lines[index] as string);
+    if (inline !== null) {
+      return (inline[1] as string)
+        .split(',')
+        .map((item) => item.trim().replace(/^(['"])(.*)\1$/, '$2'))
+        .filter((item) => item !== '');
+    }
+    const items: string[] = [];
+    for (let i = index + 1; i < lines.length; i++) {
+      const line = lines[i] as string;
+      const item = /^\s*-\s+(.*?)\s*$/.exec(line);
+      if (line.trim() === '') continue;
+      if (item === null || line.length - line.trimStart().length < indent) break;
+      items.push((item[1] as string).replace(/^(['"])(.*)\1$/, '$2'));
+    }
+    return items;
+  };
+  let topFiles: string | undefined;
+  let topExclude: string | undefined;
+  const hooks: HookInCommit[] = [];
+  let keyIndent = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] as string;
     if (/^\s*#/.test(line) || line.trim() === '') continue;
+    if (/^files:/.test(line)) {
+      topFiles = valueAt(i, 0);
+      continue;
+    }
     if (/^exclude:/.test(line)) {
-      topExcludes = MNEMA_EXCLUDE.test(valueAt(i, 0));
+      topExclude = valueAt(i, 0);
       continue;
     }
     const id = /^(\s*)-\s+id:\s*['"]?([\w.-]+)['"]?/.exec(line);
     if (id !== null) {
-      hooks.push({ id: id[2] as string, excluded: false, keyIndent: (id[1] as string).length + 2 });
+      hooks.push({ id: id[2] as string });
+      keyIndent = (id[1] as string).length + 2;
       continue;
     }
     const current = hooks[hooks.length - 1];
-    const key = /^(\s+)exclude:/.exec(line);
-    if (current !== undefined && key !== null && (key[1] as string).length === current.keyIndent) {
-      current.excluded = MNEMA_EXCLUDE.test(valueAt(i, current.keyIndent));
-    }
+    const key = /^(\s+)(files|exclude|types|types_or|exclude_types):/.exec(line);
+    if (current === undefined || key === null || (key[1] as string).length !== keyIndent) continue;
+    if (key[2] === 'files') current.files = valueAt(i, keyIndent);
+    else if (key[2] === 'exclude') current.exclude = valueAt(i, keyIndent);
+    else if (key[2] === 'exclude_types') current.excludeTypes = listAt(i, keyIndent);
+    else current.types = listAt(i, keyIndent);
   }
   if (/\{\s*id:/.test(text)) return unsure;
   if (hooks.length === 0) return text.trim() === '' ? undefined : unsure;
-  if (topExcludes) return undefined;
-  const reaching = hooks.find((hook) => REWRITING_HOOKS.has(hook.id) && !hook.excluded);
-  return reaching === undefined
-    ? undefined
-    : { tool: 'pre-commit', file, unsure: false, add: PRE_COMMIT_ADD };
+  let confirmed = true;
+  const matches = (source: string | undefined, path: string, whenAbsent: boolean): boolean => {
+    if (source === undefined || source.trim() === '') return whenAbsent;
+    const pattern = regexOf(source);
+    if (pattern === undefined) {
+      confirmed = false;
+      return whenAbsent;
+    }
+    return pattern.test(path);
+  };
+  for (const hook of hooks) {
+    const rewrites = HOOKS_AND_THE_FILES_THEY_REWRITE[hook.id];
+    if (rewrites === undefined) continue;
+    const kinds = hook.types ?? rewrites;
+    const touches = THE_RECORDS_FILES.some(
+      (one) =>
+        matches(topFiles, one.path, true) &&
+        !matches(topExclude, one.path, false) &&
+        matches(hook.files, one.path, true) &&
+        !matches(hook.exclude, one.path, false) &&
+        kinds.some((kind) => one.tags.includes(kind)) &&
+        !(hook.excludeTypes ?? []).some((kind) => one.tags.includes(kind)),
+    );
+    if (touches) return confirmed ? { ...unsure, unsure: false } : unsure;
+  }
+  return confirmed ? undefined : unsure;
 }
 
 // ---------------------------------------------------------------------------------------------

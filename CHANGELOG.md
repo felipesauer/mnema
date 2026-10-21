@@ -21,8 +21,10 @@ with its own changelog.
   `.mnema/` out, each with the line to add, and say when a file could not be read well enough to confirm; none of those files is
   edited. The `.prettierignore` is now written where prettier is declared: the project's own directory or the nearest one above it up to
   the git root, instead of the git root alone. When `mnema verify` (and the second reader) refuses a line that differs from its
-  canonical bytes only in spaces, indentation, line ends or key order, the refusal says that is what a formatter does and that
-  `git checkout -- .mnema` restores a committed file; what either reader accepts is unchanged.
+  canonical bytes only in spaces, indentation, line ends or key order, and the hash it stores (an entry) or the signature it
+  carries (a tail proof) closes over that canonical form, the refusal says that is what a formatter does and that
+  `git checkout -- .mnema` restores a committed file; a line whose content was also changed gets the plain refusal, which in
+  the product also says that more than its layout differs. What either reader accepts is unchanged.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a

@@ -68,6 +68,56 @@ describe('pre-commit', () => {
     expect(reach()).toEqual([]);
   });
 
+  const one = (id: string, extra = ''): string =>
+    `repos:\n  - repo: x\n    hooks:\n      - id: ${id}\n${extra}`;
+
+  it('does not warn of a hook that cannot reach the record: other languages, other files, other types', () => {
+    for (const config of [
+      one('black'),
+      one('trailing-whitespace', '        files: \\.py$\n'),
+      one('end-of-file-fixer', '        types: [python]\n'),
+      one('end-of-file-fixer', '        types_or: [python, yaml]\n'),
+      one('pretty-format-json', '        files: ^docs/\n'),
+      one('trailing-whitespace', '        exclude_types: [text]\n'),
+    ]) {
+      put('.pre-commit-config.yaml', config);
+      expect(reach(), config).toEqual([]);
+    }
+  });
+
+  it('warns of a hook that reaches it by the files or the types it names', () => {
+    for (const config of [
+      one('trailing-whitespace', '        files: \\.jsonl$\n'),
+      one('end-of-file-fixer', '        types: [text]\n'),
+      one('pretty-format-json', '        files: \\.json$\n'),
+      one('prettier', '        types_or: [json]\n'),
+    ]) {
+      put('.pre-commit-config.yaml', config);
+      expect(reach(), config).toEqual(['pre-commit']);
+    }
+  });
+
+  it('counts an exclude only if it takes the root .mnema/ out, not a look-alike or a part of it', () => {
+    for (const exclude of [
+      '^docs/\\.mnema-old/',
+      '^packages/.*/\\.mnema/',
+      '\\.md$',
+      '^\\.mnema/tails/',
+    ]) {
+      put('.pre-commit-config.yaml', `exclude: ${exclude}\n${one('trailing-whitespace')}`);
+      expect(reach(), exclude).toEqual(['pre-commit']);
+    }
+    put('.pre-commit-config.yaml', `exclude: ^\\.mnema/\n${one('trailing-whitespace')}`);
+    expect(reach()).toEqual([]);
+    put('.pre-commit-config.yaml', `exclude: '(^|/)\\.mnema/'\n${one('trailing-whitespace')}`);
+    expect(reach()).toEqual([]);
+  });
+
+  it('says it could not confirm a regex it cannot read', () => {
+    put('.pre-commit-config.yaml', one('trailing-whitespace', '        files: (?P<x>a\n'));
+    expect(reach()).toEqual(['pre-commit?']);
+  });
+
   it('says it could not confirm a form it does not read', () => {
     put('.pre-commit-config.yaml', 'repos: [{repo: x, hooks: [{id: end-of-file-fixer}]}]\n');
     expect(reach()).toEqual(['pre-commit?']);

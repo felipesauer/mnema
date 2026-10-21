@@ -1099,7 +1099,9 @@ finding says to run `mnema init`, which adds exactly that. (`--fix` takes a name
 
 And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
 signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
-`mixed-line-ending`, `pretty-format-json` and the usual formatters) and no `exclude` covering `.mnema/`; a `biome.json`
+`mixed-line-ending`, `pretty-format-json`, `prettier` and the like) that can reach a file of the record, judged by the
+`files`, `exclude`, `types` and `exclude_types` of the hook and of the file (a formatter of Python never warns, and an
+`exclude` counts only if it takes the root `.mnema/` out); a `biome.json`
 or `biome.jsonc` whose `files` does not leave `.mnema` out (`ignore` in Biome 1, `includes` with a `!` in Biome 2); a
 `dprint.json` without `.mnema` in `excludes`; and a `lint-staged` configuration (in `package.json` or a
 `.lintstagedrc*`) with a glob that reaches the folder (`*`, `**/*`, `*.json`) running a command that writes. Each

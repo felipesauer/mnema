@@ -348,6 +348,107 @@ describe('a line that is not the canonical serialization of its value is refused
     );
   });
 
+  /**
+   * THE CLAIM IS ONLY MADE WHEN THE PROOF CLOSES. "A formatter did this" says nothing but the layout
+   * changed, so both readers say it only where the hash an entry stores (or the signature a tail
+   * proof carries) is the one of the canonical line the same value has. An edit of the CONTENT,
+   * reflowed or not, is a tampering, and is said as one: the plain refusal, with no formatter, and
+   * where the product can tell, that the hash or signature does not cover what the line holds.
+   */
+  describe('a reflowed line whose content was ALSO changed is not a formatter', () => {
+    interface StoredEntry {
+      event: { payload: { content?: string } & Record<string, unknown>; who?: string };
+      link: unknown;
+    }
+    type Edit = (line: StoredEntry) => StoredEntry;
+    const edits: Record<string, Edit> = {
+      'a value swapped, then pretty-printed': (line) => {
+        line.event.payload.content = `${line.event.payload.content ?? ''}!`;
+        return line;
+      },
+      'a key renamed out of order': (line) => {
+        line.event.payload = { zcontent: line.event.payload.content };
+        return line;
+      },
+      'a key added out of order': (line) => {
+        line.event.payload = { ...line.event.payload, 'a-late-guest': 1 };
+        return line;
+      },
+      'a key dropped': (line) => {
+        delete line.event.who;
+        return line;
+      },
+    };
+    const layouts: Record<string, (value: unknown) => string> = {
+      'pretty-printed': (value) => JSON.stringify(value, null, 2).replace(/\n\s*/g, ' '),
+      'a space after the colons': (value) => JSON.stringify(value).replace(/":/g, '": '),
+    };
+
+    function withLine(replaced: (canonical: string) => string): string {
+      const record = copyOf('witnessed-record');
+      const file = join(tailOf(record), '000001.jsonl');
+      const lines = readFileSync(file, 'utf-8').split('\n');
+      lines[2] = replaced(lines[2] as string);
+      writeFileSync(file, lines.join('\n'));
+      return record;
+    }
+    const productSays = (record: string): string =>
+      verify(record, catalogUpcasters())
+        .issues.map((issue) => issue.detail)
+        .join('\n');
+    const secondSays = (record: string): string =>
+      secondReading(record)
+        .refusals.map((f) => f.what)
+        .join('\n');
+
+    it('says a formatter did it for a layout change alone, with the hash intact, in both readers (control)', () => {
+      for (const [name, layout] of Object.entries(layouts)) {
+        const record = withLine((canonical) => layout(JSON.parse(canonical)));
+        expect(productSays(record), name).toMatch(/formatter/);
+        expect(secondSays(record), name).toMatch(/formatter/);
+      }
+      const reordered = withLine((canonical) => {
+        const value = JSON.parse(canonical) as Record<string, unknown>;
+        return JSON.stringify({ link: value.link, event: value.event });
+      });
+      expect(productSays(reordered)).toMatch(/formatter/);
+      expect(secondSays(reordered)).toMatch(/formatter/);
+    });
+
+    for (const [edit, change] of Object.entries(edits)) {
+      for (const [layout, lay] of Object.entries(layouts)) {
+        it(`does not say it for ${edit}, ${layout}: the refusal stands, and the hash is named`, () => {
+          const record = withLine((canonical) => lay(change(JSON.parse(canonical) as StoredEntry)));
+          const here = verify(record, catalogUpcasters());
+          expect(here.ok).toBe(false);
+          expect(productSays(record)).not.toMatch(/formatter/);
+          expect(secondSays(record)).not.toMatch(/formatter/);
+          expect(secondReading(record).verdict).not.toBe('VERIFIED');
+        });
+      }
+    }
+
+    it('names the hash that does not cover the content, where the product can tell', () => {
+      const swap = edits['a value swapped, then pretty-printed'] as Edit;
+      const spaced = layouts['a space after the colons'] as (value: unknown) => string;
+      const record = withLine((canonical) => spaced(swap(JSON.parse(canonical) as StoredEntry)));
+      expect(productSays(record)).toMatch(/more than its layout differs/);
+      expect(secondSays(record)).toMatch(/the entry hash is/);
+    });
+
+    it('does the same for a tail proof reflowed AND edited: no formatter, and the signature is named', () => {
+      const record = copyOf('witnessed-record');
+      const file = join(tailOf(record), 'tailproof.json');
+      const proof = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, string>;
+      proof.sig = `${(proof.sig as string).slice(0, -1)}${(proof.sig as string).endsWith('0') ? '1' : '0'}`;
+      writeFileSync(file, `${JSON.stringify(proof, null, 2)}\n`);
+      expect(productSays(record)).not.toMatch(/formatter/);
+      expect(productSays(record)).toMatch(/ownership proof is invalid \(bad-signature\)/);
+      expect(secondSays(record)).not.toMatch(/formatter/);
+      expect(secondSays(record)).toMatch(/signature does not verify/);
+    });
+  });
+
   it('refuses a line with no canonical bytes at all, a lone surrogate, at the parse', () => {
     expect(() => parseCanonicalLine('{"a":"\\ud800"}')).toThrow(
       /a value the format has no bytes for/,

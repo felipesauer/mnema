@@ -27,7 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { parseCanonicalLine, StoredJsonError } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 
 /**
@@ -120,7 +120,10 @@ export function parseTailProof(line: string): TailProof {
   try {
     raw = parseCanonicalLine(line) as Record<string, unknown>;
   } catch (error) {
-    throw new TailProofParseError((error as Error).message);
+    throw new TailProofParseError(
+      (error as Error).message,
+      error instanceof StoredJsonError ? error.reformatted : undefined,
+    );
   }
   const requireString = (key: string): string => {
     const value = raw[key];
@@ -144,4 +147,11 @@ export function parseTailProof(line: string): TailProof {
 /** Thrown when a stored tail-proof line is malformed. */
 export class TailProofParseError extends Error {
   override readonly name = 'TailProofParseError';
+  /** The canonical line a refused one is a layout of, for a caller that holds the key to check it. */
+  readonly reformatted?: string;
+
+  constructor(message: string, reformatted?: string) {
+    super(message);
+    if (reformatted !== undefined) this.reformatted = reformatted;
+  }
 }

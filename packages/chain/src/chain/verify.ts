@@ -104,7 +104,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import type { CatalogEvent } from '../events/catalog.js';
 import { mayRetract } from '../events/retraction.js';
-import { decodeStoredBytes } from '../events/stored-json.js';
+import { decodeStoredBytes, whyALineIsRefused } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import type { MoveEvent, MoveRule } from '../events/workflow.js';
 import { oneLine } from '../one-line.js';
@@ -133,7 +133,7 @@ import {
   readTail,
   readTailCheckpoints,
 } from './store.js';
-import { parseTailProof, verifyTailProof } from './tailproof.js';
+import { parseTailProof, TailProofParseError, verifyTailProof } from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
 import {
   type ChainWitness,
@@ -1593,9 +1593,28 @@ function verifyTailOwnership(
     // strictly, so bytes that are not UTF-8 are a malformed proof and not U+FFFD.
     proof = parseTailProof(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
   } catch (error) {
-    push(
-      `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,
-    );
+    // A proof that differs from its canonical line only in layout is a formatter's work ONLY if
+    // the signature closes over that canonical line under the tail's own key; otherwise the plain
+    // refusal stands, and the signature that does not hold is an issue of its own.
+    const reformatted = error instanceof TailProofParseError ? error.reformatted : undefined;
+    const key = reformatted === undefined ? null : keys(tailFingerprint(tail));
+    let closes = false;
+    if (reformatted !== undefined && key !== null) {
+      try {
+        closes = verifyTailProof({
+          proof: parseTailProof(reformatted),
+          tail,
+          publicKey: key.key,
+        }).ok;
+      } catch {
+        closes = false;
+      }
+    }
+    const said = whyALineIsRefused(error as TailProofParseError, () => closes);
+    push(`tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine(said)}`);
+    if (reformatted !== undefined && key !== null && !closes) {
+      push(`tail ${oneLine(tail)} ownership proof is invalid (bad-signature)`);
+    }
     return;
   }
   const committed = keys(tailFingerprint(tail));

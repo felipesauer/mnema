@@ -89,12 +89,18 @@ class Coverage(NamedTuple):
         )
 
 
-def _why_not_canonical(raw: bytes) -> str:
-    """What a refusal for bytes that are not canonical adds: the CRLF a checkout leaves, or the
-    spaces, line ends and key order a formatter changes. Nothing for any other difference."""
-    if ends_in_crlf_only(raw):
-        return f": {CRLF}"
-    return f": {FORMATTER}" if rewritten_as_a_formatter_does(raw) else ""
+def _signature_holds(
+    ring: dict[str, PublicKey], signer: str, signature: str, message: bytes
+) -> bool:
+    """Whether the signature verifies, said to nobody: the question a diagnosis asks before it
+    claims that a formatter, and nothing else, changed a file."""
+    key = ring.get(signer)
+    if key is None:
+        return False
+    try:
+        return ed25519_verify(key.raw, bytes.fromhex(signature), message)
+    except ValueError:
+        return False
 
 
 def _lines(path: str) -> list[tuple[int, bytes]]:
@@ -209,6 +215,8 @@ def _read_entries(
                         if ends_in_crlf_only(raw)
                         else f": {FORMATTER}"
                         if rewritten_as_a_formatter_does(raw)
+                        and entry_hash(entry.event_bytes, tail_id, entry.seq, entry.prev)
+                        == entry.stored_hash
                         else ", so the bytes on disk are not the bytes the entry hash was "
                         "taken over"
                     ),
@@ -423,7 +431,7 @@ def _check_checkpoints(
             report.fail(
                 "6",
                 "the stored checkpoint line is not canonical"
-                + _why_not_canonical(raw),
+                + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
                 label,
                 "G13",
             )
@@ -580,7 +588,18 @@ def _check_tailproof(
     if not proof.file_is_canonical:
         report.fail(
             "-",
-            "tailproof.json is not canonical" + _why_not_canonical(raw),
+            "tailproof.json is not canonical"
+            + (
+                f": {CRLF}"
+                if ends_in_crlf_only(raw)
+                else f": {FORMATTER}"
+                if rewritten_as_a_formatter_does(raw)
+                and proof.stored["tail"] == tail_id
+                and _signature_holds(
+                    ring, proof.stored["signerFp"], proof.stored["sig"], proof.message
+                )
+                else ""
+            ),
             tail_id,
             "G10",
         )
