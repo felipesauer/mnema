@@ -26,6 +26,9 @@ with its own changelog.
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
+- **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
+  P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
+  the same words (an agent's key is an Ed25519 one), and nothing is recorded.
 
 ## [0.1.1] - 2026-10-20
 
