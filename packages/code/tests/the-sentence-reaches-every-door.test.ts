@@ -211,6 +211,8 @@ function trackedText(): { file: string; text: string }[] {
   const found: { file: string; text: string }[] = [];
   for (const file of listed) {
     if (file === THE_INSTRUMENT) continue;
+    // The record is append-only and signed, and holds people's words verbatim: not prose to edit.
+    if (file.startsWith('.mnema/')) continue;
     let text: string;
     try {
       text = readFileSync(join(ROOT, file), 'utf8');
