@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Each can be switched off with `mnema switch`, which records that it was.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. After a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing). Each can be switched off with `mnema switch`, which records that it was.",
   "hooks": {
     "SessionStart": [
       {
@@ -24,6 +24,18 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs\" --host codex --agent-key codex",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "request_user_input",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/choice-settled.mjs\"",
             "timeout": 15
           }
         ]

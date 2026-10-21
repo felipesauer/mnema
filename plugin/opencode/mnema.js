@@ -1,7 +1,8 @@
 // Generated from packages/code/src/host-names.ts: change the table, not this file.
 //
-// Hands an OpenCode session the project's committed mnema record as it opens, and refuses a
-// write where a rule of that record refuses it. Copy this file into `.opencode/plugins/` of the
+// Hands an OpenCode session the project's committed mnema record as it opens, refuses a write
+// where a rule of that record refuses it, and after a question to the person was answered says
+// which tool records a choice it settled. Copy this file into `.opencode/plugins/` of the
 // project, or into `~/.config/opencode/plugins/`. It runs `mnema` from the PATH, and every
 // outcome that is not an answer, such as no `mnema`, no project or a program of that name that
 // is not @mnema/code, leaves the session as it would have been without it.
@@ -12,6 +13,9 @@ const THIS_PRODUCT = '@mnema/code ';
 
 /** The tools OpenCode writes a file through. */
 const WRITES = new Set(['write', 'edit', 'apply_patch']);
+
+/** The tool OpenCode asks the person a question through. */
+const ASKS = 'question';
 
 /** How long `mnema` is given to answer, in milliseconds. */
 const WAIT = 15000;
@@ -91,6 +95,24 @@ export const Mnema = async ({ directory }) => {
         throw new Error(
           said.permissionDecisionReason ?? 'A rule of this project refuses this write.',
         );
+      }
+    },
+    'tool.execute.after': async (input, output) => {
+      if (input.tool !== ASKS || !ours()) return;
+      const ran = run(
+        ['settled'],
+        directory,
+        JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: input.tool }),
+      );
+      if (ran.error !== undefined || ran.status !== 0) return;
+      let said;
+      try {
+        said = JSON.parse(ran.stdout).hookSpecificOutput?.additionalContext;
+      } catch {
+        return;
+      }
+      if (typeof said === 'string' && typeof output.output === 'string') {
+        output.output = [output.output, said].join('\n\n');
       }
     },
   };
