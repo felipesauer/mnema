@@ -161,7 +161,7 @@ function mirrored(
   }
   // A NOTE ABOUT THE PERSON IS THEIRS: the host keeps it to know who it works with, and the record
   // is about the project.
-  if (note.type === 'user') return silent();
+  if (note.type?.toLowerCase() === 'user') return silent();
   const marker = hostMemoryMarker(file, content);
   const copied = withScopedCaches(trees, (sources) =>
     sources

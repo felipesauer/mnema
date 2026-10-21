@@ -14,7 +14,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -203,7 +211,11 @@ describe('a note of the host’s memory', () => {
       join(dir, 'user_tz.md'),
       '---\nname: Timezone\nmetadata:\n  node_type: memory\n  type: user\n---\nLives in UTC-4.\n',
     );
-    for (const file of [index, person, nested]) expect(answer(payload(file)), file).toEqual({});
+    // The host's own word is lower case; a note that spells it otherwise is the person's all the same.
+    const shouted = wrote(join(dir, 'user_name.md'), note('Name', 'Called Ana.', 'User'));
+    for (const file of [index, person, nested, shouted]) {
+      expect(answer(payload(file)), file).toEqual({});
+    }
     expect(memoriesIn('projectPrivate')).toHaveLength(0);
   });
 
@@ -318,6 +330,21 @@ describe('a note of the host’s memory', () => {
     expect(asked(underItsOwnName)).toEqual({});
     const underTheMain = wrote(join(memoryDir(config, main), 'project_o.md'), note('O', 'Fact O.'));
     expect(asked(underTheMain)).toHaveProperty('systemMessage');
+  });
+
+  it('is only a note really inside the directory: a link in it that leads out is not copied', async () => {
+    await did('switch', 'on', 'host-memory-mirror');
+    const outside = wrote(join(sandbox, 'elsewhere', 'secret.md'), note('Secret', 'Not a note.'));
+    const dir = memoryDir(join(home, '.claude'));
+    mkdirSync(dir, { recursive: true });
+    const link = join(dir, 'project_link.md');
+    symlinkSync(outside, link);
+    expect(answer(payload(link))).toEqual({});
+    expect(memoriesIn('projectPrivate')).toHaveLength(0);
+    // A link that stays inside it is a note there.
+    const real = wrote(join(dir, 'project_real.md'), note('Real', 'A real note.'));
+    symlinkSync(real, join(dir, 'project_alias.md'));
+    expect(answer(payload(join(dir, 'project_alias.md')))).not.toEqual({});
   });
 
   it('is counted by the line at Stop', async () => {

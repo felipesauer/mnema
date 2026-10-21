@@ -26,7 +26,10 @@ with its own changelog.
   `mnema decision import <the directory or file>` or `record_decision` when the record cites it nowhere, once per session and file; it records
   nothing, and `mnema switch off decision-file-written` stops it. The line at `Stop` now also counts the notes copied
   since the session opened. `readHostMemory` in `@mnema/core` is the one reading of a memory file, for this and for
-  `decision import --format claude-memory`.
+  `decision import --format claude-memory`. Two limits are known and left as they are: a project path longer than 200
+  characters is compared by its first 200 (the host cuts the name there and adds a hash this does not compute), so two
+  such projects that share those 200 are not told apart; and the name pattern `*plan*.md` also matches a name such as
+  `explanation.md`, whose new lines still have to open as a decision does before any line is given.
 - **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
   `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
   question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,

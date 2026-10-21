@@ -610,6 +610,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the user-corrections channel, read back off the write',
     },
+  'switch.ts «{} is now ON: a write to a file that holds decisions the record cites nowhere is answered, once per session and file, with one line naming the command that reads it.» #1':
+    {
+      verdict: 'minted',
+      why: 'the decision-file-written channel, read back off the write',
+    },
   "switch.ts «{} is now ON: it copies each note this host writes to its own memory into this machine's private tree.» #1":
     {
       verdict: 'minted',
@@ -987,7 +992,8 @@ describe('every line this wiring words is classified', () => {
     // 152 with the line `init` prints when it keeps a formatter off the record.
     // 153 with the line init prints when it completes a project that lacked what it leaves beside the record.
     // 154 with the line `switch on host-memory-mirror` prints.
-    expect(FOUND.sites.length).toBe(154);
+    // 155 with the line `switch on decision-file-written` prints.
+    expect(FOUND.sites.length).toBe(155);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1008,7 +1014,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(81);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(73);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(74);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(81);
   });
 

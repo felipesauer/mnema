@@ -135,7 +135,10 @@ document, delivered by the host instead of waited for.
   file, a plan, a handoff or a ledger whose new lines open as `Ruling:`, `Decision:` or a correction
   does) that the record cites nowhere gets one line beside the write naming the command that reads it
   (`mnema decision import <the directory or file>`, or `record_decision`), once per session and file, read off the transcript.
-  Nothing is recorded for it. `mnema switch off decision-file-written` stops the line.
+  Nothing is recorded for it. `mnema switch off decision-file-written` stops the line. **Known limits:** a
+  project path longer than 200 characters is compared by its first 200, since the host cuts the name there
+  and adds a hash this does not compute, so two such projects sharing those 200 are not told apart; and
+  `*plan*.md` also matches a name like `explanation.md`, whose new lines still have to open as a decision does.
 - **A hold on the first write of a session to a file a rule addresses**, off until you switch it
   on (`mnema switch on edit-first-write-gate`). With it on, the per-edit call into the server
   refuses that first write once, with the rules addressed at the file in the reason, so they

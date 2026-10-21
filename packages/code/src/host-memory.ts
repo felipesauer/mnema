@@ -20,8 +20,14 @@
  * it and adds a hash of its own, which this does not compute, so there only the first 200 are
  * compared. A note in another project's directory is not this project's, and is not copied: a
  * session that writes there, or a payload that names such a path, copies nothing.
- * `autoMemoryDirectory` is already this project's: it is read from this project's local settings
- * and from the person's own, the files the host reads for this session.
+ * `autoMemoryDirectory` is the directory the host uses for THIS SESSION, read from the same files:
+ * this project's local settings, and the person's own. The person's applies to every project of
+ * theirs alike, so where it is set every project's notes share one directory, and a note written
+ * there may have been another project's session's; it is still this session's own write, made
+ * where the host keeps this session's memory, and that is what is copied.
+ *
+ * AND THE NOTE IS REALLY THERE: the comparison is made on the real path, so a link inside the
+ * directory that leads out of it is not a note of it and is not copied.
  *
  * A NOTE IS A DIRECT CHILD of that directory, ending in `.md`, and is not `MEMORY.md`, the index the
  * host keeps of the others. Nothing here reads a note's words: that is `readHostMemory`'s, in the
@@ -29,7 +35,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { gitPlaceOf } from '@mnema/core';
 
@@ -110,12 +116,22 @@ export function isHostMemoryNote(path: string, place: HostMemoryPlace): boolean 
   const name = basename(file);
   if (!/\.md$/i.test(name) || name.toLowerCase() === 'memory.md') return false;
   const directory = dirname(file);
-  if (place.directory !== undefined) return directory === place.directory;
-  return (
-    basename(directory) === 'memory' &&
-    dirname(dirname(directory)) === join(place.configDir, 'projects') &&
-    namedAfter(basename(dirname(directory)), place.project)
-  );
+  const named =
+    place.directory !== undefined
+      ? directory === place.directory
+      : basename(directory) === 'memory' &&
+        dirname(dirname(directory)) === join(place.configDir, 'projects') &&
+        namedAfter(basename(dirname(directory)), place.project);
+  return named && reallyIn(file, directory);
+}
+
+/** Whether `file`, links followed, is a file directly inside `directory`, links followed. */
+function reallyIn(file: string, directory: string): boolean {
+  try {
+    return dirname(realpathSync(file)) === realpathSync(directory);
+  } catch {
+    return false;
+  }
 }
 
 /**

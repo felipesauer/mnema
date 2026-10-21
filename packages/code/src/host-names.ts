@@ -148,6 +148,7 @@ const HELD = {
   claudeSubagentStart:
     'packages/code/tests/host-contract/a-subagent-starts-with-the-record.test.ts',
   claudeSettled: 'packages/code/tests/host-contract/a-settled-choice-reaches-the-model.test.ts',
+  claudeMemory: 'packages/code/tests/host-contract/a-note-of-the-hosts-memory-is-copied.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
@@ -800,7 +801,6 @@ const noChannel = (what?: string): Presence =>
 const notRead: Presence = { held: 'not read' };
 
 const CLAUDE_HOOKS = 'https://code.claude.com/docs/en/hooks';
-const CLAUDE_MEMORY = 'https://code.claude.com/docs/en/memory';
 const VSCODE_HOOKS = 'https://code.visualstudio.com/docs/copilot/customization/hooks';
 const VSCODE_MEMORY = 'https://code.visualstudio.com/docs/copilot/agents/memory';
 const CURSOR_HOOKS = 'https://cursor.com/docs/agent/hooks';
@@ -826,7 +826,14 @@ export const PRESENCE = {
       by: HELD.claudeSettled,
       what: 'PostToolUse on the question tool',
     },
-    memory: documented('PostToolUse on a write to the memory folder', CLAUDE_MEMORY),
+    // HELD WITH THE CHANNEL SWITCHED ON, which is not how it ships: `host-memory-mirror` begins off,
+    // and the contract switches it on before it writes the note. The cell says both.
+    memory: {
+      does: true,
+      held: 'a test',
+      by: HELD.claudeMemory,
+      what: 'PostToolUse on a write to this project’s memory folder, copied to the private tree by `host-memory-mirror`, which is off until switched on',
+    },
     file: {
       does: true,
       held: 'a test',
