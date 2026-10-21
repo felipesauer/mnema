@@ -28,6 +28,10 @@ import {
   type HookHost,
   type Host,
   type HostName,
+  type Moment,
+  PRESENCE,
+  PRESENCE_HOSTS,
+  type Presence,
 } from '../../src/host-names.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
@@ -94,7 +98,7 @@ function version(): string {
 
 /** What the plugin's hooks file says it does, as the host shows it. */
 const HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent, and the answers the person gave to its questions, as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. And, after a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing, and reads which tool ran, never the answer). Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. When a subagent starts, hands it the same document the session opened with. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent, and the answers the person gave to its questions, as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. And, after a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing, and reads which tool ran, never the answer). Each can be switched off with `mnema switch`, which records that it was.";
 
 /** A variable the HOST expands in the files it reads: written as the host spells it, never ours. */
 const hostVariable = (name: string): string => `$${'{'}${name}}`;
@@ -268,6 +272,17 @@ const stopsASubagent = (name: HostName): boolean => {
   return cell !== undefined && cell.held === 'a test' && cell.does;
 };
 
+/**
+ * Whether the plugin's hooks file declares the hook of a subagent's start: when a host that reads
+ * that file has the event, held by a test or documented. A host whose cell is `documented, not
+ * measured` is generated for and marked so on the presence map; nothing is claimed of it.
+ */
+const startsASubagent = (name: HostName): boolean => {
+  const cell = (PRESENCE as Partial<Record<HostName, { subagentStart: Presence }>>)[name]
+    ?.subagentStart;
+  return cell !== undefined && 'does' in cell && cell.does;
+};
+
 /** The plugin's hooks file. */
 export function hooksJson(): string {
   const ordered = [...BEFORE_A_WRITE, ...HOST_NAMES.filter((n) => !BEFORE_A_WRITE.includes(n))];
@@ -279,6 +294,9 @@ export function hooksJson(): string {
       PreCompact: [{ hooks: [command('session-tally.mjs')] }],
       PreToolUse: ordered.filter((n) => !readsItsOwn(n)).flatMap(beforeAWrite),
       PostToolUse: AFTER_A_QUESTION,
+      ...(HOST_NAMES.some((n) => !readsItsOwn(n) && startsASubagent(n))
+        ? { SubagentStart: [{ hooks: [command('subagent-start.mjs')] }] }
+        : {}),
       ...(HOST_NAMES.some((n) => !readsItsOwn(n) && stopsASubagent(n))
         ? { SubagentStop: [{ hooks: [command('subagent-stop.mjs')] }] }
         : {}),
@@ -930,6 +948,81 @@ const LEGEND = [
   'client.',
 ].join('\n');
 
+// ---------------------------------------------------------------------------
+// The presence map
+// ---------------------------------------------------------------------------
+
+/** The columns of the presence map, each a moment of the work, in the order the work goes. */
+const MOMENTS: readonly { readonly moment: Moment; readonly heading: string }[] = [
+  { moment: 'choice', heading: 'A choice settled with the person' },
+  { moment: 'memory', heading: "The host's own memory" },
+  { moment: 'file', heading: 'A plan or decision file' },
+  { moment: 'opening', heading: 'The opening of a session' },
+  { moment: 'middle', heading: 'An edit' },
+  { moment: 'end', heading: 'The end of a response' },
+  { moment: 'subagentStart', heading: 'A subagent starts' },
+  { moment: 'subagentStop', heading: 'A subagent stops' },
+];
+
+/** One cell of the presence map: the event it is about, then how it is known. */
+function presenceText(cell: Presence, base: string): string {
+  const what = cell.what === undefined ? '' : `${cell.what}: `;
+  switch (cell.held) {
+    case 'no channel':
+      return `${what}no channel`;
+    case 'not read':
+      return 'not read';
+    default:
+      return `${what}${cellText(cell, base)}`;
+  }
+}
+
+/** What a host's cells say of the moments the opening and the gate already cover. */
+function coveredBy(name: HostName, moment: 'opening' | 'middle'): Cell {
+  return HOSTS[name].cells[moment === 'opening' ? 'opens' : 'refuses'];
+}
+
+/** The presence map, with its links relative to a page at `base` from the repository's root. */
+export function presenceMap(base: string): string {
+  const head = `| Host | ${MOMENTS.map((m) => m.heading).join(' | ')} |`;
+  const rule = `|${' --- |'.repeat(MOMENTS.length + 1)}`;
+  const rows = PRESENCE_HOSTS.map((name) => {
+    const cells = MOMENTS.map(({ moment }) =>
+      moment === 'opening' || moment === 'middle'
+        ? cellText(coveredBy(name, moment), base)
+        : presenceText(PRESENCE[name][moment], base),
+    );
+    return `| ${HOSTS[name].title} | ${cells.join(' | ')} |`;
+  });
+  return [head, rule, ...rows].join('\n');
+}
+
+/** What the presence map says about its own words, under it. */
+const PRESENCE_LEGEND = [
+  'The same three words as the rung table, and two more: **no channel** is the host itself having',
+  'nothing at that moment that this product could ride, and **not read** is that nobody has read the',
+  'host for it, which says neither yes nor no. A cell that is documented names the event or the tool',
+  'the host documents for it; that the plugin hands the host something there is held only where a',
+  "cell says **held by a test**. The opening and the edit are the rung table's cells (b) and (c).",
+  'A cell is not a promise that mnema records at that moment: it is where a hook could reach, and',
+  'where it does, what the plugin hands over there is on the pages that describe the hook.',
+].join('\n');
+
+/** The line that opens the generated presence map on a page. */
+const PRESENCE_BEGIN =
+  '<!-- The presence map below is generated from packages/code/src/host-names.ts: edit the table there. -->';
+
+/** The line that closes it. */
+const PRESENCE_END = '<!-- End of the generated presence map. -->';
+
+/** `page` with its presence map regenerated, for a page at `base` from the repository's root. */
+function withThePresenceMap(page: string, base: string, path: string): string {
+  const from = page.indexOf(PRESENCE_BEGIN);
+  const to = page.indexOf(PRESENCE_END);
+  if (from === -1 || to < from) throw new Error(`${path} has no generated presence map`);
+  return `${page.slice(0, from)}${PRESENCE_BEGIN}\n\n${presenceMap(base)}\n\n${PRESENCE_LEGEND}\n\n${page.slice(to)}`;
+}
+
 /** The line that opens the generated part of a page. */
 const BEGIN =
   '<!-- The rung table below is generated from packages/code/src/host-names.ts: edit the table there. -->';
@@ -1186,6 +1279,6 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
     case 'README.md':
       return withTheSummary(committed, '', path);
     case 'docs/evidence.md':
-      return withTheTable(committed, '../', path);
+      return withThePresenceMap(withTheTable(committed, '../', path), '../', path);
   }
 }

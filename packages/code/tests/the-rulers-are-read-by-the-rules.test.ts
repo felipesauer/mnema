@@ -175,6 +175,7 @@ describe('the same globs reach every instrument this repository ships or runs', 
       'plugin/hooks/session-recall.mjs',
       'plugin/hooks/session-start.mjs',
       'plugin/hooks/session-tally.mjs',
+      'plugin/hooks/subagent-start.mjs',
       'plugin/hooks/subagent-stop.mjs',
       'plugin/server/launch.mjs',
     ]);

@@ -349,7 +349,7 @@ $ mnema tail list
 |   <tail-own>  public   3 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
 | 12 channel(s), looked in public, private, global:
-|   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   brief-document         on   the document `mnema brief` prints, which a session opens with and a subagent starts with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
@@ -1818,7 +1818,7 @@ $ mnema tail list
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
 | 12 channel(s), looked in public, private, global:
-|   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   brief-document         on   the document `mnema brief` prints, which a session opens with and a subagent starts with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops
