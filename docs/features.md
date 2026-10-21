@@ -34,6 +34,12 @@ Each line says what it does and what it leaves unproven; the page it points to h
   stops and sends it back once when its last reply lacks the block of decisions it settled;
   `mnema handback --schema` prints the shape. It checks the shape, never that the subagent decided
   anything, and `mnema switch off subagent-handback` turns it off.
+- **A question answered is a moment the agent is told about.** In Claude Code, after the agent asked
+  the person through `AskUserQuestion` and the answer came back, `mnema settled` hands it one
+  sentence beside the answer: a choice may have been settled there, and `record_decision` records
+  it. It records nothing and reads which tool ran, never the answer; `mnema switch off
+  choice-settled` turns it off. The other hosts' hooks files carry it on their own question tools,
+  documented and not measured.
 - **A note can be taken back.** `mnema retract` appends a signed retraction of a memory or an
   observation, with a reason. The note leaves the opening and the search and stays in the record,
   and `verify` still sees both facts: nothing is erased.

@@ -88,10 +88,21 @@ document, delivered by the host instead of waited for.
   subagent settled something, calls no model and records nothing. Held against the real Claude Code binary
   by `a-subagent-is-sent-back-for-its-handback.test.ts`; the other hosts that read this hooks file were not
   measured on the event. `mnema switch off subagent-handback` stops it.
+- **A `PostToolUse` hook after a question**, `mnema settled`. After the agent asked the person a
+  question through `AskUserQuestion` and the answer came back, it hands the agent one sentence beside
+  the answer: that a choice may have been settled there, and that `record_decision` records it with
+  the options not taken as `alternatives`. It records nothing and reads which tool ran, never the
+  answer. A shell in front of it starts no process for any other tool, because VS Code runs this
+  file's hooks whatever their matcher says. Held against the real Claude Code binary by
+  `a-settled-choice-reaches-the-model.test.ts`; the hooks files of Codex, Copilot CLI, Gemini CLI and
+  OpenCode carry the same hook on their own question tools, documented and not measured. On until
+  `mnema switch off choice-settled`.
 - **A `Stop` hook that records corrections**, off until you switch it on (`mnema switch on
   user-corrections`). It runs `mnema corrections`, which reads the transcript the host names, its
   words, which no other part of this plugin reads, finds the prompts that open by correcting the
   agent (*no, …*, *stop …*, *do not …*, *that is wrong*, *use … instead*, in English and Portuguese)
+  and the answers the person gave to a question of the agent (the option chosen in the host's question
+  tool, or the prompt after a response that ended in a question mark, quoted with the question),
   and records each as a `proposed` decision in your machine's **private** tree, because what it
   quotes is a sentence typed into a conversation and not something written to be committed. Each
   proposal cites the session and the line, at most five are recorded at a `Stop`, and the same line
@@ -385,10 +396,11 @@ plugin/
 ├── .github/plugin/plugin.json   Copilot CLI's manifest, naming hooks/copilot.json
 ├── hooks/
 │   ├── hooks.json               Claude Code's hooks, and VS Code's and Cursor's beside them:
-│   │                            SessionStart, PreToolUse, Stop, PreCompact, SubagentStop
+│   │                            SessionStart, PreToolUse, PostToolUse, Stop, PreCompact,
+│   │                            SubagentStop
 │   ├── hooks.ids.json           a stable id for each hook of hooks.json
-│   ├── codex.json               Codex's hooks: SessionStart, PreToolUse
-│   ├── copilot.json             Copilot CLI's hooks: SessionStart, PreToolUse
+│   ├── codex.json               Codex's hooks: SessionStart, PreToolUse, PostToolUse
+│   ├── copilot.json             Copilot CLI's hooks: SessionStart, PreToolUse, PostToolUse
 │   ├── hand-over.mjs            the rule the handlers follow: run a verb, or say nothing
 │   ├── session-start.mjs        runs `mnema brief --hook`; silent when there is nothing to say
 │   ├── session-recall.mjs       runs `mnema recall --hook`; silent when nothing is noted
@@ -396,6 +408,7 @@ plugin/
 │   ├── session-corrections.mjs  the corrections at the end of a response
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
+│   ├── choice-settled.mjs       runs `mnema settled` after a question to the person is answered
 │   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops
 ├── opencode/mnema.js            OpenCode's plugin module, copied into a project
 ├── gemini/                      Gemini CLI's extension: its manifest, hooks file and script
