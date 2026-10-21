@@ -1164,6 +1164,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
   'init.ts «Already a mnema project at {}: nothing to found.» #1': 'the same directory',
+  'init.ts «{} {}{}: a formatter that rewrote the record would break its signatures.» #1':
+    'the same directory, and a repository that declares prettier',
   'init.ts «backup key: created and enrolled, private half at {}» #1': 'needs such a key root',
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
     'needs a checkout its key has left, and the values inside the words are the core’s, ' +
