@@ -1185,6 +1185,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-host-contract-checks-have-stable-names.test.ts': 3,
   'packages/code/tests/the-host-files-are-generated.test.ts': 5,
   'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
+  'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 5,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
   'packages/code/tests/the-install-line-is-one.test.ts': 5,
   'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,
