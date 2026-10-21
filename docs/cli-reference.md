@@ -1398,7 +1398,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 1,525 characters.
+is 1,524 characters.
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's

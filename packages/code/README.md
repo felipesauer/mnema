@@ -42,7 +42,7 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   says so. It writes the mnema instructions (when to call the mnema tools, and what never goes in the
   record) into `AGENTS.md`, into a `CLAUDE.md` or `GEMINI.md` that exists, and into a rule file of its
   own for Claude Code, Copilot and Cursor, and names each file. Run again in a project founded before,
-  it adds only what that project lacks beside the record; `mnema instructions [--check|--remove]`
+  it adds only what that project lacks beside the record; `mnema instructions`, with `--check` or `--remove`,
   writes, checks or removes the instructions.
   `mnema doctor` points at a missing README, `.prettierignore` line or instructions block, names a pre-commit hook,
   Biome, dprint or lint-staged configuration that would rewrite the record, and edits none of

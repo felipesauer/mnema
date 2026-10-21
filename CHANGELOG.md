@@ -20,7 +20,7 @@ with its own changelog.
   the mnema tools are connected. It goes into `AGENTS.md` (created where there is none), into `CLAUDE.md`,
   `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
   `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
-  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,525 characters,
+  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
   between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
   mnema did not write is left as it is and said (exit 1); `--remove` leaves each file as it was before the block and
   deletes a file the block was all of; the alpha's `<!-- MNEMA:START -->` block is replaced in place. `init` writes the

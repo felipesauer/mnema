@@ -50,7 +50,7 @@ export const INSTRUCTIONS_BODY = [
   '- Not for the record: each step taken, a credential, personal data, what the code or git already says.',
   '- Commit `.mnema/` with the work it describes: the record changes as the work does, through these tools and the `mnema` command. Never edit or reformat its files by hand.',
   '',
-  'Where the tools are not connected and the `mnema` command is installed, `mnema decision record "<title>" "<rationale>" --alternatives "<what was turned down, and why>"` in the shell records the same decision.',
+  'Where the tools are not connected and the `mnema` command is installed, `mnema decision record "<title>" "<rationale>" --alternatives "<what was turned down and why>"` in the shell records the same decision.',
   '',
 ].join('\n');
 

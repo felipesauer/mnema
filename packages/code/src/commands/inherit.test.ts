@@ -141,9 +141,11 @@ describe('pointing a project at another repository', () => {
   it('keeps its copy under the mnema home and nothing in the project but the pointer', () => {
     const { at: source } = origin();
     const project = place('project');
+    // `init` wrote the mnema instructions beside the record; inheriting adds nothing beside them.
+    const listed = readdirSync(project.cwd).sort();
     runInheritSet(project, { where: source.cwd, write: true });
     expect(readdirSync(join(project.env.home, '.mnema', 'inherited')).length).toBe(1);
-    expect(readdirSync(project.cwd)).toEqual(['.mnema']);
+    expect(readdirSync(project.cwd).sort()).toEqual(listed);
     expect(existsSync(join(project.cwd, '.mnema', 'inherited'))).toBe(false);
   });
 });
