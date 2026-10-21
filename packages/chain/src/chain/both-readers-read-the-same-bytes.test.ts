@@ -287,11 +287,61 @@ describe('a line that is not the canonical serialization of its value is refused
     expect(() => parseCheckpoint(`${checkpoint}\r`)).toThrow(CRLF);
     expect(() => parseTailProof(`${proof}\r`)).toThrow(CRLF);
     expect(() => parseEntry(`${entry}\r`, catalogUpcasters())).toThrow(NOT_CANONICAL);
-    for (const other of [`${entry.replace('":', '": ')}\r`, `${entry} `, `${entry}\r\r`]) {
-      expect(() => parseEntry(other, catalogUpcasters()), JSON.stringify(other.slice(-3))).toThrow(
+    for (const other of [
+      entry.replace('"content":"', '"content":"\u0065\u0301'),
+      entry.replace('"content":"', '"content":"\\u0041'),
+    ]) {
+      expect(() => parseEntry(other, catalogUpcasters()), other.slice(-3)).toThrow(
         /\(whitespace, key order, Unicode composition or spelling differ\)/,
       );
     }
+  });
+
+  /**
+   * THE CAUSE A FORMATTER LEAVES. A line that differs from its canonical bytes only in spaces,
+   * indentation, line ends or the order of its keys is what prettier, an editor or a pre-commit
+   * hook does to a file: both readers say so, with the way back. Still a refusal, and what they
+   * refuse is the same. A line that differs in anything else (a character spelled another way)
+   * says the generic sentence, and neither says "formatter".
+   */
+  it('says a formatter or an editor did it when only spaces, line ends or key order differ, in both readers', () => {
+    const FORMATTER = /differs only in spaces, indentation, line ends or the order of its keys/;
+    for (const name of ['whitespace-in-a-signed-line', 'key-order-in-a-signed-line']) {
+      const record = mutated(name);
+      const here = verify(record, catalogUpcasters())
+        .issues.map((issue) => issue.detail)
+        .join('\n');
+      expect(here, name).toMatch(FORMATTER);
+      expect(here, name).toContain('git checkout -- .mnema');
+      const there = secondReading(record).refusals.map((f) => f.what).join('\n');
+      expect(there, name).toMatch(FORMATTER);
+      expect(there, name).toContain('git checkout -- .mnema');
+    }
+    const record = mutated('decomposed-text-in-a-signed-line');
+    const here = verify(record, catalogUpcasters())
+      .issues.map((issue) => issue.detail)
+      .join('\n');
+    expect(here).toMatch(NOT_CANONICAL);
+    expect(here).not.toMatch(/formatter/);
+    const there = secondReading(record).refusals.map((f) => f.what).join('\n');
+    expect(there).toMatch(NOT_CANONICAL);
+    expect(there).not.toMatch(/formatter/);
+  });
+
+  it('reads the line a formatter reflowed over several lines as what it is, in a tail proof too', () => {
+    const record = copyOf('witnessed-record');
+    const file = join(tailOf(record), 'tailproof.json');
+    const proof = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, string>;
+    writeFileSync(file, `${JSON.stringify(proof, null, 2)}\n`);
+    expect(
+      verify(record, catalogUpcasters())
+        .issues.map((i) => i.detail)
+        .join('\n'),
+    ).toMatch(/formatter/);
+    const there = secondReading(record).refusals.map((f) => f.what);
+    expect(there.some((what) => /tailproof\.json is not canonical.*formatter/.test(what))).toBe(
+      true,
+    );
   });
 
   it('refuses a line with no canonical bytes at all, a lone surrogate, at the parse', () => {

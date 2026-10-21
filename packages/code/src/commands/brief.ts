@@ -91,6 +91,7 @@ import {
 } from '../tree-sources.js';
 import { type StacksHere, stacksHere } from './stack-inspect.js';
 import { whatIsMissing } from './the-record-page.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
 /** What the brief needs: injected so it is testable. */
 export interface BriefContext {
@@ -142,12 +143,14 @@ export interface BriefDone {
    */
   readonly stacks?: StacksHere;
   /**
-   * True when `mnema doctor` and `mnema init` would add the line `.mnema/` to the
-   * `.prettierignore` (`whatIsMissing`, the same function), so a formatter can rewrite the signed record. Present only when the caller asked
+   * The lines saying where a formatter can rewrite the signed record: the `.prettierignore` that
+   * lacks `.mnema/` (`whatIsMissing`, the same function `mnema doctor` and `mnema init` ask) and
+   * the pre-commit, Biome, dprint and lint-staged configurations that reach it
+   * (`toolsThatRewrite`, doctor's too). Absent when none does. Present only when the caller asked
    * ({@link runBrief}'s `outside`), for the reason {@link outside} is: it reads the disk. Nothing
    * is written for it: `mnema init` is what protects the record.
    */
-  readonly formatter?: true;
+  readonly formatter?: readonly string[];
 }
 
 /** The read was refused: there is no project to compose a brief for. */
@@ -266,9 +269,7 @@ export function runBrief(
       ...(asked.outside === true
         ? {
             stacks: stacksHere(ctx),
-            ...(whatIsMissing(dirname(trees.projectPublic as string)).prettierIgnore !== undefined
-              ? { formatter: true as const }
-              : {}),
+            ...formatterOf(dirname(trees.projectPublic as string)),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
               arrival: basesNeverImported(sources, dirname(trees.projectPublic as string)),
@@ -289,6 +290,23 @@ export function runBrief(
 }
 
 /** The inherited reading, as the field {@link BriefDone} carries it: absent when none. */
+/**
+ * What the copy a hook carries says of the formatters that can rewrite the record, as a field to
+ * spread: the `.prettierignore` that lacks the line and the other tools' configurations that
+ * reach the folder, each in one line, and nothing where none does.
+ */
+function formatterOf(project: string): { formatter?: readonly string[] } {
+  const lines = [
+    ...(whatIsMissing(project).prettierIgnore !== undefined
+      ? [
+          'Prettier is not told to leave `.mnema/` alone (the `.prettierignore` lacks the line): the formatter can rewrite the signed record and break its proof. `mnema init` protects it.',
+        ]
+      : []),
+    ...toolsThatRewrite(project).map(sayWhatReaches),
+  ];
+  return lines.length > 0 ? { formatter: lines } : {};
+}
+
 function inheritedOf(trees: ReturnType<typeof resolveTrees>): { inherited?: InheritedReading } {
   const inherited = readProjectInherited(trees);
   return inherited === undefined ? {} : { inherited };

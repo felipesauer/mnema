@@ -69,7 +69,8 @@ import {
 } from '../the-persons-key-in-the-clear.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
-import { README_NAME, whatIsMissing } from './the-record-page.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
+import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
 
 /** What the doctor needs: injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -648,9 +649,11 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
- * What `mnema init` leaves beside the record and this project lacks: the `README.md` in `.mnema/`,
- * and the line `.mnema/` in the `.prettierignore` where prettier is declared. Read only: the fix is
- * `mnema init`, which adds exactly these and nothing else. Nothing is said where the project is
+ * What `mnema init` leaves beside the record and this project lacks: the `README.md` and the
+ * `.editorconfig` in `.mnema/`, and the line `.mnema/` in the `.prettierignore` where prettier is
+ * declared. Read only: the fix is `mnema init`, which adds exactly these and nothing else. And the
+ * pre-commit, Biome, dprint and lint-staged configurations that would rewrite the record, each said
+ * with the line to add (`the-tools-that-rewrite-files.ts`): `init` edits none of them. Nothing is said where the project is
  * whole, or where there is no project here.
  */
 function recordPageFindings(ctx: DoctorContext): Finding[] {
@@ -663,11 +666,17 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
       `${oneLine(dirname(trees.projectPublic))} has no .mnema/${README_NAME}, the page that tells whoever opens the folder not to edit or reformat it: run \`mnema init\` to add it.`,
     );
   }
+  if (missing.editorconfig) {
+    lines.push(
+      `${oneLine(dirname(trees.projectPublic))} has no .mnema/${EDITORCONFIG_NAME}, the file that tells an editor or a tool that reads EditorConfig not to impose a final newline, an end of line or an indent on the record: run \`mnema init\` to add it.`,
+    );
+  }
   if (missing.prettierIgnore !== undefined) {
     lines.push(
       `${oneLine(missing.prettierIgnore.path)} ${missing.prettierIgnore.did === 'created' ? 'does not exist' : 'does not list .mnema/'}, and prettier is in play here: a formatter that rewrote the record would break its signatures; run \`mnema init\` to add the line.`,
     );
   }
+  for (const reach of toolsThatRewrite(dirname(trees.projectPublic))) lines.push(sayWhatReaches(reach));
   return lines.map((line) => ({
     topic: 'record-page' as const,
     state: 'attention' as const,

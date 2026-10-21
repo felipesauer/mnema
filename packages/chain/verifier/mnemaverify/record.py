@@ -46,7 +46,13 @@ import re
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
-from .canonical import CRLF, ends_in_crlf_only, utf16_order
+from .canonical import (
+    CRLF,
+    FORMATTER,
+    ends_in_crlf_only,
+    rewritten_as_a_formatter_does,
+    utf16_order,
+)
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
@@ -81,6 +87,14 @@ class Coverage(NamedTuple):
             f"not covered: bitcoin block {self.block} at {self.instant} dates seq "
             f"0..{self.dates_up_to}, and {self.events_after} event(s) were written after it"
         )
+
+
+def _why_not_canonical(raw: bytes) -> str:
+    """What a refusal for bytes that are not canonical adds: the CRLF a checkout leaves, or the
+    spaces, line ends and key order a formatter changes. Nothing for any other difference."""
+    if ends_in_crlf_only(raw):
+        return f": {CRLF}"
+    return f": {FORMATTER}" if rewritten_as_a_formatter_does(raw) else ""
 
 
 def _lines(path: str) -> list[tuple[int, bytes]]:
@@ -193,6 +207,8 @@ def _read_entries(
                     + (
                         f": {CRLF}"
                         if ends_in_crlf_only(raw)
+                        else f": {FORMATTER}"
+                        if rewritten_as_a_formatter_does(raw)
                         else ", so the bytes on disk are not the bytes the entry hash was "
                         "taken over"
                     ),
@@ -407,7 +423,7 @@ def _check_checkpoints(
             report.fail(
                 "6",
                 "the stored checkpoint line is not canonical"
-                + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
+                + _why_not_canonical(raw),
                 label,
                 "G13",
             )
@@ -564,7 +580,7 @@ def _check_tailproof(
     if not proof.file_is_canonical:
         report.fail(
             "-",
-            "tailproof.json is not canonical" + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
+            "tailproof.json is not canonical" + _why_not_canonical(raw),
             tail_id,
             "G10",
         )
