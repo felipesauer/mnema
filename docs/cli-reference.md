@@ -364,6 +364,8 @@ signature was checked` over the record it cannot vouch for.
 **And what neither value answers, said plainly.** One tail removed whole while another
 remains is reported but is not a break: `verify` crosses the committed keys against the tails on disk and prints
 `N committed key(s) without a tail (see census: informational, not a break)`, exit 0.
+A key file whose name is not the fingerprint of the key it holds is not that note: it is refused,
+whether or not anything signs with it (`FORMAT.md` section 6).
 One key is said otherwise: the backup `mnema init` creates never signs until it is
 restored, and `init` declares it in the record (`backup.declared`), so every machine reads
 `N backup key(s), which sign nothing until restored`, and its census line (`--verbose`) still says that a backup

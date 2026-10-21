@@ -145,6 +145,13 @@ with its own changelog.
   a tail proof under, as it already did for a checkpoint's key: a tail with no checkpoint yet, whose key file held
   another key that signed the proof, verified there and was refused by the Python verifier. No record a mnema binary
   writes is touched: a tail's proof is signed at birth by the key its id is named for.
+- **`mnema verify` and the page `mnema site` writes refuse a committed key file whose name is not its key, as the Python
+  verifier does.** A `keys/<name>.pub` that no tail, checkpoint, enrolment or tail proof uses, and whose material does not
+  hash to `<name>`, was read as a committed key with no tail, a note, and the record verified; the Python verifier refused
+  it. Both now refuse it, in the same words: the file *is named for a fingerprint its own material does not hash to*
+  (`FORMAT.md` section 6). A key nothing uses whose name is its fingerprint is still a note. No record a mnema binary writes
+  is touched: every key file is written under the fingerprint of the key it holds, which records written by 0.1.1 and by
+  this version, with a person, an agent key, a checker, a second machine and a restored and protected key, were checked for.
 
 ### Changed
 

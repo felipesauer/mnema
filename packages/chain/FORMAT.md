@@ -431,7 +431,12 @@ part of it**:
   key arrived under, and then a signature is re-pointed at another key by renaming
   a file. The keys are `<record>/keys/<fingerprint>.pub`, PEM-wrapped
   `SubjectPublicKeyInfo`, and a verifier recomputes the name from the contents
-  (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+  and refuses a file whose name is not that fingerprint, **whether or not any
+  signature of the record is checked under it**: the names are what §6.5 crosses
+  with the tails, and a file whose name is not its key is what a rename that
+  re-points a signature leaves behind
+  (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`,
+  `unused-key-misnamed`).
 - The signature is **Ed25519** over those bytes (RFC 8032), hex-encoded, stored as
   `sig` alongside the fields. The checkpoints of a tail live in
   `checkpoints.jsonl`, one canonical line each (the eight keys, `sig` included,

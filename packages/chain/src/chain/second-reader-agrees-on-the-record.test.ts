@@ -494,6 +494,20 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // A key file nothing uses (no tail, no checkpoint, no enrolment, no tail proof), filed
+    // under a name its material does not hash to. Section 6 recomputes every name from the
+    // material, and the second reader refused it; the product checked a name only when a
+    // signature asked for the key, read this one as a committed key with no tail, a note, and
+    // VERIFIED the record.
+    name: 'unused-key-misnamed',
+    refusals: 1,
+    section: '6',
+    says: 'is named for a fingerprint its own material does not hash to',
+    productSays: 'is named for a fingerprint its own material does not hash to',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-relocated',
     // TWO since the second reader began to require the tail proof (section 6.1): the copy is
     // refused for the key its id names AND for carrying no proof that the key signed that id.

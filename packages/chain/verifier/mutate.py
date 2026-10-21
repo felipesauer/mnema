@@ -341,6 +341,26 @@ def key_renamed(root: str) -> tuple[bool, str]:
     return os.path.exists(target), f"{names[0]} renamed onto a fingerprint it does not hash to"
 
 
+def unused_key_misnamed(root: str) -> tuple[bool, str]:
+    """A key file NOTHING uses, named for a fingerprint its own material does not hash to.
+
+    No tail, no checkpoint, no enrolment and no tail proof names it, so no signature of the
+    record is checked under it. It is refused anyway, by its name (section 6): the name is the
+    claim a reader of `keys/` takes at face value, and a file whose name is not its key is
+    what renaming a file to re-point a signature leaves. The product used to read it as a
+    committed key with no tail, a note, and verified the record.
+    """
+    _, pem = _unenrolled_public()
+    keys = os.path.join(root, "keys")
+    os.makedirs(keys, exist_ok=True)
+    target = os.path.join(keys, "b" * 64 + ".pub")
+    if os.path.exists(target):
+        return False, f"{target} is already there"
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(pem)
+    return os.path.exists(target), "a key nothing uses, written under a name it does not hash to"
+
+
 def tail_relocated(root: str) -> tuple[bool, str]:
     """A tail copied into a fabricated directory, relabelled and re-chained.
 
@@ -1129,6 +1149,7 @@ MUTATIONS = {
     "witness-headers-swapped": witness_headers_swapped,
     "key-renamed": key_renamed,
     "keys-removed": keys_removed,
+    "unused-key-misnamed": unused_key_misnamed,
     "forged-payload-field-appended": forged_payload_field_appended,
     "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
     "appended-event-by-an-unenrolled-key": appended_event_by_an_unenrolled_key,
