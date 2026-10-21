@@ -139,7 +139,8 @@ const TOOL_WIDTH = 24;
  */
 const WHAT_THE_COUNT_IS = [
   'This counts only the calls the MCP server on this machine answered for this project:',
-  'a call another host or another machine answered is not here, and neither is any use of',
+  "a call refused for arguments that do not match the tool's input schema is not here, a call",
+  'another host or another machine answered is not here, and neither is any use of',
   'mnema outside the MCP. It holds the tool name, whether the tool writes, and `ok` or the',
   "refusal's code, never an argument or a word an agent wrote. It is not in the record,",
   'nothing here is signed and `mnema verify` does not cover it. Nothing was written to produce it.',

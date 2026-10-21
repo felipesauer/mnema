@@ -13,11 +13,12 @@ with its own changelog.
 ### Added
 
 - **`mnema usage --tools` counts how many times each MCP tool was called, from a file this machine keeps.** For each call
-  the server answers it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
+  the server answers and counts it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
   the refusal) to `<data directory>/tool-calls/<digest of the project>.jsonl`, in the home and never in the repository.
   Never an argument, a word an agent wrote or a record's id; no event, no signature, no change of format, and `verify`
   does not read it. The verb prints, per tool, the calls, the refusals and the first and last date, and says it counts
-  only what the MCP server on this machine answered. It is on until `mnema switch off tool-call-count`; on a machine
+  only what the MCP server on this machine answered. A call refused while validating its arguments (they do not match the
+  tool's input schema) never reaches the tool and is not counted. It is on until `mnema switch off tool-call-count`; on a machine
   with no key of its own yet nothing is kept and no directory is made.
 
 ### Fixed
