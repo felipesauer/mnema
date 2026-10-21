@@ -35,6 +35,11 @@
  * {@link statesSomething} of a title now, the function the reader asks, so a title with no letter
  * and no digit is refused at the door the reader refuses it at.
  *
+ * AND A TITLE OF SPACES IS NO TITLE: it passed the reader (a non-empty string) and slipped under
+ * the question above, which was only asked of a value with something in it, so `task create "   "`
+ * recorded a task whose name is blank. It is refused as blank, in words that do not echo the
+ * spaces. The empty string stays the reader's, with its own code.
+ *
  * AND A MARKER IS NO REFERENCE. The fields a reading looks up by exact string (a link's subject,
  * target and relation, the entity an observation is about, the agents of a handoff, a run's
  * agent) are not a line a person writes (that is {@link TITLES}) and not a why, and a recipe
@@ -112,7 +117,12 @@ export function titleRefusal(
   field: string,
   value: unknown,
 ): { readonly message: string } | undefined {
-  if (typeof value !== 'string' || value.trim().length < 1) return undefined;
+  if (typeof value !== 'string' || value.length === 0) return undefined;
+  if (value.trim().length === 0) {
+    return {
+      message: `the ${field} is only spaces, so it names nothing: write the ${field} in words`,
+    };
+  }
   if (isMarker(value)) {
     return {
       message:

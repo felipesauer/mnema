@@ -365,8 +365,20 @@ describe('the title, asked of one value', () => {
     }
   });
 
+  it('refuses a title of spaces alone, in any whitespace, and says it is blank', () => {
+    for (const said of [' ', '   ', '\t', '\n', '\u00a0', ' \u3000 ']) {
+      expect(titleRefusal('title', said)?.message, JSON.stringify(said)).toBe(
+        'the title is only spaces, so it names nothing: write the title in words',
+      );
+    }
+  });
+
+  it('leaves the empty string to the reader, which refuses it with its own code', () => {
+    expect(titleRefusal('title', '')).toBeUndefined();
+  });
+
   it('passes a title in words, in any script, with a tag in it, or a single character', () => {
-    for (const said of ['Use UTC', 'use <b> for bold', '理由', 'x', '42', '']) {
+    for (const said of ['Use UTC', 'use <b> for bold', '理由', 'x', '42']) {
       expect(titleRefusal('title', said), said).toBeUndefined();
     }
   });
