@@ -35,6 +35,11 @@
  * {@link statesSomething} of a title now, the function the reader asks, so a title with no letter
  * and no digit is refused at the door the reader refuses it at.
  *
+ * AND A TITLE OF SPACES IS NO TITLE: it passed the reader (a non-empty string) and slipped under
+ * the question above, which was only asked of a value with something in it, so `task create "   "`
+ * recorded a task whose name is blank. It is refused as blank, in words that do not echo the
+ * spaces. The empty string stays the reader's, with its own code.
+ *
  * AND A MARKER IS NO REFERENCE. The fields a reading looks up by exact string (a link's subject,
  * target and relation, the entity an observation is about, the agents of a handoff, a run's
  * agent) are not a line a person writes (that is {@link TITLES}) and not a why, and a recipe
@@ -43,7 +48,9 @@
  * {@link REFERENCES} is where each kind keeps them and {@link referenceRefusal} asks
  * {@link isMarker} of each, again the same function. Only the marker is asked: a reference is a
  * string a caller owns (`src/**`, a path with a bracket in it), and what it holds is not a
- * judgment this door makes.
+ * judgment this door makes, with two exceptions: the executing agent (`which`), which is a
+ * reference on every kind, is asked the marker too, and a relation holding a path separator is
+ * refused, because that is the target typed in the relation's place.
  *
  * WHAT IT DOES NOT JUDGE is whether the words are a GOOD reason. `n/a` states something. A
  * person rules on prose; this rules only that there is some, and that it is not the blank a
@@ -112,7 +119,12 @@ export function titleRefusal(
   field: string,
   value: unknown,
 ): { readonly message: string } | undefined {
-  if (typeof value !== 'string' || value.trim().length < 1) return undefined;
+  if (typeof value !== 'string' || value.length === 0) return undefined;
+  if (value.trim().length === 0) {
+    return {
+      message: `the ${field} is only spaces, so it names nothing: write the ${field} in words`,
+    };
+  }
   if (isMarker(value)) {
     return {
       message:
@@ -367,10 +379,41 @@ export function unfilledReference(event: CatalogEvent): string | undefined {
   const payload = event.payload as Readonly<Record<string, unknown>>;
   const envelope = event as unknown as Readonly<Record<string, unknown>>;
   for (const site of REFERENCES[event.kind] as readonly string[]) {
-    const refused = referenceRefusal(site, site === 'subject' ? envelope.subject : payload[site]);
+    const value = site === 'subject' ? envelope.subject : payload[site];
+    const refused =
+      referenceRefusal(site, value) ?? (site === 'rel' ? pathAsRelation(value) : undefined);
     if (refused !== undefined) return refused.message;
   }
-  return undefined;
+  // The agent a fact names is a reference on EVERY kind, so it is asked here and not listed per
+  // kind: a `--which "<name>"` pasted from a recipe was recorded as the executor of the fact.
+  return referenceRefusal('which', envelope.which)?.message;
+}
+
+/**
+ * Whether a value is a path and not a label: no space in it, and either it starts the way a path
+ * starts (`/`, `./`, `../`, `~/`) or it holds a separator and its last segment carries a file
+ * extension (`src/a.ts`). `and/or`, `parent/child` and `v1.2` are labels. A bare `docs/` that
+ * names a directory is a label here and is asked of the project by the surfaces, which know its root.
+ */
+function looksLikeAPath(value: string): boolean {
+  if (/\s/u.test(value)) return false;
+  if (/^(?:\/|\.\/|\.\.\/|~\/)/u.test(value)) return true;
+  const last = value.split('/').at(-1) ?? '';
+  return value.includes('/') && /\.[A-Za-z0-9]+$/u.test(last);
+}
+
+/**
+ * The refusal a relation earns when it is a path: a relation is an open label, so any word is
+ * accepted, but a path is the TARGET typed in the wrong place (`--rel src/a.ts`), and recorded it
+ * would label the edge with a file nobody can look a relation up by.
+ */
+function pathAsRelation(value: unknown): { readonly message: string } | undefined {
+  if (typeof value !== 'string' || !looksLikeAPath(value)) return undefined;
+  return {
+    message:
+      `the rel "${oneLine(value.trim())}" is a path, not a relation: a relation is a label such as ` +
+      '`governs` or `relates-to`, and the path goes where the target goes',
+  };
 }
 
 /**

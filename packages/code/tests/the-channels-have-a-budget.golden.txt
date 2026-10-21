@@ -22,8 +22,8 @@ tool answer: next_actions ["id"]              106 B       28 tok
 tool answer: audit_accountability             916 B      276 tok
 tool answer: audit_exposure                    82 B       26 tok
 tool answer: audit_antipatterns               301 B       74 tok
-tool answer: record_decision                  149 B       48 tok
-tool answer: capture_memory                   143 B       44 tok
+tool answer: record_decision                  184 B       57 tok
+tool answer: capture_memory                   178 B       53 tok
 tool definition: capture_memory              2117 B      456 tok
 tool definition: record_observation          2425 B      528 tok
 tool definition: retract_note                1839 B      416 tok

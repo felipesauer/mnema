@@ -49,6 +49,21 @@ with its own changelog.
 
 ### Changed
 
+- **A write over MCP says the directory of the project it fell in, whether or not it named one.** `In the project at
+  <path>.` followed only a write that carried a `project`. It now follows every write that landed in a project's tree
+  (not the global one), a move by id (`task_transition`, `decision_transition`, `skill_transition`) and a retraction
+  included: after a reload the workspace can hold another checkout of the same repository, and an id the clone also holds
+  used to move there without a word.
+- **The agent a fact names, and a relation, are asked what a recipe prints in their place.** `--which "<name>"` was
+  recorded as the executor; `--rel src/a.ts` as the relation. Both are refused with `NOT_A_REFERENCE`, by the door
+  every write passes (a `which` that is a marker; a relation that is a path: one that starts with `/`, `./` or `../`, or has a separator and a file extension, or names a file or directory that exists in the project; `and/or` and `v1.2` stay labels).
+- **`resume`, `focus` and the resume inside `bootstrap` read the runs of every project of the workspace.** A session that
+  wrote first in a project its client listed second was answered `lastRun: null` and no open run. While no identity signs
+  for the session (a machine with no key, before the first write) the sentence about the connection now also says that
+  `actor` is empty because of that.
+- **`read_record` and `bootstrap` say when a record was moved twice out of one state by machines that had not seen each
+  other.** `show` and the brief said it; the agent was served the last state alone. The sentence is the same
+  function's, as a block beside the payload.
 - **The server's instructions say to record here even what is also kept elsewhere.** The handshake text now asks that a decision or a note be recorded as the work happens and also when the same thing is already in a plan, a ledger, `CLAUDE.md` or the host's own memory, because this is the signed copy and the one later sessions read back. To stay under 2,048 characters (the text is now 2,013) it drops the sentence that the record outlasts the session, a parenthesis about the `mnid`, and shortens the last paragraph; the `recording-decisions` skill says the same in one sentence.
 
 - **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
@@ -67,6 +82,12 @@ with its own changelog.
 
 ### Fixed
 
+- **A title made only of spaces is refused, like one made only of punctuation.** `task create "   "` recorded a task
+  named with blanks (and a decision, a skill, an observation topic): `NOT_A_TITLE`, in words that do not echo the spaces.
+  The empty string stays refused as it was.
+- **`retract` and the `retract_note` and `skills` tools take an `ADR-<n>` label like every other verb that takes an
+  id.** The label became the decision's id, which `retract` then names as a decision; a label two trees both carry is
+  refused with both ids (`AMBIGUOUS_LABEL`).
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.

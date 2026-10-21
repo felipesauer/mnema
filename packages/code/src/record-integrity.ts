@@ -76,7 +76,7 @@
  * on the record is a verb of its own.
  */
 
-import type { Scope } from '@mnema/core';
+import type { DivergentMove, Scope } from '@mnema/core';
 import { oneLine } from './one-line.js';
 
 /**
@@ -342,3 +342,21 @@ export const TOOLS_SERVING_NO_RECORD_CONTENT: { readonly [tool: string]: string 
     'against the real binary, anything that is not the reply JSON is discarded in ' +
     'silence, so a notice here would reach nobody',
 };
+
+/**
+ * What a read says of a record whose moves did not see each other: one move out of one state, two
+ * or more times, by machines that were apart. The words are here, beside the link-break sentences,
+ * for the reason those are: the command line (`show`, through `wiring/integrity.ts`) and the MCP
+ * (`read_record`, `bootstrap`) serve the same record, and a second wording would be a second
+ * opinion about the same bytes.
+ *
+ * It names every move out of the state, picks none, and says which one the answer shows. Every
+ * value in it came out of the record, so each goes through {@link oneLine}.
+ *
+ * It says the moves did NOT SEE each other, which is what the reading holds it to: two moves out
+ * of one state where the writer of the second had seen the first are not a divergence but a move
+ * the workflow does not allow, which no reader applies and `verify` names (FORMAT.md section 6.7).
+ */
+export function movedApartSentence(move: DivergentMove): string {
+  return `this ${move.kind} left ${oneLine(move.from)} more than once: to ${oneLine(move.to.join(', then '))}, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`;
+}

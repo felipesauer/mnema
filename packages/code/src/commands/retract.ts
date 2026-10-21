@@ -22,6 +22,7 @@ import {
   replayingRecordProbe,
 } from '@mnema/core';
 import { openTreeForWriting, retractNote } from '@mnema/core/write';
+import { resolveAddress } from '../label-as-address.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
@@ -66,7 +67,14 @@ export function runRetract(
   const upcasters = catalogUpcasters();
   const writing = treesToWrite(ctx);
   const { trees } = writing;
-  const scope = locateEntityScopeWith(trees, input.id, replayingRecordProbe(upcasters));
+  // A label that names one decision becomes its id, so the core says what that is (a decision is
+  // not a note); one several carry is refused with their ids, as everywhere an id goes.
+  const named = resolveAddress(ctx, input.id);
+  if (!named.ok) {
+    return { ok: false, reason: 'REFUSED', code: 'AMBIGUOUS_LABEL', message: named.message };
+  }
+  const id = named.id;
+  const scope = locateEntityScopeWith(trees, id, replayingRecordProbe(upcasters));
   if (scope === undefined) {
     return { ok: false, reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_NOTE' };
   }
@@ -78,7 +86,7 @@ export function runRetract(
     const written = retractNote(
       { writer, layout: { root: chainRootForScope(trees, scope) as string }, upcasters },
       {
-        id: input.id,
+        id,
         reason: input.reason,
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),

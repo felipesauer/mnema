@@ -60,7 +60,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { oneLine } from '../one-line.js';
-import type { PersonSigned } from '../recorded-content.js';
+import type { FellIn, PersonSigned } from '../recorded-content.js';
 import type { WorkspaceProject } from './context.js';
 import type { Session, WriteTarget } from './session.js';
 
@@ -131,25 +131,39 @@ export function routeWrite(
 }
 
 /**
- * The directory a write fell in, for the reply to say, and only when the CALLER named
- * the project.
+ * The directory a write fell in, for the reply to say: the project the caller named, else the
+ * one the write followed an id to, else the session's own.
  *
- * A path the caller carried can outlive the connection it was learnt in: after
- * a reload the workspace may hold different projects, and a path that is not among them
- * is refused. Only a path routes a write, so what the caller echoes is what it was
- * handed; the reply still says the absolute path the write fell in, which is the fact the
- * caller can check (one directory can still have two paths, through a symlink).
+ * It is said even when the caller named nothing, because a conversation can outlive the
+ * connection it began in: after a reload the workspace may hold another checkout of the same
+ * repository, and a write that fell there without a word is a write nobody can find where it was
+ * expected. A path the caller carried can outlive its connection too, and is refused when it is
+ * not among the workspace's projects; the reply still says the absolute path the write fell in,
+ * which is the fact the caller can check (one directory can still have two paths, through a
+ * symlink).
  *
- * Nothing is said when the caller named nothing (no project was echoed, so there is none
- * to mistake), nor for a write that landed in the global tree: that tree is the
- * machine's, and a directory named beside it would say it fell somewhere it did not.
+ * Nothing is said for a write that landed in the global tree: that tree is the machine's, and a
+ * directory named beside it would say it fell somewhere it did not.
  */
+export function whereItFell(
+  session: Session,
+  scope: Scope,
+  target: WriteTarget | undefined,
+): FellIn {
+  if (scope === 'global') return {};
+  const dir = target?.dir ?? session.project;
+  return dir === undefined ? {} : { project: dir };
+}
+
+/** {@link whereItFell} and the person-signed notice, for a write that was just routed. */
 export function routedTo(
   session: Session,
   route: { readonly scope: Scope; readonly target?: WriteTarget },
-): { readonly project?: string } & PersonSigned {
-  if (route.target === undefined || route.scope === 'global') return {};
-  return { project: route.target.dir, ...personSignedIn(session, route.scope, route.target) };
+): FellIn & PersonSigned {
+  return {
+    ...whereItFell(session, route.scope, route.target),
+    ...(route.scope === 'global' ? {} : personSignedIn(session, route.scope, route.target)),
+  };
 }
 
 /**
