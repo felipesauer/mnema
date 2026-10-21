@@ -12,6 +12,16 @@ with its own changelog.
 
 ### Added
 
+- **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
+  lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
+  and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed
+  with the verb), used for every verdict unless a note is written after the letter, and ends with how many were accepted,
+  rejected and skipped. Each verdict is the move `decision move` makes, through the same gate, key and refusal codes; a refusal
+  on one decision is said and the review goes on. It is a person's: it signs with your own key, refuses `--which`, and says
+  when `MNEMA_AGENT_KEY` is set that it does not use it. Without a terminal it writes nothing, refuses with
+  `DECISION_REVIEW_NEEDS_A_PERSON` and prints the `decision move accept <ids> --note` command that rules the same
+  decisions; with nothing awaiting, it says so and exits 0.
+
 - **`mnema usage --tools` counts how many times each MCP tool was called, from a file this machine keeps.** For each call
   the server answers and counts it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
   the refusal) to `<data directory>/tool-calls/<digest of the project>.jsonl`, in the home and never in the repository.

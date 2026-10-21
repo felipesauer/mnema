@@ -214,6 +214,35 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     }
   });
 
+  // `decision review`: the person's interactive way through what awaits a judgement. A person's:
+  // the group's `--which` is refused, and what is ruled is signed with the person's own key.
+  const review = decision
+    .command('review')
+    .description(
+      'go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit',
+    )
+    .addHelpText(
+      'after',
+      '\nAsks for one note at the start, used for every verdict unless you write another after the\n' +
+        'letter (`a because the benchmark held`). Each verdict is the move `decision move` makes,\n' +
+        'signed with your own key; a refusal on one decision is said and the review goes on. Without a\n' +
+        'terminal it writes nothing and prints the `decision move` command that rules the same decisions.',
+    )
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(review, {
+    refuses: {
+      '--which': 'a review is a person’s: it signs with your own key, not an agent’s.',
+      '--scope': A_MOVE_FOLLOWS_THE_DECISION,
+      '--alternatives': TURNED_DOWN_AT_BIRTH,
+    },
+  });
+  review.action(async () => {
+    const given = await fromTheGroup<object>(review, wiring);
+    if (given === REFUSED) return;
+    const { reviewDecisions } = await import('./decision-review.js');
+    await reviewDecisions(wiring);
+  });
+
   // `decision supersede <old-id> <new-id> --reason`: supersede as its own verb.
   // A supersede replaces one decision with a later one, so it needs the successor
   // id (`by`), taken as a required positional so the parser demands the pair on

@@ -1197,7 +1197,9 @@ scrollback and your CI log, so the report has no field that could hold one.
 Your project probably decided things before it had a record, and wrote them down.
 `mnema decision import` reads a directory of decision documents and **proposes** each
 one. Nothing is accepted on your behalf: every proposal is born `proposed`, whatever
-the file says its status is, and you rule on it with `decision move accept`.
+the file says its status is, and you rule on it with `decision move accept`, or one by one at a
+terminal with `mnema decision review` (it asks for one note, then accept, reject, skip or quit for each
+proposal, signs with your own key, and without a terminal writes nothing and prints the `move` command).
 
 Run it without `--write` first. Nothing is written, and the plan tells you what the
 door made of every file:

@@ -13,7 +13,7 @@
 _mnema_commands() {
   case "$1" in
     '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback help' ;;
-    'decision') echo 'record move supersede import help' ;;
+    'decision') echo 'record move review supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
     'stack') echo 'add remove list index show diff check export enable disable help' ;;
     'task') echo 'create move handoff next guard help' ;;
@@ -84,6 +84,7 @@ _mnema_described() {
     'decision') printf '%s\n' \
       'record:record a decision in the current project' \
       'move:accept or reject a decision (follows the decision; takes no --scope)' \
+      'review:go through the decisions awaiting a judgement one by one, at a terminal: accept, reject, skip or quit' \
       'supersede:supersede a decision with a later one (follows the decision; takes no --scope)' \
       'import:propose the decisions already written in this repository’s decision files' \
       'help:display help for command' ;;
@@ -165,6 +166,7 @@ _mnema_flags() {
     'decision') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision record') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision move') echo '--note -h --help --which -V --version --color' ;;
+    'decision review') echo '-h --help -V --version --color' ;;
     'decision supersede') echo '--reason -h --help --which -V --version --color' ;;
     'decision import') echo '--format --write --scope --which -h --help -V --version --color' ;;
     'link') echo '--rel --scope --which -h --help -V --version --color' ;;
@@ -272,6 +274,7 @@ _mnema_values() {
     'decision record:--color') echo 'auto always never' ;;
     'decision move:--color') echo 'auto always never' ;;
     'decision move:') echo 'accept reject' ;;
+    'decision review:--color') echo 'auto always never' ;;
     'decision supersede:--color') echo 'auto always never' ;;
     'decision import:--format') echo 'ecc-vault rulings claude-memory' ;;
     'decision import:--scope') echo 'public private' ;;
