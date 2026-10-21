@@ -1109,7 +1109,7 @@ It also says when the project lacks what `mnema init` leaves beside the record, 
 `.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
 finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
 It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
-version's block, the alpha's, or a block somebody edited), with what `mnema instructions` would do about it.
+version's block, or a block somebody edited), with what `mnema instructions` would do about it.
 
 And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
 signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
@@ -1420,7 +1420,8 @@ A link that resolves inside the project is followed. Line endings are kept: a bl
 checkout turned into CRLF is still the current one, and a rewrite uses the file's own. Markers shown
 inside a fenced code block (a README that documents them) are an example, not a block. A block you took out stays out: `init` writes the instructions only when it founds a
 project, and `mnema doctor` says where they are missing. The block an earlier, alpha version of mnema
-wrote between `<!-- MNEMA:START -->` and `<!-- MNEMA:END -->` is replaced in place.
+wrote between `<!-- MNEMA:START -->` and `<!-- MNEMA:END -->` is not recognized: it stays byte for byte
+where it is, `--remove` leaves it, and the block above is added beside it.
 
 ### Handing the record to an agent that never asked for it
 

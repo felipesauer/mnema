@@ -70,16 +70,12 @@ export const INSTRUCTIONS_END = '<!-- mnema:end -->';
 /** The block as it goes in a file: the markers, the text between them, and a final newline. */
 export const INSTRUCTIONS_BLOCK = `${beginMarker(INSTRUCTIONS_VERSION)}\n${INSTRUCTIONS_BODY}${INSTRUCTIONS_END}\n`;
 
-/** The markers an earlier version of this product wrote into `AGENTS.md`. */
-export const LEGACY_BEGIN = '<!-- MNEMA:START -->';
-export const LEGACY_END = '<!-- MNEMA:END -->';
-
 const BEGIN_LINE = /^<!-- mnema:begin (v\d+)\b[^\n]*-->[ \t]*$/;
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 
 /** One marker line of a file: where its line starts, where its text ends and where the next line starts. */
 export interface MarkerLine {
-  readonly kind: 'begin' | 'end' | 'legacy-begin' | 'legacy-end';
+  readonly kind: 'begin' | 'end';
   readonly start: number;
   readonly textEnd: number;
   readonly next: number;
@@ -123,8 +119,6 @@ export function markerLines(text: string): readonly MarkerLine[] {
       const base = { start: at, textEnd, next };
       if (begin !== null) found.push({ ...base, kind: 'begin', version: begin[1] as string });
       else if (line === INSTRUCTIONS_END) found.push({ ...base, kind: 'end' });
-      else if (line === LEGACY_BEGIN) found.push({ ...base, kind: 'legacy-begin' });
-      else if (line === LEGACY_END) found.push({ ...base, kind: 'legacy-end' });
     }
     at = next;
   }
@@ -146,7 +140,6 @@ export type Located =
       /** The text between the markers, as the file holds it (its line endings included). */
       readonly inner: string;
     }
-  | { readonly kind: 'legacy'; readonly span: Span }
   | { readonly kind: 'broken'; readonly why: string };
 
 /** The block of mnema's in `text`, if there is one outside a fenced code block, and where. */
@@ -166,14 +159,6 @@ export function locateBlock(text: string): Located {
       version: begin.version as string,
       inner: text.slice(begin.next, close.start),
     };
-  }
-  const legacy = markers.find((marker) => marker.kind === 'legacy-begin');
-  const close =
-    legacy === undefined
-      ? undefined
-      : markers.find((marker) => marker.kind === 'legacy-end' && marker.start > legacy.start);
-  if (legacy !== undefined && close !== undefined) {
-    return { kind: 'legacy', span: { start: legacy.start, end: close.next } };
   }
   return { kind: 'none' };
 }
@@ -223,7 +208,7 @@ export const OWN_INSTRUCTIONS_FILES: readonly string[] = INSTRUCTIONS_TARGETS.fi
 ).map((target) => target.path);
 
 /**
- * `text` with every block of mnema's (this version's markers or the legacy ones) taken out, for a
+ * `text` with every block of mnema's (a begin marker of any version and the end marker after it) taken out, for a
  * reader that looks for the person's own words in a file that may hold one. Markers inside a
  * fenced code block are an example, and stay.
  */
@@ -233,9 +218,8 @@ export function withoutTheBlock(text: string): string {
   let from = 0;
   for (const begin of markers) {
     if (begin.start < from) continue;
-    const closes =
-      begin.kind === 'begin' ? 'end' : begin.kind === 'legacy-begin' ? 'legacy-end' : '';
-    const close = markers.find((marker) => marker.kind === closes && marker.start > begin.start);
+    if (begin.kind !== 'begin') continue;
+    const close = markers.find((marker) => marker.kind === 'end' && marker.start > begin.start);
     if (close === undefined) continue;
     kept += text.slice(from, begin.start);
     from = close.textEnd;

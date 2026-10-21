@@ -26,7 +26,7 @@ with its own changelog.
   nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
   founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to
   the one above, says "as it was" only when that is true, and deletes a file the block was all of; line endings
-  (CRLF) are kept, and markers inside a fenced code block are an example, not a block; the alpha's `<!-- MNEMA:START -->` block is replaced in place. `init` writes the
+  (CRLF) are kept, and markers inside a fenced code block are an example, not a block; the alpha's `<!-- MNEMA:START -->` block is not recognized and is never touched: the block is added beside it and `--remove` leaves it. `init` writes the
   instructions only when it founds a project, so a block you took out stays out; `mnema doctor` names each file that
   lacks this version's block. The Gemini CLI extension carries the same text as its context file (`contextFileName`).
 - A write of the block into an instruction file is not taken for a decision written there, and `AGENTS.md`,

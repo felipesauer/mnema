@@ -2,7 +2,7 @@
  * The block of standing instructions (ADR-46): what it says, and what `mnema instructions` does to
  * the files a host reads. A file of the person's keeps every byte outside the markers; a block
  * somebody edited is refused and never overwritten; taking the block out leaves the file as it was
- * before it went in; the alpha's `MNEMA:START` block is replaced.
+ * before it went in; the alpha's `MNEMA:START` block is not recognized and is never touched.
  */
 
 import {
@@ -199,7 +199,7 @@ describe('mnema instructions in a file of the person’s', () => {
     });
   });
 
-  it('replaces the alpha’s MNEMA:START block in place', () => {
+  it('does not recognize the alpha’s MNEMA:START block: it is kept byte for byte and the block goes beside it', () => {
     const alpha = [
       '# notagrafo',
       '',
@@ -211,11 +211,14 @@ describe('mnema instructions in a file of the person’s', () => {
       '',
     ].join('\n');
     put('AGENTS.md', alpha);
-    expect(checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found.state).toBe(
-      'legacy',
-    );
-    expect(did(writeInstructions(project))['AGENTS.md']).toBe('replaced-legacy');
-    expect(text('AGENTS.md')).toBe(`# notagrafo\n\n${INSTRUCTIONS_BLOCK}\nThe rest is theirs.\n`);
+    expect(checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found).toEqual({
+      state: 'missing',
+      exists: true,
+    });
+    expect(did(writeInstructions(project))['AGENTS.md']).toBe('added');
+    expect(text('AGENTS.md')).toBe(`${alpha}\n${INSTRUCTIONS_BLOCK}`);
+    expect(did(removeInstructions(project))['AGENTS.md']).toBe('removed');
+    expect(text('AGENTS.md')).toBe(alpha);
   });
 
   it('writes a CLAUDE.md that links to AGENTS.md once', () => {
@@ -334,15 +337,6 @@ describe('a marker inside a fenced code block', () => {
     expect(text('AGENTS.md')).toBe(EXAMPLE);
     expect(withoutTheBlock(`${EXAMPLE}\n${INSTRUCTIONS_BLOCK}`)).toBe(`${EXAMPLE}\n\n`);
   });
-
-  it('is not the legacy block either: the example is not replaced', () => {
-    put('AGENTS.md', EXAMPLE);
-    expect(
-      checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found.state,
-    ).not.toBe('legacy');
-    writeInstructions(project);
-    expect(text('AGENTS.md')).toContain('alpha text');
-  });
 });
 
 describe('taking the block out', () => {
@@ -393,10 +387,11 @@ describe('a file with CRLF line endings', () => {
     expect(text('AGENTS.md')).toBe(theirs);
   });
 
-  it('keeps the file’s line endings when it replaces the alpha’s block', () => {
-    put('AGENTS.md', crlf('# a\n\n<!-- MNEMA:START -->\nold\n<!-- MNEMA:END -->\n\nmine\n'));
+  it('keeps an old alpha block byte for byte and adds the block beside it in the file’s line endings', () => {
+    const old = crlf('# a\n\n<!-- MNEMA:START -->\nold\n<!-- MNEMA:END -->\n\nmine\n');
+    put('AGENTS.md', old);
     writeInstructions(project);
-    expect(text('AGENTS.md')).toBe(crlf(`# a\n\n${INSTRUCTIONS_BLOCK}\nmine\n`));
+    expect(text('AGENTS.md')).toBe(`${old}\r\n${crlf(INSTRUCTIONS_BLOCK)}`);
   });
 
   it('leaves a file of its own alone when it holds the current text in CRLF', () => {

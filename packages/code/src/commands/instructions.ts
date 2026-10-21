@@ -11,9 +11,10 @@
  * finds. A file this command created is deleted. A block is replaced only where the text between
  * its markers is one this product wrote (`KNOWN_BODIES`, compared with the line endings
  * normalized, so a checkout that turned them into CRLF still holds the current block, and a
- * rewrite keeps the file's line endings) or the alpha's `MNEMA:START` block, whose text named
- * tools that no longer exist; any other text is somebody's edit, and it is refused and said,
- * never overwritten. Markers inside a fenced code block are an example, not a block.
+ * rewrite keeps the file's line endings); any other text is somebody's edit, and it is refused
+ * and said, never overwritten. The markers an earlier, alpha mnema wrote (`MNEMA:START` and
+ * `MNEMA:END`) are not recognized: such a block is the file's own text, kept byte for byte, and
+ * the block goes beside it. Markers inside a fenced code block are an example, not a block.
  *
  * IT WRITES NOTHING OUTSIDE THE PROJECT, AND NO ONE FILE BRINGS IT DOWN. A file that is a symbolic
  * link is followed when it resolves inside the project and refused, with where it goes, when it
@@ -55,8 +56,6 @@ export type InstructionsState =
   | { readonly state: 'current' }
   /** An earlier version's block, byte for byte: replaced by a write. */
   | { readonly state: 'outdated' }
-  /** The alpha's `MNEMA:START` block: replaced by a write. */
-  | { readonly state: 'legacy' }
   /** No block, in a file that exists or one that is always written and is not there. */
   | { readonly state: 'missing'; readonly exists: boolean }
   /** Somebody's text where the block is, or a block this version cannot read: never written over. */
@@ -69,7 +68,6 @@ export type InstructionsChange =
   | 'created'
   | 'added'
   | 'replaced'
-  | 'replaced-legacy'
   | 'unchanged'
   | 'removed'
   | 'deleted'
@@ -131,8 +129,6 @@ function stateOf(target: InstructionsTarget, text: string | undefined): Instruct
   switch (found.kind) {
     case 'none':
       return { state: 'missing', exists: true };
-    case 'legacy':
-      return { state: 'legacy' };
     case 'broken':
       return { state: 'edited', why: found.why };
     case 'block': {
@@ -293,14 +289,14 @@ function writeOne(project: string, target: InstructionsTarget): InstructionsFile
       return done('replaced');
     }
     const located = locateBlock(text);
-    if (located.kind === 'block' || located.kind === 'legacy') {
+    if (located.kind === 'block') {
       const { start, end } = located.span;
       writeFileSync(
         path,
         `${text.slice(0, start)}${inEol(INSTRUCTIONS_BLOCK, eol)}${text.slice(end)}`,
         'utf-8',
       );
-      return done(located.kind === 'legacy' ? 'replaced-legacy' : 'replaced');
+      return done('replaced');
     }
     // One line break before the block, always, so that taking it out can give the file back.
     writeFileSync(path, withTheBlock(text, eol), 'utf-8');
@@ -338,7 +334,7 @@ function removeOne(project: string, target: InstructionsTarget): InstructionsFil
       return done('deleted');
     }
     const located: Located = locateBlock(text);
-    if (located.kind !== 'block' && located.kind !== 'legacy') return done('unchanged');
+    if (located.kind !== 'block') return done('unchanged');
     const { start, end } = located.span;
     const before = text.slice(0, start);
     const after = text.slice(end);
@@ -376,8 +372,6 @@ export function stateLine(file: InstructionsFile): string {
       return `${file.path} holds this version’s mnema instructions.`;
     case 'outdated':
       return `${file.path} holds an earlier version’s mnema instructions: \`mnema instructions\` replaces them.`;
-    case 'legacy':
-      return `${file.path} holds the block an earlier mnema wrote (MNEMA:START), which names tools that no longer exist: \`mnema instructions\` replaces it.`;
     case 'missing':
       return found.exists
         ? `${file.path} holds no mnema instructions: \`mnema instructions\` adds them after what it holds.`
@@ -398,8 +392,6 @@ export function changeLine(file: InstructionsFile): string {
       return `Added the mnema instructions to ${file.path}, after what it holds.`;
     case 'replaced':
       return `Replaced the mnema instructions in ${file.path} with this version’s.`;
-    case 'replaced-legacy':
-      return `Replaced the block an earlier mnema wrote in ${file.path} (MNEMA:START) with this version’s instructions.`;
     case 'removed':
       return file.asItWas === true
         ? `Took the mnema instructions out of ${file.path}: the rest of it is as it was before them.`
