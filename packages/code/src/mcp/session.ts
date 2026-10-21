@@ -1046,9 +1046,11 @@ function ensureRun(
     session.runs.set(root, { id: opened.id, trees, scope });
     // A machine that had no key made one to write this: the session has someone to speak for now.
     if (session.who === undefined) {
-      session.who =
-        sessionAnchor(trees, scope === 'global' ? 'global' : 'private', () => {}) ??
-        sessionAnchor(session.trees, session.inProject ? 'private' : 'global', () => {});
+      session.who = sessionAnchor(
+        session.trees,
+        session.inProject ? 'private' : 'global',
+        () => {},
+      );
     }
     // The run is this connection's own fact, and the name it carries is the one the client
     // announced: the value the door screens. What it replaced is owed to the reply that

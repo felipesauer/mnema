@@ -651,7 +651,7 @@ describe('every kind says where its references are, and the door asks it there',
   });
 
   it('refuses a path where a relation goes, and a marker where the executing agent goes', () => {
-    for (const rel of ['src/a.ts', '/etc/passwd', '../x', 'a\\b']) {
+    for (const rel of ['src/a.ts', '/etc/passwd', '../x', './x', '~/x', 'docs/a.md']) {
       const before = count();
       expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
         ok: false,
@@ -669,7 +669,17 @@ describe('every kind says where its references are, and the door asks it there',
       message: expect.stringContaining('the which "<name>" is the marker'),
     });
     expect(count()).toBe(before);
-    for (const rel of ['governs', 'relates-to', 'a.b', 'TODO', 'reads a/b in <b>x</b>']) {
+    for (const rel of [
+      'governs',
+      'relates-to',
+      'a.b',
+      'TODO',
+      'and/or',
+      'parent/child',
+      'v1.2',
+      'docs/',
+      'reads a/b in <b>x</b>',
+    ]) {
       expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
         ok: true,
       });

@@ -390,13 +390,25 @@ export function unfilledReference(event: CatalogEvent): string | undefined {
 }
 
 /**
+ * Whether a value is a path and not a label: no space in it, and either it starts the way a path
+ * starts (`/`, `./`, `../`, `~/`) or it holds a separator and its last segment carries a file
+ * extension (`src/a.ts`). `and/or`, `parent/child` and `v1.2` are labels. A bare `docs/` that
+ * names a directory is a label here and is asked of the project by the surfaces, which know its root.
+ */
+function looksLikeAPath(value: string): boolean {
+  if (/\s/u.test(value)) return false;
+  if (/^(?:\/|\.\/|\.\.\/|~\/)/u.test(value)) return true;
+  const last = value.split('/').at(-1) ?? '';
+  return value.includes('/') && /\.[A-Za-z0-9]+$/u.test(last);
+}
+
+/**
  * The refusal a relation earns when it is a path: a relation is an open label, so any word is
- * accepted, but a value with no space in it and a separator in it is the TARGET typed in the wrong place
- * (`--rel src/a.ts`), and recorded it would label the edge with a file nobody can look a
- * relation up by.
+ * accepted, but a path is the TARGET typed in the wrong place (`--rel src/a.ts`), and recorded it
+ * would label the edge with a file nobody can look a relation up by.
  */
 function pathAsRelation(value: unknown): { readonly message: string } | undefined {
-  if (typeof value !== 'string' || !/^\S*[\\/]\S*$/u.test(value)) return undefined;
+  if (typeof value !== 'string' || !looksLikeAPath(value)) return undefined;
   return {
     message:
       `the rel "${oneLine(value.trim())}" is a path, not a relation: a relation is a label such as ` +

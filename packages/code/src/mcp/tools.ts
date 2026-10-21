@@ -155,6 +155,7 @@ import {
   linkRefusal,
   locateLinkAsRecorded,
   outsideTheProject,
+  relationNamesAPath,
   targetAsRecorded,
   targetRecordedAs,
 } from '../link-target.js';
@@ -602,6 +603,10 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
+  const projectDir = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
+  const namesAPath =
+    projectDir === undefined ? undefined : relationNamesAPath(input.rel, projectDir);
+  if (namesAPath !== undefined) return { ok: false, code: 'NOT_A_REFERENCE', message: namesAPath };
   // The public tree travels to every clone: a target no clone can open is refused there, as the
   // command line refuses it. The private and global trees take any path.
   const publicRoot =
@@ -1683,16 +1688,30 @@ export function movedApartNotes(session: Session, asked?: string): readonly stri
   // The id as the read resolved it: a label one decision carries is that decision's id.
   const named = asked === undefined ? undefined : addressedIn(session, asked);
   const entityId = named?.ok ? named.id : asked;
-  const caches =
-    entityId === undefined ? sessionCaches(session) : workspaceCaches(session).map((s) => s.cache);
-  const moves = caches
-    .flatMap((cache) => cache.divergentMoves())
-    .filter((move) => entityId === undefined || move.entityId === entityId);
-  const said = moves.slice(0, MOVED_APART_SHOWN).map(movedApartSentence);
-  if (moves.length > MOVED_APART_SHOWN) {
-    said.push(`(${moves.length - MOVED_APART_SHOWN} more records moved apart are not listed here)`);
+  if (entityId === undefined) {
+    const moves = sessionCaches(session).flatMap((cache) => cache.divergentMoves());
+    const said = moves.slice(0, MOVED_APART_SHOWN).map(movedApartSentence);
+    if (moves.length > MOVED_APART_SHOWN) {
+      said.push(
+        `(${moves.length - MOVED_APART_SHOWN} more records moved apart are not listed here)`,
+      );
+    }
+    return said;
   }
-  return said;
+  // One record, said ONCE: the same id held by two checkouts of a repository is one sentence that
+  // names the projects it was seen in, not the sentence per project.
+  const seenIn = new Map<string, Set<string>>();
+  for (const source of workspaceCaches(session)) {
+    const dir = source.target?.dir ?? session.project ?? '';
+    for (const move of source.cache.divergentMoves()) {
+      if (move.entityId !== entityId) continue;
+      const sentence = movedApartSentence(move);
+      seenIn.set(sentence, (seenIn.get(sentence) ?? new Set()).add(dir));
+    }
+  }
+  return [...seenIn].map(([sentence, dirs]) =>
+    dirs.size > 1 ? `${sentence} (seen in ${[...dirs].map(oneLine).join(', ')})` : sentence,
+  );
 }
 
 /** How many records moved apart one read lists. */

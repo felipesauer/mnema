@@ -1495,8 +1495,7 @@ any key of it: another identity is refused, and a retraction another identity si
 is not applied: the note is still served, and `mnema verify` names it in a census line,
 informational, not a break.
 
-**A relation is a label, and a recipe's marker is not a value.** The relation is open, but one word with a path separator in it
-(`--rel src/a.ts`) is the target typed in the wrong place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints
+**A relation is a label, and a recipe's marker is not a value.** The relation is open, but a path (`--rel src/a.ts`, `./x`, or a name that exists in the project) is the target typed in the wrong place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints
 where a value goes (`--rel "<rel>"`, `--which "<name>"`).
 
 **A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>

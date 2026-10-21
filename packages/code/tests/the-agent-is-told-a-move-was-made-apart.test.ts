@@ -145,6 +145,27 @@ describe('a record moved apart, read by an agent', () => {
     await client.close();
   });
 
+  it('is said once, naming both projects, when two checkouts hold the record', async () => {
+    const id = aTaskMovedApart();
+    const clone = join(sandbox, 'clone');
+    cpSync(repo, clone, { recursive: true });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [repo, clone].map((dir) => ({ uri: pathToFileURL(dir).href, name: dir })),
+    }));
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+    const said = (await blocks(client, 'read_record', { id })).slice(1).join('\n');
+    expect(said.split('more than once')).toHaveLength(2);
+    expect(said).toContain(repo);
+    expect(said).toContain(clone);
+    await client.close();
+  });
+
   it('is not said about a record moved in one line', async () => {
     const upcasters = catalogUpcasters();
     const here = {
