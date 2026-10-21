@@ -1909,6 +1909,16 @@ A read of a tree nobody has written to creates nothing, and where the file canno
 had (a read-only directory, a damaged file), the read builds it in memory and answers
 the same.
 
+The MCP server keeps it for the two trees of the project it is in, and for no other tree: the
+other projects of the workspace and the global tree are built in memory for the connection, as
+before. So a tool that only reads (`readOnlyHint: true`) may create or update that one file in
+the project it serves, and nothing else: the exception is written beside the other one, the local
+count of calls, and a read still appends nothing to the record and rewrites no byte of it.
+Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
+checkout of another commit) is read by the next call, and a file that does not follow the
+record is built again. What it does not see is an edit that keeps a live segment's size
+(`mnema verify` is what rules on that).
+
 `MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
 and can be written to, every read (the command line, the MCP server and the library)
 keeps its cache there instead of in the tree. It is for a checkout you cannot write to,

@@ -187,8 +187,17 @@ export interface CacheRegistry {
 /**
  * Creates an empty registry. One belongs to one session: its lifetime is the
  * connection's, which is what makes the caches warm and what bounds them.
+ *
+ * `keepsOnDisk` says, for a chain root, whether its cache may be the file the tree keeps for
+ * the next process (`ProjectionCache.open` with `persist`). The session answers yes for the two
+ * trees of its OWN project and no for every other: another project's tree is one the connection
+ * reads for a moment and is not the project the next session here opens first, and the global
+ * tree is shared by all of them. It is asked when a cache is first opened, so it may change its
+ * mind between two roots (the workspace re-read moves the project the session is in).
  */
-export function createCacheRegistry(): CacheRegistry {
+export function createCacheRegistry(
+  keepsOnDisk: (chainRoot: string) => boolean = () => false,
+): CacheRegistry {
   const entries = new Map<string, Entry>();
   // One upcaster registry for the session, shared by every cache it opens: the
   // catalog is the same for all trees, and building it per read was pure waste.
@@ -224,8 +233,16 @@ export function createCacheRegistry(): CacheRegistry {
         }
         return existing.cache;
       }
-      const cache = ProjectionCache.open(chainRoot, { upcasters, persist: readCacheIsChosen() });
-      cache.rebuild();
+      // The trees `keepsOnDisk` names are opened over the file the command line and the hooks
+      // already keep for them (`locks/projection.db`), and brought forward from it by the same
+      // rules every other reader uses; any other tree lives in memory for this connection, as it
+      // always did, unless a directory was chosen for every cache.
+      const persist = readCacheIsChosen() || keepsOnDisk(chainRoot);
+      const cache = ProjectionCache.open(chainRoot, { upcasters, persist });
+      // A file is brought to the chain (taking what it already holds when it is this code's and
+      // covers these segments); a database in memory has nothing to take and is replayed.
+      if (persist) cache.refresh();
+      else cache.rebuild();
       entries.set(chainRoot, { cache, stale: false, extent });
       return cache;
     },

@@ -18,6 +18,17 @@ with its own changelog.
   fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
   51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
   its format or what a read answers changed.
+- **The MCP server starts from the projection the command line and the hooks already keep.** It opened every tree by
+  replaying the whole record; for the two trees of the project it is in, it now opens `locks/projection.db` and takes
+  only what was appended since, with the same checks every other reader uses (the stamp of the code, the size and
+  modification time of sealed segments, the frontier of each tail), so a record changed behind the file by another
+  process, a `git pull` or a checkout is read by the next call. The other projects of the workspace and the global tree
+  stay in memory. The first `bootstrap` of a server over a record of 4,508 lines went from about 250 to about 40 ms
+  (median of 21 cold starts, one project), and from 299 to 69 ms with nine other projects in the workspace; the second
+  call is about 4 ms slower than before while the file's pages are first read, and the calls after it are equal. Because a tool that only reads now updates that file, `readOnlyHint` carries a second written
+  exception beside the local count of calls: a cache derived from the project's own record, deletable at no cost to
+  any answer, never a fact of the record. What the file does not see is an edit that keeps a live segment's size
+  (`mnema verify` is what rules on that).
 
 ## [0.1.2] - 2026-10-21
 

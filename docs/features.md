@@ -49,7 +49,9 @@ Each line says what it does and what it leaves unproven; the page it points to h
   the link stays in the record. Another identity is refused.
 - **A read pays for what arrived, not for the whole record.** A read keeps what it built in each tree's gitignored
   `locks/projection.db` and takes only what was appended since. It is derived, never the record:
-  deleting it changes no answer, and a clone does not carry it.
+  deleting it changes no answer, and a clone does not carry it. The MCP server keeps it for the two trees of
+  the project it is in too, so its first answer in a session of a large record takes what the file holds instead of
+  building the record again; a tool that only reads may therefore update that one file (and nothing else).
   `MNEMA_CACHE_DIR` keeps it in a directory you choose instead (a checkout you cannot write to,
   worktrees that share one, or a CI cache restored between runs); a directory shared by several
   projects holds a file for each, and it is still only a cache. The SDK honors the variable only when

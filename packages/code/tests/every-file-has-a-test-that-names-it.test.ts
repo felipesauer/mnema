@@ -1264,6 +1264,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-screen-is-ours.test.ts': 15,
   'packages/code/tests/the-screen-says-what-it-was-drawn-at.test.ts': 10,
   'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
+  'packages/code/tests/the-server-keeps-its-own-projects-cache.test.ts': 11,
   'packages/code/tests/the-server-only-plugin-runs-no-hook.test.ts': 4,
   'packages/code/tests/the-session-knows-who-you-are.test.ts': 15,
   'packages/code/tests/the-session-learns-where-it-is.test.ts': 12,

@@ -805,13 +805,21 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
  *     each call can leave a signed event behind. The protocol's words are "does not modify
  *     its environment", which is wider than the record, and the wider thing is what is
  *     measured: a read leaves every file and directory of the sandbox as it found them, not
- *     only the chain. The projection it rebuilds is held in memory, so there is no cache file for it
- *     to write, unless `$MNEMA_CACHE_DIR` names a directory (`core/src/projections/cache-home.ts`).
- *     THE ONE EXCEPTION IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
+ *     only the chain. The projection a read builds is held in memory for every tree but the two of
+ *     the project the session is in, and those are kept in the tree's own `locks/projection.db`
+ *     (`cache-registry.ts`), the file the command line and the hooks keep, so there is a cache file
+ *     for a read to write there, and one for the trees `$MNEMA_CACHE_DIR` names
+ *     (`core/src/projections/cache-home.ts`).
+ *     THERE ARE TWO EXCEPTIONS, both outside the record and both losing nothing. THE FIRST IS THE
+ *     DERIVED PROJECTION OF THE SESSION'S OWN PROJECT: a read may create or bring forward
+ *     `locks/projection.db` of the project's two trees. It is a cache derived from the record,
+ *     deleting it changes no answer, no fact is added or changed, and a clone never carries it;
+ *     `the-server-keeps-its-own-projects-cache.test.ts` holds that a read adds that file and no other.
+ *     THE SECOND IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
  *     appends a line to a file in the machine's data directory, outside the record, until
  *     `tool-call-count` is switched off. It changes no fact and loses nothing, which is what a
  *     client weighing whether to call a tool without asking needs to know, and the measurement
- *     excuses that one place and no other.
+ *     excuses those two places and no other, the second only inside the project the call served.
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed
