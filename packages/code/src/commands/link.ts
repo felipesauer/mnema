@@ -152,11 +152,15 @@ export function runLink(
   if (!target.ok) return refusedLink('AMBIGUOUS_LABEL', target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return refusedLink('UNKNOWN_TARGET', unresolved);
-  // The public tree travels to every clone, so a target no clone can open is refused there; the
-  // private and global trees stay on this machine and take any path.
-  const publicRoot = scope === 'public' ? projectRoot(trees.projectPublic) : undefined;
+  // A target outside the project is refused in every tree: the public one travels to every clone,
+  // and the private and global ones would hold a path nothing here can follow. Outside any project
+  // there is no root to be outside of.
+  const projectDir = projectRoot(trees.projectPublic);
+  const publicRoot = scope === 'public' ? projectDir : undefined;
   const outside =
-    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
+    projectDir === undefined
+      ? undefined
+      : outsideTheProject(input.rel, target.id, projectDir, scope);
   if (outside !== undefined) return refusedLink('OUTSIDE_PROJECT', outside);
   // And what the public tree records is the target relative to the root when it was typed absolute.
   const ends = {

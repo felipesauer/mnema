@@ -3,8 +3,8 @@
  *
  * `mnema link <rule> /etc/passwd --rel governs` was accepted, exit 0, and committed to a tree that
  * reaches every clone an address no clone can resolve ("covers nothing here"). Both doors that write
- * a link refuse it now, before a writer is opened; the private and global trees are a person's own
- * machine and keep taking any path.
+ * a link refuse it now, before a writer is opened, and so does every other tree and a `derived-from`: the
+ * private and global trees would hold a path nothing in the project can follow.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -61,12 +61,15 @@ describe('the command line', () => {
     expect(linked).toMatchObject({ ok: false, code: 'OUTSIDE_PROJECT' });
   });
 
-  it('leaves a relation that carries no address alone: derived-from cites a file', () => {
-    const linked = runLink(
-      { cwd: repo, env },
-      { subject: 'rule-1', target: '../outside/0001.md', rel: 'derived-from' },
-    );
-    expect(linked.ok).toBe(true);
+  it('refuses a derived-from that cites a file outside the project', () => {
+    for (const target of ['../outside/0001.md', '/etc/passwd']) {
+      const linked = runLink(
+        { cwd: repo, env },
+        { subject: 'rule-1', target, rel: 'derived-from' },
+      );
+      expect(linked, target).toMatchObject({ ok: false, code: 'OUTSIDE_PROJECT' });
+    }
+    expect(publicTargets()).toEqual([]);
   });
 
   it('keeps taking a path inside, however it is spelled, and an id', () => {
@@ -83,15 +86,25 @@ describe('the command line', () => {
     }
   });
 
-  it('leaves the private and global trees alone', () => {
+  it('refuses it in the private and global trees too, naming the tree, and records nothing', () => {
     for (const scope of ['private', 'global'] as const) {
-      const linked = runLink(
-        { cwd: repo, env },
-        { subject: 'rule-1', target: '/etc/passwd', rel: 'governs', scope },
-      );
-      expect(linked.ok, scope).toBe(true);
+      for (const rel of ['governs', 'derived-from']) {
+        const linked = runLink(
+          { cwd: repo, env },
+          { subject: 'rule-1', target: '/etc/passwd', rel, scope },
+        );
+        expect(linked, `${scope} ${rel}`).toMatchObject({ ok: false, code: 'OUTSIDE_PROJECT' });
+        if (linked.ok || linked.reason !== 'REFUSED') throw new Error('expected a refusal');
+        expect(linked.message).toContain(`in the ${scope} tree`);
+        expect(linked.message).not.toContain('every clone');
+      }
     }
     expect(publicTargets()).toEqual([]);
+    const trees = resolveTrees(repo, env);
+    for (const root of [trees.projectPrivate, trees.global]) {
+      const held = projectLinks(orderedEvents({ root: root as string }, catalogUpcasters()));
+      expect(held).toEqual([]);
+    }
   });
 });
 
@@ -108,6 +121,30 @@ describe('the tool', () => {
   });
 });
 
+describe('the tool, in the other trees and for a citation', () => {
+  it.each([
+    ['governs', 'private'],
+    ['governs', 'global'],
+    ['derived-from', 'public'],
+    ['derived-from', 'private'],
+    ['derived-from', 'global'],
+  ] as const)('refuses /etc/passwd under %s in the %s tree', (rel, scope) => {
+    const session = openSession({
+      clientName: 'agent-alpha',
+      roots: [pathToFileURL(repo).href],
+      env,
+    });
+    const linked = runLinkKnowledge(session, {
+      subject: 'rule-1',
+      target: '/etc/passwd',
+      rel,
+      scope,
+    });
+    expect(linked).toMatchObject({ ok: false, code: 'OUTSIDE_PROJECT' });
+    expect(publicTargets()).toEqual([]);
+  });
+});
+
 describe('the one function', () => {
   it('says so for a path that leaves the root and for nothing else', () => {
     expect(outsideTheProject('governs', '/etc/passwd', '/p')).toContain('"/etc/passwd"');
@@ -116,7 +153,9 @@ describe('the one function', () => {
     expect(outsideTheProject('governs', '/p/src', '/p')).toBeUndefined();
     expect(outsideTheProject('governs', 'src/a', '/p')).toBeUndefined();
     expect(outsideTheProject('governs', 'an-id', '/p')).toBeUndefined();
-    expect(outsideTheProject('derived-from', '/etc/passwd', '/p')).toBeUndefined();
+    expect(outsideTheProject('derived-from', '/etc/passwd', '/p')).toContain('"/etc/passwd"');
+    expect(outsideTheProject('derived-from', '/p/docs/a.md', '/p')).toBeUndefined();
+    expect(outsideTheProject('relates-to', '/etc/passwd', '/p')).toBeUndefined();
   });
 });
 
@@ -336,7 +375,8 @@ describe('what the link_knowledge tool says it linked', () => {
   it('names the target the tree holds: src for an absolute path under the root', async () => {
     const text = await said(join(repo, 'src'));
     expect(text).toContain('Linked rule-1 -governs→ src');
-    expect(text).not.toContain(repo);
+    // The reply says the project it fell in, and the target as the tree holds it, not as typed.
+    expect(text).not.toContain(join(repo, 'src'));
   });
 
   it('names . for the root itself', async () => {
