@@ -55,6 +55,12 @@
       "index": 0,
       "runs": "hooks/choice-settled.mjs"
     },
+    "after-a-write": {
+      "event": "PostToolUse",
+      "group": 1,
+      "index": 0,
+      "runs": "hooks/after-a-write.mjs"
+    },
     "subagent-start": {
       "event": "SubagentStart",
       "group": 0,

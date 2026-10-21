@@ -224,12 +224,14 @@ describe('mnema settled', () => {
 });
 
 describe('the plugin hook a host runs after a question', () => {
-  /** The `PostToolUse` group of the plugin's hooks file. */
+  /** The `PostToolUse` group of the plugin's hooks file that runs this handler: one, beside the write's. */
   function theGroup(): { matcher: string; hooks: { command: string }[] } {
     const file = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf-8')) as {
       hooks: { PostToolUse?: { matcher: string; hooks: { command: string }[] }[] };
     };
-    const groups = file.hooks.PostToolUse ?? [];
+    const groups = (file.hooks.PostToolUse ?? []).filter((group) =>
+      group.hooks.some((hook) => hook.command.includes('choice-settled.mjs')),
+    );
     expect(groups.length).toBe(1);
     return groups[0] as { matcher: string; hooks: { command: string }[] };
   }

@@ -52,6 +52,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { runAfterAWrite } from '../src/commands/after-a-write.js';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runHandback } from '../src/commands/handback.js';
 import { runSettled } from '../src/commands/settled.js';
@@ -64,9 +65,11 @@ import {
   AGENT_ACCEPTS_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
   CHOICE_SETTLED_CHANNEL,
+  DECISION_FILE_WRITTEN_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
+  HOST_MEMORY_MIRROR_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
@@ -446,6 +449,58 @@ const HONOURED: Readonly<
         { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
       );
       return 'systemMessage' in done.reply;
+    },
+  },
+  [HOST_MEMORY_MIRROR_CHANNEL]: {
+    // A COPY THAT WRITES, driven the way a host drives it: a `PostToolUse` after a write into the
+    // host's memory directory. It starts off, so the case switches it on first; and each call writes
+    // a note of new content, because a note already copied is not copied again. "Speaks" is a copy.
+    setUp: async () => {
+      await did('switch', 'on', HOST_MEMORY_MIRROR_CHANNEL);
+    },
+    speaks: async () => {
+      const dir = join(
+        env.home,
+        '.claude',
+        'projects',
+        repo.replace(/[^a-zA-Z0-9]/g, '-'),
+        'memory',
+      );
+      mkdirSync(dir, { recursive: true });
+      const file = join(dir, 'project_fact.md');
+      writeFileSync(file, `---\nname: Fact\ntype: project\n---\nFact ${Math.random()}.\n`);
+      const done = runAfterAWrite(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'PostToolUse',
+            tool_name: 'Write',
+            tool_input: { file_path: file },
+          }),
+        },
+      );
+      return 'systemMessage' in done.reply;
+    },
+  },
+  [DECISION_FILE_WRITTEN_CHANNEL]: {
+    // A LINE BESIDE A WRITE, driven the way a host drives it: a `PostToolUse` after a write to a file
+    // in a directory of decision files, a new one each call, so no earlier line stands in for it.
+    setUp: async () => {},
+    speaks: async () => {
+      const done = runAfterAWrite(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'PostToolUse',
+            tool_name: 'Write',
+            tool_input: {
+              file_path: join(repo, 'docs', 'adr', `${Math.random()}.md`),
+              content: '# X',
+            },
+          }),
+        },
+      );
+      return 'hookSpecificOutput' in done.reply;
     },
   },
   [SESSION_TALLY_CHANNEL]: {

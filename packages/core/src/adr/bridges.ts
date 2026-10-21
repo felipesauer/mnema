@@ -115,14 +115,41 @@ function eccMemory(text: string, file: string): Entry {
   };
 }
 
+/** One note of the host's memory as its file says it: its `name`, its `type` where it says one, and its body. */
+export interface HostMemoryNote {
+  readonly name: string;
+  /** The host's own word (`user`, `feedback`, `project`, …), at the top of the frontmatter or under `metadata:`. */
+  readonly type: string | undefined;
+  readonly body: string;
+}
+
+/** A frontmatter value with the quotes a writer may have put around it taken off. */
+function unquoted(value: string): string {
+  return value.replace(/^(["'])(.*)\1$/, '$2');
+}
+
+/**
+ * One host memory file read, or `undefined` where it does not have the shape: a `---` frontmatter
+ * holding a `name:`, and a body. The one reading of that shape, for the import here and for the
+ * copy of a note into the private tree as the host writes it.
+ */
+export function readHostMemory(text: string): HostMemoryNote | undefined {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text);
+  if (match === null) return undefined;
+  const front = match[1] ?? '';
+  const name = unquoted(/^name:[ \t]*(.*?)[ \t]*$/m.exec(front)?.[1] ?? '');
+  const type = unquoted(/^[ \t]*type:[ \t]*(.*?)[ \t]*$/m.exec(front)?.[1] ?? '');
+  const body = (match[2] ?? '').trim();
+  if (name === '' || body === '') return undefined;
+  return { name, type: type === '' ? undefined : type, body };
+}
+
 /** One host memory file: its `name` and its body. */
 function hostMemory(text: string, file: string): Entry {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text);
-  if (match === null) return { refused: 'MALFORMED' };
-  const name = /^name:[ \t]*(.*?)[ \t]*$/m.exec(match[1] ?? '')?.[1] ?? '';
-  const title = name.replace(/^(["'])(.*)\1$/, '$2');
-  const rationale = (match[2] ?? '').trim();
-  if (title === '' || rationale === '') return { refused: 'MALFORMED' };
+  const note = readHostMemory(text);
+  if (note === undefined) return { refused: 'MALFORMED' };
+  const title = note.name;
+  const rationale = note.body;
   const refusal = shape(title, rationale);
   if (refusal !== undefined) return { refused: refusal };
   return { document: { title, rationale: imported('claude-memory', file, rationale) } };
