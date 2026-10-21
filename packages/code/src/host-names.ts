@@ -139,6 +139,8 @@ const HELD = {
   geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
+  claudeSubagentStart:
+    'packages/code/tests/host-contract/a-subagent-starts-with-the-record.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
@@ -707,3 +709,148 @@ export function does(host: HostName, capability: Capability): boolean {
   const cell: Cell = HOSTS[host].cells[capability];
   return cell.held !== 'not ported' && cell.does;
 }
+
+// ---------------------------------------------------------------------------
+// The presence map
+// ---------------------------------------------------------------------------
+
+/** One moment of the work in which the record can be present, one column of the presence map. */
+export type Moment =
+  | 'choice'
+  | 'memory'
+  | 'file'
+  | 'opening'
+  | 'middle'
+  | 'end'
+  | 'subagentStart'
+  | 'subagentStop';
+
+/**
+ * What a host offers at one {@link Moment}, and how that is known: a {@link Cell}, or one of the
+ * two words a cell has no `does` for. `no channel` is the host's own documentation or code saying
+ * it has nothing at that moment this product could ride; `not read` is that nobody has read the
+ * host for it, which is no claim either way. `what` is the event or tool the cell is about.
+ */
+export type Presence = (Cell | { readonly held: 'no channel' } | { readonly held: 'not read' }) & {
+  readonly what?: string;
+};
+
+/** The day the hosts below were read for the moments of the work. */
+const PRESENCE_READ_ON = '21 October 2026';
+
+/** A moment a host documents, read on {@link PRESENCE_READ_ON}. */
+const documented = (what: string, at: string): Presence => ({
+  does: true,
+  held: 'documentation',
+  at,
+  read: PRESENCE_READ_ON,
+  what,
+});
+
+/** A moment a host has no channel for. */
+const noChannel = (what?: string): Presence =>
+  what === undefined ? { held: 'no channel' } : { held: 'no channel', what };
+
+/** A moment nobody has read the host for. */
+const notRead: Presence = { held: 'not read' };
+
+const CLAUDE_HOOKS = 'https://code.claude.com/docs/en/hooks';
+const CLAUDE_MEMORY = 'https://code.claude.com/docs/en/memory';
+const VSCODE_HOOKS = 'https://code.visualstudio.com/docs/copilot/customization/hooks';
+const VSCODE_MEMORY = 'https://code.visualstudio.com/docs/copilot/agents/memory';
+const CURSOR_HOOKS = 'https://cursor.com/docs/agent/hooks';
+const CODEX_HOOKS = `${CODEX_SOURCE.replace('/blob/', '/tree/')}/codex-rs/hooks/src/events`;
+const COPILOT_HOOKS = `${COPILOT_DOCS}/reference/hooks-reference.md`;
+const COPILOT_MEMORY = 'https://docs.github.com/en/copilot/concepts/agents/copilot-memory';
+const GEMINI_TREE = GEMINI_SOURCE.replace('/blob/', '/tree/');
+const OPENCODE_TREE = OPENCODE_SOURCE.replace('/blob/', '/tree/');
+
+/**
+ * Where the record can be present in the work, by host: the moments the opening and the gate do
+ * not cover, and a subagent's start and stop. The moments the host's cells already say (the
+ * opening, the refusal before a write) are read off {@link HOSTS}, not repeated; the rest is
+ * here, each with how it is known. `docs/evidence.md` carries the map, generated from this table.
+ * A moment's cell that is `documentation` was read, not run: nothing here says the host does it
+ * with this product, only that its own documentation or code offers the event.
+ */
+export const PRESENCE = {
+  claude: {
+    choice: documented('PostToolUse on the question tool', CLAUDE_HOOKS),
+    memory: documented('PostToolUse on a write to the memory folder', CLAUDE_MEMORY),
+    file: {
+      does: true,
+      held: 'a test',
+      by: HELD.claudeServer,
+      what: 'only a rule addressed at the path, beside the write',
+    },
+    end: documented('Stop', CLAUDE_HOOKS),
+    subagentStart: {
+      does: true,
+      held: 'a test',
+      by: HELD.claudeSubagentStart,
+      what: 'SubagentStart',
+    },
+    subagentStop: { ...HOSTS.claude.subagentStop, what: 'SubagentStop' },
+  },
+  vscode: {
+    choice: notRead,
+    memory: documented(
+      'a memory folder of the host, the tool that writes it not read',
+      VSCODE_MEMORY,
+    ),
+    file: documented('PostToolUse, which the host runs whatever the matcher', VSCODE_HOOKS),
+    end: documented('Stop', VSCODE_HOOKS),
+    subagentStart: documented('SubagentStart', VSCODE_HOOKS),
+    subagentStop: documented('SubagentStop', VSCODE_HOOKS),
+  },
+  cursor: {
+    choice: noChannel(),
+    memory: noChannel(),
+    file: documented('postToolUse, with additional context', CURSOR_HOOKS),
+    end: documented('stop, which can only ask for a new turn', CURSOR_HOOKS),
+    subagentStart: notRead,
+    subagentStop: documented('subagentStop', CURSOR_HOOKS),
+  },
+  codex: {
+    choice: documented('PostToolUse on `request_user_input`', CODEX_HOOKS),
+    memory: noChannel('its memories are made in the background, with no tool and no hook'),
+    file: documented('PostToolUse on `apply_patch`', CODEX_HOOKS),
+    end: documented('Stop', CODEX_HOOKS),
+    subagentStart: notRead,
+    subagentStop: { ...HOSTS.codex.subagentStop, what: 'SubagentStop' },
+  },
+  copilot: {
+    choice: documented('postToolUse on `ask_user`', COPILOT_HOOKS),
+    memory: documented('`store_memory`, which keeps it in the cloud', COPILOT_MEMORY),
+    file: documented('postToolUse on a write', COPILOT_HOOKS),
+    end: documented('agentStop', COPILOT_HOOKS),
+    subagentStart: notRead,
+    subagentStop: { ...HOSTS.copilot.subagentStop, what: 'subagentStop' },
+  },
+  gemini: {
+    choice: documented('AfterTool on `ask_user`', GEMINI_TREE),
+    memory: documented(
+      '`GEMINI.md`, kept by project, the tool that writes it not read',
+      GEMINI_TREE,
+    ),
+    file: documented('AfterTool on `write_file` and `replace`', GEMINI_TREE),
+    end: documented('AfterAgent, which cannot add context', GEMINI_TREE),
+    subagentStart: noChannel(),
+    subagentStop: noChannel(),
+  },
+  opencode: {
+    choice: documented('`tool.execute.after` on `question`', OPENCODE_TREE),
+    memory: noChannel(),
+    file: documented('`tool.execute.after`', OPENCODE_TREE),
+    end: notRead,
+    subagentStart: notRead,
+    subagentStop: notRead,
+  },
+} as const satisfies Partial<
+  Record<HostName, { readonly [M in Exclude<Moment, 'opening' | 'middle'>]: Presence }>
+>;
+
+/** The hosts the presence map has a row for, in the order of {@link HOSTS}. */
+export const PRESENCE_HOSTS = HOST_NAMES.filter(
+  (name) => name in PRESENCE,
+) as readonly (keyof typeof PRESENCE)[];

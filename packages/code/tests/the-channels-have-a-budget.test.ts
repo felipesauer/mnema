@@ -209,6 +209,8 @@ beforeAll(async () => {
   // What a session opens with: the two handlers of `SessionStart` print these two verbs.
   add('session start: brief --hook', await did('brief', '--hook'));
   add('session start: recall --hook', await did('recall', '--hook'));
+  // And the subagent that begins: the one verb, handed over by `subagent-start.mjs`.
+  add('subagent start: brief --hook', await did('brief', '--hook'));
   add('file form: brief (what MNEMA.md carries)', await did('brief'));
 
   add('instructions', client.getInstructions() ?? '');

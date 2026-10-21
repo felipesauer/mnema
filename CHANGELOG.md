@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **A subagent that begins is handed the brief of the session.** The plugin gains a `SubagentStart` hook that runs
+  `mnema brief --hook` and hands the document to the subagent as it starts, byte for byte what the opening hands the session,
+  under the event the host routes the reply by. It is the opening's channel and the opening's switch (`mnema switch off
+  brief-document` stops both), and it is silent where there is no project. It is held against the real Claude Code binary; VS
+  Code documents the event and reads the same hooks file, and was not measured on it.
+- **`docs/evidence.md` carries a presence map.** For each host and each moment of the work (a choice settled with the person, the
+  host's own memory, a plan or decision file, the opening, an edit, the end of a response, a subagent's start and stop) it says
+  whether the host offers something the plugin could ride, and how that is known: held by a test, documented and not measured,
+  no channel, or not read. It is generated from the host table, and a copy edited by hand is red.
 - **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
   lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
   and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed
