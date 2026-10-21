@@ -21,6 +21,13 @@ with its own changelog.
   host's own memory, a plan or decision file, the opening, an edit, the end of a response, a subagent's start and stop) it says
   whether the host offers something the plugin could ride, and how that is known: held by a test, documented and not measured,
   no channel, or not read. It is generated from the host table, and a copy edited by hand is red.
+- **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
+  `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
+  verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a
+  tree that does not travel leave the folder as it was, and a README that is already there is never replaced. Only the README is
+  written this way, and only inside `.mnema/`: the `.prettierignore` is still edited by `mnema init` alone. The session brief
+  (`mnema brief --hook`, never the file a person redirects it into) gains one line where `mnema doctor` would add the line `.mnema/` to the
+  `.prettierignore` (the same function), saying the formatter can rewrite the signed record and that `mnema init` protects it.
 - **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
   lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
   and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed
@@ -51,6 +58,17 @@ with its own changelog.
 
 ### Changed
 
+- **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
+  of its cost was loading `mnema`, paid even in a project whose record addresses no path. The plugin's handler now reads the
+  stored lines of the project's committed tree, of its private tree and of the machine's global tree itself, and where none
+  holds a link under `governs`, `asks-for-a-person` or `refuses-a-write` it answers what `mnema` would answer there, nothing,
+  without starting it. A canonical line holds that relation byte for byte, so the search cannot miss one. Every doubt starts
+  `mnema` as before: a tree it cannot list, a line that is not UTF-8, not canonical, or not of a kind, a version and a shape
+  the first published reader declared (the plugin carries a copy of those declarations, held to the reader's by a test), so a
+  record `mnema` cannot read still refuses every write. Nothing is kept between two writes, so a rule that arrives by `git
+  pull` is met at the next one. Measured on one Linux machine under load, 50 runs each, in a project with one accepted rule and
+  no address: the handler went from about 330 ms (Cursor) and 290 ms (VS Code) at the median to about 50 ms; with a rule that
+  refuses, it costs what it did. Claude Code's hook, a call into the server, is unchanged.
 - **The links check after the merge reads `docs/` too, and `osv-scanner` runs weekly.** The job that asks the network for every address of the READMEs once a change is on `main` now also reads every Markdown page under `docs/`; it is still never a check on a pull request, and still opens one issue for the broken ones. `osv-scanner` now also runs on Mondays against the unchanged lockfile, so an advisory published against a dependency nobody touched shows up; a finding fails that run and shows in the Actions tab, and opens nothing else. `gitleaks` stays on pull requests and on `main`.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 

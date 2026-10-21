@@ -87,9 +87,10 @@ function built(name: string): chain.CodedError {
   return new make(...(BUILT_WITH[name] ?? []));
 }
 
-/** A session with only what a refusal reads: the two watches it takes from. */
+/** A session with only what a refusal reads: the watches it takes from and settles. */
 const SESSION = {
   founding: { take: () => [] },
+  recordPage: { settled: () => [] },
   replacementsOwed: { take: () => [] },
   trees: { keyRoot: '/nowhere' },
   env: {},

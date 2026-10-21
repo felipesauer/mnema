@@ -80,6 +80,7 @@ import {
   type WriteContext,
 } from '@mnema/core/write';
 import { FoundingWatch } from '../a-new-identity.js';
+import { RecordPageWatch } from '../commands/the-record-page.js';
 import { oneLine } from '../one-line.js';
 import { replacementNotice } from '../recorded-content.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
@@ -409,6 +410,13 @@ export interface Session {
    */
   readonly founding: FoundingWatch;
   /**
+   * The public records this connection opened to write to since its last reply, and what each
+   * looked like then, owed to the reply that answers the write: a record with no `README.md`
+   * that a write grew gets one (`commands/the-record-page.ts`). Armed at {@link openWrite} and
+   * settled where a reply is composed (`replied`, `refused`), so a read makes no page.
+   */
+  readonly recordPage: RecordPageWatch;
+  /**
    * What the content door replaced in the facts this connection records ON ITS OWN, owed to the
    * next reply: the run it opens ({@link ensureRun}) and what the edit hook appends
    * (`channel.asked`, `channel.served`). No tool call asked for those, so no tool's own reply
@@ -592,6 +600,7 @@ export function openSession(input: OpenSessionInput): Session {
     log,
     caches,
     founding: new FoundingWatch(),
+    recordPage: new RecordPageWatch(),
     replacementsOwed: new ReplacementsOwed(),
     writesBegun: new Set<string>(),
     consulted: new Map<string, Set<string>>(),
@@ -851,6 +860,11 @@ function cascadeInput(
   return { ...workspace, env, ...(configProject !== undefined ? { configProject } : {}) };
 }
 
+/** The key roots a write in `trees` signs from: the person's, and the agent's where one signs. */
+function keyRootsOf(trees: ResolvedTrees): string[] {
+  return [trees.keyRoot, ...(trees.agent !== undefined ? [trees.agent.keyRoot] : [])];
+}
+
 /** What a write needs from its session: where to append, and what to pin it to. */
 export interface SessionWrite {
   /** The write context over the tree the write is going to. */
@@ -932,6 +946,7 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // answer, unchanged, and the whole of the non-regression: a call that says nothing
   // lands exactly where it landed before this parameter existed.
   const trees = target?.trees ?? session.trees;
+  session.recordPage.opened(trees.projectPublic, keyRootsOf(trees));
   const which = whichIn(trees, scope, session);
   const open = session.runs.get(chainRootForScope(trees, scope) as string);
   if (open !== undefined)
