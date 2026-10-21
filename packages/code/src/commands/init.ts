@@ -34,15 +34,8 @@
  * about a directory that is none, with the anchor of whatever project lies above it.
  */
 
-import {
-  appendFileSync,
-  existsSync,
-  readdirSync,
-  readFileSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname, join, parse } from 'node:path';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 import { catalogUpcasters, ensureTree, privateKeyPath } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -62,6 +55,12 @@ import {
   signerFor,
 } from '@mnema/core/write';
 import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
+import {
+  complete,
+  type Missing,
+  nearestGitRoot,
+  type PrettierIgnoreChange,
+} from './the-record-page.js';
 
 /** What init needs from its environment: injected so it is testable. */
 export interface InitContext {
@@ -108,7 +107,7 @@ export interface InitResult {
      * alone: `created` or `added` (the line `.mnema/`), and absent when the repository declares no
      * prettier or the line was already there. The one thing init writes outside `.mnema/`.
      */
-    readonly prettierIgnore?: { readonly path: string; readonly did: 'created' | 'added' };
+    readonly prettierIgnore?: PrettierIgnoreChange;
   };
   /**
    * Present only in a project already here whose checkout recorded an identity that no longer
@@ -116,6 +115,7 @@ export interface InitResult {
    * refusal, the code and the words a write prints, asked of the same function the write asks
    * (`recordedAnchorOf`), and the file those words' restore takes, where they name one.
    */
+  readonly completed?: Missing;
   readonly writeRefused?: {
     readonly code: IdentityUnavailableError['code'];
     readonly message: string;
@@ -175,10 +175,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
 
   // Create the tree at the EXACT cwd (its own `.gitignore` comes with it) unless
   // one is already here: a second init must not re-found.
-  if (!alreadyHere) {
-    ensureTree({ root });
-    writeFileSync(join(root, README_NAME), RECORD_README, 'utf-8');
-  }
+  if (!alreadyHere) ensureTree({ root });
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
 
@@ -204,14 +201,21 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       layout: { root: chainRootForScope(trees, 'public') as string },
       upcasters: catalogUpcasters(),
     };
+    // What the founding leaves beside the record, and a project founded before it did lacks:
+    // completed here, and nothing else of the project is touched.
+    const done = complete(ctx.cwd);
+    const completed = done.readme || done.prettierIgnore !== undefined ? { completed: done } : {};
     const recorded = recordedAnchorOf(asked);
-    if (recorded === undefined) return { created: false, root, anchor: authorizingAnchor(asked) };
-    if (recorded.counted) return { created: false, root, anchor: recorded.anchor };
+    if (recorded === undefined) {
+      return { created: false, root, anchor: authorizingAnchor(asked), ...completed };
+    }
+    if (recorded.counted) return { created: false, root, anchor: recorded.anchor, ...completed };
     const { refusal } = recorded;
     return {
       created: false,
       root,
       anchor: recorded.anchor,
+      ...completed,
       writeRefused: {
         code: refusal.code,
         message: refusal.message,
@@ -244,7 +248,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
   });
 
   const gitRoot = nearestGitRoot(ctx.cwd);
-  const prettierIgnore = protectFromPrettier(gitRoot ?? ctx.cwd);
+  const { prettierIgnore } = complete(ctx.cwd);
   return {
     created: true,
     root,
@@ -260,96 +264,10 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
   };
 }
 
-/**
- * The nearest directory at or above `from` that holds a `.git` (a directory, or the file a
- * worktree and a submodule leave), or undefined when none does. A read of the disk, and the only
- * way this product learns where a repository starts without running git.
- */
-function nearestGitRoot(from: string): string | undefined {
-  for (let dir = from; ; dir = dirname(dir)) {
-    if (existsSync(join(dir, '.git'))) return dir;
-    if (dir === parse(dir).root) return undefined;
-  }
-}
-
 function isDirectory(path: string): boolean {
   try {
     return statSync(path).isDirectory();
   } catch {
     return false;
   }
-}
-
-/** The name of the page init leaves in the record's directory. Not part of the proof. */
-const README_NAME = 'README.md';
-
-/**
- * What a person or an agent finds when it opens `.mnema/`. It says only what the format and
- * `docs/what-it-proves.md` already promise: a reformatted byte is a broken proof, and the
- * private keys are not here.
- */
-const RECORD_README = [
-  '# .mnema',
-  '',
-  "This is the project's mnema record: the signed, append-only log of the decisions behind the",
-  'work, kept with the repository and committed with it.',
-  '',
-  '- The record changes as the work does, and each change goes in the same commit as the work',
-  '  it describes.',
-  '- Nothing here is edited by hand or reformatted. The record is signed bytes: a formatter that',
-  '  rewrites one byte of it breaks the proof, so keep prettier and the like away from this folder.',
-  '- Private keys are never here: the `.gitignore` in this folder keeps them out of git.',
-  '',
-  'To check it, run `mnema verify` in the project. Without installing anything, clone',
-  'https://github.com/felipesauer/mnema and run',
-  '`python3 packages/chain/verifier/mnema_verify.py record <this folder>`.',
-  '',
-].join('\n');
-
-const IGNORED_LINE = '.mnema/';
-
-/** Whether the repository at `dir` declares prettier: a dependency, a `prettier` key, or a `.prettierrc*`. */
-function declaresPrettier(dir: string): boolean {
-  try {
-    if (readdirSync(dir).some((name) => name.startsWith('.prettierrc'))) return true;
-  } catch {
-    return false;
-  }
-  try {
-    const manifest: unknown = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-    if (typeof manifest !== 'object' || manifest === null) return false;
-    const declared = manifest as Record<string, unknown>;
-    if ('prettier' in declared) return true;
-    return ['dependencies', 'devDependencies'].some((key) => {
-      const group = declared[key];
-      return typeof group === 'object' && group !== null && 'prettier' in group;
-    });
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Keeps a formatter off the record, in the one case the repository says it runs one: it has a
- * `.prettierignore` or declares prettier. Adds the line `.mnema/` once (a `.mnema` or `.mnema/`
- * already there counts), creates the file only when prettier is declared and it is absent, and
- * touches nothing in a repository with no prettier.
- */
-function protectFromPrettier(
-  dir: string,
-): { readonly path: string; readonly did: 'created' | 'added' } | undefined {
-  const path = join(dir, '.prettierignore');
-  if (existsSync(path)) {
-    const existing = readFileSync(path, 'utf-8');
-    const has = existing
-      .split(/\r?\n/)
-      .some((l) => ['.mnema', '.mnema/', '/.mnema', '/.mnema/'].includes(l.trim()));
-    if (has) return undefined;
-    const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
-    appendFileSync(path, `${gap}${IGNORED_LINE}\n`, 'utf-8');
-    return { path, did: 'added' };
-  }
-  if (!declaresPrettier(dir)) return undefined;
-  writeFileSync(path, `${IGNORED_LINE}\n`, 'utf-8');
-  return { path, did: 'created' };
 }

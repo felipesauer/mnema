@@ -19,7 +19,9 @@ with its own changelog.
   prettier (a dependency, a `prettier` key in `package.json`, or a `.prettierrc*` at the root), `init` adds the line `.mnema/`
   to the `.prettierignore` at the root of the repository, creating it only when prettier is declared, and says so; a repository
   with no prettier is left as it is. The session brief gains one line saying that recording changes `.mnema/` and that the change
-  goes in the same commit as the work.
+  goes in the same commit as the work. Run again in a project that is already founded, `init` adds what that project
+  lacks of the README and the `.prettierignore` line, says what it added and touches nothing else of the record, and
+  `mnema doctor` points at either when it is missing (it writes nothing; the fix it names is `mnema init`).
 - **`mnema usage --tools` counts how many times each MCP tool was called, from a file this machine keeps.** For each call
   the server answers and counts it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
   the refusal) to `<data directory>/tool-calls/<digest of the project>.jsonl`, in the home and never in the repository.

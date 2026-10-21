@@ -245,7 +245,9 @@ mnema init
 # has a `.prettierignore` or declares prettier (a dependency, a `prettier` key in `package.json`, or a
 # `.prettierrc*` at the root), `init` also adds the line `.mnema/` to the `.prettierignore` at the root of
 # the repository (creating it only when prettier is declared), and says so. It touches no other file outside
-# `.mnema/`, and nothing at all where prettier is not in play.
+# `.mnema/`, and nothing at all where prettier is not in play. Run again in a project that is already founded, it
+# adds only what that project lacks of these two (the README, the `.prettierignore` line), says what it added, and
+# touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -1078,6 +1080,10 @@ it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself na
 In a project inside a git repository it also names each worktree that still holds private notes
 in `.mnema/private/`, where they lived before the private tree moved into the repository's git
 directory: nothing reads them there, and removing that worktree deletes them.
+
+It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, or
+the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes neither: each finding says to run
+`mnema init`, which adds exactly that. (`--fix` takes a named target, and these two are not among them.)
 
 `mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
