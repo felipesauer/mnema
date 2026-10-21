@@ -67,6 +67,7 @@ import {
   personsKeyInTheClear,
   THE_AGENT_KEY_SEPARATES_NOTHING,
 } from '../the-persons-key-in-the-clear.js';
+import { isOlderThan } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
 import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
@@ -290,19 +291,38 @@ function pluginFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unread
       },
     ];
   }
-  return plugins.map((one) =>
-    one.version === ctx.running.version
-      ? {
-          topic: 'plugin',
-          state: 'fine',
-          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope), the version of this binary: nothing to do.`,
-        }
-      : {
-          topic: 'plugin',
-          state: 'attention',
-          line: `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope) and this binary is ${ctx.running.version}: update whichever is behind so the two agree.`,
-        },
-  );
+  return plugins.map((one): Finding => {
+    const where = `plugin ${oneLine(one.id)} is installed at ${oneLine(one.version)} (${oneLine(one.scope)} scope)`;
+    if (one.version === ctx.running.version) {
+      return {
+        topic: 'plugin',
+        state: 'fine',
+        line: `${where}, the version of this binary: nothing to do.`,
+      };
+    }
+    // THE BINARY BEHIND THE PLUGIN IS THE PAIR THAT BREAKS: the plugin asks it for what it never
+    // learned, and a hook that is refused says nothing. A binary AHEAD of the plugin keeps every
+    // flag it took, so that pair works and only the plugin is stale.
+    if (isOlderThan(ctx.running.version, one.version)) {
+      return {
+        topic: 'plugin',
+        state: 'attention',
+        line: `${where} and this binary is ${ctx.running.version}, older than the plugin: the plugin's hooks and server run the mnema on the PATH and may ask it for what it lacks, so update the binary with \`npm i -g @mnema/code@${oneLine(one.version)}\`.`,
+      };
+    }
+    if (isOlderThan(one.version, ctx.running.version)) {
+      return {
+        topic: 'plugin',
+        state: 'attention',
+        line: `${where} and this binary is ${ctx.running.version}, newer than the plugin: they still work together, and \`claude plugin update ${oneLine(one.id)}\` brings the plugin up to date.`,
+      };
+    }
+    return {
+      topic: 'plugin',
+      state: 'attention',
+      line: `${where} and this binary is ${ctx.running.version}: the two versions could not be ordered, so update whichever is behind so the two agree.`,
+    };
+  });
 }
 
 /** Whether one entry of an MCP configuration starts this product's server. */

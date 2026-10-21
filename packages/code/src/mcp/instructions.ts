@@ -65,9 +65,13 @@
  *     one is committed: `RECORD_CONTRACT`, the text every write tool but `skills` carries
  *     (`mcp-e2e.test.ts`, "every write tool declares the contract"; this said "every write
  *     tool", while two did not, and `rules_before_an_edit` came to carry it);
+ *   - that what is recorded here is the signed copy, and the one later sessions read back,
+ *     even when the same thing is also kept in a plan, a ledger or the host's own memory:
+ *     the record is signed and read back by `bootstrap` and `search`
+ *     (`the-agent-is-told-what-it-has.test.ts` holds the sentence, and the ceiling);
  *   - that, with the plugin, a session opens with the decisions in force, the adopted
- *     patterns and the notes this machine holds, the ones near the work first, unless that was
- *     switched off:
+ *     patterns and the notes this machine holds, the ones nearest the work first, unless that
+ *     was switched off:
  *     `the-record-arrives-unasked.test.ts` for both handlers the plugin declares, and
  *     `the-switch-is-a-fact.test.ts` for the switch.
  *   - that no tool here reports, sends or accepts a report of an internal error, and that the
@@ -87,10 +91,11 @@
 const LINES = [
   'mnema is this project’s record of the decisions behind the work, each with its reasons',
   'and the alternatives turned down, and of notes about the project: signed, append-only,',
-  'kept with the repository. What is recorded here outlasts this session, and later sessions',
-  'read it back.',
+  'kept with the repository.',
   '',
-  'Record as the work happens, not in a batch at the end:',
+  'Record as the work happens, not in a batch at the end, and record here even what is also',
+  'kept elsewhere (a plan, a ledger, CLAUDE.md, this host’s own memory): this is the signed',
+  'copy, and the one later sessions read back:',
   '- `record_decision` when a choice is settled that someone could later question: a',
   '  library, an approach, a trade-off. Give the `rationale`, and in `alternatives` what was',
   '  turned down and why. A decision is born `proposed`; once accepted, it is in force here.',
@@ -107,17 +112,16 @@ const LINES = [
   '  `resume` says where this agent’s last session stopped.',
   '',
   'Not for the record: a credential (a record is permanent, and a public one is committed and',
-  'cloned), personal data such as an email address (the mnid already says who wrote), what',
-  'the code or its history already says, or a log of every step.',
+  'cloned), personal data such as an email address, what the code or its history already',
+  'says, or a log of every step.',
   '',
   'If mnema fails with an internal error, tell the person they can run `mnema report`: it is',
   'theirs to run, and no tool here reports, sends or accepts one.',
   '',
   'With the mnema plugin, a session here opens with the decisions in force, the adopted',
-  'patterns and the memories and observations this machine holds for the project, those near',
-  'the files and tasks the session touches first, unless someone switched that off, so a',
-  'note recorded here comes back without anybody asking for it, and a decision does once it',
-  'is accepted.',
+  'patterns and the notes this machine holds for the project, those nearest the work first,',
+  'unless someone switched that off: a note recorded here comes back unasked, and a decision',
+  'does once it is accepted.',
 ];
 
 /** What the server sends as `instructions` in the handshake. */

@@ -155,6 +155,7 @@ import {
   linkRefusal,
   locateLinkAsRecorded,
   outsideTheProject,
+  relationNamesAPath,
   targetAsRecorded,
   targetRecordedAs,
 } from '../link-target.js';
@@ -174,8 +175,9 @@ import {
   type SwitchableChannel,
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
-import type { ScopedLinkBreak } from '../record-integrity.js';
+import { movedApartSentence, type ScopedLinkBreak } from '../record-integrity.js';
 import {
+  type FellIn,
   forwardReplacement,
   type Landed,
   type PersonSigned,
@@ -208,7 +210,7 @@ import {
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
-import { personSignedIn, routedTo, routeWrite } from './route.js';
+import { personSignedIn, routedTo, routeWrite, whereItFell } from './route.js';
 import { anchorIn, openWrite, type Session, type WriteTarget, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -252,7 +254,8 @@ export type CreateTaskResult =
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The task's id (the one that moved). */
         readonly id: string;
@@ -290,7 +293,8 @@ export type RecordDecisionResult =
 /** A decision moved (ok), or the gate refused (a typed reason in the envelope). */
 export type DecisionTransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The decision's id (the one that moved). */
         readonly id: string;
@@ -336,7 +340,8 @@ export type CreateSkillResult =
 /** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
 export type SkillTransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The skill's id (the one that moved). */
         readonly id: string;
@@ -598,6 +603,10 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
+  const projectDir = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
+  const namesAPath =
+    projectDir === undefined ? undefined : relationNamesAPath(input.rel, projectDir);
+  if (namesAPath !== undefined) return { ok: false, code: 'NOT_A_REFERENCE', message: namesAPath };
   // The public tree travels to every clone: a target no clone can open is refused there, as the
   // command line refuses it. The private and global trees take any path.
   const publicRoot =
@@ -770,6 +779,7 @@ export function runTaskTransition(
     id: input.id,
     alias: deriveAlias('task', input.id),
     to: moved.to,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
@@ -969,6 +979,7 @@ export function runDecisionTransition(
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
     ...(input.action === 'accept' && which !== undefined ? { acceptedByAgent: which } : {}),
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
@@ -1005,12 +1016,16 @@ export function runRetractNote(
   session: Session,
   input: { id: string; reason: string },
 ): RetractNoteResult {
-  const located = locateEntity(session, input.id, 'records');
-  if (located.outcome !== 'found') return refuseUnlocated(session, 'note', input.id, located);
+  // A label one decision carries becomes its id, so the refusal says what that is; one several
+  // carry is refused with their ids.
+  const named = addressedIn(session, input.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  const located = locateEntity(session, named.id, 'records');
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'note', named.id, located);
   const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractNote(ctx, {
-      id: input.id,
+      id: named.id,
       reason: input.reason,
       which,
       run,
@@ -1025,6 +1040,7 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(retracted),
   };
@@ -1241,6 +1257,7 @@ export function runSkillTransition(
     id: input.id,
     name,
     to: moved.to,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
@@ -1298,7 +1315,14 @@ function skillProofToFields(input: {
  * always the chain as it stands: the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
-  return bootstrap(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  const asking = { actor: session.who ?? '', ...askerContext(session) };
+  // The work, the patterns and the decisions are the session's own project's (see above); where
+  // the actor LEFT OFF is not: the session's run lives in the project its first write went to,
+  // which may be another one of the workspace.
+  return {
+    ...bootstrap(sessionCaches(session), asking),
+    resume: resume(actorCaches(session), asking),
+  };
 }
 
 /**
@@ -1640,6 +1664,59 @@ function sessionCaches(session: Session): ProjectionCache[] {
   return scopedCaches(session).map((source) => source.cache);
 }
 
+/**
+ * The caches the actor's runs are read from: every tree of every project of the workspace.
+ *
+ * A run is the actor's session wherever it was opened, and a connection opens one per project it
+ * writes to, so reading the session's first project alone said `lastRun: null` about a session
+ * whose first write went to the second. Asking the whole workspace is safe because the reads
+ * filter by the actor: they list only the runs the session's own identity signed.
+ */
+function actorCaches(session: Session): ProjectionCache[] {
+  return workspaceCaches(session).map((source) => source.cache);
+}
+
+/**
+ * The sentences a read owes about records moved apart (`movedApartSentence`): those of the one
+ * entity a read opened, or, with none named, of every entity in the session's own project, the
+ * trees the opening context is read from. Empty for every record moved in one line.
+ *
+ * A reading with many is cut at {@link MOVED_APART_SHOWN} so a record with a long history of
+ * divergence does not become the opening read's weight; the cut is said.
+ */
+export function movedApartNotes(session: Session, asked?: string): readonly string[] {
+  // The id as the read resolved it: a label one decision carries is that decision's id.
+  const named = asked === undefined ? undefined : addressedIn(session, asked);
+  const entityId = named?.ok ? named.id : asked;
+  if (entityId === undefined) {
+    const moves = sessionCaches(session).flatMap((cache) => cache.divergentMoves());
+    const said = moves.slice(0, MOVED_APART_SHOWN).map(movedApartSentence);
+    if (moves.length > MOVED_APART_SHOWN) {
+      said.push(
+        `(${moves.length - MOVED_APART_SHOWN} more records moved apart are not listed here)`,
+      );
+    }
+    return said;
+  }
+  // One record, said ONCE: the same id held by two checkouts of a repository is one sentence that
+  // names the projects it was seen in, not the sentence per project.
+  const seenIn = new Map<string, Set<string>>();
+  for (const tree of workspaceTrees(session)) {
+    const dir = tree.target?.dir ?? session.project ?? '';
+    for (const move of session.caches.get(tree.chainRoot).divergentMoves()) {
+      if (move.entityId !== entityId) continue;
+      const sentence = movedApartSentence(move);
+      seenIn.set(sentence, (seenIn.get(sentence) ?? new Set()).add(dir));
+    }
+  }
+  return [...seenIn].map(([sentence, dirs]) =>
+    dirs.size > 1 ? `${sentence} (seen in ${[...dirs].map(oneLine).join(', ')})` : sentence,
+  );
+}
+
+/** How many records moved apart one read lists. */
+const MOVED_APART_SHOWN = 5;
+
 /** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
   /**
@@ -1766,7 +1843,12 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
   // context marks the written tree stale; doing it the other way round would
   // make every call rebuild the tree it is about to read.
   const caches = sessionCaches(session);
-  const served = input.id === undefined ? undefined : lookupServedSkill(caches, input.id);
+  // A label one decision carries becomes its id, as in every tool that takes one; one several
+  // carry is refused with their ids.
+  const named = input.id === undefined ? undefined : addressedIn(session, input.id);
+  if (named !== undefined && !named.ok) return ambiguousLabel(named.message);
+  const id = named?.id;
+  const served = id === undefined ? undefined : lookupServedSkill(caches, id);
   if (served?.outcome === 'unknown') {
     return {
       ok: false,
@@ -1775,7 +1857,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // the trees the session can see, and a refusal claiming a search of every
       // project would claim more than it did. `input.id` is defined here: `served`
       // is undefined without it.
-      message: notFoundInSessionTrees(session, 'skill', input.id as string),
+      message: notFoundInSessionTrees(session, 'skill', id as string),
     };
   }
   if (served?.outcome === 'not-served') {
@@ -1799,7 +1881,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // the caller sent"). `input.id` is defined here: `served` is undefined without
       // it, the same narrowing the branch above relies on.
       message:
-        `skill "${oneLine(input.id as string)}" is ${served.state}: a pattern the ` +
+        `skill "${oneLine(id as string)}" is ${served.state}: a pattern the ` +
         'project turned down or retired is not served as a way of working',
     };
   }
@@ -1915,7 +1997,7 @@ function recordConsultations(
  * so the result carries only the machine's OWN open runs.
  */
 export function runFocusTool(session: Session): Focus {
-  return focus(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  return focus(actorCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /**
@@ -1926,7 +2008,7 @@ export function runFocusTool(session: Session): Focus {
  * open OR already ended, the "where was I" anchor.
  */
 export function runResumeTool(session: Session): Resume {
-  return resume(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  return resume(actorCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */

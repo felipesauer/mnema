@@ -195,6 +195,22 @@ describe('a title with no word in it', () => {
   }, 60_000);
 });
 
+describe('a title of spaces', () => {
+  it('is refused as the title of every write that takes one, and nothing lands', async () => {
+    const born = events();
+    for (const said of [' ', '   ', '\u00a0']) {
+      for (const argv of titled(said)) {
+        const result = await mnema(...argv);
+        const label = `${argv.slice(0, 2).join(' ')} ${JSON.stringify(said)}`;
+        expect(result.failed, label).toBe(true);
+        expect(result.said, label).toContain('Refused (NOT_A_TITLE)');
+        expect(result.said, label).toContain('is only spaces, so it names nothing');
+      }
+    }
+    expect(events()).toBe(born);
+  }, 60_000);
+});
+
 describe('a marker the product prints where a reference goes', () => {
   /** The writes that take a reference a later reading looks up, each with the marker put there. */
   function referenced(marker: string): readonly (readonly string[])[] {
@@ -221,6 +237,20 @@ describe('a marker the product prints where a reference goes', () => {
       }
     }
     expect(events()).toBe(born);
+  }, 60_000);
+
+  it('refuses a path as a relation and keeps a label with a slash in it', async () => {
+    mkdirSync(join(project, 'docs', 'kept'), { recursive: true });
+    const born = events();
+    for (const rel of ['src/a.ts', './x', '../x', '/etc/x', 'docs/kept', 'docs/kept/']) {
+      const result = await mnema('link', task, 'src/a.ts', '--rel', rel);
+      expect(result.failed, rel).toBe(true);
+      expect(result.said, rel).toContain('Refused (NOT_A_REFERENCE)');
+    }
+    expect(events()).toBe(born);
+    for (const rel of ['and/or', 'parent/child', 'v1.2', 'docs/missing']) {
+      expect((await mnema('link', task, 'src/a.ts', '--rel', rel)).failed, rel).toBe(false);
+    }
   }, 60_000);
 
   it('and the same writes land with a value in place, so the refusal was about the marker', async () => {

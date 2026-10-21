@@ -66,9 +66,22 @@
  * with what it answered and where the right one comes from. The notes handler asks too and
  * stays silent, so a session is told once. Asserted in the same test ("names a program of the
  * same name to the session instead of running it").
+ *
+ * AND THE ANSWER CARRIES THE VERSION, WHICH IS COMPARED WITH THE PLUGIN'S OWN ({@link theMismatch}).
+ * A `mnema` OLDER than the plugin is the pair that breaks: the plugin asks it for things it has
+ * never heard of, and where it refuses, that was silence. So the handler that hands over the
+ * document says, in one line and with the command that fixes it, that the two do not agree, and
+ * says it whether or not the old binary could still print a document. A `mnema` NEWER than the
+ * plugin is not told: the binary keeps every flag it took, so that pair works, and the doctor
+ * says which side to update. The line is a fact in the session's context, never a refusal: the
+ * handler still exits 0 and blocks nothing. Asserted in the same test ("says a binary older
+ * than the plugin does not match it").
  */
 
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
 
 /**
@@ -135,6 +148,49 @@ const THIS_PRODUCT = '@mnema/code';
  */
 const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
+/**
+ * The version of the plugin this file belongs to, read off its manifest, or `null` where it is
+ * not there to read (a copy of this file somewhere else, a manifest that is not JSON): no claim
+ * is made then, and a handler that cannot say what it is does not say it disagrees.
+ *
+ * @param {string} [manifest]
+ * @returns {string | null}
+ */
+export function thePluginVersion(
+  manifest = join(dirname(fileURLToPath(import.meta.url)), '..', '.claude-plugin', 'plugin.json'),
+) {
+  try {
+    const version = JSON.parse(readFileSync(manifest, 'utf-8'))?.version;
+    return typeof version === 'string' ? version : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether `binary` is a version OLDER than `plugin`, by the three numbers before any suffix
+ * (`0.2.0-beta` counts as `0.2.0`: the suffix does not order). A version that is not three
+ * numbers is not compared, and is never "older".
+ *
+ * `packages/code/src/version.ts` holds the same comparison for the doctor, and a test holds the
+ * two to one table.
+ *
+ * @param {string} binary
+ * @param {string} plugin
+ * @returns {boolean}
+ */
+export function isOlderThan(binary, plugin) {
+  const numbers = (/** @type {string} */ version) =>
+    /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(version.trim())?.slice(1).map(Number);
+  const had = numbers(binary);
+  const wants = numbers(plugin);
+  if (had === undefined || wants === undefined) return false;
+  for (let at = 0; at < 3; at += 1) {
+    if ((had[at] ?? 0) !== (wants[at] ?? 0)) return (had[at] ?? 0) < (wants[at] ?? 0);
+  }
+  return false;
+}
+
 /** How much of what a stranger answered is quoted back: enough to recognize it. */
 const QUOTED = 120;
 
@@ -152,7 +208,7 @@ const QUOTED = 120;
  * existed, and the question changes nothing about a PATH with no `mnema` on it.
  *
  * @param {string} cwd
- * @returns {{ readonly kind: 'this' | 'older' | 'absent' } | { readonly kind: 'stranger', readonly said: string, readonly status: number | null }}
+ * @returns {{ readonly kind: 'this', readonly version: string } | { readonly kind: 'older' | 'absent' } | { readonly kind: 'stranger', readonly said: string, readonly status: number | null }}
  */
 export function whoAnswers(cwd) {
   const ran = spawnSync(binaryToRun(), [WHICH_PROGRAM], {
@@ -162,7 +218,9 @@ export function whoAnswers(cwd) {
   });
   if (ran.error !== undefined) return { kind: 'absent' };
   const out = (ran.stdout ?? '').trim();
-  if (ran.status === 0 && out.startsWith(`${THIS_PRODUCT} `)) return { kind: 'this' };
+  if (ran.status === 0 && out.startsWith(`${THIS_PRODUCT} `)) {
+    return { kind: 'this', version: (out.split('\n')[0] ?? '').slice(THIS_PRODUCT.length).trim() };
+  }
   const err = (ran.stderr ?? '').trim();
   if (ran.status !== 0 && err.startsWith(`mnema does not take "${WHICH_PROGRAM}".`)) {
     return { kind: 'older' };
@@ -206,6 +264,27 @@ export function aStranger(stranger) {
 }
 
 /**
+ * The one line a session is told when the `mnema` it runs is older than this plugin, or `null`
+ * where the two agree, the binary is the newer, or either version is unknown. A binary that
+ * does not answer `--identify` at all predates this product's first release, so it is older.
+ *
+ * @param {ReturnType<typeof whoAnswers>} who
+ * @param {string | null} [plugin] This plugin's version.
+ * @returns {string | null}
+ */
+export function theMismatch(who, plugin = thePluginVersion()) {
+  if (plugin === null) return null;
+  const had = who.kind === 'older' ? 'older than 0.1.0' : who.kind === 'this' ? who.version : null;
+  if (had === null) return null;
+  if (who.kind === 'this' && !isOlderThan(who.version, plugin)) return null;
+  return (
+    `The mnema plugin is ${plugin} and the mnema it runs is ${had}, which is older than the plugin: ` +
+    `what the plugin asks of it may not be understood and this session can open without the record. ` +
+    `Update it with \`npm i -g @mnema/code@${plugin}\` (${INSTALL_PAGE}); nothing is blocked meanwhile.`
+  );
+}
+
+/**
  * What a verb has to say here, or `null` when it has nothing.
  *
  * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS. A refusal arrives with a non-zero
@@ -218,8 +297,9 @@ export function aStranger(stranger) {
  * @param {string} cwd Where to run it: the host's project directory, or this process's own
  *   when the host announced none.
  * @param {{ readonly namesAStranger?: boolean }} [options] Whether a `mnema` that is another
- *   program is named to the session ({@link aStranger}) rather than met with silence: the one
- *   handler that hands over the document says it, so a session is told once.
+ *   program is named to the session ({@link aStranger}) rather than met with silence, and whether
+ *   one OLDER than this plugin is told so ({@link theMismatch}): the one handler that hands over
+ *   the document says both, so a session is told once.
  * @param {readonly string[]} [handed] The handler's own arguments, from the hooks file: a
  *   `--host <name>` there is passed on, so the verb cuts to that host's ceiling rather than
  *   Claude Code's ({@link hostFlags}).
@@ -229,6 +309,21 @@ export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, hand
   const who = whoAnswers(cwd);
   if (who.kind === 'absent') return null;
   if (who.kind === 'stranger') return namesAStranger ? aStranger(who) : null;
+  const text = textOf(verb, cwd, handed);
+  const mismatch = namesAStranger ? theMismatch(who) : null;
+  if (mismatch === null) return text;
+  return text === null ? mismatch : `${text}${BETWEEN_THE_STREAMS}${mismatch}`;
+}
+
+/**
+ * What the verb prints for a hook, or `null` where that is silence.
+ *
+ * @param {string} verb
+ * @param {string} cwd
+ * @param {readonly string[]} handed
+ * @returns {string | null}
+ */
+function textOf(verb, cwd, handed) {
   const flags = [FOR_A_HOOK, ...hostFlags(handed)];
   const asked = running(verb, flags, cwd);
   const ran = refusesTheFlag(asked, flags) ? running(verb, [], cwd) : asked;

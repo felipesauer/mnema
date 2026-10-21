@@ -137,6 +137,16 @@ describe('the server says what its tools are for, before any is chosen', () => {
     }
   });
 
+  it('says to record here what is also kept elsewhere, as the work happens, and stays under the ceiling', () => {
+    const text = SERVER_INSTRUCTIONS.replace(/\n/g, ' ');
+    expect(text).toContain('Record as the work happens, not in a batch at the end');
+    expect(text).toContain(
+      'record here even what is also kept elsewhere (a plan, a ledger, CLAUDE.md, this host’s own memory): this is the signed copy, and the one later sessions read back:',
+    );
+    // The lower of the two ceilings the hosts have kept (2,048 up to 2.1.295, 4,096 since).
+    expect(SERVER_INSTRUCTIONS.length).toBeLessThanOrEqual(2048);
+  });
+
   it('says a decision is born in the state the workflow gives it', () => {
     // The one claim about the WORKFLOW the text makes, read off the workflow rather than
     // typed: were the first state ever to change, a manual still saying `proposed` would be
