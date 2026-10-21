@@ -99,8 +99,9 @@ describe('what the job reads from the pages', () => {
   it('reads the real pages of this repository, so the ruler is not empty', () => {
     const real = pagesIn(ROOT);
     expect(real.map((one) => one.path)).toEqual(
-      expect.arrayContaining(['README.md', 'packages/code/README.md']),
+      expect.arrayContaining(['README.md', 'packages/code/README.md', 'docs/install.md']),
     );
+    expect(real.every((one) => one.path.endsWith('.md'))).toBe(true);
     const urls = real.flatMap((one) => addressesIn(one)).map((one) => one.url);
     expect(urls.some((url) => url.startsWith('https://raw.githubusercontent.com/'))).toBe(true);
   });

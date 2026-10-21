@@ -779,7 +779,22 @@ describe('the hook names the agent the record gives the key, not the host', () =
   });
 });
 
+/**
+ * A rule that refuses writes under `src/billing`: the gate's handler starts a `mnema` only where a
+ * rule of the record can be met (`plugin/hooks/an-address-can-be-met.mjs`), so the cases that hand
+ * it a `mnema` of their own need one in the record.
+ */
+async function aRefusalInTheRecord(): Promise<void> {
+  const id = (await did(undefined, 'decision', 'record', 'Billing is frozen', 'why')).match(
+    /\(([0-9a-f-]{20,})\)/,
+  )?.[1] as string;
+  await did(undefined, 'decision', 'move', 'accept', id, '--note', 'agreed');
+  await did(undefined, 'link', id, 'src/billing', '--rel', 'refuses-a-write');
+}
+
 describe('the handler asks again without the agent key of a mnema that does not know it', () => {
+  beforeEach(aRefusalInTheRecord);
+
   it('passes the key to a mnema that takes it, and falls back for one that refuses the option', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'mnema-old-binary-'));
     try {
@@ -833,6 +848,8 @@ describe('the handler asks again without the agent key of a mnema that does not 
 });
 
 describe('a mnema that exits before it reads its input is still asked the way it understands', () => {
+  beforeEach(aRefusalInTheRecord);
+
   /** A `mnema` that exits at the arguments, so a large payload meets a closed pipe. */
   const exitingAt = (dir: string, name: string, refusal: string): string => {
     const path = join(dir, name);

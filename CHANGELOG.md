@@ -26,7 +26,15 @@ with its own changelog.
   tool (read from the result the host writes in the transcript, which the reader passed over before) and the prompt typed
   right after a response that ended in a question mark, each quoted with its question, as a `proposed` decision in this
   machine's private tree, titled `Answer: …`. The channel is still off until somebody switches it on.
-
+- **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
+  lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
+  and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed
+  with the verb), used for every verdict unless a note is written after the letter, and ends with how many were accepted,
+  rejected and skipped. Each verdict is the move `decision move` makes, through the same gate, key and refusal codes; a refusal
+  on one decision is said and the review goes on. It is a person's: it signs with your own key, refuses `--which`, and says
+  when `MNEMA_AGENT_KEY` is set that it does not use it. Without a terminal it writes nothing, refuses with
+  `DECISION_REVIEW_NEEDS_A_PERSON` and prints the `decision move accept <ids> --note` command that rules the same
+  decisions; with nothing awaiting, it says so and exits 0.
 - **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
   that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
   is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
@@ -48,6 +56,18 @@ with its own changelog.
 
 ### Changed
 
+- **In VS Code and Cursor, a write no rule can meet no longer starts `mnema`.** The gate there is a process per write, and most
+  of its cost was loading `mnema`, paid even in a project whose record addresses no path. The plugin's handler now reads the
+  stored lines of the project's committed tree, of its private tree and of the machine's global tree itself, and where none
+  holds a link under `governs`, `asks-for-a-person` or `refuses-a-write` it answers what `mnema` would answer there, nothing,
+  without starting it. A canonical line holds that relation byte for byte, so the search cannot miss one. Every doubt starts
+  `mnema` as before: a tree it cannot list, a line that is not UTF-8, not canonical, or not of a kind, a version and a shape
+  the first published reader declared (the plugin carries a copy of those declarations, held to the reader's by a test), so a
+  record `mnema` cannot read still refuses every write. Nothing is kept between two writes, so a rule that arrives by `git
+  pull` is met at the next one. Measured on one Linux machine under load, 50 runs each, in a project with one accepted rule and
+  no address: the handler went from about 330 ms (Cursor) and 290 ms (VS Code) at the median to about 50 ms; with a rule that
+  refuses, it costs what it did. Claude Code's hook, a call into the server, is unchanged.
+- **The links check after the merge reads `docs/` too, and `osv-scanner` runs weekly.** The job that asks the network for every address of the READMEs once a change is on `main` now also reads every Markdown page under `docs/`; it is still never a check on a pull request, and still opens one issue for the broken ones. `osv-scanner` now also runs on Mondays against the unchanged lockfile, so an advisory published against a dependency nobody touched shows up; a finding fails that run and shows in the Actions tab, and opens nothing else. `gitleaks` stays on pull requests and on `main`.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 
 ### Fixed

@@ -25,6 +25,7 @@ import {
   mkdtempSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -33,6 +34,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 /** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+
+/** The second reader, the one that imports the standard library alone. */
+const SECOND_READER = fileURLToPath(
+  new URL('../../chain/verifier/mnema_verify.py', import.meta.url),
+);
 
 /** The words both readers refuse it by. */
 const NO_TAIL = 'no tail in this record holds an event or a checkpoint';
@@ -163,4 +169,41 @@ describe('mnema verify over a record in which no tail holds anything', () => {
       expect(founded.status, founded.stderr).toBe(0);
     },
   );
+});
+
+describe('the two readers exit alike over a record with no tail that holds anything', () => {
+  const SHAPES: readonly { name: string; cut: (tailsDir: string) => void }[] = [
+    { name: 'no tails/ directory', cut: (dir) => rmSync(dir, { recursive: true }) },
+    {
+      name: 'a tails/ directory with nothing in it',
+      cut: (dir) => {
+        rmSync(dir, { recursive: true });
+        mkdirSync(dir);
+      },
+    },
+    {
+      name: 'a tail whose segment is empty',
+      cut: (dir) => {
+        const tail = join(dir, tails()[0] as string);
+        for (const name of readdirSync(tail)) rmSync(join(tail, name), { recursive: true });
+        writeFileSync(join(tail, '000001.jsonl'), '');
+      },
+    },
+  ];
+
+  it.each(SHAPES)('$name: both exit 1 and both say there is no tail', ({ cut }) => {
+    aRecord();
+    cut(join(repo, '.mnema', 'tails'));
+
+    const product = mnema('verify');
+    expect(product.status, product.stderr).toBe(1);
+    expect(product.stderr).toContain(NO_TAIL);
+
+    const second = spawnSync('python3', ['-I', SECOND_READER, 'record', join(repo, '.mnema')], {
+      encoding: 'utf-8',
+      env: { PATH: process.env.PATH ?? '', HOME: home },
+    });
+    expect(second.status, second.stdout).toBe(1);
+    expect(second.stdout).toContain(NO_TAIL);
+  });
 });

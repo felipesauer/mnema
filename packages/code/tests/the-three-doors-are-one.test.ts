@@ -287,6 +287,7 @@ const SUBCOMMANDS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   'decision supersede':
     'on the MCP door, in `decision_transition` the `supersede` action; the library has no method',
   'decision import': 'reading a directory or source format; only from the shell',
+  'decision review': 'asks a person at a terminal, one verdict at a time; only from the shell',
 };
 
 // ---------------------------------------------------------------------------

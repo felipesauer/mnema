@@ -14,7 +14,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case ''
             echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback settled help'
         case 'decision'
-            echo 'record move supersede import help'
+            echo 'record move review supersede import help'
         case 'skill'
             echo 'create move export provenance help'
         case 'stack'
@@ -134,6 +134,7 @@ complete -c mnema -f -n '__mnema_at "init"' -l color -x -a 'auto always never'
 # mnema decision
 complete -c mnema -f -n '__mnema_at "decision"' -a 'record' -d 'record a decision in the current project'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'move' -d 'accept or reject a decision (follows the decision; takes no --scope)'
+complete -c mnema -f -n '__mnema_at "decision"' -a 'review' -d 'go through the decisions awaiting a judgement one by one, at a terminal'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'supersede' -d 'supersede a decision with a later one (follows the decision; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'import' -d 'propose the decisions already written in this repository’s decision files'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'help' -d 'display help for command'
@@ -163,6 +164,11 @@ complete -c mnema -f -n '__mnema_at "decision move"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision move"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "decision move"' -a 'accept reject'
+
+# mnema decision review
+complete -c mnema -f -n '__mnema_at "decision review"' -s h -l help
+complete -c mnema -f -n '__mnema_at "decision review"' -s V -l version
+complete -c mnema -f -n '__mnema_at "decision review"' -l color -x -a 'auto always never'
 
 # mnema decision supersede
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l reason -r
