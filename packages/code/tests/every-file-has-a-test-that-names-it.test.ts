@@ -808,7 +808,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/subject-events-return-the-moves-a-replay-folds.test.ts': 11,
   'packages/chain/src/chain/subject-events.test.ts': 11,
   'packages/chain/src/chain/tail-lock.test.ts': 12,
-  'packages/chain/src/chain/tailproof.test.ts': 3,
+  'packages/chain/src/chain/tailproof.test.ts': 4,
   'packages/chain/src/chain/terminal-passphrase.test.ts': 2,
   'packages/chain/src/chain/the-census-names-a-move-the-workflow-does-not-allow.test.ts': 7,
   'packages/chain/src/chain/the-census-says-what-a-backup-is.test.ts': 12,
