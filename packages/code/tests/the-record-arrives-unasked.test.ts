@@ -1199,7 +1199,7 @@ describe('the record arrives unasked', () => {
       'before-a-write --host vscode --agent-key vscode',
       'handback',
     ]);
-    expect([...reached]).toEqual(Object.values(VERB_OF));
+    expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
 
     // And each is on the side the PRODUCT declares it on. Read off the same declaration the
     // parser routes with, so a verb that ever changed sides would land here rather than in a
