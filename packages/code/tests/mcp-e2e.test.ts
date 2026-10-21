@@ -566,6 +566,7 @@ describe('MCP session + tools: unit', () => {
       ok: true,
       recorded: ['claude-code', 'claude-code'],
       scope: 'public',
+      project,
     });
 
     const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
@@ -603,7 +604,12 @@ describe('MCP session + tools: unit', () => {
       target: '00000000-0000-7000-8000-000000000000',
       rel: 'inspired-by-a-dream',
     });
-    expect(result).toEqual({ ok: true, recorded: ['inspired-by-a-dream'], scope: 'public' });
+    expect(result).toEqual({
+      ok: true,
+      recorded: ['inspired-by-a-dream'],
+      scope: 'public',
+      project,
+    });
 
     const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
     expect(verify(chainRoot, catalogUpcasters()).ok).toBe(true);
@@ -2822,10 +2828,11 @@ describe('MCP server: end to end over a real client', () => {
     // The response carries both names: the alias for the human, the id for a move.
     // The headline, then the tree it landed in: the reply says both, and the agent
     // needs the first line to move the task.
-    const [headline, landed] = textOf(created).split('\n');
+    const [headline, landed, where] = textOf(created).split('\n');
     expect(landed).toBe(
       '  Landed in the public tree: committed with the repository, so it reaches every clone.',
     );
+    expect(where).toBe(`  In the project at ${project}.`);
     const reported = /^Created task (t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)$/.exec(headline as string);
     expect(reported).not.toBeNull();
     const [, alias, id] = reported as RegExpExecArray;
@@ -2840,7 +2847,7 @@ describe('MCP server: end to end over a real client', () => {
     expect(moved.isError).toBeFalsy();
     // The alias AND the id: an alias is a four-hex hash of the id, so it is the id
     // that says which task this acknowledgement is about.
-    expect(textOf(moved)).toBe(`Task ${alias} (${id}) → READY`);
+    expect(textOf(moved)).toBe(`Task ${alias} (${id}) → READY\n  In the project at ${project}.`);
 
     // Both writes landed in the tree a task travels in, fully signed: the birth by its
     // kind, and the move by following the entity there.
@@ -2879,7 +2886,7 @@ describe('MCP server: end to end over a real client', () => {
       arguments: { id: created.id, action: 'submit' },
     });
     expect(moved.isError).toBeFalsy();
-    expect(textOf(moved)).toMatch(/→ READY$/);
+    expect(textOf(moved)).toMatch(/→ READY\n {2}In the project at .+\.$/);
 
     // An illegal move comes back as a tool error carrying the gate's reason,
     // not a thrown exception that would break the connection.
@@ -2998,7 +3005,9 @@ describe('MCP server: end to end over a real client', () => {
       arguments: { id, action: 'review', note: 'looks sound' },
     });
     expect(reviewed.isError).toBeFalsy();
-    expect(textOf(reviewed)).toBe(`Skill "stacked-prs" (${id}) → reviewed`);
+    expect(textOf(reviewed)).toBe(
+      `Skill "stacked-prs" (${id}) → reviewed\n  In the project at ${project}.`,
+    );
 
     // An unknown verb comes back as a tool error carrying UNKNOWN_ACTION.
     const bad = await client.callTool({
@@ -3029,7 +3038,7 @@ describe('MCP server: end to end over a real client', () => {
     });
     expect(observed.isError).toBeFalsy();
     expect(textOf(observed)).toMatch(
-      /^Recorded observation .+ about some-id\n {2}Landed in the private tree: this machine's own; it is not committed and does not travel\.$/,
+      /^Recorded observation .+ about some-id\n {2}Landed in the private tree: this machine's own; it is not committed and does not travel\.\n {2}In the project at .+\.$/,
     );
 
     // handoff echoes the fact; from == to accepted.
@@ -3040,7 +3049,8 @@ describe('MCP server: end to end over a real client', () => {
     expect(handed.isError).toBeFalsy();
     expect(textOf(handed)).toBe(
       'Recorded handoff on some-id: claude-code → claude-code\n' +
-        '  Landed in the public tree: committed with the repository, so it reaches every clone.',
+        '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
+        `  In the project at ${project}.`,
     );
 
     // link with a rel outside the recommended set and a dangling target: accepted.
@@ -3051,7 +3061,8 @@ describe('MCP server: end to end over a real client', () => {
     expect(linked.isError).toBeFalsy();
     expect(textOf(linked)).toBe(
       'Linked some-id -reminds-me-of→ ghost-id\n' +
-        '  Landed in the public tree: committed with the repository, so it reaches every clone.',
+        '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
+        `  In the project at ${project}.`,
     );
 
     // Where each landed, and the split is the rule rather than an accident: the

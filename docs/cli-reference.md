@@ -1494,12 +1494,15 @@ nothing. It is never a file to commit: it carries what was kept on this machine.
 (the `retract_note` tool, for an agent) takes the note's id and a `--reason`, and appends
 a signed fact saying who took it back and why, in the tree the note was written in. The
 note leaves this list and `mnema search`; `mnema show` still prints it whole, with the
-retraction above it, and `mnema verify` still sees both facts. Only memories and
+retraction above it, and `mnema verify` still sees both facts. An `ADR-<n>` label typed as the id is turned into the decision it names, which is then refused as not a note. Only memories and
 observations are retracted: a decision is rejected or superseded, and a pattern rejected or
 deprecated, each by its own move. Only the identity that wrote a note takes it back, with
 any key of it: another identity is refused, and a retraction another identity signed anyway
 is not applied: the note is still served, and `mnema verify` names it in a census line,
 informational, not a break.
+
+**A relation is a label, and a recipe's marker is not a value.** The relation is open, but a path (`--rel src/a.ts`, `./x`, or a name that exists in the project) is the target typed in the wrong place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints
+where a value goes (`--rel "<rel>"`, `--which "<name>"`).
 
 **A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>
 <target> --rel <label> --reason "<why>"` (the `retract_link` tool) names the edge exactly as
@@ -1596,8 +1599,8 @@ the two is enough.
 
 In the handshake the server sends **instructions**, which a host that defers tools reads
 before it has chosen any: when a decision or a note is worth recording, which reads to
-make before deciding, what does not belong in the record, and what comes back to the next
-session. They are the same text for every connection, because they are sent before the
+make before deciding, what does not belong in the record, that it is the place for what is
+also kept elsewhere, and what comes back to the next session. They are the same text for every connection, because they are sent before the
 server knows which project it serves, and they stay under 2,048 characters, which is
 what Claude Code keeps of them up to 2.1.295 (4,096 since 2.1.296;
 `tests/the-agent-is-told-what-it-has.test.ts`,
@@ -1625,15 +1628,23 @@ The answers of `search`, `read_record` and the `audit_*` reads name a project by
 its directory's name: a name can mean another directory on the next connection, a path cannot
 (`tests/an-answer-says-the-path-of-a-project.test.ts`). A write's `project` takes only the path: a bare name is refused as `UNKNOWN_PROJECT`, with the paths to use, and nothing is written.
 
-A write that names a `project` says, in its reply, the absolute directory it fell in
-(`In the project at /home/you/work/api.`). The name may be one the caller carried from
-another connection, and the same name can mean another directory in this one; the path says
-which, after the write, and does not refuse it. A write that named no project, or that landed
-in the global tree, says nothing of the sort
+A write says, in its reply, the absolute directory of the project it fell in
+(`In the project at /home/you/work/api.`), whether it named a `project`, followed an id (a move or a
+retraction goes where the record is) or fell in the session's own project. The name may be one the
+caller carried from another connection, and the same name can mean another directory in this one, and
+after a reload the workspace may hold another checkout of the same repository; the path says
+which, after the write, and does not refuse it. A write that landed in the global tree says nothing of the sort
 (`tests/a-routed-write-says-where-it-landed.test.ts`). When the server signs as an agent and the write
 went to another project of the workspace whose tree does not enrol that agent, the reply adds a line
 saying the person's key signed it and the agent it names is declared, not attested
 (`tests/a-write-the-person-signs-for-an-agent-says-so.test.ts`).
+
+A record that two machines moved out of one state without seeing each other (the state shown is the last
+move in the record's order) is said so beside the answer, in the words the `show` verb uses, by `read_record`
+of that record and by `bootstrap` for the project's own records. `resume`, `focus` and the resume inside
+`bootstrap` read the runs of every project of the workspace, so a session whose first write went to a
+project its client listed second still finds its run; while no identity signs for the session, the sentence
+about the connection says that `actor` is empty because of that.
 
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is

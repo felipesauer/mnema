@@ -488,13 +488,16 @@ describe('a link taken back from the project that holds it', () => {
     expect(ofKind(other, 'link.retracted')).toHaveLength(1);
   });
 
-  it("says nothing more than before when the link is the session's own project's", async () => {
+  it("says where it fell and nothing about the key when the link is the session's own project's", async () => {
     await anAgent();
     await aSecondProject();
     const text = await retractedAs(join(repo, 'src'), repo);
 
-    expect(text.split('\n').slice(0, 2)).toEqual(['Retracted link rule-1 -governs→ src', LANDED]);
-    expect(text).not.toContain('In the project at');
+    expect(text.split('\n').slice(0, 3)).toEqual([
+      'Retracted link rule-1 -governs→ src',
+      LANDED,
+      `  In the project at ${repo}.`,
+    ]);
     expect(noticesIn(text)).toEqual([]);
   });
 
@@ -510,13 +513,12 @@ describe('a link taken back from the project that holds it', () => {
     });
   });
 
-  it("carries neither in the result for the session's own project's link", async () => {
+  it("carries the project but not who signed in the result for the session's own project's link", async () => {
     await anAgent();
     await aSecondProject();
     mkdirSync(join(repo, 'src'), { recursive: true });
     const result = resultOf(repo, join(repo, 'src'));
-    expect(result).toMatchObject({ ok: true, scope: 'public' });
-    expect(result).not.toHaveProperty('project');
+    expect(result).toMatchObject({ ok: true, scope: 'public', project: repo });
     expect(result).not.toHaveProperty('personSigned');
   });
 });

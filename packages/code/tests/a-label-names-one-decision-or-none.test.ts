@@ -10,6 +10,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectLinks, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -17,8 +18,11 @@ import { runDecision } from '../src/commands/decision.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runInit } from '../src/commands/init.js';
 import { runLink } from '../src/commands/link.js';
+import { runRetract } from '../src/commands/retract.js';
 import { resolveLabel } from '../src/label-as-address.js';
 import { isLabelShaped, linkRefusal } from '../src/link-target.js';
+import { openSession } from '../src/mcp/session.js';
+import { runRetractNote, runSkillsTool } from '../src/mcp/tools.js';
 
 let sandbox: string;
 let repo: string;
@@ -152,5 +156,59 @@ describe('a label no decision carries', () => {
     expect(isLabelShaped('ADR-3x')).toBe(false);
     expect(linkRefusal({ subject: 'x', target: 'ADR-3' })).toContain('"ADR-3" is a label');
     expect(linkRefusal({ subject: 'x', target: 'src/gen' })).toBe(undefined);
+  });
+});
+
+describe('a label typed to a verb that takes a note or a pattern', () => {
+  /** A session on the project, the way a host opens one. */
+  function session() {
+    return openSession({
+      clientName: 'agent-alpha',
+      roots: [pathToFileURL(repo).href],
+      env,
+    });
+  }
+
+  it('is turned into the decision it names by `retract`, which then says what that is', () => {
+    const id = decide('Use UTC');
+    const retracted = runRetract({ cwd: repo, env }, { id: 'ADR-1', reason: 'it was wrong' });
+    expect(retracted).toMatchObject({ ok: false, reason: 'REFUSED' });
+    if (retracted.ok || retracted.reason !== 'REFUSED') throw new Error('expected a refusal');
+    expect(retracted.code).not.toBe('UNKNOWN_NOTE');
+    expect(retracted.message).toContain(id);
+  });
+
+  it('is refused by `retract` with both ids when two trees carry it', () => {
+    const ids = [decide('Use UTC'), decide('Use ISO', 'private')].sort().join(', ');
+    const retracted = runRetract({ cwd: repo, env }, { id: 'ADR-1', reason: 'it was wrong' });
+    expect(retracted).toMatchObject({ ok: false, reason: 'REFUSED', code: 'AMBIGUOUS_LABEL' });
+    if (retracted.ok || retracted.reason !== 'REFUSED') throw new Error('expected a refusal');
+    expect(retracted.message).toContain(ids);
+  });
+
+  it('is turned into the decision it names by the `retract_note` and `skills` tools', () => {
+    const id = decide('Use UTC');
+    const retracted = runRetractNote(session(), { id: 'ADR-1', reason: 'it was wrong' });
+    expect(retracted).toMatchObject({ ok: false });
+    if (retracted.ok) throw new Error('expected a refusal');
+    expect(retracted.code).not.toBe('UNKNOWN_NOTE');
+    expect(retracted.message).toContain(id);
+
+    const served = runSkillsTool(session(), { id: 'ADR-1' });
+    expect(served).toMatchObject({ ok: false, code: 'UNKNOWN_SKILL' });
+    if (served.ok) throw new Error('expected a refusal');
+    expect(served.message).toContain(id);
+  });
+
+  it('is refused by both tools with both ids when two trees carry it', () => {
+    const ids = [decide('Use UTC'), decide('Use ISO', 'private')].sort().join(', ');
+    for (const refused of [
+      runRetractNote(session(), { id: 'ADR-1', reason: 'it was wrong' }),
+      runSkillsTool(session(), { id: 'ADR-1' }),
+    ]) {
+      expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_LABEL' });
+      if (refused.ok) throw new Error('expected a refusal');
+      expect(refused.message).toContain(ids);
+    }
   });
 });
