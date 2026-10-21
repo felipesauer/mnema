@@ -93,7 +93,7 @@ function version(): string {
 
 /** What the plugin's hooks file says it does, as the host shows it. */
 const HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write (and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way) in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened (a count, which records nothing). And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. And, after a write in Claude Code, only where somebody switched it on, copies a note the host wrote to its own memory into the machine's private tree (never its index, never a note about the person); and beside a write to a file that holds decisions the record cites nowhere, names once per session the command that reads it in (a line, which records nothing). And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. Each can be switched off with `mnema switch`, which records that it was.";
 
 /** A variable the HOST expands in the files it reads: written as the host spells it, never ours. */
 const hostVariable = (name: string): string => `$${'{'}${name}}`;
@@ -234,6 +234,58 @@ const stopsASubagent = (name: HostName): boolean => {
   return cell !== undefined && cell.held === 'a test' && cell.does;
 };
 
+/**
+ * The paths a write can be one of `mnema after-a-write`'s two kinds at, as the shell in front of it
+ * matches them: a note of the host's memory under its default directory, and the files that may hold
+ * decisions (`src/decision-files.ts` decides which of them do). A `.md` outside the project passes
+ * too, for a memory directory a setting moved; every other path inside the project starts nothing.
+ */
+const AFTER_A_WRITE_PATHS = [
+  '*/memory/*.md',
+  '*/adr/*.md',
+  '*/decisions/*.md',
+  '*/CLAUDE.md',
+  '*/AGENTS.md',
+  '*/GEMINI.md',
+  '*/.claude/rules/*',
+  '*/.cursor/rules/*',
+  '*/.github/copilot-instructions.md',
+  '*handoff*.md',
+  '*plan*.md',
+  '*ledger*.md',
+] as const;
+
+/**
+ * The group after a write in Claude Code: `mnema after-a-write`, behind a shell that starts it only
+ * for a path in {@link AFTER_A_WRITE_PATHS}. The shell reads the path out of the payload itself (the
+ * `file_path` the host puts in `tool_input`, by parameter expansion, with no process), so a common
+ * write costs a shell and nothing else. A host that reads this file and says it is there (Cursor,
+ * by its variable) is turned away first: what this reads is Claude Code's memory and payload.
+ */
+function afterAWrite(): readonly Json[] {
+  const turnedAway = HOST_NAMES.filter((n) => !readsItsOwn(n))
+    .map((n) => HOSTS[n] as Host)
+    .flatMap((host) => (host.saysItIsTheHost === undefined ? [] : [host.saysItIsTheHost]))
+    .map((variable) => `[ -n "$${variable}" ] && exit 0; `)
+    .join('');
+  const path = `P=$${'{'}IN#*\\"file_path\\":\\"}; P=$${'{'}P%%\\"*}`;
+  const project = `"$${'{'}CLAUDE_PROJECT_DIR}"`;
+  const passes = AFTER_A_WRITE_PATHS.join('|');
+  const filter = `case "$P" in ${passes}) ;; ${project}/*) exit 0;; *.md) ;; *) exit 0;; esac`;
+  return [
+    {
+      matcher: 'Write|Edit',
+      hooks: [
+        {
+          type: 'command',
+          command: `${turnedAway}IN=$(cat); ${path}; ${filter}; printf '%s' "$IN" | ${nodeRuns('after-a-write.mjs')}`,
+          timeout: TIMEOUT,
+        },
+      ],
+    },
+  ];
+}
+
 /** The plugin's hooks file. */
 export function hooksJson(): string {
   const ordered = [...BEFORE_A_WRITE, ...HOST_NAMES.filter((n) => !BEFORE_A_WRITE.includes(n))];
@@ -244,6 +296,7 @@ export function hooksJson(): string {
       Stop: [{ hooks: [command('session-tally.mjs'), command('session-corrections.mjs')] }],
       PreCompact: [{ hooks: [command('session-tally.mjs')] }],
       PreToolUse: ordered.filter((n) => !readsItsOwn(n)).flatMap(beforeAWrite),
+      PostToolUse: afterAWrite(),
       ...(HOST_NAMES.some((n) => !readsItsOwn(n) && stopsASubagent(n))
         ? { SubagentStop: [{ hooks: [command('subagent-stop.mjs')] }] }
         : {}),

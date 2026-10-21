@@ -42,6 +42,7 @@ import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import {
   AGENT_ACCEPTS_CHANNEL,
+  HOST_MEMORY_MIRROR_CHANNEL,
   STARTS_OFF,
   SWITCHABLE_CHANNELS,
   USER_CORRECTIONS_CHANNEL,
@@ -72,6 +73,13 @@ const OFF_LIMIT_OF_AN_ACT =
 const OFF_LIMIT =
   'Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.';
 
+/** The channels that begin off, as the help names them: read off {@link STARTS_OFF}, never typed again. */
+function startsOff(): string {
+  const names = [...STARTS_OFF];
+  const last = names.pop() ?? '';
+  return names.length === 0 ? last : `${names.join(', ')} and ${last}`;
+}
+
 /** Registers `mnema switch` on the program. */
 export function registerSwitch(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
@@ -89,7 +97,7 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
         '  What it carries is what stops arriving when it is off.',
         '  An off switch says who made it and when, and whether a clone of this',
         '  repository holds it: a switch recorded privately governs only this machine.',
-        '  A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.',
+        `  A channel with no switch is on, except ${startsOff()}, which are off until switched on.`,
       ].join('\n'),
     )
     .action(async () => {
@@ -179,11 +187,13 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
             result.effective.on
               ? ofAnAct
                 ? `${result.channel} is now ON: an agent may accept a decision, as it did before.`
-                : (STARTS_OFF as readonly string[]).includes(result.channel)
-                  ? result.channel === USER_CORRECTIONS_CHANNEL
-                    ? `${result.channel} is now ON: it was off until this switch, and it now records a person's corrections as proposed decisions in this machine's private tree.`
-                    : `${result.channel} is now ON: it was off until this switch, and it now acts where a rule addresses a file.`
-                  : `${result.channel} is now ON: it hands the record over as it did before.`
+                : result.channel === HOST_MEMORY_MIRROR_CHANNEL
+                  ? `${result.channel} is now ON: it copies each note this host writes to its own memory into this machine's private tree.`
+                  : (STARTS_OFF as readonly string[]).includes(result.channel)
+                    ? result.channel === USER_CORRECTIONS_CHANNEL
+                      ? `${result.channel} is now ON: it was off until this switch, and it now records a person's corrections as proposed decisions in this machine's private tree.`
+                      : `${result.channel} is now ON: it was off until this switch, and it now acts where a rule addresses a file.`
+                    : `${result.channel} is now ON: it hands the record over as it did before.`
               : ofAnAct
                 ? `${result.channel} is now OFF: an agent's accept is refused. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`
                 : `${result.channel} is now OFF: nothing of it reaches a model. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`,

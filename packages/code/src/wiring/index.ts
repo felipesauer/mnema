@@ -219,6 +219,7 @@
  */
 
 import type { Command } from 'commander';
+import { registerAfterAWrite } from './after-a-write.js';
 import { registerAging } from './aging.js';
 import { registerAudit } from './audit.js';
 import { registerBeforeAWrite } from './before-a-write.js';
@@ -347,6 +348,7 @@ export const GROUPS: readonly Group[] = [
       registerBeforeAWrite,
       registerTally,
       registerCorrections,
+      registerAfterAWrite,
       registerHandback,
     ],
   },

@@ -12,7 +12,8 @@
  *
  * NO MODEL AND NO GUESSING. The files come from the transcript the host names in the payload
  * (`what-the-session-did.ts`); the decisions come from the record: every decision of the
- * project's own trees created at or after the instant the transcript opens. That instant is the
+ * project's own trees created at or after the instant the transcript opens, and so do the notes of
+ * the host's own memory `mnema after-a-write` copied into the private tree since then. That instant is the
  * only thing tying a decision to a session, so the line says "recorded since it opened" and not
  * "recorded by it": a second session of the same project in the same hours is counted too, and
  * so is a decision a person recorded by hand.
@@ -30,6 +31,7 @@
 
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { HOST_MEMORY_MARK } from '../host-memory.js';
 import { SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { whatTheSessionDid } from '../what-the-session-did.js';
@@ -75,13 +77,17 @@ function tallyLine(input: {
   readonly event: string;
   readonly files: number;
   readonly decisions: number;
+  readonly copied: number;
 }): string {
   const lead =
     input.event === BEFORE_A_COMPACTION ? 'This conversation is about to be compacted. ' : '';
   return (
     `${lead}Since this session opened, its own tool calls wrote ` +
     `${counted(input.files, 'file', 'files')}, and ` +
-    `${counted(input.decisions, 'decision was', 'decisions were')} recorded in this project’s record.`
+    `${counted(input.decisions, 'decision was', 'decisions were')} recorded in this project’s record` +
+    (input.copied === 0
+      ? '.'
+      : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`)
   );
 }
 
@@ -132,9 +138,26 @@ export function runSessionTally(
           source.cache.listDecisions().filter((one) => Date.parse(one.createdAt) >= since).length,
         0,
       );
+    // The notes `mnema after-a-write` copied from the host's memory since the session opened: the
+    // same instant ties them to it, and their marker tells them from any other memory.
+    const copied = sources
+      .filter((source) => source.scope !== 'global')
+      .reduce(
+        (total, source) =>
+          total +
+          source.cache
+            .listMemories()
+            .filter(
+              (one) =>
+                one.content.includes(HOST_MEMORY_MARK) && Date.parse(one.capturedAt) >= since,
+            ).length,
+        0,
+      );
     return {
       ok: true,
-      reply: { systemMessage: tallyLine({ event, files: did.editedFiles.length, decisions }) },
+      reply: {
+        systemMessage: tallyLine({ event, files: did.editedFiles.length, decisions, copied }),
+      },
       notes: [],
     };
   });
