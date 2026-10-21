@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **`mnema decision review` goes through the decisions awaiting a judgement, one by one, at a terminal, with no id to copy.** It
+  lists what is `proposed` in the order `mnema status` lists it, shows each one's ADR, title, reason and what it turned down,
+  and asks: accept, reject, skip or quit. It asks for one note at the start (the default says the date and that it was reviewed
+  with the verb), used for every verdict unless a note is written after the letter, and ends with how many were accepted,
+  rejected and skipped. Each verdict is the move `decision move` makes, through the same gate, key and refusal codes; a refusal
+  on one decision is said and the review goes on. It is a person's: it signs with your own key, refuses `--which`, and says
+  when `MNEMA_AGENT_KEY` is set that it does not use it. Without a terminal it writes nothing, refuses with
+  `DECISION_REVIEW_NEEDS_A_PERSON` and prints the `decision move accept <ids> --note` command that rules the same
+  decisions; with nothing awaiting, it says so and exits 0.
 - **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
   that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
   is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
