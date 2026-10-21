@@ -49,6 +49,7 @@ export const RECORD_README = [
 ].join('\n');
 
 const IGNORED_LINE = '.mnema/';
+const IGNORING_LINES = ['.mnema', '.mnema/', '/.mnema', '/.mnema/'];
 
 /** Whether the repository at `dir` declares prettier: a dependency, a `prettier` key, or a `.prettierrc*`. */
 function declaresPrettier(dir: string): boolean {
@@ -96,7 +97,7 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
   if (existsSync(path)) {
     const has = readFileSync(path, 'utf-8')
       .split(/\r?\n/)
-      .some((l) => ['.mnema', '.mnema/', '/.mnema', '/.mnema/'].includes(l.trim()));
+      .some((l) => IGNORING_LINES.includes(l.trim()));
     return has ? undefined : { path, did: 'added' };
   }
   return declaresPrettier(dir) ? { path, did: 'created' } : undefined;
@@ -111,6 +112,14 @@ export function whatIsMissing(project: string): Missing {
   };
 }
 
+/** Appends the line to a file that exists, unless a line of it already says it. */
+function addTheLine(path: string): void {
+  const existing = readFileSync(path, 'utf-8');
+  if (existing.split(/\r?\n/).some((l) => IGNORING_LINES.includes(l.trim()))) return;
+  const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
+  appendFileSync(path, `${gap}${IGNORED_LINE}\n`, 'utf-8');
+}
+
 /** Writes what is missing and returns what it wrote. Touches nothing else. */
 export function complete(project: string): Missing {
   const missing = whatIsMissing(project);
@@ -120,11 +129,15 @@ export function complete(project: string): Missing {
   const change = missing.prettierIgnore;
   if (change !== undefined) {
     if (change.did === 'created') {
-      writeFileSync(change.path, `${IGNORED_LINE}\n`, 'utf-8');
+      try {
+        // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
+        writeFileSync(change.path, `${IGNORED_LINE}\n`, { encoding: 'utf-8', flag: 'wx' });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        addTheLine(change.path);
+      }
     } else {
-      const existing = readFileSync(change.path, 'utf-8');
-      const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
-      appendFileSync(change.path, `${gap}${IGNORED_LINE}\n`, 'utf-8');
+      addTheLine(change.path);
     }
   }
   return missing;

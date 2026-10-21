@@ -142,8 +142,10 @@ export interface InitRefused {
  * every key of the identity enrolled), and checkpoints so all of that is
  * signature-covered at once.
  *
- * A second init therefore WRITES NOTHING, anywhere: it reads an anchor, asks the record
- * whether that identity still counts the key, and returns. That is not a claim about
+ * A second init therefore WRITES NOTHING OF THE RECORD: it reads an anchor, asks the record
+ * whether that identity still counts the key, and returns. The one thing it may write is what
+ * a project founded earlier lacks beside the record (`the-record-page.ts`: the README, the
+ * `.prettierignore` line), and only when that is missing. That is not a claim about
  * calls: `init.test.ts` digests every file of the project tree and of the app data
  * directory before and after, and requires both maps to be unchanged, and
  * `the-init-says-a-write-is-refused.test.ts` does the same in a checkout the key left.
