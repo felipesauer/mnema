@@ -111,6 +111,7 @@ import {
 } from '../record-effect.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
+  type FellIn,
   type Landed,
   landedNotice,
   type PersonSigned,
@@ -2237,7 +2238,7 @@ function recorded(
 function moved(
   session: Session,
   line: string,
-  result: Replacement & PersonSigned,
+  result: Replacement & PersonSigned & FellIn,
   // What a particular move owes beyond the acknowledgement: the one sentence an acceptance by
   // an agent says about itself, right after the line, and the notice a supersede whose successor
   // is still proposed ends with. A parameter, as `recorded`'s is, so no other move's reply gains
@@ -2250,6 +2251,9 @@ function moved(
       [
         line,
         ...(extra.after ?? []),
+        ...(result.project !== undefined
+          ? [`  In the project at ${oneLine(result.project)}.`]
+          : []),
         ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
         ...(extra.notice !== undefined ? [extra.notice] : []),

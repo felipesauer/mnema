@@ -227,13 +227,17 @@ export interface PersonSigned {
  * that could not say where it went is the state this closes. It is the RESOLVED
  * scope, never the argument: the argument is regularly absent.
  */
-export interface Landed extends PersonSigned {
+export interface Landed extends PersonSigned, FellIn {
   readonly scope: Scope;
-  /**
-   * The absolute directory of the project the CALLER named, when the write was routed by
-   * the `project` argument and fell in a project's tree. Absent otherwise: the command
-   * line has no such argument, and a write that named nothing echoed no name.
-   */
+}
+
+/**
+ * The half of an MCP write result that says WHICH project's directory it fell in: the absolute
+ * path, whether the caller named the project or the write followed an id, or the session's own
+ * project took it. Absent where it fell in no project (the global tree), and on the command line,
+ * whose working directory is the project and says nothing a person did not just do.
+ */
+export interface FellIn {
   readonly project?: string;
 }
 

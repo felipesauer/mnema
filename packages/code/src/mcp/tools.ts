@@ -176,6 +176,7 @@ import {
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import {
+  type FellIn,
   forwardReplacement,
   type Landed,
   type PersonSigned,
@@ -208,7 +209,7 @@ import {
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
-import { personSignedIn, routedTo, routeWrite } from './route.js';
+import { personSignedIn, routedTo, routeWrite, whereItFell } from './route.js';
 import { anchorIn, openWrite, type Session, type WriteTarget, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -252,7 +253,8 @@ export type CreateTaskResult =
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The task's id (the one that moved). */
         readonly id: string;
@@ -290,7 +292,8 @@ export type RecordDecisionResult =
 /** A decision moved (ok), or the gate refused (a typed reason in the envelope). */
 export type DecisionTransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The decision's id (the one that moved). */
         readonly id: string;
@@ -336,7 +339,8 @@ export type CreateSkillResult =
 /** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
 export type SkillTransitionResult =
   | (Replacement &
-      PersonSigned & {
+      PersonSigned &
+      FellIn & {
         readonly ok: true;
         /** The skill's id (the one that moved). */
         readonly id: string;
@@ -770,6 +774,7 @@ export function runTaskTransition(
     id: input.id,
     alias: deriveAlias('task', input.id),
     to: moved.to,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
@@ -969,6 +974,7 @@ export function runDecisionTransition(
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
     ...(input.action === 'accept' && which !== undefined ? { acceptedByAgent: which } : {}),
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
@@ -1029,6 +1035,7 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(retracted),
   };
@@ -1245,6 +1252,7 @@ export function runSkillTransition(
     id: input.id,
     name,
     to: moved.to,
+    ...whereItFell(session, located.home.scope, located.home.target),
     ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
