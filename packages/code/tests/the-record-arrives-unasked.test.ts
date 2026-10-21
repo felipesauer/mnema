@@ -1272,106 +1272,114 @@ describe('the record arrives unasked', () => {
     expect(document).toContain('1 more decision is recorded here and awaiting a judgement');
   });
 
-  it('writes nothing at all: no event, no key, no run', () => {
-    // The other half of "it is a read", and the half a reader of `hooks.json` cannot
-    // check: the events of every tail and the key material of the whole sandbox,
-    // counted by reading the files rather than by asking the product to replay them.
-    // A run opened by the hook would be an event here, which is why this case is the
-    // one that holds the plugin's claim that no session of its own is started.
-    //
-    // THE GATE IS RUN HERE TOO, on a write no rule of this project asks about, and it writes
-    // nothing: it records a fact only when it asks for a person, which is the case its own file
-    // holds, byte for byte around the call.
-    const before = held(sandbox);
-    expect(before.events).toBeGreaterThan(0);
-    for (const command of declaredCommands()) {
-      const ran = runHook(command, project);
-      // The subagent's stop is handed a reply with no block, here in a project: it sends it back
-      // (exit 2), and that writes nothing either.
-      expect(ran.status, command).toBe(handlerOf(command) === HANDBACK_HOOK ? 2 : 0);
-    }
-    expect(held(sandbox)).toEqual(before);
-  }, EVERY_HOOK_RUN);
+  it(
+    'writes nothing at all: no event, no key, no run',
+    () => {
+      // The other half of "it is a read", and the half a reader of `hooks.json` cannot
+      // check: the events of every tail and the key material of the whole sandbox,
+      // counted by reading the files rather than by asking the product to replay them.
+      // A run opened by the hook would be an event here, which is why this case is the
+      // one that holds the plugin's claim that no session of its own is started.
+      //
+      // THE GATE IS RUN HERE TOO, on a write no rule of this project asks about, and it writes
+      // nothing: it records a fact only when it asks for a person, which is the case its own file
+      // holds, byte for byte around the call.
+      const before = held(sandbox);
+      expect(before.events).toBeGreaterThan(0);
+      for (const command of declaredCommands()) {
+        const ran = runHook(command, project);
+        // The subagent's stop is handed a reply with no block, here in a project: it sends it back
+        // (exit 2), and that writes nothing either.
+        expect(ran.status, command).toBe(handlerOf(command) === HANDBACK_HOOK ? 2 : 0);
+      }
+      expect(held(sandbox)).toEqual(before);
+    },
+    EVERY_HOOK_RUN,
+  );
 
-  it('runs the verbs it names: two that read, and the gate, which writes only when it asks', () => {
-    // The guard that keeps the write half out. The read half was delivered alone on
-    // purpose: `ensureRun` already opens a run on the FIRST WRITE with the `who` off
-    // the key, so a hook that opened one would move the moment and open an empty run
-    // for every session that only reads. Nothing here writes, and this is what says
-    // so out loud when a later slice adds an event.
-    //
-    // A SECOND EVENT ARRIVED, and the list is what says which. It used to read
-    // `['SessionStart']` and the sentence above described that as the whole plugin; what
-    // it was actually guarding is that every declared event is a READ, and the events are
-    // named here so that a third one is a line somebody has to write. `PreToolUse` is the
-    // one that can refuse on this host and this plugin does not: the hook it declares
-    // there is a `mcp_tool` call that returns context, `{}`, or the one decision its type
-    // can carry, `ask`, held by `the-rule-reaches-the-writing.test.ts` and
-    // `the-record-asks-for-a-person.test.ts`, which also digest the record around the call.
-    //
-    // THIS CASE WAS "runs `mnema brief`, and nothing else", and a second verb is what
-    // renamed it: the event that opens a session now runs two handlers, and each runs one
-    // verb. What it guards is unchanged (every verb a handler reaches is a READ) and the
-    // list says which two, so a third is a line somebody has to write.
-    //
-    // A THIRD VERB ARRIVED, AND IT WRITES, so the sentence "every verb a handler reaches is a
-    // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
-    // reader who knew the old name finds a different claim. VS Code runs only command hooks and
-    // holds a write for a person when a command answers `ask` (measured on 30 Sep 2026), so the gate reaches it as a process: `mnema before-a-write
-    // --host vscode`, which records a `channel.asked` per rule when it asks, exactly as the
-    // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
-    // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb
-    // is a line somebody has to write.
-    expect(declaredEvents()).toEqual([
-      'SessionStart',
-      'Stop',
-      'PreCompact',
-      'PreToolUse',
-      'PostToolUse',
-      'SubagentStart',
-      'SubagentStop',
-    ]);
+  it(
+    'runs the verbs it names: two that read, and the gate, which writes only when it asks',
+    () => {
+      // The guard that keeps the write half out. The read half was delivered alone on
+      // purpose: `ensureRun` already opens a run on the FIRST WRITE with the `who` off
+      // the key, so a hook that opened one would move the moment and open an empty run
+      // for every session that only reads. Nothing here writes, and this is what says
+      // so out loud when a later slice adds an event.
+      //
+      // A SECOND EVENT ARRIVED, and the list is what says which. It used to read
+      // `['SessionStart']` and the sentence above described that as the whole plugin; what
+      // it was actually guarding is that every declared event is a READ, and the events are
+      // named here so that a third one is a line somebody has to write. `PreToolUse` is the
+      // one that can refuse on this host and this plugin does not: the hook it declares
+      // there is a `mcp_tool` call that returns context, `{}`, or the one decision its type
+      // can carry, `ask`, held by `the-rule-reaches-the-writing.test.ts` and
+      // `the-record-asks-for-a-person.test.ts`, which also digest the record around the call.
+      //
+      // THIS CASE WAS "runs `mnema brief`, and nothing else", and a second verb is what
+      // renamed it: the event that opens a session now runs two handlers, and each runs one
+      // verb. What it guards is unchanged (every verb a handler reaches is a READ) and the
+      // list says which two, so a third is a line somebody has to write.
+      //
+      // A THIRD VERB ARRIVED, AND IT WRITES, so the sentence "every verb a handler reaches is a
+      // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
+      // reader who knew the old name finds a different claim. VS Code runs only command hooks and
+      // holds a write for a person when a command answers `ask` (measured on 30 Sep 2026), so the gate reaches it as a process: `mnema before-a-write
+      // --host vscode`, which records a `channel.asked` per rule when it asks, exactly as the
+      // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
+      // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb
+      // is a line somebody has to write.
+      expect(declaredEvents()).toEqual([
+        'SessionStart',
+        'Stop',
+        'PreCompact',
+        'PreToolUse',
+        'PostToolUse',
+        'SubagentStart',
+        'SubagentStop',
+      ]);
 
-    const reached = new Set<string>();
-    for (const command of declaredCommands()) {
-      const at = GATES.includes(handlerOf(command)) ? addressed : project;
-      for (const line of runHook(command, at).mnema) reached.add(line);
-    }
-    // The question the opening handlers ask first is not a verb: it reads nothing and is
-    // answered before any verb is reached (`version.ts`, `IDENTITY`).
-    expect([...reached][0]).toBe(ASKED_FIRST);
-    reached.delete(ASKED_FIRST);
-    expect([...reached]).toEqual([
-      'brief --hook',
-      'recall --hook',
-      'tally',
-      'corrections',
-      'before-a-write --host cursor --agent-key cursor',
-      'before-a-write --host vscode --agent-key vscode',
-      'settled',
-      'after-a-write',
-      'handback',
-    ]);
-    expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
+      const reached = new Set<string>();
+      for (const command of declaredCommands()) {
+        const at = GATES.includes(handlerOf(command)) ? addressed : project;
+        for (const line of runHook(command, at).mnema) reached.add(line);
+      }
+      // The question the opening handlers ask first is not a verb: it reads nothing and is
+      // answered before any verb is reached (`version.ts`, `IDENTITY`).
+      expect([...reached][0]).toBe(ASKED_FIRST);
+      reached.delete(ASKED_FIRST);
+      expect([...reached]).toEqual([
+        'brief --hook',
+        'recall --hook',
+        'tally',
+        'corrections',
+        'before-a-write --host cursor --agent-key cursor',
+        'before-a-write --host vscode --agent-key vscode',
+        'settled',
+        'after-a-write',
+        'handback',
+      ]);
+      expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
 
-    // And each is on the side the PRODUCT declares it on. Read off the same declaration the
-    // parser routes with, so a verb that ever changed sides would land here rather than in a
-    // session.
-    const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
-    const sideOf = (line: string) =>
-      declared.find((one) => one.act.name() === line.split(' ')[0])?.effect;
-    expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
-      'brief --hook: reads',
-      'recall --hook: reads',
-      'tally: reads',
-      'corrections: mutates',
-      'before-a-write --host cursor --agent-key cursor: mutates',
-      'before-a-write --host vscode --agent-key vscode: mutates',
-      'settled: reads',
-      'after-a-write: mutates',
-      'handback: reads',
-    ]);
-  }, EVERY_HOOK_RUN);
+      // And each is on the side the PRODUCT declares it on. Read off the same declaration the
+      // parser routes with, so a verb that ever changed sides would land here rather than in a
+      // session.
+      const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
+      const sideOf = (line: string) =>
+        declared.find((one) => one.act.name() === line.split(' ')[0])?.effect;
+      expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
+        'brief --hook: reads',
+        'recall --hook: reads',
+        'tally: reads',
+        'corrections: mutates',
+        'before-a-write --host cursor --agent-key cursor: mutates',
+        'before-a-write --host vscode --agent-key vscode: mutates',
+        'settled: reads',
+        'after-a-write: mutates',
+        'handback: reads',
+      ]);
+    },
+    EVERY_HOOK_RUN,
+  );
 
   it('declares a manifest, a marketplace and hooks the host can read', () => {
     // Validity against what the host publishes: the manifest layout and the
