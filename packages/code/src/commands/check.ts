@@ -138,7 +138,10 @@ export function runCheckRun(
       };
     }
     // The same refusal, with the same code, a key that is not Ed25519 meets when it is to be an agent's.
-    const notEd25519 = agentKeyAlgorithmRefusal(pair);
+    const notEd25519 = agentKeyAlgorithmRefusal(
+      pair,
+      '`mnema key request --checker --anchor <your identity>` makes a checker key',
+    );
     if (notEd25519 !== undefined) {
       return { ok: false, reason: 'REFUSED', code: 'UNREADABLE_KEY', message: notEd25519 };
     }
