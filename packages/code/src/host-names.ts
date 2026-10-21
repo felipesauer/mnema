@@ -119,6 +119,12 @@ export interface Host {
    * which this is a test.
    */
   readonly subagentStop?: Cell;
+  /**
+   * What it does after its question tool ran and the person answered: runs the plugin's hook on that
+   * event, which hands the agent one sentence saying which tool records a choice. Apart from the
+   * cells for the reason {@link subagentStop} is. Absent where the host was not read for it.
+   */
+  readonly afterAQuestion?: Cell;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
   /** Where it reads the skills and the agents a stack brings. */
@@ -139,6 +145,7 @@ const HELD = {
   geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
+  claudeSettled: 'packages/code/tests/host-contract/a-settled-choice-reaches-the-model.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
@@ -205,6 +212,7 @@ export const HOSTS = {
     title: 'Claude Code',
     door: 'mcp_tool',
     subagentStop: { does: true, held: 'a test', by: HELD.claudeHandback },
+    afterAQuestion: { does: true, held: 'a test', by: HELD.claudeSettled },
     cells: {
       server: { does: true, held: 'a test', by: HELD.claudeServer },
       rulesFile: { does: true, held: 'a test', by: HELD.aRulesFile },
@@ -294,6 +302,14 @@ export const HOSTS = {
       at: `${CODEX_SOURCE}/codex-rs/hooks/src/events/stop.rs#L178-L206`,
       read: '9 October 2026',
     },
+    // Its question tool is `request_user_input`, then a `PostToolUse` hook: read in the host's own source or reference,
+    // not run.
+    afterAQuestion: {
+      does: true,
+      held: 'documentation',
+      at: `${CODEX_SOURCE}`,
+      read: '21 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.codexContract },
       rulesFile: {
@@ -353,6 +369,14 @@ export const HOSTS = {
       at: `${COPILOT_DOCS}/reference/hooks-reference.md#subagentstop--subagentstop`,
       read: '9 October 2026',
     },
+    // Its question tool is `AskUserQuestion`, then a `postToolUse` hook: read in the host's own source or reference,
+    // not run.
+    afterAQuestion: {
+      does: true,
+      held: 'documentation',
+      at: `${COPILOT_DOCS}/reference/hooks-reference.md`,
+      read: '21 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.copilotContract },
       rulesFile: {
@@ -402,6 +426,14 @@ export const HOSTS = {
       'found in its documentation or in the source read. The model is any the host is pointed ' +
       'at, with no account, under the MIT license at ' +
       `[\`LICENSE\`](${OPENCODE_SOURCE}/LICENSE).`,
+    // Its question tool is `question`, then `tool.execute.after`: read in the host's own source or reference,
+    // not run.
+    afterAQuestion: {
+      does: true,
+      held: 'documentation',
+      at: `${OPENCODE_SOURCE}`,
+      read: '21 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.opencodeContract },
       rulesFile: {
@@ -452,6 +484,14 @@ export const HOSTS = {
       '`GEMINI_CLI_TRUST_WORKSPACE=true`, which the contract sets). The model is ' +
       'any the host is pointed at, with no account, under the Apache-2.0 license at ' +
       `[\`LICENSE\`](${GEMINI_SOURCE}/LICENSE).`,
+    // Its question tool is `ask_user`, then an `AfterTool` hook: read in the host's own source or reference,
+    // not run.
+    afterAQuestion: {
+      does: true,
+      held: 'documentation',
+      at: `${GEMINI_SOURCE}`,
+      read: '21 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.geminiContract },
       rulesFile: {

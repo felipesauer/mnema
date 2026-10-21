@@ -948,7 +948,11 @@ function withTheTable(page: string, base: string, path: string): string {
       host.subagentStop === undefined
         ? undefined
         : `When a subagent stops: ${cellText(host.subagentStop, base)}.`;
-    const said = [host.note, stops].filter((text) => text !== undefined);
+    const asked =
+      host.afterAQuestion === undefined
+        ? undefined
+        : `After a question to the person is answered: ${cellText(host.afterAQuestion, base)}.`;
+    const said = [host.note, stops, asked].filter((text) => text !== undefined);
     return said.length === 0 ? [] : [`**${host.title}.** ${said.join(' ')}`];
   });
   const under = notes.length === 0 ? '' : `${notes.join('\n\n')}\n\n`;
