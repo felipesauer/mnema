@@ -21,7 +21,6 @@ with its own changelog.
   when `MNEMA_AGENT_KEY` is set that it does not use it. Without a terminal it writes nothing, refuses with
   `DECISION_REVIEW_NEEDS_A_PERSON` and prints the `decision move accept <ids> --note` command that rules the same
   decisions; with nothing awaiting, it says so and exits 0.
-
 - **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
   that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
   is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
