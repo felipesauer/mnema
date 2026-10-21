@@ -391,12 +391,12 @@ export function unfilledReference(event: CatalogEvent): string | undefined {
 
 /**
  * The refusal a relation earns when it is a path: a relation is an open label, so any word is
- * accepted, but a value with a separator in it is the TARGET typed in the wrong place
+ * accepted, but a value with no space in it and a separator in it is the TARGET typed in the wrong place
  * (`--rel src/a.ts`), and recorded it would label the edge with a file nobody can look a
  * relation up by.
  */
 function pathAsRelation(value: unknown): { readonly message: string } | undefined {
-  if (typeof value !== 'string' || !/[\\/]/.test(value)) return undefined;
+  if (typeof value !== 'string' || !/^\S*[\\/]\S*$/u.test(value)) return undefined;
   return {
     message:
       `the rel "${oneLine(value.trim())}" is a path, not a relation: a relation is a label such as ` +

@@ -669,7 +669,7 @@ describe('every kind says where its references are, and the door asks it there',
       message: expect.stringContaining('the which "<name>" is the marker'),
     });
     expect(count()).toBe(before);
-    for (const rel of ['governs', 'relates-to', 'a.b', 'TODO']) {
+    for (const rel of ['governs', 'relates-to', 'a.b', 'TODO', 'reads a/b in <b>x</b>']) {
       expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
         ok: true,
       });

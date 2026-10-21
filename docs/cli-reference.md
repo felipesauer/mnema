@@ -1619,7 +1619,7 @@ saying the person's key signed it and the agent it names is declared, not attest
 (`tests/a-write-the-person-signs-for-an-agent-says-so.test.ts`).
 
 A record that two machines moved out of one state without seeing each other (the state shown is the last
-move in the record's order) is said so beside the answer, in the words `mnema show` uses, by `read_record`
+move in the record's order) is said so beside the answer, in the words the `show` verb uses, by `read_record`
 of that record and by `bootstrap` for the project's own records. `resume`, `focus` and the resume inside
 `bootstrap` read the runs of every project of the workspace, so a session whose first write went to a
 project its client listed second still finds its run; while no identity signs for the session, the sentence

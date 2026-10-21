@@ -26,7 +26,7 @@ with its own changelog.
 - **A link whose target is a path outside the project is refused in every tree, and a `derived-from` citation too.**
   Only a link in the committed tree was asked, and only under `governs`, `asks-for-a-person` and `refuses-a-write`:
   the same path under `derived-from`, or in the private or global tree, was recorded and covered nothing. Both
-  doors that write a link (`mnema link`, `link_knowledge`) refuse it with `OUTSIDE_PROJECT`, naming the tree; a path inside
+  doors that write a link (the `link` verb and `link_knowledge`) refuse it with `OUTSIDE_PROJECT`, naming the tree; a path inside
   the project, an id, and any other relation are taken as before. Outside any project there is no root to be outside of.
 - **A write over MCP says the directory of the project it fell in, whether or not it named one.** `In the project at
   <path>.` followed only a write that carried a `project`. It now follows every write that landed in a project's tree
@@ -41,7 +41,7 @@ with its own changelog.
   for the session (a machine with no key, before the first write) the sentence about the connection now also says that
   `actor` is empty because of that.
 - **`read_record` and `bootstrap` say when a record was moved twice out of one state by machines that had not seen each
-  other.** `mnema show` and the brief said it; the agent was served the last state alone. The sentence is the same
+  other.** `show` and the brief said it; the agent was served the last state alone. The sentence is the same
   function's, as a block beside the payload.
 
 ### Fixed
@@ -49,7 +49,7 @@ with its own changelog.
 - **A title made only of spaces is refused, like one made only of punctuation.** `task create "   "` recorded a task
   named with blanks (and a decision, a skill, an observation topic): `NOT_A_TITLE`, in words that do not echo the spaces.
   The empty string stays refused as it was.
-- **`mnema retract` and the `retract_note` and `skills` tools take an `ADR-<n>` label like every other verb that takes an
+- **`retract` and the `retract_note` and `skills` tools take an `ADR-<n>` label like every other verb that takes an
   id.** The label became the decision's id, which `retract` then names as a decision; a label two trees both carry is
   refused with both ids (`AMBIGUOUS_LABEL`).
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
