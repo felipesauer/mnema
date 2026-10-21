@@ -643,6 +643,45 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // THE KEY IS THE ONE THE TAIL ID NAMES (section 6.1). Another key of the record signs the
+    // proof and names itself: the signature holds under the key the proof names. The second
+    // reader looked the key up by the proof's own `signerFp` and VERIFIED this, while the
+    // product, looking it up by the tail id, refused it: the two disagreed on who owns a tail.
+    name: 'tail-proof-signed-by-another-project-key',
+    refusals: 1,
+    section: '6.1',
+    says: '(signer-mismatch)',
+    productSays: 'ownership proof is invalid (signer-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // The mirror, which the PRODUCT accepted: the tail's own key signs a proof naming another
+    // key as its signer. The signature holds under the tail's key, and the proof says a thing
+    // section 6.1 says it cannot: that its signer is not the key the tail id begins with.
+    name: 'tail-proof-names-another-signer',
+    refusals: 1,
+    section: '6.1',
+    says: '(signer-mismatch)',
+    productSays: 'ownership proof is invalid (signer-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // The key the tail id names, read from a file that holds another key, before any
+    // checkpoint asks for it. The second reader recomputes every key's name from its material
+    // (section 6) and refuses the file and the tail; the product recomputed it for a
+    // checkpoint's key and an enrolment's, not for the key a tail proof is checked under, and
+    // VERIFIED this record.
+    name: 'tail-key-swapped-before-any-checkpoint',
+    refusals: 2,
+    section: '6',
+    says: 'is named for a fingerprint its own material does not hash to',
+    productSays: 'does not match its fingerprint (key was swapped)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     // NOT a refusal in EITHER reader, and that is the row. A cut that takes the newest events
     // and the checkpoint that covered them leaves a record that closes, and so does a record
     // erased and begun again under a new key: nothing inside the directory remembers what it

@@ -61,7 +61,8 @@ rigour, so nobody goes looking for it.
 | **§6.4** | a note or a link taken back by an identity that did not write it is named as not applied, informational: the same retractions the product's census names |
 | **§6.5** | a committed key with no tail is noted as a backup only when a signature-covered `backup.declared` by its own identity names it and the key is still that identity's; a declaration naming another identity's key is refused, and every other key with no tail is noted as one whose tail may have gone |
 | **§6.7** | every move of a workflow judged where the merged order puts it, against the tables the `workflows` of `event-schema.json` publishes (a birth once, a row with the proof it requires, a successor the record holds, a run ended once, and a `from` that is the state there or the one its writer saw) and a move they do not allow named with the rule it broke, at the same place the product's census names it, the verdict unchanged |
-| n/a | the tail id's fingerprint is a key the record carries; the undocumented `tailproof.json`; whether the newest confirmed attestation reaches the last event |
+| **§6.1** | every tail carries `tailproof.json`, an Ed25519 signature over its own id under the key the tail id names (looked up by the id, never by the proof's own `signerFp`), and a proof whose `signerFp` is another key is refused as `signer-mismatch` |
+| n/a | the tail id's fingerprint is a key the record carries; whether the newest confirmed attestation reaches the last event |
 
 ## What it does not check
 

@@ -1598,9 +1598,19 @@ function verifyTailOwnership(
     );
     return;
   }
-  const committed = keys(tailFingerprint(tail));
+  const owner = tailFingerprint(tail);
+  const committed = keys(owner);
   if (committed === null) {
     push(`tail ${oneLine(tail)} ownership proof cannot be checked: no committed public key`);
+    return;
+  }
+  // The same fingerprint binding a checkpoint's key gets: the file named for the tail's key
+  // has to hold that key. Without it, a tail with no checkpoint yet had its proof checked
+  // under whatever the file held, and a proof the swapped-in key signed verified.
+  if (committed.fingerprint() !== owner) {
+    push(
+      `tail ${oneLine(tail)} ownership proof cannot be checked: public key for ${oneLine(owner)} does not match its fingerprint (key was swapped)`,
+    );
     return;
   }
   const verdict = verifyTailProof({ proof, tail, publicKey: committed.key });
