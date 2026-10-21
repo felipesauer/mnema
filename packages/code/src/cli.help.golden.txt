@@ -229,7 +229,7 @@ $ mnema --help
 | Help:
 |   help            display help for command
 $ mnema --version
-| 0.1.1
+| 0.1.2
 
 ### mnema init --help
 $ mnema init --help
