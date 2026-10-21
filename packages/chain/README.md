@@ -250,7 +250,7 @@ Everything a chain needs lives under one root directory:
     tailproof.json             the key's signature over the tail's own id
     witness/                   external attestations over the checkpoints
   .gitattributes  .gitignore   beside the record in a project tree; not proof
-  README.md                    written by `mnema init` for a reader of the folder; not proof
+  README.md  .editorconfig     written beside the record by `mnema init` or a first signed write; not proof
 ```
 
 Only this tree is meant to be shared (committed to git, copied to a synced

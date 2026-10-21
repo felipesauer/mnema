@@ -56,6 +56,10 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   `deprecate` on an adopted pattern, and `reopen` on a completed task, so that rule
   would make a pendency of every call the project ever settled, and it did exactly
   that to every task ever finished until the lists were derived this way.
+- **`proposedDecisionsNewestFirst`**: every decision awaiting a judgement, uncut, in
+  the order `bootstrap` lists them (most recently moved first), by the same
+  derivation and comparator, so `mnema decision review`, which goes through them, and
+  `mnema status` cannot disagree about which wait or which comes first.
 - **`brief`**: everything that governs the work in the tree that TRAVELS, whole.
   Every decision in force and every adopted pattern of the public tree, each by name.
   It composes the same two derivations `bootstrap` does, so a file generated from it

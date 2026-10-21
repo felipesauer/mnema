@@ -33,11 +33,27 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   and appended, in a committed tree the team shares, a private one for this machine and a global
   one.
 - **A command line** to record, read, move work through its gates and verify, and **an MCP server**
-  over stdio for the agent to do the same: both ask the same gate.
+  over stdio for the agent to do the same: both ask the same gate. At a terminal, `mnema decision
+  review` goes through the decisions awaiting a judgement one by one (accept, reject, skip or quit),
+  with no id to copy, and signs each verdict with your own key.
+- **`mnema init`**, which founds the record and leaves in `.mnema/` a `README.md` that says what the
+  folder is and an `.editorconfig` that unsets what an outer one could impose on its bytes; where the
+  repository has a `.prettierignore` or declares prettier, it adds the line `.mnema/` to it and
+  says so. Run again in a project founded before, it adds only what that project lacks.
+  `mnema doctor` points at a missing README or `.prettierignore` line, names a pre-commit hook,
+  Biome, dprint or lint-staged configuration that would rewrite the record, and edits none of
+  those files.
 - **`mnema verify`**, which reads the record with no key and no network and prints the level it
   reached.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
-  addressed at a file beside a write to it.
+  addressed at a file beside a write to it. In Claude Code the plugin also hands the brief to a
+  subagent as it starts, and, after a question the agent asked the person is answered, names the
+  tool that records the choice. When the
+  `mnema` on the `PATH` is older than the plugin, the opening of the session says so and gives the
+  command that fixes it; `mnema doctor` says it in either direction.
+- **`mnema usage --tools`**, which counts how many times each MCP tool was called, from a file this
+  machine keeps in its home and never in the repository; `mnema switch off tool-call-count`
+  stops it.
 
 [The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
 unproven.
@@ -58,6 +74,8 @@ no private key and no network, and prints each verdict verbatim.
   remains, leaves nothing on disk to cross.
 - It does not make the agent named on a fact the one that did the work, and it is not access
   control: anyone who can run the command line writes as this machine's identity.
+- It does not count every use of a tool: `mnema usage --tools` counts only the calls this
+  machine's MCP server answered, nothing of it is signed, and `verify` does not read it.
 
 The whole table, claim by claim, is in [What it proves](https://github.com/felipesauer/mnema/blob/main/docs/what-it-proves.md), and the
 long form of each row is in [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#what-it-proves-and-what-it-does-not).
