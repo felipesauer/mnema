@@ -90,6 +90,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 import { type StacksHere, stacksHere } from './stack-inspect.js';
+import { whatIsMissing } from './the-record-page.js';
 
 /** What the brief needs: injected so it is testable. */
 export interface BriefContext {
@@ -140,6 +141,13 @@ export interface BriefDone {
    * reads the disk, so the file somebody commits never carries it.
    */
   readonly stacks?: StacksHere;
+  /**
+   * True when `mnema doctor` and `mnema init` would add the line `.mnema/` to the
+   * `.prettierignore` (`whatIsMissing`, the same function), so a formatter can rewrite the signed record. Present only when the caller asked
+   * ({@link runBrief}'s `outside`), for the reason {@link outside} is: it reads the disk. Nothing
+   * is written for it: `mnema init` is what protects the record.
+   */
+  readonly formatter?: true;
 }
 
 /** The read was refused: there is no project to compose a brief for. */
@@ -258,6 +266,9 @@ export function runBrief(
       ...(asked.outside === true
         ? {
             stacks: stacksHere(ctx),
+            ...(whatIsMissing(dirname(trees.projectPublic as string)).prettierIgnore !== undefined
+              ? { formatter: true as const }
+              : {}),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
               arrival: basesNeverImported(sources, dirname(trees.projectPublic as string)),
