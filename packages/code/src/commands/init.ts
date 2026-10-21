@@ -34,8 +34,8 @@
  * about a directory that is none, with the anchor of whatever project lies above it.
  */
 
-import { existsSync, statSync } from 'node:fs';
-import { dirname, join, parse } from 'node:path';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 import { catalogUpcasters, ensureTree, privateKeyPath } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -55,6 +55,12 @@ import {
   signerFor,
 } from '@mnema/core/write';
 import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
+import {
+  complete,
+  type Missing,
+  nearestGitRoot,
+  type PrettierIgnoreChange,
+} from './the-record-page.js';
 
 /** What init needs from its environment: injected so it is testable. */
 export interface InitContext {
@@ -96,6 +102,12 @@ export interface InitResult {
     readonly foundedBelowTheRoot: boolean;
     /** The decision bases with documents in them: nothing is imported in a project just founded. */
     readonly neverImported: readonly UnimportedBase[];
+    /**
+     * What this run did to the repository's `.prettierignore` so a formatter leaves the record
+     * alone: `created` or `added` (the line `.mnema/`), and absent when the repository declares no
+     * prettier or the line was already there. The one thing init writes outside `.mnema/`.
+     */
+    readonly prettierIgnore?: PrettierIgnoreChange;
   };
   /**
    * Present only in a project already here whose checkout recorded an identity that no longer
@@ -103,6 +115,7 @@ export interface InitResult {
    * refusal, the code and the words a write prints, asked of the same function the write asks
    * (`recordedAnchorOf`), and the file those words' restore takes, where they name one.
    */
+  readonly completed?: Missing;
   readonly writeRefused?: {
     readonly code: IdentityUnavailableError['code'];
     readonly message: string;
@@ -129,8 +142,10 @@ export interface InitRefused {
  * every key of the identity enrolled), and checkpoints so all of that is
  * signature-covered at once.
  *
- * A second init therefore WRITES NOTHING, anywhere: it reads an anchor, asks the record
- * whether that identity still counts the key, and returns. That is not a claim about
+ * A second init therefore WRITES NOTHING OF THE RECORD: it reads an anchor, asks the record
+ * whether that identity still counts the key, and returns. The one thing it may write is what
+ * a project founded earlier lacks beside the record (`the-record-page.ts`: the README, the
+ * `.prettierignore` line), and only when that is missing. That is not a claim about
  * calls: `init.test.ts` digests every file of the project tree and of the app data
  * directory before and after, and requires both maps to be unchanged, and
  * `the-init-says-a-write-is-refused.test.ts` does the same in a checkout the key left.
@@ -188,14 +203,21 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       layout: { root: chainRootForScope(trees, 'public') as string },
       upcasters: catalogUpcasters(),
     };
+    // What the founding leaves beside the record, and a project founded before it did lacks:
+    // completed here, and nothing else of the project is touched.
+    const done = complete(ctx.cwd);
+    const completed = done.readme || done.prettierIgnore !== undefined ? { completed: done } : {};
     const recorded = recordedAnchorOf(asked);
-    if (recorded === undefined) return { created: false, root, anchor: authorizingAnchor(asked) };
-    if (recorded.counted) return { created: false, root, anchor: recorded.anchor };
+    if (recorded === undefined) {
+      return { created: false, root, anchor: authorizingAnchor(asked), ...completed };
+    }
+    if (recorded.counted) return { created: false, root, anchor: recorded.anchor, ...completed };
     const { refusal } = recorded;
     return {
       created: false,
       root,
       anchor: recorded.anchor,
+      ...completed,
       writeRefused: {
         code: refusal.code,
         message: refusal.message,
@@ -228,6 +250,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
   });
 
   const gitRoot = nearestGitRoot(ctx.cwd);
+  const { prettierIgnore } = complete(ctx.cwd);
   return {
     created: true,
     root,
@@ -238,20 +261,9 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       foundedBelowTheRoot: gitRoot !== undefined && gitRoot !== ctx.cwd,
       // Nothing has been imported into a tree founded a moment ago, so no sources are asked.
       neverImported: basesNeverImported([], ctx.cwd),
+      ...(prettierIgnore !== undefined ? { prettierIgnore } : {}),
     },
   };
-}
-
-/**
- * The nearest directory at or above `from` that holds a `.git` (a directory, or the file a
- * worktree and a submodule leave), or undefined when none does. A read of the disk, and the only
- * way this product learns where a repository starts without running git.
- */
-function nearestGitRoot(from: string): string | undefined {
-  for (let dir = from; ; dir = dirname(dir)) {
-    if (existsSync(join(dir, '.git'))) return dir;
-    if (dir === parse(dir).root) return undefined;
-  }
 }
 
 function isDirectory(path: string): boolean {

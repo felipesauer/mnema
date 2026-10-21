@@ -4,7 +4,7 @@
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * SEVEN QUESTIONS, each answered by files that were read and named in the answer:
+ * EIGHT QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
  *     installed plugins: a file of the host's that this product does not own, so a list that is
@@ -19,6 +19,9 @@
  *     and that removing the worktree deletes;
  *   - where the record has adopted a stack, are its files still what the receipt says it
  *     wrote and does the record still say the same (`mnema stack check`'s own comparison);
+ *   - does the project lack what `mnema init` leaves beside the record (the `.mnema/README.md`,
+ *     the line `.mnema/` in a `.prettierignore` where prettier is declared): said, never written,
+ *     and `mnema init` is the fix;
  *   - and, for each agent key this machine holds, does this project's record enrol it, does a
  *     host asked to sign as an agent hold a key to do it with, and does the person's own key being
  *     unencrypted leave the whole separation to nothing.
@@ -66,6 +69,7 @@ import {
 } from '../the-persons-key-in-the-clear.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
+import { README_NAME, whatIsMissing } from './the-record-page.js';
 
 /** What the doctor needs: injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -89,6 +93,7 @@ export interface Finding {
     | 'namesake'
     | 'private-tree'
     | 'stack'
+    | 'record-page'
     | 'agent-key';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
@@ -643,6 +648,34 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
+ * What `mnema init` leaves beside the record and this project lacks: the `README.md` in `.mnema/`,
+ * and the line `.mnema/` in the `.prettierignore` where prettier is declared. Read only: the fix is
+ * `mnema init`, which adds exactly these and nothing else. Nothing is said where the project is
+ * whole, or where there is no project here.
+ */
+function recordPageFindings(ctx: DoctorContext): Finding[] {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) return [];
+  const missing = whatIsMissing(dirname(trees.projectPublic));
+  const lines: string[] = [];
+  if (missing.readme) {
+    lines.push(
+      `${oneLine(dirname(trees.projectPublic))} has no .mnema/${README_NAME}, the page that tells whoever opens the folder not to edit or reformat it: run \`mnema init\` to add it.`,
+    );
+  }
+  if (missing.prettierIgnore !== undefined) {
+    lines.push(
+      `${oneLine(missing.prettierIgnore.path)} ${missing.prettierIgnore.did === 'created' ? 'does not exist' : 'does not list .mnema/'}, and prettier is in play here: a formatter that rewrote the record would break its signatures; run \`mnema init\` to add the line.`,
+    );
+  }
+  return lines.map((line) => ({
+    topic: 'record-page' as const,
+    state: 'attention' as const,
+    line,
+  }));
+}
+
+/**
  * The stacks adopted for this project against their files: one finding for each place the files
  * and the record part (`stack check`'s own lines), or one that says they agree. Nothing is said
  * where no stack is adopted, which is every machine that never ran `mnema stack add`.
@@ -855,6 +888,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...mcpFindings(ctx, plugins),
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
+      ...recordPageFindings(ctx),
       ...stackFindings(ctx),
       ...agentKeyFindings(ctx),
     ],

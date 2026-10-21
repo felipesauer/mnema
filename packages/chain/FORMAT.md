@@ -195,6 +195,7 @@ if they were events. The layout, which only ever appeared here incidentally in �
 ```
 <record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
+<record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (§6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order
 <record>/tails/<tailId>/checkpoints.jsonl       the signed checkpoints (§6)

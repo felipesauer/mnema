@@ -711,9 +711,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the project root: a directory name is what this class was first measured on',
   },
+  'init.ts «Already a mnema project at {}: nothing to found, and what it lacked beside the record is added.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the same root, on the branch that completes what the project lacked',
+    },
   'init.ts «Already a mnema project at {}: nothing to found.» #1': {
     verdict: 'collapsed',
     why: 'the same root, on the second branch',
+  },
+  'init.ts «{} {}{}: a formatter that rewrote the record would break its signatures.» #1': {
+    verdict: 'collapsed',
+    why: 'the path of the .prettierignore, under a directory the run discovered',
   },
   'init.ts «backup key: created and enrolled, private half at {}» #1': {
     verdict: 'collapsed',
@@ -970,7 +979,9 @@ describe('every line this wiring words is classified', () => {
     // 145 with the line a tree that refused leaves in place of "Enrolled agent", the identity a tree
     // took the key for, and the line that says a key read from a file is not installed.
     // 151 with the five lines `key restore --agent` prints and the line a successful enrolment ends on.
-    expect(FOUND.sites.length).toBe(151);
+    // 152 with the line `init` prints when it keeps a formatter off the record.
+    // 153 with the line init prints when it completes a project that lacked what it leaves beside the record.
+    expect(FOUND.sites.length).toBe(153);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -990,9 +1001,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(79);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(81);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(72);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(79);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(81);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1160,6 +1171,10 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
   'init.ts «Already a mnema project at {}: nothing to found.» #1': 'the same directory',
+  'init.ts «Already a mnema project at {}: nothing to found, and what it lacked beside the record is added.» #1':
+    'the same directory',
+  'init.ts «{} {}{}: a formatter that rewrote the record would break its signatures.» #1':
+    'the same directory, and a repository that declares prettier',
   'init.ts «backup key: created and enrolled, private half at {}» #1': 'needs such a key root',
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
     'needs a checkout its key has left, and the values inside the words are the core’s, ' +
