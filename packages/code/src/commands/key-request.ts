@@ -229,14 +229,18 @@ export function runAgentRequest(
  * enrols an agent is proved for an Ed25519 key and no other, so a P-256 or an RSA key would make a
  * line that is printed and then refused.
  */
-export function agentKeyAlgorithmRefusal(key: {
-  readonly fingerprint: string;
-  readonly publicKey: KeyObject;
-}): string | undefined {
+export function agentKeyAlgorithmRefusal(
+  key: {
+    readonly fingerprint: string;
+    readonly publicKey: KeyObject;
+  },
+  /** What the refusal ends with: the way to a key that would do, for the verb that was asked. */
+  way = '`mnema key request --agent <name> --anchor <your identity>` without --key makes one',
+): string | undefined {
   const kind = key.publicKey.asymmetricKeyType;
   return kind === 'ed25519'
     ? undefined
-    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
+    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; ${way}`;
 }
 
 /**

@@ -40,6 +40,7 @@ with its own changelog.
 
 ### Changed
 
+- **The links check after the merge reads `docs/` too, and `osv-scanner` runs weekly.** The job that asks the network for every address of the READMEs once a change is on `main` now also reads every Markdown page under `docs/`; it is still never a check on a pull request, and still opens one issue for the broken ones. `osv-scanner` now also runs on Mondays against the unchanged lockfile, so an advisory published against a dependency nobody touched shows up; a finding fails that run and shows in the Actions tab, and opens nothing else. `gitleaks` stays on pull requests and on `main`.
 - **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
 
 ### Fixed
@@ -47,6 +48,9 @@ with its own changelog.
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
   accepted, and the single check right after the publish failed the 0.1.1 run. The job now asks every 30 seconds, up to
   20 times (about ten minutes), goes on as soon as all five answer, and otherwise fails saying how long it waited.
+- **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
+  P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
+  the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
 
 ### Changed
 
