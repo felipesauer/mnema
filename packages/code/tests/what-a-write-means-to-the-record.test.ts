@@ -20,12 +20,16 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
+import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { HOST_MEMORY_READER, runAfterAWrite } from '../src/commands/after-a-write.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { decisionFileAt } from '../src/decision-files.js';
+import { hostMemoryMarker } from '../src/host-memory.js';
+import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { STARTS_OFF } from '../src/record-framing.js';
+import { registerAfterAWrite } from '../src/wiring/after-a-write.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -154,8 +158,12 @@ describe('a note of the host’s memory', () => {
     );
     const first = answer(payload(file));
     const [copied] = memoriesIn('projectPrivate');
-    expect(copied?.payload.content).toMatch(
-      /^Builds use pnpm\n\nThe build runs with pnpm, never npm\.\n\n\[host memory feedback_x\.md sha256:[0-9a-f]{12}\]$/,
+    // The hash is of the whole file, frontmatter included, worked out once outside this code.
+    expect(hostMemoryMarker(file, readFileSync(file, 'utf-8'))).toBe(
+      '[host memory feedback_x.md sha256:df26d0c2d56f]',
+    );
+    expect(copied?.payload.content).toBe(
+      'Builds use pnpm\n\nThe build runs with pnpm, never npm.\n\n[host memory feedback_x.md sha256:df26d0c2d56f]',
     );
     expect(copied?.which).toBe(HOST_MEMORY_READER);
     expect(memoriesIn('projectPublic')).toHaveLength(0);
@@ -436,5 +444,31 @@ describe('the command the hooks file runs after a write', () => {
       systemMessage: expect.stringContaining('project_j.md'),
     });
     expect(memoriesIn('projectPrivate')).toHaveLength(1);
+  });
+});
+
+describe('the verb as the command line routes it', () => {
+  it('is a write, takes no option, and prints the reply as one JSON line', async () => {
+    const seen = { out: [] as string[], err: [] as string[] };
+    const file = join(repo, 'docs', 'adr', '0001-x.md');
+    wrote(file, '# X\n');
+    const io = {
+      out: (line: string) => seen.out.push(line),
+      err: (line: string) => seen.err.push(line),
+      fail: () => {},
+      input: async () => payload(file),
+    };
+    const program = new Command('mnema').exitOverride();
+    const declared = registerAfterAWrite(program, {
+      io,
+      render: renderPlain,
+    } as unknown as Parameters<typeof registerAfterAWrite>[1]);
+    expect(declared.effect).toBe('mutates');
+    expect(declared.act.options).toEqual([]);
+    await program.parseAsync(['after-a-write'], { from: 'user' });
+    expect(seen.out.map((line) => Object.keys(JSON.parse(line) as object))).toEqual([
+      ['hookSpecificOutput'],
+    ]);
+    expect(seen.err).toEqual([]);
   });
 });
