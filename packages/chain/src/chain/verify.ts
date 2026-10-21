@@ -788,6 +788,7 @@ export function verifyChain(
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
   // And, when no tail is counted at all, the one issue about the record as a whole.
   const allIssues: TailIssue[] = [
+    ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
   ];
@@ -894,6 +895,37 @@ function noTailHeld(layout: ChainLayout, tails: readonly string[]): TailIssue {
     layer: 'T1',
     detail: `NO TAIL: ${NO_TAIL_HELD}: ${why}, so the record asserts no fact, and nothing verifies over nothing`,
   };
+}
+
+/**
+ * How a committed key file whose name is not its key is named: the words both readers refuse it
+ * by (FORMAT.md section 6; the second reader says the same of the same file).
+ */
+export const MISNAMED_KEY = 'is named for a fingerprint its own material does not hash to';
+
+/**
+ * EVERY COMMITTED KEY FILE WHOSE NAME IS NOT ITS KEY, refused by name (FORMAT.md section 6).
+ *
+ * The name of `keys/<fingerprint>.pub` is recomputed from the material, never trusted. That was
+ * done only where a signature asked for the key, so a file nothing used, filed under a name its
+ * material does not hash to, was read as a committed key with no tail, a note, and the record
+ * verified, while the second reader refused it. Every file is asked here, used or not, through
+ * the one reader of the committed keys the rest of the verification asks, so no key is read
+ * twice. A file that holds no key is not this case: no material, no fingerprint to compare.
+ */
+function misnamedKeys(names: ReadonlySet<string>, keys: CommittedKeys): TailIssue[] {
+  const issues: TailIssue[] = [];
+  for (const name of names) {
+    const held = keys(name)?.fingerprint();
+    if (held === undefined || held === name) continue;
+    issues.push({
+      layer: 'T2/T4',
+      detail:
+        `MISNAMED KEY: the key file keys/${oneLine(name)}.pub ${MISNAMED_KEY} (it hashes to ` +
+        `${held}), so a signature could be re-pointed at another key by renaming a file`,
+    });
+  }
+  return issues;
 }
 
 /** Returned by {@link readOrIssue} when a stored line refused to parse. */

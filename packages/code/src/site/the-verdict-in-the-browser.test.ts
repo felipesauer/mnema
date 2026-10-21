@@ -25,7 +25,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
-import { verify } from '@mnema/chain';
+import { generateKeyPair, publicKeyToPem, verify } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { anAgentThatSignedAndWasRetired } from '../../tests/support/a-tail-from-another-machine.js';
@@ -268,6 +268,30 @@ describe('the verdict a page computes', () => {
       state: 'broken',
       lines: cli.notes,
     });
+  });
+
+  it('breaks where mnema verify breaks when a key nothing uses is filed under another name', () => {
+    // FORMAT.md section 6: a key file's name is recomputed from its material. This one is used
+    // by no tail and no signature, and the page read it as a committed key with no tail and
+    // said verified, as the CLI did, while the second reader refused it.
+    honestRecord();
+    const key = generateKeyPair();
+    const name = 'b'.repeat(64);
+    expect(key.fingerprint).not.toBe(name);
+    writeFileSync(join(repo, '.mnema', 'keys', `${name}.pub`), publicKeyToPem(key.publicKey));
+    expect(runSite({ cwd: repo, env }, { out: join(sandbox, 'misnamed') }).ok).toBe(true);
+    const page = readFileSync(join(sandbox, 'misnamed', 'index.html'), 'utf-8');
+    const shown = runInAPage(page, scriptOf(page));
+    const cli = theCliSays();
+    expect(cli.ok).toBe(false);
+    expect({ summary: shown.summary, state: shown.state, lines: shown.lines.length }).toEqual({
+      summary: cli.summary,
+      state: 'broken',
+      lines: cli.notes,
+    });
+    expect(shown.lines.join('\n')).toContain(
+      `keys/${name}.pub is named for a fingerprint its own material does not hash to`,
+    );
   });
 
   it('is what the chain says over the frozen witnessed record, witness included', () => {
