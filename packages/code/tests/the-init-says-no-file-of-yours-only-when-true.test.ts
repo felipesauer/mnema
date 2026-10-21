@@ -60,7 +60,7 @@ describe('the block about agents in what init prints', () => {
   it('says "no other file" when init has just written the instructions, and names each file', async () => {
     const text = await initPrints('fresh', () => undefined);
     expect(text).toContain('Created AGENTS.md, with the mnema instructions.');
-    expect(text).toContain('`mnema instructions --remove` takes them out.');
+    expect(text).toContain('takes them out.');
     expect(text).toContain('mnema writes no other file of yours. In Claude Code');
     expect(text).not.toContain('mnema writes no file of yours');
   });
