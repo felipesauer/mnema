@@ -765,6 +765,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/action/src/world.test.ts': 8,
   'packages/chain/src/boundaries.test.ts': 3,
   'packages/chain/src/chain/a-batch-remembers-the-heads-it-cited.test.ts': 9,
+  'packages/chain/src/chain/a-key-file-named-for-another-key-is-refused.test.ts': 8,
   'packages/chain/src/chain/a-link-is-taken-back-only-by-the-identity-that-recorded-it.test.ts': 7,
   'packages/chain/src/chain/a-registration-for-an-identity-the-record-never-founded-is-no-backup.test.ts': 9,
   'packages/chain/src/chain/a-swapped-public-key-is-named-at-the-signature-layer.test.ts': 8,

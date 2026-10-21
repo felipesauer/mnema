@@ -950,6 +950,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the head of a hash a stored citation names; the rule `hashes?` makes it hex, and it is collapsed anyway',
     },
+  '@mnema/chain chain/verify.ts «MISNAMED KEY: the key file keys/{}.pub {} (it hashes to » MISNAMED_KEY #1':
+    {
+      verdict: 'minted',
+      why: 'the words a key file whose name is not its key is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «MISNAMED KEY: the key file keys/{}.pub {} (it hashes to » oneLine(name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name of a file under `keys/`: whoever wrote the directory chose it',
+    },
   '@mnema/chain chain/verify.ts «NO TAIL: {}: {}, so the record asserts no fact, and nothing verifies over nothing» NO_TAIL_HELD #1':
     {
       verdict: 'minted',
@@ -1323,6 +1333,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     {
       verdict: 'collapsed',
       why: 'the subject of a `backup.declared` read from the record: a string whoever wrote the file chose',
+    },
+  '@mnema/chain chain/verify.ts «{}), so a signature could be re-pointed at another key by renaming a file» held #1':
+    {
+      verdict: 'minted',
+      why: 'the SHA-256 this verification computed over the key material, in hex',
     },
   '@mnema/chain chain/verify.ts «{}, and that identity has since revoked it, so the absence is no » oneLine(declaredFor) #1':
     {
@@ -2099,8 +2114,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(301);
-    expect(FOUND[0]?.sites.length).toBe(110);
+    expect(SITES.length).toBe(304);
+    expect(FOUND[0]?.sites.length).toBe(113);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2151,11 +2166,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(206);
-    expect(count('minted')).toBe(70);
+    expect(count('collapsed')).toBe(207);
+    expect(count('minted')).toBe(72);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      206,
+      207,
     );
   });
 
