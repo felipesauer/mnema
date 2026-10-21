@@ -73,6 +73,13 @@ A label is numbered inside one tree, so the committed tree and a machine's priva
 each hold an `ADR-1`, and a name that can mean two decisions is no address. Hand `move` the
 label and it refuses, and says which id, or which ids, carry it here.
 
+To rule on what is waiting without copying an id, run `mnema decision review` at a terminal. It
+shows each proposed decision with its reason and what it turned down, and asks whether to accept,
+reject, skip or quit. It asks for one note at the start and uses it for every verdict unless you
+write another after the letter. Each verdict is the same move `decision move` makes, signed with
+your own key; without a terminal it writes nothing and prints the `decision move` command that
+rules the same decisions.
+
 That diagram is the output of `mnema diagram decision`, read from the gate's own table;
 `skill` and `task` print theirs, and `timeline <id>` and `refs <id>` draw one entity's
 history and connections. It is mermaid text on stdout, and it writes nothing.

@@ -82,6 +82,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
 
 /**
  * The command line to run.
@@ -419,7 +420,11 @@ function answerOf(ran) {
  * the matcher says (the gate starts nothing for a tool the host does not write through). Either
  * way no `mnema` runs. It is the SECOND line: the hooks file puts a shell generated from the same
  * row in front of the handler, so where that shell turns a call away no process starts at all,
- * and this check holds only for a handler run some other way. Everything else is
+ * and this check holds only for a handler run some other way.
+ *
+ * AND NO `mnema` STARTS WHERE NO RULE CAN BE MET: where no tree it could read holds a link with an
+ * address, read from the stored lines and with every doubt starting it (`an-address-can-be-met.mjs`),
+ * the verb would answer `{}`, which is the silence this answers without it. Everything else is
  * {@link whatTheVerbAnswers}: the payload to the verb and its answer back, byte for byte.
  *
  * @param {readonly string[]} argv The handler's own arguments, from the hooks file.
@@ -436,6 +441,10 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
   const input = await payload();
   const tools = flagValue(argv, '--tools');
   if (tools !== undefined && !tools.split(',').includes(toolNameOf(input))) return null;
+  // NO RULE CAN BE MET, SO NO `mnema` STARTS: the answer it would give is the silence below, and
+  // starting it is most of what the gate costs. Read from the stored lines of every tree, never
+  // from a cache, and any doubt starts it (`an-address-can-be-met.mjs`).
+  if (!anAddressCanBeMet(cwd, env)) return null;
   const asked = ['before-a-write', '--host', host];
   const agent = flagValue(argv, '--agent-key');
   if (agent === undefined) return whatTheVerbAnswers(asked, cwd, input);

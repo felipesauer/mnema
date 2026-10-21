@@ -59,7 +59,9 @@ document, delivered by the host instead of waited for.
   of a command start. Measured on one machine (version 0.1.1, 21 October 2026, a sandbox, 50 runs
   each, without the real host): about 1 ms at the median per edit in Claude Code, and the
   server's own start, 270 to 350 ms, is paid once per session; Cursor and VS Code start a process
-  per edit, about 200 ms at the median per edit, even where no rule addresses the file. This hook has the same 10,000-character
+  per edit, about 200 ms at the median per edit where that process starts `mnema`. Where no tree
+  holds a rule with an address, it no longer does (below), and it cost about 50 ms at the median in
+  a second measurement (one machine under load, 21 October 2026, 50 runs). This hook has the same 10,000-character
   ceiling as the opening ones (read on Claude Code 2.1.281), so past it the rules stop at a whole one and the text
   says how many it left out and that `governing_rules` serves them all.
 - **A second `PreToolUse` hook, for VS Code**, which pauses a write for a person where a rule
@@ -325,6 +327,13 @@ What each one runs of it:
 | **The opening: the document and the notes** | handed to every session | handed to every session, whatever model it runs | both hooks run, and their text reaches the model |
 | **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not, and no command hook of the plugin's carries them instead: VS Code would put a hook's text inside the result of the tool (measured), but the push records that it served once per session, and a process started for each write has no session to remember that by. VS Code gets the pause for a person, below, and not the rules | not run, for the same reason |
 | **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` (the file was written) while it honors `deny` |
+
+**What a write costs there.** In VS Code and Cursor the gate is a process started for each write. Its handler first reads
+the stored lines of the project's committed record, of its private tree on this machine and of the machine's global tree,
+and where none of them holds a link under `governs`, `asks-for-a-person` or `refuses-a-write`, it answers what `mnema`
+would answer there, nothing, without starting `mnema`. A tree it cannot list, or a line it cannot read the way `mnema` reads
+it, starts `mnema` as before, so a record `mnema` cannot read still refuses every write. It keeps nothing between two writes:
+a rule that arrives with a `git pull` is met at the next write.
 
 **How each loads it.** VS Code's agent loads it from a folder listed in its
 `chat.pluginLocations` setting, which is the route these rows were measured on. Without that

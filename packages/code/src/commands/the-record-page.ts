@@ -6,8 +6,16 @@
  * does about the answer. Both take the project's directory (the one that holds `.mnema/`).
  */
 
-import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, parse } from 'node:path';
+import { listPrivateKeyFingerprints } from '@mnema/chain';
 import { PROJECT_DIR } from '@mnema/core';
 
 /**
@@ -141,4 +149,110 @@ export function complete(project: string): Missing {
     }
   }
   return missing;
+}
+
+/**
+ * What a signed write leaves behind it when the record it wrote to has no page: the README
+ * `complete` makes, made by the first write of a project founded before init left one.
+ *
+ * THE QUESTION IS ASKED OF THE DISK, BEFORE AND AFTER, like `a-new-identity.ts`'s: {@link markOf}
+ * is taken before the verb's or the tool's write, and {@link leaveThePage} after it. Only a record
+ * whose segments GREW has been written to, so a read, a refusal and a write to a tree that does
+ * not travel all leave the folder as it was, and every surface that writes is covered by
+ * construction, one added tomorrow included. It writes the README and nothing else: the
+ * `.prettierignore` is `init`'s alone, and a file outside `.mnema/` is never touched here.
+ */
+
+/** The size of every segment of every tail under the record at `root`, by tail and segment. */
+export function markOf(root: string): ReadonlyMap<string, number> {
+  const tails = join(root, 'tails');
+  const marks = new Map<string, number>();
+  try {
+    for (const tail of readdirSync(tails)) {
+      for (const name of readdirSync(join(tails, tail))) {
+        if (/^\d{6}\.jsonl$/.test(name)) {
+          marks.set(`${tail}/${name}`, statSync(join(tails, tail, name)).size);
+        }
+      }
+    }
+  } catch {
+    // A record not there to read has not grown.
+  }
+  return marks;
+}
+
+/**
+ * Whether a tail of a key THIS process signs with grew between `before` and now. A tail is named
+ * `<key fingerprint>-<installation>`, and only the keys under `keyRoots` are this process's: a
+ * pull from the remote that lands another key's tail in the middle of a read is the record
+ * growing, and it is not a write of ours. Read at the moment of asking, so the key a first
+ * write mints counts.
+ */
+function growthOfOurs(
+  root: string,
+  before: ReadonlyMap<string, number>,
+  keyRoots: readonly string[],
+): boolean {
+  const ours = new Set(
+    keyRoots.flatMap((keyRoot) => listPrivateKeyFingerprints({ root: keyRoot })),
+  );
+  for (const [segment, size] of markOf(root)) {
+    const tail = segment.slice(0, segment.indexOf('/'));
+    if (ours.has(tail.slice(0, tail.lastIndexOf('-'))) && size !== before.get(segment)) return true;
+  }
+  return false;
+}
+
+/** The one line a write says when it made the page. */
+export const THE_PAGE_WAS_LEFT =
+  'This record had no README.md, so this write left a README.md in .mnema/: it says the ' +
+  'record is signed bytes that a formatter must not rewrite.';
+
+/**
+ * The lines owed by a write that ran since `before` was taken at `root` (a project's `.mnema/`):
+ * the one above when a tail of this process's own key grew and the record had no README, which it then creates, and none
+ * otherwise. A README that is there is never replaced (the file is created, not written over).
+ */
+export function leaveThePage(
+  root: string,
+  before: ReadonlyMap<string, number>,
+  keyRoots: readonly string[],
+): string[] {
+  const page = join(root, README_NAME);
+  if (existsSync(page) || !growthOfOurs(root, before, keyRoots)) return [];
+  try {
+    // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
+    writeFileSync(page, RECORD_README, { encoding: 'utf-8', flag: 'wx' });
+  } catch {
+    return [];
+  }
+  return [THE_PAGE_WAS_LEFT];
+}
+
+/**
+ * What a connection of the server has opened to write to since its last reply, and what it owes
+ * about the page of each record it wrote to. `opened` is called at the door every write goes
+ * through; `settled` is called where a reply is composed and forgets what it read, so a read or
+ * a refusal composing one makes no page.
+ */
+export class RecordPageWatch {
+  private watched = new Map<
+    string,
+    { readonly before: ReadonlyMap<string, number>; readonly keyRoots: readonly string[] }
+  >();
+
+  /** Takes the mark of the record at `root` the first time it is opened since the last reply. */
+  opened(root: string | undefined, keyRoots: readonly string[]): void {
+    if (root !== undefined && !this.watched.has(root)) {
+      this.watched.set(root, { before: markOf(root), keyRoots });
+    }
+  }
+
+  /** The lines owed to this reply, only when it answers a write that landed. */
+  settled(wrote: boolean): string[] {
+    const was = this.watched;
+    this.watched = new Map();
+    if (!wrote) return [];
+    return [...was].flatMap(([root, { before, keyRoots }]) => leaveThePage(root, before, keyRoots));
+  }
 }

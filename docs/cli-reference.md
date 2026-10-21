@@ -248,6 +248,12 @@ mnema init
 # `.mnema/`, and nothing at all where prettier is not in play. Run again in a project that is already founded, it
 # adds only what that project lacks of these two (the README, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
+#
+# A project founded before `init` left the README gets it without running `init` again: the first signed
+# write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and says so in one line
+# (on stderr for a verb). A read, a refused write and a write to a tree that does not travel leave the folder
+# as it was, and a README that is already there is never replaced. Only the README is made this way; the
+# `.prettierignore` is never edited outside `init`.
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -832,6 +838,8 @@ mnema key enroll --checker <the line>
 mnema check run --key <the checker's private key file>
 ```
 
+The key file has to hold an Ed25519 key, like an agent's: any other kind is refused (`UNREADABLE_KEY`) before anything runs.
+
 `check run` starts each declared program from the project root with this process's environment, minus every
 `MNEMA_*` variable (that narrows what the program is handed, not what it can read from disk),
 stops it after `--timeout` seconds (300 by default) and records it as failed. It writes one
@@ -1211,7 +1219,9 @@ scrollback and your CI log, so the report has no field that could hold one.
 Your project probably decided things before it had a record, and wrote them down.
 `mnema decision import` reads a directory of decision documents and **proposes** each
 one. Nothing is accepted on your behalf: every proposal is born `proposed`, whatever
-the file says its status is, and you rule on it with `decision move accept`.
+the file says its status is, and you rule on it with `decision move accept`, or one by one at a
+terminal with `mnema decision review` (it asks for one note, then accept, reject, skip or quit for each
+proposal, signs with your own key, and without a terminal writes nothing and prints the `move` command).
 
 Run it without `--write` first. Nothing is written, and the plan tells you what the
 door made of every file:
