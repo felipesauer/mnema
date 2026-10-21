@@ -69,8 +69,8 @@ import {
 } from '../the-persons-key-in-the-clear.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
-import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
 /** What the doctor needs: injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -676,7 +676,8 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
       `${oneLine(missing.prettierIgnore.path)} ${missing.prettierIgnore.did === 'created' ? 'does not exist' : 'does not list .mnema/'}, and prettier is in play here: a formatter that rewrote the record would break its signatures; run \`mnema init\` to add the line.`,
     );
   }
-  for (const reach of toolsThatRewrite(dirname(trees.projectPublic))) lines.push(sayWhatReaches(reach));
+  for (const reach of toolsThatRewrite(dirname(trees.projectPublic)))
+    lines.push(sayWhatReaches(reach));
   return lines.map((line) => ({
     topic: 'record-page' as const,
     state: 'attention' as const,

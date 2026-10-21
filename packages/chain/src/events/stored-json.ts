@@ -244,7 +244,9 @@ function differsOnlyAsAFormatterLeavesIt(text: string, canonical: string): boole
     }
   }
   if (bare === canonical) return true;
-  return bare.length === canonical.length && [...bare].sort().join('') === [...canonical].sort().join('');
+  return (
+    bare.length === canonical.length && [...bare].sort().join('') === [...canonical].sort().join('')
+  );
 }
 
 /**

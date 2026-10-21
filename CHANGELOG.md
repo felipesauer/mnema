@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **The record carries an `.editorconfig`, and `mnema doctor` and the brief warn of the other tools that would rewrite it.** `.mnema/.editorconfig`
+  sets `insert_final_newline`, `trim_trailing_whitespace`, `end_of_line`, `charset`, `indent_style` and `indent_size` to `unset`
+  (no `root = true`, so nothing else of the folders above is cut); it is written where the README is (the founding, the `init`
+  that completes a founded project, and the first signed write that grows a record with none), never over an existing file and
+  never by a read or a refused write, and it is not part of the proof (`FORMAT.md` section 4). `mnema doctor` and the hook's brief
+  also name a `.pre-commit-config.yaml` with a rewriting hook, a Biome, dprint or lint-staged configuration that does not leave
+  `.mnema/` out, each with the line to add, and say when a file could not be read well enough to confirm; none of those files is
+  edited. The `.prettierignore` is now written where prettier is declared: the project's own directory or the nearest one above it up to
+  the git root, instead of the git root alone. When `mnema verify` (and the second reader) refuses a line that differs from its
+  canonical bytes only in spaces, indentation, line ends or key order, the refusal says that is what a formatter does and that
+  `git checkout -- .mnema` restores a committed file; what either reader accepts is unchanged.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a

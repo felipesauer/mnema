@@ -114,7 +114,7 @@ const PRE_COMMIT_ADD = 'exclude: ^\\.mnema/';
 function preCommit(file: string, text: string): Reach | undefined {
   const lines = text.split(/\r?\n/);
   const unsure: Reach = { tool: 'pre-commit', file, unsure: true, add: PRE_COMMIT_ADD };
-  const valueOf = (index: number, indent: number): string => {
+  const valueAt = (index: number, indent: number): string => {
     const first = (lines[index] as string).replace(/^[^:]*:\s*/, '').replace(/\s+#.*$/, '');
     if (!/^[|>][+-]?$/.test(first)) return first;
     let rest = '';
@@ -131,7 +131,7 @@ function preCommit(file: string, text: string): Reach | undefined {
     const line = lines[i] as string;
     if (/^\s*#/.test(line) || line.trim() === '') continue;
     if (/^exclude:/.test(line)) {
-      topExcludes = MNEMA_EXCLUDE.test(valueOf(i, 0));
+      topExcludes = MNEMA_EXCLUDE.test(valueAt(i, 0));
       continue;
     }
     const id = /^(\s*)-\s+id:\s*['"]?([\w.-]+)['"]?/.exec(line);
@@ -142,7 +142,7 @@ function preCommit(file: string, text: string): Reach | undefined {
     const current = hooks[hooks.length - 1];
     const key = /^(\s+)exclude:/.exec(line);
     if (current !== undefined && key !== null && (key[1] as string).length === current.keyIndent) {
-      current.excluded = MNEMA_EXCLUDE.test(valueOf(i, current.keyIndent));
+      current.excluded = MNEMA_EXCLUDE.test(valueAt(i, current.keyIndent));
     }
   }
   if (/\{\s*id:/.test(text)) return unsure;
@@ -212,7 +212,8 @@ function dprint(file: string, text: string): Reach | undefined {
 // lint-staged
 // ---------------------------------------------------------------------------------------------
 
-const LINT_STAGED_ADD = 'a glob that leaves the folder out, such as "!(.mnema)/**" ahead of "*.json"';
+const LINT_STAGED_ADD =
+  'a glob that leaves the folder out, such as "!(.mnema)/**" ahead of "*.json"';
 
 /** Whether a lint-staged glob matches files the record holds (`*.jsonl`, `*.json`, `*.md`, `.editorconfig`). */
 function globReaches(glob: string): boolean {
@@ -230,7 +231,8 @@ function globReaches(glob: string): boolean {
 
 /** Whether a command line of lint-staged rewrites the files it is given. */
 function rewrites(command: string): boolean {
-  if (/--(write|fix|apply|fix-type)\b|\bfmt\b|\b(gofmt|rustfmt|black|isort)\b/.test(command)) return true;
+  if (/--(write|fix|apply|fix-type)\b|\bfmt\b|\b(gofmt|rustfmt|black|isort)\b/.test(command))
+    return true;
   return /\bprettier\b/.test(command) && !/(--check|--list-different|\s-[cl]\b)/.test(command);
 }
 
@@ -304,7 +306,8 @@ function lintStagedIn(dir: string): Reach | undefined {
     const text = read(join(dir, name));
     if (text === undefined) continue;
     const path = join(dir, name);
-    if (/\.[cm]?[jt]s$/.test(name)) return { tool: 'lint-staged', file: path, unsure: true, add: LINT_STAGED_ADD };
+    if (/\.[cm]?[jt]s$/.test(name))
+      return { tool: 'lint-staged', file: path, unsure: true, add: LINT_STAGED_ADD };
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
@@ -329,7 +332,10 @@ export function toolsThatRewrite(project: string): Reach[] {
     const add = (reach: Reach | undefined): void => {
       if (reach !== undefined) found.push(reach);
     };
-    const configured = <T>(names: readonly string[], one: (file: string, text: string) => T): T | undefined => {
+    const configured = <T>(
+      names: readonly string[],
+      one: (file: string, text: string) => T,
+    ): T | undefined => {
       for (const name of names) {
         if (!files.has(name)) continue;
         const text = read(join(dir, name));

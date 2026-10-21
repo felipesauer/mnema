@@ -313,7 +313,9 @@ describe('a line that is not the canonical serialization of its value is refused
         .join('\n');
       expect(here, name).toMatch(FORMATTER);
       expect(here, name).toContain('git checkout -- .mnema');
-      const there = secondReading(record).refusals.map((f) => f.what).join('\n');
+      const there = secondReading(record)
+        .refusals.map((f) => f.what)
+        .join('\n');
       expect(there, name).toMatch(FORMATTER);
       expect(there, name).toContain('git checkout -- .mnema');
     }
@@ -323,7 +325,9 @@ describe('a line that is not the canonical serialization of its value is refused
       .join('\n');
     expect(here).toMatch(NOT_CANONICAL);
     expect(here).not.toMatch(/formatter/);
-    const there = secondReading(record).refusals.map((f) => f.what).join('\n');
+    const there = secondReading(record)
+      .refusals.map((f) => f.what)
+      .join('\n');
     expect(there).toMatch(NOT_CANONICAL);
     expect(there).not.toMatch(/formatter/);
   });
