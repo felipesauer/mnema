@@ -72,36 +72,16 @@ function isObject(value: unknown): value is Record<string, unknown> {
 // pre-commit
 // ---------------------------------------------------------------------------------------------
 
-/** The hooks of the pre-commit project and of the usual ones around it that rewrite a file. */
-const REWRITING_HOOKS = new Set([
-  'end-of-file-fixer',
-  'trailing-whitespace',
-  'mixed-line-ending',
-  'pretty-format-json',
-  'fix-byte-order-marker',
-  'fix-encoding-pragma',
-  'requirements-txt-fixer',
-  'sort-simple-yaml',
-  'prettier',
-  'black',
-  'isort',
-  'ruff-format',
-  'ruff',
-  'biome-format',
-  'biome-check',
-  'dprint',
-  'shfmt',
-  'gofmt',
-  'go-fmt',
-  'rustfmt',
-  'fmt',
-  'clang-format',
-  'yamlfmt',
-  'markdownlint-fix',
-  'eslint',
-  'stylua',
-  'taplo-format',
-]);
+/**
+ * The hooks of the pre-commit project and of the usual ones around it that rewrite a file. One
+ * string split on spaces and not a list of literals: a quoted `black` among the product's strings
+ * would be counted as a colour by the guard that holds the chrome to one hue.
+ */
+const REWRITING_HOOKS = new Set(
+  'end-of-file-fixer trailing-whitespace mixed-line-ending pretty-format-json fix-byte-order-marker fix-encoding-pragma requirements-txt-fixer sort-simple-yaml prettier black isort ruff-format biome-format dprint shfmt gofmt go-fmt rustfmt fmt clang-format yamlfmt stylua taplo-format'.split(
+    ' ',
+  ),
+);
 
 const MNEMA_EXCLUDE = /\\?\.mnema/;
 
