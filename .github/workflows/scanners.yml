@@ -1,0 +1,89 @@
+name: Scanners
+
+# WHAT THIS IS. Two scanners that read what the test suite cannot: `gitleaks` reads the whole
+# history of the repository for a credential that was ever committed, and `osv-scanner` reads
+# `pnpm-lock.yaml` for a dependency with a published advisory. Neither runs the product.
+#
+# IT RUNS ON A PULL REQUEST AND ON `main`, and it is not one of the checks a pull request must
+# carry: an advisory published tomorrow against a dependency nobody touched would otherwise stop
+# an unrelated merge. A red here is read, not waived.
+#
+# THE TOOLS ARE THE RELEASE BINARIES, pinned by version and by SHA-256 below, not an action: the
+# gitleaks action asks for a license key on an organization's repository, and a scanner that
+# needs an account is one more thing that stops running. Moving to a newer release is a diff of
+# three lines (the version, the file, the hash) taken from the release's own checksums.
+#
+# `.gitleaks.toml` lists what is public or made up and why. A finding that is not on that list is
+# a credential to rotate, not a line to add to it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  OSV_SCANNER_VERSION: 2.7.0
+  OSV_SCANNER_SHA256: 160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b
+
+jobs:
+  secrets:
+    name: secrets in the history (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      # The whole history: a secret removed by a later commit is still in every clone.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks at the pinned release
+        run: |
+          set -euo pipefail
+          file="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${file}" -o "$file"
+          echo "${GITLEAKS_SHA256}  ${file}" | sha256sum --check --strict
+          tar -xzf "$file" gitleaks
+          ./gitleaks version
+
+      - name: Scan every commit
+        run: ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --no-banner
+
+  dependencies:
+    name: dependencies with an advisory (osv-scanner)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install osv-scanner at the pinned release
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64" \
+            -o osv-scanner
+          echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum --check --strict
+          chmod +x osv-scanner
+
+      # The only lockfile the repository holds, and no Python requirements file: the verifier in
+      # `packages/chain/verifier` imports the standard library alone.
+      - name: Read the lockfile
+        run: ./osv-scanner scan source --lockfile pnpm-lock.yaml
