@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE NAME, THE HINTS, AND WHERE THE SESSION IS STANDING: the three things the opening
  * of a console says that are not answers to a typed line.

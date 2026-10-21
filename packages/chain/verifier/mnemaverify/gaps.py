@@ -11,15 +11,16 @@ found nothing to write down here would be a reader that copied the first one.
 
 from __future__ import annotations
 
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
-Resolution = Literal["experiment", "external-spec", "specified", "unresolved"]
-# `specified` is the fourth, and it arrived after the first pass: the document GREW the
+# `how` is one of "experiment", "external-spec", "specified" and "unresolved". `specified` is the
+# fourth, and it arrived after the first pass: the document GREW the
 # rule, so this reader implements it from prose and from a published artifact rather than
 # from a guess. It is the only resolution that removes an entry from what this verifier
 # declares it does not check - the other three leave the reading resting on something.
 
-Standing = Literal["reader-limit", "record-finding", "settled"]
+# `standing` is one of "reader-limit", "record-finding" and "settled".
+#
 # WHICH KIND OF HOLE AN UNRESOLVED GAP IS, and the only place that question is answered.
 #
 # The discriminant is whether this reader can OBSERVE the condition on a record:
@@ -45,9 +46,9 @@ class Gap(NamedTuple):
     id: str
     section: str
     what: str
-    how: Resolution
+    how: str
     note: str
-    standing: Standing
+    standing: str
     #: For a `reader-limit` only: what a reader of a verdict does not get, in that reader's
     #: words. It is the `NOT COVERED` line verbatim; `note` is the `why` beneath it.
     not_checked: str = ""
@@ -336,8 +337,8 @@ GAPS: tuple[Gap, ...] = (
         "THE ONE THAT RAN THE OTHER WAY, and nobody was looking for it because refusing too "
         "much looks like rigour. Section 7 stated that \"the seven top-level keys of an event "
         "are at, kind, payload, signerFp, subject, v and who\", which is the INTERSECTION of "
-        "the published vectors and not the envelope: `which` rides on sixteen of the "
-        "twenty-three and `run` on three. A reader that believed the sentence - this one did - "
+        "the published vectors and not the envelope: `which` rode on sixteen of the "
+        "twenty-three vectors published when this was found (October 2026) and `run` on three. A reader that believed the sentence - this one did - "
         "REFUSES an honest event carrying `which`, on a record the product reads as fine",
         "specified",
         "CLOSED by the same artifact as G08 and G14: an optional envelope field is spelled "
@@ -444,8 +445,8 @@ class Scope(NamedTuple):
 def audit(catalogue: tuple[Gap, ...] = GAPS) -> None:
     """Refuse a catalogue that has not answered the question, at import.
 
-    TOTALITY, SAID THE ONLY WAY THIS TREE CAN SAY IT. `Standing` is a `Literal` and no type
-    checker runs over this directory, so the annotation checks nothing on its own; what does
+    TOTALITY, SAID THE ONLY WAY THIS TREE CAN SAY IT. `standing` is a plain string and no type
+    checker runs over this directory, so nothing about its value is checked by a type; what does
     check is that `standing` is a NamedTuple field with NO DEFAULT, which makes a gap written
     without one a TypeError at import, plus the four rules below - an id used twice, a standing
     that is not one of the three, an open gap that is not a hole or a hole that is not open, and

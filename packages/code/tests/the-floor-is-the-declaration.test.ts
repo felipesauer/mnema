@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * What the CLI loads before it knows which verb was asked for.
  *

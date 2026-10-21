@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * One rule for "newest first": the comparison every recency listing in this product
  * makes, written once, and a scan that keeps a seventh writing from appearing.

@@ -19,7 +19,8 @@ no record needed.
 THAT PAIRING REPLACED A DERIVATION THAT WAS WRONG (gap G25). The envelope used to be
 re-derived here as the INTERSECTION of the vectors' top-level keys, because the document
 said the envelope was seven keys and published nothing else. It is eight names, two of them
-optional: `which` rides on sixteen of these twenty-three vectors and `run` on three, so an
+optional: `which` rode on sixteen of the twenty-three vectors published when this was found (October
+2026) and `run` on three, so an
 intersection is not the envelope - and a reader built on it refused an honest event for
 carrying `which`. An intersection can never tell a required field from an optional one, and
 that is the whole reason the declarations are published now.

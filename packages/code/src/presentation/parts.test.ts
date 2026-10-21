@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * What a line's PARTS are, and the two things that keep the split between a part and
  * its bytes from rotting.

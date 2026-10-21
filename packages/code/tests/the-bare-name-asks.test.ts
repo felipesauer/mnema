@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE BARE NAME ASKS WHAT YOU WANT: at a terminal, and nowhere else.
  *
