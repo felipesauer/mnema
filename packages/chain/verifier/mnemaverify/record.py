@@ -44,7 +44,6 @@ import json
 import os
 import re
 import shutil
-import tempfile
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
@@ -131,7 +130,9 @@ def _read_as_canonical(root: str) -> str | None:
                 )
     if not rewrites:
         return None
-    holder = tempfile.mkdtemp(prefix="mnema-layout-")
+    scratch = os.environ.get("TMPDIR") or os.environ.get("TEMP") or "/tmp"
+    holder = os.path.join(scratch, f"mnema-layout-{os.urandom(6).hex()}")
+    os.mkdir(holder, 0o700)
     copy = os.path.join(holder, "record")
     shutil.copytree(root, copy)
     for relative, content in rewrites.items():

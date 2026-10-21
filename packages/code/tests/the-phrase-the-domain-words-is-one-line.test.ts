@@ -825,6 +825,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
     },
+  '@mnema/chain chain/chain.ts «{} (reading the lines refused for their layout as their canonical bytes)» issue.detail #1':
+    {
+      verdict: 'composed',
+      why: 'a detail `verify.ts` worded and collapsed, with a fixed suffix saying it came from reading the lines refused for their layout as their canonical bytes',
+    },
   '@mnema/chain chain/enrollment.ts «checker.enrolled names {}, a checker key retired at this point, which is never enrolled again» oneLine(checkerFp) #1':
     {
       verdict: 'collapsed',
@@ -2089,8 +2094,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(299);
-    expect(FOUND[0]?.sites.length).toBe(108);
+    expect(SITES.length).toBe(300);
+    expect(FOUND[0]?.sites.length).toBe(109);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2143,7 +2148,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(204);
     expect(count('minted')).toBe(70);
-    expect(count('composed')).toBe(25);
+    expect(count('composed')).toBe(26);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
       204,
     );

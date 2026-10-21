@@ -51,6 +51,7 @@ import { verify } from './chain.js';
 import { parseCheckpoint } from './checkpoint.js';
 import { parseEntry } from './entry.js';
 import { entryHash, writtenAsStored } from './hash.js';
+import { discard, readAsCanonical } from './layout-only.js';
 import { parseTailProof } from './tailproof.js';
 import { readStoredWitness } from './witness.js';
 
@@ -528,6 +529,24 @@ describe('a line that is not the canonical serialization of its value is refused
       expect(secondSays(record)).not.toMatch(/formatter/);
       expect(secondSays(record)).toMatch(/signature does not verify/);
     });
+  });
+
+  it('reads a record as its canonical bytes where a line is refused for its layout alone', () => {
+    const file = (record: string) => join(tailOf(record), '000001.jsonl');
+    const canonicalBytes = readFileSync(file(copyOf('witnessed-record')), 'utf-8');
+    expect(readAsCanonical(join(root, 'witnessed-record'))).toBeUndefined();
+    const spaced = mutated('whitespace-in-a-signed-line');
+    expect(readFileSync(file(spaced), 'utf-8')).not.toBe(canonicalBytes);
+    const copy = readAsCanonical(spaced) as string;
+    try {
+      expect(readFileSync(file(copy), 'utf-8')).toBe(canonicalBytes);
+    } finally {
+      discard(copy);
+    }
+  });
+
+  it('reads nothing as canonical where a line differs in what it holds', () => {
+    expect(readAsCanonical(mutated('decomposed-text-in-a-signed-line'))).toBeUndefined();
   });
 
   it('refuses a line with no canonical bytes at all, a lone surrogate, at the parse', () => {
