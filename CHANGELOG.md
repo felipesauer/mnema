@@ -21,6 +21,10 @@ with its own changelog.
   tool's input schema) never reaches the tool and is not counted. It is on until `mnema switch off tool-call-count`; on a machine
   with no key of its own yet nothing is kept and no directory is made.
 
+### Changed
+
+- **Two scanners now read the repository in CI, outside the required checks.** `gitleaks` reads the whole history for a committed credential and `osv-scanner` reads `pnpm-lock.yaml` for a dependency with a published advisory, on every pull request and on `main`. Both are release binaries pinned by version and SHA-256. The first reading found no credential: every match was a public test vector, a made-up fixture or a fingerprint, and `.gitleaks.toml` names each class and why. It found no advisory.
+
 ### Fixed
 
 - **The release job that tags waits for npm to serve the five packages.** npm can take minutes to serve a version it has just
