@@ -55,6 +55,12 @@
       "index": 0,
       "runs": "hooks/choice-settled.mjs"
     },
+    "subagent-start": {
+      "event": "SubagentStart",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/subagent-start.mjs"
+    },
     "subagent-stop": {
       "event": "SubagentStop",
       "group": 0,
