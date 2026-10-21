@@ -205,59 +205,15 @@ export function parseCanonicalLine(text: string): unknown {
     throw new StoredJsonError(`a value the format has no bytes for: ${(error as Error).message}`);
   }
   if (canonical !== text) {
-    throw new StoredJsonError(`${canonical}\r` === text ? CRLF_REFUSAL : NOT_CANONICAL_REFUSAL);
+    throw new StoredJsonError(
+      `${canonical}\r` === text
+        ? CRLF_REFUSAL
+        : 'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
+            'composition or spelling differ), so these are not the bytes the proof was taken over',
+    );
   }
   return parsed;
 }
-
-/**
- * Whether `text` differs from its `canonical` form ONLY in what a formatter changes: the
- * whitespace between tokens (spaces, indentation, line ends) or the order of the keys. It is a
- * statement about HOW the two differ, never about who changed it, and it changes nothing about
- * what is accepted: the line is refused either way. Whitespace outside the strings is taken out
- * of `text`; what is left is the canonical bytes (whitespace only) or a rearrangement of them
- * (the same characters, so the keys moved). An escape, a number or a composition spelled another
- * way changes the characters, and is not this. The second reader asks the same
- * (`rewritten_as_a_formatter_does` in its `canonical.py`).
- */
-export function differsOnlyAsAFormatterLeavesIt(text: string, canonical: string): boolean {
-  let bare = '';
-  let inString = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i] as string;
-    if (inString) {
-      bare += c;
-      if (c === '\\') bare += text[++i] ?? '';
-      else if (c === '"') inString = false;
-    } else if (c === '"') {
-      inString = true;
-      bare += c;
-    } else if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') {
-      bare += c;
-    }
-  }
-  if (bare === canonical) return true;
-  return (
-    bare.length === canonical.length && [...bare].sort().join('') === [...canonical].sort().join('')
-  );
-}
-
-/** What a refused line says when nothing is known of why its layout is the way it is. */
-export const NOT_CANONICAL_REFUSAL =
-  'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
-  'composition or spelling differ), so these are not the bytes the proof was taken over';
-
-/**
- * What it says INSTEAD when the record, read with every refused line as its canonical bytes,
- * verifies in full: signed hash chain, checkpoints and tail proofs, every event covered. That is
- * the one proof that the layout is all that changed, and it lives outside any one line (a line
- * carries its own hash, which whoever edited it can recompute). See `layout-only.ts`.
- */
-export const FORMATTER_REFUSAL =
-  'not the canonical serialization of what it holds: it differs only in spaces, indentation, ' +
-  'line ends or the order of its keys, which is what a formatter or an editor does to a file, ' +
-  'so these are not the bytes the proof was taken over; a file that is committed is restored ' +
-  'by `git checkout -- .mnema` (or the exact path)';
 
 /**
  * The refusal when a carriage return at the end is ALL that stands between a line and its

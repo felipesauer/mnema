@@ -20,12 +20,7 @@ with its own changelog.
   also name a `.pre-commit-config.yaml` with a rewriting hook, a Biome, dprint or lint-staged configuration that does not leave
   `.mnema/` out, each with the line to add, and say when a file could not be read well enough to confirm; none of those files is
   edited. The `.prettierignore` is now written where prettier is declared: the project's own directory or the nearest one above it up to
-  the git root, instead of the git root alone. When `mnema verify` (and the second reader) refuses a line that differs from its
-  canonical bytes only in spaces, indentation, line ends or key order, and the record read with those lines as their canonical
-  bytes verifies in full (every event covered by a signed checkpoint, every tail proof signed by its tail's key), the refusal
-  says that is what a formatter does and that `git checkout -- .mnema` restores a committed file. A line carries its own hash,
-  so that hash proves nothing: a record that does not verify read that way keeps the plain refusal, and the product shows the
-  issues of that reading beside it. What either reader accepts is unchanged.
+  the git root, instead of the git root alone.
 - **After a question the agent asked the person is answered, the agent is told which tool records the choice.** A new verb,
   `mnema settled`, answers a hook after the host's question tool ran with one sentence of fact beside the answer: that a
   question was answered, that `record_decision` records a choice it settled with the options not taken as `alternatives`,
@@ -141,6 +136,15 @@ with its own changelog.
 - **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
   P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
   the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
+- **Both verifiers check a tail's proof of ownership under the key the tail id names, and nothing else.** The Python
+  verifier looked the key up by the proof's own `signerFp`, so a `tailproof.json` that another key of the record signed
+  over the tail's id was verified there and refused by `mnema verify`. `mnema verify` checked the signature under the
+  tail's key without comparing that key with the proof's `signerFp`, so a proof the tail's key signed naming another key
+  was accepted there and refused by the Python verifier. Both now refuse a proof whose `signerFp` is not the fingerprint
+  the tail id begins with, as `signer-mismatch`. `mnema verify` also recomputes the fingerprint of the key file it checks
+  a tail proof under, as it already did for a checkpoint's key: a tail with no checkpoint yet, whose key file held
+  another key that signed the proof, verified there and was refused by the Python verifier. No record a mnema binary
+  writes is touched: a tail's proof is signed at birth by the key its id is named for.
 
 ### Changed
 

@@ -825,11 +825,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
     },
-  '@mnema/chain chain/chain.ts «{} (reading the lines refused for their layout as their canonical bytes)» issue.detail #1':
-    {
-      verdict: 'composed',
-      why: 'a detail `verify.ts` worded and collapsed, with a fixed suffix saying it came from reading the lines refused for their layout as their canonical bytes',
-    },
   '@mnema/chain chain/enrollment.ts «checker.enrolled names {}, a checker key retired at this point, which is never enrolled again» oneLine(checkerFp) #1':
     {
       verdict: 'collapsed',
@@ -1222,13 +1217,23 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the directory name, on the branch with no committed key to check the proof against',
     },
+  '@mnema/chain chain/verify.ts «tail {} ownership proof cannot be checked: public key for {} does not match its fingerprint (key was swapped)» oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the directory name, on the branch where the file named for its key holds another key',
+    },
+  '@mnema/chain chain/verify.ts «tail {} ownership proof cannot be checked: public key for {} does not match its fingerprint (key was swapped)» oneLine(owner) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint the directory name begins with, which names that key file',
+    },
   '@mnema/chain chain/verify.ts «tail {} ownership proof is invalid ({})» oneLine(tail) #1': {
     verdict: 'collapsed',
     why: 'the directory name, on the branch where the proof is present and does not verify',
   },
   '@mnema/chain chain/verify.ts «tail {} ownership proof is invalid ({})» verdict.reason #1': {
     verdict: 'minted',
-    why: 'one of `verifyTailProof`’s three words: a closed union, like the checkpoint’s',
+    why: 'one of `verifyTailProof`’s four words: a closed union, like the checkpoint’s',
   },
   '@mnema/chain chain/verify.ts «{} ({} event(s) through {}), » oneLine(waiver.tail) #1': {
     verdict: 'collapsed',
@@ -2094,15 +2099,15 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(300);
-    expect(FOUND[0]?.sites.length).toBe(109);
+    expect(SITES.length).toBe(301);
+    expect(FOUND[0]?.sites.length).toBe(110);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
   it('follows the indirections rather than reading a field name', () => {
     // The three shapes the walk has to see through, each named by what it found. Without
-    // the SINK it misses six sentences, four of them in `verifyTailOwnership`, which
+    // the SINK it misses seven sentences, five of them in `verifyTailOwnership`, which
     // holds the one measured forgery in the whole verifier. Without the PRODUCER it
     // misses the census note's own account of a cut. The second sink of the core is the
     // refusal of a checkout whose recorded identity no longer counts its key
@@ -2146,11 +2151,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(204);
+    expect(count('collapsed')).toBe(206);
     expect(count('minted')).toBe(70);
-    expect(count('composed')).toBe(26);
+    expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      204,
+      206,
     );
   });
 

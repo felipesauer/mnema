@@ -512,6 +512,14 @@ with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else. The
 signature is Ed25519 under the key `signerFp` names, which is the fingerprint the
 tail id begins with.
 
+So a reader takes the key from the **tail id**, recomputes its fingerprint from the
+committed material as §6 says, and refuses a proof whose `signerFp` is any other
+fingerprint: one another key of the record signed, naming itself, verifies under the
+key it names and proves nothing about who owns this tail, and one the tail's own key
+signed naming another key says what this section says it cannot. The two readers of
+this repository once each accepted one of the two, and both refuse them now, as
+`signer-mismatch` (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+
 What it is for is the other half of §3's requirement. The fingerprint prefix of a
 tail id is a committed key, but the installation-id suffix is chosen locally and
 binds to nothing on its own, so a party holding no key could copy a tail whose

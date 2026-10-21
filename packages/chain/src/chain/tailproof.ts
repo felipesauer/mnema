@@ -29,6 +29,7 @@
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
 import { parseCanonicalLine } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
+import { tailFingerprint } from './layout.js';
 
 /**
  * The scheme a tail proof declares.
@@ -80,7 +81,9 @@ export function signTailProof(tail: string, keyPair: KeyPair): TailProof {
  * Verifies a proof is a signature over `tail` by the given public key. Returns
  * a verdict rather than throwing so the verifier can aggregate over many tails.
  * The proof's own `tail` must equal the directory name the verifier found, so a
- * genuine proof cannot be relocated to a fabricated tail.
+ * genuine proof cannot be relocated to a fabricated tail, and its `signerFp` must
+ * be the fingerprint that directory name begins with: `publicKey` is the key the
+ * tail id names, never one looked up by the proof's own claim.
  */
 export function verifyTailProof(input: {
   proof: TailProof;
@@ -90,6 +93,10 @@ export function verifyTailProof(input: {
   const { proof, tail, publicKey } = input;
   if (proof.scheme !== SCHEME) return { ok: false, reason: 'unknown-scheme' };
   if (proof.tail !== tail) return { ok: false, reason: 'tail-mismatch' };
+  // The key is the one the tail id names, and the proof has to say so (FORMAT.md section
+  // 6.1): a proof another key of the record signed, or one that names another key, proves
+  // nothing about who owns this tail. The second reader compares the same two strings.
+  if (proof.signerFp !== tailFingerprint(tail)) return { ok: false, reason: 'signer-mismatch' };
   const { sig, ...fields } = proof;
   let signatureOk: boolean;
   try {
@@ -102,7 +109,10 @@ export function verifyTailProof(input: {
 
 export type TailProofVerdict =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'unknown-scheme' | 'tail-mismatch' | 'bad-signature' };
+  | {
+      readonly ok: false;
+      readonly reason: 'unknown-scheme' | 'tail-mismatch' | 'signer-mismatch' | 'bad-signature';
+    };
 
 /** Serializes a tail proof to its stored line (canonical). */
 export function serializeTailProof(proof: TailProof): string {

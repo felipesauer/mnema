@@ -78,9 +78,6 @@ class Report:
         self.not_covered: list[NotCovered] = []
         self.gaps_leaned_on: set[str] = set()
         self.broken: str | None = None
-        # Set by verify_record when the record, read with each line refused for its layout as its
-        # canonical bytes, verifies in full: the one proof that the layout is all that changed.
-        self.layout_only = False
 
     def _add(self, level: Level, section: str, what: str, where: str, gap: str) -> None:
         if gap:
