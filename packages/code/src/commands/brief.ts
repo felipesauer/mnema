@@ -90,6 +90,7 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 import { type StacksHere, stacksHere } from './stack-inspect.js';
+import { prettierMayRewriteTheRecord } from './the-record-page.js';
 
 /** What the brief needs: injected so it is testable. */
 export interface BriefContext {
@@ -140,6 +141,13 @@ export interface BriefDone {
    * reads the disk, so the file somebody commits never carries it.
    */
   readonly stacks?: StacksHere;
+  /**
+   * True when prettier is declared in the repository and its `.prettierignore` does not leave
+   * `.mnema/` out, so a formatter can rewrite the signed record. Present only when the caller asked
+   * ({@link runBrief}'s `outside`), for the reason {@link outside} is: it reads the disk. Nothing
+   * is written for it: `mnema init` is what protects the record.
+   */
+  readonly formatter?: true;
 }
 
 /** The read was refused: there is no project to compose a brief for. */
@@ -258,6 +266,9 @@ export function runBrief(
       ...(asked.outside === true
         ? {
             stacks: stacksHere(ctx),
+            ...(prettierMayRewriteTheRecord(dirname(trees.projectPublic as string))
+              ? { formatter: true as const }
+              : {}),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
               arrival: basesNeverImported(sources, dirname(trees.projectPublic as string)),

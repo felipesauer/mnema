@@ -728,10 +728,12 @@ export function briefWithin(
   inherited?: InheritedReading,
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
   stacks?: StacksHere,
+  formatter?: true,
 ): string[] {
   const late = [
     ...notInTheRecord(outside),
     ...stacksSection(stacks),
+    ...formatterSection(formatter),
     ...inheritedSection(inherited),
   ];
   return fitWhole(
@@ -765,6 +767,23 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
     `Not in the record: ${counted(total, 'decision document', 'decision documents')} in this checkout, by file name, with no decision derived from them here.`,
     ...bases.map((base) => `- ${toImport(base.directory, base.documents)}`),
     '`mnema decision import <source>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+  ];
+}
+
+/**
+ * What the copy a hook carries says when a formatter can rewrite the record, and nothing at all
+ * otherwise, which is every repository with no prettier or one that already leaves `.mnema/` out.
+ *
+ * IT IS THE HOOK'S COPY ONLY, for the reason {@link notInTheRecord} is: it is a fact about one
+ * disk. One line, a fact and a door: the record is signed bytes, so a rewrite breaks the proof,
+ * and the person's `mnema init` is what adds the line to the `.prettierignore`. Nothing here
+ * writes it, and the agent is not asked to.
+ */
+function formatterSection(formatter: true | undefined): string[] {
+  if (formatter === undefined) return [];
+  return [
+    '',
+    'Prettier is declared here and its `.prettierignore` does not leave `.mnema/` out: the formatter can rewrite the signed record and break its proof. `mnema init` protects it.',
   ];
 }
 

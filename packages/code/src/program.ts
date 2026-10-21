@@ -269,8 +269,11 @@ export function buildProgram(
  */
 function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void {
   let before: import('./a-new-identity.js').AnchorsBefore | undefined;
+  // The public record this verb may write to, and what it held: see `leaveThePage`.
+  let page: { readonly root: string; readonly mark: string } | undefined;
   program.hook('preAction', async (_program, action) => {
     before = undefined;
+    page = undefined;
     if (topLevelVerbOf(action) === MCP_VERB) return;
     try {
       // Loaded here, not at the top: it reads chains, and `mnema --version` must not know it
@@ -278,18 +281,33 @@ function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void
       const { anchorsBefore, treesOf } = await import('./a-new-identity.js');
       const { resolveTrees } = await import('@mnema/core');
       const { cwd, env } = here();
-      before = anchorsBefore(treesOf(resolveTrees(cwd, env)));
+      const trees = resolveTrees(cwd, env);
+      before = anchorsBefore(treesOf(trees));
+      if (trees.projectPublic !== undefined) {
+        const { markOf } = await import('./commands/the-record-page.js');
+        page = { root: trees.projectPublic, mark: markOf(trees.projectPublic) };
+      }
     } catch {
       // Nothing to compare with afterwards: no notice, and the verb answers as it always did.
     }
   });
   program.hook('postAction', async () => {
     const was = before;
+    const watched = page;
     before = undefined;
+    page = undefined;
     if (was === undefined) return;
     try {
       const { foundingsSince } = await import('./a-new-identity.js');
       for (const sentence of foundingsSince(was)) io.err(render(fact(sentence, 0)));
+      // The page a write left in a record that had none: said where the founding is said, and
+      // only when the record grew (`commands/the-record-page.ts`), so a read says nothing.
+      if (watched !== undefined) {
+        const { leaveThePage } = await import('./commands/the-record-page.js');
+        for (const sentence of leaveThePage(watched.root, watched.mark)) {
+          io.err(render(fact(sentence, 0)));
+        }
+      }
     } catch {
       // See above.
     }

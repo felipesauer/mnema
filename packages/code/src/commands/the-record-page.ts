@@ -6,7 +6,14 @@
  * does about the answer. Both take the project's directory (the one that holds `.mnema/`).
  */
 
-import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, parse } from 'node:path';
 import { PROJECT_DIR } from '@mnema/core';
 
@@ -103,6 +110,17 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
   return declaresPrettier(dir) ? { path, did: 'created' } : undefined;
 }
 
+/**
+ * Whether prettier is declared where the project sits and its `.prettierignore` does not leave
+ * `.mnema/` alone: the only case in which a formatter can rewrite the record. By reading only.
+ * It is `prettierIgnoreChange`'s own reading (the repository's root, the same lines), narrowed to
+ * a declared prettier: a `.prettierignore` with no prettier declared is not a formatter at work.
+ */
+export function prettierMayRewriteTheRecord(project: string): boolean {
+  const dir = nearestGitRoot(project) ?? project;
+  return declaresPrettier(dir) && prettierIgnoreChange(project) !== undefined;
+}
+
 /** What is missing in the project at `project`, by reading only. */
 export function whatIsMissing(project: string): Missing {
   const change = prettierIgnoreChange(project);
@@ -141,4 +159,79 @@ export function complete(project: string): Missing {
     }
   }
   return missing;
+}
+
+/**
+ * What a signed write leaves behind it when the record it wrote to has no page: the README
+ * `complete` makes, made by the first write of a project founded before init left one.
+ *
+ * THE QUESTION IS ASKED OF THE DISK, BEFORE AND AFTER, like `a-new-identity.ts`'s: {@link markOf}
+ * is taken before the verb's or the tool's write, and {@link leaveThePage} after it. Only a record
+ * whose segments GREW has been written to, so a read, a refusal and a write to a tree that does
+ * not travel all leave the folder as it was, and every surface that writes is covered by
+ * construction, one added tomorrow included. It writes the README and nothing else: the
+ * `.prettierignore` is `init`'s alone, and a file outside `.mnema/` is never touched here.
+ */
+
+/** The size of every segment of every tail under the record at `root`: what a write grows. */
+export function markOf(root: string): string {
+  const tails = join(root, 'tails');
+  const marks: string[] = [];
+  try {
+    for (const tail of readdirSync(tails).sort()) {
+      for (const name of readdirSync(join(tails, tail)).sort()) {
+        if (/^\d{6}\.jsonl$/.test(name)) {
+          marks.push(`${tail}/${name}:${statSync(join(tails, tail, name)).size}`);
+        }
+      }
+    }
+  } catch {
+    // A record not there to read has not grown.
+  }
+  return marks.join('\n');
+}
+
+/** The one line a write says when it made the page. */
+export const THE_PAGE_WAS_LEFT =
+  'This record had no README.md, so this write left a README.md in .mnema/: it says the ' +
+  'record is signed bytes that a formatter must not rewrite.';
+
+/**
+ * The lines owed by a write that ran since `before` was taken at `root` (a project's `.mnema/`):
+ * the one above when the record grew and had no README, which it then creates, and none
+ * otherwise. A README that is there is never replaced (the file is created, not written over).
+ */
+export function leaveThePage(root: string, before: string): string[] {
+  const page = join(root, README_NAME);
+  if (existsSync(page) || markOf(root) === before) return [];
+  try {
+    // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
+    writeFileSync(page, RECORD_README, { encoding: 'utf-8', flag: 'wx' });
+  } catch {
+    return [];
+  }
+  return [THE_PAGE_WAS_LEFT];
+}
+
+/**
+ * What a connection of the server has opened to write to since its last reply, and what it owes
+ * about the page of each record it wrote to. `opened` is called at the door every write goes
+ * through; `settled` is called where a reply is composed and forgets what it read, so a read or
+ * a refusal composing one makes no page.
+ */
+export class RecordPageWatch {
+  private watched = new Map<string, string>();
+
+  /** Takes the mark of the record at `root` the first time it is opened since the last reply. */
+  opened(root: string | undefined): void {
+    if (root !== undefined && !this.watched.has(root)) this.watched.set(root, markOf(root));
+  }
+
+  /** The lines owed to this reply, only when it answers a write that landed. */
+  settled(wrote: boolean): string[] {
+    const was = this.watched;
+    this.watched = new Map();
+    if (!wrote) return [];
+    return [...was].flatMap(([root, before]) => leaveThePage(root, before));
+  }
 }

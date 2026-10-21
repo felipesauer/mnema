@@ -12,6 +12,13 @@ with its own changelog.
 
 ### Added
 
+- **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
+  `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
+  verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a
+  tree that does not travel leave the folder as it was, and a README that is already there is never replaced. Only the README is
+  written this way, and only inside `.mnema/`: the `.prettierignore` is still edited by `mnema init` alone. The session brief
+  (`mnema brief --hook`, never the file a person redirects it into) gains one line where prettier is declared and the
+  `.prettierignore` does not leave `.mnema/` out, saying the formatter can rewrite the signed record and that `mnema init` protects it.
 - **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
   that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
   is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
