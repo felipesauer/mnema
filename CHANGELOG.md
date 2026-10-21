@@ -25,7 +25,9 @@ with its own changelog.
   `Stop`, besides the openings that correct, `mnema corrections` records the option the person chose in the host's question
   tool (read from the result the host writes in the transcript, which the reader passed over before) and the prompt typed
   right after a response that ended in a question mark, each quoted with its question, as a `proposed` decision in this
-  machine's private tree, titled `Answer: …`. The channel is still off until somebody switches it on.
+  machine's private tree, titled `Answer: …`, with an email address in the title replaced by `<email>` as in the body. An
+  answer that only assents or refuses ("yes", "ok", "go ahead", "pode") is not recorded. The channel is still off until
+  somebody switches it on.
 - **A project founded before the README completes it on its first signed write.** The first write to a public record that has no
   `.mnema/README.md` (any verb, or any MCP tool) leaves the same page `mnema init` leaves and says so in one line, on stderr for a
   verb and in the tool's reply for the server. It is made only after the record grew: a read, a refused write and a write to a
