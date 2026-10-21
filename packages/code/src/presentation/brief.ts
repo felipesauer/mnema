@@ -201,7 +201,8 @@ const WHAT_THIS_IS = recordFraming('brief-document');
 const WHAT_TRAVELS = [
   'It carries what is COMMITTED to this project: the record a clone of the repository',
   'gets, and nothing kept privately on one machine or for one person. A rule recorded',
-  'that way is not below, and each heading counts what is printed under it.',
+  'that way is not below, and each heading counts what is printed under it. Recording',
+  'changes `.mnema/`, and that change goes in the same commit as the work it describes.',
 ];
 
 /**

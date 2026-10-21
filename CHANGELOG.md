@@ -12,6 +12,14 @@ with its own changelog.
 
 ### Added
 
+- **`mnema init` leaves a `README.md` in `.mnema/` and keeps prettier away from the record.** The page says what the folder is,
+  that the record changes with the work and each change goes in the same commit as the work it describes, that nothing in it
+  is edited or reformatted, that the private keys are not there, and how to verify it. It is not part of the proof: both readers
+  ignore it, and `FORMAT.md` section 4 lists it beside `.gitignore`. Where the repository has a `.prettierignore` or declares
+  prettier (a dependency, a `prettier` key in `package.json`, or a `.prettierrc*` at the root), `init` adds the line `.mnema/`
+  to the `.prettierignore` at the root of the repository, creating it only when prettier is declared, and says so; a repository
+  with no prettier is left as it is. The session brief gains one line saying that recording changes `.mnema/` and that the change
+  goes in the same commit as the work.
 - **`mnema usage --tools` counts how many times each MCP tool was called, from a file this machine keeps.** For each call
   the server answers and counts it appends one line (the instant, the tool's name, whether the tool writes, and `ok` or the code of
   the refusal) to `<data directory>/tool-calls/<digest of the project>.jsonl`, in the home and never in the repository.

@@ -133,6 +133,13 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io, render);
+        if (result.around?.prettierIgnore !== undefined) {
+          const { path, did } = result.around.prettierIgnore;
+          const what = did === 'created' ? 'Created' : 'Added `.mnema/` to';
+          io.out(
+            onOneLine`${what} ${path}${did === 'created' ? ', with the line `.mnema/`' : ''}: a formatter that rewrote the record would break its signatures.`,
+          );
+        }
         io.out('');
         for (const line of REACHES_AN_AGENT) io.out(render(fact(line)));
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
