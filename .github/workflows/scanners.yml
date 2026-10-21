@@ -4,6 +4,11 @@ name: Scanners
 # history of the repository for a credential that was ever committed, and `osv-scanner` reads
 # `pnpm-lock.yaml` for a dependency with a published advisory. Neither runs the product.
 #
+# THE LOCKFILE ALSO GETS A WEEKLY READING. An advisory is published against a dependency that nobody
+# touched, and no push or pull request would then ask again. The `schedule` runs `osv-scanner`
+# only (a history already read does not change by waiting), on Mondays, from the default branch.
+# A finding on a scheduled run fails the job and shows in the Actions tab; it opens nothing.
+#
 # IT RUNS ON A PULL REQUEST AND ON `main`, and it is not one of the checks a pull request must
 # carry: an advisory published tomorrow against a dependency nobody touched would otherwise stop
 # an unrelated merge. A red here is read, not waived.
@@ -21,6 +26,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Mondays, 05:00 UTC.
+    - cron: '0 5 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -39,6 +47,7 @@ env:
 jobs:
   secrets:
     name: secrets in the history (gitleaks)
+    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

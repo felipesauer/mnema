@@ -1,6 +1,6 @@
 /**
- * THE LINKS AFTER THE MERGE: every image and every absolute link of a README, asked of the
- * network once the change is on `main`.
+ * THE LINKS AFTER THE MERGE: every image and every absolute link of a README and of a page under
+ * `docs/`, asked of the network once the change is on `main`.
  *
  * WHY IT RUNS AFTER THE MERGE AND NOT BEFORE. The pages of the packages are read by people on
  * npm and on GitHub through ABSOLUTE addresses on `main`
@@ -13,7 +13,8 @@
  * before the merge; this is the other half, and it was missing: an image has been published
  * broken.
  *
- * WHAT IT DOES. It reads the README of the repository root and the README of every package,
+ * WHAT IT DOES. It reads the README of the repository root, the README of every package and every
+ * Markdown page under `docs/`,
  * takes every http(s) destination of an inline link or image, a reference definition, an
  * autolink and an HTML `href`, `src` or `srcset` (outside fenced blocks, HTML comments and code
  * spans), asks the network for each address once, and, if one answers with an HTTP error,
@@ -46,7 +47,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 /**
  * The title of the one issue, stable on purpose: the next run looks for an open issue by it and
@@ -329,7 +330,8 @@ export function asProse(reading) {
 }
 
 /**
- * THE PAGES: the README of the root and the README of every package, read from `root`.
+ * THE PAGES: the README of the root, the README of every package and every Markdown page under
+ * `docs/` (at any depth), read from `root`.
  *
  * @param {string} root
  * @returns {Page[]}
@@ -347,6 +349,11 @@ export function pagesIn(root) {
     } catch {
       // a package without a page has no addresses to ask
     }
+  }
+  for (const entry of readdirSync(join(root, 'docs'), { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    const path = relative(root, join(entry.parentPath, entry.name)).split(sep).join('/');
+    pages.push({ path, text: readFileSync(join(root, path), 'utf-8') });
   }
   return pages;
 }
@@ -377,7 +384,7 @@ export async function tellSomebody(reading, issues, run = '') {
   const body = [
     asProse(reading),
     '',
-    'These are the addresses the READMEs carry as the page of the package on npm and the page on GitHub show them. A file that moved, a name that changed or an image that was never pushed leaves one answering with an error.',
+    'These are the addresses the READMEs and the pages under docs/ carry as the page of the package on npm and the page on GitHub show them. A file that moved, a name that changed or an image that was never pushed leaves one answering with an error.',
     ...(run === '' ? [] : ['', `Run: ${run}`]),
   ].join('\n');
   const open = await issues.findOpen(THE_TITLE);
