@@ -33,6 +33,28 @@ export function nearestGitRoot(from: string): string | undefined {
 /** The name of the page init leaves in the record's directory. Not part of the proof. */
 export const README_NAME = 'README.md';
 
+/** The name of the `.editorconfig` init leaves beside it. Not part of the proof either. */
+export const EDITORCONFIG_NAME = '.editorconfig';
+
+/**
+ * What stops an editor, or a tool that reads EditorConfig, from imposing a final newline, an end of
+ * line, a trim or an indent on the signed bytes. No `root = true`: the file must not cut the
+ * inheritance of keys it does not name. `unset` removes a property an outer file set (EditorConfig
+ * specification: the value `unset` removes the effect of that property, as if it was never set),
+ * and the section `[*]` reaches every file under the folder.
+ */
+export const RECORD_EDITORCONFIG = [
+  '# The record is signed bytes: do not let an outer .editorconfig reformat them.',
+  '[*]',
+  'insert_final_newline = unset',
+  'trim_trailing_whitespace = unset',
+  'end_of_line = unset',
+  'charset = unset',
+  'indent_style = unset',
+  'indent_size = unset',
+  '',
+].join('\n');
+
 /**
  * What a person or an agent finds when it opens `.mnema/`. It says only what the format and
  * `docs/what-it-proves.md` already promise: a reformatted byte is a broken proof, and the
@@ -59,8 +81,23 @@ export const RECORD_README = [
 const IGNORED_LINE = '.mnema/';
 const IGNORING_LINES = ['.mnema', '.mnema/', '/.mnema', '/.mnema/'];
 
-/** Whether the repository at `dir` declares prettier: a dependency, a `prettier` key, or a `.prettierrc*`. */
-function declaresPrettier(dir: string): boolean {
+/**
+ * The directories whose tool configuration reaches the project, nearest first: the project's own,
+ * then each one above it up to the git root (or only the project's, outside git). A project in a
+ * monorepo is formatted by what its own `package.json` says or by what the root's does.
+ */
+export function directoriesInReach(project: string): string[] {
+  const root = nearestGitRoot(project) ?? project;
+  const dirs = [project];
+  for (let dir = project; dir !== root && dir !== dirname(dir); ) {
+    dir = dirname(dir);
+    dirs.push(dir);
+  }
+  return dirs;
+}
+
+/** Whether the directory `dir` declares prettier: a dependency, a `prettier` key, or a `.prettierrc*`. */
+export function declaresPrettier(dir: string): boolean {
   try {
     if (readdirSync(dir).some((name) => name.startsWith('.prettierrc'))) return true;
   } catch {
@@ -89,6 +126,7 @@ export interface PrettierIgnoreChange {
 /** What a project lacks of what init leaves beside the record. */
 export interface Missing {
   readonly readme: boolean;
+  readonly editorconfig: boolean;
   readonly prettierIgnore?: PrettierIgnoreChange;
 }
 
@@ -96,11 +134,15 @@ export interface Missing {
  * The change the `.prettierignore` needs so a formatter leaves the record alone, or undefined when
  * none: the file is there with the line (a `.mnema` or `.mnema/` counts), or it is absent and no
  * prettier is declared. A file that exists gets the line whether or not prettier is declared; an
- * absent one is created only when prettier is. It belongs at the root of the git repository the
- * project sits in, or in the project's own directory when there is none.
+ * absent one is created only when prettier is. Prettier reads the `.prettierignore` of the
+ * directory it runs from, which is where it is declared: the nearest directory from the project
+ * up to the git root that declares it (a subproject's own, else the root's). Where none does, only
+ * a file at the git root (or in the project's own directory, outside git) is looked at.
  */
 function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined {
-  const dir = nearestGitRoot(project) ?? project;
+  const dirs = directoriesInReach(project);
+  const declaring = dirs.find(declaresPrettier);
+  const dir = declaring ?? (dirs[dirs.length - 1] as string);
   const path = join(dir, '.prettierignore');
   if (existsSync(path)) {
     const has = readFileSync(path, 'utf-8')
@@ -108,7 +150,7 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
       .some((l) => IGNORING_LINES.includes(l.trim()));
     return has ? undefined : { path, did: 'added' };
   }
-  return declaresPrettier(dir) ? { path, did: 'created' } : undefined;
+  return declaring !== undefined ? { path, did: 'created' } : undefined;
 }
 
 /** What is missing in the project at `project`, by reading only. */
@@ -116,6 +158,7 @@ export function whatIsMissing(project: string): Missing {
   const change = prettierIgnoreChange(project);
   return {
     readme: !existsSync(join(project, PROJECT_DIR, README_NAME)),
+    editorconfig: !existsSync(join(project, PROJECT_DIR, EDITORCONFIG_NAME)),
     ...(change !== undefined ? { prettierIgnore: change } : {}),
   };
 }
@@ -128,12 +171,27 @@ function addTheLine(path: string): void {
   appendFileSync(path, `${gap}${IGNORED_LINE}\n`, 'utf-8');
 }
 
+/** Creates the `.editorconfig` in the record's folder; one that is there, or appeared since, is kept. */
+function writeEditorconfig(record: string): boolean {
+  try {
+    writeFileSync(join(record, EDITORCONFIG_NAME), RECORD_EDITORCONFIG, {
+      encoding: 'utf-8',
+      flag: 'wx',
+    });
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    return false;
+  }
+}
+
 /** Writes what is missing and returns what it wrote. Touches nothing else. */
 export function complete(project: string): Missing {
   const missing = whatIsMissing(project);
   if (missing.readme) {
     writeFileSync(join(project, PROJECT_DIR, README_NAME), RECORD_README, 'utf-8');
   }
+  if (missing.editorconfig) writeEditorconfig(join(project, PROJECT_DIR));
   const change = missing.prettierIgnore;
   if (change !== undefined) {
     if (change.did === 'created') {
@@ -208,10 +266,16 @@ export const THE_PAGE_WAS_LEFT =
   'This record had no README.md, so this write left a README.md in .mnema/: it says the ' +
   'record is signed bytes that a formatter must not rewrite.';
 
+/** The one line a write says when it made the `.editorconfig`. */
+export const THE_EDITORCONFIG_WAS_LEFT =
+  'This record had no .editorconfig, so this write left one in .mnema/: it tells editors and ' +
+  'tools that read EditorConfig not to reformat the signed bytes.';
+
 /**
  * The lines owed by a write that ran since `before` was taken at `root` (a project's `.mnema/`):
- * the one above when a tail of this process's own key grew and the record had no README, which it then creates, and none
- * otherwise. A README that is there is never replaced (the file is created, not written over).
+ * when a tail of this process's own key grew, the README and the `.editorconfig` the record lacks
+ * are created, and each says so in one line; none otherwise. A file that is there is never
+ * replaced (each is created, not written over).
  */
 export function leaveThePage(
   root: string,
@@ -219,14 +283,26 @@ export function leaveThePage(
   keyRoots: readonly string[],
 ): string[] {
   const page = join(root, README_NAME);
-  if (existsSync(page) || !growthOfOurs(root, before, keyRoots)) return [];
-  try {
-    // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
-    writeFileSync(page, RECORD_README, { encoding: 'utf-8', flag: 'wx' });
-  } catch {
-    return [];
+  const config = join(root, EDITORCONFIG_NAME);
+  if ((existsSync(page) && existsSync(config)) || !growthOfOurs(root, before, keyRoots)) return [];
+  const lines: string[] = [];
+  if (!existsSync(page)) {
+    try {
+      // 'wx' fails where the file exists: one that appeared since the check is not overwritten.
+      writeFileSync(page, RECORD_README, { encoding: 'utf-8', flag: 'wx' });
+      lines.push(THE_PAGE_WAS_LEFT);
+    } catch {
+      // Left as it is.
+    }
   }
-  return [THE_PAGE_WAS_LEFT];
+  if (!existsSync(config)) {
+    try {
+      if (writeEditorconfig(root)) lines.push(THE_EDITORCONFIG_WAS_LEFT);
+    } catch {
+      // A write that cannot leave the file is not refused for it.
+    }
+  }
+  return lines;
 }
 
 /**

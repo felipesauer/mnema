@@ -150,6 +150,7 @@ describe('what the-record-page reads', () => {
     const before = digests(repo);
     expect(whatIsMissing(repo)).toEqual({
       readme: true,
+      editorconfig: false,
       prettierIgnore: { path: ignore(), did: 'created' },
     });
     expect(digests(repo)).toEqual(before);

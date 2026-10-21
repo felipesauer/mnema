@@ -247,17 +247,21 @@ mnema init
 # work and each change goes in the same commit as the work it describes, nothing in it is edited or
 # reformatted, and how to verify it. Neither reader counts it as part of the proof. In a repository that
 # has a `.prettierignore` or declares prettier (a dependency, a `prettier` key in `package.json`, or a
-# `.prettierrc*` at the root), `init` also adds the line `.mnema/` to the `.prettierignore` at the root of
-# the repository (creating it only when prettier is declared), and says so. It touches no other file outside
-# `.mnema/`, and nothing at all where prettier is not in play. Run again in a project that is already founded, it
-# adds only what that project lacks of these two (the README, the `.prettierignore` line), says what it added, and
+# `.prettierrc*` in the project's directory or any directory above it up to the git root), `init` also adds
+# the line `.mnema/` to the `.prettierignore` of the nearest of those directories that declares prettier (a
+# subproject's own, else the root's; creating it only when prettier is declared), and says so. It also leaves
+# `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
+# newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
+# else away from the folders above. It touches no other file outside `.mnema/`, and nothing at all where prettier
+# is not in play. Run again in a project that is already founded, it adds only what that project lacks of
+# these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
 #
 # A project founded before `init` left the README gets it without running `init` again: the first signed
-# write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and says so in one line
-# (on stderr for a verb). A read, a refused write and a write to a tree that does not travel leave the folder
-# as it was, and a README that is already there is never replaced. Only the README is made this way; the
-# `.prettierignore` is never edited outside `init`.
+# write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and `.mnema/.editorconfig`,
+# each missing one with a line saying so (on stderr for a verb). A read, a refused write and a write to a tree
+# that does not travel leave the folder as it was, and a file that is already there is never replaced. Only
+# these two are made this way; the `.prettierignore` is never edited outside `init`.
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -1093,9 +1097,22 @@ In a project inside a git repository it also names each worktree that still hold
 in `.mnema/private/`, where they lived before the private tree moved into the repository's git
 directory: nothing reads them there, and removing that worktree deletes them.
 
-It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, or
-the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes neither: each finding says to run
-`mnema init`, which adds exactly that. (`--fix` takes a named target, and these two are not among them.)
+It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, the
+`.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
+finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
+
+And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
+signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
+`mixed-line-ending`, `pretty-format-json`, `prettier` and the like) that can reach a file of the record, judged by the
+`files`, `exclude`, `types` and `exclude_types` of the hook and of the file (a formatter of Python never warns, and an
+`exclude` counts only if it takes the root `.mnema/` out); a `biome.json`
+or `biome.jsonc` whose `files` does not leave `.mnema` out (`ignore` in Biome 1, `includes` with a `!` in Biome 2); a
+`dprint.json` without `.mnema` in `excludes`; and a `lint-staged` configuration (in `package.json` or a
+`.lintstagedrc*`) with a glob that reaches the folder (`*`, `**/*`, `*.json`) running a command that writes. Each
+finding names the file and the line to add, and `mnema init` edits none of those files: they are yours. The
+configurations are read by their JSON or their lines, so a form this does not read (a script, an unusual YAML) is
+reported as one that could not be confirmed, with the same line to add. It looks in the project's directory and in
+each one above it up to the git root.
 
 `mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's

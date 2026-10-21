@@ -161,6 +161,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
             onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
           );
           if (result.completed.readme) io.out('Added .mnema/README.md.');
+          if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
           reportIgnore(io, result.completed.prettierIgnore);
         }
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);

@@ -222,8 +222,9 @@ describe('a tail that arrives while a verb or a call is open is not a write of t
     const watch = new RecordPageWatch();
     watch.opened(root, [keyRoot]);
     grow('aaaa-one');
-    expect(watch.settled(true)).toHaveLength(1);
+    expect(watch.settled(true)).toHaveLength(2);
     expect(existsSync(join(root, 'README.md'))).toBe(true);
+    expect(existsSync(join(root, '.editorconfig'))).toBe(true);
   });
 
   it('makes none for a private write by the server while the public record grows from outside', async () => {
