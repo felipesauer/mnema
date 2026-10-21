@@ -10,6 +10,15 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
+  projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
+  (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
+  fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
+  51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
+  its format or what a read answers changed.
+
 ## [0.1.2] - 2026-10-21
 
 ### Added

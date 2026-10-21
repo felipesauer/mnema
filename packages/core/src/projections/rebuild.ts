@@ -220,11 +220,20 @@ const FOLDED_TABLES: readonly Exclude<ProjectionTable, 'refs'>[] = [
  * a chain that failed to read never reaches here, which is what leaves the
  * existing cache untouched when a line is corrupt.
  */
-export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): void {
+export function rebuild(
+  db: SqliteDatabase,
+  events: readonly CatalogEvent[],
+  options: { readonly schemaPresent?: boolean } = {},
+): void {
   const folded = foldAll(events);
   inTransaction(db, () => {
-    dropProjections(db);
-    ensureSchema(db);
+    // A database the caller KNOWS holds its tables and no rows (a memory one just made) has
+    // nothing to drop and nothing to create: the drop and the create are what a database with
+    // content needs.
+    if (options.schemaPresent !== true) {
+      dropProjections(db);
+      ensureSchema(db);
+    }
     for (const table of FOLDED_TABLES) materialize(db, table, folded);
     // The reference index is the one materialization fed by the STREAM rather
     // than by a fold: it is one row per appearance, not one per entity, so the
