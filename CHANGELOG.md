@@ -127,6 +127,15 @@ with its own changelog.
 - **`mnema check run --key` refuses a key that is not Ed25519, as `key restore --agent` and `key request --agent --key` do.** A
   P-256 or an RSA key file was accepted and then failed further on; it is now refused up front with `UNREADABLE_KEY` and
   the same account of what is wrong with the key (an agent's key is an Ed25519 one), ending with the way to make a checker key, and nothing is recorded.
+- **Both verifiers check a tail's proof of ownership under the key the tail id names, and nothing else.** The Python
+  verifier looked the key up by the proof's own `signerFp`, so a `tailproof.json` that another key of the record signed
+  over the tail's id was verified there and refused by `mnema verify`. `mnema verify` checked the signature under the
+  tail's key without comparing that key with the proof's `signerFp`, so a proof the tail's key signed naming another key
+  was accepted there and refused by the Python verifier. Both now refuse a proof whose `signerFp` is not the fingerprint
+  the tail id begins with, as `signer-mismatch`. `mnema verify` also recomputes the fingerprint of the key file it checks
+  a tail proof under, as it already did for a checkpoint's key: a tail with no checkpoint yet, whose key file held
+  another key that signed the proof, verified there and was refused by the Python verifier. No record a mnema binary
+  writes is touched: a tail's proof is signed at birth by the key its id is named for.
 
 ### Changed
 

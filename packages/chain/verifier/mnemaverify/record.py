@@ -570,10 +570,30 @@ def _check_tailproof(
         )
     if proof.stored["tail"] != tail_id:
         report.fail("-", "tailproof.json names another tail", tail_id, "G10")
+    # Section 6.1: the signature is "under the key `signerFp` names, which is the fingerprint
+    # the tail id begins with". The key is looked up by the TAIL ID, as the product looks it
+    # up. This reader used to look it up by the proof's own `signerFp`, so a proof any other
+    # key of the record signed over this tail's id, naming itself, verified here and was
+    # refused by the product: the two readers disagreed on who owns a tail.
+    owner = _tail_fingerprint(tail_id)
+    signer = proof.stored["signerFp"]
+    if signer != owner:
+        report.fail(
+            "6.1",
+            f"tailproof.json names {str(signer)[:12]}... as its signer, and the key that signs it is "
+            f"the one the tail id begins with, {owner[:12]}... (signer-mismatch)",
+            f"{tail_id}/{TAILPROOF_FILE}",
+        )
+        return
     _check_signature(
-        report, ring, proof.stored["signerFp"], proof.stored["sig"], proof.message,
+        report, ring, owner, proof.stored["sig"], proof.message,
         "-", f"{tail_id}/{TAILPROOF_FILE}",
     )
+
+
+def _tail_fingerprint(tail_id: str) -> str:
+    """The key a tail id names: everything before its last `-`, as the product splits it."""
+    return tail_id.rsplit("-", 1)[0]
 
 
 def _check_witness(
