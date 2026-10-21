@@ -36,6 +36,7 @@ import {
 } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { withCache } from '../tree-sources.js';
+import { agentKeyAlgorithmRefusal } from './key-request.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the check commands need: injected so they are testable. */
@@ -135,6 +136,14 @@ export function runCheckRun(
         code: 'UNREADABLE_KEY',
         message: `${input.keyFile} could not be read as a private key`,
       };
+    }
+    // The same refusal, with the same code, a key that is not Ed25519 meets when it is to be an agent's.
+    const notEd25519 = agentKeyAlgorithmRefusal(
+      pair,
+      '`mnema key request --checker --anchor <your identity>` makes a checker key',
+    );
+    if (notEd25519 !== undefined) {
+      return { ok: false, reason: 'REFUSED', code: 'UNREADABLE_KEY', message: notEd25519 };
     }
     staged = mkdtempSync(join(tmpdir(), 'mnema-checker-'));
     persistKeyPair({ root: staged }, pair);

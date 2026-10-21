@@ -832,6 +832,8 @@ mnema key enroll --checker <the line>
 mnema check run --key <the checker's private key file>
 ```
 
+The key file has to hold an Ed25519 key, like an agent's: any other kind is refused (`UNREADABLE_KEY`) before anything runs.
+
 `check run` starts each declared program from the project root with this process's environment, minus every
 `MNEMA_*` variable (that narrows what the program is handed, not what it can read from disk),
 stops it after `--timeout` seconds (300 by default) and records it as failed. It writes one

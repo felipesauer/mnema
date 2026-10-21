@@ -985,7 +985,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-request-for-a-person-refuses-a-key-file-kept-in-the-agents-folder.test.ts': 6,
   'packages/code/tests/a-retired-agent-key-without-a-tail-is-called-retired.test.ts': 7,
   'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
-  'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
+  'packages/code/tests/a-rule-carries-its-check.test.ts': 10,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
   'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts': 11,
