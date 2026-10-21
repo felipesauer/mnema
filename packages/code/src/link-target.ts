@@ -13,7 +13,8 @@
  * is legitimately cross-tree, and an address may name a path the tree does not hold yet.
  */
 
-import { dirname, isAbsolute } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
 import type { UpcasterRegistry } from '@mnema/chain';
 import type { RecordedAs } from '@mnema/context';
 import { ADDRESS_RELATIONS, locateLinkScope, type ResolvedTrees, type Scope } from '@mnema/core';
@@ -36,6 +37,18 @@ export function linkRefusal(ends: {
     }
   }
   return undefined;
+}
+
+/**
+ * The sentence that refuses a relation that names something in the project (`--rel docs/`), or
+ * `undefined`. A relation is an open label, so `and/or` is one; a value with a separator that is
+ * a file or a directory of this project is the target typed in the wrong place. The syntactic
+ * half of the rule (`src/a.ts`, `./x`) is the write door's; this half needs the project's root.
+ */
+export function relationNamesAPath(rel: string, root: string): string | undefined {
+  if (!rel.includes('/') || /\s/u.test(rel)) return undefined;
+  if (!existsSync(join(root, rel))) return undefined;
+  return `the rel "${oneLine(rel)}" is a path that exists in this project, not a relation: a relation is a label such as \`governs\` or \`relates-to\`, and the path goes where the target goes. Nothing was recorded.`;
 }
 
 /**

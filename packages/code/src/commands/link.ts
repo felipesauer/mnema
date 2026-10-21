@@ -43,7 +43,12 @@ import {
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
 import { reachOfAddress } from '../governed-tree.js';
 import { resolveAddress } from '../label-as-address.js';
-import { linkRefusal, outsideTheProject, targetAsRecorded } from '../link-target.js';
+import {
+  linkRefusal,
+  outsideTheProject,
+  relationNamesAPath,
+  targetAsRecorded,
+} from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import {
   type AgentWrites,
@@ -152,6 +157,10 @@ export function runLink(
   if (!target.ok) return refusedLink('AMBIGUOUS_LABEL', target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return refusedLink('UNKNOWN_TARGET', unresolved);
+  const projectDir = projectRoot(trees.projectPublic);
+  const namesAPath =
+    projectDir === undefined ? undefined : relationNamesAPath(input.rel, projectDir);
+  if (namesAPath !== undefined) return refusedLink('NOT_A_REFERENCE', namesAPath);
   // The public tree travels to every clone, so a target no clone can open is refused there; the
   // private and global trees stay on this machine and take any path.
   const publicRoot = scope === 'public' ? projectRoot(trees.projectPublic) : undefined;

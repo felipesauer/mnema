@@ -52,5 +52,5 @@ describes. `init` leaves a `README.md` in the folder saying so, and, where the r
 `.prettierignore` or declares prettier, adds the line `.mnema/` to it and says it did (the block above
 then reads "mnema writes no other file of yours"): a formatter that rewrote a byte of the record would
 break its signatures. Run again in a project founded before `init` did this, it adds what that project
-lacks and says so; where nothing is missing it answers as before. `mnema verify` exits non-zero when a record is broken, so it drops into
+lacks and says so; where nothing is missing it answers as before. A project that never ran it again still gets the README from its first signed write to the public record, which says so in one line (a read, or a write refused, makes none and a README already there is never replaced); the `.prettierignore` stays `init`'s alone, and the session brief names it, in one line, where `mnema doctor` would add that line. `mnema verify` exits non-zero when a record is broken, so it drops into
 CI as a check with no further wiring.

@@ -21,8 +21,11 @@
 import type { DivergentMove } from '@mnema/core';
 import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
-import { linkBreakSentences, type ScopedLinkBreak } from '../record-integrity.js';
-import { onOneLine } from './on-one-line.js';
+import {
+  linkBreakSentences,
+  movedApartSentence,
+  type ScopedLinkBreak,
+} from '../record-integrity.js';
 
 /**
  * The lines a read owes about the tails it served that do not chain: none at all for
@@ -54,10 +57,5 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
  * reading tells them apart now, and a move past the gate never reaches this line.
  */
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
-  return divergent.map((move) =>
-    fact(
-      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')}, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`,
-      0,
-    ),
-  );
+  return divergent.map((move) => fact(movedApartSentence(move), 0));
 }

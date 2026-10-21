@@ -475,9 +475,11 @@ describe('what an open run says about itself', () => {
 
     await writeSomething(client, { project: b });
 
+    // Both runs are listed now, the one in each project the session wrote to, and both are its own:
+    // the mark is derived per call, and the read covers every project of the workspace.
     const after = openRunsOf(await client.callTool({ name: 'focus' }));
-    expect(after.map((r) => r.thisSession)).toEqual([true]);
-    expect(after[0]?.id).toBe(beforeSecondProject[0]?.id);
+    expect(after.map((r) => r.thisSession)).toEqual([true, true]);
+    expect(after.map((r) => r.id)).toContain(beforeSecondProject[0]?.id);
 
     end();
     for (const project of [a, b]) expect(runTally(project)).toEqual({ started: 1, ended: 1 });

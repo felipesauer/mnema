@@ -111,6 +111,7 @@ import {
 } from '../record-effect.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
+  type FellIn,
   type Landed,
   landedNotice,
   type PersonSigned,
@@ -147,6 +148,7 @@ import {
   A_READ,
   A_WRITE,
   countsToolCalls,
+  movedApartNotes,
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
@@ -1454,7 +1456,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // so it is the cheapest place to learn that the workspace holds more than one
       // project, and the agent is the party that can pass that on to the person who
       // knows which one was meant.
-      return withRunState(active, context, [whereThisSessionIs(active)]);
+      return withRunState(active, context, [
+        ...movedApartBlock(active),
+        whereThisSessionIs(active),
+      ]);
     },
   );
 
@@ -1752,7 +1757,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, result.value);
+      return served(active, result.value, movedApartBlock(active, id));
     },
   );
 
@@ -2237,7 +2242,7 @@ function recorded(
 function moved(
   session: Session,
   line: string,
-  result: Replacement & PersonSigned,
+  result: Replacement & PersonSigned & FellIn,
   // What a particular move owes beyond the acknowledgement: the one sentence an acceptance by
   // an agent says about itself, right after the line, and the notice a supersede whose successor
   // is still proposed ends with. A parameter, as `recorded`'s is, so no other move's reply gains
@@ -2250,6 +2255,9 @@ function moved(
       [
         line,
         ...(extra.after ?? []),
+        ...(result.project !== undefined
+          ? [`  In the project at ${oneLine(result.project)}.`]
+          : []),
         ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
         ...(extra.notice !== undefined ? [extra.notice] : []),
@@ -2395,6 +2403,9 @@ function replied(
       // there beside others, once per key per tree for an installation, and again for a fresh
       // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
+      // AND THE PAGE A WRITE LEFT IN A RECORD THAT HAD NONE: only a write that landed makes it,
+      // so a read or a call that made nothing composes the reply and leaves the folder as it was.
+      ...session.recordPage.settled(wrote),
       // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN: its run,
       // the edit hook's facts, which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
@@ -2460,6 +2471,8 @@ function refused(
   session: Session,
   refusal: { readonly code: string; readonly message: string },
 ): RefusalReply {
+  // A refusal landed nothing: what the write opened is forgotten and no page is made.
+  session.recordPage.settled(false);
   return {
     isError: true,
     content: [
@@ -2468,6 +2481,21 @@ function refused(
       ...session.replacementsOwed.take(),
     ].map(block),
   };
+}
+
+/** The clause a run-state note adds while no identity signs for the session: see {@link withRunState}. */
+const NO_ACTOR_YET =
+  ' No identity signs for this session yet, so `actor` is empty and no run is listed as yours.';
+
+/**
+ * The block a read owes when the record it served was moved apart: the sentences of
+ * `movedApartSentence`, as ONE block of their own beside the payload (see {@link withRunState}
+ * for why a fact about the record rides beside the JSON and never inside it), and none at all for
+ * a record moved in one line, which is every record one machine moved.
+ */
+function movedApartBlock(session: Session, entityId?: string): readonly string[] {
+  const said = movedApartNotes(session, entityId);
+  return said.length === 0 ? [] : [said.join('\n')];
 }
 
 function withRunState(
@@ -2486,7 +2514,10 @@ function withRunState(
   return served(session, result, [
     ...also,
     'This session has not opened a run of its own yet: one opens when it ' +
-      'first writes, a write that is then refused included.',
+      'first writes, a write that is then refused included.' +
+      // While nobody signs for the session its `actor` is empty, which reads as an answer about
+      // nobody: it is said here, in the sentence about the connection, and goes with the first key.
+      (session.who === undefined ? NO_ACTOR_YET : ''),
   ]);
 }
 

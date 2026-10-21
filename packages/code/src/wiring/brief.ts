@@ -187,7 +187,8 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         'decision documents in this checkout the record has no decision for, as',
         '`mnema status` does, a fact about one disk, so the file never carries it. It also',
         'names, there, the stacks the record has adopted and how many places their files part',
-        'from it (`mnema stack check`).',
+        'from it (`mnema stack check`). And one line where the `.prettierignore` is missing',
+        'the line `.mnema/`, as `mnema doctor` says: the formatter can rewrite the signed record.',
         '',
         'Without `--hook` the output holds no clock, no session and no path, so the same',
         'record always prints the same bytes and a difference is a difference in the record.',
@@ -252,6 +253,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
               result.inherited,
               ceiling,
               result.stacks,
+              result.formatter,
             )
           : briefDocument(result.brief, result.inherited),
       );
