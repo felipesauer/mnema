@@ -133,8 +133,23 @@ describe('the plugin', () => {
     );
     installPlugin('mnema@mnema', '0.0.1');
     expect(said().find((line) => line.includes('plugin mnema@mnema'))).toContain(
-      'attention plugin plugin mnema@mnema is installed at 0.0.1 (user scope) and this binary is 9.9.9',
+      'attention plugin plugin mnema@mnema is installed at 0.0.1 (user scope) and this binary is 9.9.9, newer than the plugin',
     );
+  });
+
+  it('says a binary older than the plugin is the pair that breaks, with the command that fixes it', () => {
+    installPlugin('mnema@mnema', '10.0.0');
+    const line = said().find((one) => one.includes('plugin mnema@mnema')) as string;
+    expect(line).toContain('attention plugin plugin mnema@mnema is installed at 10.0.0');
+    expect(line).toContain('this binary is 9.9.9, older than the plugin');
+    expect(line).toContain('`npm i -g @mnema/code@10.0.0`');
+  });
+
+  it('does not claim an order between versions it cannot read', () => {
+    installPlugin('mnema@mnema', 'unknown');
+    const line = said().find((one) => one.includes('plugin mnema@mnema')) as string;
+    expect(line).toContain('could not be ordered');
+    expect(line).not.toContain('npm i -g');
   });
 
   it('says what to install when the list holds none, and that it is unknown when it cannot be read', () => {

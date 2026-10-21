@@ -12,7 +12,15 @@
  * directory took the write: the reply is checked against the disk, not against itself.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -133,14 +141,16 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
       await client.close();
     });
 
-    it(`${verb.name}: with no \`project\` the reply names no directory`, async () => {
+    it(`${verb.name}: with no \`project\` the reply names the directory of the session's own project`, async () => {
       const first = makeProject('area', 'first');
       const second = makeProject('area', 'second');
       const client = await connect(first, second);
 
       const text = await say(client, verb.name, verb.args);
 
-      expect(text).not.toContain('In the project at');
+      expect(text.split(`\n  In the project at ${first}.`)).toHaveLength(2);
+      expect(text.split('In the project at')).toHaveLength(2);
+      expect(text).not.toContain(second);
       await client.close();
     });
   }
@@ -222,5 +232,40 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
     expect(lines.filter((line) => line.startsWith('  In the project at'))).toHaveLength(1);
     expect(text).toContain('Landed in the private tree');
     await client.close();
+  });
+});
+
+describe('a move or a retraction by id says the directory it fell in', () => {
+  /** The id out of a reply such as `Created task t-1a2b (<uuid>)`. */
+  const idOf = (text: string): string => /[0-9a-f]{8}-[0-9a-f-]{27}/.exec(text)?.[0] ?? '';
+
+  it('after a reload, a move of an id the clone also holds says it fell in the clone', async () => {
+    const original = makeProject('work', 'api');
+    const first = await connect(original);
+    const task = idOf(await say(first, 'create_task', { title: 'the task' }));
+    const decision = idOf(
+      await say(first, 'record_decision', { title: 'the decision', rationale: 'because' }),
+    );
+    const note = idOf(await say(first, 'capture_memory', { content: 'the fact', scope: 'public' }));
+    await first.close();
+    expect([task, decision, note].every((id) => id.length === 36)).toBe(true);
+
+    // The same repository checked out elsewhere: the record travelled with it.
+    const clone = join(sandbox, 'clones', 'api');
+    mkdirSync(join(sandbox, 'clones'), { recursive: true });
+    cpSync(original, clone, { recursive: true });
+
+    const second = await connect(clone);
+    const moves: readonly [string, Record<string, unknown>][] = [
+      ['task_transition', { id: task, action: 'submit', note: 'ready' }],
+      ['decision_transition', { id: decision, action: 'accept', note: 'agreed' }],
+      ['retract_note', { id: note, reason: 'it was wrong' }],
+    ];
+    for (const [name, args] of moves) {
+      const text = await say(second, name, args);
+      expect(text.split(`\n  In the project at ${clone}.`), name).toHaveLength(2);
+      expect(text, name).not.toContain(original);
+    }
+    await second.close();
   });
 });

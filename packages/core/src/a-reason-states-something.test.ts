@@ -365,8 +365,20 @@ describe('the title, asked of one value', () => {
     }
   });
 
+  it('refuses a title of spaces alone, in any whitespace, and says it is blank', () => {
+    for (const said of [' ', '   ', '\t', '\n', '\u00a0', ' \u3000 ']) {
+      expect(titleRefusal('title', said)?.message, JSON.stringify(said)).toBe(
+        'the title is only spaces, so it names nothing: write the title in words',
+      );
+    }
+  });
+
+  it('leaves the empty string to the reader, which refuses it with its own code', () => {
+    expect(titleRefusal('title', '')).toBeUndefined();
+  });
+
   it('passes a title in words, in any script, with a tag in it, or a single character', () => {
-    for (const said of ['Use UTC', 'use <b> for bold', '理由', 'x', '42', '']) {
+    for (const said of ['Use UTC', 'use <b> for bold', '理由', 'x', '42']) {
       expect(titleRefusal('title', said), said).toBeUndefined();
     }
   });
@@ -635,6 +647,42 @@ describe('every kind says where its references are, and the door asks it there',
         unfilledReference({ kind, subject: 'coach', payload: {} } as never),
         kind,
       ).toBeUndefined();
+    }
+  });
+
+  it('refuses a path where a relation goes, and a marker where the executing agent goes', () => {
+    for (const rel of ['src/a.ts', '/etc/passwd', '../x', './x', '~/x', 'docs/a.md']) {
+      const before = count();
+      expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
+        ok: false,
+        code: 'NOT_A_REFERENCE',
+        message: expect.stringContaining('is a path, not a relation'),
+      });
+      expect(count(), rel).toBe(before);
+    }
+    const before = count();
+    expect(
+      linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel: 'governs', which: '<name>' }),
+    ).toMatchObject({
+      ok: false,
+      code: 'NOT_A_REFERENCE',
+      message: expect.stringContaining('the which "<name>" is the marker'),
+    });
+    expect(count()).toBe(before);
+    for (const rel of [
+      'governs',
+      'relates-to',
+      'a.b',
+      'TODO',
+      'and/or',
+      'parent/child',
+      'v1.2',
+      'docs/',
+      'reads a/b in <b>x</b>',
+    ]) {
+      expect(linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel }), rel).toMatchObject({
+        ok: true,
+      });
     }
   });
 

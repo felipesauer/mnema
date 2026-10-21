@@ -52,3 +52,22 @@ export const PRODUCT_NAME = '@mnema/code';
 
 /** The whole answer to `mnema --identify`: the name, then the version. */
 export const IDENTITY = `${PRODUCT_NAME} ${VERSION}`;
+
+/**
+ * Whether `version` is OLDER than `than`, by the three numbers before any suffix (`0.2.0-beta`
+ * counts as `0.2.0`: a suffix does not order). A version that is not three numbers is never
+ * "older". The plugin's hook holds the same comparison in `plugin/hooks/hand-over.mjs`, which
+ * runs with no build and cannot import this, and `tests/the-versions-are-compared-alike.test.ts`
+ * holds the two to one table.
+ */
+export function isOlderThan(version: string, than: string): boolean {
+  const numbers = (text: string) =>
+    /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(text.trim())?.slice(1).map(Number);
+  const had = numbers(version);
+  const wants = numbers(than);
+  if (had === undefined || wants === undefined) return false;
+  for (let at = 0; at < 3; at += 1) {
+    if ((had[at] ?? 0) !== (wants[at] ?? 0)) return (had[at] ?? 0) < (wants[at] ?? 0);
+  }
+  return false;
+}
