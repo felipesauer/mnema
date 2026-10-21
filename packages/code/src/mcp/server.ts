@@ -2474,6 +2474,10 @@ function refused(
   };
 }
 
+/** The clause a run-state note adds while no identity signs for the session: see {@link withRunState}. */
+const NO_ACTOR_YET =
+  ' No identity signs for this session yet, so `actor` is empty and no run is listed as yours.';
+
 function withRunState(
   session: Session,
   result: unknown,
@@ -2490,7 +2494,10 @@ function withRunState(
   return served(session, result, [
     ...also,
     'This session has not opened a run of its own yet: one opens when it ' +
-      'first writes, a write that is then refused included.',
+      'first writes, a write that is then refused included.' +
+      // While nobody signs for the session its `actor` is empty, which reads as an answer about
+      // nobody: it is said here, in the sentence about the connection, and goes with the first key.
+      (session.who === undefined ? NO_ACTOR_YET : ''),
   ]);
 }
 

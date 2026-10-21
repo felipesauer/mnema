@@ -602,14 +602,15 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
-  // The public tree travels to every clone: a target no clone can open is refused there, as the
-  // command line refuses it. The private and global trees take any path.
-  const publicRoot =
-    route.scope === 'public' && trees.projectPublic !== undefined
-      ? dirname(trees.projectPublic)
-      : undefined;
+  // A target outside the project is refused in every tree, as the command line refuses it: the
+  // public tree travels to every clone, and the private and global trees would hold a path
+  // nothing here can follow.
+  const projectDir = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
+  const publicRoot = route.scope === 'public' ? projectDir : undefined;
   const outside =
-    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
+    projectDir === undefined
+      ? undefined
+      : outsideTheProject(input.rel, target.id, projectDir, route.scope);
   if (outside !== undefined) return { ok: false, code: 'OUTSIDE_PROJECT', message: outside };
   // What the public tree records is the target relative to the root when it was typed absolute.
   const recordedTarget =
@@ -1310,7 +1311,14 @@ function skillProofToFields(input: {
  * always the chain as it stands: the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
-  return bootstrap(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  const asking = { actor: session.who ?? '', ...askerContext(session) };
+  // The work, the patterns and the decisions are the session's own project's (see above); where
+  // the actor LEFT OFF is not: the session's run lives in the project its first write went to,
+  // which may be another one of the workspace.
+  return {
+    ...bootstrap(sessionCaches(session), asking),
+    resume: resume(actorCaches(session), asking),
+  };
 }
 
 /**
@@ -1652,6 +1660,18 @@ function sessionCaches(session: Session): ProjectionCache[] {
   return scopedCaches(session).map((source) => source.cache);
 }
 
+/**
+ * The caches the actor's runs are read from: every tree of every project of the workspace.
+ *
+ * A run is the actor's session wherever it was opened, and a connection opens one per project it
+ * writes to, so reading the session's first project alone said `lastRun: null` about a session
+ * whose first write went to the second. Asking the whole workspace is safe because the reads
+ * filter by the actor: they list only the runs the session's own identity signed.
+ */
+function actorCaches(session: Session): ProjectionCache[] {
+  return workspaceCaches(session).map((source) => source.cache);
+}
+
 /** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
   /**
@@ -1932,7 +1952,7 @@ function recordConsultations(
  * so the result carries only the machine's OWN open runs.
  */
 export function runFocusTool(session: Session): Focus {
-  return focus(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  return focus(actorCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /**
@@ -1943,7 +1963,7 @@ export function runFocusTool(session: Session): Focus {
  * open OR already ended, the "where was I" anchor.
  */
 export function runResumeTool(session: Session): Resume {
-  return resume(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
+  return resume(actorCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
