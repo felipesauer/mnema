@@ -264,7 +264,7 @@ with its own changelog.
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
   definition of all 27 (49,903, 50,029, 50,956 and 56,729 bytes; 11,384, 11,524, 11,498 and 12,715 tokens in o200k,
   a relative measure), against 54,231 bytes and 12,303 tokens for the server's own listing; Codex carries none and
-  one `tool_search` entry that lists the server (2,882 bytes, 672 tokens), and what its search returns for each tool
+  one `tool_search` entry that lists the server (2,866 bytes, 678 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
   definition differently or a definition gains a word.
