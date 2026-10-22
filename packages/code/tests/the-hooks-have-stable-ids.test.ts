@@ -89,9 +89,9 @@ describe('the hooks of the plugin carry stable ids', () => {
 
   it('is red for an id whose hook is gone', () => {
     const shrunk = JSON.parse(read('hooks.json')) as { hooks: Record<string, unknown[]> };
-    delete shrunk.hooks.PreCompact;
+    delete shrunk.hooks.SubagentStop;
     expect(reconcile(JSON.stringify(shrunk), read('hooks.ids.json'))).toEqual([
-      'id session-tally-precompact points at PreCompact/0/0, which holds no hook',
+      'id subagent-stop points at SubagentStop/0/0, which holds no hook',
     ]);
   });
 });

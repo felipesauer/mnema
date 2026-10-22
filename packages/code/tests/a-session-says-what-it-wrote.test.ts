@@ -1,7 +1,6 @@
 /**
- * A session says what it wrote: at the end of a response that wrote a file, and before a
- * conversation is compacted, one line with two counts (the files its own tool calls wrote and
- * the decisions recorded since it opened).
+ * A session says what it wrote: at the end of a response that wrote a file, one line with two
+ * counts (the files its own tool calls wrote and the decisions recorded since it opened).
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half: that the counts are the ones the
  * transcript and the record hold, that the line says what each is a count OF, and that every
@@ -260,24 +259,20 @@ describe('mnema tally', () => {
     });
   });
 
-  it('says it before a compaction, and says so', async () => {
-    const { reply } = answer(payload('PreCompact', transcript(aWritingSession())));
-    expect(reply).toEqual({
-      systemMessage:
-        'This conversation is about to be compacted. Since this session opened, its own tool calls wrote 2 files, and 0 decisions were recorded in this project’s record.',
-    });
+  it('says nothing before a compaction: what the session had recorded is handed back after it, from the journal', () => {
+    const file = transcript(aWritingSession());
+    expect(answer(payload('PreCompact', file))).toEqual({ reply: {}, notes: [] });
+    expect(answer(payload('Stop', file)).reply).toHaveProperty('systemMessage');
   });
 
-  it('at Stop says nothing after a response that wrote no file, and before a compaction still does', () => {
+  it('at Stop says nothing after a response that wrote no file', () => {
     const lines = [...aWritingSession(), prompt('2020-01-01T00:01:00.000Z', 'and why?')];
     expect(answer(payload('Stop', transcript(lines)))).toEqual({ reply: {}, notes: [] });
-    expect(answer(payload('PreCompact', transcript(lines))).reply).toHaveProperty('systemMessage');
   });
 
-  it('says nothing for a session that wrote no file, at either event', () => {
+  it('says nothing for a session that wrote no file', () => {
     const reading = [prompt(LONG_AGO, 'what is this?'), call(LONG_AGO, 'Read', { file_path: 'x' })];
     expect(answer(payload('Stop', transcript(reading)))).toEqual({ reply: {}, notes: [] });
-    expect(answer(payload('PreCompact', transcript(reading)))).toEqual({ reply: {}, notes: [] });
   });
 
   it('says nothing for any other hook, with the payload it was handed', () => {
@@ -369,7 +364,7 @@ describe('the verb as the command line routes it', () => {
   });
 });
 
-describe('the plugin command a host runs at Stop and PreCompact', () => {
+describe('the plugin command a host runs at Stop', () => {
   it('hands the payload to the verb and prints what it answers, and nothing on silence', async () => {
     await did('decision', 'record', 'Use UTC', 'The ledger is UTC');
     const bin = join(sandbox, 'bin');

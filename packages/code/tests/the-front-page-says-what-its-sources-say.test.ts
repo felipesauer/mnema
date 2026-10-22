@@ -213,7 +213,7 @@ describe('the counts the docs take from the rest of the repository', () => {
       (declared.hooks[event] ?? []).reduce((total, matcher) => total + matcher.hooks.length, 0);
     const all = Object.keys(declared.hooks).reduce((total, event) => total + per(event), 0);
     expect(packages).toContain(
-      `The plugin for the agent hosts. For Claude Code, ${inWords(all)} hooks (${inWords(per('SessionStart'))} as a session opens, ${inWords(per('PreToolUse'))} at each edit: the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others; ${inWords(per('PostToolUse'))} after a tool ran (one when a question to the person is answered, one after a write, which Claude Code runs), ${inWords(per('Stop'))} at the end of a response, ${inWords(per('PreCompact'))} before a compaction, ${inWords(per('SubagentStart'))} when a subagent starts, ${inWords(per('SubagentStop'))} when a subagent stops)`,
+      `The plugin for the agent hosts. For Claude Code, ${inWords(all)} hooks (${inWords(per('SessionStart'))} as a session opens (one of them only after a compaction), ${inWords(per('PreToolUse'))} at each edit: the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others; ${inWords(per('PostToolUse'))} after a tool ran (one when a question to the person is answered, one after a write, which Claude Code runs), ${inWords(per('Stop'))} at the end of a response, ${inWords(per('SubagentStart'))} when a subagent starts, ${inWords(per('SubagentStop'))} when a subagent stops)`,
     );
     // The command reference says the same count twice, in prose, and was never read for it.
     expect(reference).toContain(`It declares ${inWords(all)} hooks and the MCP server below`);
