@@ -196,7 +196,7 @@ claim about the agent hosts is held, and which are not held yet, is in [`docs/ev
 ## Docs
 
 - **Use.** [Install](docs/install.md) · [Your first record](docs/first-record.md) · [How it works](docs/how-it-works.md) ·
-  [What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [The command reference](docs/cli-reference.md) ·
+  [What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [Switches](docs/switches.md) · [The command reference](docs/cli-reference.md) ·
   [Where it fits](docs/where-it-fits.md) · [Glossary](docs/glossary.md)
 - **Verify.** [What it proves](docs/what-it-proves.md) · [How each claim is held](docs/evidence.md) ·
   [Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·

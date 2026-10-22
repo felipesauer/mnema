@@ -12,6 +12,11 @@ with its own changelog.
 
 ### Added
 
+- **A page for the switches, generated from the table the code reads.** `docs/switches.md` lists every channel `mnema switch`
+  knows, where it begins (on, or off until a person switches it on) and the command that flips it. The listing
+  `docs/cli-reference.md` shows for `mnema switch` and the sentence of `plugin/README.md` that names the channels beginning off
+  are generated from the same table and compared with it by a test: the listing said 14 channels and showed 12.
+
 - **`mnema init` writes the mnema instructions into the files agent hosts read, and `mnema instructions` writes,
   checks and removes them.** A short block says when to call the mnema tools (`bootstrap` at the opening,
   `governing_rules` before changing a file, `record_decision` when a choice is settled, `capture_memory` for what the

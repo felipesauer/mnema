@@ -167,10 +167,9 @@ document, delivered by the host instead of waited for.
   measurements the `recording-decisions` table rests on are in its `references/`. A subagent
   dispatched for a task is told not to record and to hand its decisions back in its reply.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
-  carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
+  carries ([the table of every switch](../docs/switches.md)); `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
-  the notes. All are on to begin with but two: `edit-first-write-gate` and `user-corrections`, below, are
-  off until you switch them on. The switch is a
+  the notes. <!-- generated: the channels that begin off --> All are on to begin with but two: `edit-first-write-gate` and `user-corrections`, below, are off until you switch them on. <!-- end --> The switch is a
   **fact of your record** rather than a setting (signed, attributed, dated and scoped)
   because turning something off is legitimate and turning it off in silence is not: a reader
   of the record has to be able to tell *"no rule addressed that file"* from *"somebody had
