@@ -7,6 +7,11 @@
  * worktree still deletes them. `mnema doctor` says where they are; `mnema doctor --fix
  * private-tree` moves them.
  *
+ * THE NAME `private` UNDER `.mnema/` IS THAT TREE'S, and only that one name is looked at. The
+ * person's notes beside the record (`.mnema/workbench/`, `FORMAT.md` section 4) are never taken for
+ * it, a `tails/` among them included, and never name a part of themselves `private`: a folder that
+ * took the name would read as private notes left behind.
+ *
  * WHAT A MOVE DOES, entry by entry, and nothing else:
  *   - each tail (`tails/<id>/`) goes to the shared tree's `tails/`. Its id names a key and an
  *     installation, so tails of different worktrees never share a name; one that is already
