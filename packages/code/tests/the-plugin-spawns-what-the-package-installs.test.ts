@@ -149,7 +149,7 @@ export function theKitsChildProcessCalls(source: string): { calls: string[]; oth
   ].map((found) => found[0].replace(/\s+/g, ''));
   const other: string[] = [];
   for (const found of code.matchAll(
-    new RegExp(`\\.(?:spawn|spawnSync|execSync|execFile|execFileSync|fork)\\s*\\(`, 'g'),
+    /\.(?:spawn|spawnSync|execSync|execFile|execFileSync|fork)\s*\(/g,
   )) {
     other.push(found[0]);
   }
