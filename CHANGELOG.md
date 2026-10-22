@@ -21,7 +21,11 @@ with its own changelog.
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
   server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
-  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did.
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
+  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
+  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
+  and of the tail of the bytes already read, and read again from the top.
 - **The instruction block says when work is a task and a handoff.** One more line (version `v2` of the block): work in
   flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`) with its
   brief. `mnema init` and `mnema instructions` replace the `v1` block they wrote, byte for byte, and still refuse one
