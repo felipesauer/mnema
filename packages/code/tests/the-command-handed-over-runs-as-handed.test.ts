@@ -737,7 +737,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/presentation/summary.ts': { line: 2, name: 8 },
   'packages/code/src/presentation/usage.ts': { line: 1, name: 2 },
   'packages/code/src/record-framing.ts': { line: 1, name: 9 },
-  'packages/code/src/record-integrity.ts': { name: 7 },
+  'packages/code/src/record-integrity.ts': { name: 8 },
   'packages/code/src/repl/gate.ts': { unwritten: 2 },
   'packages/code/src/repl/promotable.ts': { line: 1 },
   'packages/code/src/repl/session.ts': { unwritten: 2 },
