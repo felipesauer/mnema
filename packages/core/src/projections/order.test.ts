@@ -334,6 +334,23 @@ describe('chainArrivals: a break planted at the boundary', () => {
     expect(arrived.suffix).toBe(false);
   });
 
+  // AN EARLIER LINE LENGTHENED. The last line is untouched and carries the entry the reading
+  // ended on, but the file is longer than the reading saw, so the line no longer ENDS at the
+  // boundary: the end position, not only the entry, has to match. Without that check the
+  // reading serves the old state with no arrivals.
+  it('refuses a suffix when a line before the last is lengthened', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const text = readFileSync(file, 'utf-8');
+    expect(text).toContain('"second"');
+    writeFileSync(file, text.replace('"second"', '"second, said at greater length"'), 'utf-8');
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+  });
+
   // The boundary advances past the arrivals, so the NEXT resumed reading is anchored on
   // what this one read. Without this, a second refresh would hand back the same events.
   it('advances the boundary past what it read, so a second reading finds nothing', () => {

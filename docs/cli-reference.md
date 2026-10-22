@@ -1956,7 +1956,8 @@ key really signed.
 
 A read keeps what it built in `locks/projection.db` of each tree it read, so the next
 read takes only what was appended since instead of building it again. It is derived and
-never the record: deleting it changes no answer and costs the next read one rebuild, it
+never the record: deleting it costs the next read one rebuild (the one edit it can miss is an in-place edit, to the same size, of a
+line before the last of a live segment, which only `mnema verify` sees), it
 sits where the tree's own `.gitignore` already looks away, and a clone never carries it.
 A read of a tree nobody has written to creates nothing, and where the file cannot be
 had (a read-only directory, a damaged file), the read builds it in memory and answers

@@ -813,7 +813,9 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
  *     THERE ARE TWO EXCEPTIONS, both outside the record and both losing nothing. THE FIRST IS THE
  *     DERIVED PROJECTION OF THE SESSION'S OWN PROJECT: a read may create or bring forward
  *     `locks/projection.db` of the project's two trees. It is a cache derived from the record,
- *     deleting it changes no answer, no fact is added or changed, and a clone never carries it;
+ *     deleting it only costs the next read a rebuild, no fact is added or changed, and a clone never
+ *     carries it (the one thing it can miss is an edit in place, to the same size, of a line before
+ *     the last of a live segment, which only `verify` sees);
  *     `the-server-keeps-its-own-projects-cache.test.ts` holds that a read adds that file and no other.
  *     THE SECOND IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
  *     appends a line to a file in the machine's data directory, outside the record, until
