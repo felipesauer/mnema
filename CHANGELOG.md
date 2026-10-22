@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Added
 
+- **`bootstrap` names the channels that are off on this machine.** The reply carries one more line, of its own beside
+  the JSON, when a channel is off for the project (the two that begin off, until a person switches them on, or any a
+  person switched off): `Off on this machine: <names>. Only a person turns one on, with `mnema switch on <name>`.` It is
+  read from the effective state of the project's trees, so a channel a person switched on is not in it, and with
+  nothing off there is no line. It adds 33 tokens to the reply; the server's instructions, the tool's description and the
+  block committed into the repository are unchanged.
 - **`mnema` with nothing after it says where the project stands and what is off.** It prints a short summary on stdout
   and exits 0 (it printed the whole catalogue on stderr and failed; `mnema --help` still prints the catalogue, and at a
   terminal the name still asks what you want to do): what the product does in a sentence, whether a project is founded

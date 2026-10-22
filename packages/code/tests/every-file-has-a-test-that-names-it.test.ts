@@ -1149,6 +1149,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-bare-name-says-what-is-off.test.ts': 8,
   'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
   'packages/code/tests/the-bodies-fit-one-read.test.ts': 15,
+  'packages/code/tests/the-bootstrap-names-what-is-off.test.ts': 14,
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,

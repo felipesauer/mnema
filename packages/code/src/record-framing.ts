@@ -531,6 +531,15 @@ export function switchOnCommand(channel: string): string {
 export const SWITCH_ON_COMMAND = switchOnCommand('<name>');
 
 /**
+ * The line an agent is handed when channels are off on this machine: which, and that turning one
+ * on is a person's act at a shell (the MCP server has no tool for it). A statement of fact: it
+ * asks the agent for nothing.
+ */
+export function offOnThisMachine(names: readonly SwitchableChannel[]): string {
+  return `Off on this machine: ${names.join(', ')}. Only a person turns one on, with \`${SWITCH_ON_COMMAND}\`.`;
+}
+
+/**
  * The command that flips a channel away from where it begins: the switch verb with `on` for a
  * channel that starts off and with `off` for every other. One sentence of the product's own that
  * the pages, the listing and the replies print, so no surface spells it again.
