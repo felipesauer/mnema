@@ -207,11 +207,13 @@ describe('mnema doctor, as a person runs it', () => {
     const lines = ran.stdout.trimEnd().split('\n');
     expect(lines.map((line) => line.split(':')[0])).toEqual([
       'to do · binary',
+      'to do · node',
       'to do · plugin',
       'ok · vscode',
       'ok · mcp',
       'ok · namesake',
     ]);
+    expect(lines[1]).toContain('no “node” on the PATH');
     expect(digest(sandbox)).toBe(before);
   });
 });

@@ -21,6 +21,9 @@
  * is ONE gate and a single place to remove if this plugin ever stopped being quiet. Asserted
  * in `packages/code/tests/the-record-arrives-unasked.test.ts` for every command `hooks.json`
  * declares ("says nothing at all where there is no project").
+ * THE GATE BEFORE A WRITE IS THE EXCEPTION, and it is the one place a handler refuses: a `mnema` that is
+ * there and does not answer (exits non-zero, does not finish, prints no JSON reply, or has no `node` that takes
+ * it) is answered `deny` with the reason ({@link whatTheGateAnswers}). No `mnema` at all stays silence.
  * ONE OUTCOME THAT IS NOT A TEXT IS NO LONGER SILENCE, and it is not a failure of this product:
  * a program of the same name first on the PATH. The document's handler names it to the session
  * (see below); silence there was the defect, not the rule.
@@ -83,6 +86,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
+import { couldNotAnswer, settleTheRuntime, whyItDidNotAnswer } from './the-gate-kit.mjs';
+import { aRuleReaches } from './where-the-record-is.mjs';
+
+/** @typedef {import('./the-gate-kit.mjs').Runtime} Runtime */
 
 /**
  * The command line to run.
@@ -119,6 +126,24 @@ export function binaryToRun(env = process.env) {
 export function whereTheSessionIs() {
   const named = process.env.CLAUDE_PROJECT_DIR;
   return named !== undefined && named !== '' ? named : process.cwd();
+}
+
+/** The last answer of {@link theRuntime}, kept for the PATH it was asked about: one process is one hook. */
+let lastRuntime = /** @type {{ key: string, said: Runtime } | null} */ (null);
+
+/**
+ * WHICH NODE `mnema` RUNS ON, settled once per process (`the-gate-kit.mjs` holds the reasoning and
+ * the search): the answer for the `mnema` this module runs, on `env`'s PATH.
+ *
+ * @param {Readonly<Record<string, string | undefined>>} [env]
+ * @returns {Runtime}
+ */
+export function theRuntime(env = process.env) {
+  const key = `${binaryToRun(env)}\0${env.PATH}`;
+  if (lastRuntime === null || lastRuntime.key !== key) {
+    lastRuntime = { key, said: settleTheRuntime(binaryToRun(env), env) };
+  }
+  return lastRuntime.said;
 }
 
 /** What separates a verb's text from what the same run said about the record under it. */
@@ -213,6 +238,7 @@ const QUOTED = 120;
 export function whoAnswers(cwd) {
   const ran = spawnSync(binaryToRun(), [WHICH_PROGRAM], {
     cwd,
+    env: theRuntime().env,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -306,6 +332,10 @@ export function theMismatch(who, plugin = thePluginVersion()) {
  * @returns {string | null}
  */
 export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, handed = []) {
+  // NO NODE THAT TAKES `mnema` IS A FACT, NOT A STRANGER: the handler that hands over the document
+  // says it, in the plugin's own voice, and the others stay silent so a session is told once.
+  const { refusal } = theRuntime();
+  if (refusal !== null) return namesAStranger ? `mnema could not run: ${refusal}` : null;
   const who = whoAnswers(cwd);
   if (who.kind === 'absent') return null;
   if (who.kind === 'stranger') return namesAStranger ? aStranger(who) : null;
@@ -368,12 +398,15 @@ export function whatTheVerbAnswers(argv, cwd, input) {
  * @param {readonly string[]} argv
  * @param {string} cwd
  * @param {string} input
+ * @param {number | undefined} [timeout] Milliseconds after which the run is killed, or none.
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
-function ranTheVerb(argv, cwd, input) {
+function ranTheVerb(argv, cwd, input, timeout = undefined) {
   return spawnSync(binaryToRun(), [...argv], {
     cwd,
+    env: theRuntime().env,
     input,
+    ...(timeout === undefined ? {} : { timeout, killSignal: 'SIGKILL' }),
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -431,9 +464,10 @@ function answerOf(ran) {
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
  * @param {string} cwd Where to run the verb.
  * @param {() => Promise<string>} payload Reads what the host handed this hook.
+ * @param {{ readonly timeout?: number }} [options] How long `mnema` is given, in milliseconds.
  * @returns {Promise<string | null>}
  */
-export async function whatTheGateAnswers(argv, env, cwd, payload) {
+export async function whatTheGateAnswers(argv, env, cwd, payload, { timeout = GATE_TIMEOUT } = {}) {
   const host = flagValue(argv, '--host');
   if (host === undefined) return null;
   const where = flagValue(argv, '--where');
@@ -445,17 +479,70 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
   // starting it is most of what the gate costs. Read from the stored lines of every tree, never
   // from a cache, and any doubt starts it (`an-address-can-be-met.mjs`).
   if (!anAddressCanBeMet(cwd, env)) return null;
+  // WHERE `mnema` CANNOT ANSWER, THE WRITE IS REFUSED ONLY WHERE A RULE THAT REFUSES IT OR ASKS FOR
+  // A PERSON ADDRESSES THIS PATH (`where-the-record-is.mjs`): no node takes it, or what it answered
+  // is no answer. Any other write passes, as it did.
+  const closed = (/** @type {string} */ because) =>
+    aRuleReaches(cwd, env, input) ? denial(couldNotAnswer(because)) : null;
+  const { refusal } = theRuntime();
+  if (refusal !== null) return closed(refusal);
   const asked = ['before-a-write', '--host', host];
   const agent = flagValue(argv, '--agent-key');
-  if (agent === undefined) return whatTheVerbAnswers(asked, cwd, input);
+  if (agent === undefined)
+    return theGateSays(ranTheVerb(asked, cwd, input, timeout), closed, timeout);
   // THE AGENT'S KEY IS ASKED FOR, NOT ASSUMED: a `mnema` older than the option refuses it by name
   // and would answer nothing, a gate that stops gating, so it is asked again without, and signs
   // as it always did.
   const withAgent = [...asked, '--agent-key', agent];
-  const ran = ranTheVerb(withAgent, cwd, input);
-  return refusesTheFlag(ran, ['--agent-key'])
-    ? whatTheVerbAnswers(asked, cwd, input)
-    : answerOf(ran);
+  const ran = ranTheVerb(withAgent, cwd, input, timeout);
+  return theGateSays(
+    refusesTheFlag(ran, ['--agent-key']) ? ranTheVerb(asked, cwd, input, timeout) : ran,
+    closed,
+    timeout,
+  );
+}
+
+/**
+ * The reply that does not let a write happen, in the shape the hosts that run the plugin's hooks read
+ * (`hookSpecificOutput`, `permissionDecision: "deny"`), with the control bytes of the reason struck.
+ *
+ * @param {string} reason
+ * @returns {string}
+ */
+export function denial(reason) {
+  const plain = [...reason]
+    .map((char) => ((char.codePointAt(0) ?? 32) < 32 || char === '\u007f' ? ' ' : char))
+    .join('');
+  return `${JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: plain,
+    },
+  })}\n`;
+}
+
+/**
+ * How long the gate waits for `mnema`, in milliseconds. With the search for a node (`SEARCH_BUDGET`)
+ * it stays under the hooks file's own 15 seconds, so the refusal is the answer and the host's kill,
+ * which a host reads as nothing to say, is not.
+ */
+export const GATE_TIMEOUT = 10_000;
+
+/**
+ * What the gate says for one run of the verb: the host's reply byte for byte, `null` where the verb
+ * has nothing to say or where there is no `mnema` to run, and `closed(because)` where the run is not
+ * an answer (`whyItDidNotAnswer`).
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @param {(because: string) => string | null} closed
+ * @param {number} timeout
+ * @returns {string | null}
+ */
+function theGateSays(ran, closed, timeout) {
+  const failed = whyItDidNotAnswer(ran, timeout);
+  if (failed === null) return null;
+  return failed === undefined ? answerOf(ran) : closed(failed);
 }
 
 /**
@@ -509,6 +596,7 @@ function toolNameOf(input) {
 function running(verb, flags, cwd) {
   return spawnSync(binaryToRun(), [verb, ...flags], {
     cwd,
+    env: theRuntime().env,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
