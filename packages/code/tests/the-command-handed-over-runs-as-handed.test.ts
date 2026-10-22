@@ -692,6 +692,7 @@ export const HANDED_OVER: Readonly<
   'docs/install.md': { line: 3, name: 4 },
   'docs/packages.md': { line: 1, name: 2 },
   'docs/site.md': { line: 1, name: 3 },
+  'docs/switches.md': { line: 16, name: 3 },
   'docs/verify-without-installing.md': { name: 1 },
   'docs/what-it-proves.md': { line: 5, name: 8 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
