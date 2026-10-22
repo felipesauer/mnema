@@ -252,8 +252,6 @@ Everything a chain needs lives under one root directory:
     witness/                   external attestations over the checkpoints
   .gitattributes  .gitignore   beside the record in a project tree; not proof
   inherit.json                 the record this one inherits (`mnema inherit`); committed; not proof
-  workbench/                   the notes of the people working here: `shared/` committed, `local` a
-                               link the `.gitignore` keeps out of git; not proof
   README.md  .editorconfig     written beside the record by `mnema init` or a first signed write; not proof
 ```
 

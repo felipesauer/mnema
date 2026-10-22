@@ -42,9 +42,7 @@ and handed to every clone. Notes go there when a person writes them; an agent's
 stay in a private tree on its machine unless it names the shared one, and a global
 tree keeps what outlives a project. Every write says which tree it landed in. Not a
 file on one person's machine: a record the team shares, and one that no command
-rewrites. The one folder in `.mnema/` that is not the record is `workbench/`, the
-notes of the people working there: edited by hand, read by no verifier, its `shared/`
-part committed and its `local` part kept out of git.
+rewrites.
 
 ```mermaid
 stateDiagram-v2

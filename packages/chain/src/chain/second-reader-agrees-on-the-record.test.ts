@@ -2020,32 +2020,31 @@ describe('a record in which no tail holds anything, to both readers', () => {
 });
 
 /**
- * A WORKBENCH BESIDE THE RECORD CHANGES NO VERDICT, in either reader (FORMAT.md section 4). The
- * folder is a person's notes, edited by hand and covered by no signature, so a reader that read it
+ * WHAT A PERSON LEAVES BESIDE THE RECORD CHANGES NO VERDICT, in either reader (FORMAT.md section
+ * 4). A folder of notes is edited by hand and covered by no signature, so a reader that read it
  * would be judging prose, and one that refused a record for holding it would refuse every project
- * that keeps notes. Both readers enumerate `keys/` and `tails/` and nothing else at the root, and
- * this holds them to it over every record the suite can name: each frozen fixture, and the
- * witnessed one under every mutation `mutate.py` builds, accepted, refused or incomplete. The
- * notes are what a stranger's reader would trip on if it walked the folder: Markdown with a
- * carriage return, bytes that are not UTF-8, a link to nothing (the private part, on a machine
- * that does not hold it), and a `tails/` and a `keys/` further down holding what is no line and
- * no key.
+ * that keeps notes next to it. Both readers enumerate `keys/` and `tails/` and nothing else at the
+ * root, and this holds them to it over every record the suite can name: each frozen fixture, and
+ * the witnessed one under every mutation `mutate.py` builds, accepted, refused or incomplete. The
+ * entry is what a stranger's reader would trip on if it walked the folder: Markdown with a
+ * carriage return, bytes that are not UTF-8, a link to nothing, and a `tails/` and a `keys/`
+ * further down holding what is no line and no key.
  */
-describe('a workbench beside the record, to both readers', () => {
-  function leaveAWorkbench(record: string): void {
-    const workbench = join(record, 'workbench');
-    const change = join(workbench, 'shared', 'changes', '2026-10-22-a-change');
+describe('what a person leaves beside the record, to both readers', () => {
+  function leaveSomething(record: string): void {
+    const left = join(record, 'left-by-a-person');
+    const change = join(left, 'shared', 'changes', 'a-change');
     mkdirSync(change, { recursive: true });
-    writeFileSync(join(workbench, 'README.md'), '# Notes\n\nNot proof.\n');
+    writeFileSync(join(left, 'README.md'), '# Notes\n\nNot proof.\n');
     writeFileSync(join(change, 'change.md'), '---\r\nstatus: open\r\n---\r\n# A change\r\n');
     writeFileSync(join(change, 'evidence.bin'), Buffer.from([0x00, 0xff, 0xfe, 0x80, 0x0a]));
-    symlinkSync(join(record, 'no-such-folder'), join(workbench, 'local'));
-    const decoyTail = join(workbench, 'shared', 'tails', `${'f'.repeat(64)}-${'0'.repeat(32)}`);
+    symlinkSync(join(record, 'no-such-folder'), join(left, 'link'));
+    const decoyTail = join(left, 'shared', 'tails', `${'f'.repeat(64)}-${'0'.repeat(32)}`);
     mkdirSync(decoyTail, { recursive: true });
     writeFileSync(join(decoyTail, '000001.jsonl'), 'not a line\n');
     writeFileSync(join(decoyTail, 'checkpoints.jsonl'), '{}\n');
-    mkdirSync(join(workbench, 'shared', 'keys'), { recursive: true });
-    writeFileSync(join(workbench, 'shared', 'keys', `${'f'.repeat(64)}.pub`), 'not a key\n');
+    mkdirSync(join(left, 'shared', 'keys'), { recursive: true });
+    writeFileSync(join(left, 'shared', 'keys', `${'f'.repeat(64)}.pub`), 'not a key\n');
   }
 
   /** What each reader says of the record, whole: every axis, so a verdict that moved on one fails. */
@@ -2064,7 +2063,7 @@ describe('a workbench beside the record, to both readers', () => {
     expect(RECORDS.length - readdirSync(FIXTURES).length).toBe(MUTATIONS.length);
   });
 
-  it.each(RECORDS)('reads $fixture $mutation the same with the notes as without', (one) => {
+  it.each(RECORDS)('reads $fixture $mutation the same with the extra folder as without', (one) => {
     if (one.mutation === 'key-file-unreadable' && process.getuid?.() === 0) return;
     const record = copyOf(one.fixture);
     if (one.mutation !== undefined) {
@@ -2074,9 +2073,9 @@ describe('a workbench beside the record, to both readers', () => {
       expect(applied.applied, `${one.mutation} did not change the record`).toBe(true);
     }
     const without = readings(record);
-    leaveAWorkbench(record);
-    const withTheNotes = readings(record);
-    expect(withTheNotes.here, 'the product read the notes').toEqual(without.here);
-    expect(withTheNotes.there, 'the second reader read the notes').toEqual(without.there);
+    leaveSomething(record);
+    const withIt = readings(record);
+    expect(withIt.here, 'the product read the folder').toEqual(without.here);
+    expect(withIt.there, 'the second reader read the folder').toEqual(without.there);
   });
 });

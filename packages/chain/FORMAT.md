@@ -195,10 +195,9 @@ if they were events. The layout, which only ever appeared here incidentally in �
 ```
 <record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
-<record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on the bytes under `tails/` and `keys/`; written by `init`; not part of the proof
+<record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on these bytes; written by `init`; not part of the proof
 <record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof
 <record>/inherit.json                           the record this one inherits, by its location and one commit (`mnema inherit`); committed; not part of the proof
-<record>/workbench/                             the notes of the people working here: `shared/` committed, `local` a link the `.gitignore` keeps out of git; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (§6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order
 <record>/tails/<tailId>/checkpoints.jsonl       the signed checkpoints (§6)
@@ -209,19 +208,17 @@ if they were events. The layout, which only ever appeared here incidentally in �
 
 **A reader enumerates `keys/` and `tails/`, and nothing else at the root.** Every other
 entry there, the four files above that say they are not part of the proof, `inherit.json`,
-`workbench/`, or anything a person leaves, is not read, and a verdict is the same with it as
-without it, whatever it holds: a file that is not UTF-8, a link to nothing, a directory named
-`tails` or `keys` further down. `workbench/` is a person's notes, edited by hand, and no
-signature covers them; an editor or a formatter that reaches it breaks nothing, which is why
-the `.editorconfig` above names only `tails/` and `keys/`
-(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, "a workbench beside
-the record, to both readers"). No `kind`, `v` or field came with it, so §7.1 has nothing to
-promise of it: a record without the folder reads as it always did, and a version from before
-the folder reads a record that has one exactly as this one does, because neither enumerates
-the root. The name `private` is not used in it: `<record>/private/` is the private tree of a
-project outside a git repository and, inside one, where an earlier version kept it before it
-moved into the repository's git directory; the product names one still there as left
-behind and, when asked, moves it.
+or anything a person leaves, is not read, and a verdict is the same with it as without it,
+whatever it holds: a file that is not UTF-8, a link to nothing, a directory named `tails` or
+`keys` further down
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, "what a person leaves
+beside the record, to both readers"). No `kind`, `v` or field comes with such an entry, so
+§7.1 has nothing to promise of it: a record without it reads as it always did, and a version
+from before it reads a record that has one exactly as this one does, because neither
+enumerates the root. The name `private` is not for a person to use there: `<record>/private/`
+is the private tree of a project outside a git repository and, inside one, where an earlier
+version kept it before it moved into the repository's git directory; the product names one
+still there as left behind and, when asked, moves it.
 
 The tail is the concatenation of its segments in name order, and sequence numbers
 are contiguous across that concatenation: **which segment a given sequence number
@@ -289,9 +286,7 @@ return at the end is all that differs, both readers say CRLF in the refusal: it 
 git leaves on every line of a checkout with `core.autocrlf=true`. A writer puts a
 `.gitattributes` holding `* -text` at the root of a project tree, beside its
 `.gitignore`, so git does not rewrite the line ends of a clone; it reaches a clone once
-it is committed, and an archive or an editor that rewrites them is not stopped by it. It
-reaches `workbench/` too, where it keeps git from rewriting the line ends of the notes and
-does nothing else: the notes are no proof, and `git diff` still shows them as text.
+it is committed, and an archive or an editor that rewrites them is not stopped by it.
 A stored block
 header that is not canonical is not read either, so the attestation it would have
 checked is not counted; the product drops that one line and the second reader the
