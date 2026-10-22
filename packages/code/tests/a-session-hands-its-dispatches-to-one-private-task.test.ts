@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { resolveTrees } from '@mnema/core';
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   briefFileOf,
   briefOf,
@@ -35,9 +35,20 @@ import {
 import { runSessionTally } from '../src/commands/tally.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
-import { journalFile, journalsDir, readJournal, STALE_AFTER_MS } from '../src/session-journal.js';
+import {
+  journalAfter,
+  journalFile,
+  journalsDir,
+  readJournal,
+  STALE_AFTER_MS,
+} from '../src/session-journal.js';
 import { withScopedCaches } from '../src/tree-sources.js';
+import { emptyReading } from '../src/what-the-session-did.js';
 import { registerDispatched } from '../src/wiring/dispatched.js';
+
+// Each case makes real writes to a tree it signs, a few dozen milliseconds apiece, and the suite runs
+// beside other heavy files: the default of five seconds is the limit a loaded machine crossed.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 let sandbox: string;
 let repo: string;
@@ -251,6 +262,23 @@ describe('three dispatches of one session', () => {
     expect(after?.handedOver).toEqual(held);
     expect(after?.goal).toBeNull();
     expect(after?.tasksInProgress).toEqual([]);
+  });
+
+  it('are kept by every later write of the journal, whoever makes it', () => {
+    mirror(dispatch());
+    const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+    const previous = readJournal(file);
+    expect(previous?.handedOver?.handoffs).toBe(1);
+    const next = withScopedCaches(resolveTrees(repo, env), (sources) =>
+      journalAfter({
+        session: SESSION,
+        previous,
+        reading: emptyReading(),
+        sources,
+        now: new Date(),
+      }),
+    );
+    expect(next.handedOver).toEqual(previous?.handedOver);
   });
 
   it('never carry the prompt: not in the record, not in the journal, not on this machine', () => {
