@@ -275,16 +275,12 @@ describe('the leftovers of an earlier install', () => {
 
   it('reads the file the host keeps in the folder CLAUDE_CONFIG_DIR names, and not the one in HOME', () => {
     const moved = join(sandbox, 'moved');
-    const declared = {
-      projects: {
-        [join(sandbox, 'gone')]: { mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } } },
-      },
-    };
+    const mnema = { mnema: { command: 'mnema', args: ['mcp'] } };
+    write(join(home, '.claude.json'), JSON.stringify({ mcpServers: mnema }));
     write(
-      join(home, '.claude.json'),
-      JSON.stringify({ mcpServers: declared.projects[join(sandbox, 'gone')].mcpServers }),
+      join(moved, '.claude.json'),
+      JSON.stringify({ projects: { [join(sandbox, 'gone')]: { mcpServers: mnema } } }),
     );
-    write(join(moved, '.claude.json'), JSON.stringify(declared));
     const lines = said('mcp', { CLAUDE_CONFIG_DIR: moved });
     expect(lines.find((line) => line.startsWith('attention '))).toContain(
       join(moved, '.claude.json'),
