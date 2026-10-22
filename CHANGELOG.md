@@ -66,6 +66,15 @@ with its own changelog.
   replaces. The record's `README.md` says nothing there is edited by hand except `workbench/`. Nothing yet writes the
   folder: this only makes the record accept that it is there and is not proof.
 
+- **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
+  module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
+  a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
+  stacks with `outside: true` (`stacksReaderFor` hands it).
+- **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
+  reply went out (about 21 microseconds an append, measured); it is now written in the next turn of the event loop, and
+  any line still waiting is written first when the process exits, when the session closes on SIGTERM, SIGINT or the end
+  of stdin, and when the count is read. A process killed by SIGKILL can still lose the lines that were waiting. Reading
+  the count in the same process sees every call already answered.
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
   (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
@@ -90,6 +99,11 @@ with its own changelog.
 
 ### Fixed
 
+- **`mnema check run --key` with a key that is not Ed25519 no longer calls it an agent's key.** The refusal says that
+  a checker's key is an Ed25519 one, as it says for an agent's in the commands that enrol an agent.
+- **`mnema doctor` reads the host's `.claude.json` where the host keeps it.** With `CLAUDE_CONFIG_DIR` set the file is
+  `$CLAUDE_CONFIG_DIR/.claude.json`, and `doctor` read the one in your home directory, so it counted the wrong
+  declarations of the mnema MCP server and listed the wrong projects.
 - **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
   `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that
   key writes to it (`FORMAT.md` section 6, a new rule). Both readers checked a checkpoint under the key it names and bound

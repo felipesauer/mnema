@@ -26,8 +26,8 @@
  * machine answered is not here, and neither is any use of the product outside the MCP. The
  * reading says so.
  *
- * A FAILURE TO WRITE IS SWALLOWED. A tool never fails, and never slows past one `appendFile`,
- * because of its own count.
+ * A FAILURE TO WRITE IS SWALLOWED. A tool never fails because of its own count, and the line is
+ * written after the reply has gone ({@link countToolCall}), so the count never slows an answer.
  */
 
 import { createHash } from 'node:crypto';
@@ -90,6 +90,33 @@ export function appendToolCall(file: string, call: ToolCall): void {
   }
 }
 
+/** The lines that wait to be written: a call is answered first and counted right after. */
+const waiting: { readonly file: string; readonly call: ToolCall }[] = [];
+let exitHooked = false;
+
+/**
+ * Counts `call` AFTER the reply it belongs to has been handed to the host: the line is written in
+ * the next turn of the event loop and not in the one that answers, so the count adds nothing to
+ * the time a tool takes to answer. {@link flushToolCalls} writes what waits, and it runs when the
+ * process exits, when the server closes its session (the end of stdin, SIGTERM, SIGINT) and
+ * before the count is read. A process killed by SIGKILL, which no handler sees, can lose the
+ * lines still waiting, which is the time between a reply and the next turn of the event loop.
+ * Never throws, like {@link appendToolCall}.
+ */
+export function countToolCall(file: string, call: ToolCall): void {
+  waiting.push({ file, call });
+  if (!exitHooked) {
+    exitHooked = true;
+    process.once('exit', flushToolCalls);
+  }
+  if (waiting.length === 1) setImmediate(flushToolCalls);
+}
+
+/** Writes every line that waits, in the order the calls were answered. */
+export function flushToolCalls(): void {
+  for (const next of waiting.splice(0)) appendToolCall(next.file, next.call);
+}
+
 /** What reading the file gave: the calls, and how many lines were not one. */
 export interface ToolCallsRead {
   readonly calls: readonly ToolCall[];
@@ -99,6 +126,9 @@ export interface ToolCallsRead {
 
 /** Reads every call in `file`; a file that is not there holds no calls. */
 export function readToolCalls(file: string): ToolCallsRead {
+  // What this process answered and has not written yet is read too: a reading never misses a call
+  // the same process has already counted.
+  flushToolCalls();
   let text: string;
   try {
     text = readFileSync(file, 'utf-8');

@@ -8,7 +8,7 @@
  */
 
 export { runBeforeAPath } from './commands/before-a-write.js';
-export { runBrief } from './commands/brief.js';
+export { runBrief, stacksReaderFor } from './commands/brief.js';
 export { runDecision } from './commands/decision.js';
 export { runDecisionTransition } from './commands/decision-transition.js';
 export { runMemory } from './commands/memory.js';

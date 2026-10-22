@@ -33,6 +33,7 @@ import {
   roomBeside,
   runBeforeAPath,
   runBrief,
+  stacksReaderFor,
 } from '@mnema/code/library';
 import type { DiscoveryEnv } from '@mnema/core';
 
@@ -100,7 +101,8 @@ export function mnemaHooks(options: HookOptions): MnemaHooks {
   const whereFor = (input: HookInput) => ({ cwd: input.cwd ?? options.cwd, env });
 
   const opening: HookCallback = async (input) => {
-    const result = runBrief(whereFor(input), { outside: true });
+    const here = whereFor(input);
+    const result = runBrief(here, { outside: true, stacks: await stacksReaderFor(here) });
     if (!result.ok) return {};
     // WHAT THE PLUGIN'S HANDLER DOES: the notice about a record that does not chain goes under
     // the document after a blank line, and counts against the room the host leaves.

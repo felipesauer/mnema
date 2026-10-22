@@ -28,6 +28,7 @@ import { runDecision } from './decision.js';
 import { runDecisionTransition } from './decision-transition.js';
 import { runInheritSet, runInheritUpdate } from './inherit.js';
 import { runInit } from './init.js';
+import { stacksHere } from './stack-inspect.js';
 import { runVerify } from './verify.js';
 
 let sandbox: string;
@@ -237,7 +238,7 @@ describe('the brief with an inherited record', () => {
     accept(project, 'Use tabs here');
     // The origin is reachable and holds the commit: a brief that fetched would read it.
     for (const outside of [false, true]) {
-      const done = runBrief(project, { outside });
+      const done = runBrief(project, outside ? { outside: true, stacks: stacksHere } : {});
       if (!done.ok) throw new Error('refused');
       expect(done.inherited?.state).toBe('unavailable');
       const text = briefDocument(done.brief, done.inherited).join('\n');

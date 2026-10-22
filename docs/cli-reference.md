@@ -1107,7 +1107,7 @@ declared more than once (a session is offered every tool once per declaration), 
 `mnema`, or an npm package of that name, is installed (and, when the first one on the `PATH` is a
 script that shadows the other, which). It also says whether VS Code's user `settings.json` lists the
 plugin under `chat.pluginLocations` (the setting VS Code's agent needs, marked experimental there)
-and which projects of `~/.claude.json` still declare the server, those whose directory no longer
+and which projects of `~/.claude.json` (the one inside `$CLAUDE_CONFIG_DIR` when that is set) still declare the server, those whose directory no longer
 exists included (`claude mcp remove` does not reach them; the line says what to delete). It reads
 files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
 that is published and not installed here is outside what it can say.
