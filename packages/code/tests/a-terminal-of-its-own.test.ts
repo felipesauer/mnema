@@ -295,18 +295,17 @@ describe('the session needs a terminal', () => {
   }, 60_000);
 });
 
-describe('the bare invocation is untouched', () => {
-  it('prints the help and fails, byte for byte what `--help` prints', async () => {
-    // The verb was added so that this stays true. `mnema` with no verb has printed the
-    // help since the first commit, and an agent that ran the binary in a terminal and
-    // met a prompt instead would wait for input nobody is going to type.
+describe('the bare invocation never opens a session', () => {
+  it('prints the summary and succeeds, and `--help` is still the catalogue', async () => {
+    // The verb was added so that this stays true. An agent that ran the binary in a terminal
+    // and met a prompt instead would wait for input nobody is going to type: `mnema` with no
+    // verb answers and comes back, and the catalogue, with the verb in it, is `--help`'s.
     const bare = await captured((io) => run([], io));
     const help = await captured((io) => run(['--help'], io));
-    expect(bare.err.join('\n')).toBe(help.out.join('\n'));
-    expect(bare.failed).toBe(true);
-    expect(bare.out).toEqual([]);
-    // And the new verb is IN that help, which is the one line of it this delivery moved.
-    expect(bare.err.join('\n')).toContain(REPL_VERB);
+    expect(bare.failed).toBe(false);
+    expect(bare.err).toEqual([]);
+    expect(bare.out.join('\n')).toContain('`mnema --help` lists every command.');
+    expect(help.out.join('\n')).toContain(REPL_VERB);
   });
 
   it('comes back, in a real process, rather than waiting for a line', () => {
@@ -317,9 +316,9 @@ describe('the bare invocation is untouched', () => {
       encoding: 'utf-8',
       timeout: 30_000,
     });
-    expect(done.status).toBe(1);
-    expect(done.stdout).toBe('');
-    expect(done.stderr).toContain('Usage: mnema [options] [command]');
+    expect(done.status).toBe(0);
+    expect(done.stderr).toBe('');
+    expect(done.stdout).toContain('`mnema --help` lists every command.');
   }, 60_000);
 });
 

@@ -7,11 +7,12 @@
  * for and the wrong one for somebody who has just typed the name of a program. So at a
  * terminal it asks, with two doors that depend on what is in this directory.
  *
- * THE HALF EVERYTHING RESTS ON IS THE OTHER ONE. Without a terminal the answer did not move
- * by a byte: the help, on stderr, with the exit code of one. Every shell pipeline, every
- * script and every CI job that has ever run this binary with no arguments is on that side of
- * the decision, and `src/cli.help.golden.txt` is where those bytes are pinned: this file is
- * what says the entry DELEGATES to the very call the golden drives, and what says the
+ * THE HALF EVERYTHING RESTS ON IS THE OTHER ONE. Without a terminal the answer is a short
+ * summary on stdout with a zero exit (it was the whole catalogue on stderr with the exit of a
+ * failure; the catalogue is `mnema --help`'s now, and the summary points to it). Every shell
+ * pipeline, every script and every CI job that runs this binary with no arguments is on that
+ * side of the decision, and `src/cli.help.golden.txt` is where those bytes are pinned: this
+ * file is what says the entry DELEGATES to the very call the golden drives, and what says the
  * question really does appear when the same call is made at a device.
  *
  * WHAT EACH CASE NEEDS THE INSTRUMENT IT USES FOR:
@@ -203,7 +204,7 @@ function theMarkedRow(bytes: string): string {
 // Without a terminal, nothing moved
 // ---------------------------------------------------------------------------
 
-describe('with no terminal the bare name is the help it always was', () => {
+describe('with no terminal the bare name is the summary, on stdout, and succeeds', () => {
   /** Everything an invocation wrote, encoded so the two streams and the exit are compared. */
   async function transcriptOf(
     drive: (io: CliIo) => Promise<void>,
@@ -268,12 +269,15 @@ describe('with no terminal the bare name is the help it always was', () => {
     );
     expect(asEntry.said, 'the entry no longer answers what the golden pins').toBe(asRun.said);
     expect(asEntry.failed, 'the exit code moved').toBe(asRun.failed);
-    // AND IT IS THE CATALOGUE, ON STDERR, WITH A NON-ZERO EXIT: asserted rather than left
-    // to the equality above, which two empty transcripts would also satisfy.
-    expect(asEntry.failed, 'the bare name stopped failing').toBe(true);
-    expect(asEntry.said, 'the catalogue is not on stderr').toContain('! Usage: mnema');
-    expect(asEntry.said, 'the verbs are not in it').toContain(`! ${' '.repeat(2)}${REPL_VERB}`);
-    expect(asEntry.said, 'something reached stdout').not.toContain('\n| ');
+    // AND IT IS THE SUMMARY, ON STDOUT, WITH A ZERO EXIT: asserted rather than left to the
+    // equality above, which two empty transcripts would also satisfy. The catalogue is
+    // `mnema --help`'s, and the summary says so.
+    expect(asEntry.failed, 'the bare name failed').toBe(false);
+    expect(asEntry.said, 'the summary is not on stdout').toContain(
+      '| `mnema --help` lists every command.',
+    );
+    expect(asEntry.said, 'something reached stderr').not.toContain('! ');
+    expect(asEntry.said, 'the catalogue is in it').not.toContain(`${' '.repeat(2)}${REPL_VERB}`);
   }, 60_000);
 
   it('would say something else the moment a terminal is claimed', async () => {

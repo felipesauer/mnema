@@ -138,7 +138,7 @@ describe('the channel starts off, and says so', () => {
     expect(STARTS_OFF).toEqual([GATE, 'user-corrections']);
     const listed = (await did('switch')).split('\n').find((line) => line.includes(GATE)) ?? '';
     expect(listed).toContain(' off ');
-    expect(listed).toContain('off until switched on, and nobody has');
+    expect(listed).toContain('off until switched on: `mnema switch on edit-first-write-gate`');
     // Every other channel is still on, with no attribution beside it.
     const others = (await did('switch'))
       .split('\n')

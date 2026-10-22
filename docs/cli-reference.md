@@ -236,6 +236,14 @@ registry serves.
 
 ### From the terminal
 
+Typed with nothing after it, `mnema` prints a short summary on stdout and exits 0 (at a terminal it asks
+what you want to do instead): what the product does in a sentence, whether a project is founded here and how
+many decisions await a judgement, which channels are off on this machine and the command that turns one on,
+three verbs to go on with, and a pointer to `mnema --help`, which prints every command. The summary reads the
+record and writes nothing; a part it cannot read (a line of the record, or the switches) is not guessed: one line says so and names `mnema verify`, and neither claims the project is not founded nor lists what could not be read. `mnema init` names the channels that begin off in
+two lines before its "Next" line, and `mnema switch` ends each off line with the command that turns it on
+([every switch](switches.md)).
+
 ```sh
 # A … marks where this page shortened what a command prints: a path, a 64-hex id, the
 # rest of a line, or, alone on a line, lines it left out.
@@ -1626,8 +1634,8 @@ mnema switch
 #>   edit-asks-a-person     on   the pause before a file is written where the record asks that a person …
 #>   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one: …
 #>   agent-accepts          on   an agent ruling a decision in force: …
-#>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on, and nobody has
-#>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on, and nobody has
+#>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on: `mnema switch on edit-first-write-gate`
+#>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on: `mnema switch on user-corrections`
 #>   choice-settled         on   the sentence handed to the agent after a question it asked the person …
 #>   host-memory-mirror     on   the copy of the host’s own memory: …
 #>   decision-file-written  on   the line beside a write to a file that holds decisions (an ADR, a plan …
