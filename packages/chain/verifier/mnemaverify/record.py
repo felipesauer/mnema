@@ -591,6 +591,47 @@ def _check_tailproof(
     )
 
 
+TAIL_SIGNER_MISMATCH = "tail-signer-mismatch"
+
+
+def _check_tail_signer(
+    report: Report, tail_id: str, entries: list[Entry], checkpoints: list[Checkpoint]
+) -> None:
+    """Section 6: a tail belongs to one key, and only that key writes to it.
+
+    Every checkpoint of the tail and every event of it names as `signerFp` the fingerprint the
+    tail id begins with. The checkpoint loop checks a signature under the key the checkpoint's
+    OWN `signerFp` names and binds its range to that key, so neither asks whose tail it is: a
+    second key of the record, enrolled for the anchor, could write its events into another
+    key's tail and sign a checkpoint over them there. An event above the last checkpoint has
+    no checkpoint to be bound to, so this is a pass over every event, not over the ranges.
+    Each half is said once per tail, at the first that breaks, as the product says it, and in
+    the product's words.
+    """
+    owner = _tail_fingerprint(tail_id)
+    said = (
+        f"a tail is written only by the key its id begins with, {owner[:12]}... "
+        f"({TAIL_SIGNER_MISMATCH})"
+    )
+    for checkpoint in sorted(checkpoints, key=lambda cp: cp.from_seq):
+        signer = checkpoint.stored["signerFp"]
+        if signer != owner:
+            report.fail(
+                "6",
+                f"checkpoint cp[{checkpoint.from_seq}..{checkpoint.to_seq}] is signed by "
+                f"{str(signer)[:12]}..., and {said}",
+                tail_id,
+            )
+            break
+    for entry in entries:
+        signer = entry.event.get("signerFp")
+        if signer != owner:
+            report.fail(
+                "6", f"seq {entry.seq} names {str(signer)[:12]}... as its signer, and {said}", tail_id
+            )
+            break
+
+
 def _tail_fingerprint(tail_id: str) -> str:
     """The key a tail id names: everything before its last `-`, as the product splits it."""
     return tail_id.rsplit("-", 1)[0]
@@ -913,6 +954,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         entries, refused, before_refused = _read_entries(report, tail_dir, tail_id, declarations)
         _check_chain(report, entries, tail_id, refused)
         found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
+        _check_tail_signer(report, tail_id, entries, found.checkpoints)
         _check_tailproof(report, tail_dir, tail_id, ring)
         last_seq = entries[-1].seq if entries else -1
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)

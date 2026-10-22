@@ -754,6 +754,7 @@ export function verifyChain(
     }
     verifyHashChain(tail, entries, issues);
     const coverage = verifyCheckpoints(keys, tail, entries, checkpoints, issues);
+    verifyTailSigner(tail, entries, checkpoints, issues);
     checkpointedByTail.set(tail, coverage.covered);
     provenTails.set(tail, { checkpoints: coverage.proven, events: entries.length });
     uncheckpointed += entries.length - (coverage.covered + 1);
@@ -1584,6 +1585,57 @@ function verifyCheckpoints(
   // that took any of the refusals above never becomes one a witness is looked for
   // under: the property the single hash carried before, over the whole run of them.
   return { covered, proven };
+}
+
+/**
+ * The name both readers refuse a write into another key's tail by (FORMAT.md section 6). It is
+ * not `signer-mismatch`, which is the tail proof's (section 6.1): that one is about who signed
+ * the id, this one about who wrote inside it.
+ */
+export const TAIL_SIGNER_MISMATCH = 'tail-signer-mismatch';
+
+/**
+ * A TAIL BELONGS TO ONE KEY (FORMAT.md section 6): every checkpoint of the tail, and every
+ * event of it, names as `signerFp` the fingerprint the tail id begins with.
+ *
+ * {@link verifyCheckpoints} checks a checkpoint under the key its OWN `signerFp` names, and
+ * binds the events of its range to that key, so neither asks whose tail it is: a second key
+ * of the record, enrolled for the anchor, wrote its events into another key's tail, signed a
+ * checkpoint over them there, and verified. And an event above the last checkpoint has no
+ * checkpoint to be bound to at all, so this is a pass over EVERY event, not over the ranges.
+ * The writer derives the tail id and the signing key from one key pair (`writer.ts`), so no
+ * record it writes is refused here.
+ *
+ * Each half is said once per tail, at the first that breaks: one forged write is one cause,
+ * and the events after it are the same cause again.
+ */
+function verifyTailSigner(
+  tail: string,
+  entries: readonly Entry[],
+  checkpoints: readonly Checkpoint[],
+  issues: TailIssue[],
+): void {
+  const owner = tailFingerprint(tail);
+  const checkpoint = [...checkpoints]
+    .sort((x, y) => x.fromSeq - y.fromSeq)
+    .find((cp) => cp.signerFp !== owner);
+  if (checkpoint !== undefined) {
+    issues.push({
+      tail,
+      layer: 'T2/T4',
+      seq: checkpoint.fromSeq,
+      detail: `checkpoint cp[${checkpoint.fromSeq}..${checkpoint.toSeq}] is signed by ${oneLine(checkpoint.signerFp.slice(0, 12))}..., and a tail is written only by the key its id begins with, ${oneLine(owner.slice(0, 12))}... (${TAIL_SIGNER_MISMATCH})`,
+    });
+  }
+  const event = entries.find((entry) => entry.event.signerFp !== owner);
+  if (event !== undefined) {
+    issues.push({
+      tail,
+      layer: 'T2/T4',
+      seq: event.link.seq,
+      detail: `seq ${event.link.seq} names ${oneLine(event.event.signerFp.slice(0, 12))}... as its signer, and a tail is written only by the key its id begins with, ${oneLine(owner.slice(0, 12))}... (${TAIL_SIGNER_MISMATCH})`,
+    });
+  }
 }
 
 /**

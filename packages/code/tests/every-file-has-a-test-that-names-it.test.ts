@@ -773,6 +773,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/a-link-is-taken-back-only-by-the-identity-that-recorded-it.test.ts': 7,
   'packages/chain/src/chain/a-registration-for-an-identity-the-record-never-founded-is-no-backup.test.ts': 9,
   'packages/chain/src/chain/a-swapped-public-key-is-named-at-the-signature-layer.test.ts': 8,
+  'packages/chain/src/chain/a-tail-is-written-by-the-key-its-id-names.test.ts': 13,
   'packages/chain/src/chain/a-writer-rotates-at-the-size-it-may-hold-and-comes-back-to-it.test.ts': 10,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,

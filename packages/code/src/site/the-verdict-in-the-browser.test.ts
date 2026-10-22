@@ -25,7 +25,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
-import { generateKeyPair, publicKeyToPem, verify } from '@mnema/chain';
+import { generateKeyPair, publicKeyToPem, sealEntry, serializeEntry, verify } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { anAgentThatSignedAndWasRetired } from '../../tests/support/a-tail-from-another-machine.js';
@@ -292,6 +292,47 @@ describe('the verdict a page computes', () => {
     expect(shown.lines.join('\n')).toContain(
       `keys/${name}.pub is named for a fingerprint its own material does not hash to`,
     );
+  });
+
+  it('breaks where mnema verify breaks when an event in a tail names another key, by the same name', () => {
+    // FORMAT.md section 6: a tail belongs to the key its id begins with, and only that key
+    // writes to it. Another committed key, named for its own material, is put as the signer of
+    // an event appended to the person's tail, and the chain is closed behind it. The page and
+    // the CLI used to read this as a member question only; both now say whose tail it is.
+    honestRecord();
+    const other = generateKeyPair();
+    writeFileSync(
+      join(repo, '.mnema', 'keys', `${other.fingerprint}.pub`),
+      publicKeyToPem(other.publicKey),
+    );
+    const segment = segmentOf(repo);
+    const lines = readFileSync(segment, 'utf-8').trimEnd().split('\n');
+    const last = JSON.parse(lines[lines.length - 1] as string) as {
+      event: Record<string, unknown>;
+      link: { tail: string; seq: number; hash: string };
+    };
+    const sealed = sealEntry({
+      event: { ...last.event, signerFp: other.fingerprint } as never,
+      tail: last.link.tail,
+      seq: last.link.seq + 1,
+      prev: last.link.hash,
+    });
+    writeFileSync(segment, `${[...lines, serializeEntry(sealed)].join('\n')}\n`);
+    expect(runSite({ cwd: repo, env }, { out: join(sandbox, 'foreign') }).ok).toBe(true);
+    const page = readFileSync(join(sandbox, 'foreign', 'index.html'), 'utf-8');
+    const shown = runInAPage(page, scriptOf(page));
+    const cli = theCliSays();
+    expect(cli.ok).toBe(false);
+    expect({ summary: shown.summary, state: shown.state, lines: shown.lines.length }).toEqual({
+      summary: cli.summary,
+      state: 'broken',
+      lines: cli.notes,
+    });
+    expect(shown.lines.join('\n')).toContain(
+      `seq ${last.link.seq + 1} names ${other.fingerprint.slice(0, 12)}... as its signer, and a ` +
+        'tail is written only by the key its id begins with',
+    );
+    expect(shown.lines.join('\n')).toContain('(tail-signer-mismatch)');
   });
 
   it('is what the chain says over the frozen witnessed record, witness included', () => {
