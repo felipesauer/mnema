@@ -482,6 +482,13 @@ export interface TailSince {
  * bytes than the boundary (less the newline a torn final line may lack) is the cut this
  * names. `order.test.ts` holds it.
  *
+ * THE LINE AT THE BOUNDARY IS READ BACK. The walk stops at the first line that starts
+ * before the boundary, and that line has to end exactly there and carry `lastHash`, the
+ * entry the previous reading ended on; otherwise the bytes are not the ones that reading
+ * saw (a branch checked out over the live segment, a line rewritten at its own length)
+ * and the answer is undefined, as for a cut tail. What stays outside the question is a
+ * line BEFORE that one, which only a full reading (`mnema verify`) sees.
+ *
  * It costs the arrivals and not the tail: the walk is backwards from the end and stops
  * at the boundary, so a tail that did not move reads one chunk.
  */
@@ -490,6 +497,7 @@ export function readTailSince(
   tailId: string,
   upcasters: UpcasterRegistry,
   boundary: TailBoundary,
+  lastHash: string | null,
 ): TailSince | undefined {
   const segments = orderedSegments(layout, tailId);
   const at = segments.indexOf(boundary.segment);
@@ -507,6 +515,13 @@ export function readTailSince(
       // the previous reading covered, and everything pushed so far is new. Only the
       // boundary's OWN segment is walked into: every segment after it arrived whole.
       if (s === at && found.start < boundary.bytes) {
+        // That line is the one the previous reading ended on, or the file is not the one it
+        // read: it must END where the boundary is and be the entry the reading took last. A
+        // checkout to a branch whose live segment shares the head of this one and then
+        // diverges leaves a longer file whose line at the boundary is another entry, and
+        // the lines after it would read as arrivals of the tail that was served.
+        if (found.end + 1 !== boundary.bytes) return undefined;
+        if (lastHash !== null && found.value.link.hash !== lastHash) return undefined;
         return { arrivals: arrivals.reverse(), boundary: reached ?? boundary };
       }
       // The walk's first line is the tail's last, so this is set once and names the end
