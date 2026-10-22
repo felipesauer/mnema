@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -93,6 +101,50 @@ describe('ensureTree: self-contained .gitignore', () => {
     }
   });
 
+  /**
+   * THE WORKBENCH'S PRIVATE PART IS A LINK, and git matches a link as a file. A rule with a trailing
+   * slash matches only a directory, so `/workbench/local/` leaves the link to show as untracked and
+   * one `git add -A` commits it (measured before this line was written). Asked of git, over a link
+   * to a folder and over a link whose folder is gone, beside the part that is committed.
+   */
+  it("keeps the workbench's private link out of git and lets its shared part through, and git is the one asked", () => {
+    const repo = mkdtempSync(join(tmpdir(), 'mnema-gitignore-'));
+    const elsewhere = mkdtempSync(join(tmpdir(), 'mnema-workbench-local-'));
+    try {
+      execFileSync('git', ['init', '-q'], { cwd: repo });
+      ensureTree({ root: join(repo, '.mnema') });
+      const workbench = join(repo, '.mnema', 'workbench');
+      mkdirSync(join(workbench, 'shared'), { recursive: true });
+      writeFileSync(join(workbench, 'shared', 'notes.md'), '# notes\n');
+      const ignored = (path: string): boolean => {
+        try {
+          execFileSync('git', ['check-ignore', '-q', path], { cwd: repo });
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      const untracked = (): string =>
+        execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], {
+          cwd: repo,
+          encoding: 'utf-8',
+        });
+      for (const target of [elsewhere, join(elsewhere, 'gone')]) {
+        rmSync(join(workbench, 'local'), { force: true });
+        symlinkSync(target, join(workbench, 'local'));
+        expect(ignored('.mnema/workbench/local'), `the link to ${target} is not ignored`).toBe(
+          true,
+        );
+        expect(untracked()).not.toContain('workbench/local');
+      }
+      expect(ignored('.mnema/workbench/shared/notes.md')).toBe(false);
+      expect(untracked()).toContain('.mnema/workbench/shared/notes.md');
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+      rmSync(elsewhere, { recursive: true, force: true });
+    }
+  });
+
   it('is idempotent and non-destructive: a hand-edited .gitignore is kept', () => {
     ensureTree({ root });
     const edited = `${readFileSync(gitignorePath({ root }), 'utf-8')}\n# my own line\n`;
@@ -103,21 +155,52 @@ describe('ensureTree: self-contained .gitignore', () => {
     expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(edited);
   });
 
-  it('adds only the missing locks line to a .gitignore written before it existed', () => {
+  it('adds only the missing lines to a .gitignore written before they existed', () => {
     const old = '# mine\n/private/\n/keys/*.key\n# my own line\n';
     writeFileSync(gitignorePath({ root }), old, 'utf-8');
     expect(ensureTree({ root })).toBe(false);
-    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/locks/\n`);
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(
+      `${old}/locks/\n/workbench/local\n`,
+    );
   });
 
-  it('adds the locks line after a last line that has no newline', () => {
+  it('adds the workbench line alone to a .gitignore that has the locks line', () => {
+    const old = '/private/\n/locks/\n';
+    writeFileSync(gitignorePath({ root }), old, 'utf-8');
+    expect(ensureTree({ root })).toBe(false);
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/workbench/local\n`);
+  });
+
+  it('does not count a workbench rule that ends in a slash, which git does not match to a link', () => {
+    const old = '/locks/\n/workbench/local/\n';
+    writeFileSync(gitignorePath({ root }), old, 'utf-8');
+    ensureTree({ root });
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/workbench/local\n`);
+  });
+
+  it('does not add the workbench line to a .gitignore that negates it', () => {
+    for (const negation of ['!/workbench/local', '!workbench/local', '  !/workbench/local/  ']) {
+      const old = `/locks/\n${negation}\n`;
+      writeFileSync(gitignorePath({ root }), old, 'utf-8');
+      ensureTree({ root });
+      expect(readFileSync(gitignorePath({ root }), 'utf-8'), negation).toBe(old);
+    }
+  });
+
+  it('adds the lines after a last line that has no newline', () => {
     writeFileSync(gitignorePath({ root }), '/private/', 'utf-8');
     ensureTree({ root });
-    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe('/private/\n/locks/\n');
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(
+      '/private/\n/locks/\n/workbench/local\n',
+    );
   });
 
-  it('leaves a .gitignore that already has the locks line byte for byte', () => {
-    for (const body of ['/private/\n/locks/\n', 'locks/\n/private/', '/private/\r\n/locks/\r\n']) {
+  it('leaves a .gitignore that already has both lines byte for byte', () => {
+    for (const body of [
+      '/private/\n/locks/\n/workbench/local\n',
+      'locks/\nworkbench/local\n/private/',
+      '/private/\r\n/locks/\r\n/workbench/local\r\n',
+    ]) {
       writeFileSync(gitignorePath({ root }), body, 'utf-8');
       ensureTree({ root });
       ensureTree({ root });
@@ -160,7 +243,7 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
   });
 
   it('writes it into a tree made before it existed, at the next write, and touches nothing else', () => {
-    const ignore = '/private/\n/locks/\n';
+    const ignore = '/private/\n/locks/\n/workbench/local\n';
     writeFileSync(gitignorePath({ root }), ignore, 'utf-8');
     expect(ensureTree({ root })).toBe(false);
     expect(readFileSync(attributes(), 'utf-8')).toContain('\n* -text\n');

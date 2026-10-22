@@ -58,7 +58,8 @@ mnema verify
 gives a clone the record, and what gives the signing key a history somebody else
 can check. The record changes with the work, so each change goes in the same commit as the work it
 describes. `init` leaves a `README.md` in the folder saying so, and an `.editorconfig` that unsets what an outer one
-could impose on the bytes, and, where the repository has a `.prettierignore` or declares prettier, adds the line
+could impose on the signed bytes under `tails/` and `keys/` (the notes of `workbench/`, which no verifier reads, are
+left to your editor), and, where the repository has a `.prettierignore` or declares prettier, adds the line
 `.mnema/` to it and says it did: a formatter that rewrote a byte of the record would
 break its signatures. It also writes the mnema instructions into the files agent hosts read at the start of a
 session (an `AGENTS.md`, created where there is none, a `CLAUDE.md` or a `GEMINI.md` where one exists, and a

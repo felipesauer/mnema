@@ -199,6 +199,16 @@ const QUOTED_ON_PURPOSE: readonly { file: string; phrase: string; why: string }[
 /** This file spells out every phrase it bans; an instrument that accuses itself is ignored. */
 const THE_INSTRUMENT = 'packages/code/tests/the-sentence-reaches-every-door.test.ts';
 
+/**
+ * Whether a tracked file is the repository's own record, which the sweep leaves alone: it is
+ * append-only and signed, and holds people's words verbatim, so it is not prose to edit. Not its
+ * `workbench/shared/`: that is prose a person writes and commits beside the record, edited like
+ * any page, so it is swept.
+ */
+function isTheRecord(file: string): boolean {
+  return file.startsWith('.mnema/') && !file.startsWith('.mnema/workbench/shared/');
+}
+
 /** Every tracked file that decodes as text. Binary payloads (proofs, keys) are skipped. */
 function trackedText(): { file: string; text: string }[] {
   const listed = execFileSync('git', ['ls-files', '-z'], {
@@ -211,8 +221,7 @@ function trackedText(): { file: string; text: string }[] {
   const found: { file: string; text: string }[] = [];
   for (const file of listed) {
     if (file === THE_INSTRUMENT) continue;
-    // The record is append-only and signed, and holds people's words verbatim: not prose to edit.
-    if (file.startsWith('.mnema/')) continue;
+    if (isTheRecord(file)) continue;
     let text: string;
     try {
       text = readFileSync(join(ROOT, file), 'utf8');
@@ -276,6 +285,19 @@ describe('no door still says the retired sentence', () => {
     expect(sweep(corpus)).toEqual(
       corpus.map(({ file }) => `${file} :: cannot hide the signed history`).sort(),
     );
+  });
+
+  it('leaves the record alone and sweeps the notes a person commits beside it', () => {
+    for (const file of ['.mnema/tails/x/000001.jsonl', '.mnema/keys/x.pub', '.mnema/README.md']) {
+      expect(isTheRecord(file), file).toBe(true);
+    }
+    for (const file of [
+      '.mnema/workbench/shared/notes.md',
+      '.mnema/workbench/shared/changes/one/change.md',
+      'docs/.mnema/x.md',
+    ]) {
+      expect(isTheRecord(file), file).toBe(false);
+    }
   });
 
   it('the sweep reads the whole tracked tree, not a handful of files', () => {
