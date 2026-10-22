@@ -754,6 +754,8 @@ known by then, and the run it closes ends with the journal's outcome (for exampl
 Each comes from the records of the tree the run is written to and from no other: the title of a private task never becomes
 the goal of a run in the public record, and a public run's outcome counts no private decision or note.
 The `resume` and `status` readings print that outcome beside a run that ended with one, as `outcome: …`.
+When the connection ends, the server marks the journal as ended (`endedAt`), and the next `Stop` of that session, if it goes on,
+takes the mark away: it is what lets `mnema recall` tell a session that stopped from one that is still going.
 
 **It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
 session-journal` stops it (a fact of the record like the other switches); with it off, every `Stop` reads the whole
@@ -1636,9 +1638,11 @@ credential in a recognized format is handed over as the fact that the note exist
 as its text. Where nothing is noted it prints **nothing**, and a session there is handed
 nothing. It is never a file to commit: it carries what was kept on this machine.
 
-**Where the last session stopped comes above the notes.** When another session wrote to this record in the last 24 hours and
-left a journal on this machine (see [The session journal](#the-session-journal)), `mnema recall` opens with a few lines read from
-it: how long ago it wrote, its goal (the title of the first task it moved into progress), the decisions it recorded by their
+**Where the last session stopped comes above the notes.** When another session that has stopped (its connection to the server
+ended, or its journal has been quiet for 15 minutes: a session that wrote a moment ago may still be going and is not told as the
+one that stopped) left a journal on this machine in the last 24 hours (see [The session journal](#the-session-journal)),
+`mnema recall` opens with a few lines read from it: how long ago it stopped, and whether it wrote to this record (a decision, a
+note copied or a task moved; a session that only edited files is said to have written nothing to it), its goal (the title of the first task it moved into progress), the decisions it recorded by their
 `ADR-<n>` label and where each stands, and what it left (files edited, files of decisions the record cites nowhere, questions
 answered with no decision recorded after, tasks in progress). About a hundred tokens, ids and counts and a title the record
 already holds. The hook passes the session's own id (`--session <id>`, read off its payload) so a session never reads its own

@@ -160,7 +160,9 @@ function lastSessionSection(last: LastSession): string[] {
   return [
     '## Where the last session stopped',
     '',
-    `Another session here wrote to this record ${humanDuration(last.agoSeconds)} ago; what follows is read from the journal it left on this machine (ids and counts, none of its words).`,
+    last.wrote
+      ? `Another session here wrote to this record ${humanDuration(last.agoSeconds)} ago; what follows is read from the journal it left on this machine (ids and counts, none of its words).`
+      : `Another session here stopped ${humanDuration(last.agoSeconds)} ago and wrote nothing to this record; what follows is read from the journal it left on this machine (ids and counts, none of its words).`,
     ...(last.goal === null || holdsACredential(last.goal)
       ? []
       : [`- Its goal: ${oneLine(excerptOf(last.goal))}`]),

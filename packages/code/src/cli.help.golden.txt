@@ -606,8 +606,9 @@ $ mnema recall --help
 | progress, the name of the branch and the files of the last 3 commits, read with
 | git and no lock, the record’s own directory left out. The rest are the newest.
 | With nothing to read there, all of them are the newest. It says which, in a line.
-| Above them, when another session wrote to this record in the last 24 hours and left a journal
-| on this machine (`mnema switch off session-journal` stops it), a few lines say where it stopped:
+| Above them, when another session that has stopped (its connection ended, or its journal has been
+| quiet for 15 minutes) left a journal on this machine in the last 24 hours
+| (`mnema switch off session-journal` stops it), a few lines say where it stopped:
 | its goal, the decisions it recorded, and the counts it left. They can be switched off alone
 | (`mnema switch off last-session`).
 | It prints NOTHING when nothing is recorded, so a session opens with nothing added.

@@ -21,7 +21,9 @@ import { type CliIo, run } from '../src/program.js';
 import {
   type Journal,
   journalFile,
+  LIVE_MS,
   lastJournalOf,
+  markEnded,
   RECENT_MS,
   writeJournal,
 } from '../src/session-journal.js';
@@ -66,7 +68,8 @@ function aJournal(session: string, over: Over = {}): Journal {
   return {
     version: 1,
     session,
-    updatedAt: new Date().toISOString(),
+    // Half an hour ago: a session that has stopped. One written to a moment ago may be going on.
+    updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     openedAt: null,
     decisions: [],
     notes: [],
@@ -140,6 +143,30 @@ describe('the section', () => {
       '- It left: 4 files edited; 1 file of decisions the record cites nowhere; 2 questions answered with no decision recorded after; 1 task in progress',
     );
     expect(text).toMatch(/wrote to this record (\d+s|\d+m)/);
+  });
+
+  it('says it wrote to the record only when the session did: files edited alone are not a write', () => {
+    keep(aJournal(FIRST, { tasksInProgress: [], decisions: [], notes: [] }));
+    const only = recalled(SECOND).join('\n');
+    expect(only).toContain('## Where the last session stopped');
+    expect(only).not.toContain('wrote to this record');
+    expect(only).toMatch(/stopped (\d+s|\d+m) ago and wrote nothing to this record/);
+    keep(aJournal(FIRST, { notes: ['a-note'] }));
+    expect(recalled(SECOND).join('\n')).toMatch(/wrote to this record (\d+s|\d+m) ago/);
+    keep(aJournal(FIRST, { tasksInProgress: ['t'] }));
+    expect(recalled(SECOND).join('\n')).toMatch(/wrote to this record (\d+s|\d+m) ago/);
+  });
+
+  it('does not call a session that is still going the one that stopped, unless its connection ended', () => {
+    const justNow = new Date().toISOString();
+    keep(aJournal(FIRST, { updatedAt: justNow }));
+    expect(recalled(SECOND).join('\n')).not.toContain('Where the last session stopped');
+    // The same journal, once the connection of that session ended, is the one that stopped.
+    keep(aJournal(FIRST, { updatedAt: justNow, endedAt: justNow }));
+    expect(recalled(SECOND).join('\n')).toContain('Where the last session stopped');
+    // And quiet for longer than a session stays quiet between two responses, it stopped too.
+    keep(aJournal(FIRST, { updatedAt: new Date(Date.now() - LIVE_MS - 60_000).toISOString() }));
+    expect(recalled(SECOND).join('\n')).toContain('Where the last session stopped');
   });
 
   it('is about a hundred tokens: a few lines, and well under a thousand bytes', () => {
@@ -269,7 +296,10 @@ describe('the plugin hooks, end to end', () => {
       session_id: FIRST,
     });
     expect(stopped.status).toBe(0);
-    // The journal is fresh to the second; the section is for any session but the first.
+    // The journal is fresh to the second, so the first session may be going on: it is not told as the
+    // one that stopped until its connection ended or it went quiet. Here it ended.
+    const kept = journalFile(resolveTrees(repo, env), FIRST) as string;
+    markEnded(kept, new Date());
     const next = host('session-recall.mjs', {
       hook_event_name: 'SessionStart',
       session_id: SECOND,

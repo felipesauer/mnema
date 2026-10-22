@@ -105,6 +105,8 @@ export interface LastSession {
   /** The decisions it recorded, by the record's own label, and where each stands. */
   readonly decisions: readonly { readonly label: string; readonly state: string }[];
   readonly filesEdited: number;
+  /** Whether it wrote anything to the record: a decision, a note copied, or a task moved. */
+  readonly wrote: boolean;
   readonly decisionFilesUncited: number;
   readonly questionsWithoutDecision: number;
   readonly tasksInProgress: number;
@@ -173,6 +175,10 @@ function theLastSession(
       return found === undefined ? [] : [{ label: found.adr, state: found.state }];
     }),
     filesEdited: journal.filesEdited,
+    wrote:
+      journal.decisions.length > 0 ||
+      journal.notes.length > 0 ||
+      journal.tasksInProgress.length > 0,
     decisionFilesUncited: journal.decisionFilesUncited,
     questionsWithoutDecision: journal.questionsWithoutDecision,
     tasksInProgress: journal.tasksInProgress.length,
