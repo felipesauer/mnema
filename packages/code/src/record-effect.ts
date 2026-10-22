@@ -70,6 +70,9 @@
  * file". That was false when it was written: the projection was held in memory, and on the
  * MCP every read is measured leaving every file and directory of its sandbox as it found them
  * (`every-tool-says-if-it-writes.test.ts`, the case the protocol's `readOnlyHint` is held to).
+ * IT IS TRUE OF THE MCP TOO, FOR THE TWO TREES OF THE PROJECT THE SESSION IS IN: the server
+ * opens them over the same file (`cache-registry.ts`), and that file is the one place a read
+ * there may write besides the local count of calls.
  * IT IS TRUE OF THE COMMAND LINE NOW, AND THE WORDING STANDS BECAUSE IT NEVER WAS ABOUT THE
  * DISK: a read keeps the projection it built in the tree it read (`CacheOptions.persist`,
  * `locks/projection.db`) so the next one pays only for what arrived, one derived file that

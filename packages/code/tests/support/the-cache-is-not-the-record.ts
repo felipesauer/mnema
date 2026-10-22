@@ -15,7 +15,16 @@
  * it is measured over the real binary (`the-record-is-kept-between-reads.test.ts`).
  */
 
-/** The cache a read leaves in a tree: `locks/projection.db`, and the files SQLite keeps beside it. */
-export function isTheDerivedCache(path: string): boolean {
+import { sep } from 'node:path';
+
+/**
+ * The cache a read leaves in a tree: `locks/projection.db`, and the files SQLite keeps beside it.
+ *
+ * With `servedProject`, only under that directory: the server keeps the file for the project it
+ * serves and for no other tree, so the same file in another project or in the global tree is a
+ * read having written where it must not.
+ */
+export function isTheDerivedCache(path: string, servedProject?: string): boolean {
+  if (servedProject !== undefined && !path.startsWith(`${servedProject}${sep}`)) return false;
   return /(?:^|[\\/])locks[\\/]projection\.db(?:-wal|-shm|-journal)?$/.test(path);
 }

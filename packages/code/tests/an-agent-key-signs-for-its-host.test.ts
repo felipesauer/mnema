@@ -53,6 +53,7 @@ import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, refreshWorkspace } from '../src/mcp/session.js';
 import { type CliIo, run } from '../src/program.js';
 import { personsKeyInTheClear } from '../src/the-persons-key-in-the-clear.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 const PASSPHRASE = 'MNEMA_KEY_PASSPHRASE';
 
@@ -1241,6 +1242,9 @@ function digestOfTheTrees(): string {
     if (root === undefined || !existsSync(root)) continue;
     for (const name of (readdirSync(root, { recursive: true }) as string[]).sort()) {
       const path = join(root, name);
+      // The projection the server keeps for the two trees of the project it serves is derived
+      // and is not what a refusal must leave as it was.
+      if (root !== trees.global && isTheDerivedCache(path)) continue;
       hash.update(`${root}\n${name}\n`);
       if (statSync(path).isFile()) hash.update(readFileSync(path));
     }

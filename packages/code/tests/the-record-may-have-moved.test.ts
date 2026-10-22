@@ -280,9 +280,10 @@ describe('the warm cache is still warm', () => {
     const { rebuilds, refreshes } = countingReplays(() => {
       for (let i = 0; i < 10; i += 1) session.caches.get(rootOf(session, 'public'));
     });
-    // The first open replays (there is no retained order to bring forward) and
+    // The first open brings the tree to the chain once (a file it keeps is taken as it is,
+    // and there is none to take here, so that is a replay) and
     // the nine after it do nothing at all.
-    expect({ rebuilds, refreshes }).toEqual({ rebuilds: 1, refreshes: 0 });
+    expect({ rebuilds, refreshes }).toEqual({ rebuilds: 0, refreshes: 1 });
     closeSession(session);
   });
 });

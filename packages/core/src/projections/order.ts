@@ -414,7 +414,7 @@ export function chainArrivals(
     const since =
       covered === undefined || covered.boundary === undefined
         ? wholeTail(layout, tail, upcasters)
-        : readTailSince(layout, tail, upcasters, covered.boundary);
+        : readTailSince(layout, tail, upcasters, covered.boundary, covered.lastHash);
     if (since === undefined) {
       refusal ??= { suffix: false, why: 'A_TAIL_WAS_CUT' };
       continue;

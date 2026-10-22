@@ -292,6 +292,65 @@ describe('chainArrivals: a break planted at the boundary', () => {
     expect(chainReplay({ root: rootA }, upcasters).linkBreaks).toHaveLength(0);
   });
 
+  // A DIVERGENT TAIL THAT IS LONGER. A checkout to a branch whose live segment shares the
+  // first lines and then goes its own way can leave the file longer than the reading that
+  // set the boundary, with the new lines starting past the boundary and the line AT the
+  // boundary a different entry. The walk used to stop at the first line starting before
+  // the boundary and take everything after it as arrivals. The line that ends at the
+  // boundary has to be the entry the reading ended on.
+  it.each([
+    ['the same length', 't-4', 'fourth'],
+    ['a longer entry', 't-44444', 'fourth and some more'],
+  ])('refuses a suffix when the entry at the boundary is replaced by %s', (_, subject, title) => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const kept = readFileSync(file, 'utf-8').trimEnd().split('\n').slice(0, 2);
+    writeFileSync(file, `${kept.join('\n')}\n`, 'utf-8');
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
+    w.append(taskCreated(env(subject, '2026-07-21T00:00:03.000Z'), { title }));
+    expect(chainReplay({ root: rootA }, upcasters).linkBreaks).toHaveLength(0);
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+  });
+
+  // THE LAST LINE REWRITTEN AT ITS OWN LENGTH. The line ends exactly at the boundary, so only
+  // the entry it holds can say it is not the one the reading ended on.
+  it('refuses a suffix when the last line is another entry of the same length', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    const last = JSON.parse(lines[lines.length - 1] as string) as { link: { hash: string } };
+    const hash = last.link.hash;
+    const other = `${hash[0] === 'a' ? 'b' : 'a'}${hash.slice(1)}`;
+    lines[lines.length - 1] = (lines[lines.length - 1] as string).replace(hash, other);
+    writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+  });
+
+  // AN EARLIER LINE LENGTHENED. The last line is untouched and carries the entry the reading
+  // ended on, but the file is longer than the reading saw, so the line no longer ENDS at the
+  // boundary: the end position, not only the entry, has to match. Without that check the
+  // reading serves the old state with no arrivals.
+  it('refuses a suffix when a line before the last is lengthened', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const text = readFileSync(file, 'utf-8');
+    expect(text).toContain('"second"');
+    writeFileSync(file, text.replace('"second"', '"second, said at greater length"'), 'utf-8');
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+  });
+
   // The boundary advances past the arrivals, so the NEXT resumed reading is anchored on
   // what this one read. Without this, a second refresh would hand back the same events.
   it('advances the boundary past what it read, so a second reading finds nothing', () => {
@@ -396,13 +455,9 @@ describe('chainArrivals: a break planted at the boundary', () => {
     const tail = readdirSync(tails)[0] as string;
     const file = join(tails, tail, '000001.jsonl');
     const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
-    // The FIRST entry written a second time, in the middle of the tail: every byte of
-    // it is below the frontier, and the entries after it are untouched.
-    writeFileSync(
-      file,
-      `${[...lines.slice(0, 1), lines[0] as string, ...lines.slice(1)].join('\n')}\n`,
-      'utf-8',
-    );
+    // The first two lines swapped: every byte changed is below the frontier, the file keeps
+    // its size and the line at the boundary is the one the reading ended on.
+    writeFileSync(file, `${[lines[1], lines[0], ...lines.slice(2)].join('\n')}\n`, 'utf-8');
 
     const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
     // The resumed reading says the tail did not move, and the full reading of the very

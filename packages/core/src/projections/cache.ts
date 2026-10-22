@@ -489,6 +489,22 @@ export class ProjectionCache {
     });
   }
 
+  /**
+   * Brings a cache kept on disk forward when ANOTHER process has written the file since this
+   * one last agreed with it, and says whether it did: one query for the file's generation.
+   *
+   * A file another process (or another version of the code) rewrote is not the tables this
+   * instance was reading from: the schema may differ, and a query over it fails or answers from
+   * rows that belong to another stamp. The chain's own extent cannot say so, because the file
+   * moved and the chain did not. A cache in memory is only this process's and is never asked.
+   */
+  refreshIfTheFileMoved(): boolean {
+    if (!this.persisted) return false;
+    if (this.guardedRead(() => readGeneration(this.db)) === this.generation) return false;
+    this.refresh();
+    return true;
+  }
+
   /** Replays the chain whole into the tables: the one place a rebuild is written. */
   private replay(): void {
     const replay = chainReplay(this.layout, this.upcasters);

@@ -80,6 +80,7 @@ import {
   runTaskTransition,
   runTimelineTool,
 } from '../src/mcp/tools.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -1385,13 +1386,17 @@ describe('MCP session + tools: unit', () => {
    * A content digest of every file under `dir` (the proof a `skills` call that
    * serves nothing records nothing: not an event, not a checkpoint, not a byte).
    */
-  function digest(dir: string): string {
+  function digest(dir: string, served: string): string {
     const hash = createHash('sha256');
     const walk = (current: string): void => {
       for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) =>
         a.name.localeCompare(b.name),
       )) {
         const full = join(current, entry.name);
+        // The derived projection of the project the session serves is not what a read must
+        // leave alone, and no other project's or the global tree's is excused
+        // (`support/the-cache-is-not-the-record.ts`).
+        if (isTheDerivedCache(full, served)) continue;
         if (entry.isDirectory()) {
           hash.update(`D:${full}\n`);
           walk(full);
@@ -1728,7 +1733,7 @@ describe('MCP session + tools: unit', () => {
       note: 'not for us',
     });
     if (!turnedDown.ok) throw new Error('setup: reject refused');
-    const before = digest(sandbox);
+    const before = digest(sandbox, project);
 
     expect(runSkillsTool(session)).toEqual({ ok: true, served: 'bodies', skills: [] });
     expect(runSkillsTool(session, { id: created.id })).toMatchObject({ ok: false });
@@ -1736,7 +1741,7 @@ describe('MCP session + tools: unit', () => {
 
     // Not an event, not a checkpoint, not a byte: across every tree and the key
     // root. Serving nothing is a pure read.
-    expect(digest(sandbox)).toBe(before);
+    expect(digest(sandbox, project)).toBe(before);
   });
 
   it('skills crosses the trees: a PRIVATE pattern is served, the consultation TRAVELS', () => {
@@ -2185,7 +2190,7 @@ describe('MCP session + tools: unit', () => {
     const skill = adoptSkill(session, { name: 'a pattern', body: 'the body' });
     const captured = runCaptureMemory(session, { content: 'a fact worth finding' });
     if (!captured.ok) throw new Error('setup: capture refused');
-    const before = digest(sandbox);
+    const before = digest(sandbox, project);
 
     runSearchTool(session, { term: 'fact' });
     runSearchTool(session, {});
@@ -2195,7 +2200,7 @@ describe('MCP session + tools: unit', () => {
     // back door into recording one.
     runReadRecordTool(session, { id: skill });
 
-    expect(digest(sandbox)).toBe(before);
+    expect(digest(sandbox, project)).toBe(before);
     expect(consultations(chainRootForScope(session.trees, 'private') as string)).toEqual([]);
   });
 

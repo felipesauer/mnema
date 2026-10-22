@@ -40,6 +40,21 @@ with its own changelog.
   fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
   51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
   its format or what a read answers changed.
+- **The MCP server starts from the projection the command line and the hooks already keep.** It opened every tree by
+  replaying the whole record; for the two trees of the project it is in, it now opens `locks/projection.db` and takes
+  only what was appended since, with the same checks every other reader uses (the stamp of the code, the size and
+  modification time of sealed segments, the frontier of each tail), so a record changed behind the file by another
+  process, a `git pull` or a checkout is read by the next call. The other projects of the workspace and the global tree
+  stay in memory. The first `bootstrap` of a server over a record of 4,508 lines went from about 250 to about 40 ms
+  (median of 21 cold starts, one project), and from 299 to 69 ms with nine other projects in the workspace; the second
+  call is about 4 ms slower than before while the file's pages are first read, and the calls after it are equal. Because a tool that only reads now updates that file, `readOnlyHint` carries a second written
+  exception beside the local count of calls: a cache derived from the project's own record, deletable (the next read builds
+  it again), never a fact of the record, and the one thing it can miss is an edit in place, to the same size, of a line
+  before the last of a live segment, which only `verify` sees. A live segment replaced by another branch's, even a longer one, is read again (the
+  line a stored position ends on is read back and must be the entry it ended on), in the command line as in the server,
+  and a file another process or version rewrote under a running server is taken again before the next answer. What the
+  file does not see is an edit, in place and to the same size, to a line before the last one of a live segment
+  (`mnema verify` is what rules on that).
 
 ### Fixed
 

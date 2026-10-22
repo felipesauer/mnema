@@ -1957,11 +1957,25 @@ key really signed.
 
 A read keeps what it built in `locks/projection.db` of each tree it read, so the next
 read takes only what was appended since instead of building it again. It is derived and
-never the record: deleting it changes no answer and costs the next read one rebuild, it
+never the record: deleting it costs the next read one rebuild (the one edit it can miss is an in-place edit, to the same size, of a
+line before the last of a live segment, which only `mnema verify` sees), it
 sits where the tree's own `.gitignore` already looks away, and a clone never carries it.
 A read of a tree nobody has written to creates nothing, and where the file cannot be
 had (a read-only directory, a damaged file), the read builds it in memory and answers
 the same.
+
+The MCP server keeps it for the two trees of the project it is in, and for no other tree: the
+other projects of the workspace and the global tree are built in memory for the connection, as
+before. So a tool that only reads (`readOnlyHint: true`) may create or update that one file in
+the project it serves, and nothing else: the exception is written beside the other one, the local
+count of calls, and a read still appends nothing to the record and rewrites no byte of it.
+Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
+checkout of another commit) is read by the next call, and a file that does not follow the
+record is built again. The line a stored position ends on is read back and has to be the entry it ended on, so a
+live segment replaced by another branch's, longer or not, is read again, by the command line and
+by a server that is already up; and a file another process or version of the code rewrote is taken
+again before the next answer. What it does not see is an edit, in place and to the same size, to a
+line before the last one of a live segment (`mnema verify` is what rules on that).
 
 `MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
 and can be written to, every read (the command line, the MCP server and the library)
