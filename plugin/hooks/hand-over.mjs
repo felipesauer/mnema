@@ -79,8 +79,8 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { accessSync, constants, readFileSync, realpathSync } from 'node:fs';
+import { delimiter, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
 
@@ -119,6 +119,172 @@ export function binaryToRun(env = process.env) {
 export function whereTheSessionIs() {
   const named = process.env.CLAUDE_PROJECT_DIR;
   return named !== undefined && named !== '' ? named : process.cwd();
+}
+
+/**
+ * The Node versions `mnema` takes, as `engines.node` of `@mnema/code` says them. A copy, because this
+ * file runs from the plugin's directory with no build and cannot import the product's reader
+ * (`packages/code/src/node-floor.ts`); `the-hooks-run-mnema-on-a-node-it-takes.test.ts` holds it to
+ * the manifest and to that reader over a table of versions, so a floor raised there turns this red.
+ */
+export const NODE_RANGE = '^24.15.0 || >=26.0.0';
+
+/** The versions as the page says them, for a reason a person reads. */
+const NODE_SAID = '24.15.0 or a later 24, or 26 or later';
+
+/**
+ * Whether a Node of this version is one `mnema` takes: each `||` alternative of {@link NODE_RANGE}
+ * is `^x.y.z` (that major from there) or `>=x.y.z`.
+ *
+ * @param {string} version
+ * @returns {boolean}
+ */
+export function nodeIsTaken(version) {
+  const have = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version.trim())?.slice(1).map(Number);
+  if (have === undefined) return false;
+  const reaches = (/** @type {number[]} */ from) => {
+    for (let at = 0; at < 3; at += 1) {
+      if ((have[at] ?? 0) !== (from[at] ?? 0)) return (have[at] ?? 0) > (from[at] ?? 0);
+    }
+    return true;
+  };
+  return NODE_RANGE.split('||').some((alternative) => {
+    const said = /^\s*(\^|>=)\s*(\d+)\.(\d+)\.(\d+)\s*$/.exec(alternative);
+    if (said === null) return false;
+    const from = [Number(said[2]), Number(said[3]), Number(said[4])];
+    return reaches(from) && (said[1] === '>=' || have[0] === from[0]);
+  });
+}
+
+/** The file name of a Node on this platform. */
+const NODE_NAME = process.platform === 'win32' ? 'node.exe' : 'node';
+
+/**
+ * Where a program is, on `env`'s PATH or by its own path, or `null`.
+ *
+ * @param {string} name A bare name (searched on the PATH) or a path.
+ * @param {Readonly<Record<string, string | undefined>>} env
+ * @returns {string | null}
+ */
+function whereIs(name, env) {
+  const executable = (/** @type {string} */ path) => {
+    try {
+      accessSync(path, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (name.includes('/') || name.includes('\\')) return executable(name) ? name : null;
+  for (const dir of (env.PATH ?? '').split(delimiter)) {
+    if (dir !== '' && executable(join(dir, name))) return join(dir, name);
+  }
+  return null;
+}
+
+/**
+ * The version a Node says it is, or `null` where it did not say one.
+ *
+ * @param {string} node
+ * @param {Readonly<Record<string, string | undefined>>} env
+ * @returns {string | null}
+ */
+function versionOf(node, env) {
+  const ran = spawnSync(node, ['-p', 'process.versions.node'], {
+    env,
+    encoding: 'utf-8',
+    timeout: 5000,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  const said = (ran.stdout ?? '').trim();
+  return ran.error === undefined && ran.status === 0 && /^\d+\.\d+\.\d+/.test(said) ? said : null;
+}
+
+/** @param {string} path */
+function realOf(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+/** @typedef {{ readonly env: Readonly<Record<string, string | undefined>>, readonly refusal: string | null }} Runtime */
+
+/** The last answer of {@link theRuntime}, kept for the PATH it was asked about: one process is one hook. */
+let lastRuntime = /** @type {{ path: string | undefined, said: Runtime } | null} */ (null);
+
+/**
+ * WHICH NODE `mnema` RUNS ON, settled once per process, and what to say where none takes it.
+ *
+ * THE HOST'S FIRST `node` IS NOT THE PLUGIN'S TO TRUST. `mnema` starts through `#!/usr/bin/env node`,
+ * so it runs on the first `node` of the PATH the host gives its hooks, and a host may put one of its
+ * own there: Cursor's command-line agent puts the Node it embeds (24.5.0 on 2026.09.18) in front, and
+ * `mnema` then died at its first line, in every hook, while the gate read that as nothing to say.
+ * So the first `node` is asked what it is (not asked at all where it is the one running this file,
+ * which already answers), and where it is below the floor the search goes on: the `node` beside the
+ * `mnema` that was found, which is the one that installed it, then every other `node` of the PATH,
+ * in order. The first that takes `mnema` is put in front of the PATH for every run of this module
+ * and the hook goes on as if the host had put it there. Where none does, `refusal` says why and
+ * what to do, and each handler says it in its own way: the gate refuses the write, the document's
+ * handler says `mnema could not run`.
+ *
+ * NO `mnema` AT ALL IS NOT A REFUSAL. Nothing is checked, and nothing refused, where there is no
+ * program to run: that is the plugin installed on a machine without the product, which is not worse
+ * than no plugin (`without-mnema-the-hooks-fail-open.test.ts`).
+ *
+ * @param {Readonly<Record<string, string | undefined>>} [env]
+ * @returns {Runtime}
+ */
+export function theRuntime(env = process.env) {
+  if (lastRuntime === null || lastRuntime.path !== env.PATH) {
+    lastRuntime = { path: env.PATH, said: settleTheRuntime(env) };
+  }
+  return lastRuntime.said;
+}
+
+/**
+ * @param {Readonly<Record<string, string | undefined>>} env
+ * @returns {Runtime}
+ */
+function settleTheRuntime(env) {
+  const asIs = { env, refusal: null };
+  const mnema = whereIs(binaryToRun(env), env);
+  if (mnema === null) return asIs;
+  const first = whereIs(NODE_NAME, env);
+  const firstVersion =
+    first === null
+      ? null
+      : realOf(first) === realOf(process.execPath)
+        ? process.versions.node
+        : versionOf(first, env);
+  if (firstVersion !== null && nodeIsTaken(firstVersion)) return asIs;
+  const candidates = [
+    join(dirname(mnema), NODE_NAME),
+    ...(env.PATH ?? '').split(delimiter).map((dir) => join(dir, NODE_NAME)),
+  ];
+  const tried = new Set(first === null ? [] : [first]);
+  for (const candidate of candidates) {
+    if (tried.has(candidate) || whereIs(candidate, env) === null) continue;
+    tried.add(candidate);
+    const version = versionOf(candidate, env);
+    if (version !== null && nodeIsTaken(version)) {
+      const path = `${dirname(candidate)}${delimiter}${env.PATH ?? ''}`;
+      return { env: { ...env, PATH: path }, refusal: null };
+    }
+  }
+  const found =
+    first === null
+      ? 'there is no node on the PATH the host gives its hooks'
+      : `the first node on the PATH the host gives its hooks is ${firstVersion ?? 'one that did not say its version'} (${first})`;
+  return {
+    env,
+    refusal:
+      `mnema needs Node ${NODE_SAID}, and ${found}; no other node on that PATH takes it. ` +
+      'Install one with your Node manager (for example `nvm install 24`) and put it first on the PATH the host ' +
+      "gives its hooks; for a host that carries a Node of its own (Cursor's command-line agent), start the host " +
+      'from a shell where it comes first. `mnema doctor` in a terminal says which node it runs on there.',
+  };
 }
 
 /** What separates a verb's text from what the same run said about the record under it. */
@@ -213,6 +379,7 @@ const QUOTED = 120;
 export function whoAnswers(cwd) {
   const ran = spawnSync(binaryToRun(), [WHICH_PROGRAM], {
     cwd,
+    env: theRuntime().env,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -306,6 +473,10 @@ export function theMismatch(who, plugin = thePluginVersion()) {
  * @returns {string | null}
  */
 export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, handed = []) {
+  // NO NODE THAT TAKES `mnema` IS A FACT, NOT A STRANGER: the handler that hands over the document
+  // says it, in the plugin's own voice, and the others stay silent so a session is told once.
+  const { refusal } = theRuntime();
+  if (refusal !== null) return namesAStranger ? `mnema could not run: ${refusal}` : null;
   const who = whoAnswers(cwd);
   if (who.kind === 'absent') return null;
   if (who.kind === 'stranger') return namesAStranger ? aStranger(who) : null;
@@ -368,12 +539,15 @@ export function whatTheVerbAnswers(argv, cwd, input) {
  * @param {readonly string[]} argv
  * @param {string} cwd
  * @param {string} input
+ * @param {number | undefined} [timeout] Milliseconds after which the run is killed, or none.
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
-function ranTheVerb(argv, cwd, input) {
+function ranTheVerb(argv, cwd, input, timeout = undefined) {
   return spawnSync(binaryToRun(), [...argv], {
     cwd,
+    env: theRuntime().env,
     input,
+    ...(timeout === undefined ? {} : { timeout }),
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -445,17 +619,94 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
   // starting it is most of what the gate costs. Read from the stored lines of every tree, never
   // from a cache, and any doubt starts it (`an-address-can-be-met.mjs`).
   if (!anAddressCanBeMet(cwd, env)) return null;
+  // A GATE THAT CANNOT RUN `mnema` REFUSES, where a record with a rule at an address is there to be
+  // read: no node takes it (below), or the program answered something that is no answer.
+  const { refusal } = theRuntime();
+  if (refusal !== null) return denial(`mnema could not run: ${refusal}`);
   const asked = ['before-a-write', '--host', host];
   const agent = flagValue(argv, '--agent-key');
-  if (agent === undefined) return whatTheVerbAnswers(asked, cwd, input);
+  if (agent === undefined) return theGateSays(ranTheVerb(asked, cwd, input, GATE_TIMEOUT));
   // THE AGENT'S KEY IS ASKED FOR, NOT ASSUMED: a `mnema` older than the option refuses it by name
   // and would answer nothing, a gate that stops gating, so it is asked again without, and signs
   // as it always did.
   const withAgent = [...asked, '--agent-key', agent];
-  const ran = ranTheVerb(withAgent, cwd, input);
-  return refusesTheFlag(ran, ['--agent-key'])
-    ? whatTheVerbAnswers(asked, cwd, input)
-    : answerOf(ran);
+  const ran = ranTheVerb(withAgent, cwd, input, GATE_TIMEOUT);
+  return theGateSays(
+    refusesTheFlag(ran, ['--agent-key']) ? ranTheVerb(asked, cwd, input, GATE_TIMEOUT) : ran,
+  );
+}
+
+/** How long the gate waits for `mnema`: under the hooks file's own `timeout`, so the refusal is the answer and the host's kill is not. */
+const GATE_TIMEOUT = 10_000;
+
+/**
+ * The reply that does not let a write happen, in the shape every host that runs this module reads
+ * (`hookSpecificOutput`, `permissionDecision: "deny"`), with the control bytes of the reason struck.
+ *
+ * @param {string} reason
+ * @returns {string}
+ */
+export function denial(reason) {
+  const plain = [...reason]
+    .map((char) => ((char.codePointAt(0) ?? 32) < 32 || char === '\u007f' ? ' ' : char))
+    .join('');
+  return `${JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: plain,
+    },
+  })}\n`;
+}
+
+/**
+ * What the gate says for one run of the verb: the host's reply byte for byte, `null` where the verb
+ * has nothing to say or where there is no `mnema` to run, and a refusal of the write where the run
+ * is not an answer: it could not start, it did not finish in time, it exited non-zero, or what it
+ * printed is not a JSON object.
+ *
+ * NO PROGRAM IS NOT A RUN THAT FAILED, and that line is drawn by `ENOENT`: a machine with the plugin
+ * and without the product is not made worse by the plugin (`without-mnema-the-hooks-fail-open.test.ts`).
+ * A program that is there and does not answer is the case a gate exists for.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @returns {string | null}
+ */
+function theGateSays(ran) {
+  const code = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error)?.code;
+  if (code === 'ENOENT') return null;
+  let because = null;
+  if (code === 'ETIMEDOUT') because = `it did not answer in ${GATE_TIMEOUT / 1000} seconds`;
+  else if (code !== undefined && code !== 'EPIPE') because = `it could not be started (${code})`;
+  else if (ran.status !== 0) {
+    const said = (ran.stderr ?? '').trim().split('\n')[0] ?? '';
+    because = `it exited ${ran.status ?? ran.signal}${said === '' ? '' : `: ${said.slice(0, QUOTED)}`}`;
+  } else if (!isAnObject(ran.stdout ?? '')) {
+    because = 'what it printed is not a JSON reply';
+  }
+  if (because !== null) {
+    return denial(
+      `mnema could not answer for this write: ${because}. A gate that cannot read the record does not let a write through, ` +
+        'since the record may hold a rule that refuses it. Run `mnema doctor` in a terminal to see what stops it; ' +
+        'once mnema answers again, the record decides this write.',
+    );
+  }
+  return answerOf(ran);
+}
+
+/**
+ * Whether `text` is one JSON object.
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+function isAnObject(text) {
+  try {
+    const parsed = JSON.parse(text);
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -509,6 +760,7 @@ function toolNameOf(input) {
 function running(verb, flags, cwd) {
   return spawnSync(binaryToRun(), [verb, ...flags], {
     cwd,
+    env: theRuntime().env,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
