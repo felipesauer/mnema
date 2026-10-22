@@ -588,21 +588,38 @@ function posix(segments: readonly string[]): string {
 function relativeSegments(path: string, root: string): string[] | null {
   const parts = normalized(path);
   if (parts === null) return null;
-  if (!path.startsWith('/')) return parts;
+  const windows = isWindowsAbsolute(path);
+  if (!path.startsWith('/') && !windows) return parts;
   const base = normalized(root) ?? [];
   if (parts.length < base.length) return null;
-  if (!base.every((part, index) => parts[index] === part)) return null;
+  // Windows names a drive and the folders above a project in either letter case, and a root and a
+  // path from two hosts may spell them differently; nothing BELOW the root is folded, because an
+  // address is bytes.
+  const same = (part: string, other: string | undefined): boolean =>
+    windows ? part.toLowerCase() === other?.toLowerCase() : part === other;
+  if (!base.every((part, index) => same(part, parts[index]))) return null;
   return parts.slice(base.length);
+}
+
+/**
+ * Whether a path is absolute the way Windows writes one: a drive and a separator (`C:\work`,
+ * `c:/work`) or a UNC share (`\\server\share`). It is a test of the SHAPE of the text, and not of
+ * the platform running, because the hooks hand this a path from the host that wrote it; a POSIX
+ * path never has that shape, and a backslash anywhere else is one name of a POSIX file.
+ */
+function isWindowsAbsolute(path: string): boolean {
+  return /^(?:[A-Za-z]:[\\/]|\\\\)/.test(path);
 }
 
 /**
  * The segments a path names, with `.` dropped and `..` resolved textually, or null
  * when the climbing goes above the first segment, which for an absolute path is
- * above the filesystem root and for a relative one is out of the project.
+ * above the filesystem root and for a relative one is out of the project. A path written the
+ * Windows way is split on both separators, its drive letter being its first segment.
  */
 function normalized(path: string): string[] | null {
   const parts: string[] = [];
-  for (const part of path.split('/')) {
+  for (const part of path.split(isWindowsAbsolute(path) ? /[\\/]/ : '/')) {
     if (part === '' || part === '.') continue;
     if (part === '..') {
       if (parts.length === 0) return null;

@@ -146,3 +146,36 @@ describe('what an address covers', () => {
     expect(walks).toBe(1);
   });
 });
+
+describe('an absolute path as Windows writes it', () => {
+  const WINDOWS_ROOT = 'C:\\Users\\me\\repo';
+  const reduced = (address: string, root = WINDOWS_ROOT) =>
+    addressReach({
+      address,
+      root,
+      tree: { walk: () => ({ skipped: [], truncated: false }) },
+    }).address;
+
+  it('is made relative to the root it lies under, backslashes and all', () => {
+    expect(reduced('C:\\Users\\me\\repo\\src\\collate\\fold.ts')).toBe('src/collate/fold.ts');
+    expect(reduced('C:\\Users\\me\\repo')).toBe('.');
+  });
+
+  it('is the same path with forward slashes, or with the drive letter in lower case', () => {
+    expect(reduced('C:/Users/me/repo/src/collate')).toBe('src/collate');
+    expect(reduced('c:\\Users\\me\\repo\\src\\collate')).toBe('src/collate');
+  });
+
+  it('does not lie under a root on another drive, or in a folder beside it', () => {
+    expect(reduced('D:\\Users\\me\\repo\\src')).toBeUndefined();
+    expect(reduced('C:\\Users\\me\\repo-other\\src')).toBeUndefined();
+  });
+
+  it('keeps the casing of everything below the root: an address is bytes', () => {
+    expect(reduced('C:\\Users\\me\\repo\\SRC\\Collate')).toBe('SRC/Collate');
+  });
+
+  it('leaves a relative path with a backslash in it as the one name it is on POSIX', () => {
+    expect(reduced('src\\odd', '/work/repo')).toBe('src\\odd');
+  });
+});
