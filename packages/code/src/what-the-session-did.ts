@@ -34,7 +34,7 @@ import { createHash } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { decisionFileAt } from './decision-files.js';
-import { asObject, forEachLine, forEachLineFrom, parsed } from './transcripts.js';
+import { asObject, digestOfBytes, forEachLine, forEachLineFrom, parsed } from './transcripts.js';
 
 /**
  * The host's tools that write a file, and the field of each one's input that names it.
@@ -84,7 +84,21 @@ export interface Reading {
   questionTimes: string[];
   /** Project-relative names of the files written that hold decisions. */
   decisionFiles: string[];
+  /**
+   * Digests of the head and of the tail of the bytes already read, so a transcript the host
+   * rewrote (to any size) is told from one that only grew. Null before anything was read.
+   */
+  anchors: Anchors | null;
 }
+
+/** The digests that say the bytes behind a reading's offset are still the ones that were read. */
+export interface Anchors {
+  readonly head: string;
+  readonly tail: string;
+}
+
+/** How many bytes each anchor covers: enough to tell two histories apart, small enough to be free. */
+const ANCHOR_BYTES = 4096;
 
 /** The reading of a transcript no one has read. */
 export function emptyReading(): Reading {
@@ -97,7 +111,28 @@ export function emptyReading(): Reading {
     pending: {},
     questionTimes: [],
     decisionFiles: [],
+    anchors: null,
   };
+}
+
+/** The anchors of the first `bytes` bytes of the file, or null when they cannot be read. */
+function anchorsOf(path: string, bytes: number): Anchors | null {
+  const width = Math.min(ANCHOR_BYTES, bytes);
+  const head = digestOfBytes(path, 0, width);
+  const tail = digestOfBytes(path, bytes - width, width);
+  return head === undefined || tail === undefined ? null : { head, tail };
+}
+
+/** Whether the bytes behind the offset are still the ones the reading read. */
+function isTheSameFile(path: string, reading: Reading): boolean {
+  if (statSize(path) < reading.bytes) return false;
+  const now = anchorsOf(path, reading.bytes);
+  return (
+    now !== null &&
+    reading.anchors !== null &&
+    now.head === reading.anchors.head &&
+    now.tail === reading.anchors.tail
+  );
 }
 
 /** How many unanswered calls and answers a reading keeps: the rest is the oldest, and is let go. */
@@ -109,8 +144,9 @@ function digestOf(file: string): string {
 
 /**
  * Reads what the host wrote to the transcript at `path` since `reading` stopped, and folds it into
- * `reading`. Returns false when the file cannot be opened. A file shorter than the offset is a
- * different file (a rewritten transcript): the reading starts over from nothing.
+ * `reading`. Returns false when the file cannot be opened. A file whose bytes behind the offset are
+ * not the ones that were read (shorter than the offset, or the same length or longer and written
+ * over) is a different file, a rewritten transcript: the reading starts over from nothing.
  *
  * `where.paths`, when given, is told the path of each digest it meets: a caller that wants the
  * paths (a whole read, in memory) asks for them, and a reading kept on disk never has them.
@@ -123,7 +159,7 @@ export function readTheNewPart(
   where: { readonly cwd: string; readonly root?: string; readonly paths?: Map<string, string> },
 ): boolean {
   let from = reading.bytes;
-  if (from > 0 && statSize(path) < from) {
+  if (from > 0 && !isTheSameFile(path, reading)) {
     Object.assign(reading, emptyReading());
     from = 0;
   }
@@ -184,6 +220,7 @@ export function readTheNewPart(
   });
   if (size === -1) return false;
   reading.bytes = end;
+  reading.anchors = end > 0 ? anchorsOf(path, end) : null;
   return true;
 }
 

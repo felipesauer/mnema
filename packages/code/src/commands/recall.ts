@@ -167,7 +167,7 @@ function theLastSession(
   const known = sources.flatMap((source) => source.cache.listDecisions());
   return {
     agoSeconds: Math.max(0, Math.floor(ago / 1000)),
-    goal: journal.goal,
+    goal: journal.trees.public.goal ?? journal.trees.private.goal,
     decisions: journal.decisions.flatMap((one) => {
       const found = known.find((decision) => decision.id === one.id);
       return found === undefined ? [] : [{ label: found.adr, state: found.state }];

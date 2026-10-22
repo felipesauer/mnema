@@ -679,7 +679,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 47, name: 85, flag: 3 },
+  'CHANGELOG.md': { line: 47, name: 87, flag: 3 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -723,7 +723,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/edit-refuses-a-write.ts': { line: 1, name: 1 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
-  'packages/code/src/instructions-block.ts': { line: 2 },
+  'packages/code/src/instructions-block.ts': { line: 3 },
   'packages/code/src/mcp/context.ts': { name: 1, flag: 2 },
   'packages/code/src/mcp/instructions.ts': { name: 1 },
   'packages/code/src/mcp/server.ts': { line: 1 },
@@ -808,7 +808,9 @@ export const HANDED_OVER: Readonly<
 const program = watchedProgram();
 const verbs = new Set(program.commands.map((one) => one.name()));
 
-const pages = trackedPages();
+// The signed record in `.mnema/` is not prose to read (ADR-38): the same skip the sentence guard
+// makes, so a README written there by the product is not a page this guard reads.
+const pages = trackedPages().filter((page) => !page.startsWith('.mnema/'));
 const onPages = pages.map((page) => handedOnPage(page, readFileSync(join(ROOT, page), 'utf8')));
 const inSources = speakingSources().map((file) =>
   handedInSource(file, readFileSync(join(ROOT, file), 'utf8'), verbs),

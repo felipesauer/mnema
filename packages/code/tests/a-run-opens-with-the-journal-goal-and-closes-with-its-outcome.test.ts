@@ -41,8 +41,7 @@ function journal(goal: string | null, outcome: string | null): Journal {
     filesEdited: 3,
     tasksInProgress: [],
     runsOpen: [],
-    goal,
-    outcome,
+    trees: { public: { goal, outcome }, private: { goal, outcome } },
     reading: emptyReading(),
   };
 }

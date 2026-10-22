@@ -58,7 +58,11 @@ async function doing(...argv: string[]): Promise<string[]> {
   return out;
 }
 
-function aJournal(session: string, over: Partial<Journal> = {}): Journal {
+/** What a test may set on a journal: the goal is told for the public tree, where a task is born. */
+type Over = Partial<Journal> & { readonly goal?: string | null };
+
+function aJournal(session: string, over: Over = {}): Journal {
+  const { goal = GOAL, ...rest } = over;
   return {
     version: 1,
     session,
@@ -71,10 +75,9 @@ function aJournal(session: string, over: Partial<Journal> = {}): Journal {
     filesEdited: 4,
     tasksInProgress: [],
     runsOpen: [],
-    goal: GOAL,
-    outcome: null,
+    trees: { public: { goal, outcome: null }, private: { goal: null, outcome: null } },
     reading: emptyReading(),
-    ...over,
+    ...rest,
   };
 }
 
@@ -176,7 +179,7 @@ describe('the section', () => {
       except: '33333333-aaaa-4bbb-8ccc-333333333333',
       now: new Date(),
     });
-    expect(found?.goal).toBe('The later goal');
+    expect(found?.trees.public.goal).toBe('The later goal');
   });
 
   it('withholds a goal that holds a credential in a recognized format', () => {
