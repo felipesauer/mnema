@@ -270,6 +270,7 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   run: 'a run is pinned by the host',
   corrections: 'covered by nothing: a hook the plugin switches on, not an operation',
   'after-a-write': 'covered by nothing: a hook the plugin runs after a write, not an operation',
+  dispatched: 'covered by nothing: a hook the plugin runs after a dispatch, not an operation',
   witness: 'an outside witness is a person’s',
   'commit-hook':
     'it writes a file into a git repository’s hooks, which only a person at a shell asks for',
