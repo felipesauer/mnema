@@ -122,6 +122,7 @@ import {
 } from '@mnema/chain';
 import {
   type ChannelSwitchProjection,
+  type Known,
   ProjectionCache,
   type RunProjection,
   readCacheIsChosen,
@@ -226,9 +227,9 @@ export function createCacheRegistry(
   // One upcaster registry for the session, shared by every cache it opens: the
   // catalog is the same for all trees, and building it per read was pure waste.
   const upcasters: UpcasterRegistry = catalogUpcasters();
-  // What each tree was last found to say, with the mark it was found at, for the trees this
+  // What each tree was last found to say, with the extent it was found at, for the trees this
   // connection asks the two questions of without otherwise reading.
-  const remembered = new Map<string, { mark: string; facts: TreeFacts }>();
+  const remembered = new Map<string, Known>();
 
   /**
    * The facts of a tree this connection does not hold open, or undefined for a tree it does
@@ -244,8 +245,7 @@ export function createCacheRegistry(
       },
       remembered.get(chainRoot),
     );
-    if (found.mark !== undefined)
-      remembered.set(chainRoot, { mark: found.mark, facts: found.facts });
+    if (found.extent !== undefined) remembered.set(chainRoot, found);
     return found.facts;
   };
 

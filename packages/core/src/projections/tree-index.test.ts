@@ -9,7 +9,8 @@
  *     lists a replay gives, field for field;
  *   - it is read again, and the file replaced, as soon as the tree moved: an append, a sealed
  *     segment rewritten, a file that is garbage, a mark of other code;
- *   - a reader that remembers the mark does not even read the file;
+ *   - a reader that remembers the extent does not even read the file, and reads again when the
+ *     extent moved;
  *   - a tree with no tail keeps nothing and is read every time, and a directory that does not
  *     exist is not founded by asking.
  */
@@ -37,7 +38,7 @@ import { switchChannel } from '../workflow/channel-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { ProjectionCache } from './cache.js';
-import { type TreeFacts, treeFactsFrom } from './tree-index.js';
+import { type Known, type TreeFacts, treeFactsFrom } from './tree-index.js';
 
 const upcasters = catalogUpcasters();
 
@@ -122,14 +123,21 @@ describe('the facts of a tree that has not moved', () => {
     expect(served.facts.channelSwitches).toMatchObject([{ channel: 'a-channel', on: false }]);
   });
 
-  it('are not even read from the file by a reader that remembers the mark', () => {
-    aTreeWithARun();
+  it('are not even read from the file by a reader that remembers the extent, until it moves', () => {
+    const ctx = aTreeWithARun();
     const first = treeFactsFrom({ root }, reader().read);
+    expect(first.extent).toBeDefined();
     rmSync(treeIndexPath({ root }));
     const again = reader();
-    const served = treeFactsFrom({ root }, again.read, first as { mark: string; facts: TreeFacts });
+    const served = treeFactsFrom({ root }, again.read, first as Known);
     expect(again.opened()).toBe(0);
     expect(served.facts).toEqual(first.facts);
+    expect(existsSync(treeIndexPath({ root }))).toBe(false);
+
+    landed(startRun(ctx, { agent: 'an-agent', goal: 'a later run' }));
+    const moved = treeFactsFrom({ root }, again.read, first as Known);
+    expect(again.opened()).toBe(1);
+    expect(moved.facts.runs).toHaveLength(2);
   });
 });
 

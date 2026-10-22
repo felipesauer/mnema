@@ -53,33 +53,41 @@ interface Marked {
 }
 
 /**
- * The facts of a tree: `remembered` when the tree is still as it was marked there, else the file
- * the tree keeps when it still describes the tree, else `read`, which opens the tree, and the
- * file is then written for the next reader. A tree that cannot carry a mark (no tail yet, or an
- * extent that could not be read) is read each time.
+ * The facts of a tree: `remembered` while the tree's extent is the one it was remembered at, else
+ * the file the tree keeps when it still describes the tree, else `read`, which opens the tree,
+ * and the file is then written for the next reader. A tree that cannot carry a mark (no tail yet,
+ * or an extent that could not be read) is read each time.
  *
- * Returns the mark with the facts so that a caller that keeps them can pass them back; `mark` is
- * undefined where there was none.
+ * A caller that keeps the answer in memory passes it back as `remembered`, and is then asked what
+ * a warm cache is asked: has the extent moved. The sealed segments are looked at when a file is
+ * to be believed or written, not on every call of a connection, exactly as a projection held in
+ * memory is not asked about them either.
  */
 export function treeFactsFrom(
   layout: ChainLayout,
   read: () => TreeFacts,
-  remembered?: { readonly mark: string; readonly facts: TreeFacts },
-): { readonly mark: string | undefined; readonly facts: TreeFacts } {
-  const mark = markOf(layout);
-  if (mark === undefined) return { mark, facts: read() };
-  if (remembered?.mark === mark) return remembered;
+  remembered?: Known,
+): Known | { readonly extent: undefined; readonly facts: TreeFacts } {
+  const extent = chainExtent(layout);
+  if (extent === '' || extent.startsWith('!')) return { extent: undefined, facts: read() };
+  if (remembered?.extent === extent) return remembered;
+  const mark = markOf(layout, extent);
+  if (mark === undefined) return { extent: undefined, facts: read() };
   const held = readIndex(layout);
-  if (held?.mark === mark) return held;
+  if (held?.mark === mark) return { extent, facts: held.facts };
   const facts = read();
   writeIndex(layout, { mark, facts });
-  return { mark, facts };
+  return { extent, facts };
 }
 
-/** The tree as it stands, or undefined when there is nothing to index or nothing to trust. */
-function markOf(layout: ChainLayout): string | undefined {
-  const extent = chainExtent(layout);
-  if (extent === '' || extent.startsWith('!')) return undefined;
+/** What a caller that keeps a tree's facts keeps with them. */
+export interface Known {
+  readonly extent: string;
+  readonly facts: TreeFacts;
+}
+
+/** The tree as it stands, or undefined when its segments cannot be listed. */
+function markOf(layout: ChainLayout, extent: string): string | undefined {
   const sealed: Record<string, string> = {};
   try {
     for (const tail of listTails(layout)) {

@@ -223,7 +223,7 @@ export {
 export { getSkill, listSkills, listSkillsByState } from './projections/skill-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
-export { type TreeFacts, treeFactsFrom } from './projections/tree-index.js';
+export { type Known, type TreeFacts, treeFactsFrom } from './projections/tree-index.js';
 // The window every read that takes `--from`/`--to` asks: one boundary rule in two
 // readings (a predicate and a `WHERE`), plus the declaration of what a given read's
 // window is OVER, which is the half that was silent.
