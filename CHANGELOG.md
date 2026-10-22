@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Added
 
+- **A compacted conversation is handed back what its session had recorded.** A new `SessionStart` hook under the `compact`
+  matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
+  twenty tokens) read from the session's journal: the decisions it recorded by label and state, the notes copied, the questions
+  answered with no decision after, the files its calls wrote. A count and the record's labels, none of the session's words.
+  The `PreCompact` hook is gone: Claude Code discards what a hook says before a compaction, so `mnema tally` no longer
+  answers that event. A new switch, `after-a-compaction`, on by default, stops the sentence.
 - **`mnema recall` says where the last session stopped.** When another session wrote to the record in the last 24 hours
   and left a session journal on this machine, the notes open with a few lines (about a hundred tokens): how long ago it
   wrote, its goal, the decisions it recorded by label and state, and what it left (files edited, files of decisions cited
