@@ -218,9 +218,10 @@ the `.editorconfig` above names only `tails/` and `keys/`
 the record, to both readers"). No `kind`, `v` or field came with it, so §7.1 has nothing to
 promise of it: a record without the folder reads as it always did, and a version from before
 the folder reads a record that has one exactly as this one does, because neither enumerates
-the root. The name `private` is not used in it: `<record>/private/` is where an earlier
-version kept the private tree before it moved into the repository's git directory, `mnema
-doctor` names one still there as left behind, and `mnema doctor --fix private-tree` moves it.
+the root. The name `private` is not used in it: `<record>/private/` is the private tree of a
+project outside a git repository and, inside one, where an earlier version kept it before it
+moved into the repository's git directory; `mnema doctor` names one still there as left
+behind, and `mnema doctor --fix private-tree` moves it.
 
 The tail is the concatenation of its segments in name order, and sequence numbers
 are contiguous across that concatenation: **which segment a given sequence number

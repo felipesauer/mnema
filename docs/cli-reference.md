@@ -249,18 +249,21 @@ mnema init
 #> …
 
 # `init` also leaves `.mnema/README.md`, a page for whoever opens the folder: the record changes with the
-# work and each change goes in the same commit as the work it describes, nothing in it is edited or
-# reformatted, and how to verify it. Neither reader counts it as part of the proof. In a repository that
+# work and each change goes in the same commit as the work it describes, nothing in it but `workbench/` (the
+# notes of the people working here, which no verifier reads) is edited or reformatted, and how to verify it.
+# Neither reader counts it as part of the proof. In a repository that
 # has a `.prettierignore` or declares prettier (a dependency, a `prettier` key in `package.json`, or a
 # `.prettierrc*` in the project's directory or any directory above it up to the git root), `init` also adds
 # the line `.mnema/` to the `.prettierignore` of the nearest of those directories that declares prettier (a
 # subproject's own, else the root's; creating it only when prettier is declared), and says so. It also leaves
-# `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
-# newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
-# else away from the folders above. And it writes the mnema instructions into the files agent hosts read at
+# `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the signed bytes
+# under `tails/` and `keys/` (a final newline, an end of line, a trim, a charset, an indent) to `unset`; its one
+# section is `[{tails,keys}/**]`, so `workbench/` is left to your own editor, and it has no `root = true`, so it
+# takes nothing else away from the folders above. And it writes the mnema instructions into the files agent hosts read at
 # the start of a session, naming each (see "The mnema instructions in the files a host reads", below). It
 # touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
-# these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
+# these (the README, the `.editorconfig`, the `.prettierignore` line), replaces an `.editorconfig` that is byte for
+# byte the one an earlier `init` wrote (its `[*]` reached `workbench/` too), says what it did, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
 # It never writes the instructions again: `mnema instructions` does, where they are missing.
 #
@@ -1114,6 +1117,9 @@ directory: nothing reads them there, and removing that worktree deletes them.
 It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, the
 `.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
 finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
+It says, too, when the `.mnema/.editorconfig` has a `[*]` that reaches `workbench/`, the notes beside the record: the
+one an earlier `init` wrote, which `mnema init` replaces, or one somebody edited, which nothing replaces, and the
+finding names the section to write instead, `[{tails,keys}/**]`.
 It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
 version's block, or a block somebody edited), with what `mnema instructions` would do about it.
 
@@ -1959,6 +1965,8 @@ key really signed.
   .gitattributes            `* -text`: a checkout never rewrites the signed lines' ends
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   locks/                    gitignored: writers' locks, and the projection a read keeps
+  workbench/                the notes of the people working here, not proof: no verifier
+                            reads them; shared/ is committed, local (a link) is gitignored
 <git common dir>/mnema/<encoded path>/private/
                             this machine, this project only: beside the repository's
                             objects, shared by its worktrees, kept when one is removed;
