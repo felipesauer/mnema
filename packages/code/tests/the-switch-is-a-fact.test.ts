@@ -520,6 +520,7 @@ const HONOURED: Readonly<
           version: 1,
           session: 'an-earlier-session',
           updatedAt: new Date().toISOString(),
+          endedAt: new Date().toISOString(),
           openedAt: null,
           decisions: [],
           notes: [],
