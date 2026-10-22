@@ -538,6 +538,20 @@ const AGENT = ['--agent-key', 'opencode'];
 /** What is run: npm's own shim name on Windows. */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
+/**
+ * How to start \`program\`: on Windows through a shell, quoted so that a path with a space stays one
+ * word, because Node refuses to start the \`.cmd\` npm writes any other way (\`EINVAL\`).
+ *
+ * @param {string} program
+ * @param {NodeJS.Platform} [platform]
+ * @returns {{ readonly program: string, readonly shell: boolean }}
+ */
+function spawnTarget(program, platform = process.platform) {
+  return platform === 'win32'
+    ? { program: '"' + program + '"', shell: true }
+    : { program, shell: false };
+}
+
 /** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
 let settled;
 const theRuntime = () => {
@@ -547,7 +561,9 @@ const theRuntime = () => {
 
 /** One run of \`mnema\`, both streams kept; a run that did not finish carries an \`error\`. */
 function run(args, cwd, input, timeout = WAIT) {
-  return spawnSync(BINARY, args, {
+  const target = spawnTarget(BINARY);
+  return spawnSync(target.program, args, {
+    shell: target.shell,
     cwd,
     env: theRuntime().env,
     input,
@@ -808,6 +824,20 @@ const AGENT = ['--agent-key', 'gemini'];
 /** What is run: npm's own shim name on Windows. */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
+/**
+ * How to start \`program\`: on Windows through a shell, quoted so that a path with a space stays one
+ * word, because Node refuses to start the \`.cmd\` npm writes any other way (\`EINVAL\`).
+ *
+ * @param {string} program
+ * @param {NodeJS.Platform} [platform]
+ * @returns {{ readonly program: string, readonly shell: boolean }}
+ */
+function spawnTarget(program, platform = process.platform) {
+  return platform === 'win32'
+    ? { program: '"' + program + '"', shell: true }
+    : { program, shell: false };
+}
+
 /** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
 let settled;
 const theRuntime = () => {
@@ -823,7 +853,9 @@ const theRuntime = () => {
  * @param {number} [timeout]
  */
 function run(args, cwd, input, timeout = WAIT) {
-  return spawnSync(BINARY, args, {
+  const target = spawnTarget(BINARY);
+  return spawnSync(target.program, args, {
+    shell: target.shell,
     cwd,
     env: theRuntime().env,
     input,
