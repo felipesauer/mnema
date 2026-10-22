@@ -24,6 +24,7 @@ const MANIFEST_NAMES = new Set(['package.json', 'plugin.json', 'gemini-extension
 const VERSION_TS = 'packages/code/src/version.ts';
 const READER_VERSION_TS = 'packages/chain/src/version.ts';
 const GOLDEN = 'packages/code/src/cli.help.golden.txt';
+const PYPROJECT = 'packages/chain/verifier/pyproject.toml';
 const CHANGELOG = 'CHANGELOG.md';
 const RELEASES = 'https://github.com/felipesauer/mnema/releases/tag/';
 const RETIRED = ', a pre-release withdrawn, from before this line';
@@ -138,6 +139,7 @@ export function plan(root, version, date) {
     ),
   );
   put(GOLDEN, rewrite(read(GOLDEN), /(\$ mnema --version\n\| )[^\n]*(\n)/, version, GOLDEN));
+  put(PYPROJECT, rewrite(read(PYPROJECT), /^(version = ")[^"]*(")/m, version, PYPROJECT));
 
   let log = read(CHANGELOG);
   if (!new RegExp(`^## \\[${version.replace(/\./g, '\\.')}\\]`, 'm').test(log)) {
