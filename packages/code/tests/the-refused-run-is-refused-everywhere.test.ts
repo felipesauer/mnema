@@ -459,6 +459,7 @@ describe('the refused run is refused everywhere', () => {
       'stack',
       'tail',
       'task',
+      'workspace',
     ]);
     // And the two facts are exclusive, which is what makes the first list readable: a path
     // the parser answered for cannot also have been heard by the pin resolver.

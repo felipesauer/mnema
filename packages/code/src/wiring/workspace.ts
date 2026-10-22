@@ -13,9 +13,9 @@ import type {
   WorkspaceRefused,
   WorkspaceStatus,
 } from '../commands/workspace.js';
-import { oneLine } from '../one-line.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -42,7 +42,7 @@ function refuse(wiring: Wiring, refusal: WorkspaceRefused): void {
           code: refusal.reason,
           message:
             refusal.reason === 'LINK_ELSEWHERE'
-              ? `${said} (${oneLine(refusal.detail ?? '')}).${HOW_TO_REPOINT}`
+              ? onOneLine`${said} (${refusal.detail ?? ''}).${HOW_TO_REPOINT}`
               : said,
         }),
   });
@@ -56,10 +56,10 @@ function initLines(done: WorkspaceInitDone): string[] {
   const lines = [
     'The workbench is in .mnema/workbench/: notes of the people working here, not proof. `mnema verify` does not read it.',
   ];
-  if (done.made.length > 0) lines.push(`made: ${done.made.map(oneLine).join(', ')}`);
+  if (done.made.length > 0) lines.push(onOneLine`made: ${done.made.join(', ')}`);
   if (done.linked) {
     lines.push(
-      `.mnema/workbench/local -> ${oneLine(places.target)} (this machine only, never committed)`,
+      onOneLine`.mnema/workbench/local -> ${places.target} (this machine only, never committed)`,
     );
   }
   return lines;
@@ -73,11 +73,11 @@ function statusLines(found: WorkspaceStatus): string[] {
   const link = found.link;
   const where =
     link.state === 'right'
-      ? `.mnema/workbench/local -> ${oneLine(places.target)}`
+      ? onOneLine`.mnema/workbench/local -> ${places.target}`
       : link.state === 'absent'
-        ? `.mnema/workbench/local is missing (it points to ${oneLine(places.target)}): \`mnema doctor --fix workbench\` makes it again`
+        ? onOneLine`.mnema/workbench/local is missing (it points to ${places.target}): \`mnema doctor --fix workbench\` makes it again`
         : link.state === 'elsewhere'
-          ? `.mnema/workbench/local points to ${oneLine(link.to)}, not to ${oneLine(places.target)}: \`mnema doctor --fix workbench\` points it right`
+          ? onOneLine`.mnema/workbench/local points to ${link.to}, not to ${places.target}: \`mnema doctor --fix workbench\` points it right`
           : '.mnema/workbench/local is a folder or a file, not a link';
   const lines = [
     `shared (committed): .mnema/workbench/shared, ${found.sharedFiles} ${found.sharedFiles === 1 ? 'file' : 'files'}`,
@@ -85,7 +85,7 @@ function statusLines(found: WorkspaceStatus): string[] {
   ];
   if (found.changes.length === 0) lines.push('no change is open or paused');
   for (const change of found.changes) {
-    lines.push(`${change.status} · ${change.root}/changes/${oneLine(change.folder)}`);
+    lines.push(onOneLine`${change.status} · ${change.root}/changes/${change.folder}`);
   }
   return lines;
 }

@@ -226,6 +226,7 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   inherit: THE_PARSER_ANSWERED_FIRST,
+  workspace: THE_PARSER_ANSWERED_FIRST,
   'commit-hook': THE_PARSER_ANSWERED_FIRST,
   'commit-hook install':
     'a hook belongs to a git repository, not to a project: outside a repository it refuses with its own sentence',
