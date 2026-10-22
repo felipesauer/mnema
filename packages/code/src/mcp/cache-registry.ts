@@ -120,7 +120,14 @@ import {
   chainExtent,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { ProjectionCache, readCacheIsChosen } from '@mnema/core';
+import {
+  type ChannelSwitchProjection,
+  ProjectionCache,
+  type RunProjection,
+  readCacheIsChosen,
+  type TreeFacts,
+  treeFactsFrom,
+} from '@mnema/core';
 
 /** A cache retained for one chain root, and whether it still matches the chain. */
 interface Entry {
@@ -151,6 +158,23 @@ export interface CacheRegistry {
    * moved the record.
    */
   get(chainRoot: string): ProjectionCache;
+  /**
+   * The runs a tree holds, as the projection lists them, without opening the tree when it can be
+   * told it has not moved since a reader last listed them: the question the session asks of every
+   * project of the workspace (where did this actor leave off), answered from a small file the
+   * tree keeps ({@link treeFactsFrom}).
+   *
+   * A tree this connection already holds, or keeps on disk for the next process, or reads from a
+   * directory somebody chose, is read through {@link get} as it always was, so the answer is the
+   * one the projection gives either way.
+   */
+  runsOf(chainRoot: string): readonly RunProjection[];
+  /**
+   * Where a channel stands in a tree, as {@link ProjectionCache.channelSwitch} says it, on the
+   * same terms as {@link runsOf}: the question asked of every tree of the workspace on every call
+   * (is the count of calls switched off) without opening the trees that have not moved.
+   */
+  channelSwitchOf(chainRoot: string, channel: string): ChannelSwitchProjection | null;
   /**
    * The keys the record counts for `anchor` under a chain root, as the chain is NOW: read off
    * the cache this connection holds for that root, and undefined where it holds none.
@@ -202,8 +226,30 @@ export function createCacheRegistry(
   // One upcaster registry for the session, shared by every cache it opens: the
   // catalog is the same for all trees, and building it per read was pure waste.
   const upcasters: UpcasterRegistry = catalogUpcasters();
+  // What each tree was last found to say, with the mark it was found at, for the trees this
+  // connection asks the two questions of without otherwise reading.
+  const remembered = new Map<string, { mark: string; facts: TreeFacts }>();
 
-  return {
+  /**
+   * The facts of a tree this connection does not hold open, or undefined for a tree it does
+   * (or keeps on disk, or reads from a chosen directory), which the caller reads off the cache.
+   */
+  const indexed = (chainRoot: string): TreeFacts | undefined => {
+    if (entries.has(chainRoot) || keepsOnDisk(chainRoot) || readCacheIsChosen()) return undefined;
+    const found = treeFactsFrom(
+      { root: chainRoot },
+      () => {
+        const cache = registry.get(chainRoot);
+        return { runs: cache.listRuns(), channelSwitches: cache.channelSwitches() };
+      },
+      remembered.get(chainRoot),
+    );
+    if (found.mark !== undefined)
+      remembered.set(chainRoot, { mark: found.mark, facts: found.facts });
+    return found.facts;
+  };
+
+  const registry: CacheRegistry = {
     get(chainRoot: string): ProjectionCache {
       // Read BEFORE the replay, and recorded as what the replay covers. An
       // append that lands DURING the rebuild is then attributed to nobody: the
@@ -251,6 +297,16 @@ export function createCacheRegistry(
       return cache;
     },
 
+    runsOf(chainRoot: string): readonly RunProjection[] {
+      return indexed(chainRoot)?.runs ?? registry.get(chainRoot).listRuns();
+    },
+
+    channelSwitchOf(chainRoot: string, channel: string): ChannelSwitchProjection | null {
+      const facts = indexed(chainRoot);
+      if (facts === undefined) return registry.get(chainRoot).channelSwitch(channel);
+      return facts.channelSwitches.find((row) => row.channel === channel) ?? null;
+    },
+
     opened(): readonly { readonly chainRoot: string; readonly cache: ProjectionCache }[] {
       return [...entries].map(([chainRoot, entry]) => ({ chainRoot, cache: entry.cache }));
     },
@@ -267,6 +323,8 @@ export function createCacheRegistry(
     closeAll(): void {
       for (const entry of entries.values()) entry.cache.close();
       entries.clear();
+      remembered.clear();
     },
   };
+  return registry;
 }

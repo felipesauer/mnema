@@ -82,6 +82,7 @@ import {
   type Resume,
   type RulesAtPath,
   type RunHere,
+  type RunSource,
   readRecord,
   references,
   resume,
@@ -111,6 +112,7 @@ import {
   type ReferenceDirection,
   type ReplacedClass,
   type ResolvedTrees,
+  type RunProjection,
   type Scope,
   SEARCH_KINDS,
   SKILL_ACTIONS,
@@ -1681,7 +1683,16 @@ function ambiguousLabel(message: string): {
  */
 export function countsToolCalls(session: Session): boolean {
   try {
-    return channelIsOn(workspaceCaches(session), TOOL_CALL_COUNT_CHANNEL);
+    return channelIsOn(
+      workspaceTrees(session).map((tree) => ({
+        ...tree,
+        cache: {
+          channelSwitch: (channel: string) =>
+            session.caches.channelSwitchOf(tree.chainRoot, channel),
+        },
+      })),
+      TOOL_CALL_COUNT_CHANNEL,
+    );
   } catch {
     return false;
   }
@@ -1739,15 +1750,27 @@ function sessionCaches(session: Session): ProjectionCache[] {
 }
 
 /**
- * The caches the actor's runs are read from: every tree of every project of the workspace.
+ * The sources the actor's runs are read from: every tree of every project of the workspace.
  *
  * A run is the actor's session wherever it was opened, and a connection opens one per project it
  * writes to, so reading the session's first project alone said `lastRun: null` about a session
  * whose first write went to the second. Asking the whole workspace is safe because the reads
  * filter by the actor: they list only the runs the session's own identity signed.
+ *
+ * Returned as sources that list runs, not as caches, because most of these projects are not
+ * otherwise read: a tree this connection has not opened, and that has not moved since a reader
+ * last listed its runs, answers from the small file it keeps (`CacheRegistry.runsOf`) instead of
+ * being opened. The list is the one the projection gives either way.
  */
-function actorCaches(session: Session): ProjectionCache[] {
-  return workspaceCaches(session).map((source) => source.cache);
+function actorCaches(session: Session): RunSource[] {
+  return workspaceTrees(session).map((tree) => {
+    let runs: readonly RunProjection[] | undefined;
+    const listed = (): readonly RunProjection[] => {
+      runs ??= session.caches.runsOf(tree.chainRoot);
+      return runs;
+    };
+    return { listRuns: listed, listOpenRuns: () => listed().filter((run) => run.open) };
+  });
 }
 
 /**

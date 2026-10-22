@@ -1987,7 +1987,8 @@ key really signed.
 <repo>/.mnema/              the project record: commit this, the team shares it
   .gitattributes            `* -text`: a checkout never rewrites the signed lines' ends
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
-  locks/                    gitignored: writers' locks, and the projection a read keeps
+  locks/                    gitignored: writers' locks, and what a read keeps (the projection,
+                            a small index of runs and switches)
 <git common dir>/mnema/<encoded path>/private/
                             this machine, this project only: beside the repository's
                             objects, shared by its worktrees, kept when one is removed;
@@ -2007,9 +2008,15 @@ the same.
 
 The MCP server keeps it for the two trees of the project it is in, and for no other tree: the
 other projects of the workspace and the global tree are built in memory for the connection, as
-before. So a tool that only reads (`readOnlyHint: true`) may create or update that one file in
-the project it serves, and nothing else: the exception is written beside the other one, the local
-count of calls, and a read still appends nothing to the record and rewrites no byte of it.
+before. Two questions are put to every project of the workspace, though: where the agent left off
+(its runs are in whichever project it wrote) and whether the count of calls is switched off. A
+tree the connection has not otherwise read keeps the answer to both in `locks/tree-index.json`,
+marked with the extent of the tree, the fingerprint of its sealed segments and the stamp of the
+code, and the next session believes it only while the tree is as marked; otherwise it reads the tree,
+which is what it did before, and writes the file again. So a tool that only reads
+(`readOnlyHint: true`) may create or update those files and nothing else: the exception is written beside the other one, the local
+count of calls, and a read still appends nothing to the record and rewrites no byte of it. Deleting
+the file costs the next read the time it saves and changes no answer.
 Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
 checkout of another commit) is read by the next call, and a file that does not follow the
 record is built again. The line a stored position ends on is read back and has to be the entry it ended on, so a

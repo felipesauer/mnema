@@ -149,6 +149,16 @@ export function projectionCachePath(layout: ChainLayout): string {
 }
 
 /**
+ * Where a tree keeps the few facts a session asks of every project it holds (the runs, the
+ * switches) as a reader last read them, so asking does not have to open the tree. Derived,
+ * deletable and never the record; it shares `locks/` with the projection for the reason
+ * {@link projectionCachePath} gives.
+ */
+export function treeIndexPath(layout: ChainLayout): string {
+  return join(layout.root, 'locks', 'tree-index.json');
+}
+
+/**
  * The lock a key root is minted under: two processes that both find no key there take it in
  * turn, and the second finds the key the first made (`loadOrCreateKeyPair`). At the key root's
  * top, so taking it makes no directory, and the key root's own `.gitignore` keeps it out of git;
