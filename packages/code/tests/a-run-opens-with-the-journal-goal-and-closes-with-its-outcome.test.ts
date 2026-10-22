@@ -67,7 +67,10 @@ async function connected(project: string, hostSession: string | undefined) {
     log: () => {},
     ...(hostSession !== undefined ? { hostSession } : {}),
   });
-  const client = new Client({ name: 'claude-code', version: '1.0.0' }, { capabilities: { roots: {} } });
+  const client = new Client(
+    { name: 'claude-code', version: '1.0.0' },
+    { capabilities: { roots: {} } },
+  );
   client.setRequestHandler(ListRootsRequestSchema, () => ({
     roots: [{ uri: pathToFileURL(project).href }],
   }));
@@ -80,8 +83,8 @@ async function connected(project: string, hostSession: string | undefined) {
 
 function eventsOf(project: string, kind: string) {
   const trees = resolveTrees(project, env);
-  return [trees.projectPublic as string, trees.projectPrivate as string, trees.global].flatMap((root) =>
-    orderedEvents({ root }, catalogUpcasters()).filter((e) => e.kind === kind),
+  return [trees.projectPublic as string, trees.projectPrivate as string, trees.global].flatMap(
+    (root) => orderedEvents({ root }, catalogUpcasters()).filter((e) => e.kind === kind),
   );
 }
 
@@ -107,13 +110,19 @@ describe('a run and the journal of its session', () => {
   it('opens with the goal the journal knows and ends with the outcome it says', async () => {
     const project = makeProject();
     const file = journalFile(resolveTrees(project, env), SESSION) as string;
-    writeJournal(file, journal('Move the ledger to UTC', '2 decisions recorded; 3 files edited.'), new Date());
+    writeJournal(
+      file,
+      journal('Move the ledger to UTC', '2 decisions recorded; 3 files edited.'),
+      new Date(),
+    );
     const { client, end } = await connected(project, SESSION);
     await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact worth a run' } });
     end();
     const started = eventsOf(project, 'run.started');
     const ended = eventsOf(project, 'run.ended');
-    expect(started.map((e) => (e.payload as Record<string, unknown>)['goal'])).toEqual(['Move the ledger to UTC']);
+    expect(started.map((e) => (e.payload as Record<string, unknown>)['goal'])).toEqual([
+      'Move the ledger to UTC',
+    ]);
     expect(ended.map((e) => (e.payload as Record<string, unknown>)['outcome'])).toEqual([
       '2 decisions recorded; 3 files edited.',
     ]);
@@ -123,10 +132,17 @@ describe('a run and the journal of its session', () => {
   it('opens with no goal and ends with no outcome where the host named no session, or none was kept', async () => {
     const project = makeProject();
     const trees = resolveTrees(project, env);
-    writeJournal(journalFile(trees, SESSION) as string, journal('A goal', 'An outcome.'), new Date());
+    writeJournal(
+      journalFile(trees, SESSION) as string,
+      journal('A goal', 'An outcome.'),
+      new Date(),
+    );
     for (const hostSession of [undefined, '9b9b9b9b-0000-4000-8000-000000000000']) {
       const { client, end } = await connected(project, hostSession);
-      await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact worth a run' } });
+      await client.callTool({
+        name: 'capture_memory',
+        arguments: { content: 'a fact worth a run' },
+      });
       end();
       await client.close();
     }
@@ -143,7 +159,11 @@ describe('a run and the journal of its session', () => {
   it('is printed by resume and by status once the run has ended with one', async () => {
     const project = makeProject();
     const trees = resolveTrees(project, env);
-    writeJournal(journalFile(trees, SESSION) as string, journal(null, '1 decision recorded; 3 files edited.'), new Date());
+    writeJournal(
+      journalFile(trees, SESSION) as string,
+      journal(null, '1 decision recorded; 3 files edited.'),
+      new Date(),
+    );
     const { client, end } = await connected(project, SESSION);
     await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact worth a run' } });
     end();
@@ -163,7 +183,9 @@ describe('a run and the journal of its session', () => {
       if (homeBefore === undefined) delete process.env.HOME;
       else process.env.HOME = homeBefore;
     }
-    const printed = out.filter((line) => line.includes('outcome: 1 decision recorded; 3 files edited.'));
+    const printed = out.filter((line) =>
+      line.includes('outcome: 1 decision recorded; 3 files edited.'),
+    );
     expect(printed.length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -80,7 +80,11 @@ document, delivered by the host instead of waited for.
   records nothing. A subagent's calls are in a transcript of their own and are not counted, and the
   decisions are those of the project since the session's first line, so a second session of the same
   project in the same hours is counted too. The line is the reply's `systemMessage`; which host shows
-  it, and to whom, was not measured.
+  it, and to whom, was not measured. The same command keeps the session journal: a small file on this
+  machine (outside the record, ids and counts and none of the session's words) that lets the next `Stop` read
+  only the lines the host wrote since, and from which the MCP server gives a run its goal and closes it with an
+  outcome (`mnema switch off session-journal` stops it; see
+  [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
 - **A `SubagentStart` hook**, `mnema brief --hook`. A subagent starts with a context of its own and
   does not see what the session was handed when it opened, so it is handed the same document: the
   decisions in force and the adopted patterns, by name, byte for byte what the opening hands over,

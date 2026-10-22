@@ -397,10 +397,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The console's layout: the two in-process renders that load it assert floor.ts's words and console.ts's fold width, while its caret and rules are measured only against dist in a pty.",
   },
-  'packages/code/src/transcripts.ts': {
-    reached: 'nobody imports it',
-    why: "The host-transcript reader: its numbers are asserted only as the usage adapter's `RunSpend`, and every fixture writes `cwd: repo`, so nothing shows a foreign cwd being left out.",
-  },
   'packages/code/src/wiring/accountability.ts': {
     reached: 'nobody imports it',
     why: "Registration and the one-level author summary; cli-e2e only scrapes this verb's output for a short anchor to prove identity forms, and never reads the counts it prints.",
@@ -659,7 +655,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 11,
+  scattered: 10,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -994,6 +990,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
   'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts': 11,
+  'packages/code/tests/a-run-opens-with-the-journal-goal-and-closes-with-its-outcome.test.ts': 15,
   'packages/code/tests/a-sent-command-is-a-band-and-an-answer-has-a-head.test.ts': 18,
   'packages/code/tests/a-session-opens-where-nothing-signs.test.ts': 14,
   'packages/code/tests/a-session-says-what-it-wrote.test.ts': 13,
@@ -1276,13 +1273,14 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
   'packages/code/tests/the-server-keeps-its-own-projects-cache.test.ts': 11,
   'packages/code/tests/the-server-only-plugin-runs-no-hook.test.ts': 4,
+  'packages/code/tests/the-session-journal-keeps-the-shape-not-the-words.test.ts': 10,
   'packages/code/tests/the-session-knows-who-you-are.test.ts': 15,
   'packages/code/tests/the-session-learns-where-it-is.test.ts': 12,
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
   'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
-  'packages/code/tests/the-switch-is-a-fact.test.ts': 23,
+  'packages/code/tests/the-switch-is-a-fact.test.ts': 24,
   'packages/code/tests/the-switch-pages-are-generated.test.ts': 5,
   'packages/code/tests/the-three-doors-are-one.test.ts': 30,
   'packages/code/tests/the-tool-calls-stay-on-this-machine.test.ts': 17,
@@ -1743,6 +1741,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/repl/turn.ts',
   'packages/code/src/report-link.ts',
   'packages/code/src/served-patterns.ts',
+  'packages/code/src/session-journal.ts',
   'packages/code/src/session-words.ts',
   'packages/code/src/sigstore/read.ts',
   'packages/code/src/sigstore/sign.ts',
@@ -2036,8 +2035,9 @@ describe('every file has a test that names it', () => {
     // 83 with the instructions verb's wiring, which a test drives through the program.
     // 82 once the switch listing's test asserts on what presentation/switches.ts words.
     // 81 once the search store's test names materializeDecisions.
-    expect(found.size).toBe(81);
-    expect(byReach('nobody imports it')).toBe(81);
+    // 80 once the session journal's test names the host-transcript reader.
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2059,7 +2059,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(81);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

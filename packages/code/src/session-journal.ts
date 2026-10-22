@@ -25,7 +25,15 @@
  * fails because of its own.
  */
 
-import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { ScopedCache } from '@mnema/context';
 import type { ResolvedTrees, TaskState } from '@mnema/core';
@@ -151,19 +159,19 @@ export function writeJournal(file: string, journal: Journal, now: Date): void {
 
 /** Lets go of the journals older than {@link PRUNE_AFTER_MS} and of all but the newest {@link PRUNE_KEEP}. */
 function prune(dir: string, now: Date): void {
-  const kept: { path: string; at: number }[] = [];
+  const kept: { path: string; mtime: number }[] = [];
   for (const name of readdirSync(dir)) {
     if (!name.endsWith('.json') && !name.endsWith('.tmp')) continue;
     const path = join(dir, name);
     try {
-      const at = statSync(path).mtimeMs;
-      if (now.getTime() - at > PRUNE_AFTER_MS) rmSync(path, { force: true });
-      else if (name.endsWith('.json')) kept.push({ path, at });
+      const mtime = statSync(path).mtimeMs;
+      if (now.getTime() - mtime > PRUNE_AFTER_MS) rmSync(path, { force: true });
+      else if (name.endsWith('.json')) kept.push({ path, mtime });
     } catch {
       // Gone already: another session pruned it.
     }
   }
-  kept.sort((a, b) => b.at - a.at);
+  kept.sort((a, b) => b.mtime - a.mtime);
   for (const old of kept.slice(PRUNE_KEEP)) rmSync(old.path, { force: true });
 }
 
@@ -174,22 +182,23 @@ const IN_PROGRESS: TaskState = 'IN_PROGRESS';
 function whatTheRecordHolds(
   sources: readonly ScopedCache[],
   since: number,
-): Pick<
-  Journal,
-  'decisions' | 'notes' | 'tasksInProgress' | 'runsOpen'
-> & { readonly lastDecisionAt: number; readonly firstTask: string | null } {
+): Pick<Journal, 'decisions' | 'notes' | 'tasksInProgress' | 'runsOpen'> & {
+  readonly lastDecisionAt: number;
+  readonly firstTask: string | null;
+} {
   const own = sources.filter((source) => source.scope !== 'global');
   const decisions = own
     .flatMap((source) => source.cache.listDecisions())
-    .filter((one) => Date.parse(one.createdAt) >= since)
-    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+    .filter((one) => Date.parse(one.createdAt) >= since);
   const notes = own
     .flatMap((source) => source.cache.listMemories())
     .filter((one) => one.content.includes(HOST_MEMORY_MARK) && Date.parse(one.capturedAt) >= since);
   const tasks = own
     .flatMap((source) => source.cache.listTasksByState(IN_PROGRESS))
-    .filter((one) => Date.parse(one.updatedAt) >= since)
-    .sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : a.updatedAt > b.updatedAt ? 1 : 0));
+    .filter((one) => Date.parse(one.updatedAt) >= since);
+  // The first to move into progress is the one the session set out on.
+  let first = tasks[0];
+  for (const one of tasks) if (first !== undefined && one.updatedAt < first.updatedAt) first = one;
   const runs = own
     .flatMap((source) => source.cache.listOpenRuns())
     .filter((one) => Date.parse(one.startedAt) >= since);
@@ -198,8 +207,11 @@ function whatTheRecordHolds(
     notes: notes.map((one) => one.id),
     tasksInProgress: tasks.map((one) => one.id),
     runsOpen: runs.map((one) => one.id),
-    lastDecisionAt: decisions.reduce((latest, one) => Math.max(latest, Date.parse(one.createdAt)), 0),
-    firstTask: tasks[0]?.title ?? null,
+    lastDecisionAt: decisions.reduce(
+      (latest, one) => Math.max(latest, Date.parse(one.createdAt)),
+      0,
+    ),
+    firstTask: first?.title ?? null,
   };
 }
 
@@ -212,7 +224,9 @@ function counted(n: number, one: string, many: string): string {
  * The outcome a run ends with: a sentence of counts, in the order of what a person asks of a
  * session. Nothing in it is anybody's words.
  */
-export function outcomeOf(journal: Pick<Journal, 'decisions' | 'filesEdited' | 'notes' | 'questionsWithoutDecision'>): string {
+export function outcomeOf(
+  journal: Pick<Journal, 'decisions' | 'filesEdited' | 'notes' | 'questionsWithoutDecision'>,
+): string {
   const parts = [
     `${counted(journal.decisions.length, 'decision', 'decisions')} recorded`,
     `${counted(journal.filesEdited, 'file', 'files')} edited`,
@@ -241,9 +255,7 @@ export function journalAfter(input: {
 }): Journal {
   const { reading, sources, previous } = input;
   const since = reading.openedAt === undefined ? Number.NaN : Date.parse(reading.openedAt);
-  const held = Number.isNaN(since)
-    ? undefined
-    : whatTheRecordHolds(sources, since);
+  const held = Number.isNaN(since) ? undefined : whatTheRecordHolds(sources, since);
   const questionsWithoutDecision = reading.questionTimes.filter(
     (at) => Date.parse(at) > (held?.lastDecisionAt ?? 0),
   ).length;

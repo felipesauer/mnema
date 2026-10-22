@@ -147,7 +147,10 @@ function payload(event: string, file: string, session: string | null = SESSION):
 
 function tally(input: string): { reply: Record<string, unknown>; notes: readonly string[] } {
   const done = runSessionTally({ cwd: repo, env }, { payload: input });
-  return { reply: JSON.parse(JSON.stringify(done.reply)) as Record<string, unknown>, notes: done.notes };
+  return {
+    reply: JSON.parse(JSON.stringify(done.reply)) as Record<string, unknown>,
+    notes: done.notes,
+  };
 }
 
 /** Every file below `dir` named `<id>.json` under a `sessions` directory. */
@@ -157,7 +160,8 @@ function journalsUnder(dir: string): string[] {
     for (const name of readdirSync(at, { withFileTypes: true })) {
       const path = join(at, name.name);
       if (name.isDirectory()) walk(path);
-      else if (path.includes(`${join('sessions', '')}`) && name.name.endsWith('.json')) found.push(path);
+      else if (path.includes(`${join('sessions', '')}`) && name.name.endsWith('.json'))
+        found.push(path);
     }
   };
   walk(dir);
@@ -216,7 +220,9 @@ describe('the byte cursor', () => {
     const file = join(sandbox, 'bytes.jsonl');
     writeFileSync(file, '{"t":"ação"}\n{"t":"y"}\n');
     const seen: string[] = [];
-    const { end } = forEachLineFrom(file, Buffer.byteLength('{"t":"ação"}\n'), (line) => seen.push(line));
+    const { end } = forEachLineFrom(file, Buffer.byteLength('{"t":"ação"}\n'), (line) =>
+      seen.push(line),
+    );
     expect(seen).toEqual(['{"t":"y"}']);
     expect(end).toBe(statSync(file).size);
   });
@@ -276,10 +282,14 @@ describe('reading a transcript in parts', () => {
 describe('the journal a Stop keeps', () => {
   it('holds the ids and counts of what the session did with the record, from the record and the transcript', async () => {
     const out = await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
-    const decision = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(out.join('\n'))?.[0];
+    const decision = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(
+      out.join('\n'),
+    )?.[0];
     expect(decision).toBeDefined();
     const taskOut = await doing('task', 'create', 'Move the ledger to UTC');
-    const task = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(taskOut.join('\n'))?.[0];
+    const task = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(
+      taskOut.join('\n'),
+    )?.[0];
     await doing('task', 'move', 'submit', task ?? '');
     await doing('task', 'move', 'start', task ?? '');
     const file = transcriptAt('session.jsonl', [
@@ -316,7 +326,12 @@ describe('the journal a Stop keeps', () => {
   it('counts a file of decisions the record cites nowhere', () => {
     const file = transcriptAt('adr.jsonl', [
       prompt(LONG_AGO, 'go'),
-      write(at(1), 'a', join(repo, 'docs', 'adr', '0001-use-utc.md'), '# Use UTC\n\nStatus: accepted\n'),
+      write(
+        at(1),
+        'a',
+        join(repo, 'docs', 'adr', '0001-use-utc.md'),
+        '# Use UTC\n\nStatus: accepted\n',
+      ),
       result(at(2), 'a'),
     ]);
     tally(payload('Stop', file));
@@ -334,7 +349,9 @@ describe('the journal a Stop keeps', () => {
     const [path] = journalsUnder(sandbox);
     const text = readFileSync(path ?? '', 'utf-8');
     for (const [kind, word] of Object.entries(SECRETS)) {
-      expect(text.includes(word.split(' ')[0] ?? word), `the ${kind} reached the journal`).toBe(false);
+      expect(text.includes(word.split(' ')[0] ?? word), `the ${kind} reached the journal`).toBe(
+        false,
+      );
     }
     const keys = new Set<string>();
     const collect = (value: unknown): void => {
@@ -347,8 +364,21 @@ describe('the journal a Stop keeps', () => {
       }
     };
     collect(JSON.parse(text));
-    for (const forbidden of ['prompt', 'text', 'content', 'diff', 'env', 'answer', 'secret', 'message', 'output']) {
-      expect([...keys].filter((key) => key.toLowerCase().includes(forbidden)), forbidden).toEqual([]);
+    for (const forbidden of [
+      'prompt',
+      'text',
+      'content',
+      'diff',
+      'env',
+      'answer',
+      'secret',
+      'message',
+      'output',
+    ]) {
+      expect(
+        [...keys].filter((key) => key.toLowerCase().includes(forbidden)),
+        forbidden,
+      ).toEqual([]);
     }
     expect(text).not.toContain(repo);
   });
@@ -367,7 +397,10 @@ describe('the journal a Stop keeps', () => {
     const size = statSync(file).size;
     const blank = `${'x'.repeat(size - 1)}\n`;
     writeFileSync(file, blank);
-    appendFileSync(file, `${[write(at(7), 'b', join(repo, 'src', 'b.ts')), result(at(8), 'b')].join('\n')}\n`);
+    appendFileSync(
+      file,
+      `${[write(at(7), 'b', join(repo, 'src', 'b.ts')), result(at(8), 'b')].join('\n')}\n`,
+    );
     tally(payload('Stop', file));
     expect(theJournal().filesEdited).toBe(2);
   });

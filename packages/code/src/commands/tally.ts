@@ -25,6 +25,14 @@
  * these two, no project here, the channel switched off, a transcript this cannot read. What went
  * wrong, when something did, is a note on the second stream, and nothing reads it to decide.
  *
+ * IT KEEPS THE SESSION JOURNAL, and reads the transcript from where the last Stop stopped. The
+ * payload names the session (`session_id`); the journal (`session-journal.ts`) holds a byte cursor
+ * into the transcript and the shape of what the session did with the record, so a Stop reads the
+ * lines the host wrote since and not the whole conversation again (130, 237 and 462 ms for
+ * transcripts of 21, 43 and 103 MB). A payload that names no session, or the journal's channel
+ * switched off, reads the whole transcript as before and keeps no file. The counts the line
+ * carries come from the journal's reading, so the line says the same thing either way.
+ *
  * WHERE THE LINE LANDS IS THE HOST'S. It is written as the `systemMessage` of the reply, the field
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
@@ -142,7 +150,13 @@ export function runSessionTally(
       return silent([`The transcript ${transcript} could not be read.`]);
     }
     if (reading.bytes === 0) return silent([`The transcript ${transcript} could not be read.`]);
-    const journal = journalAfter({ session: session ?? '', previous, reading, sources, now: new Date() });
+    const journal = journalAfter({
+      session: session ?? '',
+      previous,
+      reading,
+      sources,
+      now: new Date(),
+    });
     if (file !== undefined) writeJournal(file, journal, new Date());
 
     if (!speaks) return silent();

@@ -105,7 +105,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is
   recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
-  measured. `mnema switch off session-tally` stops it. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
+  measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
+  [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
+  what the host wrote since. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
   (`mnema switch on user-corrections`): it reads the transcript's own words, the one reader here
   that does, finds the prompts that open by correcting the agent ("no, …", "stop …", "do not …",
   "that is wrong", "use … instead", in English and Portuguese), and the answers the person gave to
@@ -724,6 +726,34 @@ makes no directory of its own on a machine where nothing has signed yet). The ou
 **It is on until you switch it off**, because what it keeps is local and holds names and nothing else:
 `mnema switch off tool-call-count` stops the count (a fact of the record like the other switches), and `mnema usage --tools`
 then says that the count is off and that what it shows was kept before.
+
+### The session journal
+
+At each `Stop` (and before a compaction) `mnema tally` keeps a small file for the session, at
+`<data directory>/sessions/<digest of the project>/<the host's session id>.json` (`~/.mnema`, or `$MNEMA_HOME`), when the hook
+names the session (Claude Code does, as `session_id`). It lets the next `Stop` read the transcript from the byte where the last
+reading stopped instead of the whole conversation again, and it holds, in ids and counts, what the session did with the
+record: the decisions recorded since it opened (their ids and state), the notes of the host's memory copied into the private
+tree (their ids), how many questions the person answered with no decision recorded after, how many files that hold decisions
+were written and are cited nowhere in the record, how many files were edited, the tasks in progress and the runs open, the
+goal of the session (the title of the first task it moved into progress, a title the record already holds) and an outcome
+that is a sentence of counts. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
+environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
+name of a file that holds decisions.
+
+**It is disposable, and outside the record.** It is not an event, it is not signed, `mnema verify` does not read it, it is
+never in the repository, and deleting it loses nothing the record holds: the next `Stop` reads the transcript from the top
+and writes it again. The journals of a project are pruned at each write: those untouched for 30 days go, and all but the
+newest 50.
+
+**What reads it.** The MCP server, when the host leaves its session id in the server's environment (Claude Code's
+`CLAUDE_CODE_SESSION_ID`): the run the server opens for the connection takes the journal's goal as its own goal when one is
+known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited.`).
+`mnema resume` and `mnema status` print that outcome beside a run that ended with one, as `outcome: …`.
+
+**It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
+session-journal` stops it (a fact of the record like the other switches); with it off, every `Stop` reads the whole
+transcript, as before.
 
 ### Bringing a second machine into your identity
 
@@ -1645,7 +1675,7 @@ flips it are in [the table of switches](switches.md).
 
 ```sh
 mnema switch
-#> 14 channel(s), looked in public, private, global:
+#> 15 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with and a …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside …
@@ -1659,6 +1689,7 @@ mnema switch
 #>   decision-file-written  on   the line beside a write to a file that holds decisions (an ADR, a plan …
 #>   subagent-handback      on   the return of a subagent that ends its final reply without the block of …
 #>   tool-call-count        on   the local count of tool calls: …
+#>   session-journal        on   the session journal: …
 #>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```
 

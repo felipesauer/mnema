@@ -12,6 +12,16 @@ with its own changelog.
 
 ### Added
 
+- **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
+  file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
+  `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
+  session did with the record (decisions recorded since it opened and their state, notes of the host's memory copied, questions
+  answered with no decision after, files holding decisions cited nowhere, files edited, tasks in progress, runs open, the goal
+  and an outcome as a sentence of counts). Never a prompt, a message, a tool's output, a file's content, the environment or the
+  answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
+  (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
+  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
+  `CLAUDE_CODE_SESSION_ID`; `mnema resume` and `mnema status` now print a run's outcome, which they never did.
 - **A task carries what it is, and a handoff what the next agent must read.** `mnema task create "<title>" --description "<text>"`
   and the `create_task` tool's `description`, and `mnema task handoff <task> <from> <to> --brief "<text>"` and `record_handoff`'s
   `brief`, take up to 64 KiB of text. The text is recorded in the same call as an observation about the task (topic

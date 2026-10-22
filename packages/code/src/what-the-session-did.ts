@@ -168,7 +168,10 @@ export function readTheNewPart(
         const inside = relative(where.root, absolute);
         if (inside !== '' && !inside.startsWith('..') && !isAbsolute(inside)) {
           const name = inside.split(sep).join('/');
-          if (decisionFileAt(name, content) !== undefined && !reading.decisionFiles.includes(name)) {
+          if (
+            decisionFileAt(name, content) !== undefined &&
+            !reading.decisionFiles.includes(name)
+          ) {
             reading.decisionFiles.push(name);
           }
         }

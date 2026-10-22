@@ -1115,7 +1115,10 @@ function ensureRun(
  * The journal the host's session keeps for the project `trees` is of, when this server knows the
  * host's id for its session and a journal was kept (its channel on, a Stop run since).
  */
-function theJournalOf(session: Pick<Session, 'hostSession'>, trees: ResolvedTrees): Journal | undefined {
+function theJournalOf(
+  session: Pick<Session, 'hostSession'>,
+  trees: ResolvedTrees,
+): Journal | undefined {
   if (session.hostSession === undefined) return undefined;
   const file = journalFile(trees, session.hostSession);
   return file === undefined ? undefined : readJournal(file);

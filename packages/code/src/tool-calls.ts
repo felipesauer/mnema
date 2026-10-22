@@ -60,7 +60,9 @@ export const UNCODED_FAILURE = 'error';
  */
 export function toolCallsFile(trees: ResolvedTrees): string | undefined {
   const digest = projectDigest(trees);
-  return digest === undefined ? undefined : join(dirname(trees.global), TOOL_CALLS_DIR, `${digest}.jsonl`);
+  return digest === undefined
+    ? undefined
+    : join(dirname(trees.global), TOOL_CALLS_DIR, `${digest}.jsonl`);
 }
 
 /**
