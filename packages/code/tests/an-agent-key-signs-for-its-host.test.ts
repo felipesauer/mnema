@@ -922,7 +922,10 @@ describe('a mnema that exits before it reads its input is still asked the way it
         exitingAt(dir, 'failing-mnema', 'error: the record cannot be read'),
         300_000,
       );
-      expect(answered).toBeNull();
+      // Not asked again without the key (it was not the key it refused), and not silence either: a
+      // gate whose program exited without an answer refuses the write, with what it said.
+      expect(answered).toContain('"permissionDecision":"deny"');
+      expect(answered).toContain('it exited 1: error: the record cannot be read');
       expect(calls).toEqual(['before-a-write --host vscode --agent-key vscode']);
     } finally {
       rmSync(dir, { recursive: true, force: true });

@@ -8,9 +8,25 @@ Each line says what it does and what it leaves unproven; the page it points to h
   host, and which was read once, is [the table of each host's rung](evidence.md#each-hosts-rung). It binds an agent that goes through the plugin, not a person with an
   editor, and `mnema switch off edit-refuses-a-write` is the way out: recorded, as a signed
   fact. [The plugin's page](../plugin/README.md#what-it-does-and-what-it-does-not). The refusal
-  is a gate, and a gate that cannot answer lets the write through: with no `mnema` on the PATH
+  is a gate, and a gate that cannot answer lets the write through only where nothing says the path
+  is governed. With no `mnema` on the PATH there is nothing to answer with
   ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)).
-  A record the gate cannot read is not that case: it refuses. Where a line of the record is one
+  A `mnema` that is there and cannot answer (it exits non-zero, does not answer in ten seconds (six in Gemini CLI and OpenCode), prints
+  what no host reads, or no `node` on the hooks' PATH takes it) refuses the write, with the reason
+  in words and the way to fix it, **only where a rule in force that refuses a write or asks for a person at it
+  addresses that very path** (a rule only proposed, rejected or superseded does not count), in Cursor's agent, Codex, VS Code, Copilot CLI, Gemini CLI and OpenCode;
+  every other path goes through, a project whose only links merely govern is never refused, and a
+  rule taken back stops refusing. A fault of a handler itself is treated the same way. Where `mnema`
+  does run, the record decides, and `mnema switch off edit-refuses-a-write` is honoured. Cursor's agent
+  puts a Node of its own, 24.5.0 on 2026.09.18, in front of its hooks' PATH, below the floor `mnema`
+  takes: the hooks go round it to the first `node` further along that PATH that takes `mnema`, within
+  three seconds, and where there is none the write a rule addresses is refused
+  ([held by a test](../packages/code/tests/the-hooks-run-mnema-on-a-node-it-takes.test.ts)).
+  What still goes through when `mnema` cannot answer: a write no rule addresses; a machine with no
+  `mnema`; a hook whose own `node` cannot start, or whose handler files are not there, because the
+  host reads a command that fails to start as nothing to say; and Claude Code's call into the server,
+  where a tool error does not block. A write by a shell command meets no hook, as on every host.
+  A record the gate cannot read is not that case either: it refuses. Where a line of the record is one
   the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's
   line is, or bytes that are not canonical), every write the gate is asked about is answered
   `deny`, by the command and by the MCP route alike, with the tree and the line named in the
@@ -102,7 +118,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A fault in mnema is not a refusal.** An internal error says it is one, and `mnema report` shows
   the report it would make, whole, with no record content, path or name in it. It sends nothing: at
   a terminal it prints a link to GitHub's issue form, and you decide.
-- **Your machine, checked.** `mnema doctor` says whether a `mnema` is on the `PATH`, whether the
+- **Your machine, checked.** `mnema doctor` says whether a `mnema` is on the `PATH`, whether the first `node` there takes it (and the Node
+  Cursor's command-line agent carries, where it is on this machine), whether the
   plugin is installed, whether VS Code's settings tell its agent where the plugin is, and whether the
   server is declared twice and, where it holds an agent key, in which trees the record enrols it. Asked alone it writes nothing and does not ask the registry;
   `mnema doctor --fix vscode` is the one change it makes, and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and

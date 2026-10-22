@@ -177,7 +177,7 @@ addressed at a file or a directory in that host's own rules format, and says whi
 ## Checking an install
 
 `mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
-on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
+on the `PATH` and which one, whether the first `node` there takes it, whether the Claude Code plugin is installed and at what version,
 whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
 package of that name is installed; whether VS Code's `settings.json` tells its agent where the
 plugin is; which projects of `~/.claude.json` (the one inside `$CLAUDE_CONFIG_DIR` when that is set) still declare the server, including ones whose
