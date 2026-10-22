@@ -347,7 +347,9 @@ const MUTATIONS = [
   },
   {
     name: 'checkpoint-other-key',
-    refusals: 2,
+    // THREE since a tail belongs to one key (section 6): the first checkpoint now names a
+    // signer that is not the key the tail id begins with, which is refused on its own.
+    refusals: 3,
     section: '6',
     says: 'the Ed25519 signature does not verify',
     productLayer: 'T2/T4',
@@ -453,9 +455,12 @@ const MUTATIONS = [
     // checkpoint. The key is committed and its material hashes to its own name; what it is
     // not is a member.
     name: 'appended-event-by-an-unenrolled-key',
-    refusals: 1,
+    // TWO since a tail belongs to one key (section 6): the event names a signer that is not
+    // the key the tail id begins with. Section 6.2's refusal stands beside it, in both readers.
+    refusals: 2,
     section: '6.2',
     says: 'is not a key enrolled for',
+    productSays: 'is not a key enrolled for',
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
@@ -467,9 +472,12 @@ const MUTATIONS = [
     // only thing wrong is that nothing ever enrolled the signer, which is the difference
     // between "the signature verifies" and "the signer was allowed to".
     name: 'checkpoint-by-an-unenrolled-key',
-    refusals: 1,
+    // THREE since a tail belongs to one key (section 6): the checkpoint and its event both name
+    // a signer that is not the key the tail id begins with. Section 6.2's refusal stands.
+    refusals: 3,
     section: '6.2',
     says: 'is not a key enrolled for',
+    productSays: 'is not a key enrolled for',
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
@@ -511,7 +519,9 @@ const MUTATIONS = [
     name: 'tail-relocated',
     // TWO since the second reader began to require the tail proof (section 6.1): the copy is
     // refused for the key its id names AND for carrying no proof that the key signed that id.
-    refusals: 2,
+    // THREE since a tail belongs to one key (section 6): its events name the key of the tail
+    // they were copied from, which is not the key the fabricated id begins with.
+    refusals: 3,
     section: '3',
     says: 'which is no key this record carries',
     productLayer: 'T2/T4',
@@ -618,7 +628,9 @@ const MUTATIONS = [
     // each event to its checkpoint's signer and refused this; the second reader read the
     // event's claim and VERIFIED it, until section 6 wrote the binding down.
     name: 'checkpoint-by-a-checker-over-the-persons-event',
-    refusals: 1,
+    // TWO since a tail belongs to one key (section 6): the checker signed a checkpoint in the
+    // person's tail, which that rule refuses beside the binding.
+    refusals: 2,
     section: '6',
     says: 'names a signer other than the checkpoint',
     productSays: 'event identity does not bind to its signer',
@@ -637,6 +649,32 @@ const MUTATIONS = [
     section: '6',
     says: 'its `which` is its `who`',
     productSays: 'event identity does not bind to its signer',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // A TAIL BELONGS TO ONE KEY (section 6). A second key, enrolled for the anchor, writes an
+    // event into the first key's tail and signs a checkpoint over it there: the root folds,
+    // `prev` chains, the signature verifies, the event names the checkpoint's signer and the
+    // signer is a member. Both readers checked the checkpoint under the key it names, never
+    // asked whose tail it was in, and VERIFIED this record. TWO refusals: the checkpoint, and
+    // the event.
+    name: 'tail-written-by-another-enrolled-key',
+    refusals: 2,
+    section: '6',
+    says: '(tail-signer-mismatch)',
+    productSays: '(tail-signer-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // The same event above the last checkpoint, where no range binds it to a signer: only the
+    // pass over every event of the tail refuses it.
+    name: 'event-by-another-enrolled-key-above-the-checkpoint',
+    refusals: 1,
+    section: '6',
+    says: 'as its signer, and a tail is written only by the key its id begins with',
+    productSays: 'as its signer, and a tail is written only by the key its id begins with',
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
@@ -1324,7 +1362,15 @@ describe('what the second reader does NOT check, said by the second reader', () 
 
     const there = secondReading(record);
     expect(there.verdict).toBe('REFUSED');
-    expect(refusals(there).map((f) => f.section)).toEqual(['6.2']);
+    // Section 6.2, and beside it only the rule that a tail belongs to one key: the forged
+    // checkpoint and its event sit in the person's tail and name another key. No other section-6
+    // refusal, so the signature is not what refused it.
+    expect(refusals(there).map((f) => f.section)).toEqual(['6', '6', '6.2']);
+    expect(
+      refusals(there)
+        .filter((f) => f.section === '6')
+        .every((f) => f.what.endsWith('(tail-signer-mismatch)')),
+    ).toBe(true);
     // THE FORGED CHECKPOINT'S OWN SIGNATURE VERIFIED, and that is the point of the case
     // rather than a detail: had it not, the refusal would be section 6's and section 6.2
     // would be untested. The mutation appends `cp[4..4]`, so that is the line to ask about.

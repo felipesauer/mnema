@@ -46,7 +46,7 @@ from mnemaverify.checkpoint import (  # noqa: E402
     signed_message,
 )
 from mnemaverify.ed25519 import public_key_of, sign  # noqa: E402
-from mnemaverify.enrolment import anchor_of, checker_message  # noqa: E402
+from mnemaverify.enrolment import anchor_of, checker_message, enrolment_message  # noqa: E402
 from mnemaverify.entry import entry_hash  # noqa: E402
 from mnemaverify.root import content_root  # noqa: E402
 
@@ -1128,6 +1128,66 @@ def which_is_who_in_a_signed_range(root: str) -> tuple[bool, str]:
     return True, f"seq {seq} signed under cp[{seq}..{seq}] with `which` = `who` + U+00A0"
 
 
+def _a_second_key_enrolled_in_the_first_keys_tail(root: str) -> tuple[str, str, dict]:
+    """A record founded on RFC 8032's first key, which enrols the second, under a checkpoint.
+
+    The second key is a member of the anchor from then on: every event it signs is one section
+    6.2 accepts. Returns the first key's fingerprint, the second's, and an event the second key
+    would sign, for the mutations below to put in the FIRST key's tail.
+    """
+    anchor = _refound(root, "the record a second key is enrolled in")
+    owner, _ = _unenrolled_public()
+    second = _commit_the_unenrolled_key(root, CHECKER_SECRET)
+    template = _last_event(root)
+    reverse = sign(CHECKER_SECRET, enrolment_message(anchor, second)).hex()
+    _append_signed(
+        root,
+        {
+            **template,
+            "kind": "key.enrolled",
+            "subject": anchor,
+            "payload": {"newFp": second, "reverseSig": reverse},
+        },
+        UNENROLLED_SECRET,
+    )
+    event = {
+        **template,
+        "signerFp": second,
+        "subject": "01a02d24-730d-7000-988d-ac7784b4a4a6",
+        "payload": {"content": "written by the second key, in the first key's tail"},
+    }
+    return owner, second, event
+
+
+def tail_written_by_another_enrolled_key(root: str) -> tuple[bool, str]:
+    """A second key of the anchor writes an event into the FIRST key's tail and signs it there.
+
+    Section 6: a tail belongs to one key, and only that key writes to it. Everything else
+    closes: the root folds, `prev` chains, the signature verifies under a committed key whose
+    material hashes to its name, the event names the checkpoint's signer, and the signer was
+    enrolled for the anchor. A reader that checks a checkpoint under the key the checkpoint
+    names, and never asks whose tail it is in, accepts this.
+    """
+    owner, second, event = _a_second_key_enrolled_in_the_first_keys_tail(root)
+    seq = _append_signed(root, event, CHECKER_SECRET)
+    return True, (
+        f"cp[{seq}..{seq}] signed by the enrolled {second[:12]}... in the tail of {owner[:12]}..."
+    )
+
+
+def event_by_another_enrolled_key_above_the_checkpoint(root: str) -> tuple[bool, str]:
+    """The same event, appended to the first key's tail above its last checkpoint.
+
+    No checkpoint covers it, so no range binds it to a signer: what refuses it is the rule
+    that every event of a tail, checkpointed or not, names the key the tail id begins with.
+    """
+    owner, second, event = _a_second_key_enrolled_in_the_first_keys_tail(root)
+    _, seq = _append(root, event)
+    return True, (
+        f"seq {seq} appended naming the enrolled {second[:12]}... in the tail of {owner[:12]}..."
+    )
+
+
 def _flip_payload(payload: object) -> object:
     """Change one string in a payload, or add one if it holds none."""
     if isinstance(payload, dict):
@@ -1179,6 +1239,10 @@ MUTATIONS = {
     "decomposed-text-in-a-signed-line": decomposed_text_in_a_signed_line,
     "checkpoint-by-a-checker-over-the-persons-event": checkpoint_by_a_checker_over_the_persons_event,
     "which-is-who-in-a-signed-range": which_is_who_in_a_signed_range,
+    "tail-written-by-another-enrolled-key": tail_written_by_another_enrolled_key,
+    "event-by-another-enrolled-key-above-the-checkpoint": (
+        event_by_another_enrolled_key_above_the_checkpoint
+    ),
 }
 
 
