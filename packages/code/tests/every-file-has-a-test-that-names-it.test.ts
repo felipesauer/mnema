@@ -1141,6 +1141,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-address-a-proof-names-is-checked.test.ts': 6,
   'packages/code/tests/the-address-names-a-rule-a-reader-can-open.test.ts': 15,
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
+  'packages/code/tests/the-after-a-write-shell-reads-the-names-in-any-case.test.ts': 5,
   'packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts': 10,
   'packages/code/tests/the-agent-is-told-a-move-was-made-apart.test.ts': 15,
   'packages/code/tests/the-agent-is-told-the-record-does-not-chain.test.ts': 11,

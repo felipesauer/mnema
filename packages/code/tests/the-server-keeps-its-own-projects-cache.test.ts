@@ -110,7 +110,7 @@ function decisionsOf(session: Session): string[] {
 function segmentsOf(chainRoot: string): string[] {
   const tails = join(chainRoot, 'tails');
   return readdirSync(tails, { recursive: true, encoding: 'utf-8' })
-    .filter((name) => /(?:^|[\/])\d+\.jsonl$/.test(name))
+    .filter((name) => /(?:^|[/])\d+\.jsonl$/.test(name))
     .sort()
     .map((name) => join(tails, name));
 }
