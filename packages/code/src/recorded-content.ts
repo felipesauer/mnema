@@ -109,7 +109,11 @@ export function reachNotice(reach: AddressReach | undefined): string[] {
  * exists and does not travel: move it, or address it from the tree it lives in. A
  * subject in NO tree is a rule nobody here has written, which is usually a mistyped id.
  */
-export function subjectReachNotice(landedIn: Scope, subjectScope: Scope | undefined): string[] {
+export function subjectReachNotice(
+  landedIn: Scope,
+  subjectScope: Scope | undefined,
+  subjectIsATask = false,
+): string[] {
   // Only the tree that travels can promise a clone anything, so only a link that landed
   // there can over-promise. A link in a machine-local tree reaches exactly as far as
   // everything else on the machine, whichever tree its subject is in.
@@ -119,6 +123,14 @@ export function subjectReachNotice(landedIn: Scope, subjectScope: Scope | undefi
     return [
       '  No tree here holds the rule it names, so this address reaches every clone and',
       '  names nothing a reader of one can open. Check the id, or record the rule.',
+    ];
+  }
+  // A TASK IS NOT A RULE, and "the rule it names" was a sentence about the other thing. What a
+  // clone gets from a link out of a task that lives in a narrower tree is the link and no task.
+  if (subjectIsATask) {
+    return [
+      `  The task it names is in the ${subjectScope} tree, which does not travel, so this link`,
+      '  reaches every clone and the task does not. A reader of one gets the link and no task.',
     ];
   }
   return [

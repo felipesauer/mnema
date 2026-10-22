@@ -89,6 +89,7 @@ import {
   taskDisposition,
 } from '@mnema/core';
 import { statesMeaning } from './disposition.js';
+import type { TaskStanding } from './task-story.js';
 
 /**
  * The states whose tasks still have something to do about them: derived, never
@@ -103,7 +104,7 @@ const LIVE: ReadonlySet<string> = new Set(
 const AWAITING_JUDGEMENT = statesMeaning(TASK_STATES, taskDisposition, 'awaiting-judgement');
 
 /** One live piece of work, NAMED: a unit of "what can be done". */
-export interface WorkItem {
+export interface WorkItem extends TaskStanding {
   /** The task's id: the key {@link nextActionsForTask} takes. */
   readonly id: string;
   readonly title: string;

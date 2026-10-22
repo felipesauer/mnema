@@ -136,6 +136,14 @@ export {
 // reachable through the other in the shape its caller needs, and the rule they share
 // (off wins, and an absence is on) has exactly one implementation behind both.
 export { type ChannelState, channelIsOn, channelStates } from './context/switches.js';
+export {
+  NOTES_SHOWN,
+  type TaskNote,
+  type TaskStanding,
+  type TaskStory,
+  taskStanding,
+  taskStory,
+} from './context/task-story.js';
 // The TYPE only, and from the module that OWNS the task machine's reads rather than
 // from the composition that serves them: `WorkItem` is what `Bootstrap.work` is made
 // of, so reading the opening context needs it written down. Neither `liveWork` nor

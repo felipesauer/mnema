@@ -91,7 +91,9 @@ import {
   type SkillCatalogue,
   searchRecords,
   skillCatalogue,
+  type TaskStanding,
   type TimelineEntry,
+  taskStanding,
   timeline,
   type WorkspaceAccountability,
   type WorkspaceAntipatterns,
@@ -2046,11 +2048,11 @@ export function runResumeTool(session: Session): Resume {
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
 export type NextActionsResult =
-  | {
+  | ({
       readonly ok: true;
       /** The transitions the workflow allows from the task's state; empty when terminal. */
       readonly actions: readonly NextAction[];
-    }
+    } & TaskStanding)
   | {
       readonly ok: false;
       /** No tree of the workspace holds a task with this id, or several records do. */
@@ -2095,7 +2097,13 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
       message: locatedButUnreadable('task', input.id, located.home),
     };
   }
-  return { ok: true, actions };
+  // Who has the task and what happened to it last, from every tree of the workspace: the same
+  // two facts the opening read gives for each task it lists, here for the one asked about.
+  const standing = taskStanding(
+    workspaceCaches(session).map((source) => source.cache),
+    input.id,
+  );
+  return { ok: true, actions, ...standing };
 }
 
 /** A guard verdict (plus the asker's focus), or a typed refusal when no tree holds the task. */

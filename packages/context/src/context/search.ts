@@ -75,6 +75,7 @@ import {
   type TaskProjection,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
+import { type TaskStory, taskStory } from './task-story.js';
 
 /** What to look for, plus the one filter that is about trees rather than rows. */
 export interface RecordQuery extends SearchQuery {
@@ -188,6 +189,12 @@ export type RecordBody =
       readonly project?: string;
       readonly origin?: readonly string[];
       readonly record: TaskProjection;
+      /**
+       * What was written beside the task: its description, the last handoff with its brief and the
+       * notes about it, newest first (see {@link TaskStory}). Absent when nothing was, so a task
+       * nobody wrote beside is served exactly as it always was.
+       */
+      readonly story?: TaskStory;
     }
   | {
       readonly kind: 'skill';
@@ -494,7 +501,16 @@ export function readRecord(sources: readonly ScopedCache[], id: string): RecordB
     const decision = cache.getDecision(id);
     if (decision !== null) return { kind: 'decision', ...held, record: decision };
     const task = cache.getTask(id);
-    if (task !== null) return { kind: 'task', ...held, record: task };
+    if (task !== null) {
+      // The story is read across EVERY tree in hand and not only the one that holds the task: a
+      // note is written into the tree its writer chose, and a private note about a task the team
+      // holds is still about that task.
+      const story = taskStory(
+        sources.map((source) => source.cache),
+        id,
+      );
+      return { kind: 'task', ...held, record: task, ...(story !== undefined ? { story } : {}) };
+    }
     const skill = cache.getSkill(id);
     if (skill !== null) return { kind: 'skill', ...held, record: skill };
   }

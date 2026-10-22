@@ -50,6 +50,7 @@ import {
   targetAsRecorded,
 } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { caches, withScopedCaches } from '../tree-sources.js';
 import {
   type AgentWrites,
   originOfTheWrite,
@@ -102,6 +103,12 @@ export interface LinkRecorded extends Replacement, Landed {
    * something else.
    */
   readonly subjectScope?: Scope;
+  /**
+   * True when the subject is a TASK. The sentence about where the subject lives names what it is:
+   * a task is not a rule, and a link from one to a path was told "the rule it names" for as long
+   * as the sentence knew only rules.
+   */
+  readonly subjectIsATask?: true;
 }
 
 /** The record was refused. */
@@ -211,11 +218,17 @@ export function runLink(
   // a writer and signed a checkpoint, and it buys the only sentence that can be true at
   // the moment it matters (see `LinkRecorded.subjectScope`).
   const subjectScope = locateEntityScope(trees, ends.subject, catalogUpcasters());
+  const subjectIsATask =
+    subjectScope !== undefined &&
+    withScopedCaches(trees, (sources) =>
+      caches(sources).some((cache) => cache.getTask(ends.subject) !== null),
+    );
   return {
     ok: true,
     subject: ends.subject,
     target: ends.target,
     ...(subjectScope !== undefined ? { subjectScope } : {}),
+    ...(subjectIsATask ? { subjectIsATask: true as const } : {}),
     // The relation AS RECORDED: screened, so the echo shows what landed.
     rel: recorded.rel,
     scope,

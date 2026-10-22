@@ -24,7 +24,6 @@
  * has handed over or started has no owner, and says so by saying nothing.
  */
 
-import { transitionProse } from '@mnema/chain';
 import {
   BRIEF_TOPIC,
   DESCRIPTION_TOPIC,
@@ -33,6 +32,12 @@ import {
   type ObservationProjection,
   type ProjectionCache,
 } from '@mnema/core';
+
+/**
+ * How a task started by a person with no agent is said to be had: the record holds the identity as a
+ * 64-digit anchor, which says nothing to a reader and costs an opening context forty tokens per task.
+ */
+const A_PERSON = 'a person';
 
 /** How many notes a task's story serves before it says how many it left out. */
 export const NOTES_SHOWN = 8;
@@ -68,7 +73,7 @@ export interface TaskStory {
 
 /** Who has a task and the most recent thing that happened to it, each as a short phrase. */
 export interface TaskStanding {
-  /** The agent or identity that has the task, and how that was known. */
+  /** The agent that has the task (`a person` when a person started it), and how that was known. */
   readonly owner?: { readonly name: string; readonly via: 'handoff' | 'start' };
   /** The most recent note or move, on one line. */
   readonly lastFact?: { readonly at: string; readonly line: string };
@@ -147,14 +152,21 @@ export function taskStanding(caches: readonly ProjectionCache[], id: string): Ta
     .flatMap((cache) => cache.references(id))
     .filter((row) => row.role === 'subject' && row.event.kind === 'task.transitioned')
     .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.ord - b.ord));
+  // What a move said is on the task's projection, which holds the prose of every move that
+  // carried any, keyed by the move's action and instant.
+  const proof = caches.flatMap((cache) => cache.getTask(id)?.proof ?? []);
   for (const row of moves) {
     if (row.event.kind !== 'task.transitioned') continue;
-    const { action, to, fields } = row.event.payload;
-    if (action === 'start') started = { name: row.which ?? row.who };
-    const said = transitionProse(fields);
+    const { action, to, from } = row.event.payload;
+    if (action === 'start') started = { name: row.which ?? A_PERSON };
+    const said = proof.find((one) => one.at === row.at && one.action === action)?.said;
     lastMove = {
       at: row.at,
-      line: `${action} → ${to}${said === '' ? '' : `: ${excerptOf(said)}`}`,
+      // The birth is the move out of nothing: "created", not an arrow from no state.
+      line:
+        from === null
+          ? 'created'
+          : `${action} → ${to}${said === undefined ? '' : `: ${excerptOf(said)}`}`,
     };
   }
   const notes = notesAbout(caches, id);

@@ -38,13 +38,15 @@ describe('bootstrap: the opening context, focused on the actor', () => {
       // Resume: the actor's open run is the anchor.
       expect(b.resume.lastRun?.id).toBe('run-1');
       expect(b.resume.focus.openRuns.map((r) => r.id)).toEqual(['run-1']);
-      // Work: the live task, as a NAME, the four fields and nothing more.
+      // Work: the live task, as a NAME: the four fields, and the one line of where it stands.
       expect(b.work).toEqual([
         {
           id: 'task-1',
           title: 'Parse tokens',
           state: 'IN_PROGRESS',
           updatedAt: expect.any(String),
+          lastFact: { at: expect.any(String), line: 'start → IN_PROGRESS' },
+          owner: { name: 'a person', via: 'start' },
         },
       ]);
     } finally {
@@ -64,7 +66,7 @@ describe('bootstrap: the opening context, focused on the actor', () => {
       // Absence, because a present-but-empty `actions` would be a second claim:
       // that this task allows nothing, which is the opposite of why it is here.
       expect(item).not.toHaveProperty('actions');
-      expect(Object.keys(item).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
+      expect(Object.keys(item).sort()).toEqual(['id', 'lastFact', 'state', 'title', 'updatedAt']);
       // And no count of them took their place: the state on the line is what says
       // which moves exist, and `nextActions` is what answers it exactly.
       expect(JSON.stringify(item)).not.toMatch(/action|move|count/i);
@@ -175,7 +177,7 @@ describe('bootstrap: the opening context, focused on the actor', () => {
       // agrees with it; nothing was hidden and nothing says it was.
       expect(b.work).toHaveLength(wanted);
       expect(b.workTotal).toBe(wanted);
-      expect(b.work.every((w) => Object.keys(w).length === 4)).toBe(true);
+      expect(b.work.every((w) => Object.keys(w).length === 5)).toBe(true);
       // The whole answer's shape, so a field added to any half fails here.
       expect(Object.keys(b).sort()).toEqual([
         'awaitingJudgement',
@@ -268,6 +270,8 @@ describe('bootstrap: the opening context, focused on the actor', () => {
           title: 'Waiting on a reviewer',
           state: 'IN_REVIEW',
           updatedAt: expect.any(String),
+          lastFact: { at: expect.any(String), line: 'submit_review → IN_REVIEW' },
+          owner: { name: 'a person', via: 'start' },
         },
       ]);
     } finally {
@@ -503,7 +507,13 @@ describe('bootstrap: the opening context, focused on the actor', () => {
         awaitingTotal: 4,
       });
       // And the lists did not swap either: each carries its own kind's fields.
-      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
+      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual([
+        'id',
+        'lastFact',
+        'state',
+        'title',
+        'updatedAt',
+      ]);
       expect(Object.keys(b.decisions[0] ?? {}).sort()).toEqual([
         'acceptance',
         'adr',
@@ -550,6 +560,8 @@ describe('bootstrap: the opening context, focused on the actor', () => {
           title: 'Nobody has reviewed',
           state: 'IN_REVIEW',
           updatedAt: expect.any(String),
+          lastFact: { at: expect.any(String), line: 'submit_review → IN_REVIEW' },
+          owner: { name: 'a person', via: 'start' },
         },
         {
           kind: 'skill',
@@ -768,7 +780,13 @@ describe('bootstrap: the opening context, focused on the actor', () => {
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
-      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
+      expect(Object.keys(b.work[0] ?? {}).sort()).toEqual([
+        'id',
+        'lastFact',
+        'state',
+        'title',
+        'updatedAt',
+      ]);
       expect(Object.keys(b.skills[0] ?? {}).sort()).toEqual(['id', 'name']);
       expect(Object.keys(b.resume).sort()).toEqual(['actor', 'focus', 'lastRun']);
       expect(b.resume.lastRun?.id).toBe('run-1');

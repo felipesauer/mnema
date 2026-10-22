@@ -41,13 +41,14 @@
  * record inside a read of one record, paid for on every open.
  */
 
-import type { RecordBody } from '@mnema/context';
+import type { RecordBody, TaskStory } from '@mnema/context';
 import type { DecisionActor, NoteRetraction, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { A_PERSON, neutralized, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
+import { asId, itemLine } from './items.js';
 import type { Render } from './render.js';
 import { asState } from './state.js';
 
@@ -168,6 +169,40 @@ function retractionFacts(
   ];
 }
 
+/**
+ * What was written beside a task: its description whole, the last handoff with its brief whole, then
+ * the other notes one line each with how many there are when the list was cut.
+ *
+ * The description and the brief are PROSE somebody wrote, so they go through the same
+ * neutralization every body goes through, under a heading that says which they are; the note lines
+ * are cut to one line each and carry the id that serves the whole text.
+ */
+function storyLines(render: Render, story: TaskStory): string[] {
+  const lines: string[] = [];
+  if (story.description !== undefined) {
+    lines.push('', 'Description:', neutralized(story.description.text));
+  }
+  if (story.handoff !== undefined) {
+    const { handoff } = story;
+    lines.push(
+      '',
+      render(fact(`last handoff ${handoff.at}: ${oneLine(handoff.from)} → ${oneLine(handoff.to)}`)),
+    );
+    if (handoff.brief !== undefined) lines.push('Brief:', neutralized(handoff.brief.text));
+  }
+  const { total, items } = story.notes;
+  if (total > 0) {
+    lines.push(
+      '',
+      `Notes (${items.length < total ? `${items.length} of ${total}, newest first` : `${total}, newest first`}):`,
+    );
+    for (const note of items) {
+      lines.push(render(itemLine([asId(note.id), oneLine(note.topic), oneLine(note.line)])));
+    }
+  }
+  return lines;
+}
+
 /** The lines one whole record prints for a person. */
 export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
@@ -248,6 +283,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         render(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
       );
       lines.push(...movesSaid(body.record.proof));
+      if (body.story !== undefined) lines.push(...storyLines(render, body.story));
       break;
     case 'skill':
       lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));
