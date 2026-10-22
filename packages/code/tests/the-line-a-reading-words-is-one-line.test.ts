@@ -1822,7 +1822,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same command for a channel that begins off, built from the product’s own channel name',
   },
-  'summary.ts «Off on this machine: {}. Turn one on with \\`{}\\`.» summary.off.join(\', \') #1': {
+  "summary.ts «Off on this machine: {}. Turn one on with \\`{}\\`.» summary.off.join(', ') #1": {
     verdict: 'minted',
     why: 'the names of the channels that are off: the product’s own identifiers, a closed set',
   },
@@ -1830,10 +1830,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a constant: the verb with the name left for the person to fill',
   },
-  'summary.ts «{} decision(s) await a judgement: \\`mnema decision review\\` goes through them.» summary.waiting #1': {
-    verdict: 'minted',
-    why: 'how many decisions await a judgement: a count',
-  },
+  'summary.ts «{} decision(s) await a judgement: \\`mnema decision review\\` goes through them.» summary.waiting #1':
+    {
+      verdict: 'minted',
+      why: 'how many decisions await a judgement: a count',
+    },
   'switches.ts «reason: {}» oneLine(row.state.reason) #1': {
     verdict: 'collapsed',
     why: 'why somebody switched it off: free text they typed at `--reason`, on a line the header counts',
