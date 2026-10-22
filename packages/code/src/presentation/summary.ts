@@ -17,17 +17,19 @@ export function summaryLines(summary: Summary): string[] {
   if (unread.length > 0) {
     const record = unread.includes('record');
     const switches = unread.includes('switches');
-    const what =
-      record && switches ? 'The record and the switches' : record ? 'The record' : 'The switches';
-    const said =
-      record && switches
-        ? 'where the project stands or what is off'
-        : record
-          ? 'where the project stands'
-          : 'what is off';
-    lines.push(
-      `${what} here could not be read, so nothing is said of ${said}: \`mnema verify\` says why.`,
-    );
+    if (record && switches) {
+      lines.push(
+        'The record and the switches here could not be read, so nothing is said of where the project stands or what is off: `mnema verify` says why.',
+      );
+    } else if (record) {
+      lines.push(
+        'The record here could not be read, so nothing is said of where the project stands: `mnema verify` says why.',
+      );
+    } else {
+      lines.push(
+        'The switches here could not be read, so nothing is said of what is off: `mnema verify` says why.',
+      );
+    }
   }
   if (summary.founded) {
     lines.push('A mnema project is founded here.');
