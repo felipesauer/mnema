@@ -43,8 +43,8 @@ const RULES_DIRECTORIES = ['.claude/rules/', '.cursor/rules/'];
 /** The one file Copilot reads its repository instructions from. */
 const COPILOT_INSTRUCTIONS = '.github/copilot-instructions.md';
 
-/** The names of the files a plan, a handoff or a ledger is kept in. */
-const WORK_FILES = /(?:handoff|plan|ledger)[^/]*\.md$/i;
+/** The names of the files a plan, a handoff, a ledger or a livro is kept in. */
+const WORK_FILES = /(?:handoff|plan|ledger|livro)[^/]*\.md$/i;
 
 /** A line that opens as a ruling or a decision does, behind an optional list marker or emphasis. */
 const A_CALL =
