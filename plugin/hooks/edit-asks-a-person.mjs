@@ -24,12 +24,13 @@
  * ask, what the reason says and which facts are recorded are the verb's, decided in the one place
  * the MCP tool decides them too. The rule for running a verb is `hand-over.mjs`'s.
  *
- * A GATE THAT CANNOT SAY WHY IT STOPS NOBODY IS NO GATE, SO WHERE IT CANNOT RUN IT REFUSES. A `mnema` that is
+ * A GATE THAT CANNOT SAY WHY IT STOPS NOBODY IS NO GATE, SO WHERE IT CANNOT RUN IT REFUSES, WHERE A RULE
+ * ADDRESSES THE PATH. A `mnema` that is
  * there and does not answer (it exits non-zero, it does not finish in time, what it prints is not a
  * JSON reply, no `node` on the PATH takes it) answers `deny`, with the reason in words and the way
  * out (`hand-over.mjs`, `whatTheGateAnswers`), and so does a fault of this handler itself: a host
  * reads silence as a write that may go on, and a record with a rule at an address is what brought
- * this process to life. Where there is no `mnema` at all, no project or no rule that could be met,
+ * this process to life. Where there is no `mnema` at all, no project, or no rule that refuses a write or asks for a person at the path,
  * nothing refuses: silence and exit 0, as before (`without-mnema-the-hooks-fail-open.test.ts`).
  * The same checks the hooks file's shell made hold in the refusal: where the host's variable is
  * unset, or the tool is not one that writes, nothing is refused.
@@ -72,7 +73,7 @@ try {
   try {
     // Where the fault came before the payload was read, and the call is only this handler's if the
     // tool is one that writes, the payload is read now.
-    if (tools !== undefined && handed === '') {
+    if (handed === '' && !(where !== undefined && (process.env[where] ?? '') === '')) {
       const chunks = [];
       for await (const chunk of process.stdin) chunks.push(chunk);
       handed = Buffer.concat(chunks).toString('utf-8');
@@ -84,7 +85,18 @@ try {
   const startsNothing =
     (where !== undefined && (process.env[where] ?? '') === '') ||
     (tools !== undefined && !tools.split(',').includes(tool));
+  // ... and only where a rule that refuses the write or asks for a person at it addresses the path, read
+  // by a module of its own: where even that cannot be loaded, nothing can say the write is governed.
+  let governed = false;
   if (!startsNothing) {
+    try {
+      const { aRuleReaches } = await import('./where-the-record-is.mjs');
+      governed = aRuleReaches(process.env.CLAUDE_PROJECT_DIR || process.cwd(), process.env, handed);
+    } catch {
+      // Nothing to say the write is governed.
+    }
+  }
+  if (governed) {
     const said = String(fault instanceof Error ? fault.message : fault)
       .split('\n')[0]
       ?.slice(0, 120);
@@ -93,7 +105,7 @@ try {
         hookSpecificOutput: {
           hookEventName: 'PreToolUse',
           permissionDecision: 'deny',
-          permissionDecisionReason: `The mnema gate could not run (${said}). A gate that cannot read the record does not let a write through, since the record may hold a rule that refuses it. Reinstall the mnema plugin, and run \`mnema doctor\` in a terminal to see what is wrong.`,
+          permissionDecisionReason: `The mnema gate could not run (${said}). A rule of this project's record addresses this path, and a gate that cannot read the record does not let a write through. Reinstall the mnema plugin, and run \`mnema doctor\` in a terminal to see what is wrong.`,
         },
       })}\n`,
     );

@@ -262,7 +262,7 @@ describe('a node below the floor in front of the PATH', () => {
     const met = aHook(CURSOR(), cursorWrite(), pathOf('slow', 'mnema', 'tools'), CURSOR_ENV);
     expect(met.status).toBe(0);
     expect(met.decision).toBe('deny');
-    expect(met.reason).toContain('mnema could not run');
+    expect(met.reason).toContain('mnema needs Node 24.15.0');
     expect(met.reason).toContain(`is ${BELOW_THE_FLOOR}`);
     expect(met.reason).toContain('Node 24.15.0 or a later 24, or 26 or later');
     expect(met.reason).toContain('nvm install 24');
@@ -301,9 +301,22 @@ describe('a node below the floor in front of the PATH', () => {
 describe('a mnema that is there and does not answer', () => {
   it.each([
     ['exits non-zero', 'echo boom >&2; exit 3', 'it exited 3: boom'],
-    ['prints what is not JSON', 'echo "no json here"', 'what it printed is not a JSON reply'],
-    ['prints nothing', 'exit 0', 'what it printed is not a JSON reply'],
-    ['prints a JSON that is not an object', 'echo "[]"', 'what it printed is not a JSON reply'],
+    [
+      'prints what is not JSON',
+      'echo "no json here"',
+      'what it printed is not a reply a host reads',
+    ],
+    ['prints nothing', 'exit 0', 'what it printed is not a reply a host reads'],
+    [
+      'prints a JSON no host reads',
+      'echo \'{"foo":1}\'',
+      'what it printed is not a reply a host reads',
+    ],
+    [
+      'prints a JSON that is not an object',
+      'echo "[]"',
+      'what it printed is not a reply a host reads',
+    ],
   ])('refuses the write when it %s', (_, then, because) => {
     aMnemaOnTheFirstNode(dirs.mnema, then);
     const met = aHook(CURSOR(), cursorWrite(), pathOf('real', 'mnema', 'tools'), CURSOR_ENV);
@@ -332,6 +345,157 @@ describe('a mnema that is there and does not answer', () => {
     );
     expect(met.decision).toBe('deny');
     expect(met.reason).toContain('it exited 1');
+  });
+});
+
+/** A `node` that never says its version: the probe the search runs hangs. */
+function aNodeThatHangs(dir: string): void {
+  writeFileSync(
+    join(dir, 'node'),
+    [
+      '#!/bin/sh',
+      'if [ "$1" = "-p" ]; then sleep 30; exit 0; fi',
+      `exec "${process.execPath}" "$@"`,
+      '',
+    ].join('\n'),
+    { mode: 0o755 },
+  );
+}
+
+const writeAt = (relative: string, at = repo): string =>
+  JSON.stringify({
+    hook_event_name: 'preToolUse',
+    tool_name: 'Write',
+    tool_input: { file_path: join(at, relative), content: 'x\n' },
+  });
+
+describe('where mnema cannot answer, only a path a rule addresses is refused', () => {
+  const stuck = () => pathOf('slow', 'mnema', 'tools');
+
+  it('refuses the path a rule that refuses addresses, and lets another through', () => {
+    const governed = aHook(CURSOR(), writeAt('src/billing/invoice.ts'), stuck(), CURSOR_ENV);
+    expect(governed.decision).toBe('deny');
+    const elsewhere = aHook(CURSOR(), writeAt('README.md'), stuck(), CURSOR_ENV);
+    expect(elsewhere).toMatchObject({ stdout: '', status: 0 });
+    // A sibling whose name only begins the same is not under the address.
+    const sibling = aHook(CURSOR(), writeAt('src/billing-old/x.ts'), stuck(), CURSOR_ENV);
+    expect(sibling).toMatchObject({ stdout: '', status: 0 });
+  });
+
+  it('refuses where a rule asks for a person, in the host that asks', () => {
+    const asked = aHook(
+      declared('PreToolUse', 'edit-asks-a-person.mjs'),
+      JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'create_file',
+        tool_input: { filePath: join(repo, 'src', 'billing', 'invoice.ts'), content: 'x\n' },
+      }),
+      pathOf('slow', 'mnema', 'tools'),
+    );
+    expect(asked.decision).toBe('deny');
+  });
+
+  it('lets everything through in a project whose only link is one that governs', async () => {
+    process.chdir(plain);
+    const said = await did('decision', 'record', 'The ledger is UTC', 'Because it was agreed');
+    const governs = said.match(/\(([0-9a-f-]{20,})\)/)?.[1] as string;
+    await did('decision', 'move', 'accept', governs, '--note', 'agreed');
+    await did('link', governs, 'src/billing', '--rel', 'governs');
+    for (const path of ['README.md', 'src/billing/invoice.ts']) {
+      const met = aHook(CURSOR(), writeAt(path, plain), stuck(), CURSOR_ENV, plain);
+      expect(met, path).toMatchObject({ stdout: '', status: 0 });
+    }
+  });
+
+  it('lets the path through once the link that refused it was taken back', async () => {
+    await did('unlink', rule, 'src/billing', '--rel', 'refuses-a-write', '--reason', 'no longer');
+    const met = aHook(CURSOR(), writeAt('src/billing/invoice.ts'), stuck(), CURSOR_ENV);
+    expect(met).toMatchObject({ stdout: '', status: 0 });
+  });
+
+  it('refuses a patch that names the governed file, in the host whose payload is a patch', () => {
+    const patched = aHook(
+      declared('PreToolUse', 'edit-asks-a-person.mjs'),
+      JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'apply_patch',
+        tool_input: {
+          input: '*** Begin Patch\n*** Update File: src/billing/invoice.ts\n*** End Patch',
+        },
+      }),
+      stuck(),
+    );
+    expect(patched.decision).toBe('deny');
+  });
+
+  it('is the record that decides where mnema runs: a switched off refusal lets the write through', async () => {
+    await did('switch', 'off', 'edit-refuses-a-write');
+    const met = aHook(
+      CURSOR(),
+      writeAt('src/billing/invoice.ts'),
+      pathOf('real', 'mnema', 'tools'),
+      CURSOR_ENV,
+    );
+    expect(met).toMatchObject({ stdout: '', status: 0 });
+  });
+});
+
+describe('a node that hangs on its version', () => {
+  it("is given a second and gone around, and the gate still answers inside the host's 15 seconds", () => {
+    aNodeThatHangs(dirs.slow);
+    const started = Date.now();
+    const met = aHook(
+      CURSOR(),
+      cursorWrite(),
+      pathOf('slow', 'mnema', 'real', 'tools'),
+      CURSOR_ENV,
+    );
+    expect(met.decision).toBe('deny');
+    expect(met.reason).toContain(rule);
+    expect(Date.now() - started).toBeLessThan(8000);
+  }, 20_000);
+
+  it("refuses with the reason where it is the only node, well inside the host's 15 seconds", () => {
+    aNodeThatHangs(dirs.slow);
+    const started = Date.now();
+    const met = aHook(CURSOR(), cursorWrite(), pathOf('slow', 'mnema', 'tools'), CURSOR_ENV);
+    expect(met.decision).toBe('deny');
+    expect(met.reason).toContain('did not say its version');
+    expect(Date.now() - started).toBeLessThan(8000);
+  }, 20_000);
+
+  it('keeps the search and the run of mnema under the 15 seconds the host gives a hook', async () => {
+    const { GATE_TIMEOUT } = await import('../../../plugin/hooks/hand-over.mjs');
+    const { SEARCH_BUDGET } = await import('../../../plugin/hooks/the-gate-kit.mjs');
+    expect(GATE_TIMEOUT + SEARCH_BUDGET).toBeLessThan(15_000);
+  });
+});
+
+describe('a mnema that does not finish', () => {
+  it('is cut at the timeout the gate is given, and the write it was asked about is refused', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mnema-never-answers-'));
+    const slow = join(dir, 'mnema');
+    writeFileSync(slow, '#!/bin/sh\nexec sleep 5\n', { mode: 0o755 });
+    const before = process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH;
+    process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH = slow;
+    try {
+      const { whatTheGateAnswers } = await import('../../../plugin/hooks/hand-over.mjs');
+      const started = Date.now();
+      const answered = await whatTheGateAnswers(
+        ['--host', 'cursor', '--where', 'CURSOR_VERSION'],
+        CURSOR_ENV,
+        repo,
+        async () => cursorWrite(),
+        { timeout: 300 },
+      );
+      expect(answered).toContain('"permissionDecision":"deny"');
+      expect(answered).toContain('it did not answer in 0.3 seconds');
+      expect(Date.now() - started).toBeLessThan(3000);
+    } finally {
+      if (before === undefined) delete process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH;
+      else process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH = before;
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -377,7 +541,10 @@ describe('a fault of the handler itself', () => {
 
     const write = aHook(
       handler(root, '--host vscode --tools create_file,replace_string_in_file'),
-      JSON.stringify({ tool_name: 'create_file', tool_input: { filePath: 'x' } }),
+      JSON.stringify({
+        tool_name: 'create_file',
+        tool_input: { filePath: join(repo, 'src', 'billing', 'invoice.ts') },
+      }),
       pathOf('real', 'tools'),
     );
     expect(write.decision).toBe('deny');
@@ -386,7 +553,7 @@ describe('a fault of the handler itself', () => {
 
 describe('the floor the plugin repeats', () => {
   it('is the one `engines.node` declares', async () => {
-    const { NODE_RANGE } = await import('../../../plugin/hooks/hand-over.mjs');
+    const { NODE_RANGE } = await import('../../../plugin/hooks/the-gate-kit.mjs');
     const declaredRange = (
       JSON.parse(readFileSync(join(REPO, 'packages', 'code', 'package.json'), 'utf-8')) as {
         engines: { node: string };
@@ -396,7 +563,7 @@ describe('the floor the plugin repeats', () => {
   });
 
   it('takes the versions the product takes, and refuses the ones it refuses', async () => {
-    const { NODE_RANGE, nodeIsTaken } = await import('../../../plugin/hooks/hand-over.mjs');
+    const { NODE_RANGE, nodeIsTaken } = await import('../../../plugin/hooks/the-gate-kit.mjs');
     expect(acceptedBy(NODE_RANGE)).toBeDefined();
     for (const [version, taken] of [
       ['24.5.0', false],
