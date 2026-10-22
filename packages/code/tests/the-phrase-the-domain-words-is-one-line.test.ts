@@ -2152,6 +2152,13 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS: what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
+  '@mnema/core workflow/gate.ts «: "{}" comes first (it moves the task to {}, where "{}" is legal)» action':
+    'an action of the workflow, in the hint on a refused move: the branch that reaches it has ' +
+    'already refused every action the workflow does not define',
+  '@mnema/core workflow/gate.ts «: "{}" comes first (it moves the task to {}, where "{}" is legal)» first.action':
+    'an action read off the transition table, never typed by anybody',
+  '@mnema/core workflow/gate.ts «: "{}" comes first (it moves the task to {}, where "{}" is legal)» first.to':
+    'a state read off the transition table, never typed by anybody',
   '@mnema/core workflow/decision-operations.ts «ADR-{}» decisions.size + 1':
     'the alias a decision is minted with, from a count of the decisions already recorded',
   '@mnema/chain chain/witness.ts «{}\\n» serializeStoredHeader(height, header)':

@@ -91,7 +91,9 @@ import {
   type SkillCatalogue,
   searchRecords,
   skillCatalogue,
+  type TaskStanding,
   type TimelineEntry,
+  taskStanding,
   timeline,
   type WorkspaceAccountability,
   type WorkspaceAntipatterns,
@@ -139,6 +141,7 @@ import {
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
 import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-push.js';
+import { type FileBehindAPath, fileOfTheOrigin } from '../file-behind-a-path.js';
 import {
   reachOfAddress,
   readGoverningRules,
@@ -244,6 +247,8 @@ export type CreateTaskResult =
         readonly id: string;
         /** The short human-facing alias (`t-xxxx`), derived from the id. */
         readonly alias: string;
+        /** The observation that carries the description, when one was given. */
+        readonly descriptionId?: string;
       })
   | {
       readonly ok: false;
@@ -439,6 +444,13 @@ export type FactRecordedResult =
          * report the fact by.
          */
         readonly recorded: readonly string[];
+        /** The observation that carries a handoff's brief, when one was given. */
+        readonly briefId?: string;
+        /**
+         * Present when a handoff named no scope and no tree of the workspace holds the task
+         * (or several records do), so it took the default tree: the sentence the reply adds.
+         */
+        readonly followedNoTree?: string;
       })
   | {
       readonly ok: false;
@@ -515,16 +527,51 @@ export function runRecordObservation(
  */
 export function runRecordHandoff(
   session: Session,
-  input: { task: string; from: string; to: string; scope?: Scope; project?: string },
+  input: {
+    task: string;
+    from: string;
+    to: string;
+    brief?: string;
+    scope?: Scope;
+    project?: string;
+  },
 ): FactRecordedResult {
-  const route = routeWrite(session, 'handoff.recorded', input);
-  if (!route.ok) return route;
+  const named = routeWrite(session, 'handoff.recorded', input);
+  if (!named.ok) return named;
+  // With no scope named, the handoff and its brief FOLLOW THE TASK to the tree that holds it,
+  // as a move does: a private task's brief (up to 64 KiB) is never committed by a handoff that
+  // named no tree. A `project` the caller named keeps the write in that project.
+  let route = named;
+  let followedNoTree: string | undefined;
+  if (input.scope === undefined) {
+    const located = locateEntity(session, input.task);
+    if (located.outcome === 'found') {
+      const homeDir = located.home.target?.dir ?? session.project;
+      const namedDir = named.target?.dir ?? session.project;
+      if (input.project === undefined || homeDir === namedDir || located.home.scope === 'global') {
+        const target = input.project === undefined ? located.home.target : named.target;
+        route = {
+          ok: true,
+          scope: located.home.scope,
+          ...(target !== undefined ? { target } : {}),
+        };
+      } else {
+        followedNoTree = `  No tree of that project holds ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`;
+      }
+    } else {
+      followedNoTree =
+        located.outcome === 'several'
+          ? `  Several records hold ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`
+          : `  No tree of this workspace holds ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`;
+    }
+  }
   const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = recordHandoff(ctx, {
       task: input.task,
       fromAgent: input.from,
       toAgent: input.to,
+      ...(input.brief !== undefined ? { brief: input.brief } : {}),
       which,
       run,
     });
@@ -540,6 +587,8 @@ export function runRecordHandoff(
   return {
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
+    ...(recorded.briefId !== undefined ? { briefId: recorded.briefId } : {}),
+    ...(followedNoTree !== undefined ? { followedNoTree } : {}),
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
@@ -570,6 +619,8 @@ export type LinkRecordedResult =
        * rule where the address is.
        */
       readonly subjectScope?: Scope;
+      /** True when the subject is a TASK, so the sentence about where it lives names what it is. */
+      readonly subjectIsATask?: true;
     })
   | Extract<FactRecordedResult, { readonly ok: false }>;
 
@@ -657,6 +708,9 @@ export function runLinkKnowledge(
   // way first, and that guard is what caught it.
   const located = locateEntity(session, subject.id);
   const subjectScope = located.outcome === 'found' ? located.home.scope : undefined;
+  const subjectIsATask =
+    located.outcome === 'found' &&
+    session.caches.get(located.home.chainRoot).getTask(subject.id) !== null;
   // The relation AS RECORDED: screened, so the echo shows what landed.
   return {
     ok: true,
@@ -666,6 +720,7 @@ export function runLinkKnowledge(
     ...(reach !== undefined ? { reach } : {}),
     ...(recordedTarget !== target.id ? { recordedTarget } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
+    ...(subjectIsATask ? { subjectIsATask: true as const } : {}),
     ...forwardReplacement(recorded),
   };
 }
@@ -687,7 +742,7 @@ export function runLinkKnowledge(
  */
 export function runCreateTask(
   session: Session,
-  input: { title: string; scope?: Scope; project?: string },
+  input: { title: string; description?: string; scope?: Scope; project?: string },
 ): CreateTaskResult {
   const route = routeWrite(session, 'task.created', input);
   if (!route.ok) return route;
@@ -695,6 +750,7 @@ export function runCreateTask(
   const created = ctx.writer.exclusively(() => {
     const written = createTask(ctx, {
       title: input.title,
+      ...(input.description !== undefined ? { description: input.description } : {}),
       which,
       run,
     });
@@ -712,6 +768,7 @@ export function runCreateTask(
     ok: true,
     id: created.id,
     alias: deriveAlias('task', created.id),
+    ...(created.descriptionId !== undefined ? { descriptionId: created.descriptionId } : {}),
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(created),
@@ -2030,11 +2087,11 @@ export function runResumeTool(session: Session): Resume {
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
 export type NextActionsResult =
-  | {
+  | ({
       readonly ok: true;
       /** The transitions the workflow allows from the task's state; empty when terminal. */
       readonly actions: readonly NextAction[];
-    }
+    } & TaskStanding)
   | {
       readonly ok: false;
       /** No tree of the workspace holds a task with this id, or several records do. */
@@ -2079,7 +2136,13 @@ export function runNextActionsTool(session: Session, input: { id: string }): Nex
       message: locatedButUnreadable('task', input.id, located.home),
     };
   }
-  return { ok: true, actions };
+  // Who has the task and what happened to it last, from every tree of the workspace: the same
+  // two facts the opening read gives for each task it lists, here for the one asked about.
+  const standing = taskStanding(
+    workspaceCaches(session).map((source) => source.cache),
+    input.id,
+  );
+  return { ok: true, actions, ...standing };
 }
 
 /** A guard verdict (plus the asker's focus), or a typed refusal when no tree holds the task. */
@@ -2467,7 +2530,9 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
 }
 
 /** The `audit_refs` result: the graph around an entity, or a refusal. */
-export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
+export type ReferencesToolResult = IntelligenceResult<
+  ReferenceGraph & { readonly file?: FileBehindAPath }
+>;
 
 /**
  * `audit_refs`: what an entity is connected to, across every project of the
@@ -2503,14 +2568,18 @@ export function runReferencesTool(
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
   const recordedAs = targetRecordedAs(projectsOf(session), named.id);
-  return {
-    ok: true,
-    value: references(workspaceCaches(session), {
-      ...input,
-      id: named.id,
-      ...(recordedAs !== undefined ? { recordedAs } : {}),
-    }),
-  };
+  const graph = references(workspaceCaches(session), {
+    ...input,
+    id: named.id,
+    ...(recordedAs !== undefined ? { recordedAs } : {}),
+  });
+  // A path is read against the root of the project this session is in (a path is relative to one
+  // root, and the session's is the one it was started for).
+  const file =
+    session.trees.projectPublic === undefined
+      ? undefined
+      : fileOfTheOrigin(dirname(session.trees.projectPublic), graph);
+  return { ok: true, value: file === undefined ? graph : { ...graph, file } };
 }
 
 /** The `governing_rules` result: the rules addressed at a path, or a refusal. */

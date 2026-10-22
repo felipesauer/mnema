@@ -121,6 +121,7 @@ import {
   type Replacement,
   reachNotice,
   replacementNotice,
+  subjectReachNotice,
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
@@ -1081,25 +1082,35 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'the mnema chain, attributed to this agent and pinned to the current ' +
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
-        'to exist. Optionally pick the scope and the project; omitted, a handoff is ' +
-        'coordination between actors and lands PUBLIC: committed, so both of them ' +
-        'reach it (global outside a project). A handoff has no id of its own: its ' +
-        'subject is the task. The reply says which tree it landed in.' +
+        'to exist. Optionally pick the scope and the project; omitted, the handoff follows ' +
+        'the task to the tree that holds it (a private task keeps its brief private) and ' +
+        'lands PUBLIC (global outside a project) only when no tree holds the task, which ' +
+        'the reply says. A handoff has no id of its own: its ' +
+        'subject is the task. Optionally give a `brief` (up to 64 KiB of text, refused ' +
+        'beyond it): what the next agent must read, recorded in the same call as an ' +
+        'observation about the task (topic `brief`) whose id the reply names. The reply ' +
+        'says which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         task: z.string().min(1).describe('The task the handoff is about.'),
         from: z.string().min(1).describe('The agent handing off.'),
         to: z.string().min(1).describe('The agent taking over (may equal `from`).'),
-        scope: scopeField('Where the handoff lands; overrides the routing rule (public).'),
+        brief: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('What the next agent must read; recorded as an observation about the task.'),
+        scope: scopeField('Where the handoff lands; overrides following the task.'),
         project: PROJECT_ARG,
       },
     },
-    async ({ task, from, to, scope, project }) => {
+    async ({ task, from, to, brief, scope, project }) => {
       const active = await ensureSession();
       const result = runRecordHandoff(active, {
         task,
         from,
         to,
+        ...(brief !== undefined ? { brief } : {}),
         ...(scope !== undefined ? { scope } : {}),
         ...(project !== undefined ? { project } : {}),
       });
@@ -1108,7 +1119,15 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // The labels the RECORD holds, not the ones the call asked for.
       const [landedFrom, landedTo] = result.recorded;
-      return recorded(active, `Recorded handoff on ${task}: ${landedFrom} → ${landedTo}`, result);
+      return recorded(
+        active,
+        `Recorded handoff on ${task}: ${landedFrom} → ${landedTo}` +
+          (result.briefId !== undefined
+            ? `\n  The brief is observation ${result.briefId} about the task.`
+            : ''),
+        result,
+        result.followedNoTree !== undefined ? { after: [result.followedNoTree] } : {},
+      );
     },
   );
 
@@ -1166,6 +1185,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         result,
         {
           after: reachNotice(result.reach),
+          // Where the rule (or task) it names lives comes AFTER the sentence about where the edge
+          // landed, as on the command line: it qualifies that sentence.
+          last: subjectReachNotice(
+            result.scope,
+            result.subjectScope,
+            result.subjectIsATask === true,
+            { subject, rel: result.recorded[0] ?? rel },
+          ),
         },
       );
     },
@@ -1182,26 +1209,42 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `pick the scope it lands in: ${SCOPE_CHOICES}; omitted, a ` +
         'task is the team’s work board and lands PUBLIC: committed, so a clone has ' +
         'the board (global outside a project). Optionally pick the project it lands ' +
-        'in, when the workspace holds more than one. Returns the minted id (the key ' +
+        'in, when the workspace holds more than one. Optionally give a `description` ' +
+        '(up to 64 KiB of text, refused beyond it): what the task is, recorded in the ' +
+        'same call as an observation about it (topic `description`) whose id the reply ' +
+        'names. Returns the minted id (the key ' +
         'to move it), the short alias a human reads, and which tree it landed in.' +
         RECORD_CONTRACT,
       inputSchema: {
         title: z.string().min(1).describe('What the task is.'),
+        description: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('The task in prose; recorded as an observation about it.'),
         scope: scopeField('Where the task lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
       },
     },
-    async ({ title, scope, project }) => {
+    async ({ title, description, scope, project }) => {
       const active = await ensureSession();
       const result = runCreateTask(active, {
         title,
+        ...(description !== undefined ? { description } : {}),
         ...(scope !== undefined ? { scope } : {}),
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
         return refused(active, result);
       }
-      return recorded(active, `Created task ${result.alias} (${result.id})`, result);
+      return recorded(
+        active,
+        `Created task ${result.alias} (${result.id})` +
+          (result.descriptionId !== undefined
+            ? `\n  The description is observation ${result.descriptionId} about it.`
+            : ''),
+        result,
+      );
     },
   );
 
@@ -1597,7 +1640,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'state. Use it to answer "what can I do to this task": each suggestion is a ' +
         'real move the gate would authorize. A terminal task returns an empty list ' +
         '(no legal moves). The task is looked for in EVERY project of this workspace; ' +
-        'an id no tree of it holds is refused, naming the projects searched. Read-only.',
+        'an id no tree of it holds is refused, naming the projects searched. After the ' +
+        'list, a line says who has the task and one the last thing that happened to it, ' +
+        'when the record has either. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The task id to inspect (from `bootstrap`, or `search`).'),
       },
@@ -1611,7 +1656,16 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // (misleadable) list.
         return refused(active, result);
       }
-      return served(active, result.actions);
+      // The moves are the first block, a JSON list; who has the task and what happened to it
+      // last follow as lines of their own, so a reader of the list is not handed a new shape.
+      return served(active, result.actions, [
+        ...(result.owner !== undefined
+          ? [
+              `Held by ${oneLine(result.owner.name)}, by ${result.owner.via === 'handoff' ? 'its last handoff' : 'who started it'}.`,
+            ]
+          : []),
+        ...(result.lastFact !== undefined ? [`Last: ${oneLine(result.lastFact.line)}`] : []),
+      ]);
     },
   );
 
@@ -1846,7 +1900,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'already applied this in my other projects?": the things that point at it ' +
         'are in THEIR records, and every edge says which project asserts it. A far ' +
         'end no visible tree holds comes back marked unresolved (that is legitimate, ' +
-        'not an error), and the answer says when the depth cut it. Read-only.',
+        'not an error), and the answer says when the depth cut it. Give it a PATH a link ' +
+        'ends in and the answer also carries `file`: whether that file exists in the ' +
+        'working tree today and the SHA-256 of its bytes. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The entity id to walk from (from `search`).'),
         direction: z
@@ -2213,10 +2269,12 @@ function recorded(
   line: string,
   result: Landed & Replacement,
   // Extra lines a particular verb owes, between the acknowledgement and the tree
-  // notice. Only `link_knowledge` has any, what its address covers, and it is a
-  // parameter rather than a field on the result so that no other verb's reply gains a
+  // notice (`after`) and after everything the tree notice carries (`last`). Only
+  // `link_knowledge` has any: what its address covers, and where the rule it names lives,
+  // which qualifies the sentence about where the edge landed and so comes after it. They are
+  // a parameter rather than a field on the result so that no other verb's reply gains a
   // slot it can never fill.
-  extra: { readonly after?: readonly string[] } = {},
+  extra: { readonly after?: readonly string[]; readonly last?: readonly string[] } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
   // THE ACKNOWLEDGEMENT IS ONE BLOCK AND THE RECORD'S STATE IS ANOTHER. What the verb
   // owes about its own act (where it landed, what the content door replaced) is one
@@ -2234,6 +2292,7 @@ function recorded(
           : []),
         ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
+        ...(extra.last ?? []),
       ].join('\n'),
     ],
     { wrote: true },

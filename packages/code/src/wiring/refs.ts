@@ -77,10 +77,16 @@ export function registerReferences(program: Command, wiring: Wiring): Declared {
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
-        io.out(JSON.stringify(result.graph, null, 2));
+        io.out(
+          JSON.stringify(
+            result.file !== undefined ? { ...result.graph, file: result.file } : result.graph,
+            null,
+            2,
+          ),
+        );
         return;
       }
-      writeLines(io, referenceReport(render, result.graph));
+      writeLines(io, referenceReport(render, result.graph, result.file));
     });
   return readsTheRecord(references);
 }

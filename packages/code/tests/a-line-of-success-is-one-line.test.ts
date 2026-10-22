@@ -646,6 +646,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the anchor of the writer that signed the waiver',
   },
+  'task.ts «  The description is observation {} about it.» #1': {
+    verdict: 'minted',
+    why: 'the id of the observation the write just minted',
+  },
+  'handoff.ts «  No tree here holds {}, so the handoff took the default tree ({}).» #1': {
+    verdict: 'collapsed',
+    why: 'the task, a positional nothing validates, said again where the handoff did not find it',
+  },
+  'handoff.ts «  The brief is observation {} about the task.» #1': {
+    verdict: 'minted',
+    why: 'the id of the observation the write just minted',
+  },
   'task.ts «Created task {} ({})» #1': {
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
@@ -993,7 +1005,9 @@ describe('every line this wiring words is classified', () => {
     // 153 with the line init prints when it completes a project that lacked what it leaves beside the record.
     // 154 with the line `switch on host-memory-mirror` prints.
     // 155 with the line `switch on decision-file-written` prints.
-    expect(FOUND.sites.length).toBe(155);
+    // 157 with the two lines that name the observation a brief or a description was recorded as.
+    // 158 with the line a handoff prints when no tree holds its task.
+    expect(FOUND.sites.length).toBe(158);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1013,9 +1027,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(81);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(74);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(81);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(82);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(82);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1056,6 +1070,11 @@ interface Probe {
   readonly argv: readonly string[];
   /** The line the site prints, with the forged value written `VALUE`. */
   readonly says: string;
+  /**
+   * How many lines carry the forged value, one when omitted. A verb that names the same
+   * value in a second sentence (a notice about it) has that many, each a line of its own.
+   */
+  readonly lines?: number;
 }
 
 /** Where the forged value goes in a probe's argv and in its expected line. */
@@ -1081,11 +1100,20 @@ const PROBES: readonly Probe[] = [
     keys: ['link.ts «Linked {} -{}→ {}» #1'],
     argv: ['link', VALUE, 'a-target', '--rel', 'relates-to'],
     says: `Linked ${VALUE} -relates-to→ a-target`,
+    // The notice that no tree holds the subject names it again, on its own line.
+    lines: 2,
   },
   {
     keys: ['handoff.ts «Recorded handoff on {}: {} → {}» #1'],
     argv: ['task', 'handoff', 'a-task', VALUE, 'to-agent'],
     says: `Recorded handoff on a-task: ${VALUE} → to-agent`,
+  },
+  {
+    keys: ['handoff.ts «  No tree here holds {}, so the handoff took the default tree ({}).» #1'],
+    argv: ['task', 'handoff', VALUE, 'from-agent', 'to-agent'],
+    says: `  No tree here holds ${VALUE}, so the handoff took the default tree (public).`,
+    // The line the handoff acknowledges itself on names the task too.
+    lines: 2,
   },
   {
     keys: ['skill.ts «Proposed skill "{}" ({})» #1'],
@@ -1121,7 +1149,9 @@ describe('a value from outside cannot forge a second line', () => {
       const forgedLine = whole.split(LF).find((line) => line.includes(head as string));
       expect(forgedLine, probe.keys[0]).toContain('start → doing');
       // And the whole answer is exactly the lines this verb prints: nothing gained one.
-      expect(whole.split(LF).filter((line) => line.includes('start → doing'))).toHaveLength(1);
+      expect(whole.split(LF).filter((line) => line.includes('start → doing'))).toHaveLength(
+        probe.lines ?? 1,
+      );
     });
   }
 

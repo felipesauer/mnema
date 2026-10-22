@@ -34,14 +34,18 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
     .addOption(
       scopeOption(
         'handoff',
-        'Omitted, a handoff lands in the public tree (coordination between actors).',
+        'Omitted, a handoff (and its brief) lands in the tree that holds the task, and in the public tree when no tree here holds it.',
       ),
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
     // agents it is about: `<from>`/`<to>` are the subject, `--which` is the author.
     .option('--which <agent>', WHICH_HELP, declaredAgent)
+    .option(
+      '--brief <text>',
+      'what the next agent must read (up to 64 KiB); recorded as an observation about the task',
+    )
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (taskId: string, from: string, to: string) => {
+    .action(async (taskId: string, from: string, to: string, opts: { brief?: string }) => {
       const given = await fromTheGroup<{ scope?: string; which?: string }>(handoff, wiring);
       if (given === REFUSED) return;
       const { runHandoff } = await import('../commands/handoff.js');
@@ -56,6 +60,7 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
         task: taskId,
         fromAgent: from,
         toAgent: to,
+        ...(opts.brief !== undefined ? { brief: opts.brief } : {}),
         ...(scope !== undefined ? { scope } : {}),
         ...(given.which !== undefined ? { which: given.which } : {}),
         ...(run !== undefined ? { run } : {}),
@@ -70,6 +75,14 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
         io.out(
           onOneLine`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`,
         );
+        if (result.briefId !== undefined) {
+          io.out(`  The brief is observation ${result.briefId} about the task.`);
+        }
+        if (result.taskNotHeld === true) {
+          io.out(
+            onOneLine`  No tree here holds ${result.task}, so the handoff took the default tree (${result.scope}).`,
+          );
+        }
         reportRecorded(result, io);
         return;
       }

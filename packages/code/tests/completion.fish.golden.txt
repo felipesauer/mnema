@@ -383,6 +383,7 @@ complete -c mnema -f -n '__mnema_at "task"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task"' -l color -x -a 'auto always never'
 
 # mnema task create
+complete -c mnema -f -n '__mnema_at "task create"' -l description -r
 complete -c mnema -f -n '__mnema_at "task create"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "task create"' -l which -r
 complete -c mnema -f -n '__mnema_at "task create"' -s h -l help
@@ -402,6 +403,7 @@ complete -c mnema -f -n '__mnema_at "task move"' -a 'submit start block unblock 
 # mnema task handoff
 complete -c mnema -f -n '__mnema_at "task handoff"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "task handoff"' -l which -r
+complete -c mnema -f -n '__mnema_at "task handoff"' -l brief -r
 complete -c mnema -f -n '__mnema_at "task handoff"' -s h -l help
 complete -c mnema -f -n '__mnema_at "task handoff"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task handoff"' -l color -x -a 'auto always never'

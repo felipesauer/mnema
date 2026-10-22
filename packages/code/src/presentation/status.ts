@@ -64,7 +64,7 @@
  * classification of every value this module puts on a line, reconciled against the source.
  */
 
-import type { AwaitingJudgement, Bootstrap } from '@mnema/context';
+import type { AwaitingJudgement, Bootstrap, TaskStanding } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { fact } from './detail.js';
@@ -279,8 +279,22 @@ function workLines(render: Render, status: Bootstrap): string[] {
   return [
     `${served(status.work.length, status.workTotal)} live task(s):`,
     ...status.work.map((item) =>
-      render(itemLine([asId(item.id), oneLine(item.title), asState(item.state)])),
+      render(
+        itemLine([asId(item.id), oneLine(item.title), asState(item.state), ...standingOf(item)]),
+      ),
     ),
+  ];
+}
+
+/**
+ * Who has a task and what happened to it last, as the two columns after its state: nothing for a
+ * task with neither. The owner is a NAME out of the record (an agent label), and the last fact is
+ * the first words of a note or a move, so both are cut to one line here.
+ */
+function standingOf(item: TaskStanding): string[] {
+  return [
+    ...(item.owner !== undefined ? [`with ${oneLine(item.owner.name)}`] : []),
+    ...(item.lastFact !== undefined ? [`last: ${oneLine(item.lastFact.line)}`] : []),
   ];
 }
 
@@ -327,6 +341,7 @@ function awaitingLines(render: Render, status: Bootstrap): string[] {
           column(item.kind, KIND_WIDTH),
           oneLine(named(item)),
           asState(item.state),
+          ...(item.kind === 'task' ? standingOf(item) : []),
         ]),
       ),
     ),

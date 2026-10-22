@@ -70,6 +70,7 @@ import {
   type ScreenRefusal,
   screenContent,
   screened,
+  screenPassedAs,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
@@ -80,6 +81,7 @@ import { type AppendRefusal, appendFact } from '../workflow/append.js';
 import { type Judged, onTheRecordAsItStands } from '../workflow/as-the-record-stands.js';
 import { authorizingAnchor } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
+import { BRIEF_TOPIC } from './companion-topics.js';
 
 /** A memory was captured: the fact was appended. */
 export interface CaptureOk extends ScreenedWrite {
@@ -256,6 +258,8 @@ export interface HandoffOk extends ScreenedWrite {
    */
   readonly fromAgent: string;
   readonly toAgent: string;
+  /** The id of the observation that carries the brief, when a brief was given. */
+  readonly briefId?: string;
 }
 
 /** What the caller asks to record as a handoff. */
@@ -266,6 +270,11 @@ export interface HandoffInput {
   readonly fromAgent: string;
   /** The agent taking over (may equal `fromAgent`: a chat restart). */
   readonly toAgent: string;
+  /**
+   * What the next agent needs to read: recorded in the same call as an observation about
+   * the task (topic `brief`), because the handoff event itself carries only the two labels.
+   */
+  readonly brief?: string;
   /** The agent that recorded it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
@@ -291,6 +300,12 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   // reach the chain.
   // The run joins them on the same grounds as `task`: a caller's string nothing
   // here proves, riding the envelope of every event of the session.
+  // The brief is screened and measured BEFORE anything is appended, by the same rule its
+  // observation will meet, so a brief that would be refused leaves no handoff behind.
+  if (input.brief !== undefined) {
+    const preflight = screenPassedAs('brief', input.brief);
+    if (!preflight.ok) return preflight;
+  }
   const agents = screenContent({
     // Handed in as `subject`, which is what it BECOMES and the key the classification
     // answers under: a subject is a name on every kind whose subject reaches the door.
@@ -321,11 +336,23 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
     ),
   );
   if (!appended.ok) return appended;
+  const brief =
+    input.brief === undefined
+      ? undefined
+      : recordObservation(ctx, {
+          about: task,
+          topic: BRIEF_TOPIC,
+          text: input.brief,
+          ...(which !== undefined ? { which } : {}),
+          ...(agents.fields.run !== undefined ? { run: agents.fields.run } : {}),
+        });
+  if (brief !== undefined && !brief.ok) return brief;
   return {
     ok: true,
     fromAgent: agents.fields.fromAgent,
     toAgent: agents.fields.toAgent,
-    ...screened([...agents.replaced, ...agent.replaced]),
+    ...(brief !== undefined ? { briefId: brief.id } : {}),
+    ...screened([...agents.replaced, ...agent.replaced, ...(brief?.replaced ?? [])]),
   };
 }
 

@@ -12,6 +12,42 @@ with its own changelog.
 
 ### Added
 
+- **A task carries what it is, and a handoff what the next agent must read.** `mnema task create "<title>" --description "<text>"`
+  and the `create_task` tool's `description`, and `mnema task handoff <task> <from> <to> --brief "<text>"` and `record_handoff`'s
+  `brief`, take up to 64 KiB of text. The text is recorded in the same call as an observation about the task (topic
+  `description`, topic `brief`), so the format is unchanged, and the reply names the observation's id. `read_record`
+  and `show` of a task now serve the description, the last handoff (from, to, and its brief) and the notes about it,
+  newest first, with the count a cut of eight left out. `bootstrap`, `status` and `next_actions` say, for each task in
+  flight, who has it (the `to` of its last handoff, or who started it) and the last thing that happened to it, on one
+  line; `bootstrap`'s answer grows by 62 bytes (25 tokens) on the fixture the budget golden measures. Nothing here is
+  signed beyond what a note already is: the description and the brief are notes, not fields of the task.
+- **`refs` and `audit_refs` say what is at a path.** For an id no tree authored, read as a path under the project, the
+  answer says whether the file exists now and the SHA-256 of its bytes (a directory is named and not hashed, and a path
+  outside the project is not read, whether it is spelled outside or reached through a directory link that leads out;
+  a link that stays inside is followed). An id that is neither a record nor a file says both, in that order. It reads
+  the working tree and writes nothing.
+- **`search` finds a decision by its `ADR-<n>` label**, as `show` already did.
+
+### Fixed
+
+- **A handoff with no scope follows its task, and its brief with it.** It landed in the public tree even when the
+  task was private, and a brief of up to 64 KiB went with it into what is committed. With no `--scope` (or `scope`),
+  the `task handoff` command and `record_handoff` now record in the tree that holds the task, as a move does; when no tree
+  holds the task (or, over MCP, several records do), the default tree is kept and the reply says so.
+- **`next_actions` serves who has the task and what happened last.** The two facts were computed and the reply dropped
+  them; they now follow the list of moves, one line each.
+- **`show` and `read_record` count a task's notes the same way**, over every tree this machine holds: `show` read only
+  the tree that holds the task and missed a private note about a public one.
+- **A size refusal names the field the person passed** (`brief`, `description`), not the note's own `text`.
+- **`link_knowledge` and the `link` command say a missing subject plainly for a relation that is not an address**: `No tree
+  here holds <id>, so this link names nothing a reader can open. Check the id.` The wording about a rule and its
+  address stays for the relations that are addresses.
+- **`start` on a task in DRAFT says that `submit` comes first**, and any refused move names the one move from the
+  current state that reaches a state where the action is legal, read off the transition table.
+- **Linking a task to a path in the public tree no longer says "the rule it names".** It says "the task it names", and
+  `link_knowledge` now prints, as the command line did, where the thing the link starts from lives when that tree does
+  not travel (the result carried it and the server never printed it).
+
 - **`bootstrap` names the channels that are off on this machine.** The reply carries one more line, of its own beside
   the JSON, when a channel is off for the project (the two that begin off, until a person switches them on, or any a
   person switched off): `Off on this machine: <names>. Only a person turns one on, with `mnema switch on <name>`.` It is

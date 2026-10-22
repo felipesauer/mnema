@@ -62,6 +62,31 @@ describe('gate: legality', () => {
     expect(illegalChecked).toBeGreaterThan(0);
   });
 
+  it('says what comes first when the action is legal one move away', () => {
+    // A task is born in DRAFT, and `start` is the first thing anyone tries on it.
+    expect(gate({ from: 'DRAFT', action: 'start', who: WHO })).toEqual({
+      ok: false,
+      code: 'ILLEGAL_TRANSITION',
+      message:
+        'cannot "start" a task in DRAFT: "submit" comes first (it moves the task to READY, where "start" is legal)',
+    });
+    expect(gate({ from: 'READY', action: 'complete', who: WHO })).toMatchObject({
+      message: expect.stringContaining('"start" comes first (it moves the task to IN_PROGRESS'),
+    });
+  });
+
+  it('says nothing about what comes first when no single move leads to the action', () => {
+    // From DONE the only move is `reopen`, which reaches IN_PROGRESS, where `approve` is not legal.
+    expect(gate({ from: 'DONE', action: 'approve', who: WHO })).toEqual({
+      ok: false,
+      code: 'ILLEGAL_TRANSITION',
+      message: 'cannot "approve" a task in DONE',
+    });
+    expect(gate({ from: 'CANCELED', action: 'start', who: WHO })).toMatchObject({
+      message: 'cannot "start" a task in CANCELED',
+    });
+  });
+
   it('rejects an unknown state', () => {
     const result = gate({ from: 'NOPE', action: 'start', who: WHO });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_STATE' });

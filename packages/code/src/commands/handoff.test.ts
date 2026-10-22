@@ -6,6 +6,7 @@ import { type DiscoveryEnv, orderedEvents, projectHandoffs, resolveTrees } from 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runHandoff } from './handoff.js';
 import { type InitContext, type InitResult, runInit } from './init.js';
+import { runTask } from './task.js';
 
 /** Founds the project; a refusal here is a broken setup, not a case. */
 function found(ctx: InitContext): InitResult {
@@ -52,6 +53,7 @@ describe('mnema task handoff', () => {
       fromAgent: 'claude-code',
       toAgent: 'cursor',
       scope: 'public',
+      taskNotHeld: true,
     });
     // The handoff really landed, keyed by the task.
     const root = resolveTrees(repo, env).projectPublic as string;
@@ -206,5 +208,131 @@ describe('mnema task handoff --which: the agent that RECORDED it', () => {
       message: 'the authorizing human and the executing agent must be different identities',
     });
     expect(roots.reduce((n, root) => n + handoffsIn(root).length, 0)).toBe(before);
+  });
+});
+
+describe('mnema task handoff --brief: what the next agent must read', () => {
+  /** Every observation in a tree: its id, what it is about, its topic and its text. */
+  function observationsIn(root: string) {
+    return orderedEvents({ root }, catalogUpcasters()).flatMap((e) =>
+      e.kind === 'observation.recorded' ? [{ id: e.subject, ...e.payload }] : [],
+    );
+  }
+
+  it('records the handoff and, in the same call, a `brief` observation about the task', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'The schema is done.\nStart at src/x.ts.' },
+    );
+    if (!result.ok) throw new Error('the handoff was refused');
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(observationsIn(root)).toEqual([
+      {
+        id: result.briefId,
+        about: 'T',
+        topic: 'brief',
+        text: 'The schema is done.\nStart at src/x.ts.',
+      },
+    ]);
+    expect(handoffsOf(root).get('T')?.length).toBe(1);
+  });
+
+  it('records no observation, and names no id, when no brief was given', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff({ cwd: repo, env }, { task: 'T', fromAgent: 'a', toAgent: 'b' });
+    expect(result.ok && 'briefId' in result).toBe(false);
+    expect(observationsIn(resolveTrees(repo, env).projectPublic as string)).toEqual([]);
+  });
+
+  it('refuses a brief over 64 KiB and leaves NO handoff behind', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'x'.repeat(65_537) },
+    );
+    expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'CONTENT_TOO_LARGE' });
+    // The field the person passed, not the note's own `text`.
+    expect(!result.ok && result.reason === 'REFUSED' && result.message).toContain('"brief" is');
+    expect(!result.ok && result.reason === 'REFUSED' && result.message).not.toContain('"text"');
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(handoffsOf(root).has('T')).toBe(false);
+    expect(observationsIn(root)).toEqual([]);
+  });
+
+  it('accepts a brief of exactly 64 KiB', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'x'.repeat(65_536) },
+    );
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('a handoff with no scope follows its task', () => {
+  /** A task born in `scope`, and the observations of one tree, for what the brief is. */
+  function aTask(repo: string, env: DiscoveryEnv, scope: 'public' | 'private'): string {
+    const made = runTask({ cwd: repo, env }, { title: 'Wire the importer', scope });
+    if (!made.ok) throw new Error('setup: task refused');
+    return made.id;
+  }
+
+  /** What a tree holds as a handoff or as the brief observation. */
+  function heldIn(root: string): { handoffs: number; briefs: string[] } {
+    const events = orderedEvents({ root }, catalogUpcasters());
+    return {
+      handoffs: events.filter((e) => e.kind === 'handoff.recorded').length,
+      briefs: events.flatMap((e) =>
+        e.kind === 'observation.recorded' && e.payload.topic === 'brief' ? [e.payload.text] : [],
+      ),
+    };
+  }
+
+  it('lands the handoff and its brief in the private tree when the task is private', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const task = aTask(repo, env, 'private');
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task, fromAgent: 'alice', toAgent: 'bob', brief: 'PRIVBRIEF yak' },
+    );
+    expect(result).toMatchObject({ ok: true, scope: 'private' });
+    expect(result.ok && result.taskNotHeld).toBeUndefined();
+    const trees = resolveTrees(repo, env);
+    expect(heldIn(trees.projectPrivate as string)).toEqual({
+      handoffs: 1,
+      briefs: ['PRIVBRIEF yak'],
+    });
+    expect(heldIn(trees.projectPublic as string)).toEqual({ handoffs: 0, briefs: [] });
+  });
+
+  it('lands in the public tree when the task is public', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const task = aTask(repo, env, 'public');
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task, fromAgent: 'alice', toAgent: 'bob', brief: 'PUBBRIEF' },
+    );
+    expect(result).toMatchObject({ ok: true, scope: 'public' });
+    const trees = resolveTrees(repo, env);
+    expect(heldIn(trees.projectPublic as string).briefs).toEqual(['PUBBRIEF']);
+    expect(heldIn(trees.projectPrivate as string)).toEqual({ handoffs: 0, briefs: [] });
+  });
+
+  it('an explicit scope still wins over the tree that holds the task', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const task = aTask(repo, env, 'private');
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task, fromAgent: 'alice', toAgent: 'bob', scope: 'public' },
+    );
+    expect(result).toMatchObject({ ok: true, scope: 'public' });
   });
 });

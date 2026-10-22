@@ -621,10 +621,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The last-switch-wins fold; the one `channel.switched` case running it asserts advanced tables equal replayed ones, never reading the `on` it decided or the attribution beside it.',
   },
-  'packages/core/src/projections/decision-store.ts': {
-    reached: 'nobody imports it',
-    why: 'Tests only ever reach its four decisions-table functions as ProjectionCache method bodies, so every assertion is about the cache facade and materializeDecisions is named by no test.',
-  },
   'packages/core/src/projections/knowledge-store.ts': {
     reached: 'nobody imports it',
     why: 'cache.test.ts reaches its four knowledge tables only through ProjectionCache, and listLinksByRelation is exercised only by context tests that load @mnema/core from dist.',
@@ -659,7 +655,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 49,
   presentation: 9,
-  projections: 4,
+  projections: 3,
   completion: 4,
   commands: 2,
   barrels: 3,
@@ -868,7 +864,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/decision.test.ts': 8,
   'packages/code/src/commands/exposure.test.ts': 13,
   'packages/code/src/commands/guard.test.ts': 11,
-  'packages/code/src/commands/handoff.test.ts': 8,
+  'packages/code/src/commands/handoff.test.ts': 9,
   'packages/code/src/commands/inherit.test.ts': 15,
   'packages/code/src/commands/init.test.ts': 8,
   'packages/code/src/commands/key-protect.test.ts': 6,
@@ -909,6 +905,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/decisions-in-git.test.ts': 2,
   'packages/code/src/env.test.ts': 4,
   'packages/code/src/every-refusal-is-red.test.ts': 8,
+  'packages/code/src/file-behind-a-path.test.ts': 6,
   'packages/code/src/git-log.test.ts': 7,
   'packages/code/src/key-file.test.ts': 2,
   'packages/code/src/mcp/hook-reply.test.ts': 2,
@@ -957,6 +954,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-correction-becomes-a-proposal.test.ts': 14,
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
+  'packages/code/tests/a-handoff-follows-its-task-and-the-reads-agree.test.ts': 16,
   'packages/code/tests/a-home-of-its-own.test.ts': 8,
   'packages/code/tests/a-hook-is-turned-on-by-a-person.test.ts': 7,
   'packages/code/tests/a-hook-that-cannot-record-still-asks-and-says-so-once.test.ts': 9,
@@ -1007,6 +1005,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
   'packages/code/tests/a-subagent-hands-back-its-decisions.test.ts': 12,
+  'packages/code/tests/a-task-carries-its-prose.test.ts': 10,
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
   'packages/code/tests/a-tool-answers-without-indentation.test.ts': 11,
   'packages/code/tests/a-tool-description-moves-the-four-weights.test.ts': 8,
@@ -1140,7 +1139,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/witnessing.ts': 0,
   'packages/code/tests/ten-writers-one-record.test.ts': 10,
   'packages/code/tests/the-address-a-proof-names-is-checked.test.ts': 6,
-  'packages/code/tests/the-address-names-a-rule-a-reader-can-open.test.ts': 13,
+  'packages/code/tests/the-address-names-a-rule-a-reader-can-open.test.ts': 15,
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
   'packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts': 10,
   'packages/code/tests/the-agent-is-told-a-move-was-made-apart.test.ts': 15,
@@ -1326,6 +1325,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/src/context/search.test.ts': 6,
   'packages/context/src/context/skills.test.ts': 6,
   'packages/context/src/context/switches.test.ts': 6,
+  'packages/context/src/context/task-story.test.ts': 5,
   'packages/context/src/context/tasks.test.ts': 6,
   'packages/context/src/context/unread.test.ts': 6,
   'packages/context/src/guard/guard.test.ts': 4,
@@ -1381,6 +1381,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
   'packages/core/src/knowledge/a-note-can-be-retracted.test.ts': 13,
+  'packages/core/src/knowledge/companion-topics.test.ts': 2,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
   'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
   'packages/core/src/knowledge/only-the-identity-that-linked-retracts-it.test.ts': 12,
@@ -1406,7 +1407,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/projections/reference-store.test.ts': 6,
   'packages/core/src/projections/run-store.test.ts': 7,
   'packages/core/src/projections/run.test.ts': 3,
-  'packages/core/src/projections/search-store.test.ts': 9,
+  'packages/core/src/projections/search-store.test.ts': 10,
   'packages/core/src/projections/skill-store.test.ts': 8,
   'packages/core/src/projections/skill.test.ts': 3,
   'packages/core/src/projections/state-store.test.ts': 7,
@@ -1640,6 +1641,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/edit-refuses-a-write.ts',
   'packages/code/src/edit-rules-push.ts',
   'packages/code/src/env.ts',
+  'packages/code/src/file-behind-a-path.ts',
   'packages/code/src/git-log.ts',
   'packages/code/src/governed-tree.ts',
   'packages/code/src/host-hook.ts',
@@ -1848,6 +1850,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/context/src/context/search.ts',
   'packages/context/src/context/skills.ts',
   'packages/context/src/context/switches.ts',
+  'packages/context/src/context/task-story.ts',
   'packages/context/src/context/tasks.ts',
   'packages/context/src/context/unread.ts',
   'packages/context/src/guard/guard.ts',
@@ -1892,6 +1895,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/identity/restore.ts',
   'packages/core/src/identity/roster.ts',
   'packages/core/src/identity/who.ts',
+  'packages/core/src/knowledge/companion-topics.ts',
   'packages/core/src/knowledge/operations.ts',
   'packages/core/src/one-line.ts',
   'packages/core/src/projections/accumulate.ts',
@@ -2031,8 +2035,9 @@ describe('every file has a test that names it', () => {
     // 82 once a test of the local count of tool calls asserts on what presentation/usage.ts words.
     // 83 with the instructions verb's wiring, which a test drives through the program.
     // 82 once the switch listing's test asserts on what presentation/switches.ts words.
-    expect(found.size).toBe(82);
-    expect(byReach('nobody imports it')).toBe(82);
+    // 81 once the search store's test names materializeDecisions.
+    expect(found.size).toBe(81);
+    expect(byReach('nobody imports it')).toBe(81);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2054,7 +2059,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(82);
+    expect(reasons).toHaveLength(81);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

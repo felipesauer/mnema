@@ -95,7 +95,13 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // this is the qualifier on that very sentence: what reaches the clone is the
           // address, and the rule it names may not. A qualifier printed before the
           // sentence it qualifies is a sentence a reader has to hold and then revise.
-          writeLines(io, subjectReachNotice(result.scope, result.subjectScope));
+          writeLines(
+            io,
+            subjectReachNotice(result.scope, result.subjectScope, result.subjectIsATask === true, {
+              subject: result.subject,
+              rel: result.rel,
+            }),
+          );
           return;
         }
         reportRefusal(wiring, result);

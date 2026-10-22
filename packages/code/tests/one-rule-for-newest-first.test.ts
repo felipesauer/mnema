@@ -182,6 +182,9 @@ const THE_ORDERINGS: readonly Rostered[] = [
     via: 'compareSearchHits',
   },
   { file: 'context/src/context/skills.ts', by: 'byNameThenId', means: OTHER },
+  { file: 'context/src/context/task-story.ts', by: 'byNewestMove', means: NEWEST },
+  { file: 'context/src/context/task-story.ts', by: 'newestRecordedFirst', means: NEWEST },
+  { file: 'context/src/context/task-story.ts', by: 'newestRecordedFirst', means: NEWEST },
   { file: 'context/src/context/switches.ts', by: 'earliestSwitchOffFirst', means: OLDEST },
   { file: 'context/src/intelligence/accountability.ts', by: 'byCountThenWhich', means: OTHER },
   { file: 'context/src/intelligence/accountability.ts', by: 'byTotalThenWho', means: OTHER },
@@ -484,7 +487,7 @@ describe('one rule for newest first', () => {
     // what makes a scan that suddenly matches nothing a failure rather than a pass.
     expect(INSTALLED.length).toBeGreaterThanOrEqual(44);
     expect(NAMED.length).toBeGreaterThanOrEqual(20);
-    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(9);
+    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(12);
     expect(THE_ORDERINGS.filter((each) => each.means === OLDEST)).toHaveLength(4);
   });
 

@@ -275,6 +275,21 @@ function refuseNamedSecret(field: string, found: readonly SecretClass[]): NameHo
 }
 
 /**
+ * The measure a text that will be recorded as a NOTE'S `text` meets, said under the name of the
+ * field the person passed: a handoff's `brief`, a task's `description`. The note's own field is
+ * called `text`, which is a word the caller never typed, so a refusal that named it sent them
+ * looking for a flag they had not used. Only the field named in the refusal changes.
+ */
+export function screenPassedAs(
+  field: string,
+  text: string,
+): ScreenedContent<{ text: string }> | ScreenRefusal {
+  const screened = screenContent({ text });
+  if (screened.ok || screened.code !== 'CONTENT_TOO_LARGE') return screened;
+  return { ...screened, message: screened.message.replace('"text"', JSON.stringify(field)) };
+}
+
+/**
  * The refusal a field over the limit earns, or undefined when it fits.
  *
  * ITS WORDS, AND THOSE OF {@link refuseNamedSecret}, SAID "Nothing was recorded", and that is

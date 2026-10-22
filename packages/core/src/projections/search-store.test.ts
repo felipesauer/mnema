@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { DecisionProjection } from './decision.js';
+import { materializeDecisions } from './decision-store.js';
 import type { MemoryProjection, ObservationProjection } from './knowledge.js';
 import {
   compareSearchHits,
@@ -525,5 +526,53 @@ describe('searchPertinent: the records that share any of several words', () => {
       'y',
       'ts',
     ]);
+  });
+});
+
+describe('searching by the citable label of a decision', () => {
+  const labelled = (id: string, adr: string, title: string, day: number): DecisionProjection => ({
+    ...decision(id, title, 'Chosen for reasons that never name a label.', day),
+    adr,
+  });
+
+  function indexDecisions(decisions: DecisionProjection[], other: Partial<SearchSources> = {}) {
+    index({ decisions, ...other });
+    materializeDecisions(db, decisions);
+  }
+
+  it('finds the decision that carries the label, in any case and with spaces around it', () => {
+    indexDecisions([
+      labelled('d-1', 'ADR-1', 'Use sqlite', 1),
+      labelled('d-48', 'ADR-48', 'Keep the notes out of the chain', 2),
+    ]);
+    for (const typed of ['ADR-48', 'adr-48', '  Adr-48 ']) {
+      expect(ids(searchRecord(db, { term: typed }).hits)).toEqual(['d-48']);
+    }
+    expect(searchRecord(db, { term: 'ADR-48' }).total).toBe(1);
+  });
+
+  it('puts the decision that carries the label before one that only mentions it', () => {
+    indexDecisions(
+      [labelled('d-1', 'ADR-1', 'Use sqlite', 1), labelled('d-48', 'ADR-48', 'Notes', 2)],
+      { memories: [memory('m-1', 'We follow ADR-48 when we write notes', 3)] },
+    );
+    const found = searchRecord(db, { term: 'ADR-48' });
+    expect(ids(found.hits)).toEqual(['d-48', 'm-1']);
+    expect(found.total).toBe(2);
+  });
+
+  it('answers a label no decision carries as it answers any term nothing matches', () => {
+    indexDecisions([labelled('d-1', 'ADR-1', 'Use sqlite', 1)]);
+    expect(searchRecord(db, { term: 'ADR-9' })).toEqual({ hits: [], total: 0 });
+  });
+
+  it('holds every decision a label names when two trees numbered it alike', () => {
+    indexDecisions([labelled('d-a', 'ADR-1', 'First', 1), labelled('d-b', 'ADR-1', 'Second', 2)]);
+    expect(ids(searchRecord(db, { term: 'ADR-1' }).hits).sort()).toEqual(['d-a', 'd-b']);
+  });
+
+  it('keeps a kind filter: a label asked of tasks finds no decision', () => {
+    indexDecisions([labelled('d-1', 'ADR-1', 'Use sqlite', 1)]);
+    expect(searchRecord(db, { term: 'ADR-1', kind: 'task' })).toEqual({ hits: [], total: 0 });
   });
 });

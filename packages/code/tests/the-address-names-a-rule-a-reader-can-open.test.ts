@@ -50,6 +50,8 @@ import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runInit } from '../src/commands/init.js';
 import { runLink } from '../src/commands/link.js';
 import { runRules } from '../src/commands/rules.js';
+import { runTask } from '../src/commands/task.js';
+import { subjectReachNotice } from '../src/recorded-content.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -213,6 +215,27 @@ describe('an address names a rule a reader can open, or it is not a rule that go
     // not a rule in some tree, and the two need different repairs.
     const nowhere = addressPublicly('01a08c99-0000-7000-8000-000000000000', 'src');
     expect(nowhere.ok && nowhere.subjectScope).toBeUndefined();
+  });
+
+  it('calls a task a task: a link out of one is not about a rule', () => {
+    // MEASURED: linking a task in the private tree to a path in the public one answered "The rule
+    // it names is in the private tree", about a thing that is not a rule.
+    const made = runTask({ cwd: repo, env }, { title: 'A private task', scope: 'private' });
+    if (!made.ok) throw new Error('task refused');
+    const fromATask = addressPublicly(made.id, 'src');
+    expect(fromATask.ok && fromATask.subjectIsATask).toBe(true);
+    const said = fromATask.ok
+      ? subjectReachNotice('public', fromATask.subjectScope, fromATask.subjectIsATask === true)
+      : [];
+    expect(said.join('\n')).toContain('The task it names is in the private tree');
+    expect(said.join('\n')).not.toContain('rule');
+
+    // THE CONTRAST: a rule keeps its sentence, and its result does not claim to be a task.
+    const fromARule = addressPublicly(aRule('A private rule', 'private'), 'src');
+    expect(fromARule.ok && fromARule.subjectIsATask).toBeUndefined();
+    expect(
+      subjectReachNotice('public', fromARule.ok ? fromARule.subjectScope : undefined).join('\n'),
+    ).toContain('The rule it names is in the private tree');
   });
 
   it('leaves the derivation one function, asked by every reading', () => {

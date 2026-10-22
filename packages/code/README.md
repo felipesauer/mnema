@@ -47,6 +47,11 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   `mnema doctor` points at a missing README, `.prettierignore` line or instructions block, names a pre-commit hook,
   Biome, dprint or lint-staged configuration that would rewrite the record, and edits none of
   those files.
+- **Tasks that carry their words.** The `--description` of `task create` and the `--brief` of `task handoff` (and the
+  same two arguments of the `create_task` and `record_handoff` tools) record up to 64 KiB of text beside the task,
+  as a note about it; `mnema show <task>` serves the description, the last handoff with its brief and the notes,
+  and the opening read says who has each task in flight and what happened last. A handoff that names no tree
+  is recorded where its task lives. The format does not change.
 - **`mnema verify`**, which reads the record with no key and no network and prints the level it
   reached.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules

@@ -566,6 +566,8 @@ describe('MCP session + tools: unit', () => {
     expect(result).toEqual({
       ok: true,
       recorded: ['claude-code', 'claude-code'],
+      followedNoTree:
+        '  No tree of this workspace holds a-task-id, so the handoff took the default tree (public).',
       scope: 'public',
       project,
     });
@@ -3054,6 +3056,7 @@ describe('MCP server: end to end over a real client', () => {
     expect(handed.isError).toBeFalsy();
     expect(textOf(handed)).toBe(
       'Recorded handoff on some-id: claude-code → claude-code\n' +
+        '  No tree of this workspace holds some-id, so the handoff took the default tree (public).\n' +
         '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
         `  In the project at ${project}.`,
     );
@@ -3067,7 +3070,8 @@ describe('MCP server: end to end over a real client', () => {
     expect(textOf(linked)).toBe(
       'Linked some-id -reminds-me-of→ ghost-id\n' +
         '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
-        `  In the project at ${project}.`,
+        `  In the project at ${project}.\n` +
+        '  No tree here holds some-id, so this link names nothing a reader can open. Check the id.',
     );
 
     // Where each landed, and the split is the rule rather than an accident: the

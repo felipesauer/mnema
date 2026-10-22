@@ -253,6 +253,7 @@ import {
   type SkillRef,
   skillsAwaitingJudgement,
 } from './skills.js';
+import { type TaskStanding, taskStanding } from './task-story.js';
 import {
   liveWork,
   type TaskAwaitingJudgement,
@@ -433,15 +434,24 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
       ...skillsAwaitingJudgement(caches),
     ].sort(byUpdatedDesc),
   );
+  // WHO HAS A TASK AND WHAT HAPPENED TO IT LAST, asked of the tasks that are SERVED and no others:
+  // it reads each one's own history, so it is paid for the handful a session is shown and not for
+  // the whole list the cut leaves out.
+  const standing = <T extends { readonly id: string }>(item: T): T & TaskStanding => ({
+    ...item,
+    ...taskStanding(caches, item.id),
+  });
   const unread = unreadKinds(caches);
   return {
     resume: resume(caches, scope),
-    work: work.served,
+    work: work.served.map(standing),
     workTotal: work.total,
     skills,
     decisions: decisions.served,
     decisionsTotal: decisions.total,
-    awaitingJudgement: awaiting.served,
+    awaitingJudgement: awaiting.served.map((item) =>
+      item.kind === 'task' ? standing(item) : item,
+    ),
     awaitingJudgementTotal: awaiting.total,
     // Absent when there is nothing to declare, which is the `hidden` idiom of
     // `searchRecords` and the reason an empty record's answer is unchanged by this

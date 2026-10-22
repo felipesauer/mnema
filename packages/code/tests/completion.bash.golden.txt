@@ -60,9 +60,9 @@ _mnema_flags() {
     'stack enable') echo '--from --scope --to -h --help -V --version --color' ;;
     'stack disable') echo '--scope --to -h --help -V --version --color' ;;
     'task') echo '--scope --which -h --help -V --version --color' ;;
-    'task create') echo '--scope --which -h --help -V --version --color' ;;
+    'task create') echo '--description --scope --which -h --help -V --version --color' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
-    'task handoff') echo '--scope --which -h --help -V --version --color' ;;
+    'task handoff') echo '--scope --which --brief -h --help -V --version --color' ;;
     'task next') echo '--json -h --help -V --version --color' ;;
     'task guard') echo '--actor --reason --note --feedback --json -h --help --which -V --version --color' ;;
     'promote') echo '--workspace --evidence -h --help -V --version --color' ;;

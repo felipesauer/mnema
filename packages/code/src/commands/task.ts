@@ -59,6 +59,8 @@ export interface TaskCreated extends Replacement, Landed {
   readonly id: string;
   /** The short human-facing alias (`t-xxxx`), derived from the id. */
   readonly alias: string;
+  /** The observation that carries the description, when one was given. */
+  readonly descriptionId?: string;
 }
 
 /** The create was refused. */
@@ -92,7 +94,7 @@ export type TaskRefused =
  */
 export function runTask(
   ctx: TaskContext,
-  input: { title: string; scope?: Scope; which?: string; run?: string },
+  input: { title: string; description?: string; scope?: Scope; which?: string; run?: string },
 ): TaskCreated | TaskRefused {
   const writing = treesToWrite(ctx);
   const { trees } = writing;
@@ -116,6 +118,7 @@ export function runTask(
       },
       {
         title: input.title,
+        ...(input.description !== undefined ? { description: input.description } : {}),
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
@@ -133,6 +136,7 @@ export function runTask(
     ok: true,
     id: created.id,
     alias: deriveAlias('task', created.id),
+    ...(created.descriptionId !== undefined ? { descriptionId: created.descriptionId } : {}),
     scope,
     ...forwardReplacement(created),
   };

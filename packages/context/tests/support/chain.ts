@@ -273,8 +273,9 @@ export function moveTask(
   to: string,
   action: string,
   fields?: TransitionFields,
+  which?: string,
 ): void {
-  moveTaskAt(b, id, b.now(), from, to, action, fields);
+  moveTaskAt(b, id, b.now(), from, to, action, fields, which);
 }
 
 /**
@@ -293,10 +294,17 @@ export function moveTaskAt(
   to: string,
   action: string,
   fields?: TransitionFields,
+  which?: string,
 ): void {
   b.writer.append(
     taskTransitioned(
-      { at, who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      {
+        at,
+        who: b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: id,
+        ...(which !== undefined ? { which } : {}),
+      },
       { from, to, action, ...(fields !== undefined ? { fields } : {}) },
     ),
   );
@@ -644,11 +652,17 @@ export function handoff(b: Bench, task: string, fromAgent: string, toAgent: stri
 }
 
 /** Appends an `observation.recorded` about an entity, returning the note's id. */
-export function observe(b: Bench, obsId: string, about: string, text = 'noted'): string {
+export function observe(
+  b: Bench,
+  obsId: string,
+  about: string,
+  text = 'noted',
+  topic = 'note',
+): string {
   b.writer.append(
     observationRecorded(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: obsId },
-      { about, topic: 'note', text },
+      { about, topic, text },
     ),
   );
   return obsId;

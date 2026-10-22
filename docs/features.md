@@ -56,6 +56,14 @@ Each line says what it does and what it leaves unproven; the page it points to h
   it. It records nothing and reads which tool ran, never the answer; `mnema switch off
   choice-settled` turns it off. The other hosts' hooks files carry it on their own question tools,
   documented and not measured.
+- **A task carries its description, and a handoff its brief.** The `--description` of `task create` and
+  the `--brief` of `task handoff` (the `description` of `create_task` and the `brief` of `record_handoff`, for
+  an agent) record the text, up to 64 KiB, in the same call as an observation about the task; the format
+  does not change, and the text is a note, signed as a note is. `mnema show <task>` serves the description,
+  the last handoff and the notes, newest first and cut at eight with the count left out, and the opening
+  read says who has each task in flight and the last thing that happened to it. A handoff that names no
+  tree is recorded where its task lives, so a private task's brief stays private. Nothing checks that the
+  text is true of the work.
 - **A note can be taken back.** `mnema retract` appends a signed retraction of a memory or an
   observation, with a reason. The note leaves the opening and the search and stays in the record,
   and `verify` still sees both facts: nothing is erased.

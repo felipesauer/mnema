@@ -16,9 +16,10 @@
  * it is a reference resolved on read, so a task in another tree is honest
  * dangling, never a refusal here.
  *
- * The birth scope is a per-action choice, exactly as for a memory: an explicit
- * `scope` wins; when omitted, the KIND decides: a handoff coordinates two actors,
- * so it belongs to the tree both of them can read. The `which` is the agent that
+ * The birth scope: an explicit `scope` wins; when omitted, the handoff (and its brief)
+ * FOLLOWS THE TASK to the tree that holds it, as a move does, so a private task's brief is
+ * never committed by a handoff that named no tree. Only when no tree holds the task does the
+ * KIND decide (public: a handoff coordinates two actors), and the result says so. The `which` is the agent that
  * RECORDED the handoff, distinct from the `from`/`to` agents it is about (the
  * recorder may be neither), and it names the agent without moving the tree.
  */
@@ -27,6 +28,7 @@ import { catalogUpcasters } from '@mnema/chain';
 import { chainRootForScope, type DiscoveryEnv, resolveScope, type Scope } from '@mnema/core';
 import { openTreeForWriting, recordHandoff } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { locateEntityScopeKept } from '../tree-sources.js';
 import {
   type AgentWrites,
   originOfTheWrite,
@@ -51,6 +53,13 @@ export interface HandoffRecorded extends Replacement, Landed {
   readonly fromAgent: string;
   /** The agent taking over. */
   readonly toAgent: string;
+  /** The observation that carries the brief, when one was given. */
+  readonly briefId?: string;
+  /**
+   * True when no `scope` was given and no tree this machine holds has the task: the handoff
+   * took the default tree (public) for want of a tree to follow, and the reply has to say so.
+   */
+  readonly taskNotHeld?: true;
 }
 
 /** The record was refused. */
@@ -79,6 +88,7 @@ export function runHandoff(
     task: string;
     fromAgent: string;
     toAgent: string;
+    brief?: string;
     scope?: Scope;
     which?: string;
     run?: string;
@@ -86,11 +96,14 @@ export function runHandoff(
 ): HandoffRecorded | HandoffRefused {
   const writing = treesToWrite(ctx);
   const { trees } = writing;
-  const scope = resolveScope(
-    'handoff.recorded',
-    originOfTheWrite(writing, input.which),
-    input.scope,
-  );
+  // With no scope named, the task's own tree: the brief is up to 64 KiB of text and
+  // belongs where the task does. Only a task no tree holds falls to the kind's default.
+  const home =
+    input.scope === undefined
+      ? locateEntityScopeKept(trees, input.task, catalogUpcasters())
+      : undefined;
+  const scope =
+    home ?? resolveScope('handoff.recorded', originOfTheWrite(writing, input.which), input.scope);
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -109,6 +122,7 @@ export function runHandoff(
         task: input.task,
         fromAgent: input.fromAgent,
         toAgent: input.toAgent,
+        ...(input.brief !== undefined ? { brief: input.brief } : {}),
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
@@ -128,7 +142,9 @@ export function runHandoff(
     // record holds a placeholder, and the echo has to show what landed.
     fromAgent: recorded.fromAgent,
     toAgent: recorded.toAgent,
+    ...(recorded.briefId !== undefined ? { briefId: recorded.briefId } : {}),
     scope,
+    ...(input.scope === undefined && home === undefined ? { taskNotHeld: true as const } : {}),
     ...forwardReplacement(recorded),
   };
 }

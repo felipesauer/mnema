@@ -184,7 +184,7 @@ $ mnema task move submit <task-runbook> --scope public
 ! `task move` takes no --scope: a move follows the task to the tree it was born in.
 [exit 1]
 $ mnema task move approve <task-runbook> --note 'not from here'
-! Refused (ILLEGAL_TRANSITION): cannot "approve" a task in IN_PROGRESS
+! Refused (ILLEGAL_TRANSITION): cannot "approve" a task in IN_PROGRESS: "submit_review" comes first (it moves the task to IN_REVIEW, where "approve" is legal)
 [exit 1]
 $ mnema task move submit no-such-id
 ! No task no-such-id here.
