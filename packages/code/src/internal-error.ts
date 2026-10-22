@@ -36,7 +36,20 @@ const ENGINE_CLASSES: readonly (abstract new (...args: never[]) => Error)[] = [
 export function isInternalError(error: unknown): boolean {
   if (!(error instanceof Error)) return true;
   if (error instanceof TypeError && hasSystemCause(error)) return false;
+  if (error instanceof TypeError && isBadInput(error)) return false;
   return ENGINE_CLASSES.some((engine) => error instanceof engine);
+}
+
+/**
+ * The Node codes whose cause is the text a person (or their environment) handed over, not the
+ * product's code: `new URL` on an address that is not one. A closed list, so a `TypeError` that
+ * carries any other code is still a fault.
+ */
+const BAD_INPUT_CODES: ReadonlySet<string> = new Set(['ERR_INVALID_URL']);
+
+function isBadInput(error: Error): boolean {
+  const { code } = error as { code?: unknown };
+  return typeof code === 'string' && BAD_INPUT_CODES.has(code);
 }
 
 function hasSystemCause(error: Error): boolean {

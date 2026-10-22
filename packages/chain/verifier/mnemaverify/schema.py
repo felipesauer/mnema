@@ -24,7 +24,6 @@ cannot apply is reported and the line it applies to is UNCHECKED, never quietly 
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from typing import Any, NamedTuple

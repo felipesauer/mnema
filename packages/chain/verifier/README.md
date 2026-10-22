@@ -17,6 +17,8 @@ python3 mutate.py list                                 # the named mutations (mo
 Python 3.9 or later. **No third-party packages**: Ed25519 is RFC 8032 by hand, checked
 against the RFC's own test vectors, and the OpenTimestamps proof and the Bitcoin block
 header are parsed from their own published formats. There is nothing to install.
+`pyproject.toml` here names the reader, its version (the release's) and that floor, and holds the
+`ruff` rules CI checks it with; it declares no dependency and builds nothing.
 
 ## Why it exists
 
