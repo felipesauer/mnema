@@ -1119,6 +1119,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toBe(
       'Recorded handoff on a-task-id: claude-code → claude-code\n' +
+        '  No tree here holds a-task-id, so the handoff took the default tree (public).\n' +
         '  Landed in the public tree: committed with the repository, so it reaches every clone.',
     );
 

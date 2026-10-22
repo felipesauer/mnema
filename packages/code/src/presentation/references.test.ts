@@ -75,6 +75,13 @@ describe('the reference report', () => {
     expect(new Set(indents(referenceReport(renderPlain, graph())))).toEqual(new Set([2]));
   });
 
+  it('says an id that is neither a record nor a file is neither', () => {
+    const lines = referenceReport(renderPlain, graph(), { path: 'ADR-99', exists: false });
+    expect(lines.join('\n')).toContain(
+      'no record here by this id, and no file at this path in the working tree now.',
+    );
+  });
+
   it('prints no list it has nothing for', () => {
     // A heading reading `(0)` states an absence nobody asked about. What is shown
     // says what was found, and one hop of a graph often has no edges further out.

@@ -65,6 +65,32 @@ describe('fileBehindAPath', () => {
     expect(fileBehindAPath(root, '/etc/passwd')).toBeUndefined();
   });
 
+  it('answers nothing for a file reached through a directory link that leads out of the project', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'mnema-outside-'));
+    try {
+      writeFileSync(join(outside, 'outside.txt'), 'secret');
+      symlinkSync(outside, join(root, 'lnk'));
+      expect(fileBehindAPath(root, 'lnk/outside.txt')).toBeUndefined();
+      // Any component, not only the first: a link one level down leads out the same way.
+      mkdirSync(join(root, 'a'));
+      symlinkSync(outside, join(root, 'a', 'deep'));
+      expect(fileBehindAPath(root, 'a/deep/outside.txt')).toBeUndefined();
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('still follows a directory link that stays inside the project', () => {
+    mkdirSync(join(root, 'src'));
+    writeFileSync(join(root, 'src', 'a.ts'), 'x');
+    symlinkSync(join(root, 'src'), join(root, 'alias'));
+    expect(fileBehindAPath(root, 'alias/a.ts')).toMatchObject({
+      exists: true,
+      kind: 'file',
+      sha256: sha256('x'),
+    });
+  });
+
   it('answers nothing for an id: an entity is not a file', () => {
     expect(fileBehindAPath(root, '01a164a2-d991-7000-b03a-58c41c82ec80')).toBeUndefined();
   });

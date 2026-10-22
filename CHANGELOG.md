@@ -23,11 +23,25 @@ with its own changelog.
   signed beyond what a note already is: the description and the brief are notes, not fields of the task.
 - **`refs` and `audit_refs` say what is at a path.** For an id no tree authored, read as a path under the project, the
   answer says whether the file exists now and the SHA-256 of its bytes (a directory is named and not hashed, and a path
-  outside the project is not read). It reads the working tree and writes nothing.
+  outside the project is not read, whether it is spelled outside or reached through a directory link that leads out;
+  a link that stays inside is followed). An id that is neither a record nor a file says both, in that order. It reads
+  the working tree and writes nothing.
 - **`search` finds a decision by its `ADR-<n>` label**, as `show` already did.
 
 ### Fixed
 
+- **A handoff with no scope follows its task, and its brief with it.** It landed in the public tree even when the
+  task was private, and a brief of up to 64 KiB went with it into what is committed. With no `--scope` (or `scope`),
+  the `task handoff` command and `record_handoff` now record in the tree that holds the task, as a move does; when no tree
+  holds the task (or, over MCP, several records do), the default tree is kept and the reply says so.
+- **`next_actions` serves who has the task and what happened last.** The two facts were computed and the reply dropped
+  them; they now follow the list of moves, one line each.
+- **`show` and `read_record` count a task's notes the same way**, over every tree this machine holds: `show` read only
+  the tree that holds the task and missed a private note about a public one.
+- **A size refusal names the field the person passed** (`brief`, `description`), not the note's own `text`.
+- **`link_knowledge` and the `link` command say a missing subject plainly for a relation that is not an address**: `No tree
+  here holds <id>, so this link names nothing a reader can open. Check the id.` The wording about a rule and its
+  address stays for the relations that are addresses.
 - **`start` on a task in DRAFT says that `submit` comes first**, and any refused move names the one move from the
   current state that reaches a state where the action is legal, read off the transition table.
 - **Linking a task to a path in the public tree no longer says "the rule it names".** It says "the task it names", and

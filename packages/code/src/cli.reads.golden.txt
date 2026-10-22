@@ -39,7 +39,7 @@ $ mnema show no-such-id --json
 [exit 1]
 $ mnema refs no-such-id
 | no-such-id  ·  unresolved
-|   no file at this path now.
+|   no record here by this id, and no file at this path in the working tree now.
 |   nothing references it, and it references nothing.
 $ mnema refs no-such-id --json
 | {
@@ -62,11 +62,11 @@ $ mnema refs no-such-id --json
 | }
 $ mnema refs no-such-id --depth 2
 | no-such-id  ·  unresolved
-|   no file at this path now.
+|   no record here by this id, and no file at this path in the working tree now.
 |   nothing references it, and it references nothing.
 $ mnema refs no-such-id --direction out --depth 1
 | no-such-id  ·  unresolved
-|   no file at this path now.
+|   no record here by this id, and no file at this path in the working tree now.
 |   nothing references it, and it references nothing.
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project

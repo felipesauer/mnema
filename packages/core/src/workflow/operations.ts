@@ -65,6 +65,7 @@ import {
   type ScreenRefusal,
   screenContent,
   screened,
+  screenPassedAs,
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
@@ -376,7 +377,7 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // The description is measured BEFORE the task is appended, by the rule its observation
   // will meet, so one that would be refused leaves no task behind.
   if (input.description !== undefined) {
-    const preflight = screenContent({ text: input.description });
+    const preflight = screenPassedAs('description', input.description);
     if (!preflight.ok) return preflight;
   }
 

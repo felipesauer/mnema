@@ -72,6 +72,11 @@ describe('mnema task create --description', () => {
       { title: 'Too much', description: 'x'.repeat(65_537) },
     );
     expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'CONTENT_TOO_LARGE' });
+    // The field the person passed, not the note's own `text`.
+    expect(!result.ok && result.reason === 'REFUSED' && result.message).toContain(
+      '"description" is',
+    );
+    expect(!result.ok && result.reason === 'REFUSED' && result.message).not.toContain('"text"');
     expect(kindsIn(resolveTrees(repo, env).projectPublic as string)).toEqual(before);
   });
 });

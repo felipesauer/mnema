@@ -446,6 +446,11 @@ export type FactRecordedResult =
         readonly recorded: readonly string[];
         /** The observation that carries a handoff's brief, when one was given. */
         readonly briefId?: string;
+        /**
+         * Present when a handoff named no scope and no tree of the workspace holds the task
+         * (or several records do), so it took the default tree: the sentence the reply adds.
+         */
+        readonly followedNoTree?: string;
       })
   | {
       readonly ok: false;
@@ -531,8 +536,35 @@ export function runRecordHandoff(
     project?: string;
   },
 ): FactRecordedResult {
-  const route = routeWrite(session, 'handoff.recorded', input);
-  if (!route.ok) return route;
+  const named = routeWrite(session, 'handoff.recorded', input);
+  if (!named.ok) return named;
+  // With no scope named, the handoff and its brief FOLLOW THE TASK to the tree that holds it,
+  // as a move does: a private task's brief (up to 64 KiB) is never committed by a handoff that
+  // named no tree. A `project` the caller named keeps the write in that project.
+  let route = named;
+  let followedNoTree: string | undefined;
+  if (input.scope === undefined) {
+    const located = locateEntity(session, input.task);
+    if (located.outcome === 'found') {
+      const homeDir = located.home.target?.dir ?? session.project;
+      const namedDir = named.target?.dir ?? session.project;
+      if (input.project === undefined || homeDir === namedDir || located.home.scope === 'global') {
+        const target = input.project === undefined ? located.home.target : named.target;
+        route = {
+          ok: true,
+          scope: located.home.scope,
+          ...(target !== undefined ? { target } : {}),
+        };
+      } else {
+        followedNoTree = `  No tree of that project holds ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`;
+      }
+    } else {
+      followedNoTree =
+        located.outcome === 'several'
+          ? `  Several records hold ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`
+          : `  No tree of this workspace holds ${oneLine(input.task)}, so the handoff took the default tree (${named.scope}).`;
+    }
+  }
   const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = recordHandoff(ctx, {
@@ -556,6 +588,7 @@ export function runRecordHandoff(
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
     ...(recorded.briefId !== undefined ? { briefId: recorded.briefId } : {}),
+    ...(followedNoTree !== undefined ? { followedNoTree } : {}),
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),

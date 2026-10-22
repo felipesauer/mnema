@@ -9,13 +9,16 @@
  * The path is read against the project's ROOT (the same root an address is recorded relative to),
  * through the reduction the gates compare by, and a path that lies outside the project is not
  * read at all: it answers nothing rather than hashing a file the record has no business naming.
- * A link on disk is not followed (the walk that counts files does not follow one either), so it
+ * That holds for the path as the file system resolves it, not only as it is spelled: a directory
+ * that is a link out of the project, anywhere along the path, puts the file outside, and the
+ * answer is nothing. A link that stays inside the project is followed through. A link as the LAST
+ * part of the path is not followed (the walk that counts files does not follow one either), so it
  * is reported as what it is and not as the file behind it.
  */
 
 import { createHash } from 'node:crypto';
-import { closeSync, lstatSync, openSync, readSync } from 'node:fs';
-import { join } from 'node:path';
+import { closeSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import type { ReferenceGraph } from '@mnema/context';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 
@@ -58,6 +61,7 @@ export function fileBehindAPath(root: string, text: string): FileBehindAPath | u
   if (AN_ID.test(text.trim()) || addressLiesOutside(text, root)) return undefined;
   const path = addressRelativeToRoot(text, root);
   const at = join(root, path);
+  if (resolvesOutside(root, at)) return undefined;
   let found: ReturnType<typeof lstatSync>;
   try {
     found = lstatSync(at);
@@ -73,6 +77,23 @@ export function fileBehindAPath(root: string, text: string): FileBehindAPath | u
     // is not something this can say, so it is reported as the one thing that is known.
     return { path, exists: true, kind: 'other' };
   }
+}
+
+/**
+ * Whether the directory `at` sits in, with every link along the way resolved, is outside the
+ * project's root. A directory that does not exist is not outside: the file is simply absent.
+ */
+function resolvesOutside(root: string, at: string): boolean {
+  let realRoot: string;
+  let realParent: string;
+  try {
+    realRoot = realpathSync(root);
+    realParent = realpathSync(dirname(at));
+  } catch {
+    return false;
+  }
+  const from = relative(realRoot, realParent);
+  return from === '..' || from.startsWith(`..${sep}`) || isAbsolute(from);
 }
 
 /** The digest of one file, read in chunks so a large file is never held whole. */

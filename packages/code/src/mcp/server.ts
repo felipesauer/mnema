@@ -1082,9 +1082,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'the mnema chain, attributed to this agent and pinned to the current ' +
         'session. It carries the `task` and the two agent labels (`from`, `to`); ' +
         '`from == to` is legitimate (a chat restart). The `task` id is NOT checked ' +
-        'to exist. Optionally pick the scope and the project; omitted, a handoff is ' +
-        'coordination between actors and lands PUBLIC: committed, so both of them ' +
-        'reach it (global outside a project). A handoff has no id of its own: its ' +
+        'to exist. Optionally pick the scope and the project; omitted, the handoff follows ' +
+        'the task to the tree that holds it (a private task keeps its brief private) and ' +
+        'lands PUBLIC (global outside a project) only when no tree holds the task, which ' +
+        'the reply says. A handoff has no id of its own: its ' +
         'subject is the task. Optionally give a `brief` (up to 64 KiB of text, refused ' +
         'beyond it): what the next agent must read, recorded in the same call as an ' +
         'observation about the task (topic `brief`) whose id the reply names. The reply ' +
@@ -1099,7 +1100,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .min(1)
           .optional()
           .describe('What the next agent must read; recorded as an observation about the task.'),
-        scope: scopeField('Where the handoff lands; overrides the routing rule (public).'),
+        scope: scopeField('Where the handoff lands; overrides following the task.'),
         project: PROJECT_ARG,
       },
     },
@@ -1125,6 +1126,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
             ? `\n  The brief is observation ${result.briefId} about the task.`
             : ''),
         result,
+        result.followedNoTree !== undefined ? { after: [result.followedNoTree] } : {},
       );
     },
   );
@@ -1189,6 +1191,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
             result.scope,
             result.subjectScope,
             result.subjectIsATask === true,
+            { subject, rel: result.recorded[0] ?? rel },
           ),
         },
       );
@@ -1637,7 +1640,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'state. Use it to answer "what can I do to this task": each suggestion is a ' +
         'real move the gate would authorize. A terminal task returns an empty list ' +
         '(no legal moves). The task is looked for in EVERY project of this workspace; ' +
-        'an id no tree of it holds is refused, naming the projects searched. Read-only.',
+        'an id no tree of it holds is refused, naming the projects searched. After the ' +
+        'list, a line says who has the task and one the last thing that happened to it, ' +
+        'when the record has either. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The task id to inspect (from `bootstrap`, or `search`).'),
       },
@@ -1651,7 +1656,16 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // (misleadable) list.
         return refused(active, result);
       }
-      return served(active, result.actions);
+      // The moves are the first block, a JSON list; who has the task and what happened to it
+      // last follow as lines of their own, so a reader of the list is not handed a new shape.
+      return served(active, result.actions, [
+        ...(result.owner !== undefined
+          ? [
+              `Held by ${oneLine(result.owner.name)}, by ${result.owner.via === 'handoff' ? 'its last handoff' : 'who started it'}.`,
+            ]
+          : []),
+        ...(result.lastFact !== undefined ? [`Last: ${oneLine(result.lastFact.line)}`] : []),
+      ]);
     },
   );
 

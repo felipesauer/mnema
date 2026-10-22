@@ -34,7 +34,7 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
     .addOption(
       scopeOption(
         'handoff',
-        'Omitted, a handoff lands in the public tree (coordination between actors).',
+        'Omitted, a handoff (and its brief) lands in the tree that holds the task, and in the public tree when no tree here holds it.',
       ),
     )
     // The agent RECORDING the handoff, which is not necessarily either of the two
@@ -77,6 +77,11 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
         );
         if (result.briefId !== undefined) {
           io.out(`  The brief is observation ${result.briefId} about the task.`);
+        }
+        if (result.taskNotHeld === true) {
+          io.out(
+            onOneLine`  No tree here holds ${result.task}, so the handoff took the default tree (${result.scope}).`,
+          );
         }
         reportRecorded(result, io);
         return;

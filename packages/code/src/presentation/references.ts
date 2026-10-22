@@ -38,7 +38,8 @@ import type { Render } from './render.js';
 
 /** What is at a path, in the words of one fact. */
 function onDisk(file: FileBehindAPath): string {
-  if (!file.exists) return 'no file at this path now.';
+  if (!file.exists)
+    return 'no record here by this id, and no file at this path in the working tree now.';
   if (file.kind === 'file') return `a file now, ${file.bytes} bytes, sha256 ${file.sha256}`;
   if (file.kind === 'directory') return 'a directory now.';
   return 'present now, and neither a file nor a directory: its bytes are not read.';

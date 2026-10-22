@@ -70,6 +70,7 @@ import {
   type ScreenRefusal,
   screenContent,
   screened,
+  screenPassedAs,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
@@ -302,7 +303,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   // The brief is screened and measured BEFORE anything is appended, by the same rule its
   // observation will meet, so a brief that would be refused leaves no handoff behind.
   if (input.brief !== undefined) {
-    const preflight = screenContent({ text: input.brief });
+    const preflight = screenPassedAs('brief', input.brief);
     if (!preflight.ok) return preflight;
   }
   const agents = screenContent({

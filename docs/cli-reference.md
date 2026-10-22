@@ -24,9 +24,11 @@ CLI and the MCP tools behave identically, because they are the same call.
   (a reason to cancel, a note to complete) and the gate enforces it.
 - **Three places to write**: a committed project record the team shares, a
   private one for this machine, and a global one for knowledge that outlives any
-  single project. What a fact IS decides which: a decision, a task, a skill, a
-  handoff and a link are the project's, so they go to the committed record whoever
-  wrote them. A memory and an observation are the open case (the kind cannot say
+  single project. What a fact IS decides which: a decision, a task, a skill and a
+  link are the project's, so they go to the committed record whoever wrote them. A
+  handoff, and the brief recorded with it, goes where its task lives, so a private
+  task's brief is not committed by a handoff that named no tree; it goes to the
+  committed record only when no tree here holds the task, and the reply says so. A memory and an observation are the open case (the kind cannot say
   whether a note is the team's or nobody's but yours), so those two still follow the
   author: an agent's stays on its machine, yours goes to the record. `--scope`
   overrides any of it, a move follows the entity it moves, and every write says which
@@ -337,9 +339,12 @@ The record's format does not change: the text is a note, signed as a note is, an
 `mnema show <task>` and `read_record` then serve the description, the last handoff (from, to and its brief) and the
 notes about the task, newest first, cut at eight with the count the cut left out. `mnema status`, `bootstrap` and
 `next_actions` say of each task in flight who has it (the `to` of its last handoff, or whoever started it) and the last
-thing that happened to it, on one line. `mnema refs <path>` and `audit_refs`, for an id no tree authored that reads as
-a path under the project, add whether the file exists now and the SHA-256 of its bytes: a reading of the working
-tree, written nowhere. `mnema search "ADR-48"` finds the decision by its label, as `mnema show ADR-48` does.
+thing that happened to it, on one line; `next_actions` says it in two lines of its own after the list of moves. A
+handoff that names no `--scope` follows its task to the tree that holds it, brief included. `show` and
+`read_record` count the notes about a task over every tree this machine holds. `mnema refs <path>` and `audit_refs`,
+for an id no tree authored that reads as a path under the project, add whether the file exists now and the SHA-256
+of its bytes: a reading of the working tree, written nowhere. A path that leads out of the project, even through a
+directory link inside it, is not read; a link that stays inside is followed. `mnema search "ADR-48"` finds the decision by its label, as `mnema show ADR-48` does.
 
 `mnema verify` exits non-zero when the record is **broken** (in **either** tree, in
 **any** project it was told to cover, and the line says which), so it drops into

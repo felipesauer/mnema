@@ -97,7 +97,10 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // sentence it qualifies is a sentence a reader has to hold and then revise.
           writeLines(
             io,
-            subjectReachNotice(result.scope, result.subjectScope, result.subjectIsATask === true),
+            subjectReachNotice(result.scope, result.subjectScope, result.subjectIsATask === true, {
+              subject: result.subject,
+              rel: result.rel,
+            }),
           );
           return;
         }

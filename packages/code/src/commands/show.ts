@@ -147,6 +147,14 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_RECORD',
       };
     }
+    // A TASK'S STORY IS ABOUT EVERY TREE THIS MACHINE HOLDS, as `read_record` serves it: a note is
+    // written into the tree its writer chose, and a private note about a public task is still
+    // about that task. The holder stays first, so the task itself is read where it lives.
+    if (found.kind === 'task' && holder !== undefined) {
+      for (; next < SCOPES.length; next++) open(SCOPES[next] as Scope);
+      found =
+        readRecord([holder, ...opened.filter((source) => source !== holder)], input.id) ?? found;
+    }
     const id = found.id;
     const divergent = (holder?.cache.divergentMoves() ?? []).filter((move) => move.entityId === id);
     // A DECISION NAMES WHO RECORDED AND WHO RULED IT, so it prints identities and reads the

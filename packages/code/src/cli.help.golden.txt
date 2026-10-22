@@ -2008,8 +2008,9 @@ $ mnema task handoff --help
 | Options:
 |   --scope <scope>  where the handoff is born: public (team-visible), private
 |                    (this machine, this project), or global (personal,
-|                    cross-project). Omitted, a handoff lands in the public tree
-|                    (coordination between actors).
+|                    cross-project). Omitted, a handoff (and its brief) lands in
+|                    the tree that holds the task, and in the public tree when no
+|                    tree here holds it.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema: omit it when you are acting directly.
 |                    Declared (by this flag, or by MNEMA_AGENT_KEY), never
