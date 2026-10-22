@@ -99,31 +99,36 @@ import { aRuleReaches } from './where-the-record-is.mjs';
  */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
+/** The characters a word of a command line may hold and need no quoting for a shell. */
+const SAFE_IN_A_SHELL = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:@=,+/-';
+
 /**
- * How to start `program`: on Windows through a shell, the program quoted so that a path with a
- * space in it stays one word, because Node refuses to start the `.cmd` that npm writes any other
- * way; elsewhere as it is.
+ * How to start `program` with `args`: on Windows as one command line for a shell, each word quoted
+ * where it needs it, because Node refuses to start the `.cmd` that npm writes any other way
+ * (`EINVAL`) and warns of arguments handed to a shell as a list; elsewhere as they are.
  *
  * @param {string} program
+ * @param {readonly string[]} args
  * @param {NodeJS.Platform} [platform]
- * @returns {{ readonly program: string, readonly shell: boolean }}
+ * @returns {{ readonly command: string, readonly args: readonly string[], readonly shell: boolean }}
  */
-export function spawnTarget(program, platform = process.platform) {
-  return platform === 'win32'
-    ? { program: `"${program}"`, shell: true }
-    : { program, shell: false };
+export function spawnTarget(program, args, platform = process.platform) {
+  if (platform !== 'win32') return { command: program, args, shell: false };
+  const word = (/** @type {string} */ text) =>
+    [...text].every((char) => SAFE_IN_A_SHELL.includes(char)) ? text : '"' + text + '"';
+  return { command: ['"' + program + '"', ...args.map(word)].join(' '), args: [], shell: true };
 }
 
 /**
- * One start of the `mnema` this module runs, with the shell {@link spawnTarget} asks for.
+ * One start of the `mnema` this module runs, the way {@link spawnTarget} says.
  *
  * @param {readonly string[]} args
  * @param {import('node:child_process').SpawnSyncOptionsWithStringEncoding} options
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
 function startMnema(args, options) {
-  const target = spawnTarget(binaryToRun());
-  return spawnSync(target.program, args, { ...options, shell: target.shell });
+  const target = spawnTarget(binaryToRun(), args);
+  return spawnSync(target.command, target.args, { ...options, shell: target.shell });
 }
 
 /**

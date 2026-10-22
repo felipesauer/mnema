@@ -169,7 +169,7 @@ try {
 
   section('init, record, accept, a rule, verify');
   const project = join(real, 'project');
-  mkdirSync(project);
+  mkdirSync(join(project, 'src', 'billing'), { recursive: true });
   /**
    * @param {string[]} args
    * @param {string} [cwd]
