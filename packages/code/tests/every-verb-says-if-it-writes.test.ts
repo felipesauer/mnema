@@ -282,7 +282,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
   inherit: CANNOT_BE_EXERCISED,
   mcp: CANNOT_BE_EXERCISED,
-  // The reads.
+  // The reads. `workspace` is exercised by its `status`: what `init` makes are files of the notes
+  // beside the record, never an event and never a key (`the-workbench-verb.test.ts`).
+  workspace: { argv: () => ['workspace', 'status'] },
   status: { argv: (f) => ['status', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
   search: { argv: () => ['search', 'task'] },
@@ -650,7 +652,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts twenty writes and thirty reads over the whole surface', () => {
+  it('counts twenty writes and thirty-one reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -686,6 +688,7 @@ describe('every verb says if it writes', () => {
       'rules',
       'rules-file',
       'instructions',
+      'workspace',
       'verify',
       'site',
       'search',

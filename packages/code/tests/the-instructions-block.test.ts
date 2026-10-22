@@ -34,6 +34,8 @@ import {
   INSTRUCTIONS_BLOCK,
   INSTRUCTIONS_BODY,
   INSTRUCTIONS_END,
+  INSTRUCTIONS_VERSION,
+  KNOWN_BODIES,
   OWN_INSTRUCTIONS_FILES,
   withoutTheBlock,
 } from '../src/instructions-block.js';
@@ -184,10 +186,19 @@ describe('mnema instructions in a file of the person’s', () => {
   });
 
   it('replaces the block an earlier version wrote, and touches nothing outside its markers', () => {
-    const older = `${beginMarker('v1')}\n${INSTRUCTIONS_BODY}${INSTRUCTIONS_END}\n`;
+    const older = `${beginMarker('v1')}\n${KNOWN_BODIES.v1}${INSTRUCTIONS_END}\n`;
     put('AGENTS.md', `${THEIRS}\n${older}\n## After\n`);
     writeInstructions(project);
     expect(text('AGENTS.md')).toBe(`${THEIRS}\n${INSTRUCTIONS_BLOCK}\n## After\n`);
+  });
+
+  it('does not tell the model the whole of .mnema/ is off limits: workbench/ is the notes of the person', () => {
+    expect(INSTRUCTIONS_BODY).toContain('Never edit or reformat its files by hand, except');
+    expect(INSTRUCTIONS_BODY).toContain('`.mnema/workbench/`');
+    expect(INSTRUCTIONS_BODY).toContain('not part of the record');
+    // The version that said it flatly is still known, byte for byte, so it can be replaced.
+    expect(KNOWN_BODIES.v1).not.toContain('workbench');
+    expect(KNOWN_BODIES.v1).toContain('Never edit or reformat its files by hand.');
   });
 
   it('refuses a block of a version it does not know', () => {
@@ -346,7 +357,7 @@ describe('a code fence that is never closed', () => {
     put('AGENTS.md', OPEN);
     expect(did(writeInstructions(project))['AGENTS.md']).toBe('added');
     expect(did(writeInstructions(project))['AGENTS.md']).toBe('unchanged');
-    expect(text('AGENTS.md').split(beginMarker('v1')).length - 1).toBe(1);
+    expect(text('AGENTS.md').split(beginMarker(INSTRUCTIONS_VERSION)).length - 1).toBe(1);
     expect(checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found.state).toBe(
       'current',
     );

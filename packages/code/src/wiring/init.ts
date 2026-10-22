@@ -168,6 +168,11 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
             onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
           );
           if (result.completed.readme) io.out('Added .mnema/README.md.');
+          if (result.completed.readmeIsEarlier === true) {
+            io.out(
+              'Replaced .mnema/README.md, which an earlier mnema init wrote, with one that says workbench/ is the notes of the people working here.',
+            );
+          }
           if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
           if (result.completed.editorconfigReachesTheNotes === 'earlier') {
             io.out(

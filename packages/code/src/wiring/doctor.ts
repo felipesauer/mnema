@@ -6,7 +6,7 @@
  * twice, a namesake, a private tree left where it lived before it moved into the repository's
  * git directory. One line to a finding, each ending in what to do. Asked alone it reads and
  * writes nothing; `--fix vscode` writes one setting of VS Code's `settings.json`, and
- * `--fix private-tree` moves those private trees: each only when a person asks
+ * `--fix private-tree` moves those private trees, `--fix workbench` makes the notes' link again: each only when a person asks
  * (`commands/doctor.ts`).
  */
 
@@ -27,7 +27,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--fix <what>',
-      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory',
+      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `workbench` makes the link .mnema/workbench/local again where it is missing or points elsewhere',
     )
     .option('--dry-run', 'with --fix: say what would change and write nothing')
     .addHelpText(
@@ -49,10 +49,14 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         'it, keeps the file’s comments, and refuses a file it cannot edit safely.',
         '`--fix private-tree` writes: it moves each tail, as it is, into the repository’s private',
         'tree, and leaves where it was anything whose name there holds other bytes.',
+        '`--fix workbench` writes: it makes the link of the notes’ private half again (`git clean -x`',
+        'removes only the link), and makes no file and touches no note.',
       ].join('\n'),
     )
     .action(async (options: { fix?: string; dryRun?: boolean }) => {
-      const { fixPrivateTree, fixVscode, runDoctor } = await import('../commands/doctor.js');
+      const { fixPrivateTree, fixVscode, fixWorkbench, runDoctor } = await import(
+        '../commands/doctor.js'
+      );
       const ctx = {
         ...here(),
         env: discoveryEnv(),
@@ -60,14 +64,28 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         running: { file: process.argv[1] ?? '', version: VERSION },
       };
       if (options.fix !== undefined) {
-        if (options.fix !== 'vscode' && options.fix !== 'private-tree') {
-          io.err(render(fact('`--fix` knows how to fix two things: `vscode` and `private-tree`.')));
+        if (
+          options.fix !== 'vscode' &&
+          options.fix !== 'private-tree' &&
+          options.fix !== 'workbench'
+        ) {
+          io.err(
+            render(
+              fact(
+                '`--fix` knows how to fix three things: `vscode`, `private-tree` and `workbench`.',
+              ),
+            ),
+          );
           io.fail();
           return;
         }
         const dryRun = options.dryRun === true;
         const fixed =
-          options.fix === 'vscode' ? fixVscode(ctx, { dryRun }) : fixPrivateTree(ctx, { dryRun });
+          options.fix === 'vscode'
+            ? fixVscode(ctx, { dryRun })
+            : options.fix === 'workbench'
+              ? fixWorkbench(ctx, { dryRun })
+              : fixPrivateTree(ctx, { dryRun });
         for (const line of fixed.lines) io.out(line);
         if (fixed.refused) io.fail();
         return;

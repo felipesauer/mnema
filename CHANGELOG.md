@@ -12,6 +12,19 @@ with its own changelog.
 
 ### Added
 
+- **`mnema workspace init` and `mnema workspace status`: the notes of the people working on a project, beside the record
+  and not part of it.** `init` makes `.mnema/workbench/` in a project `mnema init` founded, in a git repository: a
+  `README.md` (what the folder is and how a session opens), `templates/` for a change, a brief, a study and a log,
+  `shared/` (committed) and `local`, a link to a folder in the repository's git directory that is this machine's, the same
+  from every worktree of the clone and kept when one is removed. The record's `.gitignore` is ensured before the link is
+  made, so `git add .mnema` never publishes the path of this machine; a file that is there is never written over, and a
+  second run changes nothing; a link that points elsewhere, or a `local` that is a real folder, is said and left. `status`
+  prints where the two roots are, whether the link is right, how many files each holds and one line for each change whose
+  `change.md` says `status: open` or `paused`, and never what a note says. `mnema doctor` gains a `workbench` topic: the
+  link missing (a fresh clone, or `git clean -x`, which removes only the link) or pointing elsewhere is said, and
+  `mnema doctor --fix workbench` makes it again with the notes as they were. Nothing here is signed or recorded, and
+  `verify` does not read it. [The workbench page](docs/workbench.md) has the rest. On Windows the link is a junction; that
+  is the one place this was not run.
 - **`bootstrap` names the channels that are off on this machine.** The reply carries one more line, of its own beside
   the JSON, when a channel is off for the project (the two that begin off, until a person switches them on, or any a
   person switched off): `Off on this machine: <names>. Only a person turns one on, with `mnema switch on <name>`.` It is
@@ -38,8 +51,8 @@ with its own changelog.
   the mnema tools are connected. It goes into `AGENTS.md` (created where there is none), into `CLAUDE.md`,
   `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
   `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
-  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
-  between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
+  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,632 characters,
+  between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
   mnema did not write is left as it is and said (exit 1), as is a symbolic link that leaves the project or leads
   nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
   founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to
@@ -63,8 +76,15 @@ with its own changelog.
   its next write. The record's `.editorconfig` reaches only `tails/` and `keys/` (`[{tails,keys}/**]`, where it was `[*]`),
   so an editor formats the notes as it formats the rest of the repository; `mnema init` replaces the file an earlier `init`
   wrote, byte for byte, and `mnema doctor` says so, and names the section to change in one somebody edited, which nothing
-  replaces. The record's `README.md` says nothing there is edited by hand except `workbench/`. Nothing yet writes the
-  folder: this only makes the record accept that it is there and is not proof.
+  replaces. The record's `README.md` says nothing there is edited by hand except `workbench/`. `mnema workspace init` makes the
+  folder; the record accepts that it is there and it is not proof.
+
+- **The standing instructions no longer tell a model the whole of `.mnema/` is off limits, and the record's page no longer
+  says so.** The block is `v2`: "Never edit or reformat its files by hand" now reads "except `.mnema/workbench/`, which
+  holds the notes of the people working here and is not part of the record". A file whose block is `v1`, byte for byte, is
+  replaced by `mnema instructions`; one somebody edited is left, as before. A `.mnema/README.md` that is, byte for byte,
+  the page an earlier `mnema init` wrote ("Nothing here is edited by hand or reformatted") is replaced by the current one
+  at the next `mnema init`, which says so, and `mnema doctor` names it; an edited one is left.
 
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process

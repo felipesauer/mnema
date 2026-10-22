@@ -104,6 +104,30 @@ export const RECORD_README = [
   '',
 ].join('\n');
 
+/**
+ * The page an `init` wrote before the workbench existed, byte for byte. It says nothing in the
+ * folder is edited by hand, and that was the whole folder, the notes included. A file that is
+ * exactly these bytes is ours to replace (`complete`); one that is not was edited by somebody, and
+ * is left as it is. The same rule as {@link RECORD_EDITORCONFIG_BEFORE_THE_WORKBENCH}.
+ */
+export const RECORD_README_BEFORE_THE_WORKBENCH = [
+  '# .mnema',
+  '',
+  "This is the project's mnema record: the signed, append-only log of the decisions behind the",
+  'work, kept with the repository and committed with it.',
+  '',
+  '- The record changes as the work does, and each change goes in the same commit as the work',
+  '  it describes.',
+  '- Nothing here is edited by hand or reformatted. The record is signed bytes: a formatter that',
+  '  rewrites one byte of it breaks the proof, so keep prettier and the like away from this folder.',
+  '- Private keys are never here: the `.gitignore` in this folder keeps them out of git.',
+  '',
+  'To check it, run `mnema verify` in the project. Without installing anything, clone',
+  'https://github.com/felipesauer/mnema and run',
+  '`python3 packages/chain/verifier/mnema_verify.py record <this folder>`.',
+  '',
+].join('\n');
+
 const IGNORED_LINE = '.mnema/';
 const IGNORING_LINES = ['.mnema', '.mnema/', '/.mnema', '/.mnema/'];
 
@@ -152,6 +176,11 @@ export interface PrettierIgnoreChange {
 /** What a project lacks of what init leaves beside the record. */
 export interface Missing {
   readonly readme: boolean;
+  /**
+   * The `README.md` there is, byte for byte, the page an earlier `init` wrote, which says the
+   * whole folder is never edited by hand: `complete` replaces it. Absent when it is anything else.
+   */
+  readonly readmeIsEarlier?: true;
   /** There is no `.editorconfig` in the record's folder. */
   readonly editorconfig: boolean;
   /**
@@ -204,13 +233,24 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
   return declaring !== undefined ? { path, did: 'created' } : undefined;
 }
 
+/** Whether the file at `path` is, byte for byte, the page an earlier `init` wrote. */
+function isTheEarlierPage(path: string): boolean {
+  try {
+    return readFileSync(path, 'utf-8') === RECORD_README_BEFORE_THE_WORKBENCH;
+  } catch {
+    return false;
+  }
+}
+
 /** What is missing in the project at `project`, by reading only. */
 export function whatIsMissing(project: string): Missing {
   const change = prettierIgnoreChange(project);
   const config = join(project, PROJECT_DIR, EDITORCONFIG_NAME);
   const reaches = editorconfigReachingTheNotes(config);
+  const page = join(project, PROJECT_DIR, README_NAME);
   return {
-    readme: !existsSync(join(project, PROJECT_DIR, README_NAME)),
+    readme: !existsSync(page),
+    ...(isTheEarlierPage(page) ? { readmeIsEarlier: true as const } : {}),
     editorconfig: !existsSync(config),
     ...(reaches !== undefined ? { editorconfigReachesTheNotes: reaches } : {}),
     ...(change !== undefined ? { prettierIgnore: change } : {}),
@@ -221,6 +261,7 @@ export function whatIsMissing(project: string): Missing {
 export function wroteAny(missing: Missing): boolean {
   return (
     missing.readme ||
+    missing.readmeIsEarlier === true ||
     missing.editorconfig ||
     missing.editorconfigReachesTheNotes === 'earlier' ||
     missing.prettierIgnore !== undefined
@@ -252,7 +293,7 @@ function writeEditorconfig(record: string): boolean {
 /** Writes what is missing and returns what it wrote. Touches nothing else. */
 export function complete(project: string): Missing {
   const missing = whatIsMissing(project);
-  if (missing.readme) {
+  if (missing.readme || missing.readmeIsEarlier === true) {
     writeFileSync(join(project, PROJECT_DIR, README_NAME), RECORD_README, 'utf-8');
   }
   if (missing.editorconfig) writeEditorconfig(join(project, PROJECT_DIR));

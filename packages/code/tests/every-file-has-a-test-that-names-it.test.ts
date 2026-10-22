@@ -597,6 +597,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Declares the `witness` group and prints its outcomes; one suite proves --calendar reaches `stamp` and --global the bare reading, another runs both acts over the global tail on the binary (each reads --global off the group now, where it used to reach nothing) and no golden ever invokes the verb.',
   },
+  'packages/code/src/wiring/workspace.ts': {
+    reached: 'nobody imports it',
+    why: "The workspace verbs' wiring, which prints what init made, the status lines and the refusals; the-workbench-verb.test.ts drives it through the built binary, and workspace.test.ts reads what the commands return, never what this prints.",
+  },
   'packages/context/src/intelligence/events.ts': {
     reached: 'nobody imports it',
     why: 'CatalogEvent and EventKind, two aliases computed from orderedEvents across a package boundary: nothing of it survives compilation, so the two tests naming it borrow a vocabulary and never a value.',
@@ -657,7 +661,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 49,
+  wiring: 50,
   presentation: 9,
   projections: 4,
   completion: 4,
@@ -905,6 +909,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/verify.test.ts': 8,
   'packages/code/src/commands/witness-stamp-judges-each-tree-once.test.ts': 9,
   'packages/code/src/commands/witness.test.ts': 11,
+  'packages/code/src/commands/workspace.test.ts': 11,
   'packages/code/src/completion/lookups.test.ts': 8,
   'packages/code/src/decisions-in-git.test.ts': 2,
   'packages/code/src/env.test.ts': 4,
@@ -1252,7 +1257,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-record-keeps-an-editorconfig.test.ts': 7,
   'packages/code/tests/the-record-may-have-moved.test.ts': 10,
   'packages/code/tests/the-record-meets-the-git-log.test.ts': 13,
-  'packages/code/tests/the-record-page-names-the-workbench.test.ts': 2,
+  'packages/code/tests/the-record-page-names-the-workbench.test.ts': 7,
   'packages/code/tests/the-record-travels.test.ts': 14,
   'packages/code/tests/the-record-you-can-see.test.ts': 17,
   'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,
@@ -1303,6 +1308,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-witness-counts-the-tails-verify-counts.test.ts': 7,
   'packages/code/tests/the-witness-flags-reach-the-act.test.ts': 5,
   'packages/code/tests/the-words-of-the-session.test.ts': 10,
+  'packages/code/tests/the-workbench-verb.test.ts': 7,
   'packages/code/tests/the-write-says-what-it-landed-on.test.ts': 11,
   'packages/code/tests/verify-against-github.test.ts': 9,
   'packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts': 6,
@@ -1613,6 +1619,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/task.ts',
   'packages/code/src/commands/the-record-page.ts',
   'packages/code/src/commands/the-tools-that-rewrite-files.ts',
+  'packages/code/src/commands/the-workbench-files.ts',
   'packages/code/src/commands/timeline.ts',
   'packages/code/src/commands/trailer.ts',
   'packages/code/src/commands/unlink.ts',
@@ -1623,6 +1630,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/verify.ts',
   'packages/code/src/commands/why.ts',
   'packages/code/src/commands/witness.ts',
+  'packages/code/src/commands/workspace.ts',
   'packages/code/src/commands/write-as-the-agent.ts',
   'packages/code/src/completion/bash.ts',
   'packages/code/src/completion/fish.ts',
@@ -1835,6 +1843,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/verify.ts',
   'packages/code/src/wiring/why.ts',
   'packages/code/src/wiring/witness.ts',
+  'packages/code/src/wiring/workspace.ts',
   'packages/code/src/wiring/written-before.ts',
   'packages/context/src/context/bootstrap.ts',
   'packages/context/src/context/brief.ts',
@@ -2029,8 +2038,9 @@ describe('every file has a test that names it', () => {
     // 82 once a test of the local count of tool calls asserts on what presentation/usage.ts words.
     // 83 with the instructions verb's wiring, which a test drives through the program.
     // 82 once the switch listing's test asserts on what presentation/switches.ts words.
-    expect(found.size).toBe(82);
-    expect(byReach('nobody imports it')).toBe(82);
+    // 83 with the workspace verbs' wiring, which the-workbench-verb.test.ts drives through the built binary.
+    expect(found.size).toBe(83);
+    expect(byReach('nobody imports it')).toBe(83);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2052,7 +2062,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(82);
+    expect(reasons).toHaveLength(83);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

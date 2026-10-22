@@ -48,6 +48,12 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   `mnema doctor` points at a missing README, `.prettierignore` line or instructions block, names a pre-commit hook,
   Biome, dprint or lint-staged configuration that would rewrite the record, and edits none of
   those files.
+- **`mnema workspace init`**, which makes `.mnema/workbench/` beside the record: the notes of the people working
+  here, which are no proof (`mnema verify` does not read them). A README, templates for a change, a brief, a study
+  and a log, `shared/` (committed) and `local`, a link to a folder in the repository's git directory that is this
+  machine's and never committed, the same from every worktree. It never writes over a file that is there.
+  `mnema workspace status` prints where the two roots are and which changes are open, never what a note says, and
+  `mnema doctor --fix workbench` makes the link again after a `git clean -x`.
 - **`mnema verify`**, which reads the record with no key and no network and prints the level it
   reached.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules

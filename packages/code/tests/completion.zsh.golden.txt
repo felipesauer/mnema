@@ -12,13 +12,14 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help' ;;
+    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit workspace verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help' ;;
     'decision') echo 'record move review supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
     'stack') echo 'add remove list index show diff check export enable disable help' ;;
     'task') echo 'create move handoff next guard help' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
+    'workspace') echo 'init status help' ;;
     'witness') echo 'stamp upgrade sigstore' ;;
     'check') echo 'declare run help' ;;
     'audit') echo 'accountability antipatterns exposure help' ;;
@@ -51,6 +52,7 @@ _mnema_described() {
       'instructions:write the mnema instructions into the files an agent host reads (AGENTS.md and its kin), check them, or remove them' \
       'switch:turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision' \
       'inherit:read another repository’s decisions, pinned to one of its commits' \
+      'workspace:the notes of the people working here, beside the record and not part of it' \
       'verify:verify this project'\''s record: its committed tree and its private one' \
       'witness:ask an outside witness to date this record, and read where that stands' \
       'check:give a rule a program that checks it, and record whether it held at a commit' \
@@ -122,6 +124,10 @@ _mnema_described() {
     'inherit') printf '%s\n' \
       'set:point this project at a repository of decisions, at one commit' \
       'update:move the pointer to a newer commit, showing what changes first' \
+      'help:display help for command' ;;
+    'workspace') printf '%s\n' \
+      'init:make .mnema/workbench/: a README, templates, shared/ and the private link' \
+      'status:say where the two roots are, whether the link is right, and what is open' \
       'help:display help for command' ;;
     'witness') printf '%s\n' \
       'stamp:ask an outside witness to date each tail'\''s last checkpoint (T3)' \
@@ -212,6 +218,9 @@ _mnema_flags() {
     'inherit') echo '-h --help -V --version --color' ;;
     'inherit set') echo '--at --write -h --help -V --version --color' ;;
     'inherit update') echo '--to --write -h --help -V --version --color' ;;
+    'workspace') echo '-h --help -V --version --color' ;;
+    'workspace init') echo '-h --help -V --version --color' ;;
+    'workspace status') echo '-h --help -V --version --color' ;;
     'verify') echo '--global --workspace --allow-no-record --require --since --against-github --against-sigstore --verbose --json -h --help -V --version --color' ;;
     'witness') echo '--global --json -h --help -V --version --color' ;;
     'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
@@ -352,6 +361,9 @@ _mnema_values() {
     'inherit:--color') echo 'auto always never' ;;
     'inherit set:--color') echo 'auto always never' ;;
     'inherit update:--color') echo 'auto always never' ;;
+    'workspace:--color') echo 'auto always never' ;;
+    'workspace init:--color') echo 'auto always never' ;;
+    'workspace status:--color') echo 'auto always never' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'witness:--color') echo 'auto always never' ;;

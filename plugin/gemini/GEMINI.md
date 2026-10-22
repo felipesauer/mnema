@@ -9,6 +9,6 @@ This repository keeps a signed record of its decisions in `.mnema/`. Where the m
 - A subagent records no decision: it hands its decisions back in its final reply, and the session that started it records them.
 - When you learn something about this project that its code does not show, call `capture_memory`, also when you keep it in your own memory.
 - Not for the record: each step taken, a credential, personal data, what the code or git already says.
-- Commit `.mnema/` with the work it describes: the record changes as the work does, through these tools and the `mnema` command. Never edit or reformat its files by hand.
+- Commit `.mnema/` with the work it describes: the record changes as the work does, through these tools and the `mnema` command. Never edit or reformat its files by hand, except `.mnema/workbench/`, which holds the notes of the people working here and is not part of the record.
 
 Where the tools are not connected and the `mnema` command is installed, `mnema decision record "<title>" "<rationale>" --alternatives "<what was turned down and why>"` in the shell records the same decision.

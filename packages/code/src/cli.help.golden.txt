@@ -59,6 +59,8 @@ $ mnema --help
 |                   whether an agent may accept a decision
 |   inherit         read another repository’s decisions, pinned to one of its
 |                   commits
+|   workspace       the notes of the people working here, beside the record and
+|                   not part of it
 |
 | Verify:
 |   verify          verify this project's record: its committed tree and its
@@ -703,6 +705,28 @@ $ mnema inherit --help
 | The copy is kept under the mnema home, outside the project. Only `set` and `update`
 | use the network; the brief reads this machine’s copy and says when the commit is not there yet.
 
+### mnema workspace --help
+$ mnema workspace --help
+| Usage: mnema workspace [options] [command]
+|
+| the notes of the people working here, beside the record and not part of it
+|
+| Options:
+|   -h, --help      display help for command
+|
+| Commands:
+|   init            make .mnema/workbench/: a README, templates, shared/ and the
+|                   private link
+|   status          say where the two roots are, whether the link is right, and
+|                   what is open
+|   help [command]  display help for command
+|
+| The notes live in `.mnema/workbench/`. They are not proof: `mnema verify` does not read them,
+| and nothing here is signed or recorded. `workbench/shared/` is committed; `workbench/local` is
+| a link to a folder in the repository’s git directory, this machine’s only, the same from every
+| worktree of the clone and kept when one is removed. `git clean -x` removes the link and not
+| what it points to; `mnema doctor --fix workbench` makes it again.
+
 ### mnema verify --help
 $ mnema verify --help
 | Usage: mnema verify [options]
@@ -1171,7 +1195,9 @@ $ mnema doctor --help
 |                 `vscode` lists the plugin in the chat.pluginLocations setting of
 |                 VS Code’s settings.json, after keeping a copy of the file;
 |                 `private-tree` moves the private notes a worktree still holds in
-|                 .mnema/private/ into the repository’s git directory
+|                 .mnema/private/ into the repository’s git directory; `workbench`
+|                 makes the link .mnema/workbench/local again where it is missing
+|                 or points elsewhere
 |   --dry-run     with --fix: say what would change and write nothing
 |   -h, --help    display help for command
 |
@@ -1190,6 +1216,8 @@ $ mnema doctor --help
 | it, keeps the file’s comments, and refuses a file it cannot edit safely.
 | `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
 | tree, and leaves where it was anything whose name there holds other bytes.
+| `--fix workbench` writes: it makes the link of the notes’ private half again (`git clean -x`
+| removes only the link), and makes no file and touches no note.
 
 ### mnema report --help
 $ mnema report --help
@@ -2165,6 +2193,31 @@ $ mnema inherit update --help
 |   --write          record the new pointer. Omitted, it prints what would change
 |                    and writes nothing.
 |   -h, --help       display help for command
+
+### mnema workspace init --help
+$ mnema workspace init --help
+| Usage: mnema workspace init [options]
+|
+| make .mnema/workbench/: a README, templates, shared/ and the private link
+|
+| Options:
+|   -h, --help  display help for command
+|
+| Needs a project `mnema init` founded, in a git repository. It makes the record’s
+| .gitignore line for the link before the link, and never writes over a file that is there:
+| run twice, it changes nothing. On Windows the link is a junction.
+
+### mnema workspace status --help
+$ mnema workspace status --help
+| Usage: mnema workspace status [options]
+|
+| say where the two roots are, whether the link is right, and what is open
+|
+| Options:
+|   -h, --help  display help for command
+|
+| Prints paths, counts, and one line for each change whose status is `open` or `paused` (the
+| status line of its change.md). It never prints what a note says.
 
 ### mnema witness stamp --help
 $ mnema witness stamp --help

@@ -75,6 +75,10 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A record that inherits another's.** `mnema inherit set` pins another repository's decisions at
   one commit, and `mnema brief` prints them apart from the project's own. They are read, never
   signed here, and `verify` does not count them.
+- **Notes beside the record.** `mnema workspace init` makes `.mnema/workbench/`, a place for what is not a
+  decision (what is being changed, what was handed to whom, what a study found): `shared/` is committed and `local`
+  is this machine's, a link into the repository's git directory. It is not proof and `verify` does not read it; see
+  [the workbench](workbench.md).
 - **Decisions you wrote before you had a record.** `mnema decision import` reads decision documents,
   the ECC Memory Vault, a rulings ledger or Claude Code's memory files and proposes each one as
   `proposed`, with a dry run first. Nothing is accepted for you.

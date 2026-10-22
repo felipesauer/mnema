@@ -271,7 +271,7 @@ mnema init
 # the start of a session, naming each (see "The mnema instructions in the files a host reads", below). It
 # touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
 # these (the README, the `.editorconfig`, the `.prettierignore` line), replaces an `.editorconfig` that is byte for
-# byte the one an earlier `init` wrote (its `[*]` reached `workbench/` too), says what it did, and
+# byte the one an earlier `init` wrote (its `[*]` reached `workbench/` too), and a `README.md` that is byte for byte the page an earlier `init` wrote (it said the whole folder is never edited), says what it did, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
 # It never writes the instructions again: `mnema instructions` does, where they are missing.
 #
@@ -1095,6 +1095,23 @@ commit, and the commit never moves unless `inherit update --write` moves it. Onl
 use the network; a read uses this machine's copy, kept under the mnema home and not in the project,
 and says when the commit is not there yet.
 
+### Notes beside the record
+
+```sh
+mnema workspace init
+mnema workspace status
+```
+
+`.mnema/workbench/` is where the people working on a project keep what is not a decision: what is being changed
+and why, what was handed to whom, what a study found. It is **not part of the record**: `mnema verify` and the
+Python second reader do not read it, and nothing in it is signed. `workspace init` needs a project `mnema init`
+founded, in a git repository; it makes the folder's README, four templates, `shared/` (committed) and `local`, a
+link to a folder in the repository's git directory that is this machine's and never committed. The record's
+`.gitignore` is ensured before the link exists, and a file that is there is never written over, so a second run
+changes nothing. `workspace status` prints where the two roots are, whether the link is right, how many files each
+holds, and one line for each change whose `change.md` says `status: open` or `paused`; it never prints what a note
+says. [The workbench page](workbench.md) has the rest, and `mnema doctor --fix workbench` makes the link again.
+
 ### Is mnema set up on this machine
 
 ```sh
@@ -1144,7 +1161,7 @@ configurations are read by their JSON or their lines, so a form this does not re
 reported as one that could not be confirmed, with the same line to add. It looks in the project's directory and in
 each one above it up to the git root.
 
-`mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
+`mnema doctor --fix vscode` is one of the three things it writes, and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
 folder in the Claude Code marketplace to `chat.pluginLocations` and drops an entry that points into
 a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
@@ -1153,8 +1170,11 @@ untouched. `mnema doctor --fix private-tree` is the other: it moves each of thos
 into the repository's private tree (`--dry-run` says what it would move), drops the writers'
 `locks/`, and leaves where it was anything whose name there already holds other bytes. A worktree
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
-one. The exit status is 0 whatever it found: a script that wants to act on a
-finding reads the line.
+one. `mnema doctor --fix workbench` is the third: where a project has a `.mnema/workbench/`, it says when the link
+`local` is missing (after a `git clean -x`, or in a fresh clone) or points anywhere but the repository's folder for
+the notes, and `--fix workbench` makes the link again, to the same folder and with the notes as they were. It makes no
+file and touches no note, and it leaves a `local` that is a folder or a file where it is. The exit status is 0 whatever
+it found: a script that wants to act on a finding reads the line.
 
 ### Skills and agents a project adopts: stacks
 
@@ -1418,7 +1438,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 1,524 characters.
+is 1,632 characters.
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's
@@ -1426,7 +1446,7 @@ mnema instructions --check    # say what each file holds; exits 1 where one lack
 mnema instructions --remove   # take it out of each file
 ```
 
-The block sits between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what your file
+The block sits between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what your file
 holds, and nothing outside the markers changes; a file the block was all of is deleted by
 `--remove`, which takes out with the block the one line break that went in with it only where the
 block is the last thing in the file (a line you wrote after it is never glued to the one above), and

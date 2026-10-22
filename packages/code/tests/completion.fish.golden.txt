@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit workspace verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help'
         case 'decision'
             echo 'record move review supersede import help'
         case 'skill'
@@ -25,6 +25,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'off on'
         case 'inherit'
             echo 'set update help'
+        case 'workspace'
+            echo 'init status help'
         case 'witness'
             echo 'stamp upgrade sigstore'
         case 'check'
@@ -91,6 +93,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules addr
 complete -c mnema -f -n '__mnema_at ""' -a 'instructions' -d 'write the mnema instructions into the files an agent host reads (AGENTS.md and its kin), check them, or remove them'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'inherit' -d 'read another repository’s decisions, pinned to one of its commits'
+complete -c mnema -f -n '__mnema_at ""' -a 'workspace' -d 'the notes of the people working here, beside the record and not part of it'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record: its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'check' -d 'give a rule a program that checks it, and record whether it held at a commit'
@@ -517,6 +520,24 @@ complete -c mnema -f -n '__mnema_at "inherit update"' -l write
 complete -c mnema -f -n '__mnema_at "inherit update"' -s h -l help
 complete -c mnema -f -n '__mnema_at "inherit update"' -s V -l version
 complete -c mnema -f -n '__mnema_at "inherit update"' -l color -x -a 'auto always never'
+
+# mnema workspace
+complete -c mnema -f -n '__mnema_at "workspace"' -a 'init' -d 'make .mnema/workbench/: a README, templates, shared/ and the private link'
+complete -c mnema -f -n '__mnema_at "workspace"' -a 'status' -d 'say where the two roots are, whether the link is right, and what is open'
+complete -c mnema -f -n '__mnema_at "workspace"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "workspace"' -s h -l help
+complete -c mnema -f -n '__mnema_at "workspace"' -s V -l version
+complete -c mnema -f -n '__mnema_at "workspace"' -l color -x -a 'auto always never'
+
+# mnema workspace init
+complete -c mnema -f -n '__mnema_at "workspace init"' -s h -l help
+complete -c mnema -f -n '__mnema_at "workspace init"' -s V -l version
+complete -c mnema -f -n '__mnema_at "workspace init"' -l color -x -a 'auto always never'
+
+# mnema workspace status
+complete -c mnema -f -n '__mnema_at "workspace status"' -s h -l help
+complete -c mnema -f -n '__mnema_at "workspace status"' -s V -l version
+complete -c mnema -f -n '__mnema_at "workspace status"' -l color -x -a 'auto always never'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

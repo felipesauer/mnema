@@ -2,7 +2,7 @@
  * `mnema doctor`: what this machine says about how mnema is installed, and what to do about
  * each thing it finds. Asked alone it reads and writes NOTHING: not the record, not a
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
- * `--fix private-tree` are the two things it writes, each only when a person asks.
+ * `--fix private-tree` and `--fix workbench` are the three things it writes, each only when a person asks.
  *
  * EIGHT QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
@@ -73,6 +73,7 @@ import { checkInstructions, stateLine } from './instructions.js';
 import { stacksHere } from './stack-inspect.js';
 import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
 import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
+import { linkStateOf, placesOf, repairTheLink } from './workspace.js';
 
 /** What the doctor needs: injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -95,6 +96,7 @@ export interface Finding {
     | 'mcp'
     | 'namesake'
     | 'private-tree'
+    | 'workbench'
     | 'stack'
     | 'record-page'
     | 'key-metadata'
@@ -671,6 +673,46 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
   }));
 }
 
+const FIX_WORKBENCH = '`mnema doctor --fix workbench`';
+
+/**
+ * The person's notes, `.mnema/workbench/`, where this project has them: is the link `local` there
+ * and does it point at this repository's folder for them. Nothing is said where there is no
+ * workbench (`mnema workspace init` makes one), and `git clean -x` removes only the link, never the
+ * folder behind it, which is why the fix is cheap and loses no note.
+ */
+function workbenchFindings(ctx: DoctorContext): Finding[] {
+  const places = placesOf(ctx);
+  if ('ok' in places || !existsSync(places.workbench)) return [];
+  const finding = (state: Finding['state'], line: string): Finding[] => [
+    { topic: 'workbench', state, line },
+  ];
+  const link = linkStateOf(places);
+  const clean = 'removes only the link, never the notes behind it';
+  switch (link.state) {
+    case 'right':
+      return finding(
+        'fine',
+        `.mnema/workbench/local points to ${oneLine(places.target)}: nothing to do (\`git clean -x\` ${clean}).`,
+      );
+    case 'absent':
+      return finding(
+        'attention',
+        `.mnema/workbench/local, the link to this machine's private notes, is missing (a fresh clone, or a \`git clean -x\`, which ${clean}): run ${FIX_WORKBENCH} to make it again; the notes are still in ${oneLine(places.target)}.`,
+      );
+    case 'elsewhere':
+      return finding(
+        'attention',
+        `.mnema/workbench/local points to ${oneLine(link.to)}, and this project's private notes are in ${oneLine(places.target)}: run ${FIX_WORKBENCH} to point it there.`,
+      );
+    case 'blocked':
+      return finding(
+        'attention',
+        '.mnema/workbench/local is a folder or a file and not a link, so mnema leaves it as it is: move it aside and run `mnema workspace init` to make the link.',
+      );
+  }
+}
+
 /**
  * What `mnema init` leaves beside the record and this project lacks: the `README.md` and the
  * `.editorconfig` in `.mnema/`, and the line `.mnema/` in the `.prettierignore` where prettier is
@@ -687,6 +729,11 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
   if (missing.readme) {
     lines.push(
       `${oneLine(dirname(trees.projectPublic))} has no .mnema/${README_NAME}, the page that tells whoever opens the folder not to edit or reformat it: run \`mnema init\` to add it.`,
+    );
+  }
+  if (missing.readmeIsEarlier === true) {
+    lines.push(
+      `${oneLine(dirname(trees.projectPublic))} has the .mnema/${README_NAME} an earlier mnema init wrote: it says nothing in the folder is edited by hand, and .mnema/workbench/ is the notes of the people working here; run \`mnema init\` to replace it with the page that says so.`,
     );
   }
   if (missing.editorconfig) {
@@ -953,6 +1000,61 @@ export function fixPrivateTree(
   return { refused: false, lines };
 }
 
+/**
+ * `mnema doctor --fix workbench`: makes the link `local` again where it is missing or points
+ * somewhere else, and the folder behind it. The notes are never touched: it makes no file. With
+ * `dryRun`, it says what it would do and writes nothing.
+ */
+export function fixWorkbench(ctx: DoctorContext, options: { readonly dryRun: boolean }): FixResult {
+  const places = placesOf(ctx);
+  if ('ok' in places) {
+    return {
+      refused: true,
+      lines: [
+        places.reason === 'NO_PROJECT'
+          ? 'nothing changed: there is no mnema project here.'
+          : 'nothing changed: this project is in no git repository, and the private notes live in its git directory.',
+      ],
+    };
+  }
+  if (!existsSync(places.workbench)) {
+    return {
+      refused: true,
+      lines: ['nothing changed: this project has no workbench; `mnema workspace init` makes one.'],
+    };
+  }
+  const link = linkStateOf(places);
+  if (link.state === 'right') {
+    return {
+      refused: false,
+      lines: ['nothing to do: .mnema/workbench/local points where it belongs.'],
+    };
+  }
+  if (options.dryRun) {
+    return {
+      refused: false,
+      lines: [
+        `would make .mnema/workbench/local point to ${oneLine(places.target)}; nothing was written.`,
+      ],
+    };
+  }
+  const repaired = repairTheLink(ctx);
+  if (!repaired.ok) {
+    return {
+      refused: true,
+      lines: [
+        'nothing changed: .mnema/workbench/local is a folder or a file and not a link; move it aside first.',
+      ],
+    };
+  }
+  return {
+    refused: false,
+    lines: [
+      `.mnema/workbench/local now points to ${oneLine(places.target)}. \`git clean -x\` removes only this link, never the notes.`,
+    ],
+  };
+}
+
 /** Reads the machine and answers, in the order the questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
@@ -964,6 +1066,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...mcpFindings(ctx, plugins),
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
+      ...workbenchFindings(ctx),
       ...recordPageFindings(ctx),
       ...keyMetadataFindings(ctx),
       ...instructionsFindings(ctx),
