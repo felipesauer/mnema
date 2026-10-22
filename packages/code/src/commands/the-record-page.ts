@@ -36,22 +36,43 @@ export const README_NAME = 'README.md';
 /** The name of the `.editorconfig` init leaves beside it. Not part of the proof either. */
 export const EDITORCONFIG_NAME = '.editorconfig';
 
-/**
- * What stops an editor, or a tool that reads EditorConfig, from imposing a final newline, an end of
- * line, a trim or an indent on the signed bytes. No `root = true`: the file must not cut the
- * inheritance of keys it does not name. `unset` removes a property an outer file set (EditorConfig
- * specification: the value `unset` removes the effect of that property, as if it was never set),
- * and the section `[*]` reaches every file under the folder.
- */
-export const RECORD_EDITORCONFIG = [
-  '# The record is signed bytes: do not let an outer .editorconfig reformat them.',
-  '[*]',
+/** The properties the record's `.editorconfig` unsets, one line each. */
+const UNSET = [
   'insert_final_newline = unset',
   'trim_trailing_whitespace = unset',
   'end_of_line = unset',
   'charset = unset',
   'indent_style = unset',
   'indent_size = unset',
+];
+
+/**
+ * What stops an editor, or a tool that reads EditorConfig, from imposing a final newline, an end of
+ * line, a trim or an indent on the signed bytes. No `root = true`: the file must not cut the
+ * inheritance of keys it does not name. `unset` removes a property an outer file set (EditorConfig
+ * specification: the value `unset` removes the effect of that property, as if it was never set).
+ * The section reaches the signed bytes and nothing else: by the specification a glob with a `/` in
+ * it is relative to the folder of the file that holds it, `{a,b}` is either and `**` any path, so
+ * `[{tails,keys}/**]` is every file under `tails/` and `keys/` of the record. `workbench/` beside
+ * them is the person's notes, which their own editor formats.
+ */
+export const RECORD_EDITORCONFIG = [
+  '# The record is signed bytes: do not let an outer .editorconfig reformat them.',
+  "# Only tails/ and keys/ are signed: workbench/ is the person's notes, and left to their editor.",
+  '[{tails,keys}/**]',
+  ...UNSET,
+  '',
+].join('\n');
+
+/**
+ * The `.editorconfig` an `init` wrote before the workbench existed, byte for byte. Its `[*]` reaches
+ * every file under the folder, the notes included. A file that is exactly these bytes is ours to
+ * replace (`complete`); one that is not was edited by somebody, and is left as it is.
+ */
+export const RECORD_EDITORCONFIG_BEFORE_THE_WORKBENCH = [
+  '# The record is signed bytes: do not let an outer .editorconfig reformat them.',
+  '[*]',
+  ...UNSET,
   '',
 ].join('\n');
 
@@ -126,8 +147,33 @@ export interface PrettierIgnoreChange {
 /** What a project lacks of what init leaves beside the record. */
 export interface Missing {
   readonly readme: boolean;
+  /** There is no `.editorconfig` in the record's folder. */
   readonly editorconfig: boolean;
+  /**
+   * The `.editorconfig` there has a section that reaches every file under the folder, so the
+   * person's notes in `workbench/` too: `earlier` when it is, byte for byte, the file an earlier
+   * `init` wrote, which `complete` replaces; `edited` when it is not, which nothing replaces.
+   * Absent when it reaches no notes, or when there is no file.
+   */
+  readonly editorconfigReachesTheNotes?: 'earlier' | 'edited';
   readonly prettierIgnore?: PrettierIgnoreChange;
+}
+
+/** A section glob that reaches every file under the folder. */
+const EVERY_FILE = ['[*]', '[**]'];
+
+/** Whether the `.editorconfig` at `path` reaches the notes, and whose it is; see {@link Missing}. */
+function editorconfigReachingTheNotes(path: string): 'earlier' | 'edited' | undefined {
+  let text: string;
+  try {
+    text = readFileSync(path, 'utf-8');
+  } catch {
+    return undefined;
+  }
+  if (text === RECORD_EDITORCONFIG_BEFORE_THE_WORKBENCH) return 'earlier';
+  return text.split(/\r?\n/).some((line) => EVERY_FILE.includes(line.trim()))
+    ? 'edited'
+    : undefined;
 }
 
 /**
@@ -156,11 +202,24 @@ function prettierIgnoreChange(project: string): PrettierIgnoreChange | undefined
 /** What is missing in the project at `project`, by reading only. */
 export function whatIsMissing(project: string): Missing {
   const change = prettierIgnoreChange(project);
+  const config = join(project, PROJECT_DIR, EDITORCONFIG_NAME);
+  const reaches = editorconfigReachingTheNotes(config);
   return {
     readme: !existsSync(join(project, PROJECT_DIR, README_NAME)),
-    editorconfig: !existsSync(join(project, PROJECT_DIR, EDITORCONFIG_NAME)),
+    editorconfig: !existsSync(config),
+    ...(reaches !== undefined ? { editorconfigReachesTheNotes: reaches } : {}),
     ...(change !== undefined ? { prettierIgnore: change } : {}),
   };
+}
+
+/** Whether `complete` wrote anything over `missing`: what init reports as completed. */
+export function wroteAny(missing: Missing): boolean {
+  return (
+    missing.readme ||
+    missing.editorconfig ||
+    missing.editorconfigReachesTheNotes === 'earlier' ||
+    missing.prettierIgnore !== undefined
+  );
 }
 
 /** Appends the line to a file that exists, unless a line of it already says it. */
@@ -192,6 +251,9 @@ export function complete(project: string): Missing {
     writeFileSync(join(project, PROJECT_DIR, README_NAME), RECORD_README, 'utf-8');
   }
   if (missing.editorconfig) writeEditorconfig(join(project, PROJECT_DIR));
+  if (missing.editorconfigReachesTheNotes === 'earlier') {
+    writeFileSync(join(project, PROJECT_DIR, EDITORCONFIG_NAME), RECORD_EDITORCONFIG, 'utf-8');
+  }
   const change = missing.prettierIgnore;
   if (change !== undefined) {
     if (change.did === 'created') {

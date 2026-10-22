@@ -168,6 +168,11 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
           );
           if (result.completed.readme) io.out('Added .mnema/README.md.');
           if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
+          if (result.completed.editorconfigReachesTheNotes === 'earlier') {
+            io.out(
+              'Replaced .mnema/.editorconfig, which an earlier mnema init wrote, with one that reaches only tails/ and keys/.',
+            );
+          }
           reportIgnore(io, result.completed.prettierIgnore);
         }
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
