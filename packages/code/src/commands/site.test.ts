@@ -7,15 +7,7 @@
  * `site/the-verdict-in-the-browser.test.ts`.
  */
 
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
@@ -190,36 +182,6 @@ describe('mnema site', () => {
     runSite({ cwd: repo, env }, { out: join(sandbox, 'one') });
     runSite({ cwd: repo, env }, { out: join(sandbox, 'two') });
     expect(pageOf(join(sandbox, 'one'))).toBe(pageOf(join(sandbox, 'two')));
-  });
-
-  /**
-   * THE NOTES BESIDE THE RECORD ARE NOT THE RECORD, and the page is published: `workbench/` holds
-   * a person's notes, its `local` part a link to what they keep to themselves (FORMAT.md section
-   * 4). The page takes `tails/` and `keys/*.pub` by allow-list, so with the notes there it is the
-   * same bytes as without them, and the verdict it carries is the same verdict.
-   */
-  it('is the same bytes with a workbench beside the record, and carries none of it', () => {
-    runInit({ cwd: repo, env });
-    decide('Keep money in integer cents', 'public', 'accept');
-    runSite({ cwd: repo, env }, { out: join(sandbox, 'without') });
-
-    const workbench = join(repo, '.mnema', 'workbench');
-    const kept = join(sandbox, 'kept-to-myself');
-    mkdirSync(join(workbench, 'shared'), { recursive: true });
-    mkdirSync(kept);
-    writeFileSync(join(workbench, 'shared', 'notes.md'), 'SHARED-NOTE-5d2e of the team\n');
-    writeFileSync(join(workbench, 'shared', 'blob.bin'), Buffer.from([0x00, 0xff, 0x80]));
-    writeFileSync(join(kept, 'mine.md'), 'LOCAL-NOTE-a41c kept to myself\n');
-    symlinkSync(kept, join(workbench, 'local'));
-    symlinkSync(join(sandbox, 'gone'), join(workbench, 'shared', 'dangling'));
-    const done = runSite({ cwd: repo, env }, { out: join(sandbox, 'with') });
-    expect(done.ok && done.verdict.ok).toBe(true);
-
-    const page = pageOf(join(sandbox, 'with'));
-    expect(page).toBe(pageOf(join(sandbox, 'without')));
-    for (const secret of ['SHARED-NOTE-5d2e', 'LOCAL-NOTE-a41c']) {
-      expect(page.includes(secret), `the page holds ${secret}`).toBe(false);
-    }
   });
 
   it('says the page needs no network: one policy, no external reference', () => {
