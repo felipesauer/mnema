@@ -749,7 +749,7 @@ newest 50.
 **What reads it.** The MCP server, when the host leaves its session id in the server's environment (Claude Code's
 `CLAUDE_CODE_SESSION_ID`): the run the server opens for the connection takes the journal's goal as its own goal when one is
 known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited.`).
-`mnema resume` and `mnema status` print that outcome beside a run that ended with one, as `outcome: …`.
+The `resume` and `status` readings print that outcome beside a run that ended with one, as `outcome: …`.
 
 **It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
 session-journal` stops it (a fact of the record like the other switches); with it off, every `Stop` reads the whole

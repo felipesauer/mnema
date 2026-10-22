@@ -21,7 +21,7 @@ with its own changelog.
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
   server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
-  `CLAUDE_CODE_SESSION_ID`; `mnema resume` and `mnema status` now print a run's outcome, which they never did.
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did.
 - **A task carries what it is, and a handoff what the next agent must read.** `mnema task create "<title>" --description "<text>"`
   and the `create_task` tool's `description`, and `mnema task handoff <task> <from> <to> --brief "<text>"` and `record_handoff`'s
   `brief`, take up to 64 KiB of text. The text is recorded in the same call as an observation about the task (topic
