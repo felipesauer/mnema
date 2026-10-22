@@ -178,7 +178,10 @@ describe('the runs of the projects a session does not otherwise read', () => {
     // Two registries: the first has to read the tree and leaves the file; the second is served
     // from it, and a channel nobody switched is null in both, as it is in the projection.
     for (const round of [1, 2]) {
-      const registry = createCacheRegistry();
+      const registry = createCacheRegistry(
+        () => false,
+        () => true,
+      );
       expect(registry.channelSwitchOf(root, 'tool-call-count'), `round ${round}`).toEqual(expected);
       expect(
         registry.channelSwitchOf(root, 'a-channel-nobody-switched'),
@@ -187,5 +190,23 @@ describe('the runs of the projects a session does not otherwise read', () => {
       expect(registry.opened().length, `round ${round}`).toBe(round === 1 ? 1 : 0);
       registry.closeAll();
     }
+  });
+
+  it('leave nothing in a tree the session is not allowed to index, and answer the same', () => {
+    const [first] = projects as [string, string, string];
+    const trees = resolveTrees(first, env);
+    switchChannel(writeContext(trees, 'public', createCacheRegistry()), {
+      channel: 'tool-call-count',
+      on: false,
+    });
+    const root = chainRootForScope(trees, 'public') as string;
+    const registry = createCacheRegistry(
+      () => false,
+      () => false,
+    );
+    expect(registry.channelSwitchOf(root, 'tool-call-count')).toMatchObject({ on: false });
+    expect(registry.runsOf(root)).toBeDefined();
+    expect(() => readFileSync(treeIndexPath({ root }))).toThrow();
+    registry.closeAll();
   });
 });

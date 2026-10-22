@@ -2016,7 +2016,7 @@ code, and the next session believes it only while the tree is as marked; otherwi
 which is what it did before, and writes the file again. So a tool that only reads
 (`readOnlyHint: true`) may create or update those files and nothing else: the exception is written beside the other one, the local
 count of calls, and a read still appends nothing to the record and rewrites no byte of it. Deleting
-the file costs the next read the time it saves and changes no answer.
+the file costs the next read the time it saves.
 Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
 checkout of another commit) is read by the next call, and a file that does not follow the
 record is built again. The line a stored position ends on is read back and has to be the entry it ended on, so a

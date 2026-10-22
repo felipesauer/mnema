@@ -219,9 +219,15 @@ export interface CacheRegistry {
  * reads for a moment and is not the project the next session here opens first, and the global
  * tree is shared by all of them. It is asked when a cache is first opened, so it may change its
  * mind between two roots (the workspace re-read moves the project the session is in).
+ *
+ * `mayIndex` says whether a tree the connection reads for a moment may keep a small index of its
+ * runs and switches beside itself ({@link CacheRegistry.runsOf}). The session answers yes for the
+ * trees of the other projects of the workspace and no for the global tree, which a read has no
+ * business writing into: it is the machine's, shared, and a refused write leaves it byte for byte.
  */
 export function createCacheRegistry(
   keepsOnDisk: (chainRoot: string) => boolean = () => false,
+  mayIndex: (chainRoot: string) => boolean = () => false,
 ): CacheRegistry {
   const entries = new Map<string, Entry>();
   // One upcaster registry for the session, shared by every cache it opens: the
@@ -237,6 +243,7 @@ export function createCacheRegistry(
    */
   const indexed = (chainRoot: string): TreeFacts | undefined => {
     if (entries.has(chainRoot) || keepsOnDisk(chainRoot) || readCacheIsChosen()) return undefined;
+    if (!mayIndex(chainRoot)) return undefined;
     const found = treeFactsFrom(
       { root: chainRoot },
       () => {
