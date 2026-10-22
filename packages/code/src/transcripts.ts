@@ -64,6 +64,7 @@
  * that can split a multi-byte character in the middle.
  */
 
+import { createHash } from 'node:crypto';
 import { closeSync, type Dirent, openSync, readdirSync, readSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
@@ -473,6 +474,35 @@ export function forEachLineFrom(
       }
     }
     return { end, size };
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * A digest of `length` bytes of the file from `start`, or `undefined` when the file is shorter than
+ * that or cannot be read. It lets a reader that keeps an offset tell the file it read from a file
+ * somebody wrote over: the same length is not the same bytes.
+ */
+export function digestOfBytes(path: string, start: number, length: number): string | undefined {
+  if (length <= 0) return undefined;
+  let fd: number;
+  try {
+    fd = openSync(path, 'r');
+  } catch {
+    return undefined;
+  }
+  try {
+    const buffer = Buffer.alloc(length);
+    let got = 0;
+    while (got < length) {
+      const read = readSync(fd, buffer, got, length - got, start + got);
+      if (read === 0) return undefined;
+      got += read;
+    }
+    return createHash('sha256').update(buffer).digest('hex').slice(0, 16);
+  } catch {
+    return undefined;
   } finally {
     closeSync(fd);
   }

@@ -14,13 +14,14 @@ with its own changelog.
 
 - **A compacted conversation is handed back what its session had recorded.** A new `SessionStart` hook under the `compact`
   matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
-  twenty tokens) read from the session's journal: the decisions it recorded by label and state, the notes copied, the questions
+  twenty tokens) read from the session's journal: the decisions it recorded (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions
   answered with no decision after, the files its calls wrote. A count and the record's labels, none of the session's words.
   The `PreCompact` hook is gone: Claude Code discards what a hook says before a compaction, so `mnema tally` no longer
   answers that event. A new switch, `after-a-compaction`, on by default, stops the sentence.
-- **`mnema recall` says where the last session stopped.** When another session wrote to the record in the last 24 hours
-  and left a session journal on this machine, the notes open with a few lines (about a hundred tokens): how long ago it
-  wrote, its goal, the decisions it recorded by label and state, and what it left (files edited, files of decisions cited
+- **`mnema recall` says where the last session stopped.** When another session that has stopped (its connection ended, or its
+  journal has been quiet for 15 minutes) left a session journal on this machine in the last 24 hours, the notes open with a
+  few lines (about a hundred tokens): how long ago it stopped, whether it wrote to the record (only a decision, a note or a
+  task moved counts; a session that only edited files is said to have written nothing), its goal, the decisions it recorded by label and state, and what it left (files edited, files of decisions cited
   nowhere, questions answered with no decision after, tasks in progress). The plugin's hook passes the session's own id
   (`mnema recall --session <id>`), so a session never reads its own journal back, for instance after a compaction. A new
   switch, `last-session`, on by default, stops the section alone.
@@ -33,7 +34,17 @@ with its own changelog.
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
   server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
-  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did.
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
+  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
+  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
+  and of the tail of the bytes already read, and read again from the top.
+- **The instruction block says when work is a task and a handoff.** One more line (version `v2` of the block): work in
+  flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`) with its
+  brief. `mnema init` and `mnema instructions` replace the `v1` block they wrote, byte for byte, and still refuse one
+  you edited. The file that keeps a plan, a handoff or a ledger is now recognised in any case of its name (`PLANO.md`,
+  `LIVRO.md`, `PLAN.md`, `LEDGER.md`), `livro` included, so the line that names the command reading it in is no longer
+  missed for a name written in capitals; `README.md` and `CHANGELOG.md` still start nothing.
 - **A task carries what it is, and a handoff what the next agent must read.** `mnema task create "<title>" --description "<text>"`
   and the `create_task` tool's `description`, and `mnema task handoff <task> <from> <to> --brief "<text>"` and `record_handoff`'s
   `brief`, take up to 64 KiB of text. The text is recorded in the same call as an observation about the task (topic
@@ -97,7 +108,7 @@ with its own changelog.
   `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
   `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
   and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
-  between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
+  between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
   mnema did not write is left as it is and said (exit 1), as is a symbolic link that leaves the project or leads
   nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
   founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to

@@ -63,8 +63,7 @@ function aJournal(over: Partial<Journal> = {}): Journal {
     filesEdited: 0,
     tasksInProgress: [],
     runsOpen: [],
-    goal: GOAL,
-    outcome: null,
+    trees: { public: { goal: GOAL, outcome: null }, private: { goal: null, outcome: null } },
     reading: emptyReading(),
     ...over,
   };
@@ -163,6 +162,37 @@ describe('the read', () => {
     expect(afterwards()).toMatch(
       /1 decision recorded in this project’s record \(ADR-\d+: proposed\)/,
     );
+  });
+
+  it('takes the decisions from the record since the session opened, with the state they have now, not from a journal that is behind', async () => {
+    const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+    const first = await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
+    const second = await doing('decision', 'record', 'Keep the cents', 'Money is integer cents');
+    const idOf = (out: string[]) =>
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(out.join('\n'))?.[0] ??
+      '';
+    // The journal was written before the second decision was recorded, and the first was proposed then.
+    keep(
+      aJournal({
+        openedAt: hourAgo,
+        decisions: [{ id: idOf(first), state: 'proposed' }],
+        filesEdited: 3,
+      }),
+    );
+    await doing('decision', 'move', 'accept', idOf(first), '--note', 'Agreed');
+    const text = afterwards() ?? '';
+    expect(text).toMatch(/2 decisions recorded in this project’s record/);
+    expect(text).toMatch(/ADR-\d+: accepted/);
+    expect(text).toMatch(/ADR-\d+: proposed/);
+    expect(text).not.toMatch(/ADR-\d+: proposed; ADR-\d+: proposed/);
+    expect(idOf(second)).not.toBe('');
+  });
+
+  it('leaves out a decision recorded before the session opened', async () => {
+    await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
+    const later = new Date(Date.now() + 3_600_000).toISOString();
+    keep(aJournal({ openedAt: later, filesEdited: 3 }));
+    expect(afterwards()).not.toContain('decision');
   });
 
   it('says nothing for a session with no journal, one that named no session, or one that did nothing', () => {

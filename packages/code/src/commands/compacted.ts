@@ -25,7 +25,13 @@
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { AFTER_A_COMPACTION_CHANNEL, SESSION_JOURNAL_CHANNEL } from '../record-framing.js';
-import { type Journal, journalFile, readJournal, sessionIdOf } from '../session-journal.js';
+import {
+  decisionsRecordedSince,
+  type Journal,
+  journalFile,
+  readJournal,
+  sessionIdOf,
+} from '../session-journal.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { type BriefSwitchedOff, switchedOff } from './brief.js';
 
@@ -130,6 +136,10 @@ export function runAfterACompaction(
         source.cache.listDecisions().map((one) => [one.id, one.adr] as const),
       ),
     );
-    return { ok: true as const, text: afterACompactionSentence(journal, labels) };
+    // THE DECISIONS ARE THE RECORD'S, since the instant the session opened, in the state they have
+    // now: the journal is written at the end of a response, so one recorded after it, or moved
+    // since, is not in it. Where the journal knows no instant, what it kept is all there is.
+    const decisions = decisionsRecordedSince(sources, journal.openedAt) ?? journal.decisions;
+    return { ok: true as const, text: afterACompactionSentence({ ...journal, decisions }, labels) };
   });
 }

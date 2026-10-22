@@ -105,6 +105,8 @@ export interface LastSession {
   /** The decisions it recorded, by the record's own label, and where each stands. */
   readonly decisions: readonly { readonly label: string; readonly state: string }[];
   readonly filesEdited: number;
+  /** Whether it wrote anything to the record: a decision, a note copied, or a task moved. */
+  readonly wrote: boolean;
   readonly decisionFilesUncited: number;
   readonly questionsWithoutDecision: number;
   readonly tasksInProgress: number;
@@ -167,12 +169,16 @@ function theLastSession(
   const known = sources.flatMap((source) => source.cache.listDecisions());
   return {
     agoSeconds: Math.max(0, Math.floor(ago / 1000)),
-    goal: journal.goal,
+    goal: journal.trees.public.goal ?? journal.trees.private.goal,
     decisions: journal.decisions.flatMap((one) => {
       const found = known.find((decision) => decision.id === one.id);
       return found === undefined ? [] : [{ label: found.adr, state: found.state }];
     }),
     filesEdited: journal.filesEdited,
+    wrote:
+      journal.decisions.length > 0 ||
+      journal.notes.length > 0 ||
+      journal.tasksInProgress.length > 0,
     decisionFilesUncited: journal.decisionFilesUncited,
     questionsWithoutDecision: journal.questionsWithoutDecision,
     tasksInProgress: journal.tasksInProgress.length,

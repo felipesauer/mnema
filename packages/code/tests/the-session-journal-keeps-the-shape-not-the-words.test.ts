@@ -21,10 +21,16 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import type { DiscoveryEnv } from '@mnema/core';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { catalogUpcasters } from '@mnema/chain';
+import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runSessionTally } from '../src/commands/tally.js';
+import { buildMcpServer } from '../src/mcp/server.js';
 import { type CliIo, run } from '../src/program.js';
 import {
   type Journal,
@@ -306,10 +312,10 @@ describe('the journal a Stop keeps', () => {
     expect(journal.decisions).toEqual([{ id: decision, state: 'proposed' }]);
     expect(journal.filesEdited).toBe(2);
     expect(journal.tasksInProgress).toEqual([task]);
-    expect(journal.goal).toBe('Move the ledger to UTC');
+    expect(journal.trees.public.goal).toBe('Move the ledger to UTC');
     expect(journal.questionsWithoutDecision).toBe(0);
-    expect(journal.outcome).toBe(outcomeOf(journal));
-    expect(journal.outcome).toBe('1 decision recorded; 2 files edited.');
+    expect(journal.trees.public.outcome).toBe(outcomeOf(journal));
+    expect(journal.trees.public.outcome).toBe('1 decision recorded; 2 files edited.');
   });
 
   it('counts a question answered after the last decision as one with no decision after it', () => {
@@ -392,17 +398,124 @@ describe('the journal a Stop keeps', () => {
     const file = transcriptAt('grows.jsonl', lines);
     tally(payload('Stop', file));
     expect(theJournal().filesEdited).toBe(1);
-    // The part already read is overwritten with the same number of bytes of nothing: a reader
-    // that went back over it would find no write and count none.
-    const size = statSync(file).size;
-    const blank = `${'x'.repeat(size - 1)}\n`;
-    writeFileSync(file, blank);
+    expect(theJournal().reading.bytes).toBe(statSync(file).size);
     appendFileSync(
       file,
       `${[write(at(7), 'b', join(repo, 'src', 'b.ts')), result(at(8), 'b')].join('\n')}\n`,
     );
     tally(payload('Stop', file));
     expect(theJournal().filesEdited).toBe(2);
+    expect(theJournal().reading.bytes).toBe(statSync(file).size);
+  });
+
+  it('starts over when the transcript was rewritten, even to a size larger than where the reading stood', () => {
+    const file = transcriptAt('rewritten.jsonl', [
+      prompt(LONG_AGO, 'go'),
+      write(at(1), 'a', join(repo, 'src', 'a.ts')),
+      result(at(2), 'a'),
+    ]);
+    tally(payload('Stop', file));
+    expect(theJournal().filesEdited).toBe(1);
+    // A different history, longer than the first one was, whose first line is longer than the
+    // whole of the first history: a reader that kept its offset would land inside it.
+    transcriptAt('rewritten.jsonl', [
+      prompt(LONG_AGO, `go ${'x'.repeat(2000)}`),
+      write(at(1), 'cc', join(repo, 'src', 'ccc.ts')),
+      result(at(2), 'cc'),
+      write(at(3), 'd', join(repo, 'src', 'd.ts')),
+      result(at(4), 'd'),
+      write(at(5), 'e', join(repo, 'src', 'e.ts')),
+      result(at(6), 'e'),
+      write(at(7), 'f', join(repo, 'src', 'f.ts')),
+      result(at(8), 'f'),
+    ]);
+    tally(payload('Stop', file));
+    expect(theJournal().filesEdited).toBe(4);
+    expect(theJournal().reading.bytes).toBe(statSync(file).size);
+  });
+
+  it('is private to the person: the file is 0600 and its directories 0700, whatever the umask', () => {
+    const before = process.umask(0);
+    try {
+      const file = transcriptAt('mode.jsonl', [
+        prompt(LONG_AGO, 'go'),
+        write(at(1), 'a', join(repo, 'src', 'a.ts')),
+        result(at(2), 'a'),
+      ]);
+      tally(payload('Stop', file));
+    } finally {
+      process.umask(before);
+    }
+    const [path] = journalsUnder(sandbox);
+    expect(statSync(path ?? '').mode & 0o777).toBe(0o600);
+    expect(statSync(dirname(path ?? '')).mode & 0o777).toBe(0o700);
+    expect(statSync(dirname(dirname(path ?? ''))).mode & 0o777).toBe(0o700);
+  });
+
+  it('gives a run in one tree nothing from the other: a private task never reaches the public record', async () => {
+    const created = await doing(
+      'task',
+      'create',
+      '--scope',
+      'private',
+      'PRIVATETITLESENTINEL fix the vault',
+    );
+    const task = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(
+      created.join('\n'),
+    )?.[0];
+    await doing('task', 'move', 'submit', task ?? '');
+    await doing('task', 'move', 'start', task ?? '');
+    await doing('decision', 'record', '--scope', 'private', 'A private call', 'Because');
+    const file = transcriptAt('private.jsonl', [
+      prompt(LONG_AGO, 'go'),
+      write(at(1), 'a', join(repo, 'src', 'a.ts')),
+      result(at(2), 'a'),
+    ]);
+    tally(payload('Stop', file));
+    const journal = theJournal();
+    expect(journal.trees.private.goal).toBe('PRIVATETITLESENTINEL fix the vault');
+    expect(journal.trees.public.goal).toBeNull();
+    expect(journal.trees.public.outcome).toBe('0 decisions recorded; 1 file edited.');
+    expect(journal.trees.private.outcome).toBe('1 decision recorded; 1 file edited.');
+
+    // The public run a decision opens, with the host's session id, is what the sentinel must miss.
+    const { server, armClose } = buildMcpServer({
+      cwd: repo,
+      env,
+      log: () => {},
+      hostSession: SESSION,
+    });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(repo).href }],
+    }));
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(a), server.connect(b)]);
+    const handlers: (() => void)[] = [];
+    armClose({
+      on: (event, handler) => {
+        if (event === 'SIGTERM') handlers.push(handler);
+      },
+      off: () => {},
+      raise: () => {},
+      onStdin: () => {},
+    });
+    await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'A public call', rationale: 'Because', scope: 'public' },
+    });
+    for (const handler of handlers) handler();
+    await client.close();
+    const resolved = resolveTrees(repo, env);
+    const publicEvents = orderedEvents(
+      { root: resolved.projectPublic as string },
+      catalogUpcasters(),
+    );
+    expect(publicEvents.filter((e) => e.kind === 'run.started').length).toBeGreaterThan(0);
+    expect(JSON.stringify(publicEvents)).not.toContain('PRIVATETITLESENTINEL');
   });
 
   it('keeps no file when its channel is off, and the line is still said', async () => {
@@ -457,8 +570,7 @@ describe('the pruning', () => {
       filesEdited: 0,
       tasksInProgress: [],
       runsOpen: [],
-      goal: null,
-      outcome: null,
+      trees: { public: { goal: null, outcome: null }, private: { goal: null, outcome: null } },
       reading: emptyReading(),
     };
   }

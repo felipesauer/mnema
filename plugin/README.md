@@ -88,7 +88,7 @@ document, delivered by the host instead of waited for.
   [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
 - **A `SessionStart` hook that runs only after a compaction** (the `compact` matcher), `mnema recall
   --after-a-compaction`. It hands the conversation that continues one sentence, read from the session's journal: the
-  decisions it had recorded (by label and state), the notes copied, the questions answered with no decision after, the
+  decisions it had recorded (read from the record since it opened, by label and the state they have now), the notes copied, the questions answered with no decision after, the
   files its calls wrote; a count and the record's labels, none of the session's words. Nothing runs before a
   compaction, because the host discards what a hook says then. `mnema switch off after-a-compaction` stops it; see
   [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#after-a-compaction).

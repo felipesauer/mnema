@@ -83,7 +83,7 @@ import { FoundingWatch } from '../a-new-identity.js';
 import { RecordPageWatch } from '../commands/the-record-page.js';
 import { oneLine } from '../one-line.js';
 import { replacementNotice } from '../recorded-content.js';
-import { type Journal, journalFile, readJournal } from '../session-journal.js';
+import { type Journal, journalFile, markEnded, readJournal } from '../session-journal.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import {
   type ClientWorkspace,
@@ -1055,7 +1055,7 @@ function ensureRun(
   // moment before is what the next reply compares with, and a write refused before it founds
   // leaves them as they were, so the reply says nothing.
   session.founding.opened(root, scope);
-  const goal = goalFromTheJournal(session, trees);
+  const goal = goalFromTheJournal(session, trees, scope);
   const prepared = prepareRun(ctx, {
     agent: whichIn(trees, scope, session),
     ...(goal !== undefined ? { goal } : {}),
@@ -1124,14 +1124,28 @@ function theJournalOf(
   return file === undefined ? undefined : readJournal(file);
 }
 
-/** The goal a run opens with: the first objective the journal knows, a task title the record holds. */
-function goalFromTheJournal(session: Session, trees: ResolvedTrees): string | undefined {
-  return theJournalOf(session, trees)?.goal ?? undefined;
+/**
+ * The goal a run opens with: the first objective the journal knows for the tree the run is written
+ * to, a task title that tree holds. A run in the global tree takes none: the journal speaks of the
+ * project's trees only, and a run takes nothing from a tree other than its own.
+ */
+function goalFromTheJournal(
+  session: Session,
+  trees: ResolvedTrees,
+  scope: Scope,
+): string | undefined {
+  if (scope === 'global') return undefined;
+  return theJournalOf(session, trees)?.trees[scope].goal ?? undefined;
 }
 
-/** The outcome a run closes with: the journal's sentence of counts. */
-function outcomeFromTheJournal(session: Session, trees: ResolvedTrees): string | undefined {
-  return theJournalOf(session, trees)?.outcome ?? undefined;
+/** The outcome a run closes with: the journal's sentence of counts for the tree the run is in. */
+function outcomeFromTheJournal(
+  session: Session,
+  trees: ResolvedTrees,
+  scope: Scope,
+): string | undefined {
+  if (scope === 'global') return undefined;
+  return theJournalOf(session, trees)?.trees[scope].outcome ?? undefined;
 }
 
 /** What a close recorded, and what it could not: every run the connection opened. */
@@ -1203,7 +1217,7 @@ export function closeSession(session: Session): SessionClose {
         // `which` is the client's, the one disagreement `verify` reads as a break. Taken from
         // the session, never asked of the client.
         const ended = ctx.writer.exclusively(() => {
-          const outcome = outcomeFromTheJournal(session, run.trees);
+          const outcome = outcomeFromTheJournal(session, run.trees, run.scope);
           const closing = endRun(ctx, {
             run: run.id,
             which: whichIn(run.trees, run.scope, session),
@@ -1228,6 +1242,17 @@ export function closeSession(session: Session): SessionClose {
     }
   } finally {
     session.caches.closeAll();
+  }
+  // The journals this connection's runs belong to are those of a session that has ended, so a later
+  // session is told this one stopped and not that it may still be going.
+  if (session.hostSession !== undefined) {
+    const marked = new Set<string>();
+    for (const run of session.runs.values()) {
+      const file = journalFile(run.trees, session.hostSession);
+      if (file === undefined || marked.has(file)) continue;
+      marked.add(file);
+      markEnded(file, new Date());
+    }
   }
   const opened = new Set(session.runs.keys());
   const begunWithNoRun = [...session.writesBegun].filter((root) => !opened.has(root));

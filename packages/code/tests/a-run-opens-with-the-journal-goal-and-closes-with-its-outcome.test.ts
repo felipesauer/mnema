@@ -20,7 +20,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Lifecycle } from '../src/mcp/lifecycle.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { type CliIo, run } from '../src/program.js';
-import { type Journal, journalFile, writeJournal } from '../src/session-journal.js';
+import {
+  type Journal,
+  journalFile,
+  lastJournalOf,
+  readJournal,
+  writeJournal,
+} from '../src/session-journal.js';
 import { emptyReading } from '../src/what-the-session-did.js';
 
 let sandbox: string;
@@ -41,8 +47,7 @@ function journal(goal: string | null, outcome: string | null): Journal {
     filesEdited: 3,
     tasksInProgress: [],
     runsOpen: [],
-    goal,
-    outcome,
+    trees: { public: { goal, outcome }, private: { goal, outcome } },
     reading: emptyReading(),
   };
 }
@@ -127,6 +132,20 @@ describe('a run and the journal of its session', () => {
       '2 decisions recorded; 3 files edited.',
     ]);
     await client.close();
+  });
+
+  it('marks the journal of the session as ended when the connection ends, so a later one is told it stopped', async () => {
+    const project = makeProject();
+    const trees = resolveTrees(project, env);
+    const file = journalFile(trees, SESSION) as string;
+    writeJournal(file, journal('A goal', 'An outcome.'), new Date());
+    expect(readJournal(file)?.endedAt).toBeUndefined();
+    const { client, end } = await connected(project, SESSION);
+    await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact worth a run' } });
+    end();
+    await client.close();
+    expect(typeof readJournal(file)?.endedAt).toBe('string');
+    expect(lastJournalOf(trees, { except: 'another', now: new Date() })?.session).toBe(SESSION);
   });
 
   it('opens with no goal and ends with no outcome where the host named no session, or none was kept', async () => {

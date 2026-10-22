@@ -95,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$CURSOR_VERSION\" ] && exit 0; IN=$(cat); P=${IN#*\\\"file_path\\\":\\\"}; P=${P%%\\\"*}; case \"$P\" in */memory/*.md|*/adr/*.md|*/decisions/*.md|*/CLAUDE.md|*/AGENTS.md|*/GEMINI.md|*/.claude/rules/*|*/.cursor/rules/*|*/.github/copilot-instructions.md|*handoff*.md|*plan*.md|*ledger*.md) ;; \"${CLAUDE_PROJECT_DIR}\"/*) exit 0;; *.md) ;; *) exit 0;; esac; printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/after-a-write.mjs\"",
+            "command": "[ -n \"$CURSOR_VERSION\" ] && exit 0; IN=$(cat); P=${IN#*\\\"file_path\\\":\\\"}; P=${P%%\\\"*}; case \"$P\" in */memory/*.md|*/adr/*.md|*/decisions/*.md|*/CLAUDE.md|*/AGENTS.md|*/GEMINI.md|*/.claude/rules/*|*/.cursor/rules/*|*/.github/copilot-instructions.md|*[hH][aA][nN][dD][oO][fF][fF]*.md|*[pP][lL][aA][nN]*.md|*[lL][eE][dD][gG][eE][rR]*.md|*[lL][iI][vV][rR][oO]*.md) ;; \"${CLAUDE_PROJECT_DIR}\"/*) exit 0;; *.md) ;; *) exit 0;; esac; printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/after-a-write.mjs\"",
             "timeout": 15
           }
         ]
