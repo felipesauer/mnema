@@ -33,7 +33,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A subagent hands its decisions back.** In Claude Code, `mnema handback` runs when a subagent
   stops and sends it back once when its last reply lacks the block of decisions it settled;
   `mnema handback --schema` prints the shape. It checks the shape, never that the subagent decided
-  anything, and `mnema switch off subagent-handback` turns it off.
+  anything, and `mnema switch off subagent-handback` turns it off. Every switch, where it begins and the command that flips it are in [the table of switches](switches.md).
 - **A question answered is a moment the agent is told about.** In Claude Code, after the agent asked
   the person through `AskUserQuestion` and the answer came back, `mnema settled` hands it one
   sentence beside the answer: a choice may have been settled there, and `record_decision` records

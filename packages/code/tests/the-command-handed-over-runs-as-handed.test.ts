@@ -679,7 +679,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 40, name: 77, flag: 2 },
+  'CHANGELOG.md': { line: 40, name: 79, flag: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -692,6 +692,7 @@ export const HANDED_OVER: Readonly<
   'docs/install.md': { line: 3, name: 4 },
   'docs/packages.md': { line: 1, name: 2 },
   'docs/site.md': { line: 1, name: 3 },
+  'docs/switches.md': { line: 16, name: 3 },
   'docs/verify-without-installing.md': { name: 1 },
   'docs/what-it-proves.md': { line: 5, name: 8 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
@@ -734,7 +735,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/presentation/site.ts': { name: 1 },
   'packages/code/src/presentation/status.ts': { line: 2 },
   'packages/code/src/presentation/usage.ts': { line: 1, name: 2 },
-  'packages/code/src/record-framing.ts': { line: 1, name: 8 },
+  'packages/code/src/record-framing.ts': { line: 1, name: 9 },
   'packages/code/src/record-integrity.ts': { name: 7 },
   'packages/code/src/repl/gate.ts': { unwritten: 2 },
   'packages/code/src/repl/promotable.ts': { line: 1 },

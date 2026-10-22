@@ -520,6 +520,17 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
   // off", and the rule still holds for every other such channel.
 ];
 
+const SWITCH_VERB = 'mnema switch';
+
+/**
+ * The command that flips a channel away from where it begins: the switch verb with `on` for a
+ * channel that starts off and with `off` for every other. One sentence of the product's own that
+ * the pages, the listing and the replies print, so no surface spells it again.
+ */
+export function flipCommand(channel: SwitchableChannel): string {
+  return [SWITCH_VERB, STARTS_OFF.includes(channel) ? 'on' : 'off', channel].join(' ');
+}
+
 /**
  * The channel that reads what a PERSON typed into a session and records the corrections, and the
  * answers to the agent's questions, as `proposed` decisions: off until somebody switches it on.
