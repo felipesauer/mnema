@@ -406,7 +406,7 @@ function ranTheVerb(argv, cwd, input, timeout = undefined) {
     cwd,
     env: theRuntime().env,
     input,
-    ...(timeout === undefined ? {} : { timeout }),
+    ...(timeout === undefined ? {} : { timeout, killSignal: 'SIGKILL' }),
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });

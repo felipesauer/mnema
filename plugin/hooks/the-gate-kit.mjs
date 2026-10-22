@@ -104,6 +104,8 @@ function versionOf(node, env, timeout) {
     env,
     encoding: 'utf-8',
     timeout,
+    // A node that ignores SIGTERM must not outlive its probe: the gate's answer waits on it.
+    killSignal: 'SIGKILL',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
   const said = (ran.stdout ?? '').trim();

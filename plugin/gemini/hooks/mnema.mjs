@@ -100,6 +100,8 @@ function versionOf(node, env, timeout) {
     env,
     encoding: 'utf-8',
     timeout,
+    // A node that ignores SIGTERM must not outlive its probe: the gate's answer waits on it.
+    killSignal: 'SIGKILL',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
   const said = (ran.stdout ?? '').trim();
@@ -577,8 +579,15 @@ const ASKS = 'ask_user';
 /** How long `mnema` is given to answer, in milliseconds. */
 const WAIT = 15000;
 
-/** How long the gate gives it: under the host's own limit, with the search for a node. */
-const GATE_WAIT = 10000;
+/**
+ * What every step of the gate is given, so that the steps TOGETHER stay under the host's own cap
+ * (the hooks file's 15 seconds): the search for a node takes at most 3 s, `--identify` at most
+ * IDENTIFY_WAIT, and the gate at most GATE_WAIT with its second attempt included. 3 + 2 + 6 = 11 s,
+ * so a mnema that hangs is answered by the refusal, not by the host killing the hook (which a host
+ * reads as nothing to say, and the write goes through).
+ */
+const IDENTIFY_WAIT = 2000;
+const GATE_WAIT = 6000;
 
 /** The agent whose key signs what the gate records, where the record enrols it. */
 const AGENT = ['--agent-key', 'gemini'];
@@ -607,6 +616,7 @@ function run(args, cwd, input, timeout = WAIT) {
     input,
     encoding: 'utf-8',
     timeout,
+    killSignal: 'SIGKILL',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 }
@@ -617,7 +627,7 @@ function run(args, cwd, input, timeout = WAIT) {
  * @param {string} cwd
  */
 function whoIsThere(cwd) {
-  const ran = run(['--identify'], cwd);
+  const ran = run(['--identify'], cwd, undefined, IDENTIFY_WAIT);
   const failure = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error);
   if (failure?.code === 'ENOENT') return 'other';
   if (ran.error !== undefined || ran.status !== 0) return 'broken';
@@ -686,9 +696,13 @@ function answer(mode, raw) {
   }
   if (mode !== 'gate') return undefined;
   const gate = ['before-a-write', '--host', 'gemini'];
+  const started = Date.now();
   let ran = run([...gate, ...AGENT], cwd, raw, GATE_WAIT);
-  // A `mnema` too old to know the option refuses it by name: asked again without it.
-  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) ran = run(gate, cwd, raw, GATE_WAIT);
+  // A `mnema` too old to know the option refuses it by name: asked again without it, with what is
+  // left of the one budget.
+  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) {
+    ran = run(gate, cwd, raw, Math.max(1, GATE_WAIT - (Date.now() - started)));
+  }
   const failed = whyItDidNotAnswer(ran, GATE_WAIT);
   if (failed === null) return undefined;
   if (failed !== undefined) return closedWhere(failed, cwd, raw);

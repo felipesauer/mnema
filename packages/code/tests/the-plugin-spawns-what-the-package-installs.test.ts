@@ -128,6 +128,47 @@ export function whatTheManifestRuns(manifestText: string): { command: string; sc
   return { command: server.command ?? '', script: server.args?.[0] ?? '' };
 }
 
+/** Every API of `node:child_process` that starts a program, by the name it is called by. */
+const CHILD_PROCESS_APIS = 'spawn|spawnSync|exec|execSync|execFile|execFileSync|fork';
+
+/**
+ * WHAT A MODULE DOES WITH CHILD PROCESSES, read off its CODE (comments, strings and regular
+ * expressions blanked, so a comment cannot satisfy it and cannot accuse it).
+ *
+ * `calls` is every call of one of the APIs by its bare name, with its first argument; `other` is
+ * what would start a program some other way: a method call of one of them, a namespace or default
+ * import, a `require` or a dynamic `import()`, and a named import of any API but `spawnSync`.
+ * `.exec(` as a method is a regular expression's and is not one of them.
+ */
+export function theKitsChildProcessCalls(source: string): { calls: string[]; other: string[] } {
+  const code = codeOnly(source);
+  const calls = [
+    ...code.matchAll(
+      new RegExp(`(?<![.\\w])(?:${CHILD_PROCESS_APIS})\\s*\\(\\s*[\\w$]*\\s*[,)]`, 'g'),
+    ),
+  ].map((found) => found[0].replace(/\s+/g, ''));
+  const other: string[] = [];
+  for (const found of code.matchAll(
+    new RegExp(`\\.(?:spawn|spawnSync|execSync|execFile|execFileSync|fork)\\s*\\(`, 'g'),
+  )) {
+    other.push(found[0]);
+  }
+  for (const found of code.matchAll(
+    /\b(?:require\s*\(|import\s*\(|import\s*\*|import\s+\w+\s*[,\s]\s*from\b)/g,
+  )) {
+    other.push(found[0]);
+  }
+  for (const found of code.matchAll(/\bimport\s*\{([^}]*)\}/g)) {
+    for (const name of (found[1] as string).split(',')) {
+      const bare = name.trim().split(/\s+as\s+/)[0] as string;
+      if (new RegExp(`^(?:${CHILD_PROCESS_APIS})$`).test(bare) && bare !== 'spawnSync') {
+        other.push(`import ${bare}`);
+      }
+    }
+  }
+  return { calls, other };
+}
+
 describe('every place that spells the executable spells the one the package installs', () => {
   const installed = theInstalledBinary(readFileSync(INSTALLS, 'utf-8'));
 
@@ -172,11 +213,39 @@ describe('every place that spells the executable spells the one the package inst
       ),
     );
     expect(spawning).toEqual([]);
-    const kit = codeOnly(readFileSync(join(HOOKS_DIR, KIT), 'utf-8'));
-    expect(kit.match(/\bspawnSync\(/g)).toHaveLength(1);
-    expect(readFileSync(join(HOOKS_DIR, KIT), 'utf-8')).toMatch(/\bspawnSync\(node,/);
+    expect(theKitsChildProcessCalls(readFileSync(join(HOOKS_DIR, KIT), 'utf-8'))).toEqual({
+      calls: ['spawnSync(node,'],
+      other: [],
+    });
     // And the module that does spawn is where the name is: the case above reads it there.
     expect(codeOnly(readFileSync(HOOK, 'utf-8'))).toMatch(/\bspawnSync\(/);
+  });
+
+  it('lights where the kit spawns anything but a node, however it is written', () => {
+    // THE MUTATIONS, AS CASES: strings fed to the reading, the real file untouched.
+    const kitText = readFileSync(join(HOOKS_DIR, 'the-gate-kit.mjs'), 'utf-8');
+    expect(theKitsChildProcessCalls(kitText).calls).toEqual(['spawnSync(node,']);
+    const lit = (text: string) => theKitsChildProcessCalls(text);
+    expect(lit(`${kitText}\nexecFileSync('mnema', []);`).calls).toHaveLength(2);
+    expect(lit(`${kitText}\nexecSync('mnema');`).calls).toHaveLength(2);
+    expect(lit(`${kitText}\nspawn('mnema', []);`).calls).toHaveLength(2);
+    expect(lit(`${kitText}\nexec('mnema');`).calls).toHaveLength(2);
+    expect(lit(`${kitText}\nfork('x.js');`).calls).toHaveLength(2);
+    expect(lit(`${kitText}\ncp.execFileSync('mnema');`).other).toHaveLength(1);
+    expect(lit("import { execFileSync } from 'node:child_process';").other).toHaveLength(1);
+    expect(lit("import * as cp from 'node:child_process';").other).toHaveLength(1);
+    expect(lit("const cp = require('node:child_process');").other).toHaveLength(1);
+    expect(lit("const cp = await import('node:child_process');").other).toHaveLength(1);
+    // The one spawn aimed at something that is not the node it was given.
+    expect(lit(kitText.replace('spawnSync(node,', 'spawnSync(binary,')).calls).toEqual([
+      'spawnSync(binary,',
+    ]);
+    // A comment cannot satisfy the reading, and a regular expression's .exec( is not a spawn.
+    const bare = kitText.replace('spawnSync(node,', 'spawnSync(binary,');
+    expect(lit(`// spawnSync(node,\n${bare}`).calls).toEqual(['spawnSync(binary,']);
+    expect(lit('const m = /a/.exec(text);\nspawnSync(node, []);').calls).toEqual([
+      'spawnSync(node,',
+    ]);
   });
 
   it('starts the MCP server through a launcher that spawns it, off the same name', () => {
