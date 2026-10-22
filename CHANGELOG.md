@@ -1435,8 +1435,8 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   since the last read, and rebuilt whole whenever it cannot be shown to be a continuation (a
   sealed segment whose size or modification time changed, the active one whose size changed, a
   different record, a different build). A rewrite of the active segment that keeps its size is
-  not seen by the projection, and `verify` refuses it. Deleting it changes no answer, only the
-  time. A write numbers, moves and checks who counts from that projection rather than from a
+  not seen by the projection, and `verify` refuses it. Deleting it costs only the time, except where it had
+  missed an edit in place of that kind. A write numbers, moves and checks who counts from that projection rather than from a
   replay held under the lock; measured at 100 thousand events, 0 of 27 writes timed out waiting
   for the lock with the projection warm, and 1 of 18 on the first use.
 - **A console.** `mnema` alone at a terminal asks what you want to do here, and its first
