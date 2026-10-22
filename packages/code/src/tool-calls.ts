@@ -97,8 +97,11 @@ let exitHooked = false;
 /**
  * Counts `call` AFTER the reply it belongs to has been handed to the host: the line is written in
  * the next turn of the event loop and not in the one that answers, so the count adds nothing to
- * the time a tool takes to answer. No line is lost to that: {@link flushToolCalls} writes what
- * waits, and it runs when the process exits as well. Never throws, like {@link appendToolCall}.
+ * the time a tool takes to answer. {@link flushToolCalls} writes what waits, and it runs when the
+ * process exits, when the server closes its session (the end of stdin, SIGTERM, SIGINT) and
+ * before the count is read. A process killed by SIGKILL, which no handler sees, can lose the
+ * lines still waiting, which is the time between a reply and the next turn of the event loop.
+ * Never throws, like {@link appendToolCall}.
  */
 export function countToolCall(file: string, call: ToolCall): void {
   waiting.push({ file, call });

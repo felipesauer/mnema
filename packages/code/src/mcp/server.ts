@@ -124,7 +124,13 @@ import {
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
-import { countToolCall, resultOf, toolCallsFile, UNCODED_FAILURE } from '../tool-calls.js';
+import {
+  countToolCall,
+  flushToolCalls,
+  resultOf,
+  toolCallsFile,
+  UNCODED_FAILURE,
+} from '../tool-calls.js';
 import { VERSION } from '../version.js';
 import {
   actionsRequiring,
@@ -621,6 +627,9 @@ export function buildMcpServer(options: McpServerOptions): {
    * they can read on disk, which is the whole use of this line.
    */
   const closeNow = (): void => {
+    // The count's lines wait for the turn after the reply; a signal or the end of stdin can
+    // arrive first, and a process asked to stop does not come back for that turn.
+    flushToolCalls();
     if (openedSession === undefined) return;
     const { closed, leftOpen, replaced, begunWithNoRun } = closeSession(openedSession);
     // "Nothing was written" only where no write began: a run's opening founds on its way in

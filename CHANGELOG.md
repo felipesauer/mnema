@@ -71,9 +71,10 @@ with its own changelog.
   a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
   stacks with `outside: true` (`stacksReaderFor` hands it).
 - **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
-  reply went out, about a millisecond on every call; it is now written in the next turn of the event loop, and when the
-  process exits any line still waiting is written first. Reading the count in the same process sees every call already
-  answered.
+  reply went out (about 21 microseconds an append, measured); it is now written in the next turn of the event loop, and
+  any line still waiting is written first when the process exits, when the session closes on SIGTERM, SIGINT or the end
+  of stdin, and when the count is read. A process killed by SIGKILL can still lose the lines that were waiting. Reading
+  the count in the same process sees every call already answered.
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
   (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
@@ -1462,8 +1463,8 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   since the last read, and rebuilt whole whenever it cannot be shown to be a continuation (a
   sealed segment whose size or modification time changed, the active one whose size changed, a
   different record, a different build). A rewrite of the active segment that keeps its size is
-  not seen by the projection, and `verify` refuses it. Deleting it costs only the time, except where it had
-  missed an edit in place of that kind. A write numbers, moves and checks who counts from that projection rather than from a
+  not seen by the projection, and `verify` refuses it. Deleting it changes no answer, only the
+  time. A write numbers, moves and checks who counts from that projection rather than from a
   replay held under the lock; measured at 100 thousand events, 0 of 27 writes timed out waiting
   for the lock with the projection warm, and 1 of 18 on the first use.
 - **A console.** `mnema` alone at a terminal asks what you want to do here, and its first

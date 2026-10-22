@@ -148,6 +148,34 @@ describe('the local count of tool calls', () => {
     await client.close();
   });
 
+  it('leaves the line of a call on disk when SIGTERM arrives before the write turn', async () => {
+    const { server, armClose } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(repo).href }],
+    }));
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+    const signals = new Map<string, () => void>();
+    armClose({
+      on: (event, handler) => signals.set(event, handler),
+      off: () => {},
+      // Swallowed: a re-raise here would take the test runner down.
+      raise: () => {},
+      onStdin: () => {},
+    });
+    await client.callTool({ name: 'capture_memory', arguments: { content: 'last words' } });
+    const onDisk = (): string => (existsSync(theFile()) ? readFileSync(theFile(), 'utf-8') : '');
+    expect(onDisk()).not.toContain('capture_memory');
+    // The signal handler runs in the turn after the reply and before the write turn.
+    signals.get('SIGTERM')?.();
+    expect(onDisk()).toContain('capture_memory');
+    await client.close();
+  });
+
   it('keeps no argument: a marker sent to a write and to a read is nowhere in the file', async () => {
     const client = await connect();
     await client.callTool({ name: 'capture_memory', arguments: { content: MARKER } });

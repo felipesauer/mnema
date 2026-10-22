@@ -311,6 +311,18 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
     expect(await stacksReaderFor(ctx)).toBe(stacksHere);
   });
 
+  it('opens a session with a stack the record adopted when no receipts folder is here', async () => {
+    await install(false);
+    rmSync(join(ctx.cwd, '.mnema/stacks'), { recursive: true });
+    const reader = await stacksReaderFor(ctx);
+    expect(reader).toBe(stacksHere);
+    const asHook = runBrief(ctx, { outside: true, stacks: reader });
+    if (!asHook.ok) throw new Error('no brief');
+    expect(asHook.stacks?.adopted).toEqual([
+      { name: 'hello-stack', version: '1.0.0', scope: 'public' },
+    ]);
+  });
+
   it('opens a session with the stacks adopted, and the file a person commits carries none', async () => {
     await install(false);
     rmSync(join(ctx.cwd, '.claude/agents/greeter.md'));
