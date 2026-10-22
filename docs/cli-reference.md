@@ -1206,7 +1206,10 @@ not what. Any key that writes to the tree can record a removal, whoever adopted 
 ### When mnema itself fails
 
 An error in mnema's own code is not a refusal, and it says so: the command names it as an internal
-error, keeps a short note of it on this machine (outside the record) and points at `mnema report`.
+error, keeps a short note of it on this machine (outside the record) and points at `mnema report`. What a
+person or their environment handed over is not mnema's fault: a failed network call, or an address
+that is not an address (the one a CI job gives for its signing token, say), is said as a refusal
+with exit 1, and no report is offered for it.
 
 ```sh
 mnema report
