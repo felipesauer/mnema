@@ -179,16 +179,19 @@ function retractionFacts(
  */
 function storyLines(render: Render, story: TaskStory): string[] {
   const lines: string[] = [];
-  if (story.description !== undefined) {
-    lines.push('', 'Description:', neutralized(story.description.text));
-  }
+  // THE HAND-OVER IS A FACT, so it sits with the other facts under the subject; what was written
+  // (the description, the brief) is prose and follows as bodies, each under its heading.
   if (story.handoff !== undefined) {
     const { handoff } = story;
     lines.push(
-      '',
       render(fact(`last handoff ${handoff.at}: ${oneLine(handoff.from)} → ${oneLine(handoff.to)}`)),
     );
-    if (handoff.brief !== undefined) lines.push('Brief:', neutralized(handoff.brief.text));
+  }
+  if (story.description !== undefined) {
+    lines.push('', 'Description:', neutralized(story.description.text));
+  }
+  if (story.handoff?.brief !== undefined) {
+    lines.push('', 'Brief:', neutralized(story.handoff.brief.text));
   }
   const { total, items } = story.notes;
   if (total > 0) {
@@ -282,8 +285,8 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(
         render(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
       );
-      lines.push(...movesSaid(body.record.proof));
       if (body.story !== undefined) lines.push(...storyLines(render, body.story));
+      lines.push(...movesSaid(body.record.proof));
       break;
     case 'skill':
       lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));

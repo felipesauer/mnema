@@ -208,3 +208,63 @@ describe('mnema task handoff --which: the agent that RECORDED it', () => {
     expect(roots.reduce((n, root) => n + handoffsIn(root).length, 0)).toBe(before);
   });
 });
+
+describe('mnema task handoff --brief: what the next agent must read', () => {
+  /** Every observation in a tree: its id, what it is about, its topic and its text. */
+  function observationsIn(root: string) {
+    return orderedEvents({ root }, catalogUpcasters()).flatMap((e) =>
+      e.kind === 'observation.recorded' ? [{ id: e.subject, ...e.payload }] : [],
+    );
+  }
+
+  it('records the handoff and, in the same call, a `brief` observation about the task', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'The schema is done.\nStart at src/x.ts.' },
+    );
+    if (!result.ok) throw new Error('the handoff was refused');
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(observationsIn(root)).toEqual([
+      {
+        id: result.briefId,
+        about: 'T',
+        topic: 'brief',
+        text: 'The schema is done.\nStart at src/x.ts.',
+      },
+    ]);
+    expect(handoffsOf(root).get('T')?.length).toBe(1);
+  });
+
+  it('records no observation, and names no id, when no brief was given', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff({ cwd: repo, env }, { task: 'T', fromAgent: 'a', toAgent: 'b' });
+    expect(result.ok && 'briefId' in result).toBe(false);
+    expect(observationsIn(resolveTrees(repo, env).projectPublic as string)).toEqual([]);
+  });
+
+  it('refuses a brief over 64 KiB and leaves NO handoff behind', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'x'.repeat(65_537) },
+    );
+    expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'CONTENT_TOO_LARGE' });
+    const root = resolveTrees(repo, env).projectPublic as string;
+    expect(handoffsOf(root).has('T')).toBe(false);
+    expect(observationsIn(root)).toEqual([]);
+  });
+
+  it('accepts a brief of exactly 64 KiB', () => {
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const result = runHandoff(
+      { cwd: repo, env },
+      { task: 'T', fromAgent: 'a', toAgent: 'b', brief: 'x'.repeat(65_536) },
+    );
+    expect(result.ok).toBe(true);
+  });
+});
