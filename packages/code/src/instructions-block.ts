@@ -83,7 +83,13 @@ export interface MarkerLine {
   readonly version?: string;
 }
 
-function collect(line: string, at: number, textEnd: number, next: number, into: MarkerLine[]): void {
+function collect(
+  line: string,
+  at: number,
+  textEnd: number,
+  next: number,
+  into: MarkerLine[],
+): void {
   const begin = BEGIN_LINE.exec(line);
   const base = { start: at, textEnd, next };
   if (begin !== null) into.push({ ...base, kind: 'begin', version: begin[1] as string });
