@@ -407,6 +407,12 @@ export interface McpServerOptions {
    * connection whose client declares `roots` never reads it.
    */
   readonly cwd: string;
+  /**
+   * The host's id for the session this server was started in, where the host leaves one in the
+   * server's environment: what `mnema mcp` reads from `CLAUDE_CODE_SESSION_ID`. It names the
+   * session journal a run takes its goal from and closes with the outcome of.
+   */
+  readonly hostSession?: string | undefined;
   /** Where to write diagnostics (never stdout: that carries the protocol). */
   readonly log?: (line: string) => void;
 }
@@ -482,6 +488,7 @@ export function buildMcpServer(options: McpServerOptions): {
         log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
         ...(options.agentKey !== undefined ? { agentKey: options.agentKey } : {}),
+        ...(options.hostSession !== undefined ? { hostSession: options.hostSession } : {}),
       });
       // Before the log line and before this promise resolves: from here on the close
       // can reach the session synchronously, and there is no window in which a write
