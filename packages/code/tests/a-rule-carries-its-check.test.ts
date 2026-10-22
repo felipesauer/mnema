@@ -215,7 +215,7 @@ describe('mnema check', () => {
 
       expect(said.failed).toBe(true);
       expect(said.err.join('\n')).toContain(
-        `is ${article} key, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; \`mnema key request --checker --anchor <your identity>\` makes a checker key`,
+        `is ${article} key, and a checker's key is an Ed25519 one: the consent that enrols it is proved for no other kind; \`mnema key request --checker --anchor <your identity>\` makes a checker key`,
       );
       expect(events()).toHaveLength(before);
     },

@@ -76,6 +76,8 @@ with its own changelog.
 
 ### Fixed
 
+- **`mnema check run --key` with a key that is not Ed25519 no longer calls it an agent's key.** The refusal says that
+  a checker's key is an Ed25519 one, as it says for an agent's in the commands that enrol an agent.
 - **`mnema doctor` reads the host's `.claude.json` where the host keeps it.** With `CLAUDE_CONFIG_DIR` set the file is
   `$CLAUDE_CONFIG_DIR/.claude.json`, and `doctor` read the one in your home directory, so it counted the wrong
   declarations of the mnema MCP server and listed the wrong projects.
