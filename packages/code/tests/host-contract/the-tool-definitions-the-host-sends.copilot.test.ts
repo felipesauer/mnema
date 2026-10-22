@@ -10,6 +10,7 @@ import {
   theEntriesOf,
   theFirstThatOffersTools,
   theServersTools,
+  theWeightsFile,
 } from './support/the-tool-definitions.js';
 
 describe("what the Copilot CLI sends of the plugin's tools", () => {
@@ -24,10 +25,7 @@ describe("what the Copilot CLI sends of the plugin's tools", () => {
       expect(String(entry['description']).length, String(entry['name'])).toBeGreaterThan(40);
       expect(entry['input_schema'], String(entry['name'])).toBeTypeOf('object');
     }
-    expect({ count: mine.names.length, ...mine.all }).toEqual({
-      count: 27,
-      bytes: 50_029,
-      tokens: 11_524,
-    });
+    expect(mine.names).toHaveLength(27);
+    await expect(theWeightsFile(mine.all)).toMatchFileSnapshot('./weights/copilot.json');
   }, 180_000);
 });
