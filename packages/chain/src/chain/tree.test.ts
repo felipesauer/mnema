@@ -178,6 +178,15 @@ describe('ensureTree: self-contained .gitignore', () => {
     expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/workbench/local\n`);
   });
 
+  it('does not add the workbench line to a .gitignore that negates it', () => {
+    for (const negation of ['!/workbench/local', '!workbench/local', '  !/workbench/local/  ']) {
+      const old = `/locks/\n${negation}\n`;
+      writeFileSync(gitignorePath({ root }), old, 'utf-8');
+      ensureTree({ root });
+      expect(readFileSync(gitignorePath({ root }), 'utf-8'), negation).toBe(old);
+    }
+  });
+
   it('adds the lines after a last line that has no newline', () => {
     writeFileSync(gitignorePath({ root }), '/private/', 'utf-8');
     ensureTree({ root });

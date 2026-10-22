@@ -74,6 +74,8 @@ const LOCKS_LINE = '/locks/';
 
 const WORKBENCH_LOCAL_LINE = '/workbench/local';
 
+const WORKBENCH_NEGATED = /^!\/?workbench\/local\/?$/;
+
 /**
  * The chain's own `.gitattributes`. A line of the record is refused unless its bytes are the
  * canonical bytes that were signed (`FORMAT.md` section 4), and a checkout that rewrites line
@@ -98,7 +100,8 @@ const NO_EOL_LINE = '* -text';
  * `.gitattributes`. Creates the tree directory if absent and writes each file only if it
  * is not already there; an older `.gitignore` that lacks the `/locks/` or the
  * `/workbench/local` line, or a `.gitattributes` that lacks `* -text`, gets each missing line
- * appended and nothing else, which is how a tree made before a line existed gets it, at its
+ * appended and nothing else (unless the file negates the path, `!/workbench/local`: that is
+ * the person's choice, and the line would cancel it), which is how a tree made before a line existed gets it, at its
  * next write. Idempotent: safe to call before every write. Returns true if it wrote the
  * `.gitignore` this call (it was absent), false if one already existed (even if a line was
  * appended to it).
@@ -113,9 +116,11 @@ export function ensureTree(layout: ChainLayout): boolean {
     // by a killed holder would be committed.
     { has: (l) => l === LOCKS_LINE || l === 'locks/', line: LOCKS_LINE },
     // A tree made before the workbench existed has no line for its private link. Only the forms
-    // git matches against a link count: one that ends in a slash does not.
+    // git matches against a link count: one that ends in a slash does not. A negation of the
+    // path is the person's own choice to share it: appended after it, the line would cancel it.
     {
-      has: (l) => l === WORKBENCH_LOCAL_LINE || l === 'workbench/local',
+      has: (l) =>
+        l === WORKBENCH_LOCAL_LINE || l === 'workbench/local' || WORKBENCH_NEGATED.test(l),
       line: WORKBENCH_LOCAL_LINE,
     },
   ]);
