@@ -26,7 +26,10 @@
  * tree, so in a project whose only change is the record, the changed files are its own
  * chain, measured on a field project at the moment its session would open: its two
  * changed files were `.mnema/tails/…/000001.jsonl` and `checkpoints.jsonl`. The record's
- * directory is excluded from both git reads by a pathspec, and what is left is the project.
+ * directory is excluded from both git reads by a pathspec, and what is left is the project. So
+ * are the files of standing instructions that are wholly mnema's (`instructions-block.ts`): a
+ * founding leaves them untracked, and their names would make "mnema instructions" the theme of
+ * every session until they are committed.
  *
  * THE REPOSITORY IS READ AND NEVER WRITTEN. `git status` refreshes the index when it may,
  * which is a write into somebody's repository by a verb that says it writes nothing; with
@@ -50,6 +53,7 @@
 import { spawnSync } from 'node:child_process';
 import type { ScopedCache } from '@mnema/context';
 import { PROJECT_DIR, type TaskState, wordsOf } from '@mnema/core';
+import { OWN_INSTRUCTIONS_FILES } from './instructions-block.js';
 
 /** What the session touches, as words, and where the words came from, counted. */
 export interface SessionTouch {
@@ -103,7 +107,12 @@ const GIT_MAX_BYTES = 4 * 1024 * 1024;
 const READ_ONLY = ['-c', 'core.fsmonitor=false', '--no-optional-locks'];
 
 /** Everything under the project's directory except the record itself: both reads' pathspec. */
-const THE_PROJECT_NOT_THE_RECORD = ['--', '.', `:(exclude)${PROJECT_DIR}`];
+const THE_PROJECT_NOT_THE_RECORD = [
+  '--',
+  '.',
+  `:(exclude)${PROJECT_DIR}`,
+  ...OWN_INSTRUCTIONS_FILES.map((path) => `:(exclude)${path}`),
+];
 
 /**
  * What the session opening at `projectRoot` touches: the working tree, the tasks in

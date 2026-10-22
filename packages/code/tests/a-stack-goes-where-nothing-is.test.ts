@@ -38,6 +38,8 @@ beforeEach(() => {
   mkdirSync(home);
   mkdirSync(project);
   expect(mnema('init').status).toBe(0);
+  // The cases are about a `.claude/` the stack makes: the one the instructions live in goes.
+  expect(mnema('instructions', '--remove').status).toBe(0);
 });
 
 afterEach(() => {

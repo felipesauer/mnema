@@ -12,8 +12,15 @@ mnema init
 #>   identity: mnid:eaacca5499e459f77de6c5f821336b4a…
 #>   backup key: created and enrolled, private half at …/identity/backup/9dd8d3df….key
 #>   Move that file off this machine: a backup left on this disk is lost with it.
+#>   Created AGENTS.md, with the mnema instructions.
+#>   Created .claude/rules/mnema-instructions.md, with the mnema instructions.
+#>   Created .github/instructions/mnema-instructions.instructions.md, with the mnema instructions.
+#>   Created .cursor/rules/mnema-instructions.mdc, with the mnema instructions.
+#>   Each holds the mnema instructions an agent host reads at the start of a session: when to
+#>   call the mnema tools, and what never goes in the record. `mnema instructions --remove`
+#>   takes them out.
 #>
-#>   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+#>   mnema writes no other file of yours. In Claude Code the mnema plugin hands this record to
 #>   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
 #>   project in a file of its own (the `>` replaces the whole of the file it names), and
 #>   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
@@ -50,8 +57,14 @@ gives a clone the record, and what gives the signing key a history somebody else
 can check. The record changes with the work, so each change goes in the same commit as the work it
 describes. `init` leaves a `README.md` in the folder saying so, and an `.editorconfig` that unsets what an outer one
 could impose on the bytes, and, where the repository has a `.prettierignore` or declares prettier, adds the line
-`.mnema/` to it and says it did (the block above
-then reads "mnema writes no other file of yours"): a formatter that rewrote a byte of the record would
-break its signatures. Run again in a project founded before `init` did this, it adds what that project
-lacks and says so; where nothing is missing it answers as before. A project that never ran it again still gets the README from its first signed write to the public record, which says so in one line (a read, or a write refused, makes none and a README already there is never replaced); the `.prettierignore` stays `init`'s alone, and the session brief names it, in one line, where `mnema doctor` would add that line, and names in the same way a pre-commit hook, Biome, dprint or lint-staged configuration that would rewrite the folder (their files are yours: it says what to add and edits none). `mnema verify` exits non-zero when a record is broken, so it drops into
+`.mnema/` to it and says it did: a formatter that rewrote a byte of the record would
+break its signatures. It also writes the mnema instructions into the files agent hosts read at the start of a
+session (an `AGENTS.md`, created where there is none, a `CLAUDE.md` or a `GEMINI.md` where one exists, and a
+rule file of its own for Claude Code, Copilot and Cursor), after what each of yours holds, and names each file;
+the block above then reads "mnema writes no other file of yours". They say when to call the mnema tools and
+what never goes in the record ([the reference](cli-reference.md#the-mnema-instructions-in-the-files-a-host-reads)),
+and `mnema instructions --remove` takes them out. Run again in a project founded before `init` did this, it adds what that project
+lacks of the README, the `.editorconfig` and the `.prettierignore` line, and says so; where nothing is missing it
+answers as before. It never writes the instructions again: in a project founded before, or where you took them
+out, `mnema instructions` writes them, and `mnema doctor` says where they are missing. A project that never ran it again still gets the README from its first signed write to the public record, which says so in one line (a read, or a write refused, makes none and a README already there is never replaced); the `.prettierignore` stays `init`'s alone, and the session brief names it, in one line, where `mnema doctor` would add that line, and names in the same way a pre-commit hook, Biome, dprint or lint-staged configuration that would rewrite the folder (their files are yours: it says what to add and edits none). `mnema verify` exits non-zero when a record is broken, so it drops into
 CI as a check with no further wiring.

@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled help'
         case 'decision'
             echo 'record move review supersede import help'
         case 'skill'
@@ -88,6 +88,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the wo
 complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the notes recorded here as markdown, near ones first, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules addressed at a file as another host’s rules file, and why the rest are not'
+complete -c mnema -f -n '__mnema_at ""' -a 'instructions' -d 'write the mnema instructions into the files an agent host reads (AGENTS.md and its kin), check them, or remove them'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'inherit' -d 'read another repository’s decisions, pinned to one of its commits'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record: its committed tree and its private one'
@@ -462,6 +463,13 @@ complete -c mnema -f -n '__mnema_at "rules-file"' -l host -x -a 'claude vscode c
 complete -c mnema -f -n '__mnema_at "rules-file"' -s h -l help
 complete -c mnema -f -n '__mnema_at "rules-file"' -s V -l version
 complete -c mnema -f -n '__mnema_at "rules-file"' -l color -x -a 'auto always never'
+
+# mnema instructions
+complete -c mnema -f -n '__mnema_at "instructions"' -l check
+complete -c mnema -f -n '__mnema_at "instructions"' -l remove
+complete -c mnema -f -n '__mnema_at "instructions"' -s h -l help
+complete -c mnema -f -n '__mnema_at "instructions"' -s V -l version
+complete -c mnema -f -n '__mnema_at "instructions"' -l color -x -a 'auto always never'
 
 # mnema switch
 complete -c mnema -f -n '__mnema_at "switch"' -a 'off' -d 'stop a channel handing the record to a model unasked'

@@ -23,6 +23,7 @@ import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { runInit } from './init.js';
+import { removeInstructions } from './instructions.js';
 import {
   applyStackInstall,
   planLines,
@@ -59,6 +60,8 @@ function project(): StackContext & { repo: string } {
   const env: DiscoveryEnv = { home: join(sandbox, 'home') };
   mkdirSync(env.home, { recursive: true });
   runInit({ cwd: repo, env });
+  // The cases are about a `.claude/` the stack makes: the one the instructions live in goes.
+  removeInstructions(repo);
   return { cwd: repo, env, repo };
 }
 

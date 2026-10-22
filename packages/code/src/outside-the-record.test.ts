@@ -25,7 +25,7 @@
  * being tested against input the product can actually produce.
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { adrFileNames, type DiscoveryEnv, resolveTrees } from '@mnema/core';
@@ -222,6 +222,8 @@ describe('which decision documents this checkout holds that the record has none 
     const { repo, env } = setup();
     adr(repo, '0001-utc.md', 'Use UTC everywhere');
     expect(outside(repo, env)).toEqual([]);
+    // The `AGENTS.md` init wrote at the root is the host's instructions, not a document of the base.
+    expect(existsSync(join(repo, 'AGENTS.md'))).toBe(true);
 
     runDecisionImport({ cwd: repo, env }, { from: '.', write: true });
     adr(repo, '0002-ids.md', 'Mint ids as uuidv7');

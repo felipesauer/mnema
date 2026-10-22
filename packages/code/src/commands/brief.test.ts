@@ -364,11 +364,14 @@ describe('mnema brief (what governs the work here)', () => {
     runMemory(here, { content: 'something recorded that is not governance' });
     runTask(here, { title: 'a piece of work nobody asked this file about' });
 
+    // `init` wrote the mnema instructions beside the record; `brief` adds nothing beside them.
+    const listed = readdirSync(repo).sort();
     const before = digest(sandbox);
     const first = runBrief(here);
     const second = runBrief(here);
     expect(digest(sandbox)).toBe(before);
-    expect(readdirSync(repo).sort()).toEqual(['.mnema']);
+    expect(readdirSync(repo).sort()).toEqual(listed);
+    expect(listed).not.toContain('MNEMA.md');
     // And the same record twice is the same answer twice, through the adapter that
     // rebuilds a cache from the chain each time.
     expect(second).toEqual(first);

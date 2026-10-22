@@ -317,14 +317,21 @@ describe('mnema init, where no project can be founded', () => {
 describe('mnema init, and the formatter that would rewrite the record', () => {
   const ignoreFile = (repo: string): string => join(repo, '.prettierignore');
 
-  it('leaves a repository with no prettier alone: only .mnema/ is made, with its README', () => {
+  it('leaves a repository with no prettier alone: beside .mnema/, only the instructions files are made', () => {
     const { repo, env } = setup();
     writeFileSync(join(repo, 'package.json'), '{"devDependencies":{"vitest":"1"}}');
     const before = filesUnder(repo);
     const result = found({ cwd: repo, env });
     const made = filesUnder(repo).filter((path) => !before.includes(path));
     expect(made.length).toBeGreaterThan(0);
-    expect(made.filter((path) => !path.startsWith('.mnema/'))).toEqual([]);
+    expect(made.filter((path) => !path.startsWith('.mnema/')).sort()).toEqual(
+      [
+        '.claude/rules/mnema-instructions.md',
+        '.cursor/rules/mnema-instructions.mdc',
+        '.github/instructions/mnema-instructions.instructions.md',
+        'AGENTS.md',
+      ].sort(),
+    );
     expect(existsSync(ignoreFile(repo))).toBe(false);
     expect(result.around?.prettierIgnore).toBeUndefined();
     const readme = readFileSync(join(repo, '.mnema', 'README.md'), 'utf-8');
