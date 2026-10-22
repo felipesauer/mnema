@@ -1182,16 +1182,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `Linked ${subject} -${result.recorded[0]}→ ${result.recordedTarget ?? target}`,
         result,
         {
-          // The reach of the address, then where the rule (or task) it names lives, the way the
-          // command line says them: an agent recording a gate for somebody is who most needs both.
-          after: [
-            ...reachNotice(result.reach),
-            ...subjectReachNotice(
-              result.scope,
-              result.subjectScope,
-              result.subjectIsATask === true,
-            ),
-          ],
+          after: reachNotice(result.reach),
+          // Where the rule (or task) it names lives comes AFTER the sentence about where the edge
+          // landed, as on the command line: it qualifies that sentence.
+          last: subjectReachNotice(
+            result.scope,
+            result.subjectScope,
+            result.subjectIsATask === true,
+          ),
         },
       );
     },
@@ -2257,10 +2255,12 @@ function recorded(
   line: string,
   result: Landed & Replacement,
   // Extra lines a particular verb owes, between the acknowledgement and the tree
-  // notice. Only `link_knowledge` has any, what its address covers, and it is a
-  // parameter rather than a field on the result so that no other verb's reply gains a
+  // notice (`after`) and after everything the tree notice carries (`last`). Only
+  // `link_knowledge` has any: what its address covers, and where the rule it names lives,
+  // which qualifies the sentence about where the edge landed and so comes after it. They are
+  // a parameter rather than a field on the result so that no other verb's reply gains a
   // slot it can never fill.
-  extra: { readonly after?: readonly string[] } = {},
+  extra: { readonly after?: readonly string[]; readonly last?: readonly string[] } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
   // THE ACKNOWLEDGEMENT IS ONE BLOCK AND THE RECORD'S STATE IS ANOTHER. What the verb
   // owes about its own act (where it landed, what the content door replaced) is one
@@ -2278,6 +2278,7 @@ function recorded(
           : []),
         ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
+        ...(extra.last ?? []),
       ].join('\n'),
     ],
     { wrote: true },

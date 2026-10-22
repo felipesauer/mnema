@@ -317,6 +317,8 @@ describe('the agent is told the same thing', () => {
     const text = (reply.content as { text: string }[])[0]?.text ?? '';
     expect(text).toContain('The task it names is in the private tree');
     expect(text).not.toContain('The rule it names');
+    // After the sentence it qualifies, as the command line prints it.
+    expect(text.indexOf('Landed in the')).toBeLessThan(text.indexOf('The task it names'));
     await client.close();
   });
 

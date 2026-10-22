@@ -3067,7 +3067,9 @@ describe('MCP server: end to end over a real client', () => {
     expect(textOf(linked)).toBe(
       'Linked some-id -reminds-me-of→ ghost-id\n' +
         '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
-        `  In the project at ${project}.`,
+        `  In the project at ${project}.\n` +
+        '  No tree here holds the rule it names, so this address reaches every clone and\n' +
+        '  names nothing a reader of one can open. Check the id, or record the rule.',
     );
 
     // Where each landed, and the split is the rule rather than an accident: the
