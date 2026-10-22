@@ -452,7 +452,7 @@ const CLOSED = ['rejected', 'superseded', 'deprecated'];
  * @returns {boolean}
  */
 function inForce(rule) {
-  return rule !== undefined && rule.live && !rule.left;
+  return rule?.live === true && !rule.left;
 }
 
 /**
