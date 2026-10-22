@@ -51,6 +51,13 @@ export const PRUNE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 /** The most journals a project keeps: the newest ones. */
 export const PRUNE_KEEP = 50;
 
+/** A journal untouched for this long belongs to a session that is over, whether or not it said so. */
+export const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/** How long a holder of a journal's lock is waited for, and how old a lock must be to be taken as left. */
+const LOCK_WAIT_MS = 3000;
+const LOCK_LEFT_MS = 15000;
+
 /** The one version of the file's shape. */
 const VERSION = 1;
 
@@ -58,6 +65,16 @@ const VERSION = 1;
 export interface JournalDecision {
   readonly id: string;
   readonly state: string;
+}
+
+/**
+ * The private task a session hands its dispatched work to (`commands/dispatched.ts`): its id, how many
+ * handoffs hang on it, and whether the session's end already closed it. Ids and a count, like the rest.
+ */
+export interface HandedOver {
+  readonly task: string;
+  readonly handoffs: number;
+  readonly closed: boolean;
 }
 
 /** The journal of one session: see the head of this file for what it holds and never holds. */
@@ -89,6 +106,8 @@ export interface Journal {
   readonly outcome: string | null;
   /** Where the reading of the transcript stands. */
   readonly reading: Reading;
+  /** The task this session's dispatches hang on, once the first one was seen. */
+  readonly handedOver?: HandedOver;
 }
 
 /** What a session's id may look like to be a file name here: the host's own are UUIDs. */
@@ -157,6 +176,76 @@ export function writeJournal(file: string, journal: Journal, now: Date): void {
   }
 }
 
+/**
+ * Runs `work` as the only one touching `file`'s journal: parallel dispatches of one session are
+ * parallel processes, and two that both read "no task yet" would each open one. A lock that cannot be
+ * had in {@link LOCK_WAIT_MS} is not waited for any longer (a journal is a convenience), and one older
+ * than {@link LOCK_LEFT_MS} is a process that died holding it.
+ */
+export function exclusivelyOn<T>(file: string, work: () => T): T {
+  const lock = `${file}.lock`;
+  let held = false;
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    const until = Date.now() + LOCK_WAIT_MS;
+    while (!held) {
+      try {
+        mkdirSync(lock);
+        held = true;
+      } catch {
+        try {
+          if (Date.now() - statSync(lock).mtimeMs > LOCK_LEFT_MS)
+            rmSync(lock, { recursive: true, force: true });
+        } catch {
+          // Released between the two calls: ask again.
+        }
+        if (Date.now() > until) break;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+      }
+    }
+  } catch {
+    // No lock to be had: the work goes on without one.
+  }
+  try {
+    return work();
+  } finally {
+    if (held) rmSync(lock, { recursive: true, force: true });
+  }
+}
+
+/** A journal that names a task the session's end never closed, with where it is. */
+export interface LeftOpen {
+  readonly file: string;
+  readonly journal: Journal;
+  readonly held: HandedOver;
+}
+
+/** The journals of this project, but `own`, untouched for {@link STALE_AFTER_MS}, whose task is still open. */
+export function leftOpen(trees: ResolvedTrees, own: string, now: Date): readonly LeftOpen[] {
+  const dir = journalsDir(trees);
+  if (dir === undefined) return [];
+  const left: LeftOpen[] = [];
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.json')) continue;
+      const file = join(dir, name);
+      if (file === own) continue;
+      try {
+        if (now.getTime() - statSync(file).mtimeMs <= STALE_AFTER_MS) continue;
+      } catch {
+        continue;
+      }
+      const journal = readJournal(file);
+      const held = journal?.handedOver;
+      if (journal !== undefined && held !== undefined && !held.closed)
+        left.push({ file, journal, held });
+    }
+  } catch {
+    // No directory: nothing was left.
+  }
+  return left;
+}
+
 /** Lets go of the journals older than {@link PRUNE_AFTER_MS} and of all but the newest {@link PRUNE_KEEP}. */
 function prune(dir: string, now: Date): void {
   const kept: { path: string; mtime: number }[] = [];
@@ -182,6 +271,7 @@ const IN_PROGRESS: TaskState = 'IN_PROGRESS';
 function whatTheRecordHolds(
   sources: readonly ScopedCache[],
   since: number,
+  mirrored: string | undefined,
 ): Pick<Journal, 'decisions' | 'notes' | 'tasksInProgress' | 'runsOpen'> & {
   readonly lastDecisionAt: number;
   readonly firstTask: string | null;
@@ -195,7 +285,8 @@ function whatTheRecordHolds(
     .filter((one) => one.content.includes(HOST_MEMORY_MARK) && Date.parse(one.capturedAt) >= since);
   const tasks = own
     .flatMap((source) => source.cache.listTasksByState(IN_PROGRESS))
-    .filter((one) => Date.parse(one.updatedAt) >= since);
+    // The task the session's dispatches hang on is the mirror's, not work the session set out on.
+    .filter((one) => one.id !== mirrored && Date.parse(one.updatedAt) >= since);
   // The first to move into progress is the one the session set out on.
   let first = tasks[0];
   for (const one of tasks) if (first !== undefined && one.updatedAt < first.updatedAt) first = one;
@@ -255,7 +346,9 @@ export function journalAfter(input: {
 }): Journal {
   const { reading, sources, previous } = input;
   const since = reading.openedAt === undefined ? Number.NaN : Date.parse(reading.openedAt);
-  const held = Number.isNaN(since) ? undefined : whatTheRecordHolds(sources, since);
+  const held = Number.isNaN(since)
+    ? undefined
+    : whatTheRecordHolds(sources, since, previous?.handedOver?.task);
   const questionsWithoutDecision = reading.questionTimes.filter(
     (at) => Date.parse(at) > (held?.lastDecisionAt ?? 0),
   ).length;
@@ -278,6 +371,7 @@ export function journalAfter(input: {
     goal: previous?.goal ?? held?.firstTask ?? null,
     outcome: outcomeOf(base),
     reading,
+    ...(previous?.handedOver !== undefined ? { handedOver: previous.handedOver } : {}),
   };
 }
 

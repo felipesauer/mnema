@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **The work a session hands to other agents is kept as one private task.** In the Claude Code plugin, a `PostToolUse` hook on the
+  `Agent` tool and a `SessionEnd` hook run a new verb, `mnema dispatched`: the first dispatch of a session records a private
+  task, `Work handed over in this session` and the instant, in progress; each dispatch records a private handoff on it, from
+  `orchestrator` to the subagent type, with the call's short description as the brief and the path of a file the prompt cites
+  when that file exists; the end of the session moves the task to done with the count of handoffs. The prompt is never recorded
+  and nothing goes to the public tree. The task's id is kept in the session journal (a new `handedOver` field), so a resumed
+  session reopens its task, and the next session that dispatches closes the tasks left by a journal untouched for a day.
+  `mnema switch off agent-mirror` stops it (a new channel, on by default; it also does nothing where `session-journal` is off),
+  and a failure of the mirror never holds a dispatch. The mirror's task is not taken for the goal of the session.
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
