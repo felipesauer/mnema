@@ -27,7 +27,8 @@ name: Release
 # on. A package already at the version is skipped, so a run that stopped halfway runs again.
 # The tag and the release come after the publish, and only if the five are on npm at the version.
 #
-# WHAT IT DOES NOT PROVE. Its publish has not run: the first version on npm was published by hand. It needs no npm token and
+# WHAT IT DOES NOT PROVE. Its publish has run (0.1.1 was the first version it published; 0.1.0 was published by hand), so
+# that is no longer untried, and a run does not prove the next one. It needs no npm token and
 # no secret of the repository; the release is created with the job's own `github.token`.
 
 on:

@@ -180,7 +180,7 @@ addressed at a file or a directory in that host's own rules format, and says whi
 on the `PATH` and which one, whether the first `node` there takes it, whether the Claude Code plugin is installed and at what version,
 whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
 package of that name is installed; whether VS Code's `settings.json` tells its agent where the
-plugin is; which projects of `~/.claude.json` still declare the server, including ones whose
+plugin is; which projects of `~/.claude.json` (the one inside `$CLAUDE_CONFIG_DIR` when that is set) still declare the server, including ones whose
 directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
 delete); and, for each agent key this machine holds, in which of the project's committed tree, its private
 tree and the machine's global one the record enrols it, retired it or does not name it and, on a machine that holds an

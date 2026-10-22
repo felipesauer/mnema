@@ -12,11 +12,12 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chainRootForScope, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE } from '../presentation/brief.js';
 import { HOOK_TEXT_CEILING } from '../presentation/within-a-hook.js';
-import { runBrief } from './brief.js';
+import { runBrief, stacksReaderFor } from './brief.js';
 import { runDoctor } from './doctor.js';
 import { runInit } from './init.js';
 import { offerHook, offerLines, turnHookOff, turnHookOn } from './stack-hooks.js';
@@ -43,6 +44,7 @@ import {
   type StackTarget,
 } from './stack-install.js';
 import { readStackSource } from './stack-source.js';
+import { standingIn } from './stack-standing.js';
 
 const HELLO = join(dirname(fileURLToPath(import.meta.url)), '../../../stacks/fixtures/hello-stack');
 
@@ -293,10 +295,38 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
     ]);
   });
 
+  it('reads the stacks a tree stands on off its record: the version of the last adoption', async () => {
+    const root = chainRootForScope(resolveTrees(ctx.cwd, ctx.env), 'public') as string;
+    expect(standingIn(root)).toEqual(new Map());
+    await install(false);
+    expect(standingIn(root)).toEqual(new Map([['hello-stack', '1.0.0']]));
+  });
+
+  it('loads what reads stacks only where one can be, and answers the same where none is', async () => {
+    const none = await stacksReaderFor(ctx);
+    expect(none).not.toBe(stacksHere);
+    expect(none(ctx)).toEqual(stacksHere(ctx));
+    expect(none(ctx)).toEqual({ adopted: [], departures: [] });
+    await install(false);
+    expect(await stacksReaderFor(ctx)).toBe(stacksHere);
+  });
+
+  it('opens a session with a stack the record adopted when no receipts folder is here', async () => {
+    await install(false);
+    rmSync(join(ctx.cwd, '.mnema/stacks'), { recursive: true });
+    const reader = await stacksReaderFor(ctx);
+    expect(reader).toBe(stacksHere);
+    const asHook = runBrief(ctx, { outside: true, stacks: reader });
+    if (!asHook.ok) throw new Error('no brief');
+    expect(asHook.stacks?.adopted).toEqual([
+      { name: 'hello-stack', version: '1.0.0', scope: 'public' },
+    ]);
+  });
+
   it('opens a session with the stacks adopted, and the file a person commits carries none', async () => {
     await install(false);
     rmSync(join(ctx.cwd, '.claude/agents/greeter.md'));
-    const asHook = runBrief(ctx, { outside: true });
+    const asHook = runBrief(ctx, { outside: true, stacks: await stacksReaderFor(ctx) });
     const asFile = runBrief(ctx);
     if (!asHook.ok || !asFile.ok) throw new Error('no brief');
     expect(asFile.stacks).toBeUndefined();

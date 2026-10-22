@@ -76,8 +76,8 @@
  * IT IS TRUE OF THE COMMAND LINE NOW, AND THE WORDING STANDS BECAUSE IT NEVER WAS ABOUT THE
  * DISK: a read keeps the projection it built in the tree it read (`CacheOptions.persist`,
  * `locks/projection.db`) so the next one pays only for what arrived, one derived file that
- * is not the record, that a clone never carries and that deleting changes no answer of
- * (`the-record-is-kept-between-reads.test.ts`). A verb that left anything else would still be
+ * is not the record, that a clone never carries and that deleting costs a rebuild and changes no answer but
+ * the one edit it can miss (`the-record-is-kept-between-reads.test.ts`). A verb that left anything else would still be
  * accused. The other direction is what makes the
  * wording earn its place, and it is the sharpest case on either surface: the `skills`
  * TOOL serves a pattern's body and records that a run was served it, so a reading that

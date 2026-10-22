@@ -220,11 +220,14 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       const host = hookHostOf(wiring, opts.hook === true, opts.host);
       if (host === false) return;
       const { linkBreakNotice } = await import('./integrity.js');
-      const { runBrief } = await import('../commands/brief.js');
+      const { runBrief, stacksReaderFor } = await import('../commands/brief.js');
       const { briefDocument, briefWithin } = await import('../presentation/brief.js');
       const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
       const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
-      const result = runBrief(here(), { outside: opts.hook === true });
+      const result =
+        opts.hook === true
+          ? runBrief(here(), { outside: true, stacks: await stacksReaderFor(here()) })
+          : runBrief(here());
       if (!result.ok) {
         reportRefusal(
           wiring,

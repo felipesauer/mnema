@@ -362,6 +362,17 @@ function claudeConfigDir(ctx: DoctorContext): string {
   return moved === undefined || moved === '' ? join(ctx.env.home, '.claude') : moved;
 }
 
+/**
+ * The host's own settings file. With `CLAUDE_CONFIG_DIR` the host keeps it inside that folder, not
+ * in the home directory, so it is read where the host wrote it.
+ */
+function claudeJsonPath(ctx: DoctorContext): string {
+  const moved = ctx.processEnv.CLAUDE_CONFIG_DIR;
+  return moved === undefined || moved === ''
+    ? join(ctx.env.home, '.claude.json')
+    : join(moved, '.claude.json');
+}
+
 interface InstalledPlugin {
   readonly id: string;
   readonly version: string;
@@ -489,7 +500,7 @@ function declaredFindings(
     (json) => json.servers,
     oneLine(join(root, '.vscode', 'mcp.json')),
   );
-  const claudeJson = join(ctx.env.home, '.claude.json');
+  const claudeJson = claudeJsonPath(ctx);
   read(claudeJson, (json) => json.mcpServers, `${oneLine(claudeJson)} (user)`);
   read(
     claudeJson,
@@ -527,7 +538,7 @@ function declaredFindings(
 
 /** Every project of `~/.claude.json` that declares the mnema MCP server, but the one at `root`. */
 function otherProjectFindings(ctx: DoctorContext, root: string): Finding[] {
-  const claudeJson = join(ctx.env.home, '.claude.json');
+  const claudeJson = claudeJsonPath(ctx);
   const projects = asRecord(asRecord(readJson(claudeJson))?.projects);
   if (projects === undefined) return [];
   const gone: string[] = [];

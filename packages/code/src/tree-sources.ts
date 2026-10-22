@@ -16,7 +16,8 @@
  * linear in the record: 3.3 s and 548 MB for a search over 100 thousand events, and the two
  * hooks that open a session are such reads. A cache per tree is kept in the tree now
  * (`CacheOptions.persist`, `locks/projection.db`), the next read takes only what arrived, and
- * deleting the file changes no answer but the time
+ * deleting the file costs the time, and changes an answer only where the cache could miss an
+ * edit in place that `verify` sees
  * (`tests/the-record-is-kept-between-reads.test.ts`).
  *
  * The order the trees are opened in reaches no answer: every reader over these

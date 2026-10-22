@@ -66,9 +66,10 @@
  * this one only reads where the switch stands.
  */
 
-import { dirname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/context';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type InheritedReading, readProjectInherited } from '../inherited-record.js';
 import {
   basesNeverImported,
@@ -89,7 +90,8 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
-import { type StacksHere, stacksHere } from './stack-inspect.js';
+import type { StacksHere } from './stack-inspect.js';
+import { standingIn } from './stack-standing.js';
 import { whatIsMissing } from './the-record-page.js';
 import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
@@ -237,7 +239,9 @@ export function switchedOff(
  */
 export function runBrief(
   ctx: BriefContext,
-  asked: { readonly outside?: boolean } = {},
+  asked:
+    | { readonly outside?: false }
+    | { readonly outside: true; readonly stacks: (ctx: BriefContext) => StacksHere } = {},
 ): BriefDone | BriefRefused | BriefSwitchedOff {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) {
@@ -268,7 +272,7 @@ export function runBrief(
       // for `decision import`'s reason: a file imported into the private tree is imported.
       ...(asked.outside === true
         ? {
-            stacks: stacksHere(ctx),
+            stacks: asked.stacks(ctx),
             ...formatterOf(dirname(trees.projectPublic as string)),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
@@ -310,4 +314,28 @@ function formatterOf(project: string): { formatter?: readonly string[] } {
 function inheritedOf(trees: ReturnType<typeof resolveTrees>): { inherited?: InheritedReading } {
   const inherited = readProjectInherited(trees);
   return inherited === undefined ? {} : { inherited };
+}
+
+const NO_STACKS: StacksHere = { adopted: [], departures: [] };
+
+/**
+ * What reads the stacks adopted here, for {@link runBrief}'s `outside`. The module that does is
+ * loaded only where a stack can be: a tree with a receipts folder, or whose record has adopted
+ * one. Anywhere else the answer is the empty one it would have computed, and the opening of a
+ * session over a project with no stack does not pay for loading what installs them.
+ */
+export async function stacksReaderFor(
+  ctx: BriefContext,
+): Promise<(ctx: BriefContext) => StacksHere> {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const mayHaveOne = (['public', 'private', 'global'] as const).some((scope) => {
+    const root = chainRootForScope(trees, scope);
+    return (
+      root !== undefined &&
+      existsSync(root) &&
+      (existsSync(join(root, 'stacks')) || standingIn(root).size > 0)
+    );
+  });
+  if (!mayHaveOne) return () => NO_STACKS;
+  return (await import('./stack-inspect.js')).stacksHere;
 }
