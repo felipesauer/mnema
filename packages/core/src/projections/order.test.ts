@@ -316,6 +316,24 @@ describe('chainArrivals: a break planted at the boundary', () => {
     expect(arrived.suffix).toBe(false);
   });
 
+  // THE LAST LINE REWRITTEN AT ITS OWN LENGTH. The line ends exactly at the boundary, so only
+  // the entry it holds can say it is not the one the reading ended on.
+  it('refuses a suffix when the last line is another entry of the same length', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    const last = JSON.parse(lines[lines.length - 1] as string) as { link: { hash: string } };
+    const hash = last.link.hash;
+    const other = `${hash[0] === 'a' ? 'b' : 'a'}${hash.slice(1)}`;
+    lines[lines.length - 1] = (lines[lines.length - 1] as string).replace(hash, other);
+    writeFileSync(file, `${lines.join('\n')}\n`, 'utf-8');
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+  });
+
   // The boundary advances past the arrivals, so the NEXT resumed reading is anchored on
   // what this one read. Without this, a second refresh would hand back the same events.
   it('advances the boundary past what it read, so a second reading finds nothing', () => {
