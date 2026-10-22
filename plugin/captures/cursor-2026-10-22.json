@@ -43,9 +43,7 @@
         "channel.served": 0
       },
       "verdict": "did-not-hold",
-      "transcript": [
-        "Created `src/frozen/x.ts` with `export const x = 1;`."
-      ]
+      "transcript": ["Created `src/frozen/x.ts` with `export const x = 1;`."]
     },
     {
       "id": "ask-is-ignored",
@@ -57,9 +55,7 @@
         "channel.served": 0
       },
       "verdict": "held",
-      "transcript": [
-        "Created `src/ledger/x.ts` with `export const x = 1;`."
-      ]
+      "transcript": ["Created `src/ledger/x.ts` with `export const x = 1;`."]
     },
     {
       "id": "no-rule",
@@ -71,9 +67,7 @@
         "channel.served": 0
       },
       "verdict": "held",
-      "transcript": [
-        "Created `src/other/x.ts` with `export const x = 1;`."
-      ]
+      "transcript": ["Created `src/other/x.ts` with `export const x = 1;`."]
     },
     {
       "id": "what-the-host-hands-the-server",
@@ -81,15 +75,7 @@
       "observed": "The probe server was first \"not loaded (needs approval)\"; after `cursor-agent mcp enable handed` (which adds it to the approved list), `cursor-agent mcp list` said \"handed: ready\" and the file was written, with no model call. The client name is what the agent announced. The chain is the ancestry of the shell that ran `cursor-agent mcp list` (it includes the capturing assistant's own processes, `claude` and `code`) and has no `cursor-agent` entry: do not read a rung into it. `present` is empty.",
       "handed": {
         "client": "Cursor",
-        "chain": [
-          "node",
-          "timeout",
-          "bash",
-          "claude",
-          "code",
-          "code",
-          "systemd"
-        ],
+        "chain": ["node", "timeout", "bash", "claude", "code", "code", "systemd"],
         "present": []
       },
       "channelFacts": {
