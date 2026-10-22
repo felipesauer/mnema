@@ -167,7 +167,7 @@ function services(scope: 'public' | 'private' = 'public'): string[] {
 }
 
 /** A digest over every byte of a directory tree: names, sizes and contents. */
-function digest(dir: string): string {
+function digest(dir: string, served: string): string {
   const hash = createHash('sha256');
   const walk = (current: string): void => {
     for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) =>
@@ -175,7 +175,7 @@ function digest(dir: string): string {
     )) {
       const full = join(current, entry.name);
       // The derived projection is not what asking must leave alone.
-      if (isTheDerivedCache(full)) continue;
+      if (isTheDerivedCache(full, served)) continue;
       if (entry.isDirectory()) {
         hash.update(`D:${relative(dir, full)}\n`);
         walk(full);
@@ -478,11 +478,11 @@ describe('the asking is a FACT, and the service is one too', () => {
     // addresses gets the empty reply, and the record is byte for byte what it was.
     await ruleInForce('Round money at the boundary');
     const session = connect();
-    const before = digest(join(repo, '.mnema'));
+    const before = digest(join(repo, '.mnema'), repo);
     for (const path of ['src/billing/invoice.ts', 'README.md']) {
       expect(replyFor(session, path)).toEqual({});
     }
-    expect(digest(join(repo, '.mnema'))).toBe(before);
+    expect(digest(join(repo, '.mnema'), repo)).toBe(before);
   });
 
   it('can never cite a rule id the product did not mint, which is why it is an identifier', async () => {

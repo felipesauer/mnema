@@ -819,7 +819,7 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
  *     appends a line to a file in the machine's data directory, outside the record, until
  *     `tool-call-count` is switched off. It changes no fact and loses nothing, which is what a
  *     client weighing whether to call a tool without asking needs to know, and the measurement
- *     excuses those two places and no other, the second only inside the project the call served.
+ *     excuses those two places and no other, the first only inside the project the call served.
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed
