@@ -1192,6 +1192,12 @@ measured. `mnema stack remove` keeps every file changed since it was written, an
 fails when the files or their receipt part from the record. A hook a stack declares stays off until
 `mnema stack enable` shows its script and a person at a terminal types its name.
 
+After it writes, the install asks `skills-ref` (the validator the Agent Skills specification
+publishes; its command is `agentskills`) about each skill folder it wrote and prints one line each,
+`skills-ref accepted <folder>` or `skills-ref refused <folder>`, with what it said. It does this only
+when `agentskills` is on the `PATH`; otherwise it prints that `skills-ref` did not run. It is never a
+dependency of mnema, a refusal from it does not take the files back, and what it said is not recorded.
+
 **What it proves** is that the files written are the bytes the digest names and, when the stack
 carries `stack.sigstore.json`, who signed that digest, checked offline. **What it does not prove**
 is that a stack is safe to run, or that its instructions make an agent better: a signature says who,

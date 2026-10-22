@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -134,5 +134,57 @@ describe('mnema stack, on the built binary', () => {
     expect(broken.err).toContain('STACK_RECEIPT_REFUSED');
     expect(mnema('stack', 'remove', 'hello-stack').status).toBe(0);
     expect(mnema('verify').status).toBe(0);
+  });
+});
+
+describe('mnema stack add and skills-ref, the validator the Agent Skills specification publishes', () => {
+  /** A `PATH` whose only `agentskills` is this script; the rest of the path is node's own. */
+  function withValidator(script: string): string {
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    writeFileSync(join(bin, 'agentskills'), `#!/bin/sh\n${script}\n`, { mode: 0o755 });
+    return `${bin}:${process.env.PATH ?? ''}`;
+  }
+  const install = (path: string) => {
+    const digest = digestOf(mnema('stack', 'add', HELLO, '--dry-run').out);
+    const ran = spawnSync(process.execPath, [CLI, 'stack', 'add', HELLO, '--expect', digest], {
+      cwd: project,
+      encoding: 'utf-8',
+      env: {
+        PATH: path,
+        HOME: home,
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+      },
+    });
+    return { status: ran.status, out: ran.stdout, err: ran.stderr };
+  };
+
+  it('asks it about each installed skill folder and prints what it said', () => {
+    const added = install(
+      withValidator('[ "$1" = "--version" ] && exit 0; echo "valid: $2" >&2; exit 0'),
+    );
+    expect(added.status).toBe(0);
+    expect(added.out).toContain(
+      `skills-ref accepted .claude/skills/hello (valid: ${join(project, '.claude/skills/hello')})`,
+    );
+  });
+
+  it('prints its refusal, installs all the same, and exits clean: the stack was already validated', () => {
+    const added = install(
+      withValidator('[ "$1" = "--version" ] && exit 0; echo "name too long"; exit 1'),
+    );
+    expect(added.status).toBe(0);
+    expect(added.out).toContain('skills-ref refused .claude/skills/hello (name too long)');
+    expect(existsSync(join(project, '.claude/skills/hello/SKILL.md'))).toBe(true);
+  });
+
+  it('says it did not run when it is not on the path, and installs as before', () => {
+    const none = join(sandbox, 'empty');
+    mkdirSync(none);
+    const added = install(`${none}:${dirname(process.execPath)}`);
+    expect(added.status).toBe(0);
+    expect(added.out).toContain('skills-ref did not run: `agentskills` is not on the PATH.');
+    expect(existsSync(join(project, '.claude/skills/hello/SKILL.md'))).toBe(true);
   });
 });
