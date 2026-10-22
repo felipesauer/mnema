@@ -117,6 +117,7 @@ export {
   IdentityUnavailableError,
   type MembershipRefusalCode,
 } from './identity/membership.js';
+export { BRIEF_TOPIC, DESCRIPTION_TOPIC } from './knowledge/companion-topics.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
 export {
   CACHE_DIR_VARIABLE,

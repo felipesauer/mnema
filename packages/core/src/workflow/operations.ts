@@ -68,6 +68,8 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { DESCRIPTION_TOPIC } from '../knowledge/companion-topics.js';
+import { recordObservation } from '../knowledge/operations.js';
 import { oneLine } from '../one-line.js';
 import { projectTasks } from '../projections/task.js';
 import { type AppendRefusal, appendFact, appendFacts } from './append.js';
@@ -200,6 +202,8 @@ export interface CreateOk extends ScreenedWrite {
   readonly id: string;
   /** The `task.created` then the birth `task.transitioned`, as appended. */
   readonly entries: readonly [Entry, Entry];
+  /** The id of the observation that carries the description, when one was given. */
+  readonly descriptionId?: string;
 }
 
 /** What the caller asks to transition. */
@@ -219,6 +223,11 @@ export interface TransitionInput {
 /** What the caller asks to create. */
 export interface CreateInput {
   readonly title: string;
+  /**
+   * What the task is, in prose: recorded in the same call as an observation about the task
+   * (topic `description`), because the task event itself carries only the title.
+   */
+  readonly description?: string;
   /** The agent that executed it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
   /** The run this belongs to, if any. */
@@ -364,6 +373,12 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // ceiling of its own, on every event of that session.
   const text = screenContent({ title: input.title, run: input.run });
   if (!text.ok) return text;
+  // The description is measured BEFORE the task is appended, by the rule its observation
+  // will meet, so one that would be refused leaves no task behind.
+  if (input.description !== undefined) {
+    const preflight = screenContent({ text: input.description });
+    if (!preflight.ok) return preflight;
+  }
 
   // `who` is derived from local material and the record, so it is always a real
   // anchor: the MISSING_WHO path a typed-in name could hit no longer exists. The one
@@ -400,5 +415,22 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   );
   if (!appended.ok) return appended;
   const [e1, e2] = appended.entries as [Entry, Entry];
-  return { ok: true, id, entries: [e1, e2], ...screened([...text.replaced, ...agent.replaced]) };
+  const description =
+    input.description === undefined
+      ? undefined
+      : recordObservation(ctx, {
+          about: id,
+          topic: DESCRIPTION_TOPIC,
+          text: input.description,
+          ...(which !== undefined ? { which } : {}),
+          ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+        });
+  if (description !== undefined && !description.ok) return description;
+  return {
+    ok: true,
+    id,
+    entries: [e1, e2],
+    ...(description !== undefined ? { descriptionId: description.id } : {}),
+    ...screened([...text.replaced, ...agent.replaced, ...(description?.replaced ?? [])]),
+  };
 }

@@ -30,17 +30,33 @@
  */
 
 import type { ReferenceGraph } from '@mnema/context';
+import type { FileBehindAPath } from '../file-behind-a-path.js';
 import { oneLine } from '../one-line.js';
 import { fact, subjectLine } from './detail.js';
 import { asScope, itemLine } from './items.js';
 import type { Render } from './render.js';
 
+/** What is at a path, in the words of one fact. */
+function onDisk(file: FileBehindAPath): string {
+  if (!file.exists) return 'no file at this path now.';
+  if (file.kind === 'file') return `a file now, ${file.bytes} bytes, sha256 ${file.sha256}`;
+  if (file.kind === 'directory') return 'a directory now.';
+  return 'present now, and neither a file nor a directory: its bytes are not read.';
+}
+
 /** The lines a reference graph prints for a person. */
-export function referenceReport(render: Render, graph: ReferenceGraph): string[] {
+export function referenceReport(
+  render: Render,
+  graph: ReferenceGraph,
+  file?: FileBehindAPath,
+): string[] {
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
   const origin = nodes.get(graph.id);
   const known = origin?.resolved === true ? (origin.kind ?? 'entity') : 'unresolved';
   const lines = [render(subjectLine(oneLine(graph.id), known))];
+  // What is at the path today, when the id was read as one: a file is a fact of the working tree,
+  // so it is said as one fact under the subject, before the edges.
+  if (file !== undefined) lines.push(render(fact(onDisk(file))));
   if (graph.links.length === 0) {
     lines.push(render(fact('nothing references it, and it references nothing.')));
     return lines;

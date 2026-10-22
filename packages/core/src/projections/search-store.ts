@@ -352,7 +352,61 @@ export function searchRecord(db: SqliteDatabase, query: SearchQuery): SearchResu
   // search that matches nothing. Answering it with a listing would silently turn
   // "find this" into "here is everything", which is the wrong answer twice over.
   if (match === null) return { hits: [], total: 0 };
+  const label = term === undefined ? undefined : citableLabel(term);
+  if (label !== undefined && match !== undefined) {
+    return withTheDecisionsLabelled(db, query, match, label);
+  }
   return askTheIndex(db, query, match);
+}
+
+/**
+ * The relevance a decision that CARRIES the label asked for is served with: better than any bm25
+ * a text match reaches, because the label is the decision's name and a text match only mentions it.
+ */
+const THE_LABEL_ITSELF = -1_000_000;
+
+/** `ADR-<n>` as the record freezes it, or undefined when `term` is not exactly one. */
+function citableLabel(term: string): string | undefined {
+  return /^ADR-\d+$/iu.test(term) ? term.toUpperCase() : undefined;
+}
+
+/**
+ * A search for a citable label: the decisions that carry it, then the records whose words
+ * mention it.
+ *
+ * The index holds the words a person wrote, and `ADR-48` is not among them: it is the
+ * decision's label, derived when it was recorded. So the same term that `show` resolves found
+ * nothing here unless some other record happened to say it. The label is read off the decisions
+ * of this tree, and the text match still runs, because "what mentions ADR-48" is the other half
+ * of the question. A label is numbered inside one tree, so several decisions may carry it (the
+ * merge across trees keeps every one); the filters of the query narrow both halves.
+ */
+function withTheDecisionsLabelled(
+  db: SqliteDatabase,
+  query: SearchQuery,
+  match: string,
+  label: string,
+): SearchResult {
+  const limit = effectiveLimit(query.limit);
+  const where = whereClause(query, undefined);
+  const carrying = `id IN (SELECT id FROM decisions WHERE adr = @label) AND kind = 'decision'`;
+  const named = db
+    .prepare(
+      `SELECT id, kind, state, at, title, substr(body, 1, ${EXCERPT_CHARS * 3}) AS excerpt,
+              ${THE_LABEL_ITSELF} AS score
+       FROM record_search ${where.sql === '' ? 'WHERE' : `${where.sql} AND`} ${carrying}
+       ORDER BY ${NEWEST_FIRST_SQL}
+       LIMIT @limit`,
+    )
+    .all({ ...where.params, label, limit: SEARCH_MAX_LIMIT }) as SearchRow[];
+  const mentioning = askTheIndex(db, { ...query, limit: SEARCH_MAX_LIMIT }, match);
+  const namedIds = new Set(named.map((row) => row.id));
+  const rest = mentioning.hits.filter((hit) => !namedIds.has(hit.id));
+  const alsoMentioning = mentioning.hits.length - rest.length;
+  return {
+    hits: [...named.map(toHit), ...rest].slice(0, limit),
+    total: named.length + mentioning.total - alsoMentioning,
+  };
 }
 
 /**

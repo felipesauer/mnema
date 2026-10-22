@@ -71,13 +71,17 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
     .command('create')
     .description('create a task in the current project')
     .argument('<title>', 'the task title')
+    .option(
+      '--description <text>',
+      'what the task is, in prose (up to 64 KiB); recorded as an observation about it',
+    )
     .addOption(
       scopeOption('task', 'Omitted, a task lands in the public tree (the team’s work board).'),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   createsBy(create);
-  create.action(async (title: string) => {
+  create.action(async (title: string, opts: { description?: string }) => {
     const given = await fromTheGroup<{ scope?: string; which?: string }>(create, wiring);
     if (given === REFUSED) return;
     const { runTask } = await import('../commands/task.js');
@@ -90,12 +94,16 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
     }
     const result = runTask(hereWriting(wiring), {
       title,
+      ...(opts.description !== undefined ? { description: opts.description } : {}),
       ...(scope !== undefined ? { scope } : {}),
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
     if (result.ok) {
       io.out(`Created task ${result.alias} (${result.id})`);
+      if (result.descriptionId !== undefined) {
+        io.out(`  The description is observation ${result.descriptionId} about it.`);
+      }
       reportRecorded(result, io);
       return;
     }

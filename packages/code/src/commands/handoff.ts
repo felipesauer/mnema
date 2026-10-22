@@ -51,6 +51,8 @@ export interface HandoffRecorded extends Replacement, Landed {
   readonly fromAgent: string;
   /** The agent taking over. */
   readonly toAgent: string;
+  /** The observation that carries the brief, when one was given. */
+  readonly briefId?: string;
 }
 
 /** The record was refused. */
@@ -79,6 +81,7 @@ export function runHandoff(
     task: string;
     fromAgent: string;
     toAgent: string;
+    brief?: string;
     scope?: Scope;
     which?: string;
     run?: string;
@@ -109,6 +112,7 @@ export function runHandoff(
         task: input.task,
         fromAgent: input.fromAgent,
         toAgent: input.toAgent,
+        ...(input.brief !== undefined ? { brief: input.brief } : {}),
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
@@ -128,6 +132,7 @@ export function runHandoff(
     // record holds a placeholder, and the echo has to show what landed.
     fromAgent: recorded.fromAgent,
     toAgent: recorded.toAgent,
+    ...(recorded.briefId !== undefined ? { briefId: recorded.briefId } : {}),
     scope,
     ...forwardReplacement(recorded),
   };

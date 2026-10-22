@@ -43,7 +43,13 @@ import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { oneLine } from '../one-line.js';
 import { isTaskState, type TaskState } from './states.js';
-import { findTransition, type ProofField, TASK_ACTIONS, type TaskAction } from './transitions.js';
+import {
+  findTransition,
+  type ProofField,
+  TASK_ACTIONS,
+  type TaskAction,
+  TRANSITIONS,
+} from './transitions.js';
 
 /** What the caller asks the gate to authorize. */
 export interface GateRequest {
@@ -154,7 +160,8 @@ export function gate(request: GateRequest): GateResult {
   if (transition === undefined) {
     return err(
       'ILLEGAL_TRANSITION',
-      `cannot "${oneLine(request.action)}" a task in ${oneLine(request.from)}`,
+      `cannot "${oneLine(request.action)}" a task in ${oneLine(request.from)}` +
+        whatComesFirst(request.from as TaskState, request.action),
     );
   }
 
@@ -174,6 +181,20 @@ export function gate(request: GateRequest): GateResult {
   return request.fields !== undefined
     ? { ok: true, to: transition.to, action: request.action, fields: request.fields }
     : { ok: true, to: transition.to, action: request.action };
+}
+
+/**
+ * What has to be done before an action that is not legal yet: the one move from here that
+ * reaches a state where the action is legal, read off the transition table, or nothing when
+ * no single move does. A task is born in DRAFT, and `start` on it is the first thing anyone
+ * tries: the refusal then says `submit` comes first rather than leaving the table to be read.
+ */
+function whatComesFirst(from: TaskState, action: TaskAction): string {
+  const first = TRANSITIONS.find(
+    (move) => move.from === from && findTransition(move.to, action) !== undefined,
+  );
+  if (first === undefined) return '';
+  return `: "${first.action}" comes first (it moves the task to ${first.to}, where "${action}" is legal)`;
 }
 
 /** True when `action` is one the workflow defines. */

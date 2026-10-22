@@ -139,6 +139,7 @@ import {
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
 import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-push.js';
+import { type FileBehindAPath, fileOfTheOrigin } from '../file-behind-a-path.js';
 import {
   reachOfAddress,
   readGoverningRules,
@@ -244,6 +245,8 @@ export type CreateTaskResult =
         readonly id: string;
         /** The short human-facing alias (`t-xxxx`), derived from the id. */
         readonly alias: string;
+        /** The observation that carries the description, when one was given. */
+        readonly descriptionId?: string;
       })
   | {
       readonly ok: false;
@@ -439,6 +442,8 @@ export type FactRecordedResult =
          * report the fact by.
          */
         readonly recorded: readonly string[];
+        /** The observation that carries a handoff's brief, when one was given. */
+        readonly briefId?: string;
       })
   | {
       readonly ok: false;
@@ -515,7 +520,14 @@ export function runRecordObservation(
  */
 export function runRecordHandoff(
   session: Session,
-  input: { task: string; from: string; to: string; scope?: Scope; project?: string },
+  input: {
+    task: string;
+    from: string;
+    to: string;
+    brief?: string;
+    scope?: Scope;
+    project?: string;
+  },
 ): FactRecordedResult {
   const route = routeWrite(session, 'handoff.recorded', input);
   if (!route.ok) return route;
@@ -525,6 +537,7 @@ export function runRecordHandoff(
       task: input.task,
       fromAgent: input.from,
       toAgent: input.to,
+      ...(input.brief !== undefined ? { brief: input.brief } : {}),
       which,
       run,
     });
@@ -540,6 +553,7 @@ export function runRecordHandoff(
   return {
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
+    ...(recorded.briefId !== undefined ? { briefId: recorded.briefId } : {}),
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
@@ -687,7 +701,7 @@ export function runLinkKnowledge(
  */
 export function runCreateTask(
   session: Session,
-  input: { title: string; scope?: Scope; project?: string },
+  input: { title: string; description?: string; scope?: Scope; project?: string },
 ): CreateTaskResult {
   const route = routeWrite(session, 'task.created', input);
   if (!route.ok) return route;
@@ -695,6 +709,7 @@ export function runCreateTask(
   const created = ctx.writer.exclusively(() => {
     const written = createTask(ctx, {
       title: input.title,
+      ...(input.description !== undefined ? { description: input.description } : {}),
       which,
       run,
     });
@@ -712,6 +727,7 @@ export function runCreateTask(
     ok: true,
     id: created.id,
     alias: deriveAlias('task', created.id),
+    ...(created.descriptionId !== undefined ? { descriptionId: created.descriptionId } : {}),
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(created),
@@ -2467,7 +2483,9 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
 }
 
 /** The `audit_refs` result: the graph around an entity, or a refusal. */
-export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
+export type ReferencesToolResult = IntelligenceResult<
+  ReferenceGraph & { readonly file?: FileBehindAPath }
+>;
 
 /**
  * `audit_refs`: what an entity is connected to, across every project of the
@@ -2503,14 +2521,18 @@ export function runReferencesTool(
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
   const recordedAs = targetRecordedAs(projectsOf(session), named.id);
-  return {
-    ok: true,
-    value: references(workspaceCaches(session), {
-      ...input,
-      id: named.id,
-      ...(recordedAs !== undefined ? { recordedAs } : {}),
-    }),
-  };
+  const graph = references(workspaceCaches(session), {
+    ...input,
+    id: named.id,
+    ...(recordedAs !== undefined ? { recordedAs } : {}),
+  });
+  // A path is read against the root of the project this session is in (a path is relative to one
+  // root, and the session's is the one it was started for).
+  const file =
+    session.trees.projectPublic === undefined
+      ? undefined
+      : fileOfTheOrigin(dirname(session.trees.projectPublic), graph);
+  return { ok: true, value: file === undefined ? graph : { ...graph, file } };
 }
 
 /** The `governing_rules` result: the rules addressed at a path, or a refusal. */
