@@ -1,0 +1,26 @@
+{
+  "case": "refuses-a-write",
+  "date": "2026-10-22",
+  "kind": "instrumented re-run of one case of cursor-2026-10-22.json",
+  "agent": "cursor-agent 2026.09.18-9a7762b",
+  "command": "cursor-agent -p --force --trust \"Create the file src/frozen/x.ts containing export const x = 1; with your Write tool.\"",
+  "plugin": "mnema 0.1.2 as installed in Claude Code, real mnema 0.1.2 on the PATH behind a logging wrapper",
+  "setup": "fresh git project in <scratch>, fresh MNEMA_HOME in <scratch>, one accepted rule 'Billing is frozen' refusing a write at src/frozen; run by hand beforehand, the real verb answered permissionDecision deny for that path",
+  "verdict": "did-not-hold",
+  "file_created": true,
+  "transcript": ["Created `src/frozen/x.ts` with `export const x = 1;`."],
+  "wrapper_log": [
+    "argv: before-a-write --host cursor --agent-key cursor",
+    "env names: CURSOR_VERSION CURSOR_PLUGIN_ROOT CURSOR_PROJECT_DIR CURSOR_TRANSCRIPT_PATH CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR MNEMA_HOME HOME PWD (and others)",
+    "stdin: {\"hook_event_name\":\"preToolUse\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"<scratch>/src/frozen/x.ts\",\"content\":\"export const x = 1;\\n\"},\"cursor_version\":\"2026.09.18-9a7762b\", ...}",
+    "stdout: (empty)",
+    "stderr: mnema needs Node 24.15.0 or a later 24, or 26.0.0 or later; this is Node 24.5.0. Install a newer Node and run it again.",
+    "exit: 1"
+  ],
+  "also_seen": [
+    "two earlier calls `--identify`: same stderr, exit 1",
+    "the MCP server `mnema mcp` started once (initialize from clientInfo Cursor 1.0.0), exit 0"
+  ],
+  "link_that_failed": "mnema errored and the handler swallowed it: the hook was loaded and ran, and the real mnema ran, but cursor-agent puts its own bundled Node 24.5.0 first on the PATH of a hook, below the piso of mnema (24.15.0), so mnema exited 1 with no stdout; edit-refuses-a-write.mjs catches every error and answers nothing, which Cursor reads as allow",
+  "does_not_prove": "that a Node at or above the piso on the hook's PATH would make the refusal hold with the real mnema (not run: one attempt); nor anything about other versions of cursor-agent"
+}
