@@ -372,6 +372,8 @@ describe('a file another version of the code rewrote under a server that is up',
     db.exec('COMMIT');
     db.close();
 
+    // The bootstrap reads the column the other version renamed.
+    expect(JSON.stringify(runBootstrap(session))).toContain('Alpha');
     expect(decisionsOf(session)).toEqual(['Alpha']);
     closeSession(session);
   });
