@@ -52,6 +52,10 @@ with its own changelog.
 
 ### Changed
 
+- **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
+  module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
+  a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
+  stacks with `outside: true` (`stacksReaderFor` hands it).
 - **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
   reply went out, about a millisecond on every call; it is now written in the next turn of the event loop, and when the
   process exits any line still waiting is written first. Reading the count in the same process sees every call already
