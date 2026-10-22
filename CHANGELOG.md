@@ -41,6 +41,20 @@ with its own changelog.
   51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
   its format or what a read answers changed.
 
+### Fixed
+
+- **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
+  `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that
+  key writes to it (`FORMAT.md` section 6, a new rule). Both readers checked a checkpoint under the key it names and bound
+  its events to that key, and never asked whose tail they were in: a second key of the record, even one enrolled for
+  the same person, could append its events to another key's tail and sign a checkpoint over them there, and the record
+  verified. It is now refused as `tail-signer-mismatch` (not the tail proof's `signer-mismatch`), on a checkpoint and on
+  every event of the tail, including those above the last checkpoint, in the same words in every reader. No record a
+  mnema binary writes is touched: a writer names its tail and signs in it with one key. Records written by 0.1.1, by the
+  version before this change and by this one, with a person, an agent key, a checker, a second machine and a restored
+  backup key, and this repository's own record, verify as before. A version from before this one still verifies a record
+  that breaks the rule.
+
 ## [0.1.2] - 2026-10-21
 
 ### Added

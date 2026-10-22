@@ -496,6 +496,21 @@ part of it**:
   U+0085. The product applied both halves before this document said them, and the
   second reader verified the record that breaks the first until it did
   (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+- **A tail belongs to one key (§6.1), and only that key writes to it.** A checkpoint's
+  `signerFp`, and the `signerFp` of every event of the tail, is the fingerprint the tail id
+  begins with. A reader refuses a checkpoint or an event that names another, as
+  `tail-signer-mismatch`, which is not §6.1's `signer-mismatch`: that one is about who signed
+  the tail id, this one about who wrote inside the tail. The sentence above binds the events of a
+  range to the key that signed it and says nothing about whose tail the range is in, so without
+  this one a second key of the record, valid for the anchor, wrote its events into another key's
+  tail, signed a checkpoint over them there, and both readers verified the record. The rule is
+  over every event of the tail, checkpointed or not: an event above the last checkpoint is bound
+  to no checkpoint at all. The writer this document describes names a tail and signs in it with
+  one key pair, so no record it wrote breaks this. It is a rule tightened after the first
+  publication (§7.1), so a version from before it verifies such a record and refuses nothing
+  (`packages/chain/src/chain/a-tail-is-written-by-the-key-its-id-names.test.ts`;
+  `second-reader-agrees-on-the-record.test.ts`, `tail-written-by-another-enrolled-key` and
+  `event-by-another-enrolled-key-above-the-checkpoint`).
 - `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
   rather than guessing at the fields, and the signature is over the seven keys
   above with `sig` absent
