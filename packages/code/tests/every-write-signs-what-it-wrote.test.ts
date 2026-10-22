@@ -530,6 +530,17 @@ const NOT_DRIVEN: Readonly<Record<string, string>> = {};
  */
 const EVERY_CLI_WRITE = 30_000;
 
+/**
+ * The other cases of this file run in this process and not on the binary: the two MCP sweeps, the
+ * cadence over 30 writes and the one act that crosses the ceiling. Measured alone, under a load of
+ * seven, they take 0.50 s, 0.44 s, 0.23 s and 0.58 s, against the shared 5 s, and the release's own
+ * run stopped one of the cases of this file at five seconds on a runner an order of magnitude slower
+ * than that. What they measure is the signing of a fixed number of writes, which does not grow with
+ * the record, so the figure is a wait for a slow machine and no allowance for a slow product: the
+ * ceiling is given room, 15 s, which a writer that really slowed to that would still be seen to cross.
+ */
+const IN_PROCESS_SWEEP = 15_000;
+
 describe('every write path leaves the record fully signed', () => {
   /**
    * The CLI surface, driven in one project, in order, so each act builds on the last.
@@ -1108,7 +1119,9 @@ describe('every write path leaves the record fully signed', () => {
     expect(end.levels).toContain('fully-signed');
   });
 
-  it('leaves nothing above a checkpoint, after every MCP write there is', async () => {
+  it('leaves nothing above a checkpoint, after every MCP write there is', {
+    timeout: IN_PROCESS_SWEEP,
+  }, async () => {
     const project = join(sandbox, 'served');
     for (const row of mcpSweep()) {
       const before = acrossTrees(project, env);
@@ -1133,7 +1146,9 @@ describe('every write path leaves the record fully signed', () => {
     }
   });
 
-  it('signs every MCP write under the hold that wrote it, so a refusal never follows the fact', async () => {
+  it('signs every MCP write under the hold that wrote it, so a refusal never follows the fact', {
+    timeout: IN_PROCESS_SWEEP,
+  }, async () => {
     const project = join(sandbox, 'served');
     const trap = armTheGapBetweenTheFactAndItsSignature();
     try {
@@ -1143,7 +1158,7 @@ describe('every write path leaves the record fully signed', () => {
     }
   });
 
-  it('keeps the cadence at one signature per act of writing', () => {
+  it('keeps the cadence at one signature per act of writing', { timeout: IN_PROCESS_SWEEP }, () => {
     // The non-regression the delivery owes: this is what the cadence WAS before any
     // of it, measured on the binary (30 writes to a fresh record: 32 events, 31
     // checkpoints, 1.03 events per checkpoint), and it must not have moved. Counted
@@ -1180,7 +1195,9 @@ describe('every write path leaves the record fully signed', () => {
 // ---------------------------------------------------------------------------
 
 describe('the ceiling the writer holds on its own', () => {
-  it('fires on a real act too big to wait for, with nobody calling checkpoint', () => {
+  it('fires on a real act too big to wait for, with nobody calling checkpoint', {
+    timeout: IN_PROCESS_SWEEP,
+  }, () => {
     // THE LINK, and the case that took `DEFAULT_MAX_UNSIGNED_EVENTS` off the list of
     // inert exports. One write that touches many files under a path a rule refuses puts
     // one `channel.refused` per path on the tail, in ONE hold of the lock, and signs once

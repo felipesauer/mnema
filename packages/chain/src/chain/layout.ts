@@ -141,8 +141,8 @@ export function tailLockPath(layout: ChainLayout, tailId: string): string {
  * `/locks/` (see `ensureTree`), the tree already has to be writable there for any write to
  * land, and a directory of its own would need a line in a `.gitignore` the chain never
  * touches once it exists, which every tree created before this has. It is derived and never
- * the record: deleting it costs the next reader a rebuild and changes no answer, and a clone
- * never carries it.
+ * the record: deleting it costs the next reader a rebuild and, bar the one edit it can miss (see
+ * `CacheOptions.persist`), changes no answer, and a clone never carries it.
  */
 export function projectionCachePath(layout: ChainLayout): string {
   return join(layout.root, 'locks', 'projection.db');

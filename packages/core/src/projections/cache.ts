@@ -153,7 +153,8 @@ export interface CacheOptions {
    *     replays, so a rewrite of what was already read is not served in silence;
    *   - a file that cannot be had (the directory is read-only, the database is corrupt, a
    *     writer held it past the wait) is not an error: the cache lives in memory for this
-   *     process and answers the same, slower. DELETING IT CHANGES NO ANSWER.
+   *     process and answers the same, slower. DELETING IT COSTS A REBUILD, AND CHANGES AN ANSWER
+   *     ONLY WHERE THE CACHE HAD MISSED AN EDIT IN PLACE (below).
    *
    * What it does not promise is what a reading that resumes can never promise: that bytes the
    * last reading already accepted were not edited since. `cache-meta.ts` says where the line

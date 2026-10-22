@@ -28,7 +28,7 @@
     "test": "vitest run --reporter=default --reporter=./.github/why-it-went-red/ledger.mjs",
     "test:guards": "vitest run --config vitest.guards.config.ts --maxWorkers=2",
     "test:watch": "vitest",
-    "test:host-contract": "unshare -rn bash -c 'ip link set lo up && exec vitest run --config vitest.host-contract.config.ts'",
+    "test:host-contract": "unshare -rn bash -c 'ip link set lo up && exec vitest run --config vitest.host-contract.config.ts \"$@\"' _",
     "test:coverage": "vitest run --coverage --reporter=default --reporter=./.github/why-it-went-red/ledger.mjs",
     "why-it-went-red": "node .github/why-it-went-red/verdict.mjs",
     "what-the-suite-left-behind": "node .github/what-the-suite-left-behind/sweep.mjs",

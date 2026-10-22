@@ -11,6 +11,7 @@ import {
   theEntriesOf,
   theFirstThatOffersTools,
   theServersTools,
+  theWeightsFile,
 } from './support/the-tool-definitions.js';
 
 /** The declarations of the first tool group, where Gemini CLI puts every function. */
@@ -32,10 +33,7 @@ describe("what Gemini CLI sends of the plugin's tools", () => {
       expect(String(entry['description']).length, String(entry['name'])).toBeGreaterThan(40);
       expect(entry['parametersJsonSchema'], String(entry['name'])).toBeTypeOf('object');
     }
-    expect({ count: mine.names.length, ...mine.all }).toEqual({
-      count: 27,
-      bytes: 56_729,
-      tokens: 12_715,
-    });
+    expect(mine.names).toHaveLength(27);
+    await expect(theWeightsFile(mine.all)).toMatchFileSnapshot('./weights/gemini.json');
   }, 180_000);
 });

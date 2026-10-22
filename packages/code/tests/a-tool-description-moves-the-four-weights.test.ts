@@ -3,7 +3,7 @@
  *
  * Claude Code, OpenCode, the Copilot CLI and Gemini CLI each send the server's tool definitions
  * whole, and `host-contract/the-tool-definitions-the-host-sends{,.opencode,.copilot,.gemini}.test.ts`
- * pin what they weigh. Those four run only in the host-contract job. The golden in
+ * pin what they weigh, each in a file of `host-contract/weights/`. Those four run only in the host-contract job. The golden in
  * `the-channels-have-a-budget.test.ts` already goes red locally on an edited description, but
  * regenerating it with `-u` turned the run green again while the four pinned figures stayed
  * stale, and only CI saw that. This test is the one thing that ties those four figures to the
@@ -19,8 +19,8 @@
  * bytes where they were and moves the tokens by a few per host, which the slack absorbs, so this
  * test stays green; the host contract's own `toEqual` is what catches it. Nor is the host's real
  * figure held: only the host-contract run measures that. When this fails, run
- * `pnpm test:host-contract` for the host named, put its figures in that file, and, if a host changed
- * how it wraps a definition, the new overhead here.
+ * `pnpm test:host-contract the-tool-definitions-the-host-sends -u` for the host named: it writes its figures into that file (see
+ * CONTRIBUTING.md), and, if a host changed how it wraps a definition, put the new overhead here.
  */
 
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -43,7 +43,7 @@ interface Host {
 
 const HOSTS: Readonly<Record<string, Host>> = {
   'Claude Code': {
-    file: 'the-tool-definitions-the-host-sends.test.ts',
+    file: 'weights/claude-code.json',
     wrap: (t) => ({
       name: `mcp__plugin_mnema_mnema__${t.name}`,
       description: t.description,
@@ -52,7 +52,7 @@ const HOSTS: Readonly<Record<string, Host>> = {
     overhead: { bytes: 0, tokens: -3 },
   },
   OpenCode: {
-    file: 'the-tool-definitions-the-host-sends.opencode.test.ts',
+    file: 'weights/opencode.json',
     wrap: (t) => ({
       name: `mnema_${t.name}`,
       description: t.description,
@@ -61,7 +61,7 @@ const HOSTS: Readonly<Record<string, Host>> = {
     overhead: { bytes: 1_566, tokens: 346 },
   },
   'Copilot CLI': {
-    file: 'the-tool-definitions-the-host-sends.copilot.test.ts',
+    file: 'weights/copilot.json',
     wrap: (t) => ({
       name: `mnema-${t.name}`,
       description: t.description,
@@ -70,7 +70,7 @@ const HOSTS: Readonly<Record<string, Host>> = {
     overhead: { bytes: 639, tokens: 368 },
   },
   'Gemini CLI': {
-    file: 'the-tool-definitions-the-host-sends.gemini.test.ts',
+    file: 'weights/gemini.json',
     wrap: (t) => ({
       name: `mcp_mnema_${t.name}`,
       description: t.description,
@@ -103,13 +103,15 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** The `bytes` and `tokens` the host-contract file pins, read off its text. */
+/** The `bytes` and `tokens` the host contract pins, read off the file it compares with. */
 function pinnedIn(file: string): TheWeight {
-  const text = readFileSync(join(import.meta.dirname, 'host-contract', file), 'utf8');
+  const pinned: unknown = JSON.parse(
+    readFileSync(join(import.meta.dirname, 'host-contract', file), 'utf8'),
+  );
   const figure = (key: string): number => {
-    const found = text.match(new RegExp(`${key}: ([0-9_]+),`))?.[1];
-    if (found === undefined) throw new Error(`${file} pins no ${key}`);
-    return Number(found.replaceAll('_', ''));
+    const found = (pinned as Record<string, unknown>)[key];
+    if (typeof found !== 'number') throw new Error(`${file} pins no ${key}`);
+    return found;
   };
   return { bytes: figure('bytes'), tokens: figure('tokens') };
 }
