@@ -505,7 +505,9 @@ part of it**:
   this one a second key of the record, valid for the anchor, wrote its events into another key's
   tail, signed a checkpoint over them there, and both readers verified the record. The rule is
   over every event of the tail, checkpointed or not: an event above the last checkpoint is bound
-  to no checkpoint at all. The writer this document describes names a tail and signs in it with
+  to no checkpoint at all, so the rule refuses one only when it names another key. An event above
+  the last checkpoint that names the tail's own key is not refused here, and it still stands as not
+  yet signature-covered (§6.2). The writer this document describes names a tail and signs in it with
   one key pair, so no record it wrote breaks this. It is a rule tightened after the first
   publication (§7.1), so a version from before it verifies such a record and refuses nothing
   (`packages/chain/src/chain/a-tail-is-written-by-the-key-its-id-names.test.ts`;

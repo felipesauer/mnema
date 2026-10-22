@@ -50,8 +50,8 @@ with its own changelog.
   the same person, could append its events to another key's tail and sign a checkpoint over them there, and the record
   verified. It is now refused as `tail-signer-mismatch` (not the tail proof's `signer-mismatch`), on a checkpoint and on
   every event of the tail, including those above the last checkpoint, in the same words in every reader. No record a
-  mnema binary writes is touched: a writer names its tail and signs in it with one key. Records written by 0.1.1, by the
-  version before this change and by this one, with a person, an agent key, a checker, a second machine and a restored
+  mnema binary writes is touched: a writer names its tail and signs in it with one key. Records written by 0.1.0, 0.1.1 and
+  0.1.2, with a person, an agent key, a checker, a second machine and a restored
   backup key, and this repository's own record, verify as before. A version from before this one still verifies a record
   that breaks the rule.
 
