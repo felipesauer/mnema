@@ -516,6 +516,37 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // THE THREE FILES UNDER `keys/` THAT HOLD NO KEY. The second reader stopped with a
+    // traceback over the first two and refused the third under section 1; the product read
+    // all three as a committed key with no tail, a note, and VERIFIED the record. Both refuse
+    // each by name now, under section 6, in the same words and for the same reason.
+    name: 'key-file-holds-no-key',
+    refusals: 1,
+    section: '6',
+    says: 'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
+    productSays: 'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'key-file-is-a-directory',
+    refusals: 1,
+    section: '6',
+    says: 'holds no Ed25519 public key: it is not a file',
+    productSays: 'holds no Ed25519 public key: it is not a file',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'key-file-not-utf8',
+    refusals: 1,
+    section: '6',
+    says: 'holds no Ed25519 public key: not UTF-8 at byte 113',
+    productSays: 'holds no Ed25519 public key: not UTF-8 at byte 113',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-relocated',
     // TWO since the second reader began to require the tail proof (section 6.1): the copy is
     // refused for the key its id names AND for carrying no proof that the key signed that id.

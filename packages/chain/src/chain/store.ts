@@ -9,11 +9,11 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
-import { decodeStoredBytes } from '../events/stored-json.js';
+import { decodeStoredBytes, StoredJsonError } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
 import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
-import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
+import { fingerprintOf, type KeyObject, NoCommittedKeyError, publicKeyFromCommittedText } from './keys.js';
 import {
   type ChainLayout,
   checkpointsPath,
@@ -76,9 +76,17 @@ export interface CommittedKey {
 
 /**
  * The committed key a fingerprint names: `null` when no file carries that name, or the file
- * holds no key.
+ * holds no key, and {@link CommittedKeys.holdsNoKey} says which of the two.
  */
-export type CommittedKeys = (fingerprint: string) => CommittedKey | null;
+export interface CommittedKeys {
+  (fingerprint: string): CommittedKey | null;
+  /**
+   * Why the file named for `fingerprint` holds no key, when one is listed under `keys/` and
+   * holds none: the reason {@link readCommittedKeyFile} gives. `undefined` when it holds a key.
+   * Read through the same cache, so asking it reads no file a second time.
+   */
+  holdsNoKey(fingerprint: string): string | undefined;
+}
 
 /**
  * The committed public keys, each read off the disk AT MOST ONCE for as long as the reader
@@ -97,8 +105,8 @@ export type CommittedKeys = (fingerprint: string) => CommittedKey | null;
  * the disk and wrong for anything that outlives it.
  */
 export function committedKeys(layout: ChainLayout): CommittedKeys {
-  const read = new Map<string, CommittedKey | null>();
-  return (fingerprint) => {
+  const read = new Map<string, CommittedKey | string>();
+  const reading = (fingerprint: string): CommittedKey | string => {
     let key = read.get(fingerprint);
     if (key === undefined) {
       key = committedKey(layout, fingerprint);
@@ -106,21 +114,50 @@ export function committedKeys(layout: ChainLayout): CommittedKeys {
     }
     return key;
   };
+  const keys = (fingerprint: string): CommittedKey | null => {
+    const key = reading(fingerprint);
+    return typeof key === 'string' ? null : key;
+  };
+  keys.holdsNoKey = (fingerprint: string): string | undefined => {
+    const key = reading(fingerprint);
+    return typeof key === 'string' ? key : undefined;
+  };
+  return keys;
 }
 
-/** One read of one committed key off the disk: see {@link committedKeys}. */
-function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | null {
-  const path = publicKeyPath(layout, fingerprint);
-  if (!existsSync(path)) return null;
-  let key: KeyObject;
-  try {
-    // A file of the record like a line of it: bytes that are not UTF-8 are no key.
-    key = publicKeyFromPem(decodeStoredBytes(readFileSync(path)));
-  } catch {
-    return null;
-  }
+/** One read of one committed key off the disk, or why it holds none: see {@link committedKeys}. */
+function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | string {
+  const read = readCommittedKeyFile(publicKeyPath(layout, fingerprint));
+  if ('holdsNoKey' in read) return read.holdsNoKey;
+  const { key } = read;
   let derived: string | undefined;
   return { key, fingerprint: () => (derived ??= fingerprintOf(key)) };
+}
+
+/** What a file under `keys/` HELD: its key, or the reason it holds none. */
+export type CommittedKeyFile = { readonly key: KeyObject } | { readonly holdsNoKey: string };
+
+/** The reason a key file is refused when what is at its path is not a file. */
+export const NOT_A_FILE = 'it is not a file';
+
+/**
+ * The ONE reading of a committed key file, for every reader of a chain root's `keys/`.
+ *
+ * A path with no file at it, or with a directory at it, is not a file; bytes that are not
+ * UTF-8, like a line of the record that is not, are no key, and the offset of the first byte
+ * that is not is the reason; past that, {@link publicKeyFromCommittedText} says whether the text
+ * holds a key. The second reader gives the same reason for the same bytes (`load_keyring`).
+ */
+export function readCommittedKeyFile(path: string): CommittedKeyFile {
+  if (!existsSync(path) || statSync(path).isDirectory()) return { holdsNoKey: NOT_A_FILE };
+  try {
+    return { key: publicKeyFromCommittedText(decodeStoredBytes(readFileSync(path))) };
+  } catch (error) {
+    if (error instanceof NoCommittedKeyError || error instanceof StoredJsonError) {
+      return { holdsNoKey: error.message };
+    }
+    throw error;
+  }
 }
 
 /**

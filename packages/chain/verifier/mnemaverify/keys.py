@@ -36,6 +36,17 @@ _SPKI_ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
 _PEM = re.compile(
     r"-----BEGIN PUBLIC KEY-----(?P<body>.*?)-----END PUBLIC KEY-----", re.DOTALL
 )
+# The whitespace a PEM body may be wrapped with, and the strict alphabet and padding of what is
+# left. Both are spelled out, rather than left to `str.split()` and `b64decode`, so the product
+# applies the very same rule (`committedKeyFrom` in its `keys.ts`) and the two readers hold the
+# same bytes to be a key or not.
+_PEM_WRAP = re.compile(r"[\t\n\v\f\r ]")
+_BASE64 = re.compile(r"(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?")
+
+# The words a file under `keys/` that holds no key is refused by, in this reader and the
+# product's (`HOLDS_NO_KEY` in its `verify.ts`), followed by the reason.
+HOLDS_NO_KEY = "holds no Ed25519 public key"
+NOT_A_FILE = "it is not a file"
 
 
 class PublicKey(NamedTuple):
@@ -47,15 +58,19 @@ class PublicKey(NamedTuple):
 
 
 def parse_pem(text: str, filename: str = "") -> PublicKey:
+    """The key a committed key file holds, or a refusal under section 6 that says why it holds none.
+
+    The refusal carries the reason alone, with no path: the caller names the file.
+    """
     match = _PEM.search(text)
     if match is None:
-        raise Refusal("6", f"not a PEM public key: {filename or '<text>'}")
-    try:
-        der = base64.b64decode("".join(match.group("body").split()), validate=True)
-    except (ValueError, TypeError) as exc:
-        raise Refusal("6", f"the PEM body is not base64: {filename}") from exc
+        raise Refusal("6", "no PEM public key in it")
+    body = _PEM_WRAP.sub("", match.group("body"))
+    if _BASE64.fullmatch(body) is None:
+        raise Refusal("6", "the PEM body is not base64")
+    der = base64.b64decode(body, validate=True)
     if not der.startswith(_SPKI_ED25519_PREFIX) or len(der) != len(_SPKI_ED25519_PREFIX) + 32:
-        raise Refusal("6", f"not an Ed25519 SubjectPublicKeyInfo: {filename}")
+        raise Refusal("6", "not an Ed25519 SubjectPublicKeyInfo")
     fingerprint = hashlib.sha256(der).hexdigest()
     stated = os.path.basename(filename)[:-4] if filename.endswith(".pub") else ""
     return PublicKey(
@@ -69,37 +84,44 @@ def parse_pem(text: str, filename: str = "") -> PublicKey:
 
 def load_keyring(
     record_root: str,
-) -> tuple[dict[str, PublicKey], list[str], list[tuple[str, Refusal]]]:
+) -> tuple[dict[str, PublicKey], list[str], list[tuple[str, str]]]:
     """Every `keys/*.pub` under the record root, indexed by recomputed fingerprint.
 
     Gap G03: that `keys/` is where they live is inferred from the frozen records, not from
     the document. Returns the ring, the list of files whose name disagrees with their
-    contents, and the files whose bytes are not UTF-8, each with its refusal - all of them
-    refusals the caller reports, not ones this function raises, so one bad key does not hide
-    a good record. A file that is not UTF-8 holds no key this reader puts in the ring, as the
-    product reads no key out of it.
+    contents, and the files that hold no key, each with the reason - all of them refusals the
+    caller reports, not ones this function raises, so one bad key does not hide a good record.
+
+    A FILE THAT HOLDS NO KEY IS REFUSED, NEVER RAISED. A `.pub` that is a directory, whose
+    bytes are not UTF-8, or that holds no PEM-wrapped Ed25519 `SubjectPublicKeyInfo` used to
+    stop this reader with a traceback (the directory, the text that is no key) or be refused
+    here while the product read on (the bytes that are not UTF-8). Section 6 has a reader
+    recompute each name from the material, and a file with no material has a name that stands
+    for no key, which is what the misnamed file is refused for. Neither is put in the ring.
     """
     from .canonical import utf8_text
 
     directory = os.path.join(record_root, "keys")
     ring: dict[str, PublicKey] = {}
     misnamed: list[str] = []
-    undecodable: list[tuple[str, Refusal]] = []
+    no_key: list[tuple[str, str]] = []
     if not os.path.isdir(directory):
-        return ring, misnamed, undecodable
+        return ring, misnamed, no_key
     for name in sorted(os.listdir(directory)):
         if not name.endswith(".pub"):
             continue
         path = os.path.join(directory, name)
+        if not os.path.isfile(path):
+            no_key.append((name, NOT_A_FILE))
+            continue
         with open(path, "rb") as handle:
             raw = handle.read()
         try:
-            text = utf8_text(raw)
+            key = parse_pem(utf8_text(raw), path)
         except Refusal as refusal:
-            undecodable.append((name, refusal))
+            no_key.append((name, refusal.what))
             continue
-        key = parse_pem(text, path)
         if not key.name_matches_material:
             misnamed.append(name)
         ring[key.fingerprint] = key
-    return ring, misnamed, undecodable
+    return ring, misnamed, no_key

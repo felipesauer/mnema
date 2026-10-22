@@ -361,6 +361,60 @@ def unused_key_misnamed(root: str) -> tuple[bool, str]:
     return os.path.exists(target), "a key nothing uses, written under a name it does not hash to"
 
 
+def _key_file_without_a_key(root: str, name: str, write) -> tuple[bool, str]:
+    """A file under `keys/` that holds no key, written by `write(path)`, nothing else touched."""
+    keys = os.path.join(root, "keys")
+    os.makedirs(keys, exist_ok=True)
+    target = os.path.join(keys, name)
+    if os.path.exists(target):
+        return False, f"{target} is already there"
+    write(target)
+    return os.path.exists(target), name
+
+
+def key_file_holds_no_key(root: str) -> tuple[bool, str]:
+    """A `README.pub` beside the keys: text, and no key in it.
+
+    Section 6 has a reader recompute each name under `keys/` from the material in the file, and
+    this file has none, so its name stands for no key. This reader used to stop on it with a
+    traceback from `parse_pem`, and the product read it as a committed key with no tail.
+    """
+
+    def write(path: str) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("The public keys of this record.\n")
+
+    applied, _ = _key_file_without_a_key(root, "README.pub", write)
+    return applied, "a README.pub with no key in it, beside the keys"
+
+
+def key_file_is_a_directory(root: str) -> tuple[bool, str]:
+    """A directory named like a key file: `keys/<fingerprint>.pub` that is no file at all.
+
+    This reader used to stop on it with `IsADirectoryError`, and the product read it as a
+    committed key with no tail.
+    """
+    applied, _ = _key_file_without_a_key(root, "c" * 64 + ".pub", os.makedirs)
+    return applied, "a directory named for a fingerprint, under keys/"
+
+
+def key_file_not_utf8(root: str) -> tuple[bool, str]:
+    """A key file nothing uses whose bytes are not UTF-8: a real key, and one byte 0xff after it.
+
+    The text outside the armour would be no reason to refuse it, and the byte is: section 1
+    says the bytes of the record are UTF-8. This reader refused it, and the product read it as
+    a committed key with no tail and verified the record.
+    """
+    fingerprint, pem = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "wb") as handle:
+            handle.write(pem.encode("ascii") + b"\xff\n")
+
+    applied, _ = _key_file_without_a_key(root, f"{fingerprint}.pub", write)
+    return applied, "a key nothing uses, with a byte that is not UTF-8 after its armour"
+
+
 def tail_relocated(root: str) -> tuple[bool, str]:
     """A tail copied into a fabricated directory, relabelled and re-chained.
 
@@ -1210,6 +1264,9 @@ MUTATIONS = {
     "key-renamed": key_renamed,
     "keys-removed": keys_removed,
     "unused-key-misnamed": unused_key_misnamed,
+    "key-file-holds-no-key": key_file_holds_no_key,
+    "key-file-is-a-directory": key_file_is_a_directory,
+    "key-file-not-utf8": key_file_not_utf8,
     "forged-payload-field-appended": forged_payload_field_appended,
     "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
     "appended-event-by-an-unenrolled-key": appended_event_by_an_unenrolled_key,

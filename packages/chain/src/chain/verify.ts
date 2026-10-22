@@ -789,6 +789,7 @@ export function verifyChain(
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
   // And, when no tail is counted at all, the one issue about the record as a whole.
   const allIssues: TailIssue[] = [
+    ...keyFilesWithoutAKey(committedFingerprints, keys),
     ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
@@ -803,7 +804,14 @@ export function verifyChain(
   const census: CensusNote[] = [
     // `tails`, not `counted`: an empty tail's directory is there, so its key has a tail, and
     // reading that key as one whose tail may have been removed would say a loss nobody made.
-    ...keysWithoutTail(committedFingerprints, tails, waivers, backups, identity.backups),
+    // A file that holds no key is refused above, and is no key whose tail may have gone.
+    ...keysWithoutTail(
+      new Set([...committedFingerprints].filter((name) => keys.holdsNoKey(name) === undefined)),
+      tails,
+      waivers,
+      backups,
+      identity.backups,
+    ),
     ...[...empty].map(emptyTail),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
@@ -912,8 +920,38 @@ export const MISNAMED_KEY = 'is named for a fingerprint its own material does no
  * material does not hash to, was read as a committed key with no tail, a note, and the record
  * verified, while the second reader refused it. Every file is asked here, used or not, through
  * the one reader of the committed keys the rest of the verification asks, so no key is read
- * twice. A file that holds no key is not this case: no material, no fingerprint to compare.
+ * twice. A file that holds no key is not this case: no material, no fingerprint to compare
+ * ({@link keyFilesWithoutAKey} refuses it).
  */
+/**
+ * How a committed key file that holds no key is named: the words both readers refuse it by
+ * (FORMAT.md section 6; the second reader says the same of the same file, and the same reason).
+ */
+export const HOLDS_NO_KEY = 'holds no Ed25519 public key';
+
+/**
+ * EVERY FILE UNDER `keys/` THAT HOLDS NO KEY, refused by name (FORMAT.md section 6).
+ *
+ * A `.pub` that is a directory, whose bytes are not UTF-8, or that holds no PEM-wrapped Ed25519
+ * `SubjectPublicKeyInfo` was read as no key and said as a committed key with no tail, a note, and
+ * the record verified, while the second reader stopped with a traceback over two of them and
+ * refused the third. Its name is the claim a reader of `keys/` takes at face value and it stands
+ * for no key, which is what a misnamed file is refused for. Asked of the same reader of the
+ * committed keys, so no file is read twice.
+ */
+function keyFilesWithoutAKey(names: ReadonlySet<string>, keys: CommittedKeys): TailIssue[] {
+  const issues: TailIssue[] = [];
+  for (const name of names) {
+    const why = keys.holdsNoKey(name);
+    if (why === undefined) continue;
+    issues.push({
+      layer: 'T2/T4',
+      detail: `KEY FILE WITHOUT A KEY: the key file keys/${oneLine(name)}.pub ${HOLDS_NO_KEY}: ${oneLine(why)}`,
+    });
+  }
+  return issues;
+}
+
 function misnamedKeys(names: ReadonlySet<string>, keys: CommittedKeys): TailIssue[] {
   const issues: TailIssue[] = [];
   for (const name of names) {
