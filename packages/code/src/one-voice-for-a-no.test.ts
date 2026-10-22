@@ -539,14 +539,15 @@ describe('`--help` and `--version` are not touched', () => {
     expect(version.out).toEqual([VERSION]);
   });
 
-  it('and the help shown INSTEAD of an error is still the help', async () => {
-    // `mnema` with no verb prints the whole help and exits non-zero. It is the same
-    // code as `--help`, so nothing is added to it: a caller who typed nothing is
-    // being answered, not corrected.
+  it('and the bare name is answered with a summary, not corrected', async () => {
+    // `mnema` with no verb prints a short summary on stdout and succeeds, pointing to
+    // `--help` for the catalogue: a caller who typed nothing is being answered, not
+    // corrected.
     const said = await invoke();
-    expect(said.failed).toBe(true);
-    expect(said.err.join(String.fromCharCode(10))).toContain('Usage: mnema');
+    expect(said.failed).toBe(false);
+    expect(said.out.join(String.fromCharCode(10))).toContain('`mnema --help` lists every command.');
     expect(said.err.join(String.fromCharCode(10))).not.toContain('does not take');
+    expect(said.err).toEqual([]);
   });
 });
 

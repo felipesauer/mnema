@@ -109,6 +109,7 @@ import {
   type RecordEffect,
   readsTheRecord,
 } from '../record-effect.js';
+import { offOnThisMachine } from '../record-framing.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
   type FellIn,
@@ -147,6 +148,7 @@ import { closeSession, openSession, refreshWorkspace, type Session } from './ses
 import {
   A_READ,
   A_WRITE,
+  channelsOffHere,
   countsToolCalls,
   movedApartNotes,
   runAccountabilityTool,
@@ -1469,6 +1471,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       return withRunState(active, context, [
         ...movedApartBlock(active),
         whereThisSessionIs(active),
+        ...switchedOffBlock(active),
       ]);
     },
   );
@@ -2506,6 +2509,16 @@ const NO_ACTOR_YET =
 function movedApartBlock(session: Session, entityId?: string): readonly string[] {
   const said = movedApartNotes(session, entityId);
   return said.length === 0 ? [] : [said.join('\n')];
+}
+
+/**
+ * The block the opening read owes when channels are off on this machine: which, and that a person
+ * turns one on. None at all when nothing is off. It is read from the effective state of the
+ * session's own project, so a channel a person switched on is not in it.
+ */
+function switchedOffBlock(session: Session): readonly string[] {
+  const off = channelsOffHere(session);
+  return off.length === 0 ? [] : [offOnThisMachine(off)];
 }
 
 function withRunState(

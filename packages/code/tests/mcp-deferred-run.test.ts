@@ -175,8 +175,9 @@ describe('a connection that only reads', () => {
     // bootstrap EMBEDS resume, so it answers about runs; being the first thing an
     // agent calls, it is also the answer most likely to be read as a statement
     // about the asking session.
-    // Three blocks: the answer, where this session is, then the run note last.
-    const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }), 3);
+    // Four blocks: the answer, where this session is, the channels off on this machine, then the
+    // run note last.
+    const payload = payloadBesideTheNote(await client.callTool({ name: 'bootstrap' }), 4);
     // `work`, `skills` and `decisions` are bootstrap's and no other read's.
     expect(payload).toMatchObject({
       work: [],
@@ -266,10 +267,10 @@ describe('a connection that only reads', () => {
     });
     const id = /\(([^)]+)\)/.exec(blocksOf(created)[0]?.text ?? '')?.[1] as string;
 
-    // `bootstrap` keeps its own second block, where this session landed is true
-    // whether or not a run is open, and it is the note alone that must go.
+    // `bootstrap` keeps its own second and third blocks, where this session landed and what is off
+    // are true whether or not a run is open, and it is the note alone that must go.
     for (const { call, blocks: expected } of [
-      { call: { name: 'bootstrap' }, blocks: 2 },
+      { call: { name: 'bootstrap' }, blocks: 3 },
       { call: { name: 'focus' }, blocks: 1 },
       { call: { name: 'resume' }, blocks: 1 },
       { call: { name: 'guard', arguments: { id, action: 'submit' } }, blocks: 1 },

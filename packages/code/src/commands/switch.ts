@@ -140,6 +140,18 @@ export function runSwitchList(ctx: SwitchContext): SwitchListing {
   });
 }
 
+/**
+ * The channels that are OFF on this machine now, in the order the product declares them:
+ * where each stands across the trees visible from here, which is what the next push will do.
+ */
+export function channelsOff(ctx: Pick<SwitchContext, 'cwd' | 'env'>): readonly SwitchableChannel[] {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  return withScopedCaches(trees, (sources) => {
+    const states = channelStates(sources, SWITCHABLE_CHANNELS, STARTS_OFF);
+    return SWITCHABLE_CHANNELS.filter((_channel, at) => (states[at] as ChannelState).on === false);
+  });
+}
+
 /** The switch was recorded. */
 export interface SwitchRecorded extends Replacement, Landed {
   readonly ok: true;

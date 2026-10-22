@@ -522,6 +522,23 @@ export const STARTS_OFF: readonly SwitchableChannel[] = [
 
 const SWITCH_VERB = 'mnema switch';
 
+/** The command a person types to turn a channel on. */
+export function switchOnCommand(channel: string): string {
+  return [SWITCH_VERB, 'on', channel].join(' ');
+}
+
+/** The same command with the name left for the person to fill. */
+export const SWITCH_ON_COMMAND = switchOnCommand('<name>');
+
+/**
+ * The line an agent is handed when channels are off on this machine: which, and that turning one
+ * on is a person's act at a shell (the MCP server has no tool for it). A statement of fact: it
+ * asks the agent for nothing.
+ */
+export function offOnThisMachine(names: readonly SwitchableChannel[]): string {
+  return `Off on this machine: ${names.join(', ')}. Only a person turns one on, with \`${SWITCH_ON_COMMAND}\`.`;
+}
+
 /**
  * The command that flips a channel away from where it begins: the switch verb with `on` for a
  * channel that starts off and with `off` for every other. One sentence of the product's own that

@@ -7,6 +7,7 @@
  * A page keeps its own prose: only what sits between a pair of markers is regenerated.
  */
 
+import { neverSwitchedOn } from '../../src/presentation/switches.js';
 import {
   flipCommand,
   STARTS_OFF,
@@ -87,7 +88,7 @@ export function listing(): string {
   const width = Math.max(...SWITCHABLE_CHANNELS.map((channel) => channel.length));
   const lines = SWITCHABLE_CHANNELS.map((channel) => {
     const off = STARTS_OFF.includes(channel);
-    const tail = off ? ' · off until switched on, and nobody has' : '';
+    const tail = off ? ` · ${neverSwitchedOn(channel)}` : '';
     const text = shortened(WHAT_STOPS[channel]);
     return `#>   ${channel.padEnd(width)}  ${(off ? 'off' : 'on').padEnd(3)}  ${text}${tail}`;
   });

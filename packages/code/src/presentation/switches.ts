@@ -41,6 +41,7 @@ import type { Scope } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import type { SwitchRow } from '../commands/switch.js';
 import { oneLine } from '../one-line.js';
+import { switchOnCommand } from '../record-framing.js';
 import { asId, asWhen, type Column, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 
@@ -51,8 +52,9 @@ const POSITION_WIDTH = 3;
 const ON = 'on';
 const OFF = 'off';
 
-/** What a line says of a channel that starts off and nobody has switched on. */
-const NEVER_SWITCHED_ON = 'off until switched on, and nobody has';
+/** What a line says of a channel that starts off and nobody has switched on: and how to. */
+export const neverSwitchedOn = (channel: string): string =>
+  `off until switched on: \`${switchOnCommand(channel)}\``;
 
 /** What a line says when the off switch is not in the tree that travels. */
 const NOT_COMMITTED = '(not committed to this project)';
@@ -99,7 +101,7 @@ function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string
   if (row.state.on) return stands;
   // OFF WITH NOBODY'S NAME ON IT is a channel that starts off and was never switched on: there is
   // no switch to attribute, and a placeholder where one goes would read as a switch somebody made.
-  if (row.state.by === undefined) return [...stands, '·', NEVER_SWITCHED_ON];
+  if (row.state.by === undefined) return [...stands, '·', neverSwitchedOn(row.state.channel)];
   return [
     ...stands,
     '·',
@@ -107,5 +109,6 @@ function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string
     asWhen(row.state.at ?? ''),
     ...(row.state.travels === false ? [NOT_COMMITTED] : []),
     ...(row.state.reason !== undefined ? [`reason: ${oneLine(row.state.reason)}`] : []),
+    `\`${switchOnCommand(row.state.channel)}\` turns it on`,
   ];
 }

@@ -679,7 +679,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 40, name: 82, flag: 2 },
+  'CHANGELOG.md': { line: 42, name: 84, flag: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -701,7 +701,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 94, name: 121, flag: 2 },
+  'docs/cli-reference.md': { line: 95, name: 124, flag: 2 },
   'packages/code/README.md': { line: 5, name: 10 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -734,6 +734,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/presentation/runs.ts': { line: 1 },
   'packages/code/src/presentation/site.ts': { name: 1 },
   'packages/code/src/presentation/status.ts': { line: 2 },
+  'packages/code/src/presentation/summary.ts': { line: 2, name: 8 },
   'packages/code/src/presentation/usage.ts': { line: 1, name: 2 },
   'packages/code/src/record-framing.ts': { line: 1, name: 9 },
   'packages/code/src/record-integrity.ts': { name: 7 },
@@ -751,7 +752,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/doctor.ts': { name: 1 },
   'packages/code/src/wiring/handback.ts': { line: 1 },
   'packages/code/src/wiring/inherit.ts': { line: 1, name: 3 },
-  'packages/code/src/wiring/init.ts': { line: 3, name: 4 },
+  'packages/code/src/wiring/init.ts': { line: 3, name: 5 },
   'packages/code/src/wiring/instructions.ts': { name: 1 },
   'packages/code/src/wiring/key.ts': { line: 17, name: 15 },
   'packages/code/src/wiring/mcp.ts': { line: 2 },
@@ -788,7 +789,7 @@ export const HANDED_OVER: Readonly<
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/README.md': { line: 11, name: 4 },
   'packages/vscode/src/stacks.ts': { line: 1 },
-  'plugin/README.md': { line: 32, name: 23, flag: 1 },
+  'plugin/README.md': { line: 33, name: 23, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 2 },
