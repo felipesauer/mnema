@@ -670,7 +670,13 @@ print(json.dumps([{"damaged": read(pairs[i]), "oracle": read(pairs[i + 1])} for 
     {
       weight: 1,
       arbitrary: fc
-        .constantFrom(...(JSON.parse(python([MUTATE, 'list']).stdout) as string[]))
+        .constantFrom(
+          // A file the process may not read cannot be copied for the damage to be put in a copy,
+          // and no line of a tail is what it is about.
+          ...(JSON.parse(python([MUTATE, 'list']).stdout) as string[]).filter(
+            (name) => name !== 'key-file-unreadable',
+          ),
+        )
         .map((mutation) => ({ mutation })),
     },
     {

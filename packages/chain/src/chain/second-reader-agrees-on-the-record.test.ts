@@ -47,7 +47,7 @@
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *
  * So no input `mutate.py` builds is accepted by ONE reader alone: the case that says so is
- * the count in `leaves exactly FIVE rows out of the refusal loop`, which names the five that
+ * the count in `leaves exactly SIX rows out of the refusal loop`, which names the six that
  * are not refusals (three accepted by both readers, two read as incomplete).
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
@@ -516,6 +516,63 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // THE THREE FILES UNDER `keys/` THAT HOLD NO KEY. The second reader stopped with a
+    // traceback over the first two and refused the third under section 1; the product read
+    // all three as a committed key with no tail, a note, and VERIFIED the record. Both refuse
+    // each by name now, under section 6, in the same words and for the same reason.
+    name: 'key-file-holds-no-key',
+    refusals: 1,
+    section: '6',
+    says: 'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
+    productSays:
+      'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'key-file-is-a-directory',
+    refusals: 1,
+    section: '6',
+    says: 'holds no Ed25519 public key: it is not a file',
+    productSays: 'holds no Ed25519 public key: it is not a file',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'key-file-not-utf8',
+    refusals: 1,
+    section: '6',
+    says: 'holds no Ed25519 public key: not UTF-8 at byte 113',
+    productSays: 'holds no Ed25519 public key: not UTF-8 at byte 113',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // A key file the process may not read (mode 000): both readers used to stop with a
+    // traceback. Both refuse it by name now, in the same words. The loop below does not run it
+    // as root, which reads the file anyway.
+    name: 'key-file-unreadable',
+    refusals: 1,
+    section: '6',
+    says: 'holds no Ed25519 public key: it cannot be read',
+    productSays: 'holds no Ed25519 public key: it cannot be read',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // A LINE NO READER CAN READ, AND A SECOND CAUSE BESIDE IT IN THE SAME TAIL. The product
+    // stopped at the line and said nothing more about the tail; the second reader named both.
+    // Both name both now: the row holds the product to the SECOND cause, the signature, and
+    // `a-refused-line-hides-nothing-else-in-its-tail.test.ts` to the whole list.
+    name: 'refused-line-beside-a-forged-signature',
+    refusals: 2,
+    section: '6',
+    says: 'the Ed25519 signature does not verify',
+    productSays: 'checkpoint failed: bad-signature',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-relocated',
     // TWO since the second reader began to require the tail proof (section 6.1): the copy is
     // refused for the key its id names AND for carrying no proof that the key signed that id.
@@ -770,6 +827,18 @@ const MUTATIONS = [
     agreedAccepted: true,
   },
   {
+    // macOS metadata beside the keys (`keys/._<fingerprint>.pub`): both readers skip it like
+    // `.DS_Store`, so the record is still VERIFIED, and the agreement is asserted in
+    // `both-readers-read-the-same-bytes.test.ts`.
+    name: 'key-metadata-file-beside-the-keys',
+    refusals: 0,
+    section: '6',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
     name: 'blank-segment-same-size',
     // The SECOND row that is not a refusal, and the reason the count below is 2. See the
     // INCOMPLETE describe: a checkpoint whose range outruns the entries present is a shape
@@ -794,9 +863,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   /**
-   * Every row but the FIVE that are not refusals: the three `agreedAccepted` rows (a cut that
+   * Every row but the SIX that are not refusals: the four `agreedAccepted` rows (a cut that
    * takes events and their checkpoint together, a record erased and refounded, a move the
-   * workflow does not allow), which BOTH readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
+   * workflow does not allow, a macOS metadata file beside the keys), which BOTH readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
    * below. Both of those are in the table so the enumeration
    * from `mutate.py list` above stays total, and both belong to the INCOMPLETE describe
    * below instead: a check that could not run is not a check that refused, and a loop that
@@ -826,8 +895,8 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
     (mutation) => !('incomplete' in mutation) && !('agreedAccepted' in mutation),
   );
 
-  it('leaves exactly FIVE rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(5);
+  it('leaves exactly SIX rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(6);
     expect(
       MUTATIONS.filter((m) => 'incomplete' in m || 'agreedAccepted' in m)
         .map((m) => m.name)
@@ -836,6 +905,7 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       'aligned-cut',
       'appended-move-the-workflow-does-not-allow',
       'blank-segment-same-size',
+      'key-metadata-file-beside-the-keys',
       'keys-removed',
       'refounded-record',
     ]);
@@ -847,6 +917,8 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   it.each(REFUSING)('refuses $name, and says so under section $section', (mutation) => {
+    // A process that is root reads a file whose mode is 000, so the mutation cannot be built.
+    if (mutation.name === 'key-file-unreadable' && process.getuid?.() === 0) return;
     const record = copyOf('witnessed-record');
 
     // THE MUTATION IS PROVEN APPLIED BEFORE ANY VERDICT IS READ. An anchor that missed

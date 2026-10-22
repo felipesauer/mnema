@@ -49,7 +49,7 @@ this repository, and every read and every write goes through the `mnema` command
   name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the
   command line, started as the extension starts it, refuses with no terminal.
 - **The status bar.** The level `mnema verify --json` reports for the record, and how many of the
-  channels `mnema switch` lists are off, with their names in the tooltip. Clicking it reads again.
+  channels `mnema switch` lists ([what they are](../../docs/switches.md)) are off, with their names in the tooltip. Clicking it reads again.
 
 ## Install
 

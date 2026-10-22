@@ -13,6 +13,24 @@ import { SWITCH_ON_COMMAND } from '../record-framing.js';
 /** The summary, one string per line. */
 export function summaryLines(summary: Summary): string[] {
   const lines = [PRODUCT_PROMISE];
+  const unread = summary.unread ?? [];
+  if (unread.length > 0) {
+    const record = unread.includes('record');
+    const switches = unread.includes('switches');
+    if (record && switches) {
+      lines.push(
+        'The record and the switches here could not be read, so nothing is said of where the project stands or what is off: `mnema verify` says why.',
+      );
+    } else if (record) {
+      lines.push(
+        'The record here could not be read, so nothing is said of where the project stands: `mnema verify` says why.',
+      );
+    } else {
+      lines.push(
+        'The switches here could not be read, so nothing is said of what is off: `mnema verify` says why.',
+      );
+    }
+  }
   if (summary.founded) {
     lines.push('A mnema project is founded here.');
     if (summary.waiting !== undefined && summary.waiting > 0) {
@@ -30,7 +48,9 @@ export function summaryLines(summary: Summary): string[] {
     'Next:',
     summary.founded
       ? '  `mnema status`                                where things stand'
-      : '  `mnema init`                                  found a project in this directory',
+      : unread.includes('record')
+        ? '  `mnema verify`                                say why the record cannot be read'
+        : '  `mnema init`                                  found a project in this directory',
     '  `mnema decision record <title> <rationale>`   record a choice that was settled',
     '  `mnema switch`                                what is on and what is off',
     '`mnema --help` lists every command.',

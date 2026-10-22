@@ -73,6 +73,8 @@ client.
 
 ## Where the record can reach the work, host by host
 
+Every channel named below can be switched off, and two begin off: [the switches page](switches.md) lists them.
+
 The rung table says what a host does at the opening and before a write. This one says, for each
 moment of the work, whether the host offers something the plugin could ride, and how that is known.
 

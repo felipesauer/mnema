@@ -4,7 +4,7 @@ import { readChannels, readVerdict, statusText, statusTooltip } from './status.j
 const SWITCH = [
   '9 channel(s), looked in public, private, global:',
   '  brief-document         on   the document `mnema brief` prints',
-  '  edit-first-write-gate  off  the hold on the first write  ·  off until switched on, and nobody has',
+  '  edit-first-write-gate  off  the hold on the first write  ·  off until switched on: `mnema switch on edit-first-write-gate`',
   '  user-corrections       off  the proposals recorded from what a person typed',
   '  session-tally          on   the line a session prints',
 ].join('\n');
