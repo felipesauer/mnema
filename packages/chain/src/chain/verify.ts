@@ -110,7 +110,12 @@ import type { MoveEvent, MoveRule } from '../events/workflow.js';
 import { oneLine } from '../one-line.js';
 import { isBackupRegistration, listRegistrations } from './backup.js';
 import { causalOrder } from './causal-order.js';
-import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
+import {
+  type Checkpoint,
+  checkpointHash,
+  checkpointSignatureHolds,
+  verifyCheckpoint,
+} from './checkpoint.js';
 import { type IdentityResolution, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
@@ -122,7 +127,7 @@ import {
   provenLevel,
   type WitnessStatus,
 } from './level.js';
-import { UnreadableLineError } from './lines.js';
+import type { UnreadableLineError } from './lines.js';
 import { illegalMoves } from './moves.js';
 import { entriesBetween } from './range.js';
 import {
@@ -130,6 +135,7 @@ import {
   committedKeys,
   listPublicKeyFingerprints,
   listTails,
+  type RefusedLine,
   readTail,
   readTailCheckpoints,
 } from './store.js';
@@ -707,21 +713,18 @@ export function verifyChain(
     // verifier. Measured before this: the exception reached the CLI's catch-all and
     // printed `not valid JSON: Unexpected end of JSON input`, correct in its exit
     // code and useless as a verdict.
-    const read = readOrIssue(layout, tail, issues, () => readTail(layout, tail, upcasters));
-    const checkpoints = readOrIssue(layout, tail, issues, () => readTailCheckpoints(layout, tail));
-    if (read === UNREADABLE || checkpoints === UNREADABLE) {
-      // Nothing further is claimed about a tail that could not be read: the checks
-      // below would either need its entries or add findings about a file the
-      // verifier just said it cannot open. The verdict is already the strongest
-      // thing there is to say (see `provenLevel`).
-      unreadable = true;
-      entriesByTail.set(tail, []);
-      checkpointedByTail.set(tail, -1);
-      provenTails.set(tail, { checkpoints: [], events: 0 });
-      continue;
-    }
+    //
+    // EVERY LINE THAT WILL NOT PARSE IS NAMED, and the read goes on past it. This used to stop
+    // at the first one and say nothing more about the tail, which hid every other cause in it
+    // (a second line, a checkpoint whose signature fails, a missing ownership proof) while the
+    // second reader named them all. Each refused line is left out of what is read, so what
+    // follows is asked only what a hole leaves checkable: see `lineRefused` below.
+    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, issues));
+    // A refused EVENT line leaves a hole in the entries; a refused checkpoint line does not.
+    const holed = issues.length > 0;
+    const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, issues));
+    const lineRefused = issues.length > 0;
     const entries = read.entries;
-    entriesByTail.set(tail, entries);
     if (read.partialFinalLine) {
       notes.push({
         kind: 'partial-final-line',
@@ -746,6 +749,26 @@ export function verifyChain(
       // and have its residual events counted. See tailproof.ts.
       verifyTailOwnership(layout, keys, tail, issues);
     }
+    if (lineRefused) {
+      // A tail with a line the verifier could not read is refused at that line, and the level
+      // says `unreadable`, the strongest thing there is to say (see `provenLevel`). Its other
+      // causes are named beside it, as far as the hole lets them be checked: whose key signed
+      // its checkpoints and events, each checkpoint's own signature, and, when no event line
+      // was refused, the hash chain and the content roots too. Across a hole in the entries
+      // neither is asked: a chain walked past a missing line reports a gap, a broken `prev` and
+      // a root that does not fold, none of which the record holds. Nothing of the tail is
+      // counted toward the verdict, as before: no events, no coverage, no checkpoint a witness
+      // is looked for under, and none of its events in the identity fold.
+      unreadable = true;
+      if (!holed) verifyHashChain(tail, entries, issues);
+      verifyCheckpoints(keys, tail, holed ? undefined : entries, checkpoints, issues);
+      verifyTailSigner(tail, entries, checkpoints, issues);
+      entriesByTail.set(tail, []);
+      checkpointedByTail.set(tail, -1);
+      provenTails.set(tail, { checkpoints: [], events: 0 });
+      continue;
+    }
+    entriesByTail.set(tail, entries);
     if (isEmptyTail({ events: entries.length, checkpoints: checkpoints.length })) {
       // Its ownership was checked above and a failure there stands; past that it asserts
       // nothing, so it is said once in the census and folded into nothing (FORMAT.md §4).
@@ -789,6 +812,7 @@ export function verifyChain(
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
   // And, when no tail is counted at all, the one issue about the record as a whole.
   const allIssues: TailIssue[] = [
+    ...keyFilesWithoutAKey(committedFingerprints, keys),
     ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
@@ -803,7 +827,14 @@ export function verifyChain(
   const census: CensusNote[] = [
     // `tails`, not `counted`: an empty tail's directory is there, so its key has a tail, and
     // reading that key as one whose tail may have been removed would say a loss nobody made.
-    ...keysWithoutTail(committedFingerprints, tails, waivers, backups, identity.backups),
+    // A file that holds no key is refused above, and is no key whose tail may have gone.
+    ...keysWithoutTail(
+      new Set([...committedFingerprints].filter((name) => keys.holdsNoKey(name) === undefined)),
+      tails,
+      waivers,
+      backups,
+      identity.backups,
+    ),
     ...[...empty].map(emptyTail),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
@@ -912,8 +943,38 @@ export const MISNAMED_KEY = 'is named for a fingerprint its own material does no
  * material does not hash to, was read as a committed key with no tail, a note, and the record
  * verified, while the second reader refused it. Every file is asked here, used or not, through
  * the one reader of the committed keys the rest of the verification asks, so no key is read
- * twice. A file that holds no key is not this case: no material, no fingerprint to compare.
+ * twice. A file that holds no key is not this case: no material, no fingerprint to compare
+ * ({@link keyFilesWithoutAKey} refuses it).
  */
+/**
+ * How a committed key file that holds no key is named: the words both readers refuse it by
+ * (FORMAT.md section 6; the second reader says the same of the same file, and the same reason).
+ */
+export const HOLDS_NO_KEY = 'holds no Ed25519 public key';
+
+/**
+ * EVERY FILE UNDER `keys/` THAT HOLDS NO KEY, refused by name (FORMAT.md section 6).
+ *
+ * A `.pub` that is a directory, whose bytes are not UTF-8, or that holds no PEM-wrapped Ed25519
+ * `SubjectPublicKeyInfo` was read as no key and said as a committed key with no tail, a note, and
+ * the record verified, while the second reader stopped with a traceback over two of them and
+ * refused the third. Its name is the claim a reader of `keys/` takes at face value and it stands
+ * for no key, which is what a misnamed file is refused for. Asked of the same reader of the
+ * committed keys, so no file is read twice.
+ */
+function keyFilesWithoutAKey(names: ReadonlySet<string>, keys: CommittedKeys): TailIssue[] {
+  const issues: TailIssue[] = [];
+  for (const name of names) {
+    const why = keys.holdsNoKey(name);
+    if (why === undefined) continue;
+    issues.push({
+      layer: 'T2/T4',
+      detail: `KEY FILE WITHOUT A KEY: the key file keys/${oneLine(name)}.pub ${HOLDS_NO_KEY}: ${oneLine(why)}`,
+    });
+  }
+  return issues;
+}
+
 function misnamedKeys(names: ReadonlySet<string>, keys: CommittedKeys): TailIssue[] {
   const issues: TailIssue[] = [];
   for (const name of names) {
@@ -929,12 +990,9 @@ function misnamedKeys(names: ReadonlySet<string>, keys: CommittedKeys): TailIssu
   return issues;
 }
 
-/** Returned by {@link readOrIssue} when a stored line refused to parse. */
-const UNREADABLE = Symbol('unreadable');
-
 /**
- * Runs one read of a tail's stored files, turning an unreadable line into an
- * {@link TailIssue} instead of an exception.
+ * What a read of a tail's stored files does with a line that will not parse: it becomes a
+ * {@link TailIssue}, and the read goes on to the next line.
  *
  * This is the ONE place the verifier converts "cannot read" into a finding, so the
  * two files a tail is verified over cannot answer differently, and a third one
@@ -945,23 +1003,14 @@ const UNREADABLE = Symbol('unreadable');
  * chain (`tails/<id>/000001.jsonl line 3`) rather than wherever this clone happens
  * to sit on this machine.
  */
-function readOrIssue<T>(
-  layout: ChainLayout,
-  tail: string,
-  issues: TailIssue[],
-  read: () => T,
-): T | typeof UNREADABLE {
-  try {
-    return read();
-  } catch (error) {
-    if (!(error instanceof UnreadableLineError)) throw error;
+function refusedLine(layout: ChainLayout, tail: string, issues: TailIssue[]): RefusedLine {
+  return (error: UnreadableLineError) => {
     issues.push({
       tail,
       layer: 'T1',
       detail: `UNREADABLE: ${oneLine(withinChain(layout, error.locus))}: ${oneLine(error.reason)}`,
     });
-    return UNREADABLE;
-  }
+  };
 }
 
 /** A locus with the chain root stripped, so a verdict names a path inside the chain. */
@@ -1454,7 +1503,7 @@ interface CheckpointCoverage {
 function verifyCheckpoints(
   keys: CommittedKeys,
   tail: string,
-  entries: readonly Entry[],
+  entries: readonly Entry[] | undefined,
   stored: readonly Checkpoint[],
   issues: TailIssue[],
 ): CheckpointCoverage {
@@ -1465,7 +1514,10 @@ function verifyCheckpoints(
   // Asked once per checkpoint, answered without walking the tail (range.ts). It used to BE
   // the walk (`entries.filter` over every entry of the tail, for every checkpoint) and
   // with a checkpoint per act that is the square of the history.
-  const between = entriesBetween(entries);
+  // `undefined` when an event line of the tail could not be read: no range can be known, so
+  // each checkpoint is asked only what is over its own bytes (its tail, its link, its key and
+  // its signature) and none of them covers anything.
+  const between = entries === undefined ? undefined : entriesBetween(entries);
 
   for (const checkpoint of checkpoints) {
     if (checkpoint.tail !== tail) {
@@ -1492,7 +1544,7 @@ function verifyCheckpoints(
       });
       continue;
     }
-    if (checkpoint.fromSeq !== covered + 1) {
+    if (between !== undefined && checkpoint.fromSeq !== covered + 1) {
       issues.push({
         tail,
         layer: 'T2/T4',
@@ -1502,7 +1554,6 @@ function verifyCheckpoints(
       // keep going: report each gap, but do not advance coverage over the hole
       continue;
     }
-    const range = between(checkpoint.fromSeq, checkpoint.toSeq);
     const committed = keys(checkpoint.signerFp);
     if (committed === null) {
       issues.push({
@@ -1528,6 +1579,20 @@ function verifyCheckpoints(
       });
       continue;
     }
+    if (between === undefined) {
+      if (!checkpointSignatureHolds(checkpoint, committed.key)) {
+        issues.push({
+          tail,
+          layer: 'T2/T4',
+          seq: checkpoint.fromSeq,
+          detail: 'checkpoint failed: bad-signature',
+        });
+        continue;
+      }
+      expectedPrev = checkpointHash(checkpoint);
+      continue;
+    }
+    const range = between(checkpoint.fromSeq, checkpoint.toSeq);
     const verdict = verifyCheckpoint({
       checkpoint,
       // The signed root is folded over the events AS WRITTEN. Folding it over

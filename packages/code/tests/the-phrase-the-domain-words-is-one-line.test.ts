@@ -950,6 +950,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the head of a hash a stored citation names; the rule `hashes?` makes it hex, and it is collapsed anyway',
     },
+  '@mnema/chain chain/verify.ts «KEY FILE WITHOUT A KEY: the key file keys/{}.pub {}: {}» HOLDS_NO_KEY #1':
+    {
+      verdict: 'minted',
+      why: 'the words a key file that holds no key is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «KEY FILE WITHOUT A KEY: the key file keys/{}.pub {}: {}» oneLine(name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name of a file under `keys/`: whoever wrote the directory chose it',
+    },
+  '@mnema/chain chain/verify.ts «KEY FILE WITHOUT A KEY: the key file keys/{}.pub {}: {}» oneLine(why) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the reason the reader of the key file gives, which carries a byte offset read off the file',
+    },
   '@mnema/chain chain/verify.ts «MISNAMED KEY: the key file keys/{}.pub {} (it hashes to » MISNAMED_KEY #1':
     {
       verdict: 'minted',
@@ -2159,8 +2174,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(313);
-    expect(FOUND[0]?.sites.length).toBe(122);
+    expect(SITES.length).toBe(316);
+    expect(FOUND[0]?.sites.length).toBe(125);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2211,11 +2226,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(211);
-    expect(count('minted')).toBe(77);
+    expect(count('collapsed')).toBe(213);
+    expect(count('minted')).toBe(78);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      211,
+      213,
     );
   });
 

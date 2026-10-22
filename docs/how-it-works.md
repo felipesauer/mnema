@@ -93,7 +93,7 @@ write, in time for every edit after it and for a correction of that one
 (read on Claude Code 2.1.228 and 2.1.281; [`the-rule-reaches-the-writing.test.ts`](../packages/code/tests/the-rule-reaches-the-writing.test.ts) holds the product's half), and a rule recorded as asking for a
 person holds the write itself until one decides: in VS Code's agent and Copilot CLI too, through
 a hook of their own, and not in Cursor's command-line agent, Codex, Gemini CLI or OpenCode, which
-refuse a write and do not pause one ([how each claim is held](evidence.md#each-hosts-rung)). Each of those channels can be switched off, and
+refuse a write and do not pause one ([how each claim is held](evidence.md#each-hosts-rung)). Each of those channels can be switched off ([the list](switches.md)), and
 switching one off is itself a signed fact.
 
 **It proves itself to a stranger.** Every fact is hash-chained, and every write the

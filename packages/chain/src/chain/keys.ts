@@ -110,6 +110,47 @@ export function publicKeyFromPem(pem: string): KeyObject {
   return createPublicKey(pem);
 }
 
+/** Why the text of a committed key file holds no key: the reason, which both readers word alike. */
+export class NoCommittedKeyError extends Error {
+  override readonly name = 'NoCommittedKeyError';
+}
+
+/** The first PEM-armoured public key in a text, and what is between its two lines. */
+const PEM_PUBLIC_KEY = /-----BEGIN PUBLIC KEY-----([\s\S]*?)-----END PUBLIC KEY-----/;
+/** The ASCII whitespace a PEM body may be wrapped with. */
+const PEM_WRAP = /[\t\n\v\f\r ]/g;
+/** Base64 with its alphabet and its padding both strict: what is left once the wrap is gone. */
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+/** The DER `SubjectPublicKeyInfo` prefix of an Ed25519 key, RFC 8410 section 4, in hex. */
+const SPKI_ED25519_PREFIX = '302a300506032b6570032100';
+
+/**
+ * The key the text of a committed key file holds (`keys/<fingerprint>.pub`, FORMAT.md section 6:
+ * PEM-wrapped `SubjectPublicKeyInfo`), or a {@link NoCommittedKeyError} saying why it holds none.
+ *
+ * THE RULE IS SPELLED OUT, NOT LEFT TO THE PLATFORM'S PEM READER, because the second reader
+ * applies it too (`parse_pem` in `verifier/mnemaverify/keys.py`) and two readers have to hold the
+ * same bytes to be a key or not. Node's reader took a PRIVATE key, or a key of another algorithm,
+ * as a public key; the second reader took neither. Text outside the armour is no reason to refuse
+ * a key, in either reader; Windows line ends inside it are the wrap a checkout may leave.
+ */
+export function publicKeyFromCommittedText(text: string): KeyObject {
+  const armoured = PEM_PUBLIC_KEY.exec(text);
+  if (armoured === null) throw new NoCommittedKeyError('no PEM public key in it');
+  const body = (armoured[1] as string).replace(PEM_WRAP, '');
+  if (!BASE64.test(body)) throw new NoCommittedKeyError('the PEM body is not base64');
+  const der = Buffer.from(body, 'base64');
+  if (der.length !== 44 || der.toString('hex', 0, 12) !== SPKI_ED25519_PREFIX) {
+    throw new NoCommittedKeyError('not an Ed25519 SubjectPublicKeyInfo');
+  }
+  // What was checked, and nothing else, is what the platform is handed.
+  try {
+    return createPublicKey(`-----BEGIN PUBLIC KEY-----\n${body}\n-----END PUBLIC KEY-----\n`);
+  } catch {
+    throw new NoCommittedKeyError('not an Ed25519 SubjectPublicKeyInfo');
+  }
+}
+
 /** Reconstructs a private key from local PEM text. */
 export function privateKeyFromPem(pem: string): KeyObject {
   return createPrivateKey(pem);

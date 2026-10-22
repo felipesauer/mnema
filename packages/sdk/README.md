@@ -31,7 +31,7 @@ A refusal comes back as a value with the code the command line prints (`ok: fals
 `mnemaHooks({ cwd, agent? })` returns what `query()` takes as `options.hooks`, for two events:
 
 - **`SessionStart`** hands the session the document `mnema brief --hook` prints, as
-  `additionalContext`. Where there is no project, the channel is switched off or the record does
+  `additionalContext`. Where there is no project, the channel is switched off ([the channels](../../docs/switches.md)) or the record does
   not read, it answers `{}`.
 - **`PreToolUse`**, on `Write`, `Edit` and `NotebookEdit`, asks what the `before-a-write` verb asks:
   `deny` citing the rule where a rule of the record refuses a write at the path, `ask` where one

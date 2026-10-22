@@ -154,17 +154,24 @@ export function verifyCheckpoint(input: {
   if (recomputed !== checkpoint.contentRoot) {
     return { ok: false, reason: 'content-root-mismatch' };
   }
-  const { sig, ...fields } = checkpoint;
-  let signatureOk: boolean;
-  try {
-    signatureOk = verify(signedMessage(fields), Buffer.from(sig, 'hex'), publicKey);
-  } catch {
-    signatureOk = false;
-  }
-  if (!signatureOk) {
+  if (!checkpointSignatureHolds(checkpoint, publicKey)) {
     return { ok: false, reason: 'bad-signature' };
   }
   return { ok: true };
+}
+
+/**
+ * Whether a checkpoint's signature verifies under `publicKey`, over its own signed message and
+ * nothing else: no event is asked. {@link verifyCheckpoint} asks it after the range and the root;
+ * a verifier that cannot know the range (a line of the tail it could not read) asks it alone.
+ */
+export function checkpointSignatureHolds(checkpoint: Checkpoint, publicKey: KeyObject): boolean {
+  const { sig, ...fields } = checkpoint;
+  try {
+    return verify(signedMessage(fields), Buffer.from(sig, 'hex'), publicKey);
+  } catch {
+    return false;
+  }
 }
 
 export type CheckpointVerdict =
