@@ -679,13 +679,13 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 43, name: 84, flag: 3 },
+  'CHANGELOG.md': { line: 43, name: 83, flag: 3 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
-  'docs/features.md': { line: 8, name: 12 },
+  'docs/features.md': { line: 9, name: 12 },
   'docs/first-record.md': { line: 2, name: 7 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
@@ -794,9 +794,11 @@ export const HANDED_OVER: Readonly<
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 3 },
   'plugin/gemini/GEMINI.md': { line: 1 },
+  'plugin/gemini/hooks/mnema.mjs': { line: 1, name: 2 },
   'plugin/hooks/edit-asks-a-person.mjs': { name: 1 },
   'plugin/hooks/edit-refuses-a-write.mjs': { name: 1 },
-  'plugin/hooks/hand-over.mjs': { line: 1, name: 2 },
+  'plugin/hooks/hand-over.mjs': { line: 1 },
+  'plugin/hooks/the-gate-kit.mjs': { name: 2 },
   'plugin/skills/recording-decisions/SKILL.md': { line: 1 },
   'stack-index/README.md': { line: 1 },
 };

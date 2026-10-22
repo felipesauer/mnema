@@ -618,7 +618,8 @@ function run(args, cwd, input, timeout = WAIT) {
  */
 function whoIsThere(cwd) {
   const ran = run(['--identify'], cwd);
-  if (ran.error?.code === 'ENOENT') return 'other';
+  const failure = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error);
+  if (failure?.code === 'ENOENT') return 'other';
   if (ran.error !== undefined || ran.status !== 0) return 'broken';
   return ran.stdout.startsWith(THIS_PRODUCT) ? 'this' : 'other';
 }

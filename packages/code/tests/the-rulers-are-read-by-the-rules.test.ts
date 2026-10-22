@@ -178,6 +178,8 @@ describe('the same globs reach every instrument this repository ships or runs', 
       'plugin/hooks/session-tally.mjs',
       'plugin/hooks/subagent-start.mjs',
       'plugin/hooks/subagent-stop.mjs',
+      'plugin/hooks/the-gate-kit.mjs',
+      'plugin/hooks/where-the-record-is.mjs',
       'plugin/server/launch.mjs',
     ]);
   });
