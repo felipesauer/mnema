@@ -11,7 +11,7 @@
  * how to turn it on, and `mnema init` names the channels that begin off before its "Next" line.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -122,6 +122,36 @@ describe('the bare name, with no terminal', () => {
       waiting: 0,
       off: [...STARTS_OFF],
     });
+  });
+
+  it('a record with a line that cannot be read is said so, naming verify, and is not called unfounded', async () => {
+    await mnema('init');
+    const tails = join(repo, '.mnema', 'tails');
+    for (const tail of readdirSync(tails)) {
+      appendFileSync(join(tails, tail, '000001.jsonl'), 'this is not an event\n');
+    }
+    const said = await mnema();
+    expect(said.failed).toBe(false);
+    const text = said.out.join('\n');
+    expect(text).toContain('could not be read');
+    expect(text).toContain('`mnema verify` says why.');
+    expect(text).not.toContain('`mnema init`');
+    expect(text).not.toContain('is founded here');
+    expect(text).not.toContain('Off on this machine');
+    expect(summaryHere({ cwd: repo, env: { home: join(sandbox, 'home') } })).toMatchObject({
+      unread: expect.arrayContaining(['record']),
+      off: [],
+    });
+  });
+
+  it('names what could not be read by itself or together', () => {
+    const one = summaryLines({ founded: false, off: [], unread: ['record'] }).join('\n');
+    expect(one).toContain(
+      'The record here could not be read, so nothing is said of where the project stands',
+    );
+    const two = summaryLines({ founded: false, off: [], unread: ['switches'] }).join('\n');
+    expect(two).toContain('The switches here could not be read, so nothing is said of what is off');
+    expect(two).toContain('`mnema init`');
   });
 
   it('lines the summary carries are only the ones its facts earn', () => {

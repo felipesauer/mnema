@@ -18,26 +18,37 @@ export interface Summary {
   readonly founded: boolean;
   /** How many decisions await a judgement, when it could be read. */
   readonly waiting?: number;
-  /** The channels that are off on this machine, in the product's order. */
+  /** The channels that are off on this machine, in the product's order. Empty when they could not be read. */
   readonly off: readonly SwitchableChannel[];
+  /** What could not be read, when something could not: the summary says so and claims nothing about it. */
+  readonly unread?: readonly ('record' | 'switches')[];
 }
 
 /** Reads the summary for the project at `ctx.cwd`. */
 export function summaryHere(ctx: { readonly cwd: string; readonly env: DiscoveryEnv }): Summary {
   let founded = false;
   let waiting: number | undefined;
+  const unread: ('record' | 'switches')[] = [];
   try {
     const read = proposalsToReview(ctx);
     founded = read.ok;
     if (read.ok) waiting = read.proposals.length;
   } catch {
-    // The record could not be read: nothing is said about it, and `mnema verify` is where that is said.
+    // The record could not be read: the summary says that, once, and names `mnema verify`; it does
+    // not say the project is not founded.
+    unread.push('record');
   }
   let off: readonly SwitchableChannel[] = [];
   try {
     off = channelsOff(ctx);
   } catch {
-    // The switches could not be read: nothing is said of them.
+    // The switches could not be read: nothing is listed, and the summary says that.
+    unread.push('switches');
   }
-  return { founded, ...(waiting === undefined ? {} : { waiting }), off };
+  return {
+    founded,
+    ...(waiting === undefined ? {} : { waiting }),
+    off,
+    ...(unread.length === 0 ? {} : { unread }),
+  };
 }

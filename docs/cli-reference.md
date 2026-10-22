@@ -240,7 +240,7 @@ Typed with nothing after it, `mnema` prints a short summary on stdout and exits 
 what you want to do instead): what the product does in a sentence, whether a project is founded here and how
 many decisions await a judgement, which channels are off on this machine and the command that turns one on,
 three verbs to go on with, and a pointer to `mnema --help`, which prints every command. The summary reads the
-record and writes nothing; a part it cannot read is left out. `mnema init` names the channels that begin off in
+record and writes nothing; a part it cannot read (a line of the record, or the switches) is not guessed: one line says so and names `mnema verify`, and neither claims the project is not founded nor lists what could not be read. `mnema init` names the channels that begin off in
 two lines before its "Next" line, and `mnema switch` ends each off line with the command that turns it on
 ([every switch](switches.md)).
 

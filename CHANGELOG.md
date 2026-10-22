@@ -16,7 +16,8 @@ with its own changelog.
   and exits 0 (it printed the whole catalogue on stderr and failed; `mnema --help` still prints the catalogue, and at a
   terminal the name still asks what you want to do): what the product does in a sentence, whether a project is founded
   here and how many decisions await a judgement, the channels that are off on this machine with the command that turns
-  one on, and three verbs to go on with. `mnema switch` ends each off line with the command that turns it on, and
+  one on, and three verbs to go on with. Where the record or the switches cannot be read it says so in one line, and says
+  nothing of what it could not read. `mnema switch` ends each off line with the command that turns it on, and
   `mnema init` names the channels that begin off in two lines before its "Next" line.
 - **A page for the switches, generated from the table the code reads.** `docs/switches.md` lists every channel `mnema switch`
   knows, where it begins (on, or off until a person switches it on) and the command that flips it. The listing
