@@ -910,6 +910,8 @@ describe('records with no refused founding read as they did', () => {
     expect(reading.verdict).toBe('REFUSED');
     expect(reading.fails).toEqual([
       `1 000001.jsonl:${count + 1}: ${JUNK_REFUSED}`,
+      // The event names a key that is not the one the tail id begins with (section 6).
+      `6 ${TAIL}: seq 4 names 06e3fd8fda29... as its signer, and a tail is written only by the key its id begins with, 7e5a72fd0ea2... (tail-signer-mismatch)`,
       `6.2 ${TAIL_SHORT} seq 4: the signer 06e3fd8fda29... is not a key enrolled for mnid:e55891571921e7b... at this point`,
     ]);
     expect(reading.notJudged).toEqual([]);
@@ -935,6 +937,9 @@ describe('records with no refused founding read as they did', () => {
         "and the previous checkpoint's signed message hashes to " +
         '37b345b5d2b4720ddd001f317a6532fb029e9789778f80ecb533454132e5028d. Dropping an earlier ' +
         'checkpoint while keeping a later one breaks this link, which is what it is for',
+      // The re-pointed checkpoint names a key that is not the one the tail id begins with.
+      `6 ${TAIL}: checkpoint cp[0..1] is signed by 6bc98177967e..., and a tail is written only ` +
+        'by the key its id begins with, 7e5a72fd0ea2... (tail-signer-mismatch)',
     ]);
     expect(reading.notJudged).toEqual([]);
   });
