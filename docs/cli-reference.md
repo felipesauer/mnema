@@ -1102,7 +1102,8 @@ mnema doctor
 ```
 
 One line to a finding, each with what to do about it: whether a `mnema` is on the `PATH` and which
-one runs, whether the Claude Code plugin is installed and at what version, whether the MCP server is
+one runs, whether the first `node` on the `PATH` takes it (a hook starts `mnema` through `#!/usr/bin/env node`)
+and, where the Node Cursor's command-line agent carries is on this machine, what it leaves the plugin's hooks, whether the Claude Code plugin is installed and at what version, whether the MCP server is
 declared more than once (a session is offered every tool once per declaration), and whether a second
 `mnema`, or an npm package of that name, is installed (and, when the first one on the `PATH` is a
 script that shadows the other, which). It also says whether VS Code's user `settings.json` lists the

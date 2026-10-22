@@ -21,6 +21,9 @@
  * is ONE gate and a single place to remove if this plugin ever stopped being quiet. Asserted
  * in `packages/code/tests/the-record-arrives-unasked.test.ts` for every command `hooks.json`
  * declares ("says nothing at all where there is no project").
+ * THE GATE BEFORE A WRITE IS THE EXCEPTION, and it is the one place a handler refuses: a `mnema` that is
+ * there and does not answer (exits non-zero, does not finish, prints no JSON reply, or has no `node` that takes
+ * it) is answered `deny` with the reason ({@link whatTheGateAnswers}). No `mnema` at all stays silence.
  * ONE OUTCOME THAT IS NOT A TEXT IS NO LONGER SILENCE, and it is not a failure of this product:
  * a program of the same name first on the PATH. The document's handler names it to the session
  * (see below); silence there was the defect, not the rule.

@@ -4,8 +4,11 @@
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * EIGHT QUESTIONS, each answered by files that were read and named in the answer:
+ * NINE QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
+ *   - is the first `node` on the `PATH` one that takes `mnema` (a hook starts it through
+ *     `#!/usr/bin/env node`), and where this machine holds the Node Cursor's command-line agent
+ *     carries, does it sit below the floor in front of a plugin's hooks, and what that leaves them;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
  *     installed plugins: a file of the host's that this product does not own, so a list that is
  *     missing or does not read as expected is said, never guessed at);
@@ -31,6 +34,7 @@
  * wants to act on a finding reads the line.
  */
 
+import { execFileSync } from 'node:child_process';
 import {
   accessSync,
   constants,
@@ -62,6 +66,7 @@ import {
 } from '@mnema/core';
 import { agentKeyFromEnvironment } from '../env.js';
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
+import { declaredRange, floorRefusal } from '../node-floor.js';
 import { oneLine } from '../one-line.js';
 import {
   personsKeyInTheClear,
@@ -84,12 +89,18 @@ export interface DoctorContext {
   readonly running: { readonly file: string; readonly version: string };
   /** Which platform's places VS Code's settings are looked for in; this process's by default. */
   readonly platform?: NodeJS.Platform;
+  /**
+   * The version a `node` executable says it is, or undefined where it does not say one. By default
+   * the executable is asked (`node -p process.versions.node`); a test hands its own.
+   */
+  readonly nodeVersionOf?: (path: string) => string | undefined;
 }
 
 /** `attention` is a finding with something to do; `fine` needs nothing. */
 export interface Finding {
   readonly topic:
     | 'binary'
+    | 'node'
     | 'plugin'
     | 'vscode'
     | 'mcp'
@@ -200,6 +211,108 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         `(${ctx.running.version}); a host that starts \`mnema mcp\` starts the first: put the one you mean first on the PATH.`,
     },
   ];
+}
+
+/** What a `node` executable says it is, by asking it: the one thing this verb starts, and it reads nothing of the record. */
+function askedNodeVersion(path: string): string | undefined {
+  try {
+    const said = execFileSync(path, ['-p', 'process.versions.node'], {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return /^\d+\.\d+\.\d+/.test(said) ? said : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `node` that sits first on the `PATH`, or undefined where none does. */
+function firstNodeOnPath(processEnv: NodeJS.ProcessEnv): string | undefined {
+  const name = process.platform === 'win32' ? 'node.exe' : 'node';
+  for (const dir of (processEnv.PATH ?? '').split(delimiter)) {
+    if (dir !== '' && isExecutableFile(join(dir, name))) return join(dir, name);
+  }
+  return undefined;
+}
+
+/** Where Cursor's command-line agent keeps the Node it carries, one directory per version it installed. */
+function cursorAgentNodes(home: string): string[] {
+  const versions = join(home, '.local', 'share', 'cursor-agent', 'versions');
+  try {
+    return readdirSync(versions)
+      .sort()
+      .map((one) => join(versions, one, 'node'))
+      .filter(isExecutableFile);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Which `node` `mnema` starts on, and whether a host that carries a Node of its own can put one
+ * below the floor in front of it. A hook runs `mnema` through `#!/usr/bin/env node`, so it runs on
+ * the first `node` of the PATH the host gives that hook, which this verb cannot see: what it can see
+ * is this shell's PATH and, where it is on this machine, the Node Cursor's command-line agent
+ * carries and puts first (24.5.0 on 2026.09.18). The plugin's hooks go around such a node to the
+ * first one on the rest of the PATH that takes `mnema`, and where there is none they refuse the
+ * write and say why, so the fix is the same for both: a Node that takes `mnema` on the PATH.
+ */
+function nodeFindings(ctx: DoctorContext): Finding[] {
+  const range = declaredRange();
+  if (range === undefined) return [];
+  const ask = ctx.nodeVersionOf ?? askedNodeVersion;
+  const refusal = (version: string): string | undefined => floorRefusal(version, range);
+  const first = firstNodeOnPath(ctx.processEnv);
+  const firstVersion =
+    first === undefined
+      ? undefined
+      : realOf(first) === realOf(process.execPath) && ctx.nodeVersionOf === undefined
+        ? process.versions.node
+        : ask(first);
+  const fix =
+    'put a Node that takes mnema (24.15.0 or a later 24, or 26 or later) first on the PATH, for example with `nvm install 24`';
+  const findings: Finding[] = [];
+  if (first === undefined) {
+    findings.push({
+      topic: 'node',
+      state: 'attention',
+      line: `no “node” on the PATH: \`mnema\` starts through \`#!/usr/bin/env node\` and the plugin's hooks run it the same way; ${fix}.`,
+    });
+  } else if (firstVersion === undefined) {
+    findings.push({
+      topic: 'node',
+      state: 'attention',
+      line: `the first “node” on the PATH, ${oneLine(first)}, did not say its version, and \`mnema\` starts on it: ${fix}.`,
+    });
+  } else if (refusal(firstVersion) !== undefined) {
+    findings.push({
+      topic: 'node',
+      state: 'attention',
+      line: `the first “node” on the PATH, ${oneLine(first)}, is ${oneLine(firstVersion)}, below what mnema takes, and \`mnema\` starts on it: ${fix}.`,
+    });
+  } else {
+    findings.push({
+      topic: 'node',
+      state: 'fine',
+      line: `the first “node” on the PATH, ${oneLine(first)}, is ${oneLine(firstVersion)} and takes mnema: nothing to do.`,
+    });
+  }
+  const takes = firstVersion !== undefined && refusal(firstVersion) === undefined;
+  for (const embedded of cursorAgentNodes(ctx.env.home)) {
+    const version = ask(embedded);
+    if (version === undefined || refusal(version) === undefined) continue;
+    findings.push({
+      topic: 'node',
+      state: takes ? 'fine' : 'attention',
+      line:
+        `Cursor's command-line agent carries a Node of its own, ${oneLine(embedded)} (${oneLine(version)}), and puts it first on the PATH of a plugin's hooks, below what mnema takes: ` +
+        (takes
+          ? "the plugin's hooks go around it to the node this PATH has first, nothing to do."
+          : `with no other node on the PATH that takes mnema, its hooks refuse writes the record may govern and say why; ${fix}.`),
+    });
+  }
+  return findings;
 }
 
 function namesakeFindings(ctx: DoctorContext): Finding[] {
@@ -959,6 +1072,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
   return {
     findings: [
       ...binaryFindings(ctx),
+      ...nodeFindings(ctx),
       ...pluginFindings(ctx, plugins),
       ...vscodeFindings(ctx),
       ...mcpFindings(ctx, plugins),

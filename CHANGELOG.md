@@ -90,6 +90,18 @@ with its own changelog.
 
 ### Fixed
 
+- **The plugin's hooks no longer trust the first `node` of their PATH, and a gate that cannot decide a write refuses it.**
+  Cursor's command-line agent puts the Node it carries (24.5.0 on 2026.09.18) in front of the PATH of a plugin's hooks;
+  `mnema` starts through `#!/usr/bin/env node`, died on its own floor at its first line, and the gate read that as nothing
+  to say, so a write a rule refuses was made. Now the hooks ask the first `node` what it is and, below the floor, run
+  `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first); where none does, the
+  gate refuses the write and says which node it met and how to fix it, and the handler that hands over the document says
+  `mnema could not run: ...`. In Cursor's agent, Codex, VS Code and Copilot CLI, a `mnema` that is there and exits non-zero,
+  does not answer in ten seconds, or prints what is not a JSON reply now refuses the write with the reason, and so does a
+  fault of the handler itself; with no `mnema` on the PATH, no project, or no rule that could meet the write, nothing
+  changes and the write goes. `mnema doctor` has a `node` topic: the first `node` on the PATH and whether it takes `mnema`,
+  and the Node Cursor's agent carries where it is on the machine. Gemini CLI's and OpenCode's own scripts are unchanged.
+
 - **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
   `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that
   key writes to it (`FORMAT.md` section 6, a new rule). Both readers checked a checkpoint under the key it names and bound

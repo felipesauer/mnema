@@ -32,6 +32,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { runDoctor } from '../src/commands/doctor.js';
 import { acceptedBy, floorRefusal } from '../src/node-floor.js';
 import { type CliIo, run } from '../src/program.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -417,5 +418,62 @@ describe('the floor the plugin repeats', () => {
         );
       }
     }
+  });
+});
+
+describe('mnema doctor says which node mnema starts on', () => {
+  const embedded = () =>
+    join(home, '.local', 'share', 'cursor-agent', 'versions', '2026.09.18-x', 'node');
+
+  /** The node findings for a PATH, with every `node` named saying the version `says` gives it. */
+  const nodeLines = (path: string, says: (node: string) => string | undefined): string[] =>
+    runDoctor({
+      cwd: repo,
+      env: { home },
+      processEnv: { PATH: path },
+      running: { file: join(sandbox, 'mnema'), version: '9.9.9' },
+      nodeVersionOf: says,
+    })
+      .findings.filter((one) => one.topic === 'node')
+      .map((one) => `${one.state} ${one.line}`);
+
+  it('is fine where the first node takes mnema', () => {
+    const lines = nodeLines(pathOf('real'), () => '24.21.0');
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(
+      /^fine the first “node” on the PATH, .*, is 24\.21\.0 and takes mnema/,
+    );
+  });
+
+  it('says what to do where the first node is below the floor', () => {
+    const lines = nodeLines(pathOf('slow', 'real'), (node) =>
+      node.startsWith(dirs.slow) ? '24.5.0' : '24.21.0',
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('attention the first “node” on the PATH');
+    expect(lines[0]).toContain('is 24.5.0, below what mnema takes');
+    expect(lines[0]).toContain('nvm install 24');
+  });
+
+  it('says there is no node where there is none', () => {
+    const lines = nodeLines(pathOf('tools'), () => undefined);
+    expect(lines).toEqual([expect.stringContaining('attention no “node” on the PATH')]);
+  });
+
+  it('names the node Cursor carries, and whether the hooks go around it', () => {
+    mkdirSync(join(embedded(), '..'), { recursive: true });
+    writeFileSync(embedded(), '#!/bin/sh\n', { mode: 0o755 });
+    const says = (node: string) => (node === embedded() ? BELOW_THE_FLOOR : '24.21.0');
+    const around = nodeLines(pathOf('real'), says);
+    expect(around).toHaveLength(2);
+    expect(around[1]).toMatch(
+      /^fine Cursor's command-line agent carries a Node of its own, .* \(24\.5\.0\)/,
+    );
+    expect(around[1]).toContain('go around it');
+
+    const stuck = nodeLines(pathOf('tools'), says);
+    expect(stuck[1]).toMatch(/^attention Cursor's command-line agent carries a Node of its own/);
+    expect(stuck[1]).toContain('refuse writes');
+    expect(stuck[1]).toContain('nvm install 24');
   });
 });
