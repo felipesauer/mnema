@@ -29,7 +29,14 @@ import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { serializeOtsProof } from './ots.js';
-import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';
+import {
+  holdsRecord,
+  listTails,
+  orderedSegments,
+  readTail,
+  readTailEntries,
+  readTailSince,
+} from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { writeWitness } from './witness.js';
 import type { ChainWriter } from './writer.js';
@@ -1416,5 +1423,80 @@ describe('signerAt: who would sign, read without opening the chain', () => {
     expect(seen(signer)).toEqual(seen(writer));
     expect(signer.anchor).toBe(adopted);
     expect(signer.hasAnchor).toBe(true);
+  });
+});
+
+describe('readTailSince: a tail resumed from the boundary a reading left', () => {
+  const upcasters = catalogUpcasters();
+
+  /** A founded tail with two tasks, and what a full reading of it leaves to resume from. */
+  function seeded(opts?: { maxSegmentBytes?: number }) {
+    const w = openFounded(opts);
+    w.append(taskCreated(env(w, 't-1'), { title: 'first' }));
+    w.append(taskCreated(env(w, 't-2'), { title: 'second' }));
+    const read = readTail({ root }, w.tail, upcasters);
+    const last = read.entries[read.entries.length - 1];
+    if (read.boundary === undefined) throw new Error('a tail with entries has a boundary');
+    return { w, boundary: read.boundary, lastHash: last?.link.hash ?? null };
+  }
+
+  it('finds nothing past a boundary the tail has not moved beyond', () => {
+    const { w, boundary, lastHash } = seeded();
+    const since = readTailSince({ root }, w.tail, upcasters, boundary, lastHash);
+    expect(since?.arrivals).toEqual([]);
+    expect(since?.boundary).toEqual(boundary);
+  });
+
+  it('returns what arrived after it, oldest first, and the boundary it now stands on', () => {
+    const { w, boundary, lastHash } = seeded();
+    w.append(taskCreated(env(w, 't-3'), { title: 'third' }));
+    w.append(taskCreated(env(w, 't-4'), { title: 'fourth' }));
+    const since = readTailSince({ root }, w.tail, upcasters, boundary, lastHash);
+    if (since === undefined) throw new Error('the boundary should still hold');
+    expect(since.arrivals.map((e) => e.event.subject)).toEqual(['t-3', 't-4']);
+    const again = readTailSince(
+      { root },
+      w.tail,
+      upcasters,
+      since.boundary,
+      since.arrivals[1]?.link.hash ?? null,
+    );
+    expect(again?.arrivals).toEqual([]);
+  });
+
+  it('walks into a segment the tail rotated into since', () => {
+    const { w, boundary, lastHash } = seeded({ maxSegmentBytes: 1 });
+    w.append(taskCreated(env(w, 't-3'), { title: 'third' }));
+    expect(orderedSegments({ root }, w.tail).length).toBeGreaterThan(1);
+    const since = readTailSince({ root }, w.tail, upcasters, boundary, lastHash);
+    expect(since?.arrivals.map((e) => e.event.subject)).toEqual(['t-3']);
+  });
+
+  it('refuses a boundary in a segment the tail no longer has', () => {
+    const { w, boundary, lastHash } = seeded();
+    const gone = { segment: join(root, 'no-such-segment.jsonl'), bytes: boundary.bytes };
+    expect(readTailSince({ root }, w.tail, upcasters, gone, lastHash)).toBeUndefined();
+  });
+
+  it('refuses a segment that holds fewer bytes than the reading saw', () => {
+    const { w, boundary, lastHash } = seeded();
+    const file = boundary.segment;
+    const text = readFileSync(file, 'utf-8');
+    writeFileSync(file, text.slice(0, text.length - 40), 'utf-8');
+    expect(readTailSince({ root }, w.tail, upcasters, boundary, lastHash)).toBeUndefined();
+  });
+
+  it('refuses a line before the last that was lengthened, since the last no longer ends at the boundary', () => {
+    const { w, boundary, lastHash } = seeded();
+    const file = boundary.segment;
+    const text = readFileSync(file, 'utf-8');
+    expect(text).toContain('"first"');
+    writeFileSync(file, text.replace('"first"', '"first, said at greater length"'), 'utf-8');
+    expect(readTailSince({ root }, w.tail, upcasters, boundary, lastHash)).toBeUndefined();
+  });
+
+  it('refuses a last line that ends at the boundary but is not the entry the reading ended on', () => {
+    const { w, boundary } = seeded();
+    expect(readTailSince({ root }, w.tail, upcasters, boundary, 'not-the-hash')).toBeUndefined();
   });
 });

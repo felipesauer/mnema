@@ -549,7 +549,15 @@ export function openSession(input: OpenSessionInput): Session {
   // The caches are created BEFORE the first write so that write invalidates
   // through the same door as every later one: there is no window in which a
   // write happens with no registry to tell.
-  const caches = createCacheRegistry();
+  //
+  // Its own project's two trees keep their projection in the file the tree holds for the next
+  // process; the session is read at the moment a cache opens because a re-read of the
+  // workspace can move the project it is in.
+  const home: { session?: Session } = {};
+  const caches = createCacheRegistry((chainRoot) => {
+    const own = home.session?.trees ?? trees;
+    return chainRoot === own.projectPublic || chainRoot === own.projectPrivate;
+  });
 
   // The anchor is DECIDED, not read off the writer. The writer's own anchor is the
   // one its key derives, and that is the wrong answer for a key the record proves
@@ -571,7 +579,7 @@ export function openSession(input: OpenSessionInput): Session {
     );
   }
 
-  return {
+  const opened: Session = {
     trees,
     inProject,
     rung,
@@ -608,6 +616,8 @@ export function openSession(input: OpenSessionInput): Session {
     held: new Set<string>(),
     told: new Map<string, number>(),
   };
+  home.session = opened;
+  return opened;
 }
 
 /**

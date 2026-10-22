@@ -89,7 +89,7 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { Socket } from 'node:net';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, PROJECT_DIR, resolveTrees } from '@mnema/core';
@@ -229,6 +229,7 @@ function whatTheCallDid(
   before: ReadonlyMap<string, Standing>,
   after: ReadonlyMap<string, Standing>,
   counted: string | undefined,
+  ownProject?: string,
 ): { changed: string[]; destroyed: string[] } {
   const changed: string[] = [];
   const destroyed: string[] = [];
@@ -258,8 +259,14 @@ function whatTheCallDid(
   // fact. It is excused by its place and no other file is, in `changed` as it is in `destroyed`:
   // the one file of the project under test, whose path the code computes (`toolCallsFile`), not
   // any file of the same shape.
+  // THE PROJECTION OF THE PROJECT THE SESSION IS IN is the second place a read may write: the
+  // server keeps the two trees of its own project in the file the command line keeps
+  // (`cache-registry.ts`). It is excused by its shape AND by the project it sits in, so the same
+  // file in another project's tree or in the global tree is still accused.
+  const ownCache = (at: string): boolean =>
+    ownProject !== undefined && at.startsWith(`${ownProject}${sep}`) && isTheDerivedCache(at);
   return {
-    changed: changed.filter((at) => at !== counted).sort(),
+    changed: changed.filter((at) => at !== counted && !ownCache(at)).sort(),
     destroyed: destroyed.filter((at) => !isTheDerivedCache(at) && at !== counted).sort(),
   };
 }
@@ -476,7 +483,12 @@ describe('every tool says if it writes', () => {
       const reachedBefore = reached();
       const result = await client.callTool({ name: tool, arguments: args });
       const ended = held(sandbox);
-      const did = whatTheCallDid(before, asItStands(sandbox), theCountOf(project));
+      const did = whatTheCallDid(
+        before,
+        asItStands(sandbox),
+        theCountOf(project),
+        relative(sandbox, project),
+      );
       return {
         said: textOf(result),
         refused: result.isError === true,
@@ -784,6 +796,21 @@ describe('every tool says if it writes', () => {
       [another, Buffer.from('x\n')],
     ]);
     expect(whatTheCallDid(before, after, ours)).toEqual({ changed: [another], destroyed: [] });
+  });
+
+  it('excuses the projection of the project under test and the same file nowhere else', () => {
+    const own = 'proj/.mnema/locks/projection.db';
+    const wal = 'proj/.mnema/locks/projection.db-wal';
+    const another = 'other/.mnema/locks/projection.db';
+    const global = 'home/.mnema/global/locks/projection.db';
+    const tail = 'proj/.mnema/tails/a/000001.jsonl';
+    const after = new Map<string, Standing>(
+      [own, wal, another, global, tail].map((at) => [at, Buffer.from('x\n')]),
+    );
+    expect(whatTheCallDid(new Map(), after, undefined, 'proj')).toEqual({
+      changed: [another, global, tail].sort(),
+      destroyed: [],
+    });
   });
 
   it('counts a reach for the network by either way out, and lets it reach nothing', async () => {
