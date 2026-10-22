@@ -10,5 +10,6 @@
         "MNEMA_AGENT_KEY": "gemini"
       }
     }
-  }
+  },
+  "contextFileName": "GEMINI.md"
 }

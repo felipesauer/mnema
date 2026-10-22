@@ -464,6 +464,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/index.ts',
   'wiring/inherit.ts',
   'wiring/init.ts',
+  'wiring/instructions.ts',
   'wiring/io.ts',
   'wiring/key.ts',
   'wiring/link.ts',

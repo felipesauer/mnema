@@ -256,10 +256,12 @@ mnema init
 # subproject's own, else the root's; creating it only when prettier is declared), and says so. It also leaves
 # `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
 # newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
-# else away from the folders above. It touches no other file outside `.mnema/`, and nothing at all where prettier
-# is not in play. Run again in a project that is already founded, it adds only what that project lacks of
+# else away from the folders above. And it writes the mnema instructions into the files agent hosts read at
+# the start of a session, naming each (see "The mnema instructions in the files a host reads", below). It
+# touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
 # these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
+# It never writes the instructions again: `mnema instructions` does, where they are missing.
 #
 # A project founded before `init` left the README gets it without running `init` again: the first signed
 # write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and `.mnema/.editorconfig`,
@@ -1106,6 +1108,8 @@ directory: nothing reads them there, and removing that worktree deletes them.
 It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, the
 `.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
 finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
+It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
+version's block, or a block somebody edited), with what `mnema instructions` would do about it.
 
 And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
 signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
@@ -1369,6 +1373,55 @@ mnema decision import docs/decisions
 the only check there is that your column mapping was right: a table whose `rationale`
 column is really a link column converts cleanly and proposes 111 decisions whose why is
 a URL. The dry run cannot catch that. You can, by opening two of the files it wrote.
+
+### The mnema instructions in the files a host reads
+
+When it founds a project, `mnema init` writes a short block into the files agent hosts read as
+standing instructions, and names each file it wrote. The block says when to call the mnema tools
+(`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
+is settled, `capture_memory` for what the code does not show), that a decision is born `proposed`
+and a person accepts it, that a subagent hands its decisions back rather than recording them, the
+`mnema decision record` command where the tools are not connected, and what never goes in the
+record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
+inert, and it carries nothing of the record: the decisions in force reach a session as it opens,
+through the plugin.
+
+| File | Written | Read by, as each host documents it |
+|---|---|---|
+| `AGENTS.md` | always, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no `CLAUDE.md` exists |
+| `CLAUDE.md`, `.claude/CLAUDE.md` | where they exist | Claude Code, Copilot CLI |
+| `GEMINI.md` | where it exists | Gemini CLI, Copilot CLI |
+| `.claude/rules/mnema-instructions.md` | always | Claude Code, at launch |
+| `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`) | always | VS Code and Copilot CLI, when the agent works on a file |
+| `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`) | always | Cursor |
+
+The Gemini CLI extension carries the same text as its own context file. Every copy is the same
+text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
+file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
+is 1,524 characters.
+
+```sh
+mnema instructions            # write the block where it is missing or an earlier version's
+mnema instructions --check    # say what each file holds; exits 1 where one lacks this version's block
+mnema instructions --remove   # take it out of each file
+```
+
+The block sits between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what your file
+holds, and nothing outside the markers changes; a file the block was all of is deleted by
+`--remove`, which takes out with the block the one line break that went in with it only where the
+block is the last thing in the file (a line you wrote after it is never glued to the one above), and
+says "as it was before them" only when putting the block back would give the file it found. A block
+whose text is not one mnema wrote is your edit: it is never overwritten, said, and the run exits 1.
+The same for a symbolic link that leaves the project or leads nowhere (the line says where it goes),
+and for a file that cannot be read or written (a directory named `AGENTS.md`, a read-only
+`CLAUDE.md`): that file is left as it is, said with why and the command to try again, the others are
+still written, and the run exits 1; `mnema init` prints the same lines and still founds the project.
+A link that resolves inside the project is followed. Line endings are kept: a block whose lines a
+checkout turned into CRLF is still the current one, and a rewrite uses the file's own. Markers shown
+inside a fenced code block (a README that documents them) are an example, not a block. A block you took out stays out: `init` writes the instructions only when it founds a
+project, and `mnema doctor` says where they are missing. The block an earlier, alpha version of mnema
+wrote between `<!-- MNEMA:START -->` and `<!-- MNEMA:END -->` is not recognized: it stays byte for byte
+where it is, `--remove` leaves it, and the block above is added beside it.
 
 ### Handing the record to an agent that never asked for it
 

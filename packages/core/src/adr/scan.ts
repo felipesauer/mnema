@@ -107,6 +107,11 @@ const MARKDOWN = /\.(?:md|markdown)$/i;
  * would propose "Short title of solved problem and solution" as a decision of the
  * project. Comparing on the stem (case-folded, without extension) covers
  * `README.md`, `readme.markdown` and `TEMPLATE.md` alike.
+ *
+ * AND THE FILES AN AGENT HOST READS AS STANDING INSTRUCTIONS (`AGENTS.md`, `CLAUDE.md`,
+ * `GEMINI.md`), which sit at a repository's root, the one base a project may also keep its
+ * decisions in: `mnema init` creates an `AGENTS.md` there, and its heading would otherwise make
+ * it a document of that base that the record never read, for as long as the file is there.
  */
 const NOT_A_DECISION: readonly string[] = [
   'readme',
@@ -115,6 +120,9 @@ const NOT_A_DECISION: readonly string[] = [
   'formato',
   'format',
   '_index',
+  'agents',
+  'claude',
+  'gemini',
 ];
 
 /** The path, POSIX-style, of a file inside the scanned directory. */

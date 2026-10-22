@@ -55,6 +55,7 @@ import {
   signerFor,
 } from '@mnema/core/write';
 import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
+import { type InstructionsFile, writeInstructions } from './instructions.js';
 import {
   complete,
   type Missing,
@@ -105,9 +106,16 @@ export interface InitResult {
     /**
      * What this run did to the repository's `.prettierignore` so a formatter leaves the record
      * alone: `created` or `added` (the line `.mnema/`), and absent when the repository declares no
-     * prettier or the line was already there. The one thing init writes outside `.mnema/`.
+     * prettier or the line was already there.
      */
     readonly prettierIgnore?: PrettierIgnoreChange;
+    /**
+     * What this run did to the files an agent host reads standing instructions from (ADR-46):
+     * `AGENTS.md` and the files of mnema's own always, `CLAUDE.md` and its kin where they exist.
+     * Only a founding writes them: a second `init` never does, so a block the person took out
+     * stays out (`mnema doctor` says it is missing, and `mnema instructions` puts it back).
+     */
+    readonly instructions: readonly InstructionsFile[];
   };
   /**
    * Present only in a project already here whose checkout recorded an identity that no longer
@@ -254,6 +262,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
 
   const gitRoot = nearestGitRoot(ctx.cwd);
   const { prettierIgnore } = complete(ctx.cwd);
+  const instructions = writeInstructions(ctx.cwd);
   return {
     created: true,
     root,
@@ -265,6 +274,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       // Nothing has been imported into a tree founded a moment ago, so no sources are asked.
       neverImported: basesNeverImported([], ctx.cwd),
       ...(prettierIgnore !== undefined ? { prettierIgnore } : {}),
+      instructions,
     },
   };
 }

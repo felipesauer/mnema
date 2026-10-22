@@ -76,8 +76,10 @@ mnema verify   # reads the signed record, whatever the decisions' states; one li
 ```
 
 At a terminal, `mnema decision review` goes through what awaits a judgement one by one, with no id
-to copy. `mnema init` also leaves a `README.md` and an `.editorconfig` in `.mnema/`, and adds `.mnema/`
-to the `.prettierignore` where the repository has one or declares prettier. The whole install, the
+to copy. `mnema init` also leaves a `README.md` and an `.editorconfig` in `.mnema/`, adds `.mnema/`
+to the `.prettierignore` where the repository has one or declares prettier, and writes the mnema
+instructions into `AGENTS.md` and the other files agent hosts read, naming each
+(`mnema instructions --remove` takes them out). The whole install, the
 other hosts and the first record, line by line, are in [`docs/install.md`](docs/install.md) and
 [`docs/first-record.md`](docs/first-record.md).
 

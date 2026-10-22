@@ -118,6 +118,8 @@ beforeEach(async () => {
   process.chdir(repo);
   const initiated = await mnema('init');
   expect(initiated.failed, initiated.err.join(' / ')).toBe(false);
+  // Every file in the tree is counted: the cases count only the ones they write.
+  expect((await mnema('instructions', '--remove')).failed).toBe(false);
 });
 
 afterEach(() => {

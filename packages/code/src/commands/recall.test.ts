@@ -23,6 +23,7 @@ import { renderPlain } from '../presentation/plain.js';
 import { recallDocument } from '../presentation/recall.js';
 import { registerRecall } from '../wiring/recall.js';
 import { type InitContext, type InitResult, runInit } from './init.js';
+import { removeInstructions } from './instructions.js';
 import { runMemory } from './memory.js';
 import { runObserve } from './observe.js';
 import { runRecall } from './recall.js';
@@ -32,6 +33,8 @@ import { runSwitch } from './switch.js';
 function found(ctx: InitContext): InitResult {
   const result = runInit(ctx);
   if ('refused' in result) throw new Error('setup: init refused');
+  // The mnema instructions `init` writes beside the record are files the session would touch.
+  removeInstructions(ctx.cwd);
   return result;
 }
 
@@ -66,7 +69,7 @@ describe('runRecall: the notes out of every tree this machine holds', () => {
   });
 
   it('reads the committed tree, this machine’s own and the personal one', () => {
-    runInit(here());
+    found(here());
     const committed = minted(runMemory(here(), { content: 'the invoice job runs at 02:00' }));
     const mine = minted(
       runMemory(here(), { content: 'staging resets every night', scope: 'private' }),
@@ -100,7 +103,7 @@ describe('runRecall: the notes out of every tree this machine holds', () => {
   });
 
   it('serves the newest first, in the order the index serves', () => {
-    runInit(here());
+    found(here());
     const older = minted(runMemory(here(), { content: 'the older of two notes' }));
     const newer = minted(runMemory(here(), { content: 'the newer of two notes' }));
     const recalled = runRecall(here());
@@ -109,7 +112,7 @@ describe('runRecall: the notes out of every tree this machine holds', () => {
   });
 
   it('cuts where the index cuts, and says how many there are in all', () => {
-    runInit(here());
+    found(here());
     const written = SEARCH_DEFAULT_LIMIT + 3;
     for (let i = 0; i < written; i += 1) {
       minted(runMemory(here(), { content: `note number ${i}` }));
@@ -196,7 +199,7 @@ describe('runRecall: the notes near what the session touches come first', () => 
    * not one invoice note is handed over.
    */
   function twoThemes(): { readonly invoice: string[]; readonly login: string[] } {
-    runInit(here());
+    found(here());
     const invoice = [
       'the invoice rounding job runs nightly',
       'invoices round half up',

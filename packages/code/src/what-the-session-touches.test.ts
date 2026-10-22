@@ -26,6 +26,7 @@ import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../tests/support/git-without-maintenance.js';
 import { runInit } from './commands/init.js';
+import { removeInstructions } from './commands/instructions.js';
 import { runTask } from './commands/task.js';
 import { runTaskTransition } from './commands/task-transition.js';
 import { withScopedCaches } from './tree-sources.js';
@@ -38,6 +39,14 @@ import {
   whatTheSessionTouches,
 } from './what-the-session-touches.js';
 
+/**
+ * Founds the project and takes out the mnema instructions `init` writes beside it, so the working
+ * tree holds the record and what each case writes, and nothing else.
+ */
+function founded(repo: string, env: Parameters<typeof runInit>[0]['env']): void {
+  runInit({ cwd: repo, env });
+  removeInstructions(repo);
+}
 let sandbox: string;
 let repo: string;
 let env: DiscoveryEnv;
@@ -87,13 +96,13 @@ function touched(): SessionTouch {
 
 describe('whatTheSessionTouches: read off a real repository', () => {
   it('reads nothing outside git, and that is no signal rather than an error', () => {
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     expect(touched()).toEqual({ words: [], changed: 0, tasks: 0, branch: false, commits: 0 });
   });
 
   it('reads the files changed in the working tree, a new directory file by file', () => {
     git('init', '-q', '-b', 'main');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     // Untracked, in a directory git would otherwise collapse to `src/`: the words of the
     // file are the new work, and `src` alone is not.
     write('src/invoice/rounding.ts');
@@ -102,9 +111,17 @@ describe('whatTheSessionTouches: read off a real repository', () => {
     expect(read.words).toEqual(['src', 'invoice', 'rounding']);
   });
 
-  it('leaves the record’s own files out: they change with every write', () => {
+  it('leaves out the instruction files that are wholly mnema’s, and reads the AGENTS.md the founding made', () => {
     git('init', '-q', '-b', 'main');
     runInit({ cwd: repo, env });
+    const read = touched();
+    expect(read.changed).toBe(1);
+    expect(read.words).toEqual(['AGENTS']);
+  });
+
+  it('leaves the record’s own files out: they change with every write', () => {
+    git('init', '-q', '-b', 'main');
+    founded(repo, env);
     // The record is all there is: `.mnema/` untracked, and nothing else.
     expect(touched().changed).toBe(0);
     expect(touched().words).toEqual([]);
@@ -125,7 +142,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
       git('add', '-A');
       git('commit', '-q', '-m', name);
     }
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     git('add', '-A');
     git('commit', '-q', '-m', 'the record');
     const read = touched();
@@ -135,7 +152,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
 
   it('reads the branch, less a name that names no work', () => {
     git('init', '-q', '-b', 'fix/login-timeout');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     expect(touched()).toMatchObject({ branch: true, words: ['fix', 'login', 'timeout'] });
 
     git('checkout', '-q', '-b', 'main');
@@ -145,7 +162,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
   });
 
   it('reads the tasks in progress, and only those', () => {
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     const started = runTask({ cwd: repo, env }, { title: 'migrate the ledger' });
     const waiting = runTask({ cwd: repo, env }, { title: 'rename the exports' });
     if (!started.ok || !waiting.ok) throw new Error('no task');
@@ -163,7 +180,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
     for (let i = 0; i < MAX_WORDS + 10; i += 1) write(`old/w${String(i).padStart(3, '0')}x.ts`);
     git('add', '-A');
     git('commit', '-q', '-m', 'many');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     write('now/changing.ts');
     const read = touched();
     expect(read.words).toHaveLength(MAX_WORDS);
@@ -172,7 +189,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
 
   it('keeps a hostile path as words, and nothing of it as syntax', () => {
     git('init', '-q', '-b', 'main');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     write('docs/"quoted" NEAR(x y) -minus star*.md');
     expect(touched().words).toEqual(['docs', 'quoted', 'NEAR', 'minus', 'star']);
   });
@@ -182,7 +199,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
     write('src/kept.ts');
     git('add', '-A');
     git('commit', '-q', '-m', 'kept');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     // A file whose content is committed and whose stat is not: a `git status` that may take
     // the index lock refreshes the stat into the index, which is a write. Measured on git
     // 2.55: without `--no-optional-locks` the index's bytes change here.
@@ -195,7 +212,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
 
   it('runs no program the repository’s configuration names', () => {
     git('init', '-q', '-b', 'main');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     // `core.fsmonitor` naming a program is run by every `git status` that honours it: a
     // repository somebody cloned can name anything there.
     const marker = join(sandbox, 'the-monitor-ran');
@@ -213,7 +230,7 @@ describe('whatTheSessionTouches: read off a real repository', () => {
     write('a/b/c.ts');
     git('add', '-A');
     git('commit', '-q', '-m', 'one');
-    runInit({ cwd: repo, env });
+    founded(repo, env);
     write('d/e.ts');
     expect(touched()).toEqual(touched());
   });

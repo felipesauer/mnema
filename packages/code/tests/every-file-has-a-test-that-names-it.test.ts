@@ -429,6 +429,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The option-less brief registration and its switched-off sentence; the brief cases all assert the document presentation/brief.ts renders, and the switch test is about the switch.',
   },
+  'packages/code/src/wiring/instructions.ts': {
+    reached: 'nobody imports it',
+    why: "The instructions verb's wiring: the line it says for each file and the exit it sets on a refusal or a check that finds a file without the block; the-instructions-verb-says-each-file.test.ts drives it through the program in a throwaway project.",
+  },
   'packages/code/src/wiring/inherit.ts': {
     reached: 'nobody imports it',
     why: "The inherit verbs' wiring, which prints the plan and the refusals; a-project-inherits-a-record.test.ts drives it through the binary, and the cases beside the command read what it returns, never what this prints.",
@@ -657,7 +661,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 48,
+  wiring: 49,
   presentation: 10,
   projections: 4,
   completion: 4,
@@ -875,7 +879,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/memory.test.ts': 8,
   'packages/code/src/commands/next-actions.test.ts': 9,
   'packages/code/src/commands/observe.test.ts': 8,
-  'packages/code/src/commands/recall.test.ts': 16,
+  'packages/code/src/commands/recall.test.ts': 17,
   'packages/code/src/commands/references.test.ts': 15,
   'packages/code/src/commands/resume.test.ts': 9,
   'packages/code/src/commands/run-end.test.ts': 9,
@@ -888,7 +892,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/skill.test.ts': 8,
   'packages/code/src/commands/stack-index.test.ts': 5,
   'packages/code/src/commands/stack-inspect.test.ts': 16,
-  'packages/code/src/commands/stack-install.test.ts': 13,
+  'packages/code/src/commands/stack-install.test.ts': 14,
   'packages/code/src/commands/stack-signature.test.ts': 7,
   'packages/code/src/commands/stack-source.test.ts': 10,
   'packages/code/src/commands/tail-list.test.ts': 11,
@@ -942,7 +946,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/site/page.test.ts': 3,
   'packages/code/src/site/the-verdict-in-the-browser.test.ts': 15,
   'packages/code/src/tree-sources.test.ts': 7,
-  'packages/code/src/what-the-session-touches.test.ts': 13,
+  'packages/code/src/what-the-session-touches.test.ts': 14,
   'packages/code/src/who-is-here.test.ts': 4,
   'packages/code/src/wiring/from-the-group.test.ts': 5,
   'packages/code/src/wiring/io.test.ts': 3,
@@ -1069,6 +1073,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/host-contract/support/the-stand-in-api.ts': 3,
   'packages/code/tests/host-contract/support/the-tool-definitions.ts': 1,
   'packages/code/tests/host-contract/support/the-vscode.ts': 7,
+  'packages/code/tests/host-contract/the-instructions-reach-the-model.test.ts': 3,
   'packages/code/tests/host-contract/the-instrument-sees-what-leaves.test.ts': 6,
   'packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts': 6,
   'packages/code/tests/host-contract/the-session-opens-with-the-record.test.ts': 3,
@@ -1128,7 +1133,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/reading-source.ts': 2,
   'packages/code/tests/support/screen.ts': 3,
   'packages/code/tests/support/the-cache-is-not-the-record.ts': 0,
-  'packages/code/tests/support/the-host-files.ts': 5,
+  'packages/code/tests/support/the-host-files.ts': 6,
   'packages/code/tests/support/the-line-a-path-takes.ts': 4,
   'packages/code/tests/support/the-record-held.ts': 3,
   'packages/code/tests/support/what-a-subcommand-reads.ts': 0,
@@ -1199,9 +1204,11 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-host-files-are-generated.test.ts': 5,
   'packages/code/tests/the-init-completes-what-a-founded-project-lacks.test.ts': 8,
   'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
-  'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 5,
+  'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 6,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
   'packages/code/tests/the-install-line-is-one.test.ts': 5,
+  'packages/code/tests/the-instructions-block.test.ts': 8,
+  'packages/code/tests/the-instructions-verb-says-each-file.test.ts': 7,
   'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,
   'packages/code/tests/the-line-a-reading-words-is-one-line.test.ts': 7,
   'packages/code/tests/the-link-cannot-come-back.test.ts': 8,
@@ -1555,6 +1562,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/handoff.ts',
   'packages/code/src/commands/inherit.ts',
   'packages/code/src/commands/init.ts',
+  'packages/code/src/commands/instructions.ts',
   'packages/code/src/commands/key-enroll.ts',
   'packages/code/src/commands/key-github.ts',
   'packages/code/src/commands/key-protect.ts',
@@ -1631,6 +1639,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/host-names.ts',
   'packages/code/src/host-rules-file.ts',
   'packages/code/src/inherited-record.ts',
+  'packages/code/src/instructions-block.ts',
   'packages/code/src/intelligence-source.ts',
   'packages/code/src/internal-error.ts',
   'packages/code/src/key-file.ts',
@@ -1773,6 +1782,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/index.ts',
   'packages/code/src/wiring/inherit.ts',
   'packages/code/src/wiring/init.ts',
+  'packages/code/src/wiring/instructions.ts',
   'packages/code/src/wiring/integrity.ts',
   'packages/code/src/wiring/io.ts',
   'packages/code/src/wiring/key.ts',
@@ -2010,8 +2020,9 @@ describe('every file has a test that names it', () => {
     // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
     // 83 once the writer's test asserts on the refusal it throws over a damaged tail.
     // 82 once a test of the local count of tool calls asserts on what presentation/usage.ts words.
-    expect(found.size).toBe(82);
-    expect(byReach('nobody imports it')).toBe(82);
+    // 83 with the instructions verb's wiring, which a test drives through the program.
+    expect(found.size).toBe(83);
+    expect(byReach('nobody imports it')).toBe(83);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2033,7 +2044,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(82);
+    expect(reasons).toHaveLength(83);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

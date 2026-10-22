@@ -236,6 +236,7 @@ import { registerExport } from './export.js';
 import { registerHandback } from './handback.js';
 import { registerInherit } from './inherit.js';
 import { registerInit } from './init.js';
+import { registerInstructions } from './instructions.js';
 import { registerKey } from './key.js';
 import { registerLink } from './link.js';
 import { registerMcp } from './mcp.js';
@@ -310,6 +311,7 @@ export const GROUPS: readonly Group[] = [
       registerRecall,
       registerRules,
       registerRulesFile,
+      registerInstructions,
       registerSwitch,
       registerInherit,
     ],

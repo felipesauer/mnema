@@ -69,6 +69,7 @@ import {
 } from '../the-persons-key-in-the-clear.js';
 import { isOlderThan } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
+import { checkInstructions, stateLine } from './instructions.js';
 import { stacksHere } from './stack-inspect.js';
 import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
 import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
@@ -96,6 +97,7 @@ export interface Finding {
     | 'private-tree'
     | 'stack'
     | 'record-page'
+    | 'instructions'
     | 'agent-key';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
@@ -706,6 +708,24 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
+ * The files an agent host reads standing instructions from that lack this version's block, each
+ * with what `mnema instructions` would do (ADR-46). Read only. A block the person took out is said
+ * here and never put back by `mnema init`: putting it back is `mnema instructions`, their act.
+ * Nothing is said where every file holds the block, or where there is no project here.
+ */
+function instructionsFindings(ctx: DoctorContext): Finding[] {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) return [];
+  return checkInstructions(dirname(trees.projectPublic))
+    .filter((file) => file.found.state !== 'current')
+    .map((file) => ({
+      topic: 'instructions' as const,
+      state: 'attention' as const,
+      line: stateLine(file),
+    }));
+}
+
+/**
  * The stacks adopted for this project against their files: one finding for each place the files
  * and the record part (`stack check`'s own lines), or one that says they agree. Nothing is said
  * where no stack is adopted, which is every machine that never ran `mnema stack add`.
@@ -919,6 +939,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
       ...recordPageFindings(ctx),
+      ...instructionsFindings(ctx),
       ...stackFindings(ctx),
       ...agentKeyFindings(ctx),
     ],
