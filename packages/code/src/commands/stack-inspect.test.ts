@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chainRootForScope, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE } from '../presentation/brief.js';
@@ -43,6 +44,7 @@ import {
   type StackTarget,
 } from './stack-install.js';
 import { readStackSource } from './stack-source.js';
+import { standingIn } from './stack-standing.js';
 
 const HELLO = join(dirname(fileURLToPath(import.meta.url)), '../../../stacks/fixtures/hello-stack');
 
@@ -291,6 +293,13 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
         line: 'hello-stack (public): .claude/agents/greeter.md is gone: `mnema stack check` lists every departure and `mnema stack diff <name>` shows one.',
       },
     ]);
+  });
+
+  it('reads the stacks a tree stands on off its record: the version of the last adoption', async () => {
+    const root = chainRootForScope(resolveTrees(ctx.cwd, ctx.env), 'public') as string;
+    expect(standingIn(root)).toEqual(new Map());
+    await install(false);
+    expect(standingIn(root)).toEqual(new Map([['hello-stack', '1.0.0']]));
   });
 
   it('loads what reads stacks only where one can be, and answers the same where none is', async () => {
