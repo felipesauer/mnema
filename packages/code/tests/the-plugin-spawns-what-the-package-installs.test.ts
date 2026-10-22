@@ -155,19 +155,26 @@ describe('every place that spells the executable spells the one the package inst
     // own would be a second spelling of the executable this file exists to keep single,
     // and a second copy of the silence rule beside it, so every other file of the plugin
     // is asked, and none may spawn.
+    // `the-gate-kit.mjs` spawns too, and what it spawns is a `node`, to ask it its version: it
+    // is the one other module allowed a spawn, on the condition that its one spawn is of the
+    // `node` it was given and not of the executable (asked after the scan). A regular expression's `.exec(` is a method, not a spawn.
+    const KIT = 'the-gate-kit.mjs';
     const others = readdirSync(HOOKS_DIR).filter(
-      (name) => name.endsWith('.mjs') && join(HOOKS_DIR, name) !== HOOK,
+      (name) => name.endsWith('.mjs') && join(HOOKS_DIR, name) !== HOOK && name !== KIT,
     );
     expect(others.length).toBeGreaterThan(1);
     // CODE ONLY, and a first version of this scan is why: over raw text it accused a
     // handler whose doc comment says the rule "lives in `hand-over.mjs`, beside the spawn".
     // A spawn is a call, so what is read is the code with every comment and literal blanked.
     const spawning = others.filter((name) =>
-      /\bspawn(Sync)?\b|\bexec(File)?(Sync)?\b/.test(
+      /(?<![.\w])(spawn(Sync)?|exec(File)?(Sync)?)\b/.test(
         codeOnly(readFileSync(join(HOOKS_DIR, name), 'utf-8')),
       ),
     );
     expect(spawning).toEqual([]);
+    const kit = codeOnly(readFileSync(join(HOOKS_DIR, KIT), 'utf-8'));
+    expect(kit.match(/\bspawnSync\(/g)).toHaveLength(1);
+    expect(readFileSync(join(HOOKS_DIR, KIT), 'utf-8')).toMatch(/\bspawnSync\(node,/);
     // And the module that does spawn is where the name is: the case above reads it there.
     expect(codeOnly(readFileSync(HOOK, 'utf-8'))).toMatch(/\bspawnSync\(/);
   });
