@@ -79,7 +79,8 @@ export const RECORD_EDITORCONFIG_BEFORE_THE_WORKBENCH = [
 /**
  * What a person or an agent finds when it opens `.mnema/`. It says only what the format and
  * `docs/what-it-proves.md` already promise: a reformatted byte is a broken proof, and the
- * private keys are not here.
+ * private keys are not here. And the one folder beside the record that is not it: `workbench/`,
+ * the person's notes, which no reader enumerates (`FORMAT.md` section 4).
  */
 export const RECORD_README = [
   '# .mnema',
@@ -89,8 +90,12 @@ export const RECORD_README = [
   '',
   '- The record changes as the work does, and each change goes in the same commit as the work',
   '  it describes.',
-  '- Nothing here is edited by hand or reformatted. The record is signed bytes: a formatter that',
-  '  rewrites one byte of it breaks the proof, so keep prettier and the like away from this folder.',
+  '- Nothing here, except `workbench/`, is edited by hand or reformatted. The record is signed',
+  '  bytes: a formatter that rewrites one byte of it breaks the proof, so keep prettier and the',
+  '  like away from this folder.',
+  '- `workbench/`, where there is one, holds the notes of the people working here, and is not part',
+  '  of the proof: no verifier reads it. `workbench/shared/` is committed; `workbench/local` never',
+  '  is, as the `.gitignore` in this folder says.',
   '- Private keys are never here: the `.gitignore` in this folder keeps them out of git.',
   '',
   'To check it, run `mnema verify` in the project. Without installing anything, clone',
