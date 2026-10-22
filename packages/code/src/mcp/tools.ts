@@ -66,6 +66,7 @@ import {
   type Bootstrap,
   bootstrap,
   channelIsOn,
+  channelStates,
   type Focus,
   focus,
   type GoverningRules,
@@ -172,6 +173,7 @@ import {
   FIRST_WRITE_GATE_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
   STARTS_OFF,
+  SWITCHABLE_CHANNELS,
   type SwitchableChannel,
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
@@ -1625,6 +1627,21 @@ export function countsToolCalls(session: Session): boolean {
     return channelIsOn(workspaceCaches(session), TOOL_CALL_COUNT_CHANNEL);
   } catch {
     return false;
+  }
+}
+
+/**
+ * The channels that are off for this session's project now, in the product's order: what each
+ * tree of it says folded the way the pushes fold it (off wins between trees that cannot be
+ * ordered). A record this session cannot read yields none, because a line about switches built
+ * on a guess would say what nobody recorded.
+ */
+export function channelsOffHere(session: Session): readonly SwitchableChannel[] {
+  try {
+    const states = channelStates(scopedCaches(session), SWITCHABLE_CHANNELS, STARTS_OFF);
+    return SWITCHABLE_CHANNELS.filter((_channel, at) => states[at]?.on === false);
+  } catch {
+    return [];
   }
 }
 

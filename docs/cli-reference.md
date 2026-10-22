@@ -1676,6 +1676,9 @@ on the machine that wrote it), so "the most recent switch across the trees" is n
 comparison this product is entitled to make. The listing says which switch decides.
 
 No channel arrives switched off except the two that start off, and there is no `mnema switch` tool on the **MCP server**.
+What it does say is where the switches stand: the `bootstrap` reply carries one line of its own, `Off on this machine:`
+followed by the names of the channels that are off for the project, and that only a person turns one on, with the
+command. A channel a person switched on is not in it, and with nothing off there is no line.
 Anyone who can write to the record can append any fact, so this is not a claim about what is
 possible; it is a claim about which doors are open. An agent that could switch off what
 governs its own work through the door built for agents would be an agent that opts out of
