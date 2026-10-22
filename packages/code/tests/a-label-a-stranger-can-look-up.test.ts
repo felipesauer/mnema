@@ -112,8 +112,8 @@ const WORKBENCH_VOCABULARY: readonly {
  */
 const NOT_SWEPT: readonly { readonly path: RegExp; readonly why: string }[] = [
   {
-    path: /^\.mnema\/(?!workbench\/shared\/)/,
-    why: "the repository's own record: append-only and signed, so a line cannot be edited, and it holds people's words verbatim, which the triage of content covers. Not its workbench/shared/: that is prose a person writes and commits, edited like any page, so it is swept",
+    path: /^\.mnema\//,
+    why: "the repository's own record: append-only and signed, so a line cannot be edited, and it holds people's words verbatim, which the triage of content covers",
   },
   {
     path: /^pnpm-lock\.yaml$/,
@@ -323,23 +323,8 @@ describe('the repository leans on no label and no word that only the workbench d
    */
   it('excuses the record at the root and nothing that only looks like it', () => {
     const excused = (where: string) => NOT_SWEPT.some(({ path }) => path.test(where));
-    for (const where of [
-      '.mnema/tails/x/000001.jsonl',
-      '.mnema/keys/x.pub',
-      '.mnema/README.md',
-      '.mnema/workbench/README.md',
-    ]) {
-      expect(excused(where), where).toBe(true);
-    }
-    for (const where of [
-      'docs/.mnema/x.md',
-      '.mnema-notes/x.md',
-      'docs/guide.md',
-      'mnema/x.md',
-      // The notes a person commits beside the record are prose, and swept like any page.
-      '.mnema/workbench/shared/changes/one/change.md',
-      '.mnema/workbench/shared/notes.md',
-    ]) {
+    expect(excused('.mnema/tails/x/000001.jsonl')).toBe(true);
+    for (const where of ['docs/.mnema/x.md', '.mnema-notes/x.md', 'docs/guide.md', 'mnema/x.md']) {
       expect(excused(where), where).toBe(false);
     }
     // The exclusion does not open the guard to the rest: a page with the word is still accused.
@@ -348,11 +333,7 @@ describe('the repository leans on no label and no word that only the workbench d
 
   it('excuses only what it argues for, and says when an excuse has stopped being needed', () => {
     expect(TRACKED.some((where) => where.startsWith('.mnema/tails/'))).toBe(true);
-    expect(
-      CORPUS.some(
-        ({ where }) => where.startsWith('.mnema/') && !where.startsWith('.mnema/workbench/shared/'),
-      ),
-    ).toBe(false);
+    expect(CORPUS.some(({ where }) => where.startsWith('.mnema/'))).toBe(false);
     expect(TRACKED).toContain('pnpm-lock.yaml');
     expect(textOf('pnpm-lock.yaml')).toMatch(/^lockfileVersion:/);
 

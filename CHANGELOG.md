@@ -52,20 +52,6 @@ with its own changelog.
 
 ### Changed
 
-- **`.mnema/workbench/` is a folder the record holds and does not count: the notes of the people working there.**
-  `FORMAT.md` section 4 names it in the layout, with `inherit.json`, and says what was already true of both readers: they
-  enumerate `keys/` and `tails/` and nothing else at the root, so a verdict is the same with the folder as without it,
-  whatever it holds. A test holds `mnema verify`, the Python verifier and the page of the site verb to that over every
-  frozen record and every mutation the verifier's tool builds, with notes beside each that hold bytes that are not UTF-8,
-  a link to nothing and a `tails/` and `keys/` of their own. No `kind`, `v` or field came with it, and a record without
-  the folder reads as before. The record's `.gitignore` gains `/workbench/local` (the private part, a link, so the rule has
-  no trailing slash: with one, git does not match the link and `git add -A` commits it), which a tree made before gets at
-  its next write. The record's `.editorconfig` reaches only `tails/` and `keys/` (`[{tails,keys}/**]`, where it was `[*]`),
-  so an editor formats the notes as it formats the rest of the repository; `mnema init` replaces the file an earlier `init`
-  wrote, byte for byte, and `mnema doctor` says so, and names the section to change in one somebody edited, which nothing
-  replaces. The record's `README.md` says nothing there is edited by hand except `workbench/`. Nothing yet writes the
-  folder: this only makes the record accept that it is there and is not proof.
-
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
   (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a

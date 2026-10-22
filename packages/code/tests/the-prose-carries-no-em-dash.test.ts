@@ -100,16 +100,8 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
  */
 const COPIED_BYTE_FOR_BYTE = 'packages/chain/conformance/vectors/';
 
-/**
- * The signed tails of the repository's own record: append-only, people's words verbatim. Only the
- * tails: the rest of `.mnema/` is read, and so is `workbench/shared/`, the notes a person writes and
- * commits beside the record, which are prose like any page.
- */
+/** The signed tails of the repository's own record: append-only, people's words verbatim. */
 const THE_SIGNED_RECORD = '.mnema/tails/';
-
-/** Whether a listed path is read at all: everything but the copied vectors and the signed tails. */
-const isRead = (where: string): boolean =>
-  !where.startsWith(COPIED_BYTE_FOR_BYTE) && !where.startsWith(THE_SIGNED_RECORD);
 
 /**
  * EVERYTHING THE WORKSPACE HOLDS, ASKED OF GIT: what is tracked and what is present and not
@@ -123,7 +115,13 @@ const listed = (): readonly string[] =>
     maxBuffer: 32 * 1024 * 1024,
   })
     .split('\n')
-    .filter((where) => where !== '' && isRead(where) && existsSync(join(ROOT, where)));
+    .filter(
+      (where) =>
+        where !== '' &&
+        !where.startsWith(COPIED_BYTE_FOR_BYTE) &&
+        !where.startsWith(THE_SIGNED_RECORD) &&
+        existsSync(join(ROOT, where)),
+    );
 
 interface Read {
   readonly where: string;
@@ -254,18 +252,6 @@ describe('a sentence carries no em dash, anywhere the workspace holds text', () 
     expect(CORPUS.binary, 'the recordings were not recognised as binary').toContain(
       'recordings/first-record.gif',
     );
-  });
-
-  it('leaves out the signed tails alone of the record, and reads the notes a person commits beside it', () => {
-    expect(isRead('.mnema/tails/x/000001.jsonl')).toBe(false);
-    for (const where of [
-      '.mnema/README.md',
-      '.mnema/.gitignore',
-      '.mnema/workbench/shared/notes.md',
-      '.mnema/workbench/shared/changes/one/change.md',
-    ]) {
-      expect(isRead(where), where).toBe(true);
-    }
   });
 
   it('is held by no file', () => {
