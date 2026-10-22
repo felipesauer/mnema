@@ -1165,7 +1165,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- recall.ts: the notes a session opens with ------------------------------------
-  "recall.ts «- Decisions it recorded: {}» last.decisions .map((one) => `${oneLine(one.label)} (${oneLine(one.state)})`) .join(', ') #1":
+  "recall.ts «- Decisions it recorded: {}» last.decisions .map((one) => `${oneLine(one.label)}: ${oneLine(one.state)}`) .join('; ') #1":
     {
       verdict: 'collapsed',
       why: 'the label and the state of each decision the last session recorded: text the record holds, each collapsed',

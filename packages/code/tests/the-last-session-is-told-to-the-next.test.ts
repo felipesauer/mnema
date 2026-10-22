@@ -132,7 +132,7 @@ describe('the section', () => {
     const text = recalled(SECOND).join('\n');
     expect(text).toContain('## Where the last session stopped');
     expect(text).toContain(`- Its goal: ${GOAL}`);
-    expect(text).toMatch(/- Decisions it recorded: ADR-\d+ \(proposed\)/);
+    expect(text).toMatch(/- Decisions it recorded: ADR-\d+: proposed/);
     expect(text).toContain(
       '- It left: 4 files edited; 1 file of decisions the record cites nowhere; 2 questions answered with no decision recorded after; 1 task in progress',
     );

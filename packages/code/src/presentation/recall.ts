@@ -168,8 +168,8 @@ function lastSessionSection(last: LastSession): string[] {
       ? []
       : [
           `- Decisions it recorded: ${last.decisions
-            .map((one) => `${oneLine(one.label)} (${oneLine(one.state)})`)
-            .join(', ')}`,
+            .map((one) => `${oneLine(one.label)}: ${oneLine(one.state)}`)
+            .join('; ')}`,
         ]),
     ...(left.length === 0 ? [] : [`- It left: ${left.join('; ')}`]),
   ];
