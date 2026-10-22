@@ -260,7 +260,8 @@ describe('three dispatches of one session', () => {
     );
     const after = readJournal(file as string);
     expect(after?.handedOver).toEqual(held);
-    expect(after?.goal).toBeNull();
+    expect(after?.trees.private.goal).toBeNull();
+    expect(after?.trees.public.goal).toBeNull();
     expect(after?.tasksInProgress).toEqual([]);
   });
 
@@ -371,6 +372,49 @@ describe('where it stays silent, and never fails', () => {
     expect(done.reply).toEqual({});
     expect(done.notes).toHaveLength(1);
     expect(whatTheRecordHolds().tasks).toEqual([]);
+  });
+
+  it('stays silent when the journal’s lock is not had in time: no task, no handoff, and the skip is counted', () => {
+    const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+    mirror(dispatch());
+    const held = readJournal(file)?.handedOver;
+    expect(held?.handoffs).toBe(1);
+    // Another process holds the lock, freshly: this one is not let in within the time it waits.
+    mkdirSync(`${file}.lock`);
+    const before = whatTheRecordHolds();
+    const skipped = runDispatched(
+      { cwd: repo, env, lockWaitMs: 50 },
+      { payload: dispatch({ type: 'revisar' }) },
+    );
+    expect(skipped.reply).toEqual({});
+    expect(skipped.notes.join(' ')).toMatch(/not mirrored/);
+    expect(whatTheRecordHolds()).toEqual(before);
+    expect(readJournal(file)?.handedOver).toEqual(held);
+    // A first dispatch of another session, with the lock held, opens no task either.
+    const other = '7e7e7e7e-0000-4000-8000-0123456789ab';
+    const otherFile = journalFile(resolveTrees(repo, env), other) as string;
+    mkdirSync(`${otherFile}.lock`);
+    runDispatched({ cwd: repo, env, lockWaitMs: 50 }, { payload: dispatch({ session: other }) });
+    expect(whatTheRecordHolds().tasks).toHaveLength(before.tasks.length);
+    // The lock let go, the session goes on, and its end says how many dispatches were not mirrored.
+    rmSync(`${file}.lock`, { recursive: true });
+    mirror(dispatch());
+    mirror(theEnd());
+    const [task] = whatTheRecordHolds().tasks.filter((one) => one.state === 'DONE');
+    expect(task?.proof).toContain('2 handoffs recorded in this session');
+    expect(task?.proof).toContain('1 dispatch was not mirrored');
+  });
+
+  it('is listed by `mnema switch` as doing nothing while the journal’s switch is off', async () => {
+    const row = (lines: string[]) => lines.find((line) => line.includes('agent-mirror')) ?? '';
+    expect(row(await doing('switch'))).not.toContain('does nothing');
+    await doing('switch', 'off', 'session-journal');
+    const listed = row(await doing('switch'));
+    expect(listed).toMatch(/agent-mirror\s+on\b/);
+    expect(listed).toContain('does nothing while session-journal is off');
+    // Off by its own switch, the line says it is off and nothing about the journal.
+    await doing('switch', 'off', 'agent-mirror');
+    expect(row(await doing('switch'))).not.toContain('does nothing while');
   });
 
   it('does nothing outside a project', () => {

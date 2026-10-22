@@ -509,6 +509,14 @@ export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
 export const AGENT_MIRROR_CHANNEL: SwitchableChannel = 'agent-mirror';
 
 /**
+ * The channels that do nothing while another is off, and the one they need: a channel on whose
+ * dependence is off is on in the record and does nothing, which a list of switches has to say.
+ */
+export const CHANNEL_NEEDS: Readonly<Partial<Record<SwitchableChannel, SwitchableChannel>>> = {
+  'agent-mirror': SESSION_JOURNAL_CHANNEL,
+};
+
+/**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
  * decisions the record asks a subagent to hand back.
  *

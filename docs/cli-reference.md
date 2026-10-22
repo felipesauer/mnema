@@ -736,10 +736,12 @@ reading stopped instead of the whole conversation again, and it holds, in ids an
 record: the decisions recorded since it opened (their ids and state), the notes of the host's memory copied into the private
 tree (their ids), how many questions the person answered with no decision recorded after, how many files that hold decisions
 were written and are cited nowhere in the record, how many files were edited, the tasks in progress and the runs open, the
-goal of the session (the title of the first task it moved into progress, a title the record already holds) and an outcome
-that is a sentence of counts. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
+goal of a run (the title of the first task it moved into progress in the tree that run is written to, a title that tree
+already holds) and an outcome that is a sentence of counts of that tree's records. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
 environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
-name of a file that holds decisions.
+name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their head and of
+their tail, so a transcript the host rewrote is read again from the top. The file is mode `0600`, and its directories
+`0700`, whatever the umask.
 
 **It is disposable, and outside the record.** It is not an event, it is not signed, `mnema verify` does not read it, it is
 never in the repository, and deleting it loses nothing the record holds: the next `Stop` reads the transcript from the top
@@ -749,6 +751,8 @@ newest 50.
 **What reads it.** The MCP server, when the host leaves its session id in the server's environment (Claude Code's
 `CLAUDE_CODE_SESSION_ID`): the run the server opens for the connection takes the journal's goal as its own goal when one is
 known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited.`).
+Each comes from the records of the tree the run is written to and from no other: the title of a private task never becomes
+the goal of a run in the public record, and a public run's outcome counts no private decision or note.
 The `resume` and `status` readings print that outcome beside a run that ended with one, as `outcome: …`.
 
 **It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
@@ -771,11 +775,14 @@ where `session-journal` is off. A session that is resumed (the host hands the sa
 opening a second, and closes it again at the next end. A session that ended with no `SessionEnd` (a terminal that was killed)
 leaves its task in progress: the next session of the project that dispatches closes the tasks whose journal has been untouched
 for a day. A failure of the mirror never holds a dispatch: the hook exits 0, and what it could not do is a line on the second
-stream.
+stream. Two dispatches of one session are two processes, so each takes a lock on the journal; one that does not get it in three
+seconds records nothing (no task, no handoff), says so on the second stream and counts the skip, and the task's closing note
+says how many dispatches were not mirrored. `mnema switch` lists `agent-mirror` as doing nothing while `session-journal` is off.
 
 **It is on until you switch it off** (`mnema switch off agent-mirror`, a fact of the record like the other switches), because
 what it writes stays in the private tree and holds a few words the model itself wrote to label the dispatch. The cost is one
-`mnema` process per dispatch and per session end, and no tokens.
+`mnema` process per dispatch and per session end, and no tokens: measured at 315 ms a dispatch on a machine at a load of 5 on 16
+cores, of which 204 ms is the start of the process (`mnema --version`).
 
 ### Bringing a second machine into your identity
 
@@ -1490,7 +1497,7 @@ mnema instructions --check    # say what each file holds; exits 1 where one lack
 mnema instructions --remove   # take it out of each file
 ```
 
-The block sits between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what your file
+The block sits between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what your file
 holds, and nothing outside the markers changes; a file the block was all of is deleted by
 `--remove`, which takes out with the block the one line break that went in with it only where the
 block is the last thing in the file (a line you wrote after it is never glued to the one above), and

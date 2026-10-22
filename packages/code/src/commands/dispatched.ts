@@ -32,6 +32,7 @@ import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
 import { AGENT_MIRROR_CHANNEL, SESSION_JOURNAL_CHANNEL } from '../record-framing.js';
 import {
+  countASkip,
   exclusivelyOn,
   type HandedOver,
   type Journal,
@@ -40,6 +41,7 @@ import {
   readingOf,
   readJournal,
   sessionIdOf,
+  skippedOf,
   writeJournal,
 } from '../session-journal.js';
 import { withScopedCaches } from '../tree-sources.js';
@@ -57,6 +59,8 @@ export interface DispatchedContext {
   readonly agentKey?: string;
   /** The instant, injected so a test names it. */
   readonly now?: Date;
+  /** How long a held lock on the session's journal is waited for, in milliseconds: a test shortens it. */
+  readonly lockWaitMs?: number;
 }
 
 /** The reply for the host, and what the run has to say beside it. */
@@ -156,8 +160,7 @@ function journalOf(
     filesEdited: 0,
     tasksInProgress: [],
     runsOpen: [],
-    goal: null,
-    outcome: null,
+    trees: { public: { goal: null, outcome: null }, private: { goal: null, outcome: null } },
     reading: readingOf(undefined),
     handedOver,
   };
@@ -215,9 +218,14 @@ function move(
     : `The task ${id} could not be moved (${action}): ${refusal(moved as { reason: string; message?: string })}`;
 }
 
-/** The note a session's task is closed with: a count and nothing else. */
-function closingNote(handoffs: number): string {
-  return `${handoffs} ${handoffs === 1 ? 'handoff' : 'handoffs'} recorded in this session.`;
+/** The note a session's task is closed with: counts and nothing else. */
+function closingNote(handoffs: number, skipped: number): string {
+  return (
+    `${handoffs} ${handoffs === 1 ? 'handoff' : 'handoffs'} recorded in this session.` +
+    (skipped === 0
+      ? ''
+      : ` ${skipped} ${skipped === 1 ? 'dispatch was' : 'dispatches were'} not mirrored.`)
+  );
 }
 
 /** Opens the session's task: private, submitted and started. */
@@ -257,42 +265,54 @@ function dispatched(
   );
   const to = (text(input, 'subagent_type') ?? '').trim() || ANY_SUBAGENT;
 
-  return exclusivelyOn(file, (): DispatchedDone => {
-    const notes: string[] = [];
-    const previous = readJournal(file);
-    let held = previous?.handedOver;
-    if (held === undefined) {
-      const opened = openTheTask(ctx, now);
-      notes.push(...opened.notes);
-      if (opened.id === undefined) return silent(notes);
-      held = { task: opened.id, handoffs: 0, closed: false };
-      notes.push(...sweepTheLeft(ctx, trees, file, now));
-    } else if (held.closed) {
-      const refused = move(ctx, held.task, 'reopen', {
-        reason: 'The session went on after it ended.',
+  const done = exclusivelyOn(
+    file,
+    (): DispatchedDone => {
+      const notes: string[] = [];
+      const previous = readJournal(file);
+      let held = previous?.handedOver;
+      if (held === undefined) {
+        const opened = openTheTask(ctx, now);
+        notes.push(...opened.notes);
+        if (opened.id === undefined) return silent(notes);
+        held = { task: opened.id, handoffs: 0, closed: false };
+        notes.push(...sweepTheLeft(ctx, trees, file, now));
+      } else if (held.closed) {
+        const refused = move(ctx, held.task, 'reopen', {
+          reason: 'The session went on after it ended.',
+        });
+        if (refused !== undefined) notes.push(refused);
+      }
+      const recorded = runHandoff(writes(ctx), {
+        task: held.task,
+        fromAgent: ORCHESTRATOR,
+        toAgent: to,
+        brief,
+        scope: 'private',
       });
-      if (refused !== undefined) notes.push(refused);
-    }
-    const recorded = runHandoff(writes(ctx), {
-      task: held.task,
-      fromAgent: ORCHESTRATOR,
-      toAgent: to,
-      brief,
-      scope: 'private',
-    });
-    if (!recorded.ok) {
-      notes.push(
-        `The handoff to ${to} was not recorded: ${refusal(recorded as { reason: string; message?: string })}`,
+      if (!recorded.ok) {
+        notes.push(
+          `The handoff to ${to} was not recorded: ${refusal(recorded as { reason: string; message?: string })}`,
+        );
+      }
+      const handoffs = held.handoffs + (recorded.ok ? 1 : 0);
+      writeJournal(
+        file,
+        journalOf(session, previous, now, { task: held.task, handoffs, closed: false }),
+        now,
       );
-    }
-    const handoffs = held.handoffs + (recorded.ok ? 1 : 0);
-    writeJournal(
-      file,
-      journalOf(session, previous, now, { task: held.task, handoffs, closed: false }),
-      now,
-    );
-    return silent(notes);
-  });
+      return silent(notes);
+    },
+    ctx.lockWaitMs,
+  );
+  if (done !== undefined) return done;
+  // THE LOCK WAS NOT HAD: the mirror says nothing to the record, which opens no task and records no
+  // handoff it could not tie to the one task of the session, and it counts the skip so the end of the
+  // session can say it.
+  countASkip(file);
+  return silent([
+    `A dispatch to ${to} was not mirrored: another process held this session's journal. Nothing was recorded.`,
+  ]);
 }
 
 /** The end of the session: the task goes to done with the count. */
@@ -302,18 +322,30 @@ function ended(ctx: DispatchedContext, trees: ResolvedTrees, session: string): D
   if (file === undefined) return silent();
   if (!mirrorIsOn(trees)) return silent();
   const now = ctx.now ?? new Date();
-  return exclusivelyOn(file, (): DispatchedDone => {
-    const previous = readJournal(file);
-    const held = previous?.handedOver;
-    if (held === undefined || held.closed) return silent();
-    const refused = move(ctx, held.task, 'complete', { note: closingNote(held.handoffs) });
-    writeJournal(
-      file,
-      journalOf(session, previous, now, { ...held, closed: refused === undefined }),
-      now,
-    );
-    return silent(refused === undefined ? [] : [refused]);
-  });
+  const done = exclusivelyOn(
+    file,
+    (): DispatchedDone => {
+      const previous = readJournal(file);
+      const held = previous?.handedOver;
+      if (held === undefined || held.closed) return silent();
+      const refused = move(ctx, held.task, 'complete', {
+        note: closingNote(held.handoffs, skippedOf(file)),
+      });
+      writeJournal(
+        file,
+        journalOf(session, previous, now, { ...held, closed: refused === undefined }),
+        now,
+      );
+      return silent(refused === undefined ? [] : [refused]);
+    },
+    ctx.lockWaitMs,
+  );
+  return (
+    done ??
+    silent([
+      'The end of the session was not mirrored: another process held its journal. The next session that dispatches in this project closes the task.',
+    ])
+  );
 }
 
 /**
@@ -329,7 +361,7 @@ function sweepTheLeft(
   const notes: string[] = [];
   for (const left of leftOpen(trees, own, now)) {
     const refused = move(ctx, left.held.task, 'complete', {
-      note: closingNote(left.held.handoffs),
+      note: closingNote(left.held.handoffs, skippedOf(left.file)),
     });
     if (refused !== undefined) notes.push(refused);
     else

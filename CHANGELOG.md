@@ -19,8 +19,13 @@ with its own changelog.
   when that file exists; the end of the session moves the task to done with the count of handoffs. The prompt is never recorded
   and nothing goes to the public tree. The task's id is kept in the session journal (a new `handedOver` field), so a resumed
   session reopens its task, and the next session that dispatches closes the tasks left by a journal untouched for a day.
-  `mnema switch off agent-mirror` stops it (a new channel, on by default; it also does nothing where `session-journal` is off),
-  and a failure of the mirror never holds a dispatch. The mirror's task is not taken for the goal of the session.
+  `mnema switch off agent-mirror` stops it (a new channel, on by default; it also does nothing where `session-journal` is off,
+  and `mnema switch` lists it as `does nothing while session-journal is off` then), and a failure of the mirror never holds a
+  dispatch. Where the journal's lock is not had in time (another dispatch of the session holds it), the mirror records nothing
+  rather than go on without it, which opened tasks no one closed: it says so on the second stream, counts the skip, and the
+  task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
+  A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
+  the process itself.
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
@@ -30,7 +35,17 @@ with its own changelog.
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
   server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
-  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did.
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
+  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
+  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
+  and of the tail of the bytes already read, and read again from the top.
+- **The instruction block says when work is a task and a handoff.** One more line (version `v2` of the block): work in
+  flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`) with its
+  brief. `mnema init` and `mnema instructions` replace the `v1` block they wrote, byte for byte, and still refuse one
+  you edited. The file that keeps a plan, a handoff or a ledger is now recognised in any case of its name (`PLANO.md`,
+  `LIVRO.md`, `PLAN.md`, `LEDGER.md`), `livro` included, so the line that names the command reading it in is no longer
+  missed for a name written in capitals; `README.md` and `CHANGELOG.md` still start nothing.
 - **A task carries what it is, and a handoff what the next agent must read.** `mnema task create "<title>" --description "<text>"`
   and the `create_task` tool's `description`, and `mnema task handoff <task> <from> <to> --brief "<text>"` and `record_handoff`'s
   `brief`, take up to 64 KiB of text. The text is recorded in the same call as an observation about the task (topic
@@ -94,7 +109,7 @@ with its own changelog.
   `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
   `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
   and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
-  between `<!-- mnema:begin v1 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
+  between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
   mnema did not write is left as it is and said (exit 1), as is a symbolic link that leaves the project or leads
   nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
   founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to

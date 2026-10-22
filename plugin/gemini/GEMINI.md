@@ -8,6 +8,7 @@ This repository keeps a signed record of its decisions in `.mnema/`. Where the m
 - A decision is born `proposed`, and a person accepts it; from then on it is in force here.
 - A subagent records no decision: it hands its decisions back in its final reply, and the session that started it records them.
 - When you learn something about this project that its code does not show, call `capture_memory`, also when you keep it in your own memory.
+- Work in flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`), with its brief: the short text, and the path of a file where the brief is long.
 - Not for the record: each step taken, a credential, personal data, what the code or git already says.
 - Commit `.mnema/` with the work it describes: the record changes as the work does, through these tools and the `mnema` command. Never edit or reformat its files by hand.
 

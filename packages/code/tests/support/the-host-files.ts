@@ -314,10 +314,18 @@ const AFTER_A_WRITE_PATHS = [
   '*/.claude/rules/*',
   '*/.cursor/rules/*',
   '*/.github/copilot-instructions.md',
-  '*handoff*.md',
-  '*plan*.md',
-  '*ledger*.md',
 ] as const;
+
+/**
+ * The words a file that keeps the work's plan, handoff or ledger is named by, in any case: the
+ * pattern spells each letter as a bracket pair, so the shell matches `PLANO.md` and `Ledger.md`
+ * without starting a process to lower the path. `README.md` and `CHANGELOG.md` hold none of them.
+ */
+const WORK_FILE_WORDS = ['handoff', 'plan', 'ledger', 'livro'] as const;
+
+/** `word` as a shell pattern that ignores case. */
+const anyCase = (word: string): string =>
+  [...word].map((letter) => `[${letter}${letter.toUpperCase()}]`).join('');
 
 /**
  * The group after a write in Claude Code: `mnema after-a-write`, behind a shell that starts it only
@@ -335,7 +343,8 @@ function afterAWrite(): readonly Json[] {
   const path = `P=$${'{'}IN#*\\"file_path\\":\\"}; P=$${'{'}P%%\\"*}`;
   const project = `"$${'{'}CLAUDE_PROJECT_DIR}"`;
   const passes = AFTER_A_WRITE_PATHS.join('|');
-  const filter = `case "$P" in ${passes}) ;; ${project}/*) exit 0;; *.md) ;; *) exit 0;; esac`;
+  const work = WORK_FILE_WORDS.map((word) => `*${anyCase(word)}*.md`).join('|');
+  const filter = `case "$P" in ${passes}|${work}) ;; ${project}/*) exit 0;; *.md) ;; *) exit 0;; esac`;
   return [
     {
       matcher: 'Write|Edit',

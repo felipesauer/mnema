@@ -13,11 +13,18 @@
  * the session opened and their state; the ids of the host's notes copied into the private tree; how
  * many questions the person answered with no decision recorded after; how many files holding
  * decisions were written and cited nowhere; how many files were edited; the tasks in progress and
- * the runs open; and, from those, the goal of the session (the title of the first task it had in
- * progress, a title the RECORD holds) and an outcome that is a sentence of counts. Never a prompt,
+ * the runs open; and, from those, for EACH of the project's trees, the goal of a run in it (the title
+ * of the first task the session had in progress IN THAT TREE, a title the record holds there) and an
+ * outcome that is a sentence of counts. A run takes its goal and its outcome from the records of its
+ * own tree and from no other: a private task's title, or the count of private decisions, never
+ * reaches a run that is written to the public record. Never a prompt,
  * never the text of a message, never a tool's output, never the content or the diff of a file,
  * never the environment, never a secret and never the answer a person chose. The cursor into the
- * transcript is a byte offset and a few digests: a file is kept by a digest of its path.
+ * transcript is a byte offset and a few digests: a file is kept by a digest of its path, and the bytes
+ * already read by a digest of their head and of their tail, so a transcript the host rewrote is read
+ * again from the top and not from the middle of another history.
+ *
+ * PRIVATE TO THE PERSON: the file is 0600 and its directories 0700, whatever the umask.
  *
  * ONE LIFE: {@link PRUNE_AFTER_MS} and {@link PRUNE_KEEP}. Every write prunes the directory of its
  * project, by age and by number, so the journals of sessions nobody will ask about again do not pile
@@ -26,6 +33,8 @@
  */
 
 import {
+  appendFileSync,
+  chmodSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -58,6 +67,9 @@ export const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const LOCK_WAIT_MS = 3000;
 const LOCK_LEFT_MS = 15000;
 
+/** The two trees of a project that a run can be written to and a journal speaks of. */
+const TREES = ['public', 'private'] as const;
+
 /** The one version of the file's shape. */
 const VERSION = 1;
 
@@ -75,6 +87,14 @@ export interface HandedOver {
   readonly task: string;
   readonly handoffs: number;
   readonly closed: boolean;
+}
+
+/** What a run in one tree takes from the session: its goal and its outcome, both from that tree. */
+export interface TreeAccount {
+  /** The title of the first task in progress in that tree since the session opened, once known. */
+  readonly goal: string | null;
+  /** What the session did, as a sentence of counts that counts only that tree's records. */
+  readonly outcome: string | null;
 }
 
 /** The journal of one session: see the head of this file for what it holds and never holds. */
@@ -100,10 +120,8 @@ export interface Journal {
   readonly tasksInProgress: readonly string[];
   /** Runs open that started since the session opened, by id. */
   readonly runsOpen: readonly string[];
-  /** The title of the first task the session had in progress, once known. */
-  readonly goal: string | null;
-  /** What the session did, as a sentence of counts. */
-  readonly outcome: string | null;
+  /** The goal and the outcome a run takes, by the tree the run is written to. */
+  readonly trees: { readonly public: TreeAccount; readonly private: TreeAccount };
   /** Where the reading of the transcript stands. */
   readonly reading: Reading;
   /** The task this session's dispatches hang on, once the first one was seen. */
@@ -132,6 +150,21 @@ export function journalsDir(trees: ResolvedTrees): string | undefined {
   return digest === undefined ? undefined : join(dirname(trees.global), SESSIONS_DIR, digest);
 }
 
+/** Whether `value` holds an account for each of the two trees. */
+function areAccounts(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const both = value as Record<string, unknown>;
+  return TREES.every((tree) => {
+    const one = both[tree] as Record<string, unknown> | null | undefined;
+    return (
+      typeof one === 'object' &&
+      one !== null &&
+      (one['goal'] === null || typeof one['goal'] === 'string') &&
+      (one['outcome'] === null || typeof one['outcome'] === 'string')
+    );
+  });
+}
+
 /** Whether `value` has the shape of a journal: a hand edit or another version is read as none. */
 function isJournal(value: unknown): value is Journal {
   if (typeof value !== 'object' || value === null) return false;
@@ -143,9 +176,11 @@ function isJournal(value: unknown): value is Journal {
     Array.isArray(one['decisions']) &&
     Array.isArray(one['notes']) &&
     typeof one['filesEdited'] === 'number' &&
+    areAccounts(one['trees']) &&
     typeof reading === 'object' &&
     reading !== null &&
     typeof reading['bytes'] === 'number' &&
+    (reading['anchors'] === null || typeof reading['anchors'] === 'object') &&
     typeof reading['files'] === 'object' &&
     typeof reading['pending'] === 'object' &&
     Array.isArray(reading['questionTimes']) &&
@@ -163,12 +198,21 @@ export function readJournal(file: string): Journal | undefined {
   }
 }
 
+/** The modes a journal and its directories keep, whatever the umask: the person's alone. */
+const FILE_MODE = 0o600;
+const DIRECTORY_MODE = 0o700;
+
 /** Writes `journal` to `file`, whole and atomically, then prunes its directory. Never throws. */
 export function writeJournal(file: string, journal: Journal, now: Date): void {
   try {
-    mkdirSync(dirname(file), { recursive: true });
+    const dir = dirname(file);
+    mkdirSync(dir, { recursive: true, mode: DIRECTORY_MODE });
+    // `mkdir` is subject to the umask, and a directory that already exists keeps the mode it had.
+    chmodSync(dir, DIRECTORY_MODE);
+    chmodSync(dirname(dir), DIRECTORY_MODE);
     const staging = `${file}.${process.pid}.tmp`;
-    writeFileSync(staging, JSON.stringify(journal));
+    writeFileSync(staging, JSON.stringify(journal), { mode: FILE_MODE });
+    chmodSync(staging, FILE_MODE);
     renameSync(staging, file);
     prune(dirname(file), now);
   } catch {
@@ -179,15 +223,21 @@ export function writeJournal(file: string, journal: Journal, now: Date): void {
 /**
  * Runs `work` as the only one touching `file`'s journal: parallel dispatches of one session are
  * parallel processes, and two that both read "no task yet" would each open one. A lock that cannot be
- * had in {@link LOCK_WAIT_MS} is not waited for any longer (a journal is a convenience), and one older
- * than {@link LOCK_LEFT_MS} is a process that died holding it.
+ * had in `waitMs` ({@link LOCK_WAIT_MS} unless a caller says) is not waited for any longer, and one
+ * older than {@link LOCK_LEFT_MS} is a process that died holding it. Then the work DOES NOT RUN and
+ * the answer is `undefined`: running it without the lock is how two processes each open a task, and
+ * a task nobody closes. The caller says what it skipped.
  */
-export function exclusivelyOn<T>(file: string, work: () => T): T {
+export function exclusivelyOn<T>(
+  file: string,
+  work: () => T,
+  waitMs: number = LOCK_WAIT_MS,
+): T | undefined {
   const lock = `${file}.lock`;
   let held = false;
   try {
-    mkdirSync(dirname(file), { recursive: true });
-    const until = Date.now() + LOCK_WAIT_MS;
+    mkdirSync(dirname(file), { recursive: true, mode: DIRECTORY_MODE });
+    const until = Date.now() + waitMs;
     while (!held) {
       try {
         mkdirSync(lock);
@@ -204,12 +254,35 @@ export function exclusivelyOn<T>(file: string, work: () => T): T {
       }
     }
   } catch {
-    // No lock to be had: the work goes on without one.
+    // No lock to be had, and no directory to make one in.
   }
+  if (!held) return undefined;
   try {
     return work();
   } finally {
-    if (held) rmSync(lock, { recursive: true, force: true });
+    rmSync(lock, { recursive: true, force: true });
+  }
+}
+
+/** The file beside a journal that counts what the mirror could not do: one byte for each skip. */
+const SKIPPED_SUFFIX = '.skipped';
+
+/** Counts one dispatch the mirror did not record. An append, so two processes never lose each other's. */
+export function countASkip(file: string): void {
+  try {
+    mkdirSync(dirname(file), { recursive: true, mode: DIRECTORY_MODE });
+    appendFileSync(`${file}${SKIPPED_SUFFIX}`, '.', { mode: FILE_MODE });
+  } catch {
+    // A count that cannot be kept is the one thing left unsaid.
+  }
+}
+
+/** How many dispatches of the session the mirror skipped. */
+export function skippedOf(file: string): number {
+  try {
+    return statSync(`${file}${SKIPPED_SUFFIX}`).size;
+  } catch {
+    return 0;
   }
 }
 
@@ -250,7 +323,8 @@ export function leftOpen(trees: ResolvedTrees, own: string, now: Date): readonly
 function prune(dir: string, now: Date): void {
   const kept: { path: string; mtime: number }[] = [];
   for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.json') && !name.endsWith('.tmp')) continue;
+    if (!name.endsWith('.json') && !name.endsWith('.tmp') && !name.endsWith(SKIPPED_SUFFIX))
+      continue;
     const path = join(dir, name);
     try {
       const mtime = statSync(path).mtimeMs;
@@ -267,7 +341,7 @@ function prune(dir: string, now: Date): void {
 /** The state a task is in while somebody works on it: typed, so a renamed state does not compile. */
 const IN_PROGRESS: TaskState = 'IN_PROGRESS';
 
-/** What the record holds of a session, read through the caches of the project's own trees. */
+/** What the record holds of a session, read through the caches of the project's trees named. */
 function whatTheRecordHolds(
   sources: readonly ScopedCache[],
   since: number,
@@ -276,7 +350,7 @@ function whatTheRecordHolds(
   readonly lastDecisionAt: number;
   readonly firstTask: string | null;
 } {
-  const own = sources.filter((source) => source.scope !== 'global');
+  const own = sources;
   const decisions = own
     .flatMap((source) => source.cache.listDecisions())
     .filter((one) => Date.parse(one.createdAt) >= since);
@@ -346,30 +420,61 @@ export function journalAfter(input: {
 }): Journal {
   const { reading, sources, previous } = input;
   const since = reading.openedAt === undefined ? Number.NaN : Date.parse(reading.openedAt);
-  const held = Number.isNaN(since)
-    ? undefined
-    : whatTheRecordHolds(sources, since, previous?.handedOver?.task);
-  const questionsWithoutDecision = reading.questionTimes.filter(
-    (at) => Date.parse(at) > (held?.lastDecisionAt ?? 0),
-  ).length;
   const decisionFilesUncited = reading.decisionFiles.filter((path) => !cites(sources, path)).length;
-  const base = {
-    decisions: held?.decisions ?? [],
-    notes: held?.notes ?? [],
-    filesEdited: Object.keys(reading.files).length,
-    questionsWithoutDecision,
+  const filesEdited = Object.keys(reading.files).length;
+  // Each tree is read through its own caches only, and what a run of that tree carries is made from
+  // that reading alone: the other tree's records are not consulted for the goal nor counted.
+  const of = (tree: (typeof TREES)[number]) => {
+    const held = Number.isNaN(since)
+      ? undefined
+      : whatTheRecordHolds(
+          sources.filter((source) => source.scope === tree),
+          since,
+          previous?.handedOver?.task,
+        );
+    const questionsWithoutDecision = reading.questionTimes.filter(
+      (at) => Date.parse(at) > (held?.lastDecisionAt ?? 0),
+    ).length;
+    const base = {
+      decisions: held?.decisions ?? [],
+      notes: held?.notes ?? [],
+      filesEdited,
+      questionsWithoutDecision,
+    };
+    return {
+      held,
+      account: {
+        goal: previous?.trees[tree].goal ?? held?.firstTask ?? null,
+        outcome: outcomeOf(base),
+      },
+    };
   };
+  const publicOnes = of('public');
+  const privateOnes = of('private');
+  const together = {
+    decisions: [...(publicOnes.held?.decisions ?? []), ...(privateOnes.held?.decisions ?? [])],
+    notes: [...(publicOnes.held?.notes ?? []), ...(privateOnes.held?.notes ?? [])],
+    tasksInProgress: [
+      ...(publicOnes.held?.tasksInProgress ?? []),
+      ...(privateOnes.held?.tasksInProgress ?? []),
+    ],
+    runsOpen: [...(publicOnes.held?.runsOpen ?? []), ...(privateOnes.held?.runsOpen ?? [])],
+  };
+  const lastDecisionAt = Math.max(
+    publicOnes.held?.lastDecisionAt ?? 0,
+    privateOnes.held?.lastDecisionAt ?? 0,
+  );
   return {
     version: VERSION,
     session: input.session,
     updatedAt: input.now.toISOString(),
     openedAt: reading.openedAt ?? null,
-    ...base,
+    ...together,
+    filesEdited,
+    questionsWithoutDecision: reading.questionTimes.filter((at) => Date.parse(at) > lastDecisionAt)
+      .length,
     decisionFilesUncited,
-    tasksInProgress: held?.tasksInProgress ?? [],
-    runsOpen: held?.runsOpen ?? [],
-    goal: previous?.goal ?? held?.firstTask ?? null,
-    outcome: outcomeOf(base),
+    trees: { public: publicOnes.account, private: privateOnes.account },
     reading,
     ...(previous?.handedOver !== undefined ? { handedOver: previous.handedOver } : {}),
   };

@@ -164,8 +164,9 @@ document, delivered by the host instead of waited for.
   call's short description and the path of a file the prompt cites when one exists; at the end of the session the task is moved to
   done with the count. **The prompt is never recorded**, nothing goes to the public tree, and it prints nothing to the model. It
   is on to begin with (`mnema switch off agent-mirror` stops it), keeps the task in the session journal (so it needs
-  `session-journal` on), reopens the task of a resumed session, and never holds a dispatch: a failure is a line on the second
-  stream. Measured on the payload the host hands the hook, and not against a model. The other hosts that read this hooks file
+  `session-journal` on; `mnema switch` says it does nothing while that is off), reopens the task of a resumed session, and
+  never holds a dispatch: a failure is a line on the second stream, and a dispatch that could not take the journal's lock records
+  nothing and is counted. Measured on the payload the host hands the hook, and not against a model. The other hosts that read this hooks file
   were not measured on either event.
 - **Three skills**, which the host offers a model when a skill's description matches what the
   session is doing. `recording-decisions` is for the moment a choice between approaches is
