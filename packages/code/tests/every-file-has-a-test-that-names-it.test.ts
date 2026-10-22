@@ -381,10 +381,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The `mnema status` printer: nothing imports it, its lines are only read by an end-to-end test about two doors sharing one derivation, and no fixture caps a list so `3 of 12` never prints.',
   },
-  'packages/code/src/presentation/switches.ts': {
-    reached: 'nobody imports it',
-    why: 'The `mnema switch` listing: the only reads of its rows belong to a test about the switch event, which uses the line as a probe for on-or-off rather than asking what the row says.',
-  },
   'packages/code/src/presentation/tails.ts': {
     reached: 'nobody imports it',
     why: 'The `tail list` renderer: an e2e test does take the id off its printed row and feed `tail prune`, but nothing imports `tailReport`, so every column is observed only through the verb.',
@@ -662,7 +658,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 49,
-  presentation: 10,
+  presentation: 9,
   projections: 4,
   completion: 4,
   commands: 2,
@@ -1137,7 +1133,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/the-host-files.ts': 6,
   'packages/code/tests/support/the-line-a-path-takes.ts': 4,
   'packages/code/tests/support/the-record-held.ts': 3,
-  'packages/code/tests/support/the-switch-pages.ts': 1,
+  'packages/code/tests/support/the-switch-pages.ts': 2,
   'packages/code/tests/support/what-a-subcommand-reads.ts': 0,
   'packages/code/tests/support/witnessing.ts': 0,
   'packages/code/tests/ten-writers-one-record.test.ts': 10,
@@ -1150,6 +1146,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-agent-is-told-what-it-has.test.ts': 16,
   'packages/code/tests/the-antigravity-cli-rises-only-with-a-capture.test.ts': 4,
   'packages/code/tests/the-bare-name-asks.test.ts': 15,
+  'packages/code/tests/the-bare-name-says-what-is-off.test.ts': 8,
   'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
   'packages/code/tests/the-bodies-fit-one-read.test.ts': 15,
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
@@ -1603,6 +1600,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/stack-signature.ts',
   'packages/code/src/commands/stack-source.ts',
   'packages/code/src/commands/status.ts',
+  'packages/code/src/commands/summary.ts',
   'packages/code/src/commands/switch.ts',
   'packages/code/src/commands/tail-list.ts',
   'packages/code/src/commands/tail-prune.ts',
@@ -1695,6 +1693,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/state.ts',
   'packages/code/src/presentation/status.ts',
   'packages/code/src/presentation/styled.ts',
+  'packages/code/src/presentation/summary.ts',
   'packages/code/src/presentation/switches.ts',
   'packages/code/src/presentation/tails.ts',
   'packages/code/src/presentation/usage.ts',
@@ -2025,8 +2024,9 @@ describe('every file has a test that names it', () => {
     // 83 once the writer's test asserts on the refusal it throws over a damaged tail.
     // 82 once a test of the local count of tool calls asserts on what presentation/usage.ts words.
     // 83 with the instructions verb's wiring, which a test drives through the program.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    // 82 once the switch listing's test asserts on what presentation/switches.ts words.
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2048,7 +2048,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

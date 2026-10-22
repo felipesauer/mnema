@@ -356,7 +356,27 @@ export async function run(
 ): Promise<void> {
   const built = buildProgram(io, argv, render);
   sayWhatTheWalkPassesOver(built);
+  if (argv.length === 0) return await saySummary(built);
   await parseWith(built, argv);
+}
+
+/**
+ * The bare name's answer: a short summary on stdout and a zero exit, where it used to be the
+ * whole catalogue on stderr with the exit of a failure. `mnema --help` is the catalogue.
+ *
+ * Reached by a dynamic import, like the rest of what reads a record, so `mnema --version` does
+ * not know it exists (`tests/the-floor-is-the-declaration.test.ts`).
+ */
+async function saySummary(built: BuiltProgram): Promise<void> {
+  const [{ summaryHere }, { summaryLines }, { fact }] = await Promise.all([
+    import('./commands/summary.js'),
+    import('./presentation/summary.js'),
+    import('./presentation/detail.js'),
+  ]);
+  const { cwd, env } = here();
+  for (const line of summaryLines(summaryHere({ cwd, env }))) {
+    built.io.out(built.render(fact(line, 0)));
+  }
 }
 
 /**
@@ -529,9 +549,8 @@ export interface Entry {
  * what the caller picks is a LINE this same function then runs.
  *
  * WITHOUT A TERMINAL NOTHING MOVED, and that is the half with everything resting on it. A
- * pipe, a script, a CI job, `mnema | less`: every one of them gets the help on stderr and
- * the exit code of one, byte for byte as it always has, because {@link run} is reached
- * unchanged with the same empty argv. It is the same rule the session already followed and
+ * pipe, a script, a CI job, `mnema | less`: every one of them gets the summary on stdout and
+ * a zero exit, because {@link run} is reached unchanged with the same empty argv. It is the same rule the session already followed and
  * it protects more than the session did: every script that has ever called this binary with
  * no arguments is on the other side of it. `cli.help.golden.txt` is where those bytes are
  * pinned, and `tests/the-bare-name-asks.test.ts` is what says this function delegates to the

@@ -19,6 +19,7 @@ import type { InstructionsFile } from '../commands/instructions.js';
 import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
+import { STARTS_OFF, SWITCH_ON_COMMAND } from '../record-framing.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { onOneLine } from './on-one-line.js';
@@ -256,6 +257,10 @@ export function whatComesNext(result: InitResult): string[] {
       );
     }
   }
+  lines.push(
+    `Off until switched on: ${STARTS_OFF.join(', ')}.`,
+    `Turn one on with \`${SWITCH_ON_COMMAND}\`; \`mnema switch\` lists every channel.`,
+  );
   lines.push(
     'Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.',
   );

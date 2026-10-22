@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Added
 
+- **`mnema` with nothing after it says where the project stands and what is off.** It prints a short summary on stdout
+  and exits 0 (it printed the whole catalogue on stderr and failed; `mnema --help` still prints the catalogue, and at a
+  terminal the name still asks what you want to do): what the product does in a sentence, whether a project is founded
+  here and how many decisions await a judgement, the channels that are off on this machine with the command that turns
+  one on, and three verbs to go on with. `mnema switch` ends each off line with the command that turns it on, and
+  `mnema init` names the channels that begin off in two lines before its "Next" line.
 - **A page for the switches, generated from the table the code reads.** `docs/switches.md` lists every channel `mnema switch`
   knows, where it begins (on, or off until a person switches it on) and the command that flips it. The listing
   `docs/cli-reference.md` shows for `mnema switch` and the sentence of `plugin/README.md` that names the channels beginning off

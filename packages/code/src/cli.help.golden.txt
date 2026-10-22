@@ -1,120 +1,14 @@
 ### the bare name, with no terminal
 $ mnema
-! Usage: mnema [options] [command]
-!
-! Your decisions, handed to your agents' sessions and held at the edits they
-! govern: append-only and signed in the repository, and checkable by anyone.
-!
-! Options:
-!   -V, --version   output the version number
-!   --color <when>  auto, always or never; NO_COLOR and FORCE_COLOR are honored
-!                   (choices: "auto", "always", "never", default: "auto")
-!   -h, --help      display help for command
-!
-! Record:
-!   init            establish a mnema project in the current directory
-!   decision        record a decision, or move one, in the current project
-!   link            link one piece of knowledge to another in the current project
-!   unlink          take a link back, keeping it in the record (only the identity
-!                   that recorded it; follows the link)
-!   memory          capture a memory in the current project
-!   observe         record an observation about an entity in the current project
-!   retract         take a memory or an observation back, keeping it in the record
-!                   (follows the note; takes no --scope)
-!   skill           propose, move or export a reusable skill, or show where each
-!                   came from
-!   stack           install a stack of skills and agents into the folders each
-!                   host reads
-!   task            create a task, move it, hand it over, or ask what the workflow
-!                   allows next
-!   promote         list what recurs across projects, or copy one pattern to the
-!                   global tree
-!
-! Hand over:
-!   status          show where things stand: the work, what governs, what awaits a
-!                   ruling
-!   brief           print what governs the work here as markdown, for an agent to
-!                   read
-!   recall          print the notes recorded here as markdown, near ones first,
-!                   for an agent to read
-!   rules           show which recorded rules govern a path, and which address
-!                   nothing
-!   rules-file      print the rules addressed at a file as another host’s rules
-!                   file, and why the rest are not
-!   instructions    write the mnema instructions into the files an agent host
-!                   reads (AGENTS.md and its kin), check them, or remove them
-!   switch          turn off, or back on, what mnema hands to a model unasked, and
-!                   whether an agent may accept a decision
-!   inherit         read another repository’s decisions, pinned to one of its
-!                   commits
-!
-! Verify:
-!   verify          verify this project's record: its committed tree and its
-!                   private one
-!   witness         ask an outside witness to date this record, and read where
-!                   that stands
-!   check           give a rule a program that checks it, and record whether it
-!                   held at a commit
-!   site            write the project's committed record as one HTML page that
-!                   verifies itself in the browser (records nothing)
-!
-! Read:
-!   search          find what has been recorded, or list the most recent (no term)
-!   show            show one whole record by id (the body a search only pointed
-!                   at)
-!   timeline        show an entity's history across the trees (subject, about,
-!                   target)
-!   refs            show what an entity is connected to across the trees
-!   audit           ask the record who authorized what, what recurs, and what
-!                   looks like a credential
-!   diagram         print a state machine, or an entity’s history or connections,
-!                   as mermaid
-!   export          emit the record as an OCSF audit feed (NDJSON, envelope only,
-!                   never a body)
-!   usage           what each run cost, read from this machine's Claude Code
-!                   transcripts
-!   resume          show where an actor left off, and the runs they still have
-!                   open
-!   repl            open an interactive session that reads this project
-!
-! The git log:
-!   why             show under which decisions a file or a commit stands
-!   commits         show the commits that cite a decision and those that touched
-!                   what it addresses
-!   aging           show accepted decisions whose addressed paths changed in many
-!                   commits since
-!   trailer         print the commit trailer that ties a commit to a decision
-!   commit-hook     install or remove an optional git hook that suggests the
-!                   Mnema-Decision trailer
-!
-! This machine:
-!   key             manage this machine's signing keys
-!   tail            authorize a cut in the record's own tails
-!   doctor          say how mnema is installed on this machine, and what to do
-!                   about each thing found (writes nothing unless you pass --fix)
-!   report          show, whole, what mnema would say about its own last internal
-!                   error, and keep your answer to it (sends nothing)
-!   completion      print the tab-completion script for a shell
-!
-! Called by a host:
-!   mcp             run the mnema MCP server over stdio (for an agent host)
-!   run             open and close the session an agent works inside
-!   before-a-write  answer a host’s hook before a file is written: refuse or ask
-!                   where a rule says
-!   tally           answer a host’s Stop or PreCompact hook with what the session
-!                   wrote and recorded
-!   corrections     record what a person corrected in a session as proposed
-!                   decisions, for a Stop hook
-!   after-a-write   copy a note of the host’s memory into the private tree, or
-!                   name the door of a decision file, for a PostToolUse hook
-!   handback        check what a subagent hands back when it stops, or print the
-!                   format it is checked by
-!   settled         say to the agent, after a question to the person was answered,
-!                   which tool records a choice
-!
-! Help:
-!   help            display help for command
-[exit 1]
+| Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.
+| A mnema project is founded here.
+| 1 decision(s) await a judgement: `mnema decision review` goes through them.
+| Off on this machine: edit-first-write-gate, user-corrections. Turn one on with `mnema switch on <name>`.
+| Next:
+|   `mnema status`                                where things stand
+|   `mnema decision record <title> <rationale>`   record a choice that was settled
+|   `mnema switch`                                what is on and what is off
+| `mnema --help` lists every command.
 
 ### the program
 $ mnema --help
