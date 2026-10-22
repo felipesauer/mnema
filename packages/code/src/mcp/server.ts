@@ -124,7 +124,7 @@ import {
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
-import { appendToolCall, resultOf, toolCallsFile, UNCODED_FAILURE } from '../tool-calls.js';
+import { countToolCall, resultOf, toolCallsFile, UNCODED_FAILURE } from '../tool-calls.js';
 import { VERSION } from '../version.js';
 import {
   actionsRequiring,
@@ -765,7 +765,7 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
       // `a-refusal-leaves-nothing.test.ts`), and the first write that signs is what makes the
       // key root: the calls from then on are counted, the ones before it are the cost.
       if (!existsSync(session.trees.keyRoot)) return;
-      appendToolCall(file, {
+      countToolCall(file, {
         at: new Date().toISOString(),
         tool: what.act,
         effect: what.effect,

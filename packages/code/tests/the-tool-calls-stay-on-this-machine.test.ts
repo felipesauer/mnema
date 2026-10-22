@@ -14,7 +14,15 @@
  *   4. SWITCHED OFF, IT KEEPS NOTHING, and it is on until somebody switches it.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -30,7 +38,7 @@ import { runToolUsage } from '../src/commands/usage.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { toolUsageReport } from '../src/presentation/usage.js';
-import { readToolCalls, toolCallsFile } from '../src/tool-calls.js';
+import { flushToolCalls, readToolCalls, toolCallsFile } from '../src/tool-calls.js';
 
 const MARKER = 'ZEBRA-MARKER-9f3a41c7';
 
@@ -121,6 +129,25 @@ describe('the local count of tool calls', () => {
     expect(Object.keys(first).sort()).toEqual(['at', 'effect', 'result', 'tool']);
   });
 
+  it("writes a call's line after its reply has gone, and loses none", async () => {
+    const client = await connect();
+    await client.callTool({ name: 'search', arguments: { term: 'a' } });
+    await client.callTool({ name: 'search', arguments: { term: 'b' } });
+    await client.callTool({ name: 'capture_memory', arguments: { content: 'c' } });
+    // The reply of the last call is in hand and its line is not on the file yet: the count is not
+    // part of the time the call took.
+    const onDisk = (): string => (existsSync(theFile()) ? readFileSync(theFile(), 'utf-8') : '');
+    expect(onDisk()).not.toContain('capture_memory');
+    flushToolCalls();
+    expect(onDisk()).toContain('capture_memory');
+    expect(readToolCalls(theFile()).calls.map((call) => call.tool)).toEqual([
+      'search',
+      'search',
+      'capture_memory',
+    ]);
+    await client.close();
+  });
+
   it('keeps no argument: a marker sent to a write and to a read is nowhere in the file', async () => {
     const client = await connect();
     await client.callTool({ name: 'capture_memory', arguments: { content: MARKER } });
@@ -128,6 +155,7 @@ describe('the local count of tool calls', () => {
     await client.callTool({ name: 'read_record', arguments: { id: MARKER } });
     await client.close();
 
+    flushToolCalls();
     const text = readFileSync(theFile(), 'utf-8');
     expect(text.split('\n').filter((line) => line !== '')).toHaveLength(3);
     expect(text).not.toContain(MARKER);

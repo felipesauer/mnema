@@ -52,6 +52,10 @@ with its own changelog.
 
 ### Changed
 
+- **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
+  reply went out, about a millisecond on every call; it is now written in the next turn of the event loop, and when the
+  process exits any line still waiting is written first. Reading the count in the same process sees every call already
+  answered.
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
   (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
