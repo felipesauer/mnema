@@ -33,6 +33,7 @@ import { catalogUpcasters } from '../events/registry.js';
 import { verify } from './chain.js';
 import { committedPublicKey } from './keystore.js';
 import { lastTailCheckpoint, readTailTip } from './store.js';
+import { HOLDS_NO_KEY } from './verify.js';
 import { readStoredWitness } from './witness.js';
 
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -191,13 +192,19 @@ describe('one byte that is not UTF-8, in the middle of a file of the record', ()
     // The same note with one byte that is not UTF-8.
     writeFileSync(file, Buffer.concat([pem, Buffer.from([0x61, 0xff, 0x0a])]));
     expect(committedPublicKey({ root: record }, KEY)).toBeNull();
-    expect(verify(record, catalogUpcasters()).ok).toBe(false);
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    // The file is refused by name and by the byte, in both readers, and not only through the
+    // signatures that needed the key.
+    expect(here.issues[0]?.detail).toBe(
+      `KEY FILE WITHOUT A KEY: the key file keys/${KEY}.pub ${HOLDS_NO_KEY}: not UTF-8 at byte ${pem.length + 1}`,
+    );
 
     const there = secondReading(record);
     expect(there.verdict).toBe('REFUSED');
     expect(there.findings.filter((f) => f.level === 'FAIL')[0]).toMatchObject({
-      section: '1',
-      what: `not UTF-8 at byte ${pem.length + 1}`,
+      section: '6',
+      what: `the key file keys/${KEY}.pub ${HOLDS_NO_KEY}: not UTF-8 at byte ${pem.length + 1}`,
       where: `keys/${KEY}.pub`,
     });
   });

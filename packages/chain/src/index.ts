@@ -135,6 +135,7 @@ export {
   firstLinkBreakFrom,
   holdsRecord,
   type LinkBreak,
+  listAppleDoubleKeyFiles,
   listPublicKeyFingerprints,
   listTails,
   orderedSegments,

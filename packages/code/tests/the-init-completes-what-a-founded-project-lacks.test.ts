@@ -156,3 +156,26 @@ describe('what the-record-page reads', () => {
     expect(digests(repo)).toEqual(before);
   });
 });
+
+describe('mnema doctor over a macOS metadata file under keys/', () => {
+  const findings = () =>
+    runDoctor({
+      cwd: repo,
+      env: env(),
+      processEnv: { PATH: '' },
+      running: { file: join(sandbox, 'mnema'), version: '9.9.9' },
+    })
+      .findings.filter((one) => one.topic === 'key-metadata')
+      .map((one) => one.line);
+
+  it('names the file so it can be deleted, and says nothing where there is none', () => {
+    founded();
+    expect(findings()).toEqual([]);
+    mkdirSync(join(repo, '.mnema', 'keys'), { recursive: true });
+    writeFileSync(join(repo, '.mnema', 'keys', `._${'a'.repeat(64)}.pub`), 'junk');
+    const named = findings();
+    expect(named).toHaveLength(1);
+    expect(named[0]).toContain(`._${'a'.repeat(64)}.pub`);
+    expect(named[0]).toContain('you can delete it');
+  });
+});

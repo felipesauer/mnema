@@ -361,6 +361,121 @@ def unused_key_misnamed(root: str) -> tuple[bool, str]:
     return os.path.exists(target), "a key nothing uses, written under a name it does not hash to"
 
 
+def _key_file_without_a_key(root: str, name: str, write) -> tuple[bool, str]:
+    """A file under `keys/` that holds no key, written by `write(path)`, nothing else touched."""
+    keys = os.path.join(root, "keys")
+    os.makedirs(keys, exist_ok=True)
+    target = os.path.join(keys, name)
+    if os.path.exists(target):
+        return False, f"{target} is already there"
+    write(target)
+    return os.path.exists(target), name
+
+
+def key_file_holds_no_key(root: str) -> tuple[bool, str]:
+    """A `README.pub` beside the keys: text, and no key in it.
+
+    Section 6 has a reader recompute each name under `keys/` from the material in the file, and
+    this file has none, so its name stands for no key. This reader used to stop on it with a
+    traceback from `parse_pem`, and the product read it as a committed key with no tail.
+    """
+
+    def write(path: str) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("The public keys of this record.\n")
+
+    applied, _ = _key_file_without_a_key(root, "README.pub", write)
+    return applied, "a README.pub with no key in it, beside the keys"
+
+
+def key_file_is_a_directory(root: str) -> tuple[bool, str]:
+    """A directory named like a key file: `keys/<fingerprint>.pub` that is no file at all.
+
+    This reader used to stop on it with `IsADirectoryError`, and the product read it as a
+    committed key with no tail.
+    """
+    applied, _ = _key_file_without_a_key(root, "c" * 64 + ".pub", os.makedirs)
+    return applied, "a directory named for a fingerprint, under keys/"
+
+
+def key_file_not_utf8(root: str) -> tuple[bool, str]:
+    """A key file nothing uses whose bytes are not UTF-8: a real key, and one byte 0xff after it.
+
+    The text outside the armour would be no reason to refuse it, and the byte is: section 1
+    says the bytes of the record are UTF-8. This reader refused it, and the product read it as
+    a committed key with no tail and verified the record.
+    """
+    fingerprint, pem = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "wb") as handle:
+            handle.write(pem.encode("ascii") + b"\xff\n")
+
+    applied, _ = _key_file_without_a_key(root, f"{fingerprint}.pub", write)
+    return applied, "a key nothing uses, with a byte that is not UTF-8 after its armour"
+
+
+def key_file_unreadable(root: str) -> tuple[bool, str]:
+    """A key file nothing uses whose mode is 000: a real key the process may not read.
+
+    Both readers used to stop on it with a traceback. Not applied when the process can read it
+    anyway (root), because then there is no file to refuse.
+    """
+    fingerprint, pem = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(pem)
+        os.chmod(path, 0)
+
+    applied, _ = _key_file_without_a_key(root, f"{fingerprint}.pub", write)
+    if applied:
+        try:
+            with open(os.path.join(root, "keys", f"{fingerprint}.pub"), "rb"):
+                applied = False
+        except PermissionError:
+            pass
+    return applied, "a key nothing uses, with mode 000"
+
+
+def key_metadata_file_beside_the_keys(root: str) -> tuple[bool, str]:
+    """A `keys/._<fingerprint>.pub` of junk: macOS metadata, which both readers skip.
+
+    NOT a refusal: the row of this name is an agreement that the record is still VERIFIED.
+    """
+    fingerprint, _ = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "wb") as handle:
+            handle.write(b"\x00\x05\x16\x07\xff junk")
+
+    applied, _ = _key_file_without_a_key(root, f"._{fingerprint}.pub", write)
+    return applied, "a ._<fingerprint>.pub of junk beside the keys"
+
+
+def refused_line_beside_a_forged_signature(root: str) -> tuple[bool, str]:
+    """Two causes in one tail: a line no reader can read, and a checkpoint whose signature fails.
+
+    The last line of the segment is made a line that is not JSON, and one hex digit of the
+    last checkpoint's `sig` is changed (the last, so no later checkpoint links to one that
+    failed). A reader that stops at the line it cannot read, and
+    says nothing more about the tail, hides the second: the product did, and this reader named
+    both. A hole in the entries leaves the chain walk and the root folds unchecked, in either
+    reader, and the signature, which is over the checkpoint's own bytes, checkable.
+    """
+    segment = _segment(root)
+    lines = _read_lines(segment)
+    lines[-1] = b"this line is not JSON"
+    path = _checkpoints(root)
+    checkpoints = _read_lines(path)
+    last = strict_loads(checkpoints[-1].decode("utf-8"))
+    sig = last["sig"]
+    last["sig"] = ("0" if sig[0] != "0" else "1") + sig[1:]
+    checkpoints[-1] = canonical_bytes(last)
+    applied = _rewrite(segment, lines) and _rewrite(path, checkpoints)
+    return applied, "the last event line made unreadable, and the last checkpoint's sig changed"
+
+
 def tail_relocated(root: str) -> tuple[bool, str]:
     """A tail copied into a fabricated directory, relabelled and re-chained.
 
@@ -1210,6 +1325,12 @@ MUTATIONS = {
     "key-renamed": key_renamed,
     "keys-removed": keys_removed,
     "unused-key-misnamed": unused_key_misnamed,
+    "key-file-holds-no-key": key_file_holds_no_key,
+    "key-file-is-a-directory": key_file_is_a_directory,
+    "key-file-not-utf8": key_file_not_utf8,
+    "key-file-unreadable": key_file_unreadable,
+    "key-metadata-file-beside-the-keys": key_metadata_file_beside_the_keys,
+    "refused-line-beside-a-forged-signature": refused_line_beside_a_forged_signature,
     "forged-payload-field-appended": forged_payload_field_appended,
     "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
     "appended-event-by-an-unenrolled-key": appended_event_by_an_unenrolled_key,
