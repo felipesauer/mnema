@@ -18,8 +18,7 @@
 
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, orderedEvents } from '@mnema/core';
+import { chainRootForScope } from '@mnema/core';
 import { checkName } from '@mnema/stacks';
 import { oneLine } from '../one-line.js';
 import {
@@ -39,6 +38,7 @@ import {
   whereOf,
   writeNew,
 } from './stack-install.js';
+import { standingIn } from './stack-standing.js';
 
 const SCOPES_IN_ORDER: readonly StackScope[] = ['public', 'private', 'global'];
 
@@ -413,16 +413,6 @@ export function unreceipted(ctx: StackContext, target: StackTarget | undefined):
     }
   }
   return out;
-}
-
-/** The stacks a tree's record stands on, each with the version of its last adoption. */
-function standingIn(root: string): Map<string, string> {
-  const standing = new Map<string, string>();
-  for (const event of orderedEvents({ root }, catalogUpcasters())) {
-    if (event.kind === 'stack.adopted') standing.set(event.subject, event.payload.version);
-    else if (event.kind === 'stack.removed') standing.delete(event.subject);
-  }
-  return standing;
 }
 
 /** What the record says is adopted for this project, and where the files and the record part. */

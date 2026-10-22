@@ -34,6 +34,7 @@ import { runBrief } from './commands/brief.js';
 import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
+import { stacksHere } from './commands/stack-inspect.js';
 import { basesNeverImported, decisionsOutsideTheRecord } from './outside-the-record.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE } from './presentation/brief.js';
 import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
@@ -382,7 +383,7 @@ function withoutTheRecipe(file: string[]): string[] {
 describe('what the copy of the opening document a hook carries says about them', () => {
   /** The opening document, the way the hook asks for it and the way a file is written. */
   function opening(repo: string, env: DiscoveryEnv): { hook: string[]; file: string[] } {
-    const asHook = runBrief({ cwd: repo, env }, { outside: true });
+    const asHook = runBrief({ cwd: repo, env }, { outside: true, stacks: stacksHere });
     const asFile = runBrief({ cwd: repo, env });
     if (!asHook.ok || !asFile.ok) throw new Error('no brief');
     // The file's reading never reads the disk: the field is absent, not empty.

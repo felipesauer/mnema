@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE } from '../presentation/brief.js';
 import { HOOK_TEXT_CEILING } from '../presentation/within-a-hook.js';
-import { runBrief } from './brief.js';
+import { runBrief, stacksReaderFor } from './brief.js';
 import { runDoctor } from './doctor.js';
 import { runInit } from './init.js';
 import { offerHook, offerLines, turnHookOff, turnHookOn } from './stack-hooks.js';
@@ -293,10 +293,19 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
     ]);
   });
 
+  it('loads what reads stacks only where one can be, and answers the same where none is', async () => {
+    const none = await stacksReaderFor(ctx);
+    expect(none).not.toBe(stacksHere);
+    expect(none(ctx)).toEqual(stacksHere(ctx));
+    expect(none(ctx)).toEqual({ adopted: [], departures: [] });
+    await install(false);
+    expect(await stacksReaderFor(ctx)).toBe(stacksHere);
+  });
+
   it('opens a session with the stacks adopted, and the file a person commits carries none', async () => {
     await install(false);
     rmSync(join(ctx.cwd, '.claude/agents/greeter.md'));
-    const asHook = runBrief(ctx, { outside: true });
+    const asHook = runBrief(ctx, { outside: true, stacks: await stacksReaderFor(ctx) });
     const asFile = runBrief(ctx);
     if (!asHook.ok || !asFile.ok) throw new Error('no brief');
     expect(asFile.stacks).toBeUndefined();
