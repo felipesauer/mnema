@@ -38,13 +38,12 @@ _PEM = re.compile(
 )
 # The whitespace a PEM body may be wrapped with, and the strict alphabet and padding of what is
 # left. Both are spelled out, rather than left to `str.split()` and `b64decode`, so the product
-# applies the very same rule (`committedKeyFrom` in its `keys.ts`) and the two readers hold the
-# same bytes to be a key or not.
+# can apply the very same rule and the two readers hold the same bytes to be a key or not.
 _PEM_WRAP = re.compile(r"[\t\n\v\f\r ]")
 _BASE64 = re.compile(r"(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?")
 
-# The words a file under `keys/` that holds no key is refused by, in this reader and the
-# product's (`HOLDS_NO_KEY` in its `verify.ts`), followed by the reason.
+# The words a file under `keys/` that holds no key is refused by, in this reader and in the
+# product, followed by the reason.
 HOLDS_NO_KEY = "holds no Ed25519 public key"
 NOT_A_FILE = "it is not a file"
 

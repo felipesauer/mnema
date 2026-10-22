@@ -415,6 +415,29 @@ def key_file_not_utf8(root: str) -> tuple[bool, str]:
     return applied, "a key nothing uses, with a byte that is not UTF-8 after its armour"
 
 
+def refused_line_beside_a_forged_signature(root: str) -> tuple[bool, str]:
+    """Two causes in one tail: a line no reader can read, and a checkpoint whose signature fails.
+
+    The last line of the segment is made a line that is not JSON, and one hex digit of the
+    last checkpoint's `sig` is changed (the last, so no later checkpoint links to one that
+    failed). A reader that stops at the line it cannot read, and
+    says nothing more about the tail, hides the second: the product did, and this reader named
+    both. A hole in the entries leaves the chain walk and the root folds unchecked, in either
+    reader, and the signature, which is over the checkpoint's own bytes, checkable.
+    """
+    segment = _segment(root)
+    lines = _read_lines(segment)
+    lines[-1] = b"this line is not JSON"
+    path = _checkpoints(root)
+    checkpoints = _read_lines(path)
+    last = strict_loads(checkpoints[-1].decode("utf-8"))
+    sig = last["sig"]
+    last["sig"] = ("0" if sig[0] != "0" else "1") + sig[1:]
+    checkpoints[-1] = canonical_bytes(last)
+    applied = _rewrite(segment, lines) and _rewrite(path, checkpoints)
+    return applied, "the last event line made unreadable, and the last checkpoint's sig changed"
+
+
 def tail_relocated(root: str) -> tuple[bool, str]:
     """A tail copied into a fabricated directory, relabelled and re-chained.
 
@@ -1267,6 +1290,7 @@ MUTATIONS = {
     "key-file-holds-no-key": key_file_holds_no_key,
     "key-file-is-a-directory": key_file_is_a_directory,
     "key-file-not-utf8": key_file_not_utf8,
+    "refused-line-beside-a-forged-signature": refused_line_beside_a_forged_signature,
     "forged-payload-field-appended": forged_payload_field_appended,
     "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
     "appended-event-by-an-unenrolled-key": appended_event_by_an_unenrolled_key,

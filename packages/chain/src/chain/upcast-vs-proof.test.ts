@@ -305,10 +305,18 @@ describe('the lift still does its job: the proof was not bought with the reading
     const refused = verify(root, withAMissingRung());
     expect(refused.ok).toBe(false);
     expect(refused.level).toBe('unreadable');
-    expect(refused.issues).toHaveLength(1);
-    expect(refused.issues[0]?.tail).toBe(tailIdOf());
-    expect(refused.issues[0]?.detail).toMatch(/UNREADABLE/);
-    expect(refused.issues[0]?.detail).toMatch(/no upcaster for task\.created@1/);
+    // Each of the three lines the missing rung leaves unread is named, and nothing else: the
+    // verdict reads on past a line it cannot read rather than stopping at the first.
+    expect(refused.issues.map((issue) => issue.tail)).toEqual([
+      tailIdOf(),
+      tailIdOf(),
+      tailIdOf(),
+    ]);
+    expect(refused.issues.map((issue) => issue.detail)).toEqual([
+      expect.stringMatching(/^UNREADABLE: .* line 2: .*no upcaster for task\.created@1/),
+      expect.stringMatching(/^UNREADABLE: .* line 3: .*no upcaster for run\.started@1/),
+      expect.stringMatching(/^UNREADABLE: .* line 4: .*no upcaster for decision\.recorded@1/),
+    ]);
     // And the sentence a person reads says the record could not be read, rather
     // than a count of events it could not have counted.
     expect(refused.summary).toContain('part of the record is UNREADABLE');

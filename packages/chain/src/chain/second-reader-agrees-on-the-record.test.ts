@@ -547,6 +547,19 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // A LINE NO READER CAN READ, AND A SECOND CAUSE BESIDE IT IN THE SAME TAIL. The product
+    // stopped at the line and said nothing more about the tail; the second reader named both.
+    // Both name both now: the row holds the product to the SECOND cause, the signature, and
+    // `a-refused-line-hides-nothing-else-in-its-tail.test.ts` to the whole list.
+    name: 'refused-line-beside-a-forged-signature',
+    refusals: 2,
+    section: '6',
+    says: 'the Ed25519 signature does not verify',
+    productSays: 'checkpoint failed: bad-signature',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-relocated',
     // TWO since the second reader began to require the tail proof (section 6.1): the copy is
     // refused for the key its id names AND for carrying no proof that the key signed that id.

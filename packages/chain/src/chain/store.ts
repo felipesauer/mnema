@@ -24,7 +24,13 @@ import {
   tailDir,
   tailsDir,
 } from './layout.js';
-import { locatedFromEnd, parsedFromEnd, parseStoredLine, splitLines } from './lines.js';
+import {
+  locatedFromEnd,
+  parsedFromEnd,
+  parseStoredLine,
+  splitLines,
+  UnreadableLineError,
+} from './lines.js';
 
 const NEWLINE = 0x0a;
 
@@ -207,6 +213,33 @@ interface SegmentRead {
 }
 
 /**
+ * What a reader that READS ON past a line it cannot read is handed for each such line: the
+ * line's address and the reason, as {@link UnreadableLineError} carries them. The line is left
+ * out of what the read returns and the read goes on to the next one.
+ *
+ * Only the verifier asks for this. Every other reader of a tail still stops at the first line it
+ * cannot read, because what it returns is the tail and a tail with a hole in it is not one; the
+ * verifier returns a verdict, and a verdict that stops at the first refused line hides every other
+ * cause in that tail (see `verify.ts`).
+ */
+export type RefusedLine = (line: UnreadableLineError) => void;
+
+/** What {@link readOn} returns for a line it handed to the {@link RefusedLine}. */
+const REFUSED = Symbol('refused');
+
+/** One line's read: a refused line goes to `refused` when there is one, and throws when not. */
+function readOn<T>(refused: RefusedLine | undefined, read: () => T): T | typeof REFUSED {
+  if (refused === undefined) return read();
+  try {
+    return read();
+  } catch (error) {
+    if (!(error instanceof UnreadableLineError)) throw error;
+    refused(error);
+    return REFUSED;
+  }
+}
+
+/**
  * Parses one segment file into its entries, whole and in seq order.
  *
  * `isLast` says whether this is the tail's last segment, because that is the
@@ -220,7 +253,12 @@ interface SegmentRead {
  * itself whether the last line looks torn: a second reading of that rule could
  * disagree with this one.
  */
-function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): SegmentRead {
+function entriesOfSegment(
+  file: string,
+  upcasters: UpcasterRegistry,
+  isLast: boolean,
+  refused: RefusedLine | undefined,
+): SegmentRead {
   // Read as BYTES: each line is decoded by {@link parseStoredLine}, which refuses one
   // that is not UTF-8 instead of reading U+FFFD in its place.
   const raw = readFileSync(file);
@@ -248,12 +286,10 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
     if (line.length === 0) continue;
     const couldBeTorn = isLast && !endsWithNewline && i === lines.length - 1;
     at = i + 1;
-    const entry = parseStoredLine(
-      line,
-      couldBeTorn,
-      (stored) => parseEntry(stored, upcasters),
-      where,
+    const entry = readOn(refused, () =>
+      parseStoredLine(line, couldBeTorn, (stored) => parseEntry(stored, upcasters), where),
     );
+    if (entry === REFUSED) continue;
     if (entry !== null) {
       entries.push(entry);
       bytes = start + size + 1;
@@ -345,6 +381,7 @@ export function readTail(
   layout: ChainLayout,
   tailId: string,
   upcasters: UpcasterRegistry,
+  refused?: RefusedLine,
 ): TailRead {
   const segments = orderedSegments(layout, tailId);
   const entries: Entry[] = [];
@@ -352,7 +389,7 @@ export function readTail(
   let boundary: TailBoundary | undefined;
   for (let s = 0; s < segments.length; s += 1) {
     const file = segments[s] as string;
-    const read = entriesOfSegment(file, upcasters, s === segments.length - 1);
+    const read = entriesOfSegment(file, upcasters, s === segments.length - 1, refused);
     for (const entry of read.entries) entries.push(entry);
     if (read.partialFinalLine) partialFinalLine = true;
     // The end of the last segment that YIELDED an entry, not of the last segment read.
@@ -570,7 +607,11 @@ export function readTailSince(
  * verifier and the writer's own recovery would throw; the machine could neither
  * verify nor resume its own tail after a crash mid-checkpoint.
  */
-export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkpoint[] {
+export function readTailCheckpoints(
+  layout: ChainLayout,
+  tailId: string,
+  refused?: RefusedLine,
+): Checkpoint[] {
   const file = checkpointsPath(layout, tailId);
   if (!existsSync(file)) return [];
   // As bytes, for the reason {@link entriesOfSegment} reads a segment so.
@@ -585,8 +626,10 @@ export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkp
     if (line.length === 0) continue;
     const couldBeTorn = !endsWithNewline && i === lines.length - 1;
     at = i + 1;
-    const checkpoint = parseStoredLine(line, couldBeTorn, parseCheckpoint, where);
-    if (checkpoint !== null) checkpoints.push(checkpoint);
+    const checkpoint = readOn(refused, () =>
+      parseStoredLine(line, couldBeTorn, parseCheckpoint, where),
+    );
+    if (checkpoint !== null && checkpoint !== REFUSED) checkpoints.push(checkpoint);
   }
   return checkpoints;
 }
