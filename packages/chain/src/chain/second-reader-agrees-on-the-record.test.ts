@@ -78,6 +78,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -2015,5 +2016,67 @@ describe('a record in which no tail holds anything, to both readers', () => {
       expect(there.exit).toBe(0);
       expect(keysWithoutTailThere(there)).toEqual([`gone ${gone}`]);
     }
+  });
+});
+
+/**
+ * A WORKBENCH BESIDE THE RECORD CHANGES NO VERDICT, in either reader (FORMAT.md section 4). The
+ * folder is a person's notes, edited by hand and covered by no signature, so a reader that read it
+ * would be judging prose, and one that refused a record for holding it would refuse every project
+ * that keeps notes. Both readers enumerate `keys/` and `tails/` and nothing else at the root, and
+ * this holds them to it over every record the suite can name: each frozen fixture, and the
+ * witnessed one under every mutation `mutate.py` builds, accepted, refused or incomplete. The
+ * notes are what a stranger's reader would trip on if it walked the folder: Markdown with a
+ * carriage return, bytes that are not UTF-8, a link to nothing (the private part, on a machine
+ * that does not hold it), and a `tails/` and a `keys/` further down holding what is no line and
+ * no key.
+ */
+describe('a workbench beside the record, to both readers', () => {
+  function leaveAWorkbench(record: string): void {
+    const workbench = join(record, 'workbench');
+    const change = join(workbench, 'shared', 'changes', '2026-10-22-a-change');
+    mkdirSync(change, { recursive: true });
+    writeFileSync(join(workbench, 'README.md'), '# Notes\n\nNot proof.\n');
+    writeFileSync(join(change, 'change.md'), '---\r\nstatus: open\r\n---\r\n# A change\r\n');
+    writeFileSync(join(change, 'evidence.bin'), Buffer.from([0x00, 0xff, 0xfe, 0x80, 0x0a]));
+    symlinkSync(join(record, 'no-such-folder'), join(workbench, 'local'));
+    const decoyTail = join(workbench, 'shared', 'tails', `${'f'.repeat(64)}-${'0'.repeat(32)}`);
+    mkdirSync(decoyTail, { recursive: true });
+    writeFileSync(join(decoyTail, '000001.jsonl'), 'not a line\n');
+    writeFileSync(join(decoyTail, 'checkpoints.jsonl'), '{}\n');
+    mkdirSync(join(workbench, 'shared', 'keys'), { recursive: true });
+    writeFileSync(join(workbench, 'shared', 'keys', `${'f'.repeat(64)}.pub`), 'not a key\n');
+  }
+
+  /** What each reader says of the record, whole: every axis, so a verdict that moved on one fails. */
+  function readings(record: string): { readonly here: unknown; readonly there: SecondReading } {
+    return { here: verify(record, catalogUpcasters()), there: secondReading(record) };
+  }
+
+  const offered = JSON.parse(python([MUTATE, 'list']).stdout) as string[];
+  const RECORDS: readonly { readonly fixture: string; readonly mutation?: string }[] = [
+    ...readdirSync(FIXTURES).map((fixture) => ({ fixture })),
+    ...offered.map((mutation) => ({ fixture: 'witnessed-record', mutation })),
+  ];
+
+  it('runs over every fixture and every mutation the tool offers', () => {
+    expect(readdirSync(FIXTURES).length).toBeGreaterThanOrEqual(3);
+    expect(RECORDS.length - readdirSync(FIXTURES).length).toBe(MUTATIONS.length);
+  });
+
+  it.each(RECORDS)('reads $fixture $mutation the same with the notes as without', (one) => {
+    if (one.mutation === 'key-file-unreadable' && process.getuid?.() === 0) return;
+    const record = copyOf(one.fixture);
+    if (one.mutation !== undefined) {
+      const applied = JSON.parse(python([MUTATE, one.mutation, record]).stdout) as {
+        applied: boolean;
+      };
+      expect(applied.applied, `${one.mutation} did not change the record`).toBe(true);
+    }
+    const without = readings(record);
+    leaveAWorkbench(record);
+    const withTheNotes = readings(record);
+    expect(withTheNotes.here, 'the product read the notes').toEqual(without.here);
+    expect(withTheNotes.there, 'the second reader read the notes').toEqual(without.there);
   });
 });
