@@ -287,7 +287,7 @@ describe('no door still says the retired sentence', () => {
     );
   });
 
-  it("leaves the record alone and sweeps the notes a person commits beside it", () => {
+  it('leaves the record alone and sweeps the notes a person commits beside it', () => {
     for (const file of ['.mnema/tails/x/000001.jsonl', '.mnema/keys/x.pub', '.mnema/README.md']) {
       expect(isTheRecord(file), file).toBe(true);
     }
