@@ -41,14 +41,20 @@ const named = work;
 const real = realpathSync.native(work);
 
 let failures = 0;
+/** @param {string} message */
 const fail = (message) => {
   failures += 1;
   console.log(`FAIL: ${message}`);
 };
+/**
+ * @param {boolean} ok
+ * @param {string} message
+ */
 const check = (ok, message) => {
   if (!ok) fail(message);
   else console.log(`ok: ${message}`);
 };
+/** @param {string} title */
 const section = (title) => console.log(`\n== ${title}`);
 
 const home = join(real, 'home');
@@ -58,6 +64,9 @@ for (const dir of [home, prefix, tarballs]) mkdirSync(dir);
 
 // npm puts the launcher in `<prefix>` on Windows and in `<prefix>/bin` elsewhere.
 const binDir = WINDOWS ? prefix : join(prefix, 'bin');
+// Windows spells it `Path`, and a copy of the environment keeps that spelling.
+const PATH_KEY = Object.keys(process.env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
+/** @type {Record<string, string | undefined>} */
 const baseEnv = {
   ...process.env,
   HOME: home,
@@ -66,10 +75,7 @@ const baseEnv = {
   LOCALAPPDATA: join(home, 'AppData', 'Local'),
   XDG_CONFIG_HOME: join(home, '.config'),
   npm_config_cache: join(real, 'npm-cache'),
-  PATH: `${binDir}${delimiter}${process.env.PATH ?? process.env.Path ?? ''}`,
-  ...(WINDOWS
-    ? { Path: `${binDir}${delimiter}${process.env.Path ?? process.env.PATH ?? ''}` }
-    : {}),
+  [PATH_KEY]: `${binDir}${delimiter}${process.env[PATH_KEY] ?? ''}`,
 };
 for (const key of Object.keys(baseEnv)) {
   if (key.startsWith('MNEMA_') || key === 'CLAUDE_PROJECT_DIR' || key === 'CURSOR_VERSION') {
@@ -77,9 +83,16 @@ for (const key of Object.keys(baseEnv)) {
   }
 }
 
-/** Runs a program; `shell` for the `.cmd` shims Windows needs one for. */
+/**
+ * Runs a program; `shell` for the `.cmd` shims Windows needs one for. A shell joins the arguments
+ * with spaces and nothing else, so each is quoted for `cmd` (none of ours holds a quote).
+ *
+ * @param {string} program
+ * @param {string[]} args
+ * @param {{ cwd?: string, env?: Record<string, string | undefined>, input?: string, shell?: boolean }} [options]
+ */
 function run(program, args, { cwd = root, env = baseEnv, input, shell = false } = {}) {
-  const ran = spawnSync(program, args, {
+  const ran = spawnSync(program, shell ? args.map((arg) => `"${arg}"`) : args, {
     cwd,
     env,
     input,
@@ -96,10 +109,24 @@ function run(program, args, { cwd = root, env = baseEnv, input, shell = false } 
   };
 }
 
+/**
+ * @param {string[]} args
+ * @param {string} cwd
+ */
 const pnpm = (args, cwd) => run('pnpm', args, { cwd, shell: WINDOWS });
+/**
+ * @param {string[]} args
+ * @param {string} cwd
+ * @param {{ env?: Record<string, string | undefined>, input?: string }} [options]
+ */
 const mnema = (args, cwd, options = {}) =>
   run(WINDOWS ? 'mnema.cmd' : 'mnema', args, { cwd, shell: WINDOWS, ...options });
 
+/**
+ * @param {string} label
+ * @param {ReturnType<typeof run>} ran
+ * @param {{ tail?: number }} [options]
+ */
 function mustRun(label, ran, { tail = 4000 } = {}) {
   const all = `${ran.out}${ran.err}`.trim();
   const said = all.length > tail ? `...${all.slice(-tail)}` : all;
@@ -143,6 +170,10 @@ try {
   section('init, record, accept, a rule, verify');
   const project = join(real, 'project');
   mkdirSync(project);
+  /**
+   * @param {string[]} args
+   * @param {string} [cwd]
+   */
   const git = (args, cwd = project) => run('git', args, { cwd });
   mustRun('git init', git(['init', '-q']));
   git(['config', 'user.email', '120697114+felipesauer@users.noreply.github.com']);
@@ -191,13 +222,16 @@ try {
     'git clone (core.autocrlf=true)',
     run('git', ['-c', 'core.autocrlf=true', 'clone', '-q', project, clone], { cwd: real }),
   );
-  if (WINDOWS) {
-    const some = readdirSync(join(clone, '.mnema'), { recursive: true })
-      .map((entry) => join(clone, '.mnema', entry))
-      .filter((path) => path.endsWith('.jsonl') || path.endsWith('.json'));
-    const crlf = some.filter((path) => readFileSync(path).includes(Buffer.from('\r\n')));
-    console.log(`  ${crlf.length} of ${some.length} record files carry CRLF in the checkout`);
-  }
+  const everyEntry = readdirSync(join(clone, '.mnema'), { recursive: true, encoding: 'utf-8' });
+  const some = everyEntry
+    .map((entry) => join(clone, '.mnema', entry))
+    .filter((path) => path.endsWith('.jsonl') || path.endsWith('.json'));
+  const crlf = some.filter((path) => readFileSync(path).includes(Buffer.from('\r\n')));
+  console.log(`  ${crlf.length} of ${some.length} record files carry CRLF in the checkout`);
+  // A path of the record is `.mnema/...` below the project, and Windows stops at 260 characters
+  // for the whole path unless the machine opted in to long paths: say how much room is left.
+  const longest = everyEntry.reduce((most, entry) => Math.max(most, entry.length), 0);
+  console.log(`  the longest path below .mnema/ here is ${longest} characters`);
   const inClone = mustRun(
     'mnema verify in the clone',
     mnema(['verify', '--require', 'signed'], clone),
@@ -230,6 +264,12 @@ try {
     CLAUDE_PROJECT_DIR: project,
     CLAUDE_PLUGIN_ROOT: join(root, 'plugin'),
   };
+  /**
+   * @param {string} file
+   * @param {string[]} args
+   * @param {Record<string, string | undefined>} env
+   * @param {string} input
+   */
   const handler = (file, args, env, input) =>
     run(process.execPath, [join(hooks, file), ...args], { cwd: project, env, input });
 
@@ -242,6 +282,7 @@ try {
   );
 
   const cursorEnv = { ...hookEnv, CURSOR_VERSION: '2026.09.18' };
+  /** @param {string} file */
   const payload = (file) =>
     JSON.stringify({
       hook_event_name: 'preToolUse',
@@ -251,6 +292,10 @@ try {
       workspace_roots: [project],
     });
   const refuseArgs = ['--host', 'cursor', '--where', 'CURSOR_VERSION', '--agent-key', 'cursor'];
+  /**
+   * @param {string} label
+   * @param {string} file
+   */
   const denied = (label, file) => {
     const ran = handler('edit-refuses-a-write.mjs', refuseArgs, cursorEnv, payload(file));
     console.log(
@@ -258,6 +303,10 @@ try {
     );
     check(ran.status === 0 && /deny/.test(ran.out), `a write is refused: ${label}`);
   };
+  /**
+   * @param {string} label
+   * @param {string} file
+   */
   const allowed = (label, file) => {
     const ran = handler('edit-refuses-a-write.mjs', refuseArgs, cursorEnv, payload(file));
     check(ran.status === 0 && !/deny/.test(ran.out), `a write elsewhere is not refused: ${label}`);
