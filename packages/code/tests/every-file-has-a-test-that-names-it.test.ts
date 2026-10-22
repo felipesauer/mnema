@@ -1391,6 +1391,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/projections/divergent-moves.test.ts': 14,
   'packages/core/src/projections/knowledge.test.ts': 4,
   'packages/core/src/projections/many-tails.properties.test.ts': 10,
+  'packages/core/src/projections/memory-schema-once.test.ts': 6,
   'packages/core/src/projections/newest-first.test.ts': 3,
   'packages/core/src/projections/one-window-three-readings.test.ts': 8,
   'packages/core/src/projections/order.test.ts': 6,

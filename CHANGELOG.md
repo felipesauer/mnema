@@ -32,6 +32,15 @@ with its own changelog.
 - A write of the block into an instruction file is not taken for a decision written there, and `AGENTS.md`,
   `CLAUDE.md` and `GEMINI.md` are not counted as decision documents of a directory `mnema decision import` reads.
 
+### Changed
+
+- **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
+  projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
+  (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
+  fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
+  51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
+  its format or what a read answers changed.
+
 ## [0.1.2] - 2026-10-21
 
 ### Added
@@ -132,6 +141,7 @@ with its own changelog.
   tool's input schema) never reaches the tool and is not counted. It is on until `mnema switch off tool-call-count`; on a machine
   with no key of its own yet nothing is kept and no directory is made.
 
+
 ### Changed
 
 - **A write over MCP says the directory of the project it fell in, whether or not it named one.** `In the project at
@@ -196,6 +206,7 @@ with its own changelog.
   is touched: every key file is written under the fingerprint of the key it holds, which records written by 0.1.1 and by
   this version, with a person, an agent key, a checker, a second machine and a restored and protected key, were checked for.
 
+
 ### Changed
 
 - **What `verify` says of a file when it is given a base commit is a sentence.** A file the record held at the base commit and no longer
@@ -214,6 +225,7 @@ with its own changelog.
   carry a field.** The comments say how many were published when the finding was made (October 2026).
 
 ## [0.1.1] - 2026-10-20
+
 
 ### Changed
 
@@ -418,6 +430,7 @@ with its own changelog.
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. The descriptions of `guard` and of a write's `project` changed, and both are longer (the entries under Fixed and Changed); a case per host is red when that binary wraps a
   definition differently or a definition gains a word.
+
 
 ### Changed
 
@@ -1141,6 +1154,7 @@ with its own changelog.
   GitHub Copilot CLI, Gemini CLI and OpenCode; in VS Code's agent's job no handshake of the plugin's server
   is seen, and a case says so, without saying why. The table is in `docs/evidence.md`.
 
+
 ### Changed
 
 - **Every third-party action in the workflows is pinned by the SHA of a commit.** `uses:` named a moving major tag
@@ -1404,6 +1418,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   decision and, apart, those that touched the paths it addresses; `why` shows the decisions a file
   or a commit stands under; and `aging` lists the accepted decisions whose paths changed in many
   commits since they were accepted.
+
 
 ### Changed
 

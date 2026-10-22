@@ -325,7 +325,23 @@ function removeEmptyDirectories(from: string, project: string): void {
   }
 }
 
+/** Whether `path` is a symbolic link to nothing: there is no block in it to take out. */
+function leadsNowhere(path: string): boolean {
+  if (!existsAsALink(path)) return false;
+  try {
+    realpathSync(path);
+    return false;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'ENOENT';
+  }
+}
+
 function removeOne(project: string, target: InstructionsTarget): InstructionsFile {
+  // A link whose target was taken out a moment ago (CLAUDE.md pointing at an AGENTS.md the block
+  // founded) holds nothing of ours: it is left as it is, and that is not a refusal.
+  if (leadsNowhere(join(project, target.path))) {
+    return { path: target.path, found: { state: 'missing', exists: true }, did: 'unchanged' };
+  }
   return attempt(project, target, REMOVE_AGAIN, (done, text, path) => {
     if (text === undefined || stateOf(target, text).state === 'missing') return done('unchanged');
     if (target.own !== undefined) {

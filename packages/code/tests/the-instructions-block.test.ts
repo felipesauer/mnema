@@ -339,6 +339,23 @@ describe('a marker inside a fenced code block', () => {
   });
 });
 
+describe('a code fence that is never closed', () => {
+  const OPEN = '# x\n```\ncode never closed\n';
+
+  it('hides no marker: the block is found, written once, checked and taken out', () => {
+    put('AGENTS.md', OPEN);
+    expect(did(writeInstructions(project))['AGENTS.md']).toBe('added');
+    expect(did(writeInstructions(project))['AGENTS.md']).toBe('unchanged');
+    expect(text('AGENTS.md').split(beginMarker('v1')).length - 1).toBe(1);
+    expect(checkInstructions(project).find((file) => file.path === 'AGENTS.md')?.found.state).toBe(
+      'current',
+    );
+    expect(did(removeInstructions(project))['AGENTS.md']).toBe('removed');
+    expect(text('AGENTS.md')).toBe(OPEN);
+    expect(withoutTheBlock(`${OPEN}\n${INSTRUCTIONS_BLOCK}`)).toBe(`${OPEN}\n\n`);
+  });
+});
+
 describe('taking the block out', () => {
   it('never glues the person’s last line to what follows, and says the rest is as it was only when it is', () => {
     put('AGENTS.md', 'one');
@@ -437,6 +454,16 @@ describe('a symbolic link', () => {
     );
     expect(rule?.did).toBe('refused');
     expect(existsSync(join(outside, 'rules'))).toBe(false);
+  });
+
+  it('to a file the block founded is not refused when taking the block out deletes that file first', () => {
+    writeInstructions(project);
+    rmSync(at('CLAUDE.md'), { force: true });
+    symlinkSync('AGENTS.md', at('CLAUDE.md'));
+    const files = removeInstructions(project);
+    expect(did(files)['AGENTS.md']).toBe('deleted');
+    expect(files.some((file) => file.did === 'refused')).toBe(false);
+    expect(existsSync(at('AGENTS.md'))).toBe(false);
   });
 
   it('that resolves inside the project is followed, and taking the block out leaves the file as it was', () => {

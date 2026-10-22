@@ -83,14 +83,24 @@ export interface MarkerLine {
   readonly version?: string;
 }
 
+function collect(line: string, at: number, textEnd: number, next: number, into: MarkerLine[]): void {
+  const begin = BEGIN_LINE.exec(line);
+  const base = { start: at, textEnd, next };
+  if (begin !== null) into.push({ ...base, kind: 'begin', version: begin[1] as string });
+  else if (line === INSTRUCTIONS_END) into.push({ ...base, kind: 'end' });
+}
+
 /**
  * The marker lines of `text`, in order, as markers: a line of its own, and not inside a fenced
  * code block (a README that shows the markers as an example has no block of ours). A line ending
- * is `\n` or `\r\n`; a marker line is matched without its `\r`.
+ * is `\n` or `\r\n`; a marker line is matched without its `\r`. A fence that is never closed
+ * hides nothing: it is no fence, and the markers after its opening line count.
  */
 export function markerLines(text: string): readonly MarkerLine[] {
   const found: MarkerLine[] = [];
   let fence: { readonly char: string; readonly length: number } | undefined;
+  // What looks like a marker inside the open fence: kept only if the fence turns out never to close.
+  let hidden: MarkerLine[] = [];
   for (let at = 0; at < text.length; ) {
     const newline = text.indexOf('\n', at);
     const next = newline === -1 ? text.length : newline + 1;
@@ -108,6 +118,9 @@ export function markerLines(text: string): readonly MarkerLine[] {
         (opens[2] ?? '').trim() === ''
       ) {
         fence = undefined;
+        hidden = [];
+      } else {
+        collect(line, at, textEnd, next, hidden);
       }
     } else if (opens !== null) {
       const ticks = opens[1] as string;
@@ -115,13 +128,11 @@ export function markerLines(text: string): readonly MarkerLine[] {
         fence = { char: ticks[0] as string, length: ticks.length };
       }
     } else {
-      const begin = BEGIN_LINE.exec(line);
-      const base = { start: at, textEnd, next };
-      if (begin !== null) found.push({ ...base, kind: 'begin', version: begin[1] as string });
-      else if (line === INSTRUCTIONS_END) found.push({ ...base, kind: 'end' });
+      collect(line, at, textEnd, next, found);
     }
     at = next;
   }
+  found.push(...hidden);
   return found;
 }
 
