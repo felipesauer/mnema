@@ -67,3 +67,12 @@ export function theFirstThatOffersTools<
 ): T | undefined {
   return requests.find((request) => theEntriesOf(listOf(request.body)).length > 0);
 }
+
+/**
+ * The text a weight is pinned as, in a file next to the test (`weights/<host>.json`). The case
+ * compares it with `toMatchFileSnapshot`, so a host that moved the figure turns it red with the
+ * diff, and `pnpm test:host-contract the-tool-definitions-the-host-sends -u` (with the host's own variables) writes the new one.
+ */
+export function theWeightsFile(weight: TheWeight): string {
+  return `${JSON.stringify({ bytes: weight.bytes, tokens: weight.tokens }, null, 2)}\n`;
+}

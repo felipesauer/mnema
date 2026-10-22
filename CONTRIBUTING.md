@@ -38,6 +38,15 @@ pnpm test
 - `pnpm test` is the whole suite. Every test process runs with a `HOME` made for it, so a run
   never signs with your key or writes to your own records
   ([`.github/a-home-of-its-own/`](.github/a-home-of-its-own/README.md)).
+- `pnpm test:host-contract` starts a real host and is not part of `pnpm test`; it needs
+  `MNEMA_HOST_CONTRACT_HOST` and that host's own variables (see
+  [`vitest.host-contract.config.ts`](vitest.host-contract.config.ts)). What each host sends of the
+  server's 27 tool definitions is pinned in
+  [`packages/code/tests/host-contract/weights/`](packages/code/tests/host-contract/weights), one file
+  per host. After a tool's description changes, `pnpm test:host-contract the-tool-definitions-the-host-sends -u` for each of the four hosts
+  (Claude Code, OpenCode, Copilot CLI, Gemini CLI) rewrites its file with what the host sent; commit
+  the four, and the figures `docs/evidence.md` repeats. Without `-u` a different figure fails the case
+  and shows the difference.
 
 Beside the suite, CI runs two scanners on every pull request and on `main`, outside the checks a
 pull request must carry: `gitleaks` reads the whole history for a committed credential, and

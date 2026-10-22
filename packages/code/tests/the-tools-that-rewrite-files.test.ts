@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type BriefDone, runBrief } from '../src/commands/brief.js';
 import { runDoctor } from '../src/commands/doctor.js';
 import { runInit } from '../src/commands/init.js';
+import { stacksHere } from '../src/commands/stack-inspect.js';
 import { whatIsMissing } from '../src/commands/the-record-page.js';
 import { toolsThatRewrite } from '../src/commands/the-tools-that-rewrite-files.js';
 
@@ -262,7 +263,13 @@ describe('mnema doctor and mnema brief', () => {
     const lines = doctor();
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('could not be confirmed');
-    const brief = runBrief({ cwd: repo, env: { home: join(sandbox, 'home') } }, { outside: true });
+    const brief = runBrief(
+      { cwd: repo, env: { home: join(sandbox, 'home') } },
+      {
+        outside: true,
+        stacks: stacksHere,
+      },
+    );
     expect((brief as BriefDone).formatter).toEqual(lines);
     const without = runBrief({ cwd: repo, env: { home: join(sandbox, 'home') } }, {});
     expect((without as BriefDone).formatter).toBeUndefined();

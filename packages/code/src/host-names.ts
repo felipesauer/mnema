@@ -290,11 +290,12 @@ export const HOSTS = {
       bytesPerTokenAt: `${CODEX_SOURCE}/codex-rs/utils/string/src/truncate.rs#L4`,
     },
     note:
-      'The refusal fails open, as on every host: a gate that cannot answer, no `mnema` on the ' +
+      'The refusal fails open where nothing says the path is governed: no `mnema` on the ' +
       'PATH (held by its test) or a hook that errors (read in ' +
       `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)), ` +
-      'lets the patch through. A record the gate cannot read is not a hook that errors: it is a ' +
-      '`deny` (held by its test). The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
+      'lets the patch through. A `mnema` that is there and cannot answer, at a path a rule that ' +
+      'refuses it addresses, is a `deny` from the hook (held by the test of the node it runs ' +
+      'on), and so is a record the gate cannot read (held by its test). The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
       'at a whole rule, held by the same test.',
     // `events/stop.rs` fires a `SubagentStop` command hook and takes exit 2 with a continuation
@@ -423,9 +424,12 @@ export const HOSTS = {
       'contract pins the version it was held on. The tools it writes through are `write` and ' +
       '`edit`, and `apply_patch` for the models that use it ' +
       `([\`registry.ts\`](${OPENCODE_SOURCE}/packages/opencode/src/tool/registry.ts#L297-L300)); a ` +
-      'file a shell command writes meets no hook, as on every host. The module fails open: with ' +
-      'no `mnema` on the PATH, or a program of that name that is not this product, the write ' +
-      'goes through (held by its test). OpenCode’s own `permission.ask` hook is not used, so a ' +
+      'file a shell command writes meets no hook, as on every host. The module fails open where ' +
+      'nothing says the path is governed: with no `mnema` on the PATH, or a program of that ' +
+      'name that is not this product, the write goes through (held by its test); a `mnema` ' +
+      'that is there and cannot answer (no node takes it, it exits non-zero, it does not ' +
+      'finish) refuses a write at a path a rule that refuses it addresses, and runs on the ' +
+      'first node that takes it (held by the test of the node it runs on). OpenCode’s own `permission.ask` hook is not used, so a ' +
       'rule that only asks for a person is let through in silence. The opening is the text ' +
       'Claude Code gets, cut at 10,000 units; a ceiling of OpenCode’s on a system prompt was not ' +
       'found in its documentation or in the source read. The model is any the host is pointed ' +
@@ -481,8 +485,12 @@ export const HOSTS = {
       `[\`gemini.tsx\`](${GEMINI_SOURCE}/packages/cli/src/gemini.tsx#L951-L956)); a ceiling of ` +
       'its own on that text was not found in the source read, so it is cut at 10,000 units. A hook ' +
       'that exits with a code other than 0 or 2 is a warning and the call goes on, and the script ' +
-      'fails open: with no `mnema` on the PATH, or a program of that name that is not this ' +
-      'product, the write goes through (held by its test). The documentation lists `allow` and ' +
+      'fails open where nothing says the path is governed: with no `mnema` on the PATH, or a ' +
+      'program of that name that is not this product, the write goes through (held by its ' +
+      'test); a `mnema` that is there and cannot answer (no node takes it, it exits ' +
+      'non-zero, it does not finish) refuses a write at a path a rule that refuses it ' +
+      'addresses, and runs on the first node that takes it (held by the test of the node it ' +
+      'runs on). The documentation lists `allow` and ' +
       '`deny` as the decisions of a `BeforeTool` hook; the source also has an `ask`, which was ' +
       'not read for what it does with a write and is not used, so a rule that only asks for a ' +
       'person is let through in silence. Run without a person, in a folder it does not trust, ' +

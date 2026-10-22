@@ -52,20 +52,15 @@ with its own changelog.
 
 ### Changed
 
-- **`.mnema/workbench/` is a folder the record holds and does not count: the notes of the people working there.**
-  `FORMAT.md` section 4 names it in the layout, with `inherit.json`, and says what was already true of both readers: they
-  enumerate `keys/` and `tails/` and nothing else at the root, so a verdict is the same with the folder as without it,
-  whatever it holds. A test holds `mnema verify`, the Python verifier and the page of the site verb to that over every
-  frozen record and every mutation the verifier's tool builds, with notes beside each that hold bytes that are not UTF-8,
-  a link to nothing and a `tails/` and `keys/` of their own. No `kind`, `v` or field came with it, and a record without
-  the folder reads as before. The record's `.gitignore` gains `/workbench/local` (the private part, a link, so the rule has
-  no trailing slash: with one, git does not match the link and `git add -A` commits it), which a tree made before gets at
-  its next write. The record's `.editorconfig` reaches only `tails/` and `keys/` (`[{tails,keys}/**]`, where it was `[*]`),
-  so an editor formats the notes as it formats the rest of the repository; `mnema init` replaces the file an earlier `init`
-  wrote, byte for byte, and `mnema doctor` says so, and names the section to change in one somebody edited, which nothing
-  replaces. The record's `README.md` says nothing there is edited by hand except `workbench/`. Nothing yet writes the
-  folder: this only makes the record accept that it is there and is not proof.
-
+- **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
+  module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
+  a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
+  stacks with `outside: true` (`stacksReaderFor` hands it).
+- **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
+  reply went out (about 21 microseconds an append, measured); it is now written in the next turn of the event loop, and
+  any line still waiting is written first when the process exits, when the session closes on SIGTERM, SIGINT or the end
+  of stdin, and when the count is read. A process killed by SIGKILL can still lose the lines that were waiting. Reading
+  the count in the same process sees every call already answered.
 - **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
   projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
   (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
@@ -89,6 +84,29 @@ with its own changelog.
   (`mnema verify` is what rules on that).
 
 ### Fixed
+
+- **`mnema check run --key` with a key that is not Ed25519 no longer calls it an agent's key.** The refusal says that
+  a checker's key is an Ed25519 one, as it says for an agent's in the commands that enrol an agent.
+- **`mnema doctor` reads the host's `.claude.json` where the host keeps it.** With `CLAUDE_CONFIG_DIR` set the file is
+  `$CLAUDE_CONFIG_DIR/.claude.json`, and `doctor` read the one in your home directory, so it counted the wrong
+  declarations of the mnema MCP server and listed the wrong projects.
+- **The plugin's hooks no longer trust the first `node` of their PATH, and a gate that cannot decide a write refuses it where a rule addresses the path.**
+  Cursor's command-line agent puts the Node it carries (24.5.0 on 2026.09.18) in front of the PATH of a plugin's hooks;
+  `mnema` starts through `#!/usr/bin/env node`, died on its own floor at its first line, and the gate read that as nothing
+  to say, so a write a rule refuses was made. Now the hooks ask the first `node` what it is and, below the floor, run
+  `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first), within three seconds
+  and with a second for each `node` that hangs on its version. Where none does, or where `mnema` is there and exits
+  non-zero, does not answer in ten seconds (six in Gemini CLI's script and OpenCode's plugin, which also ask again at the
+  next write after one failed identification), or prints what no host reads, the write is refused with the reason and the
+  fix, but only where a rule IN FORCE that refuses a write or asks for a person at it addresses that path (a rule only
+  proposed, rejected or superseded does not count); any other path goes
+  through, a project whose only links govern is never refused, and a rule taken back stops refusing. This holds in Cursor's
+  agent, Codex, VS Code, Copilot CLI, and now in Gemini CLI's script and OpenCode's plugin too, and for a fault of a
+  handler itself. With no `mnema` on the PATH, no project, or no rule that could meet the write, nothing changes. The
+  handler that hands over the document tells the session that mnema could not run, with the reason. `mnema doctor` has a
+  `node` topic: the first `node` on the PATH and whether it takes `mnema`, and the Node Cursor's agent carries where it is
+  on the machine. A hook whose own `node` cannot start, or whose handler files are missing, is still read by the host as
+  nothing to say, and Claude Code's call into the server is unchanged.
 
 - **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
   `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that

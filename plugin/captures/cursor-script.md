@@ -20,6 +20,14 @@ claude plugin list                               # the plugin as Cursor will see
 uname -sr
 ```
 
+Then check the Node the agent gives its hooks. Cursor's command-line agent carries a Node of its own
+and puts it first on the PATH of a plugin's hooks, and `mnema` starts on the first `node` it finds:
+below `24.15.0` (or a 25) it dies at its first line. Write down `~/.local/share/cursor-agent/versions/*/node -v`
+and `node -v` of the shell you run the agent from, and `mnema doctor`'s `node` lines. The plugin's hooks
+go round a node that is too old to the first one further along the PATH that takes `mnema`; where there
+is none they refuse the write and say why, which this capture reads as a refusal of the rule it is
+reading for. Say in the capture which of the two it was.
+
 If `claude plugin list` shows a plugin that is not the one in this checkout, install the one in this
 checkout first (`claude plugin marketplace add <this checkout>`, then `claude plugin install
 mnema@mnema`) and say so in the capture. The capture says which plugin was read.

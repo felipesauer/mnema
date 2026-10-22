@@ -461,8 +461,209 @@ export function copilotHooksJson(): string {
  * and the opening is asked of the verb for a hook (`--hook`) and handed over byte for byte, with
  * what the same run said about the record under it.
  */
+/**
+ * THE GATE'S OWN READING OF WHAT TO DO WHERE `mnema` CANNOT ANSWER, inlined into the two files a person
+ * copies whole (OpenCode's module, Gemini CLI's script): the node search and the refusal of
+ * `plugin/hooks/the-gate-kit.mjs`, and the reading of which rule addresses a path of
+ * `plugin/hooks/where-the-record-is.mjs`, as they stand. One reading, so a change there regenerates
+ * both. Returns the `import` lines the two modules need, merged, and their code with the module
+ * comments and the `export`s struck.
+ */
+function theGateKit(): { readonly imports: string[]; readonly code: string[] } {
+  const merged = new Map<string, Set<string>>();
+  const bodies: string[] = [];
+  for (const file of ['the-gate-kit.mjs', 'where-the-record-is.mjs']) {
+    const source = readFileSync(join(ROOT, 'plugin', 'hooks', file), 'utf-8')
+      .replace(/^\/\*\*[\s\S]*?\*\/\n\n/, '')
+      .replace(/^import \{([^}]*)\} from '([^']+)';\n/gm, (_whole, names: string, from: string) => {
+        const known = merged.get(from) ?? new Set<string>();
+        for (const name of names.split(',').map((one) => one.trim())) {
+          if (name !== '') known.add(name);
+        }
+        merged.set(from, known);
+        return '';
+      })
+      .replace(/^export /gm, '');
+    bodies.push(source.trim());
+  }
+  return {
+    imports: [...merged.entries()]
+      .sort(([one], [other]) => (one < other ? -1 : 1))
+      .map(
+        ([from, names]) =>
+          `import { ${[...names].sort((one, other) => (one.toLowerCase() < other.toLowerCase() ? -1 : 1)).join(', ')} } from '${from}';`,
+      ),
+    code: bodies.join('\n\n').split('\n'),
+  };
+}
+
 export function opencodePlugin(): string {
   const tools = writeToolsOf('opencode');
+  const kit = theGateKit();
+  const own = String.raw`
+/** What \`mnema --identify\` starts its answer with: the package, then the version. */
+const THIS_PRODUCT = '@mnema/code ';
+
+/** The tools OpenCode writes a file through. */
+const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});
+
+/** The tool OpenCode asks the person a question through. */
+const ASKS = '${ASKS_THROUGH.opencode}';
+
+/** How long \`mnema\` is given to answer, in milliseconds. */
+const WAIT = ${TIMEOUT * 1000};
+
+/**
+ * What every step of the gate is given, so that the steps TOGETHER stay under the host's own cap
+ * (the hooks file's ${TIMEOUT} seconds): the search for a node takes at most 3 s, \`--identify\` at most
+ * IDENTIFY_WAIT, and the gate at most GATE_WAIT with its second attempt included. 3 + 2 + 6 = 11 s,
+ * so a mnema that hangs is answered by the refusal, not by the host killing the hook (which a host
+ * reads as nothing to say, and the write goes through).
+ */
+const IDENTIFY_WAIT = 2000;
+const GATE_WAIT = 6000;
+
+/** The agent whose key signs what the gate records, where the record enrols it. */
+const AGENT = ['--agent-key', 'opencode'];
+
+/** What is run: npm's own shim name on Windows. */
+const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
+
+/** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
+let settled;
+const theRuntime = () => {
+  settled ??= settleTheRuntime(BINARY, process.env);
+  return settled;
+};
+
+/** One run of \`mnema\`, both streams kept; a run that did not finish carries an \`error\`. */
+function run(args, cwd, input, timeout = WAIT) {
+  return spawnSync(BINARY, args, {
+    cwd,
+    env: theRuntime().env,
+    input,
+    encoding: 'utf-8',
+    timeout,
+    killSignal: 'SIGKILL',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+}
+
+/**
+ * Which \`mnema\` is on the PATH: this product, another program of that name, none, or one that did
+ * not answer the question (it exited non-zero or did not finish), which is the case a gate exists for.
+ */
+function whoIsThere(cwd) {
+  const ran = run(['--identify'], cwd, undefined, IDENTIFY_WAIT);
+  const failure = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error);
+  if (failure?.code === 'ENOENT') return 'other';
+  if (ran.error !== undefined || ran.status !== 0) return 'broken';
+  return ran.stdout.startsWith(THIS_PRODUCT) ? 'this' : 'other';
+}
+
+/** What a verb printed for a hook, or nothing: the second stream rides under the first. */
+function whatItSays(verb, cwd) {
+  const ran = run([verb, '--hook'], cwd);
+  if (ran.error !== undefined || ran.status !== 0 || ran.stdout.trim() === '') return [];
+  const alsoSaid = ran.stderr.trim();
+  return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\n\n')];
+}
+
+/**
+ * One run of the gate, asked with the key of the agent this module signs as, and asked again
+ * without it by a \`mnema\` too old to know the option, which refuses it by name.
+ */
+function askTheGate(cwd, input) {
+  const gate = ['before-a-write', '--host', 'opencode'];
+  const started = Date.now();
+  const ran = run([...gate, ...AGENT], cwd, input, GATE_WAIT);
+  // The second attempt is given what is left of the one budget, never a second one.
+  return ran.status !== 0 && ran.stderr.includes('--agent-key')
+    ? run(gate, cwd, input, Math.max(1, GATE_WAIT - (Date.now() - started)))
+    : ran;
+}
+
+/**
+ * The refusal, or nothing: where \`mnema\` could not answer, a write is refused only where a rule that
+ * refuses it or asks for a person at it addresses the path.
+ */
+function closedWhere(because, directory, input) {
+  if (!aRuleReaches(directory, process.env, input)) return undefined;
+  throw new Error(couldNotAnswer(because));
+}
+
+export const Mnema = async ({ directory }) => {
+  let known;
+  /** Asked once where it answered: the PATH does not change under a running host. */
+  const who = () => {
+    if (known !== undefined) return known;
+    const there = theRuntime().refusal === null ? whoIsThere(directory) : 'broken';
+    // A \`broken\` answer may be one transient failure: it is asked again at the next write.
+    if (there !== 'broken') known = there;
+    return there;
+  };
+  /** The opening of each session, asked of the verbs once. */
+  const opened = new Map();
+  return {
+    'experimental.chat.system.transform': async (input, output) => {
+      const session = input.sessionID ?? '';
+      if (!opened.has(session)) {
+        opened.set(
+          session,
+          who() === 'this'
+            ? ['brief', 'recall'].flatMap((verb) => whatItSays(verb, directory))
+            : [],
+        );
+      }
+      output.system.push(...opened.get(session));
+    },
+    'tool.execute.before': async (input, output) => {
+      if (!WRITES.has(input.tool)) return;
+      const payload = JSON.stringify({ tool_name: input.tool, tool_input: output.args });
+      if (theRuntime().refusal !== null) closedWhere(theRuntime().refusal, directory, payload);
+      const there = who();
+      if (there === 'other') return;
+      if (there === 'broken')
+        closedWhere('it did not answer \`mnema --identify\`', directory, payload);
+      const ran = askTheGate(directory, payload);
+      const failed = whyItDidNotAnswer(ran, GATE_WAIT);
+      if (failed === null) return;
+      if (failed !== undefined) closedWhere(failed, directory, payload);
+      let said;
+      try {
+        said = JSON.parse(ran.stdout).hookSpecificOutput;
+      } catch {
+        return;
+      }
+      if (said?.permissionDecision === 'deny') {
+        throw new Error(
+          said.permissionDecisionReason ?? 'A rule of this project refuses this write.',
+        );
+      }
+    },
+    'tool.execute.after': async (input, output) => {
+      if (input.tool !== ASKS || who() !== 'this') return;
+      const ran = run(
+        ['settled'],
+        directory,
+        JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: input.tool }),
+      );
+      if (ran.error !== undefined || ran.status !== 0) return;
+      let said;
+      try {
+        said = JSON.parse(ran.stdout).hookSpecificOutput?.additionalContext;
+      } catch {
+        return;
+      }
+      if (typeof said === 'string' && typeof output.output === 'string') {
+        output.output = [output.output, said].join('\n\n');
+      }
+    },
+  };
+};
+`
+    .replaceAll('\\`', '`')
+    .split('\n');
   return [
     '// Generated from packages/code/src/host-names.ts: change the table, not this file.',
     '//',
@@ -471,119 +672,16 @@ export function opencodePlugin(): string {
     '// which tool records a choice it settled. Copy this file into `.opencode/plugins/` of the',
     '// project, or into `~/.config/opencode/plugins/`. It runs `mnema` from the PATH, and every',
     '// outcome that is not an answer, such as no `mnema`, no project or a program of that name that',
-    '// is not @mnema/code, leaves the session as it would have been without it.',
-    "import { spawnSync } from 'node:child_process';",
+    '// is not @mnema/code, leaves the session as it would have been without it. One outcome is not',
+    '// silence: a `mnema` that is there and cannot answer (no node on the PATH takes it, it exits',
+    '// non-zero, it does not finish) refuses a write at a path that a rule which refuses it, or asks',
+    '// for a person at it, addresses; any other write goes through.',
+    ...kit.imports,
     '',
-    '/** What `mnema --identify` starts its answer with: the package, then the version. */',
-    "const THIS_PRODUCT = '@mnema/code ';",
+    '// ---- the reading of what to do where `mnema` cannot answer, as the plugin ships it ----',
     '',
-    '/** The tools OpenCode writes a file through. */',
-    `const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});`,
-    '',
-    '/** The tool OpenCode asks the person a question through. */',
-    `const ASKS = '${ASKS_THROUGH.opencode}';`,
-    '',
-    '/** How long `mnema` is given to answer, in milliseconds. */',
-    `const WAIT = ${TIMEOUT * 1000};`,
-    '',
-    '/** The agent whose key signs what the gate records, where the record enrols it. */',
-    `const AGENT = ['--agent-key', '${'opencode'}'];`,
-    '',
-    '/** One run of `mnema`, both streams kept; a run that did not finish carries an `error`. */',
-    'function run(args, cwd, input) {',
-    "  return spawnSync(process.platform === 'win32' ? 'mnema.cmd' : 'mnema', args, {",
-    '    cwd,',
-    '    input,',
-    "    encoding: 'utf-8',",
-    '    timeout: WAIT,',
-    "    stdio: ['pipe', 'pipe', 'pipe'],",
-    '  });',
-    '}',
-    '',
-    '/** Whether the `mnema` on the PATH is this product: a stranger of that name is never run. */',
-    'function isThisProduct(cwd) {',
-    "  const ran = run(['--identify'], cwd);",
-    '  return ran.error === undefined && ran.status === 0 && ran.stdout.startsWith(THIS_PRODUCT);',
-    '}',
-    '',
-    '/** What a verb printed for a hook, or nothing: the second stream rides under the first. */',
-    'function whatItSays(verb, cwd) {',
-    "  const ran = run([verb, '--hook'], cwd);",
-    "  if (ran.error !== undefined || ran.status !== 0 || ran.stdout.trim() === '') return [];",
-    '  const alsoSaid = ran.stderr.trim();',
-    "  return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\\n\\n')];",
-    '}',
-    '',
-    '/**',
-    ' * One run of the gate, asked with the key of the agent this module signs as, and asked again',
-    ' * without it by a `mnema` too old to know the option, which refuses it by name.',
-    ' */',
-    'function askTheGate(cwd, input) {',
-    "  const gate = ['before-a-write', '--host', 'opencode'];",
-    '  const ran = run([...gate, ...AGENT], cwd, input);',
-    "  return ran.status !== 0 && ran.stderr.includes('--agent-key') ? run(gate, cwd, input) : ran;",
-    '}',
-    '',
-    'export const Mnema = async ({ directory }) => {',
-    '  let known;',
-    '  /** Asked once: the PATH does not change under a running host. */',
-    '  const ours = () => {',
-    '    known ??= isThisProduct(directory);',
-    '    return known;',
-    '  };',
-    '  /** The opening of each session, asked of the verbs once. */',
-    '  const opened = new Map();',
-    '  return {',
-    "    'experimental.chat.system.transform': async (input, output) => {",
-    "      const session = input.sessionID ?? '';",
-    '      if (!opened.has(session)) {',
-    '        opened.set(',
-    '          session,',
-    "          ours() ? ['brief', 'recall'].flatMap((verb) => whatItSays(verb, directory)) : [],",
-    '        );',
-    '      }',
-    '      output.system.push(...opened.get(session));',
-    '    },',
-    "    'tool.execute.before': async (input, output) => {",
-    '      if (!WRITES.has(input.tool) || !ours()) return;',
-    '      const ran = askTheGate(',
-    '        directory,',
-    '        JSON.stringify({ tool_name: input.tool, tool_input: output.args }),',
-    '      );',
-    '      if (ran.error !== undefined || ran.status !== 0) return;',
-    '      let said;',
-    '      try {',
-    '        said = JSON.parse(ran.stdout).hookSpecificOutput;',
-    '      } catch {',
-    '        return;',
-    '      }',
-    "      if (said?.permissionDecision === 'deny') {",
-    '        throw new Error(',
-    "          said.permissionDecisionReason ?? 'A rule of this project refuses this write.',",
-    '        );',
-    '      }',
-    '    },',
-    "    'tool.execute.after': async (input, output) => {",
-    '      if (input.tool !== ASKS || !ours()) return;',
-    '      const ran = run(',
-    "        ['settled'],",
-    '        directory,',
-    "        JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: input.tool }),",
-    '      );',
-    '      if (ran.error !== undefined || ran.status !== 0) return;',
-    '      let said;',
-    '      try {',
-    '        said = JSON.parse(ran.stdout).hookSpecificOutput?.additionalContext;',
-    '      } catch {',
-    '        return;',
-    '      }',
-    "      if (typeof said === 'string' && typeof output.output === 'string') {",
-    "        output.output = [output.output, said].join('\\n\\n');",
-    '      }',
-    '    },',
-    '  };',
-    '};',
-    '',
+    ...kit.code,
+    ...own,
   ].join('\n');
 }
 
@@ -671,6 +769,160 @@ export function geminiHooksJson(): string {
  */
 export function geminiHookScript(): string {
   const tools = writeToolsOf('gemini');
+  const kit = theGateKit();
+  const own = String.raw`
+/** What \`mnema --identify\` starts its answer with: the package, then the version. */
+const THIS_PRODUCT = '@mnema/code ';
+
+/** The tools Gemini CLI writes a file through. */
+const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});
+
+/** The tool Gemini CLI asks the person a question through. */
+const ASKS = '${ASKS_THROUGH.gemini}';
+
+/** How long \`mnema\` is given to answer, in milliseconds. */
+const WAIT = ${TIMEOUT * 1000};
+
+/**
+ * What every step of the gate is given, so that the steps TOGETHER stay under the host's own cap
+ * (the hooks file's ${TIMEOUT} seconds): the search for a node takes at most 3 s, \`--identify\` at most
+ * IDENTIFY_WAIT, and the gate at most GATE_WAIT with its second attempt included. 3 + 2 + 6 = 11 s,
+ * so a mnema that hangs is answered by the refusal, not by the host killing the hook (which a host
+ * reads as nothing to say, and the write goes through).
+ */
+const IDENTIFY_WAIT = 2000;
+const GATE_WAIT = 6000;
+
+/** The agent whose key signs what the gate records, where the record enrols it. */
+const AGENT = ['--agent-key', 'gemini'];
+
+/** What is run: npm's own shim name on Windows. */
+const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
+
+/** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
+let settled;
+const theRuntime = () => {
+  settled ??= settleTheRuntime(BINARY, process.env);
+  return settled;
+};
+
+/**
+ * One run of \`mnema\`, both streams kept; a run that did not finish carries an \`error\`.
+ * @param {string[]} args
+ * @param {string} cwd
+ * @param {string} [input]
+ * @param {number} [timeout]
+ */
+function run(args, cwd, input, timeout = WAIT) {
+  return spawnSync(BINARY, args, {
+    cwd,
+    env: theRuntime().env,
+    input,
+    encoding: 'utf-8',
+    timeout,
+    killSignal: 'SIGKILL',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+}
+
+/**
+ * Which \`mnema\` is on the PATH: this product, another program of that name, none, or one that did
+ * not answer the question (it exited non-zero or did not finish), which is the case a gate exists for.
+ * @param {string} cwd
+ */
+function whoIsThere(cwd) {
+  const ran = run(['--identify'], cwd, undefined, IDENTIFY_WAIT);
+  const failure = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error);
+  if (failure?.code === 'ENOENT') return 'other';
+  if (ran.error !== undefined || ran.status !== 0) return 'broken';
+  return ran.stdout.startsWith(THIS_PRODUCT) ? 'this' : 'other';
+}
+
+/**
+ * What a verb printed for a hook, or nothing: the second stream rides under the first.
+ * @param {string} verb
+ * @param {string} cwd
+ */
+function whatItSays(verb, cwd) {
+  const ran = run([verb, '--hook'], cwd);
+  if (ran.error !== undefined || ran.status !== 0 || ran.stdout.trim() === '') return [];
+  const alsoSaid = ran.stderr.trim();
+  return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\n\n')];
+}
+
+/**
+ * The gate's answer where \`mnema\` could not give one: a refusal only where a rule that refuses the
+ * write or asks for a person at it addresses the path, nothing otherwise.
+ * @param {string} because
+ * @param {string} cwd
+ * @param {string} raw
+ */
+function closedWhere(because, cwd, raw) {
+  return aRuleReaches(cwd, process.env, raw)
+    ? { decision: 'deny', reason: couldNotAnswer(because) }
+    : undefined;
+}
+
+/**
+ * What the hook answers for one payload, or nothing.
+ * @param {string | undefined} mode \`open\`, \`gate\` or \`settled\`
+ * @param {string} raw what the host wrote to stdin
+ */
+function answer(mode, raw) {
+  let input;
+  try {
+    input = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();
+  if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;
+  if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;
+  if (mode === 'gate' && theRuntime().refusal !== null) {
+    return closedWhere(theRuntime().refusal, cwd, raw);
+  }
+  const who = theRuntime().refusal === null ? whoIsThere(cwd) : 'broken';
+  if (who === 'broken' && mode === 'gate') {
+    return closedWhere('it did not answer \`mnema --identify\`', cwd, raw);
+  }
+  if (who !== 'this') return undefined;
+  if (mode === 'open') {
+    const text = ['brief', 'recall'].flatMap((verb) => whatItSays(verb, cwd)).join('\n\n');
+    return text === ''
+      ? undefined
+      : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };
+  }
+  if (mode === 'settled') {
+    const ran = run(['settled'], cwd, raw);
+    if (ran.error !== undefined || ran.status !== 0) return undefined;
+    const said = JSON.parse(ran.stdout);
+    return said.hookSpecificOutput === undefined ? undefined : said;
+  }
+  if (mode !== 'gate') return undefined;
+  const gate = ['before-a-write', '--host', 'gemini'];
+  const started = Date.now();
+  let ran = run([...gate, ...AGENT], cwd, raw, GATE_WAIT);
+  // A \`mnema\` too old to know the option refuses it by name: asked again without it, with what is
+  // left of the one budget.
+  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) {
+    ran = run(gate, cwd, raw, Math.max(1, GATE_WAIT - (Date.now() - started)));
+  }
+  const failed = whyItDidNotAnswer(ran, GATE_WAIT);
+  if (failed === null) return undefined;
+  if (failed !== undefined) return closedWhere(failed, cwd, raw);
+  const said = JSON.parse(ran.stdout);
+  return said.decision === 'deny' ? { decision: 'deny', reason: said.reason } : undefined;
+}
+
+try {
+  const said = answer(process.argv[2], readFileSync(0, 'utf-8'));
+  if (said !== undefined) process.stdout.write(JSON.stringify(said));
+} catch {
+  // Silence: this must never make a session worse than it would have been without it.
+}
+`
+    .replaceAll('\\`', '`')
+    .split('\n');
   return [
     '// Generated from packages/code/src/host-names.ts: change the table, not this file.',
     '//',
@@ -679,107 +931,16 @@ export function geminiHookScript(): string {
     '// `settled`, after a question to the person was answered, says which tool records a choice.',
     '// It runs `mnema` from the PATH, and every outcome that is not an answer, such as no `mnema`, no',
     '// project or a program of that name that is not @mnema/code, leaves the session as it would',
-    '// have been without it: nothing on stdout, exit 0.',
-    "import { spawnSync } from 'node:child_process';",
-    "import { readFileSync } from 'node:fs';",
+    '// have been without it: nothing on stdout, exit 0. One outcome is not silence: a `mnema` that is',
+    '// there and cannot answer (no node on the PATH takes it, it exits non-zero, it does not finish)',
+    '// refuses a write at a path that a rule which refuses it, or asks for a person at it, addresses;',
+    '// any other write goes through.',
+    ...kit.imports,
     '',
-    '/** What `mnema --identify` starts its answer with: the package, then the version. */',
-    "const THIS_PRODUCT = '@mnema/code ';",
+    '// ---- the reading of what to do where `mnema` cannot answer, as the plugin ships it ----',
     '',
-    '/** The tools Gemini CLI writes a file through. */',
-    `const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});`,
-    '',
-    '/** The tool Gemini CLI asks the person a question through. */',
-    `const ASKS = '${ASKS_THROUGH.gemini}';`,
-    '',
-    '/** How long `mnema` is given to answer, in milliseconds. */',
-    `const WAIT = ${TIMEOUT * 1000};`,
-    '',
-    '/** The agent whose key signs what the gate records, where the record enrols it. */',
-    `const AGENT = ['--agent-key', '${'gemini'}'];`,
-    '',
-    '/**',
-    ' * One run of `mnema`, both streams kept; a run that did not finish carries an `error`.',
-    ' * @param {string[]} args',
-    ' * @param {string} cwd',
-    ' * @param {string} [input]',
-    ' */',
-    'function run(args, cwd, input) {',
-    "  return spawnSync(process.platform === 'win32' ? 'mnema.cmd' : 'mnema', args, {",
-    '    cwd,',
-    '    input,',
-    "    encoding: 'utf-8',",
-    '    timeout: WAIT,',
-    "    stdio: ['pipe', 'pipe', 'pipe'],",
-    '  });',
-    '}',
-    '',
-    '/**',
-    ' * Whether the `mnema` on the PATH is this product: a stranger of that name is never run.',
-    ' * @param {string} cwd',
-    ' */',
-    'function isThisProduct(cwd) {',
-    "  const ran = run(['--identify'], cwd);",
-    '  return ran.error === undefined && ran.status === 0 && ran.stdout.startsWith(THIS_PRODUCT);',
-    '}',
-    '',
-    '/**',
-    ' * What a verb printed for a hook, or nothing: the second stream rides under the first.',
-    ' * @param {string} verb',
-    ' * @param {string} cwd',
-    ' */',
-    'function whatItSays(verb, cwd) {',
-    "  const ran = run([verb, '--hook'], cwd);",
-    "  if (ran.error !== undefined || ran.status !== 0 || ran.stdout.trim() === '') return [];",
-    '  const alsoSaid = ran.stderr.trim();',
-    "  return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\\n\\n')];",
-    '}',
-    '',
-    '/**',
-    ' * What the hook answers for one payload, or nothing.',
-    ' * @param {string | undefined} mode `open`, `gate` or `settled`',
-    ' * @param {string} raw what the host wrote to stdin',
-    ' */',
-    'function answer(mode, raw) {',
-    '  let input;',
-    '  try {',
-    '    input = JSON.parse(raw);',
-    '  } catch {',
-    '    return undefined;',
-    '  }',
-    "  const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();",
-    "  if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;",
-    "  if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;",
-    '  if (!isThisProduct(cwd)) return undefined;',
-    "  if (mode === 'open') {",
-    "    const text = ['brief', 'recall'].flatMap((verb) => whatItSays(verb, cwd)).join('\\n\\n');",
-    "    return text === ''",
-    '      ? undefined',
-    "      : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };",
-    '  }',
-    "  if (mode === 'settled') {",
-    "    const ran = run(['settled'], cwd, raw);",
-    '    if (ran.error !== undefined || ran.status !== 0) return undefined;',
-    '    const said = JSON.parse(ran.stdout);',
-    '    return said.hookSpecificOutput === undefined ? undefined : said;',
-    '  }',
-    "  if (mode !== 'gate') return undefined;",
-    "  const gate = ['before-a-write', '--host', 'gemini'];",
-    '  let ran = run([...gate, ...AGENT], cwd, raw);',
-    '  // A `mnema` too old to know the option refuses it by name: asked again without it.',
-    "  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) ran = run(gate, cwd, raw);",
-    '  if (ran.error !== undefined || ran.status !== 0) return undefined;',
-    '  const said = JSON.parse(ran.stdout);',
-    "  return said.decision === 'deny' ? { decision: 'deny', reason: said.reason } : undefined;",
-    '}',
-    '',
-    'try {',
-    "  const said = answer(process.argv[2], readFileSync(0, 'utf-8'));",
-    '  if (said !== undefined) process.stdout.write(JSON.stringify(said));',
-    '} catch {',
-    '  // Silence: this must never make a session worse than it would have been without it.',
-    '}',
-    '',
+    ...kit.code,
+    ...own,
   ].join('\n');
 }
 

@@ -225,8 +225,8 @@ export function runAgentRequest(
 }
 
 /**
- * What is wrong with a key that is to be an agent's, or undefined when nothing is: the consent that
- * enrols an agent is proved for an Ed25519 key and no other, so a P-256 or an RSA key would make a
+ * What is wrong with a key that is to be an agent's (or, said so, a checker's), or undefined when
+ * nothing is: the consent that enrols one is proved for an Ed25519 key and no other, so a P-256 or an RSA key would make a
  * line that is printed and then refused.
  */
 export function agentKeyAlgorithmRefusal(
@@ -236,11 +236,13 @@ export function agentKeyAlgorithmRefusal(
   },
   /** What the refusal ends with: the way to a key that would do, for the verb that was asked. */
   way = '`mnema key request --agent <name> --anchor <your identity>` without --key makes one',
+  /** Whose key it is to be, as the refusal says it. */
+  whose: "an agent's" | "a checker's" = "an agent's",
 ): string | undefined {
   const kind = key.publicKey.asymmetricKeyType;
   return kind === 'ed25519'
     ? undefined
-    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, and an agent's key is an Ed25519 one: the consent that enrols it is proved for no other kind; ${way}`;
+    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, and ${whose} key is an Ed25519 one: the consent that enrols it is proved for no other kind; ${way}`;
 }
 
 /**

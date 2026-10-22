@@ -141,6 +141,7 @@ export function runCheckRun(
     const notEd25519 = agentKeyAlgorithmRefusal(
       pair,
       '`mnema key request --checker --anchor <your identity>` makes a checker key',
+      "a checker's",
     );
     if (notEd25519 !== undefined) {
       return { ok: false, reason: 'REFUSED', code: 'UNREADABLE_KEY', message: notEd25519 };
