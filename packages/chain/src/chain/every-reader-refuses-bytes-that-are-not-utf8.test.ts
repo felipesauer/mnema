@@ -33,8 +33,8 @@ import { catalogUpcasters } from '../events/registry.js';
 import { verify } from './chain.js';
 import { committedPublicKey } from './keystore.js';
 import { lastTailCheckpoint, readTailTip } from './store.js';
-import { readStoredWitness } from './witness.js';
 import { HOLDS_NO_KEY } from './verify.js';
+import { readStoredWitness } from './witness.js';
 
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));

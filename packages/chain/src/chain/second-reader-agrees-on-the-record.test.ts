@@ -524,7 +524,8 @@ const MUTATIONS = [
     refusals: 1,
     section: '6',
     says: 'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
-    productSays: 'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
+    productSays:
+      'the key file keys/README.pub holds no Ed25519 public key: no PEM public key in it',
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },

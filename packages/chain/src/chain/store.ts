@@ -13,7 +13,12 @@ import { decodeStoredBytes, StoredJsonError } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
 import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
-import { fingerprintOf, type KeyObject, NoCommittedKeyError, publicKeyFromCommittedText } from './keys.js';
+import {
+  fingerprintOf,
+  type KeyObject,
+  NoCommittedKeyError,
+  publicKeyFromCommittedText,
+} from './keys.js';
 import {
   type ChainLayout,
   checkpointsPath,

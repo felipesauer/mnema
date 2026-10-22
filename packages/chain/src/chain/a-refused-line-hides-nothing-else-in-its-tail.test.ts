@@ -91,7 +91,9 @@ describe('a tail with a line no reader can read', () => {
 
     expect(refusedThere(record)).toEqual([
       expect.stringMatching(/^000001\.jsonl:4: not JSON/),
-      expect.stringMatching(/^checkpoints\.jsonl:3 cp\[3\.\.3\]: the Ed25519 signature does not verify/),
+      expect.stringMatching(
+        /^checkpoints\.jsonl:3 cp\[3\.\.3\]: the Ed25519 signature does not verify/,
+      ),
     ]);
   });
 
@@ -104,7 +106,9 @@ describe('a tail with a line no reader can read', () => {
 
     const here = verify(record, catalogUpcasters());
     expect(here.level).toBe('unreadable');
-    expect(here.issues.map((issue) => issue.detail.replace(/^UNREADABLE: tails\/[^/]+\//, ''))).toEqual([
+    expect(
+      here.issues.map((issue) => issue.detail.replace(/^UNREADABLE: tails\/[^/]+\//, '')),
+    ).toEqual([
       expect.stringMatching(/^000001\.jsonl line 2: not valid JSON/),
       expect.stringMatching(/^000001\.jsonl line 4: not valid JSON/),
       expect.stringMatching(/^checkpoints\.jsonl line 3: not valid JSON/),

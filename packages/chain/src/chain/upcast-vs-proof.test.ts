@@ -307,11 +307,7 @@ describe('the lift still does its job: the proof was not bought with the reading
     expect(refused.level).toBe('unreadable');
     // Each of the three lines the missing rung leaves unread is named, and nothing else: the
     // verdict reads on past a line it cannot read rather than stopping at the first.
-    expect(refused.issues.map((issue) => issue.tail)).toEqual([
-      tailIdOf(),
-      tailIdOf(),
-      tailIdOf(),
-    ]);
+    expect(refused.issues.map((issue) => issue.tail)).toEqual([tailIdOf(), tailIdOf(), tailIdOf()]);
     expect(refused.issues.map((issue) => issue.detail)).toEqual([
       expect.stringMatching(/^UNREADABLE: .* line 2: .*no upcaster for task\.created@1/),
       expect.stringMatching(/^UNREADABLE: .* line 3: .*no upcaster for run\.started@1/),
