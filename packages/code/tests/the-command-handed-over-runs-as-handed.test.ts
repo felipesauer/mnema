@@ -808,7 +808,9 @@ export const HANDED_OVER: Readonly<
 const program = watchedProgram();
 const verbs = new Set(program.commands.map((one) => one.name()));
 
-const pages = trackedPages();
+// The signed record in `.mnema/` is not prose to read (ADR-38): the same skip the sentence guard
+// makes, so a README written there by the product is not a page this guard reads.
+const pages = trackedPages().filter((page) => !page.startsWith('.mnema/'));
 const onPages = pages.map((page) => handedOnPage(page, readFileSync(join(ROOT, page), 'utf8')));
 const inSources = speakingSources().map((file) =>
   handedInSource(file, readFileSync(join(ROOT, file), 'utf8'), verbs),
