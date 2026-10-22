@@ -277,19 +277,19 @@ function nodeFindings(ctx: DoctorContext): Finding[] {
     findings.push({
       topic: 'node',
       state: 'attention',
-      line: `no “node” on the PATH: \`mnema\` starts through \`#!/usr/bin/env node\` and the plugin's hooks run it the same way; ${fix}.`,
+      line: `no “node” on the PATH: mnema starts through \`#!/usr/bin/env node\` and the plugin's hooks run it the same way; ${fix}.`,
     });
   } else if (firstVersion === undefined) {
     findings.push({
       topic: 'node',
       state: 'attention',
-      line: `the first “node” on the PATH, ${oneLine(first)}, did not say its version, and \`mnema\` starts on it: ${fix}.`,
+      line: `the first “node” on the PATH, ${oneLine(first)}, did not say its version, and mnema starts on it: ${fix}.`,
     });
   } else if (refusal(firstVersion) !== undefined) {
     findings.push({
       topic: 'node',
       state: 'attention',
-      line: `the first “node” on the PATH, ${oneLine(first)}, is ${oneLine(firstVersion)}, below what mnema takes, and \`mnema\` starts on it: ${fix}.`,
+      line: `the first “node” on the PATH, ${oneLine(first)}, is ${oneLine(firstVersion)}, below what mnema takes, and mnema starts on it: ${fix}.`,
     });
   } else {
     findings.push({

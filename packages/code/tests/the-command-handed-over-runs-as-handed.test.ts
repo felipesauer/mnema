@@ -679,7 +679,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 42, name: 84, flag: 2 },
+  'CHANGELOG.md': { line: 42, name: 85, flag: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -789,12 +789,14 @@ export const HANDED_OVER: Readonly<
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/README.md': { line: 11, name: 4 },
   'packages/vscode/src/stacks.ts': { line: 1 },
-  'plugin/README.md': { line: 33, name: 23, flag: 1 },
+  'plugin/README.md': { line: 33, name: 24, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
-  'plugin/captures/cursor-script.md': { line: 3, name: 2 },
+  'plugin/captures/cursor-script.md': { line: 3, name: 3 },
   'plugin/gemini/GEMINI.md': { line: 1 },
-  'plugin/hooks/hand-over.mjs': { line: 1 },
+  'plugin/hooks/edit-asks-a-person.mjs': { name: 1 },
+  'plugin/hooks/edit-refuses-a-write.mjs': { name: 1 },
+  'plugin/hooks/hand-over.mjs': { line: 1, name: 2 },
   'plugin/skills/recording-decisions/SKILL.md': { line: 1 },
   'stack-index/README.md': { line: 1 },
 };

@@ -95,8 +95,8 @@ with its own changelog.
   `mnema` starts through `#!/usr/bin/env node`, died on its own floor at its first line, and the gate read that as nothing
   to say, so a write a rule refuses was made. Now the hooks ask the first `node` what it is and, below the floor, run
   `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first); where none does, the
-  gate refuses the write and says which node it met and how to fix it, and the handler that hands over the document says
-  `mnema could not run: ...`. In Cursor's agent, Codex, VS Code and Copilot CLI, a `mnema` that is there and exits non-zero,
+  gate refuses the write and says which node it met and how to fix it, and the handler that hands over the document tells the session that mnema could not run, with the reason.
+  In Cursor's agent, Codex, VS Code and Copilot CLI, a `mnema` that is there and exits non-zero,
   does not answer in ten seconds, or prints what is not a JSON reply now refuses the write with the reason, and so does a
   fault of the handler itself; with no `mnema` on the PATH, no project, or no rule that could meet the write, nothing
   changes and the write goes. `mnema doctor` has a `node` topic: the first `node` on the PATH and whether it takes `mnema`,
