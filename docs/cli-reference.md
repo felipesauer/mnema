@@ -329,6 +329,18 @@ mnema verify --workspace ~/work/api ~/work/web
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
 
+**A task can carry what it is, and a handoff what the next agent must read.** `mnema task create "<title>"
+--description "<text>"` and `mnema task handoff <task> <from> <to> --brief "<text>"` (the `create_task` and
+`record_handoff` tools take `description` and `brief`) record up to 64 KiB of text in the same call as an
+observation about the task, under the topics `description` and `brief`, and the reply names the observation's id.
+The record's format does not change: the text is a note, signed as a note is, and not a field of the task.
+`mnema show <task>` and `read_record` then serve the description, the last handoff (from, to and its brief) and the
+notes about the task, newest first, cut at eight with the count the cut left out. `mnema status`, `bootstrap` and
+`next_actions` say of each task in flight who has it (the `to` of its last handoff, or whoever started it) and the last
+thing that happened to it, on one line. `mnema refs <path>` and `audit_refs`, for an id no tree authored that reads as
+a path under the project, add whether the file exists now and the SHA-256 of its bytes: a reading of the working
+tree, written nowhere. `mnema search "ADR-48"` finds the decision by its label, as `mnema show ADR-48` does.
+
 `mnema verify` exits non-zero when the record is **broken** (in **either** tree, in
 **any** project it was told to cover, and the line says which), so it drops into
 CI as a check with no extra wiring. It also exits non-zero when a **named** path

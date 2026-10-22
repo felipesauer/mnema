@@ -296,6 +296,30 @@ describe('the agent is told the same thing', () => {
     await client.close();
   });
 
+  it('says in the TEXT where the thing the link starts from lives, when that tree does not travel', async () => {
+    // The tool result carried `subjectScope` and the server printed none of it: only the command
+    // line said that a clone gets the link and not what it starts from. A task in a private tree
+    // is the case, and it is a TASK, not a rule.
+    file('src/collate/fold.ts');
+    const client = await connectClient();
+    const made = await client.callTool({
+      name: 'create_task',
+      arguments: { title: 'A private task', scope: 'private' },
+    });
+    const id = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/.exec(
+      (made.content as { text: string }[])[0]?.text ?? '',
+    )?.[1];
+    expect(id).toBeDefined();
+    const reply = await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: id, target: 'src/collate', rel: 'governs', scope: 'public' },
+    });
+    const text = (reply.content as { text: string }[])[0]?.text ?? '';
+    expect(text).toContain('The task it names is in the private tree');
+    expect(text).not.toContain('The rule it names');
+    await client.close();
+  });
+
   it('says nothing in that text when the relation carries no address', async () => {
     const client = await connectClient();
     const reply = await client.callTool({

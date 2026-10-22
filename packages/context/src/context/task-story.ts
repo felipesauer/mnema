@@ -29,6 +29,7 @@ import {
   DESCRIPTION_TOPIC,
   excerptOf,
   type HandoffProjection,
+  newestFirst,
   type ObservationProjection,
   type ProjectionCache,
 } from '@mnema/core';
@@ -79,35 +80,60 @@ export interface TaskStanding {
   readonly lastFact?: { readonly at: string; readonly line: string };
 }
 
-/** Every observation about a task in `caches`, oldest first (ties by id). */
-function notesAbout(caches: readonly ProjectionCache[], id: string): ObservationProjection[] {
-  return caches
-    .flatMap((cache) => cache.listObservationsAbout(id))
-    .sort((a, b) => (a.recordedAt < b.recordedAt ? -1 : a.recordedAt > b.recordedAt ? 1 : 0));
+/** Newest first by the record's one rule; a handoff has no id of its own, so it ties on nothing. */
+function newestRecordedFirst(
+  a: { readonly recordedAt: string; readonly id?: string },
+  b: { readonly recordedAt: string; readonly id?: string },
+): number {
+  return newestFirst({ at: a.recordedAt, id: a.id ?? '' }, { at: b.recordedAt, id: b.id ?? '' });
 }
 
-/** Every handoff of a task in `caches`, oldest first. */
+/** A task's move, newest first: the stream position stands in for the id a row does not carry. */
+function byNewestMove(
+  a: { readonly at: string; readonly ord: number },
+  b: { readonly at: string; readonly ord: number },
+): number {
+  return newestFirst(
+    { at: a.at, id: String(a.ord).padStart(12, '0') },
+    { at: b.at, id: String(b.ord).padStart(12, '0') },
+  );
+}
+
+/** Every observation about a task in `caches`, newest first. */
+function notesAbout(caches: readonly ProjectionCache[], id: string): ObservationProjection[] {
+  return caches.flatMap((cache) => cache.listObservationsAbout(id)).sort(newestRecordedFirst);
+}
+
+/** Every handoff of a task in `caches`, newest first. */
 function handoffsOf(caches: readonly ProjectionCache[], id: string): HandoffProjection[] {
-  return caches
-    .flatMap((cache) => cache.listHandoffs(id))
-    .sort((a, b) => (a.recordedAt < b.recordedAt ? -1 : a.recordedAt > b.recordedAt ? 1 : 0));
+  return caches.flatMap((cache) => cache.listHandoffs(id)).sort(newestRecordedFirst);
+}
+
+/** What a move said, as `: first words`, or nothing when it said nothing. */
+function said(
+  proof: readonly { readonly at: string; readonly action: string; readonly said?: string }[],
+  at: string,
+  action: string,
+): string {
+  const words = proof.find((one) => one.at === at && one.action === action)?.said;
+  return words === undefined ? '' : `: ${excerptOf(words)}`;
 }
 
 /** The story of one task, or undefined when nothing was written beside it. */
 export function taskStory(caches: readonly ProjectionCache[], id: string): TaskStory | undefined {
   const notes = notesAbout(caches, id);
   const handoffs = handoffsOf(caches, id);
-  const lastHandoff = handoffs[handoffs.length - 1];
-  const described = notes.filter((note) => note.topic === DESCRIPTION_TOPIC).pop();
+  const lastHandoff = handoffs[0];
+  const described = notes.find((note) => note.topic === DESCRIPTION_TOPIC);
   // THE BRIEF OF A HANDOFF IS THE FIRST `brief` NOTE RECORDED AT OR AFTER IT: the two are written in
   // one call, the handoff first, so a brief older than the handoff belongs to an earlier one.
   const briefed =
     lastHandoff === undefined
       ? undefined
-      : notes.find(
-          (note) => note.topic === BRIEF_TOPIC && note.recordedAt >= lastHandoff.recordedAt,
-        );
-  const rest = notes.filter((note) => note !== described && note !== briefed).reverse();
+      : notes
+          .filter((note) => note.topic === BRIEF_TOPIC && note.recordedAt >= lastHandoff.recordedAt)
+          .pop();
+  const rest = notes.filter((note) => note !== described && note !== briefed);
   if (described === undefined && lastHandoff === undefined && rest.length === 0) return undefined;
   return {
     ...(described !== undefined
@@ -144,33 +170,31 @@ export function taskStory(caches: readonly ProjectionCache[], id: string): TaskS
  * after, so it is the later.
  */
 export function taskStanding(caches: readonly ProjectionCache[], id: string): TaskStanding {
-  const handoffs = handoffsOf(caches, id);
-  const lastHandoff = handoffs[handoffs.length - 1];
-  let started: { readonly name: string } | undefined;
-  let lastMove: { readonly at: string; readonly line: string } | undefined;
+  const lastHandoff = handoffsOf(caches, id)[0];
   const moves = caches
     .flatMap((cache) => cache.references(id))
     .filter((row) => row.role === 'subject' && row.event.kind === 'task.transitioned')
-    .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.ord - b.ord));
+    .sort(byNewestMove);
+  // The task is had by whoever executed its most recent `start`.
+  const started = moves.find(
+    (row) => row.event.kind === 'task.transitioned' && row.event.payload.action === 'start',
+  );
   // What a move said is on the task's projection, which holds the prose of every move that
   // carried any, keyed by the move's action and instant.
   const proof = caches.flatMap((cache) => cache.getTask(id)?.proof ?? []);
-  for (const row of moves) {
-    if (row.event.kind !== 'task.transitioned') continue;
-    const { action, to, from } = row.event.payload;
-    if (action === 'start') started = { name: row.which ?? A_PERSON };
-    const said = proof.find((one) => one.at === row.at && one.action === action)?.said;
-    lastMove = {
-      at: row.at,
-      // The birth is the move out of nothing: "created", not an arrow from no state.
-      line:
-        from === null
-          ? 'created'
-          : `${action} → ${to}${said === undefined ? '' : `: ${excerptOf(said)}`}`,
-    };
-  }
-  const notes = notesAbout(caches, id);
-  const lastNote = notes[notes.length - 1];
+  const newest = moves[0];
+  const lastMove =
+    newest !== undefined && newest.event.kind === 'task.transitioned'
+      ? {
+          at: newest.at,
+          // The birth is the move out of nothing: "created", not an arrow from no state.
+          line:
+            newest.event.payload.from === null
+              ? 'created'
+              : `${newest.event.payload.action} → ${newest.event.payload.to}${said(proof, newest.at, newest.event.payload.action)}`,
+        }
+      : undefined;
+  const lastNote = notesAbout(caches, id)[0];
   const lastFact =
     lastNote !== undefined && (lastMove === undefined || lastNote.recordedAt >= lastMove.at)
       ? { at: lastNote.recordedAt, line: `${lastNote.topic}: ${excerptOf(lastNote.text)}` }
@@ -179,7 +203,7 @@ export function taskStanding(caches: readonly ProjectionCache[], id: string): Ta
     ...(lastHandoff !== undefined
       ? { owner: { name: lastHandoff.toAgent, via: 'handoff' as const } }
       : started !== undefined
-        ? { owner: { name: started.name, via: 'start' as const } }
+        ? { owner: { name: started.which ?? A_PERSON, via: 'start' as const } }
         : {}),
     ...(lastFact !== undefined ? { lastFact } : {}),
   };

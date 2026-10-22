@@ -39,6 +39,7 @@ $ mnema show no-such-id --json
 [exit 1]
 $ mnema refs no-such-id
 | no-such-id  ·  unresolved
+|   no file at this path now.
 |   nothing references it, and it references nothing.
 $ mnema refs no-such-id --json
 | {
@@ -53,13 +54,19 @@ $ mnema refs no-such-id --json
 |     }
 |   ],
 |   "links": [],
-|   "truncated": false
+|   "truncated": false,
+|   "file": {
+|     "path": "no-such-id",
+|     "exists": false
+|   }
 | }
 $ mnema refs no-such-id --depth 2
 | no-such-id  ·  unresolved
+|   no file at this path now.
 |   nothing references it, and it references nothing.
 $ mnema refs no-such-id --direction out --depth 1
 | no-such-id  ·  unresolved
+|   no file at this path now.
 |   nothing references it, and it references nothing.
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
@@ -559,7 +566,11 @@ $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
+|   last handoff <at:10>: agent-alpha → agent-beta
 |   derived from <task-chore>
+|
+| Notes (1, newest first):
+|   <observation-rollback>  review  the runbook needs a rollback section
 |
 | What each move said:
 | complete · <at:18>
@@ -606,6 +617,24 @@ $ mnema show <task-runbook> --json
 |         "said": "reason: the rollback step is wrong"
 |       }
 |     ]
+|   },
+|   "story": {
+|     "handoff": {
+|       "from": "agent-alpha",
+|       "to": "agent-beta",
+|       "at": "<at:10>"
+|     },
+|     "notes": {
+|       "total": 1,
+|       "items": [
+|         {
+|           "id": "<observation-rollback>",
+|           "topic": "review",
+|           "line": "the runbook needs a rollback section",
+|           "at": "<at:09>"
+|         }
+|       ]
+|     }
 |   }
 | }
 $ mnema refs <decision-runbook>
@@ -1509,9 +1538,9 @@ $ mnema status --actor <anchor>
 |   1 run(s) still open
 |
 | 3 live task(s):
-|   <task-runbook>  Write the deploy runbook (IN_PROGRESS)
-|   <task-errand>  Read the release notes (DRAFT)
-|   <task-chore>  Rotate the local credentials (DRAFT)
+|   <task-runbook>  Write the deploy runbook (IN_PROGRESS)  with agent-beta  last: reopen → IN_PROGRESS: reason: the rollback step is wrong
+|   <task-errand>  Read the release notes (DRAFT)  last: created
+|   <task-chore>  Rotate the local credentials (DRAFT)  last: created
 |
 | 1 decision(s) in force:
 |   <decision-runbook>  ADR-1  Keep the runbook in the record
@@ -1562,19 +1591,35 @@ $ mnema status --actor <anchor> --json
 |       "id": "<task-runbook>",
 |       "title": "Write the deploy runbook",
 |       "state": "IN_PROGRESS",
-|       "updatedAt": "<at:22>"
+|       "updatedAt": "<at:22>",
+|       "owner": {
+|         "name": "agent-beta",
+|         "via": "handoff"
+|       },
+|       "lastFact": {
+|         "at": "<at:22>",
+|         "line": "reopen → IN_PROGRESS: reason: the rollback step is wrong"
+|       }
 |     },
 |     {
 |       "id": "<task-errand>",
 |       "title": "Read the release notes",
 |       "state": "DRAFT",
-|       "updatedAt": "<at:04>"
+|       "updatedAt": "<at:04>",
+|       "lastFact": {
+|         "at": "<at:04>",
+|         "line": "created"
+|       }
 |     },
 |     {
 |       "id": "<task-chore>",
 |       "title": "Rotate the local credentials",
 |       "state": "DRAFT",
-|       "updatedAt": "<at:03>"
+|       "updatedAt": "<at:03>",
+|       "lastFact": {
+|         "at": "<at:03>",
+|         "line": "created"
+|       }
 |     }
 |   ],
 |   "workTotal": 3,
@@ -1850,7 +1895,11 @@ $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
+|   last handoff <at:10>: agent-alpha → agent-beta
 |   derived from <task-chore>
+|
+| Notes (1, newest first):
+|   <observation-rollback>  review  the runbook needs a rollback section
 |
 | What each move said:
 | complete · <at:18>

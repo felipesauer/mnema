@@ -9,7 +9,7 @@ instructions                                 2019 B      476 tok
 edit: rules pushed                            331 B       92 tok
 edit: asks for a person                       515 B      137 tok
 edit: refuses the write                       643 B      184 tok
-tool answer: bootstrap                       2225 B      817 tok
+tool answer: bootstrap                       2287 B      842 tok
 tool answer: skills                           302 B       89 tok
 tool answer: focus                            743 B      295 tok
 tool answer: resume                          1127 B      439 tok
@@ -29,9 +29,9 @@ tool definition: capture_memory              2117 B      456 tok
 tool definition: record_observation          2425 B      528 tok
 tool definition: retract_note                1839 B      416 tok
 tool definition: retract_link                2064 B      470 tok
-tool definition: record_handoff              2415 B      549 tok
+tool definition: record_handoff              2746 B      627 tok
 tool definition: link_knowledge              2731 B      610 tok
-tool definition: create_task                 2293 B      503 tok
+tool definition: create_task                 2605 B      575 tok
 tool definition: task_transition             2020 B      447 tok
 tool definition: record_decision             3060 B      668 tok
 tool definition: decision_transition         2290 B      509 tok
@@ -46,10 +46,10 @@ tool definition: guard                       2886 B      676 tok
 tool definition: search                      2682 B      629 tok
 tool definition: read_record                 1371 B      322 tok
 tool definition: audit_timeline               975 B      224 tok
-tool definition: audit_refs                  1502 B      369 tok
+tool definition: audit_refs                  1649 B      403 tok
 tool definition: governing_rules             1501 B      339 tok
 tool definition: rules_before_an_edit        2427 B      546 tok
 tool definition: audit_accountability        1986 B      440 tok
 tool definition: audit_exposure              1626 B      364 tok
 tool definition: audit_antipatterns          1447 B      314 tok
-tool definitions: all 27                    54231 B    12303 tok
+tool definitions: all 27                    55021 B    12487 tok

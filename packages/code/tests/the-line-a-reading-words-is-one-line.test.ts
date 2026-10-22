@@ -1696,6 +1696,63 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- status.ts: where things stand ---------------------------------------------
+  'record.ts asId(note.id) #1': {
+    verdict: 'minted',
+    why: 'the id of an observation the record holds',
+  },
+  'record.ts itemLine(oneLine(note.line)) #1': {
+    verdict: 'collapsed',
+    why: 'the first words of a note, typed by whoever wrote it',
+  },
+  'record.ts itemLine(oneLine(note.topic)) #1': {
+    verdict: 'collapsed',
+    why: 'the topic a note was filed under, typed by whoever wrote it',
+  },
+  'record.ts «Notes ({}):» items.length < total ? `${items.length} of ${total}, newest first` : `${total}, newest first` #1':
+    {
+      verdict: 'composed',
+      why: 'the `n of m` or the total, composed out of two counts and a clause of this module',
+    },
+  'record.ts «last handoff {}: {} → {}» handoff.at #1': {
+    verdict: 'minted',
+    why: 'an ISO-8601 instant off the record: when the handoff was written',
+  },
+  'record.ts «last handoff {}: {} → {}» oneLine(handoff.from) #1': {
+    verdict: 'collapsed',
+    why: 'an agent name, typed by whoever handed the task over',
+  },
+  'record.ts «last handoff {}: {} → {}» oneLine(handoff.to) #1': {
+    verdict: 'collapsed',
+    why: 'an agent name, typed by whoever handed the task over',
+  },
+  'references.ts fact(onDisk(file)) #1': {
+    verdict: 'composed',
+    why: 'a clause of this module, built by onDisk below out of a byte count and a hash this reading computed',
+  },
+  'references.ts «a file now, {} bytes, sha256 {}» file.bytes #1': {
+    verdict: 'minted',
+    why: 'the size of the file the path names, counted by this reading',
+  },
+  'references.ts «a file now, {} bytes, sha256 {}» file.sha256 #1': {
+    verdict: 'minted',
+    why: 'the hash of the file the path names, computed by this reading',
+  },
+  "status.ts itemLine(...(item.kind === 'task' ? standingOf(item) : [])) #1": {
+    verdict: 'composed',
+    why: 'the clauses of standingOf below, each classified where it is worded',
+  },
+  'status.ts itemLine(...standingOf(item)) #1': {
+    verdict: 'composed',
+    why: 'the clauses of standingOf below, each classified where it is worded',
+  },
+  'status.ts «last: {}» oneLine(item.lastFact.line) #1': {
+    verdict: 'collapsed',
+    why: 'the first words of the last note about the task, typed by whoever wrote it',
+  },
+  'status.ts «with {}» oneLine(item.owner.name) #1': {
+    verdict: 'collapsed',
+    why: 'an agent name, typed by whoever handed the task over or started it',
+  },
   'status.ts «{}, where things stand.» actor #1': {
     verdict: 'minted',
     why: 'an anchor: the reading resolved the actor to one before this line',
@@ -2358,8 +2415,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on.
-    expect(FOUND.sites.length).toBe(452);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path.
+    expect(FOUND.sites.length).toBe(466);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2380,10 +2437,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(121);
-    expect(count('minted')).toBe(259);
-    expect(count('composed')).toBe(72);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(121);
+    expect(count('collapsed')).toBe(127);
+    expect(count('minted')).toBe(263);
+    expect(count('composed')).toBe(76);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(127);
   });
 
   it('every reason says where the value comes from', () => {

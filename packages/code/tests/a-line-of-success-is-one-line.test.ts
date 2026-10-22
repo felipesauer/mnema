@@ -646,6 +646,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the anchor of the writer that signed the waiver',
   },
+  'task.ts «  The description is observation {} about it.» #1': {
+    verdict: 'minted',
+    why: 'the id of the observation the write just minted',
+  },
+  'handoff.ts «  The brief is observation {} about the task.» #1': {
+    verdict: 'minted',
+    why: 'the id of the observation the write just minted',
+  },
   'task.ts «Created task {} ({})» #1': {
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
@@ -993,7 +1001,8 @@ describe('every line this wiring words is classified', () => {
     // 153 with the line init prints when it completes a project that lacked what it leaves beside the record.
     // 154 with the line `switch on host-memory-mirror` prints.
     // 155 with the line `switch on decision-file-written` prints.
-    expect(FOUND.sites.length).toBe(155);
+    // 157 with the two lines that name the observation a brief or a description was recorded as.
+    expect(FOUND.sites.length).toBe(157);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1014,7 +1023,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(81);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(74);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(81);
   });
 

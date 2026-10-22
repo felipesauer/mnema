@@ -121,6 +121,7 @@ import {
   type Replacement,
   reachNotice,
   replacementNotice,
+  subjectReachNotice,
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
@@ -1181,7 +1182,16 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `Linked ${subject} -${result.recorded[0]}→ ${result.recordedTarget ?? target}`,
         result,
         {
-          after: reachNotice(result.reach),
+          // The reach of the address, then where the rule (or task) it names lives, the way the
+          // command line says them: an agent recording a gate for somebody is who most needs both.
+          after: [
+            ...reachNotice(result.reach),
+            ...subjectReachNotice(
+              result.scope,
+              result.subjectScope,
+              result.subjectIsATask === true,
+            ),
+          ],
         },
       );
     },

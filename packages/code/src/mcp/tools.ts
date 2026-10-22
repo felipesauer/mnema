@@ -586,6 +586,8 @@ export type LinkRecordedResult =
        * rule where the address is.
        */
       readonly subjectScope?: Scope;
+      /** True when the subject is a TASK, so the sentence about where it lives names what it is. */
+      readonly subjectIsATask?: true;
     })
   | Extract<FactRecordedResult, { readonly ok: false }>;
 
@@ -673,6 +675,9 @@ export function runLinkKnowledge(
   // way first, and that guard is what caught it.
   const located = locateEntity(session, subject.id);
   const subjectScope = located.outcome === 'found' ? located.home.scope : undefined;
+  const subjectIsATask =
+    located.outcome === 'found' &&
+    session.caches.get(located.home.chainRoot).getTask(subject.id) !== null;
   // The relation AS RECORDED: screened, so the echo shows what landed.
   return {
     ok: true,
@@ -682,6 +687,7 @@ export function runLinkKnowledge(
     ...(reach !== undefined ? { reach } : {}),
     ...(recordedTarget !== target.id ? { recordedTarget } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
+    ...(subjectIsATask ? { subjectIsATask: true as const } : {}),
     ...forwardReplacement(recorded),
   };
 }
