@@ -90,17 +90,21 @@ with its own changelog.
 - **`mnema doctor` reads the host's `.claude.json` where the host keeps it.** With `CLAUDE_CONFIG_DIR` set the file is
   `$CLAUDE_CONFIG_DIR/.claude.json`, and `doctor` read the one in your home directory, so it counted the wrong
   declarations of the mnema MCP server and listed the wrong projects.
-- **The plugin's hooks no longer trust the first `node` of their PATH, and a gate that cannot decide a write refuses it.**
+- **The plugin's hooks no longer trust the first `node` of their PATH, and a gate that cannot decide a write refuses it where a rule addresses the path.**
   Cursor's command-line agent puts the Node it carries (24.5.0 on 2026.09.18) in front of the PATH of a plugin's hooks;
   `mnema` starts through `#!/usr/bin/env node`, died on its own floor at its first line, and the gate read that as nothing
   to say, so a write a rule refuses was made. Now the hooks ask the first `node` what it is and, below the floor, run
-  `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first); where none does, the
-  gate refuses the write and says which node it met and how to fix it, and the handler that hands over the document tells the session that mnema could not run, with the reason.
-  In Cursor's agent, Codex, VS Code and Copilot CLI, a `mnema` that is there and exits non-zero,
-  does not answer in ten seconds, or prints what is not a JSON reply now refuses the write with the reason, and so does a
-  fault of the handler itself; with no `mnema` on the PATH, no project, or no rule that could meet the write, nothing
-  changes and the write goes. `mnema doctor` has a `node` topic: the first `node` on the PATH and whether it takes `mnema`,
-  and the Node Cursor's agent carries where it is on the machine. Gemini CLI's and OpenCode's own scripts are unchanged.
+  `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first), within three seconds
+  and with a second for each `node` that hangs on its version. Where none does, or where `mnema` is there and exits
+  non-zero, does not answer in ten seconds, or prints what no host reads, the write is refused with the reason and the
+  fix, but only where a rule that refuses a write or asks for a person at it addresses that path; any other path goes
+  through, a project whose only links govern is never refused, and a rule taken back stops refusing. This holds in Cursor's
+  agent, Codex, VS Code, Copilot CLI, and now in Gemini CLI's script and OpenCode's plugin too, and for a fault of a
+  handler itself. With no `mnema` on the PATH, no project, or no rule that could meet the write, nothing changes. The
+  handler that hands over the document tells the session that mnema could not run, with the reason. `mnema doctor` has a
+  `node` topic: the first `node` on the PATH and whether it takes `mnema`, and the Node Cursor's agent carries where it is
+  on the machine. A hook whose own `node` cannot start, or whose handler files are missing, is still read by the host as
+  nothing to say, and Claude Code's call into the server is unchanged.
 
 - **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
   `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that
