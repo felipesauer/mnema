@@ -287,6 +287,96 @@ describe('a record that moved behind the file is seen by the next read', () => {
   }, 60_000);
 });
 
+describe('a branch checked out over the live segment', () => {
+  /**
+   * The tails of two branches that share a base and then diverge, the branch longer than the
+   * one served: what `git checkout` leaves behind.
+   */
+  function twoBranches(): { main: Map<string, string>; branch: Map<string, string> } {
+    cli(own, 'decision', 'record', 'Base', 'shared by both branches');
+    const tails = join(own, PROJECT_DIR, 'tails');
+    const base = snapshot(tails);
+    cli(own, 'decision', 'record', 'OnMain', 'x');
+    const main = snapshot(tails);
+    checkout(base);
+    cli(own, 'decision', 'record', 'OnTheBranchWithALongerTitle', 'a longer reason than the other');
+    cli(own, 'decision', 'record', 'AndMore', 'y');
+    return { main, branch: snapshot(tails) };
+  }
+
+  /** Every file of a tree's tails, as git keeps them per branch. */
+  function snapshot(tails: string): Map<string, string> {
+    const files = new Map<string, string>();
+    for (const name of readdirSync(tails, { recursive: true, encoding: 'utf-8' })) {
+      const path = join(tails, name);
+      if (!readdirSafe(path)) files.set(path, readFileSync(path, 'utf-8'));
+    }
+    return files;
+  }
+
+  function checkout(branch: Map<string, string>): void {
+    for (const [path, text] of branch) writeFileSync(path, text);
+  }
+
+  it('a new session serves the branch and not the other one', () => {
+    const { main, branch } = twoBranches();
+    checkout(main);
+    const first = openOn(own);
+    expect(decisionsOf(first)).toEqual(['Base', 'OnMain']);
+    closeSession(first);
+    checkout(branch);
+
+    const next = openOn(own);
+    expect(decisionsOf(next)).toEqual(['AndMore', 'Base', 'OnTheBranchWithALongerTitle']);
+    closeSession(next);
+  });
+
+  it('a session that is up serves the branch after the checkout', () => {
+    const { main, branch } = twoBranches();
+    checkout(main);
+    const session = openOn(own);
+    expect(decisionsOf(session)).toEqual(['Base', 'OnMain']);
+    checkout(branch);
+    expect(decisionsOf(session)).toEqual(['AndMore', 'Base', 'OnTheBranchWithALongerTitle']);
+    closeSession(session);
+  });
+
+  it('the command line, which keeps the same file, serves the branch too', () => {
+    const { main, branch } = twoBranches();
+    checkout(main);
+    expect(cli(own, 'search', '--kind', 'decision')).toContain('OnMain');
+    checkout(branch);
+    const answer = cli(own, 'search', '--kind', 'decision');
+    expect(answer).toContain('OnTheBranchWithALongerTitle');
+    expect(answer).not.toContain('OnMain');
+  });
+});
+
+describe('a file another version of the code rewrote under a server that is up', () => {
+  it('is taken again and answers, instead of failing on the other schema', () => {
+    cli(own, 'decision', 'record', 'Alpha', 'a reason');
+    const session = openOn(own);
+    expect(decisionsOf(session)).toEqual(['Alpha']);
+    const file = fileOf(rootOf(session, 'public'));
+
+    const db = new DatabaseSync(file);
+    db.exec('BEGIN IMMEDIATE');
+    const row = db.prepare("SELECT value FROM cache_meta WHERE key = 'generation'").get() as {
+      value: string;
+    };
+    db.prepare("UPDATE cache_meta SET value = ? WHERE key = 'generation'").run(
+      String(Number(row.value) + 1),
+    );
+    db.exec("UPDATE cache_meta SET value = 'another-version' WHERE key = 'stamp'");
+    db.exec('ALTER TABLE decisions RENAME COLUMN state TO status');
+    db.exec('COMMIT');
+    db.close();
+
+    expect(decisionsOf(session)).toEqual(['Alpha']);
+    closeSession(session);
+  });
+});
+
 describe('what a read leaves behind', () => {
   it('is the projection of the tree it read, and nothing else in the project', () => {
     cli(own, 'decision', 'record', 'Something to read', 'so the tree has a tail');

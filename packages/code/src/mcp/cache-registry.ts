@@ -230,6 +230,10 @@ export function createCacheRegistry(
           existing.cache.refresh();
           existing.stale = false;
           existing.extent = extent;
+        } else {
+          // The chain did not move, but a file kept on disk may have: another process, or
+          // another version of the code, rewrote it since this connection read it. One query.
+          existing.cache.refreshIfTheFileMoved();
         }
         return existing.cache;
       }
