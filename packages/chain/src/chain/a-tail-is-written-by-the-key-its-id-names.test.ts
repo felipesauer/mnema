@@ -49,7 +49,10 @@ function commit(kp: KeyPair): void {
 function writeTail(owner: KeyPair, suffix: string, runs: readonly Run[]): string {
   const tail = `${owner.fingerprint}-${suffix}`;
   mkdirSync(tailDir({ root }, tail), { recursive: true });
-  writeFileSync(tailProofPath({ root }, tail), `${serializeTailProof(signTailProof(tail, owner))}\n`);
+  writeFileSync(
+    tailProofPath({ root }, tail),
+    `${serializeTailProof(signTailProof(tail, owner))}\n`,
+  );
   const lines: string[] = [];
   let prevHash: string | null = null;
   let prevCheckpoint: string | null = null;

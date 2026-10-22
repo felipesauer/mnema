@@ -1616,7 +1616,6 @@ function verifyTailSigner(
   issues: TailIssue[],
 ): void {
   const owner = tailFingerprint(tail);
-  const ownerSaid = `a tail is written only by the key its id begins with, ${oneLine(owner.slice(0, 12))}... (${TAIL_SIGNER_MISMATCH})`;
   const checkpoint = [...checkpoints]
     .sort((x, y) => x.fromSeq - y.fromSeq)
     .find((cp) => cp.signerFp !== owner);
@@ -1625,7 +1624,7 @@ function verifyTailSigner(
       tail,
       layer: 'T2/T4',
       seq: checkpoint.fromSeq,
-      detail: `checkpoint cp[${checkpoint.fromSeq}..${checkpoint.toSeq}] is signed by ${oneLine(checkpoint.signerFp.slice(0, 12))}..., and ${ownerSaid}`,
+      detail: `checkpoint cp[${checkpoint.fromSeq}..${checkpoint.toSeq}] is signed by ${oneLine(checkpoint.signerFp.slice(0, 12))}..., and a tail is written only by the key its id begins with, ${oneLine(owner.slice(0, 12))}... (${TAIL_SIGNER_MISMATCH})`,
     });
   }
   const event = entries.find((entry) => entry.event.signerFp !== owner);
@@ -1634,7 +1633,7 @@ function verifyTailSigner(
       tail,
       layer: 'T2/T4',
       seq: event.link.seq,
-      detail: `seq ${event.link.seq} names ${oneLine(event.event.signerFp.slice(0, 12))}... as its signer, and ${ownerSaid}`,
+      detail: `seq ${event.link.seq} names ${oneLine(event.event.signerFp.slice(0, 12))}... as its signer, and a tail is written only by the key its id begins with, ${oneLine(owner.slice(0, 12))}... (${TAIL_SIGNER_MISMATCH})`,
     });
   }
 }

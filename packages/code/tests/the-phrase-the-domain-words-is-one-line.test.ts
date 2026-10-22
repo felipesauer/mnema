@@ -1120,6 +1120,51 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'a whole number the catalog requires of a checkpoint’s range',
     },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» TAIL_SIGNER_MISMATCH #1':
+    {
+      verdict: 'minted',
+      why: 'the name a write into another key’s tail is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» checkpoint.fromSeq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number the catalog requires of a checkpoint’s range',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» checkpoint.toSeq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number the catalog requires of a checkpoint’s range',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» oneLine(checkpoint.signerFp.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the signer a stored checkpoint names: a string whoever wrote the file chose',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» oneLine(owner.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the fingerprint the directory name begins with',
+    },
+  '@mnema/chain chain/verify.ts «seq {} names {}... as its signer, and a tail is written only by the key its id begins with, {}... ({})» TAIL_SIGNER_MISMATCH #1':
+    {
+      verdict: 'minted',
+      why: 'the name a write into another key’s tail is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «seq {} names {}... as its signer, and a tail is written only by the key its id begins with, {}... ({})» event.link.seq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number the catalog requires of a stored link',
+    },
+  '@mnema/chain chain/verify.ts «seq {} names {}... as its signer, and a tail is written only by the key its id begins with, {}... ({})» oneLine(event.event.signerFp.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the signer a stored event names: a string whoever wrote the file chose',
+    },
+  '@mnema/chain chain/verify.ts «seq {} names {}... as its signer, and a tail is written only by the key its id begins with, {}... ({})» oneLine(owner.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the fingerprint the directory name begins with',
+    },
   '@mnema/chain chain/verify.ts «external witness (T3): PENDING, which is not coverage: {}» witness.detail #1':
     {
       verdict: 'composed',
@@ -2114,8 +2159,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(304);
-    expect(FOUND[0]?.sites.length).toBe(113);
+    expect(SITES.length).toBe(313);
+    expect(FOUND[0]?.sites.length).toBe(122);
     expect(FOUND[1]?.sites.length).toBe(191);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2166,11 +2211,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(207);
-    expect(count('minted')).toBe(72);
+    expect(count('collapsed')).toBe(211);
+    expect(count('minted')).toBe(77);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      207,
+      211,
     );
   });
 
