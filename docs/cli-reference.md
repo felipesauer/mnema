@@ -1916,8 +1916,11 @@ the project it serves, and nothing else: the exception is written beside the oth
 count of calls, and a read still appends nothing to the record and rewrites no byte of it.
 Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
 checkout of another commit) is read by the next call, and a file that does not follow the
-record is built again. What it does not see is an edit that keeps a live segment's size
-(`mnema verify` is what rules on that).
+record is built again. The line a stored position ends on is read back and has to be the entry it ended on, so a
+live segment replaced by another branch's, longer or not, is read again, by the command line and
+by a server that is already up; and a file another process or version of the code rewrote is taken
+again before the next answer. What it does not see is an edit, in place and to the same size, to a
+line before the last one of a live segment (`mnema verify` is what rules on that).
 
 `MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
 and can be written to, every read (the command line, the MCP server and the library)

@@ -27,7 +27,10 @@ with its own changelog.
   (median of 21 cold starts, one project), and from 299 to 69 ms with nine other projects in the workspace; the second
   call is about 4 ms slower than before while the file's pages are first read, and the calls after it are equal. Because a tool that only reads now updates that file, `readOnlyHint` carries a second written
   exception beside the local count of calls: a cache derived from the project's own record, deletable at no cost to
-  any answer, never a fact of the record. What the file does not see is an edit that keeps a live segment's size
+  any answer, never a fact of the record. A live segment replaced by another branch's, even a longer one, is read again (the
+  line a stored position ends on is read back and must be the entry it ended on), in the command line as in the server,
+  and a file another process or version rewrote under a running server is taken again before the next answer. What the
+  file does not see is an edit, in place and to the same size, to a line before the last one of a live segment
   (`mnema verify` is what rules on that).
 
 ## [0.1.2] - 2026-10-21
