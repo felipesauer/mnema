@@ -4,7 +4,7 @@
  * to the tree a clone gets, and the task is the session journal's to remember.
  *
  * The files under test are `src/commands/dispatched.ts` (the verb's command) and the field it adds to
- * `src/session-journal.ts`. The payloads are in the shape the host's `PostToolUse` on its `Agent` tool
+ * `src/session-journal.ts`, and `src/wiring/dispatched.ts`, the verb as the command line routes it. The payloads are in the shape the host's `PostToolUse` on its `Agent` tool
  * hands a hook (`tool_input` with `description`, `prompt` and `subagent_type`, `tool_response`,
  * `session_id`, `cwd`, `tool_use_id`) and the `SessionEnd` the host hands at the end.
  */
@@ -24,6 +24,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { resolveTrees } from '@mnema/core';
+import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   briefFileOf,
@@ -32,9 +33,11 @@ import {
   runDispatched,
 } from '../src/commands/dispatched.js';
 import { runSessionTally } from '../src/commands/tally.js';
+import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { journalFile, journalsDir, readJournal, STALE_AFTER_MS } from '../src/session-journal.js';
 import { withScopedCaches } from '../src/tree-sources.js';
+import { registerDispatched } from '../src/wiring/dispatched.js';
 
 let sandbox: string;
 let repo: string;
@@ -358,5 +361,27 @@ describe('where it stays silent, and never fails', () => {
     mirror(dispatch());
     expect(whatTheRecordHolds().tasks).toEqual([]);
     expect(statSync(sandbox).isDirectory()).toBe(true);
+  });
+});
+
+describe('the verb as the command line routes it', () => {
+  it('is a write, takes no option, and prints {} whatever it did', async () => {
+    const seen = { out: [] as string[], err: [] as string[] };
+    const io = {
+      out: (line: string) => seen.out.push(line),
+      err: (line: string) => seen.err.push(line),
+      fail: () => {},
+      input: async () => dispatch(),
+    };
+    const program = new Command('mnema').exitOverride();
+    const declared = registerDispatched(program, {
+      io,
+      render: renderPlain,
+    } as unknown as Parameters<typeof registerDispatched>[1]);
+    expect(declared.effect).toBe('mutates');
+    expect(declared.act.options).toEqual([]);
+    await program.parseAsync(['dispatched'], { from: 'user' });
+    expect(seen.out).toEqual(['{}']);
+    expect(whatTheRecordHolds().handoffs).toHaveLength(1);
   });
 });

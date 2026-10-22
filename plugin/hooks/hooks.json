@@ -106,7 +106,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/agent-dispatched.mjs\"",
+            "command": "IN=$(cat); case \"$IN\" in *'\"Agent\"'*|*'\"Task\"'*) printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/agent-dispatched.mjs\";; esac",
             "timeout": 15
           }
         ]
