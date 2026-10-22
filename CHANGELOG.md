@@ -42,7 +42,7 @@ with its own changelog.
 - **`.mnema/workbench/` is a folder the record holds and does not count: the notes of the people working there.**
   `FORMAT.md` section 4 names it in the layout, with `inherit.json`, and says what was already true of both readers: they
   enumerate `keys/` and `tails/` and nothing else at the root, so a verdict is the same with the folder as without it,
-  whatever it holds. A test holds `mnema verify`, the Python verifier and the page `mnema site` writes to that over every
+  whatever it holds. A test holds `mnema verify`, the Python verifier and the page of the site verb to that over every
   frozen record and every mutation the verifier's tool builds, with notes beside each that hold bytes that are not UTF-8,
   a link to nothing and a `tails/` and `keys/` of their own. No `kind`, `v` or field came with it, and a record without
   the folder reads as before. The record's `.gitignore` gains `/workbench/local` (the private part, a link, so the rule has

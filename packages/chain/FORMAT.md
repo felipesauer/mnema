@@ -220,8 +220,8 @@ promise of it: a record without the folder reads as it always did, and a version
 the folder reads a record that has one exactly as this one does, because neither enumerates
 the root. The name `private` is not used in it: `<record>/private/` is the private tree of a
 project outside a git repository and, inside one, where an earlier version kept it before it
-moved into the repository's git directory; `mnema doctor` names one still there as left
-behind, and `mnema doctor --fix private-tree` moves it.
+moved into the repository's git directory; the product names one still there as left
+behind and, when asked, moves it.
 
 The tail is the concatenation of its segments in name order, and sequence numbers
 are contiguous across that concatenation: **which segment a given sequence number
