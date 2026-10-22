@@ -421,6 +421,63 @@ export function forEachLine(path: string, visit: (line: string) => boolean): voi
   }
 }
 
+/**
+ * Calls `visit` with each line of a file from byte `start` on, and returns the byte offset a later
+ * call may start from: the end of the last line it handed over.
+ *
+ * It exists so a reader that runs after every response reads only what the host wrote since: the
+ * offset is BYTES, and a line is cut at the newline byte before it is decoded, so a multi-byte
+ * character is never split. A last fragment with no newline is handed over only if it is a whole
+ * JSON value (the host may still be writing it); otherwise the offset stops before it. A `start`
+ * past the end of the file hands over nothing and returns the file's size, which the caller reads
+ * as "the file is shorter than where I was" and starts over from. `size` is -1 for a file that
+ * cannot be opened.
+ */
+export function forEachLineFrom(
+  path: string,
+  start: number,
+  visit: (line: string) => void,
+): { readonly end: number; readonly size: number } {
+  let fd: number;
+  try {
+    fd = openSync(path, 'r');
+  } catch {
+    return { end: start, size: -1 };
+  }
+  try {
+    const size = statSync(path).size;
+    if (start > size) return { end: size, size };
+    const buffer = Buffer.allocUnsafe(CHUNK);
+    let position = start;
+    let end = start;
+    let rest: Buffer = Buffer.alloc(0);
+    for (;;) {
+      const read = readSync(fd, buffer, 0, CHUNK, position);
+      if (read === 0) break;
+      position += read;
+      const got = buffer.subarray(0, read);
+      rest = rest.length === 0 ? Buffer.from(got) : Buffer.concat([rest, got]);
+      let cut = rest.indexOf(0x0a);
+      while (cut !== -1) {
+        visit(rest.subarray(0, cut).toString('utf8'));
+        end += cut + 1;
+        rest = rest.subarray(cut + 1);
+        cut = rest.indexOf(0x0a);
+      }
+    }
+    if (rest.length > 0) {
+      const tail = rest.toString('utf8');
+      if (parsed(tail) !== undefined) {
+        visit(tail);
+        end += rest.length;
+      }
+    }
+    return { end, size };
+  } finally {
+    closeSync(fd);
+  }
+}
+
 /** One line of a transcript, as an object, or `undefined` when it is not one. */
 export function parsed(line: string): Record<string, unknown> | undefined {
   try {

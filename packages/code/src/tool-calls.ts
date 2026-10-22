@@ -59,9 +59,18 @@ export const UNCODED_FAILURE = 'error';
  * one has no project to be counted for, and the count is per project.
  */
 export function toolCallsFile(trees: ResolvedTrees): string | undefined {
+  const digest = projectDigest(trees);
+  return digest === undefined ? undefined : join(dirname(trees.global), TOOL_CALLS_DIR, `${digest}.jsonl`);
+}
+
+/**
+ * The name this project goes by in the machine's data directory: a digest of its private tree's
+ * path, or undefined outside a project. The one place the files that are "per project, on this
+ * machine" (the count of tool calls, the session journals) agree on what that means.
+ */
+export function projectDigest(trees: ResolvedTrees): string | undefined {
   if (trees.projectPrivate === undefined) return undefined;
-  const digest = createHash('sha256').update(trees.projectPrivate).digest('hex').slice(0, 16);
-  return join(dirname(trees.global), TOOL_CALLS_DIR, `${digest}.jsonl`);
+  return createHash('sha256').update(trees.projectPrivate).digest('hex').slice(0, 16);
 }
 
 /**

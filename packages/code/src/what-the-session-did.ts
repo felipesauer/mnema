@@ -30,8 +30,11 @@
  * subagent's hand-back, so neither is mistaken for somebody typing.
  */
 
-import { isAbsolute, resolve } from 'node:path';
-import { asObject, forEachLine, parsed } from './transcripts.js';
+import { createHash } from 'node:crypto';
+import { statSync } from 'node:fs';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { decisionFileAt } from './decision-files.js';
+import { asObject, forEachLine, forEachLineFrom, parsed } from './transcripts.js';
 
 /**
  * The host's tools that write a file, and the field of each one's input that names it.
@@ -57,48 +60,153 @@ export interface SessionDid {
 }
 
 /**
+ * Where a reading of a transcript stands, so the next one starts there and reads only what the host
+ * wrote since: a byte offset and the few facts that cannot be rebuilt from the new part alone.
+ *
+ * A FILE IS KEPT BY A DIGEST OF ITS PATH, never by the path: this is what a journal on disk holds, and
+ * it holds the shape of what happened and none of what was said. The one path it keeps is the
+ * project-relative name of a file that holds decisions, because whether the record cites it can
+ * change after it was written and has to be asked again.
+ */
+export interface Reading {
+  /** The byte the next reading starts at: the end of the last complete line read. */
+  bytes: number;
+  openedAt: string | undefined;
+  /** Prompts seen: what separates one response from the next. */
+  response: number;
+  /** Writes of the current response that happened or have no answer yet. */
+  writesInResponse: number;
+  /** For each file (by digest), how many of its writes happened or have no answer yet. */
+  files: Record<string, number>;
+  /** The calls with no answer yet, by the host's id: their file and the response they belong to. */
+  pending: Record<string, { file: string; response: number }>;
+  /** The instants the person answered the host's question tool. */
+  questionTimes: string[];
+  /** Project-relative names of the files written that hold decisions. */
+  decisionFiles: string[];
+}
+
+/** The reading of a transcript no one has read. */
+export function emptyReading(): Reading {
+  return {
+    bytes: 0,
+    openedAt: undefined,
+    response: 0,
+    writesInResponse: 0,
+    files: {},
+    pending: {},
+    questionTimes: [],
+    decisionFiles: [],
+  };
+}
+
+/** How many unanswered calls and answers a reading keeps: the rest is the oldest, and is let go. */
+const KEPT = 200;
+
+function digestOf(file: string): string {
+  return createHash('sha256').update(file).digest('hex').slice(0, 16);
+}
+
+/**
+ * Reads what the host wrote to the transcript at `path` since `reading` stopped, and folds it into
+ * `reading`. Returns false when the file cannot be opened. A file shorter than the offset is a
+ * different file (a rewritten transcript): the reading starts over from nothing.
+ *
+ * `where.paths`, when given, is told the path of each digest it meets: a caller that wants the
+ * paths (a whole read, in memory) asks for them, and a reading kept on disk never has them.
+ * `where.root` is the project's directory, for the one question that needs a path inside it:
+ * whether a file written holds decisions.
+ */
+export function readTheNewPart(
+  path: string,
+  reading: Reading,
+  where: { readonly cwd: string; readonly root?: string; readonly paths?: Map<string, string> },
+): boolean {
+  let from = reading.bytes;
+  if (from > 0 && statSize(path) < from) {
+    Object.assign(reading, emptyReading());
+    from = 0;
+  }
+  const { end, size } = forEachLineFrom(path, from, (line) => {
+    const said = parsed(line);
+    if (said === undefined) return;
+    const at = typeof said.timestamp === 'string' ? said.timestamp : undefined;
+    if (at !== undefined && (reading.openedAt === undefined || at < reading.openedAt)) {
+      reading.openedAt = at;
+    }
+    if (said.type === 'user' && isAPrompt(said)) {
+      reading.response += 1;
+      reading.writesInResponse = 0;
+      return;
+    }
+    if (said.type === 'user') {
+      for (const id of idsOfFailedCalls(said)) {
+        const call = reading.pending[id];
+        if (call === undefined) continue;
+        const left = (reading.files[call.file] ?? 1) - 1;
+        if (left <= 0) delete reading.files[call.file];
+        else reading.files[call.file] = left;
+        if (call.response === reading.response) reading.writesInResponse -= 1;
+      }
+      for (const id of idsOfAnsweredCalls(said)) delete reading.pending[id];
+      if (answersToTheQuestionTool(said) !== undefined && at !== undefined) {
+        reading.questionTimes.push(at);
+        if (reading.questionTimes.length > KEPT) reading.questionTimes.shift();
+      }
+      return;
+    }
+    if (said.type !== 'assistant') return;
+    const cwd = typeof said.cwd === 'string' ? said.cwd : where.cwd;
+    for (const { id, file, content } of filesWritten(said)) {
+      const absolute = isAbsolute(file) ? file : resolve(cwd, file);
+      const digest = digestOf(absolute);
+      where.paths?.set(digest, absolute);
+      reading.files[digest] = (reading.files[digest] ?? 0) + 1;
+      reading.writesInResponse += 1;
+      if (id !== undefined) reading.pending[id] = { file: digest, response: reading.response };
+      if (where.root !== undefined) {
+        const inside = relative(where.root, absolute);
+        if (inside !== '' && !inside.startsWith('..') && !isAbsolute(inside)) {
+          const name = inside.split(sep).join('/');
+          if (decisionFileAt(name, content) !== undefined && !reading.decisionFiles.includes(name)) {
+            reading.decisionFiles.push(name);
+          }
+        }
+      }
+    }
+    const ids = Object.keys(reading.pending);
+    if (ids.length > KEPT) {
+      for (const id of ids.slice(0, ids.length - KEPT)) delete reading.pending[id];
+    }
+  });
+  if (size === -1) return false;
+  reading.bytes = end;
+  return true;
+}
+
+function statSize(path: string): number {
+  try {
+    return statSync(path).size;
+  } catch {
+    return -1;
+  }
+}
+
+/**
  * Reads the transcript at `path`, or `undefined` when it cannot be read at all.
  *
  * `cwd` resolves a relative path a tool call named, for the one reason distinct spellings of
  * one file must be one file: the host names a path as the model wrote it.
  */
 export function whatTheSessionDid(path: string, cwd: string): SessionDid | undefined {
-  let lines = 0;
-  let openedAt: string | undefined;
-  // Each write the tool calls ATTEMPTED, in order, and the ids of the calls the host answered
-  // with an error: a call a hook refused is in the first list and the second, and is not a write.
-  const attempts: { id: string | undefined; file: string; response: number }[] = [];
-  const failed = new Set<string>();
-  let response = 0;
-  forEachLine(path, (line) => {
-    lines += 1;
-    const said = parsed(line);
-    if (said === undefined) return true;
-    const at = typeof said.timestamp === 'string' ? said.timestamp : undefined;
-    if (at !== undefined && (openedAt === undefined || at < openedAt)) openedAt = at;
-    if (said.type === 'user' && isAPrompt(said)) {
-      response += 1;
-      return true;
-    }
-    if (said.type === 'user') {
-      for (const id of idsOfFailedCalls(said)) failed.add(id);
-      return true;
-    }
-    if (said.type !== 'assistant') return true;
-    const where = typeof said.cwd === 'string' ? said.cwd : cwd;
-    for (const { id, file } of filesWritten(said)) {
-      attempts.push({ id, file: isAbsolute(file) ? file : resolve(where, file), response });
-    }
-    return true;
-  });
-  const happened = attempts.filter((one) => one.id === undefined || !failed.has(one.id));
-  return lines === 0
-    ? undefined
-    : {
-        openedAt,
-        editedFiles: [...new Set(happened.map((one) => one.file))],
-        lastResponseEdited: happened.some((one) => one.response === response),
-      };
+  const reading = emptyReading();
+  const paths = new Map<string, string>();
+  if (!readTheNewPart(path, reading, { cwd, paths }) || reading.bytes === 0) return undefined;
+  return {
+    openedAt: reading.openedAt,
+    editedFiles: Object.keys(reading.files).flatMap((digest) => paths.get(digest) ?? []),
+    lastResponseEdited: reading.writesInResponse > 0,
+  };
 }
 
 /** The ids of the tool calls a `user` line says the host answered with an error. */
@@ -115,18 +223,38 @@ function idsOfFailedCalls(line: Record<string, unknown>): string[] {
   return ids;
 }
 
-/** The writes the tool calls of one assistant line name, for the tools that write a file. */
-function filesWritten(line: Record<string, unknown>): { id: string | undefined; file: string }[] {
+/** The ids of the tool calls a `user` line carries a result for, whatever the result is. */
+function idsOfAnsweredCalls(line: Record<string, unknown>): string[] {
   const content = asObject(line.message)?.content;
   if (!Array.isArray(content)) return [];
-  const files: { id: string | undefined; file: string }[] = [];
+  return content.flatMap((block) => {
+    const result = asObject(block);
+    return result?.type === 'tool_result' && typeof result.tool_use_id === 'string'
+      ? [result.tool_use_id]
+      : [];
+  });
+}
+
+/** The writes the tool calls of one assistant line name, for the tools that write a file. */
+function filesWritten(
+  line: Record<string, unknown>,
+): { id: string | undefined; file: string; content: string }[] {
+  const content = asObject(line.message)?.content;
+  if (!Array.isArray(content)) return [];
+  const files: { id: string | undefined; file: string; content: string }[] = [];
   for (const block of content) {
     const call = asObject(block);
     if (call === undefined || call.type !== 'tool_use' || typeof call.name !== 'string') continue;
     const field = WRITING_TOOLS[call.name];
     const named = field === undefined ? undefined : asObject(call.input)?.[field];
     if (typeof named === 'string' && named !== '') {
-      files.push({ id: typeof call.id === 'string' ? call.id : undefined, file: named });
+      const input = asObject(call.input);
+      const written = input?.['content'] ?? input?.['new_string'];
+      files.push({
+        id: typeof call.id === 'string' ? call.id : undefined,
+        file: named,
+        content: typeof written === 'string' ? written : '',
+      });
     }
   }
   return files;
