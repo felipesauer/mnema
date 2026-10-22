@@ -705,6 +705,16 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
       `${oneLine(dirname(trees.projectPublic))} has no .mnema/${EDITORCONFIG_NAME}, the file that tells an editor or a tool that reads EditorConfig not to impose a final newline, an end of line or an indent on the record: run \`mnema init\` to add it.`,
     );
   }
+  if (missing.editorconfigReachesTheNotes === 'earlier') {
+    lines.push(
+      `${oneLine(dirname(trees.projectPublic))} has the .mnema/${EDITORCONFIG_NAME} an earlier mnema init wrote: its [*] reaches .mnema/workbench/ too, the person's notes, which are not signed bytes; run \`mnema init\` to replace it with one that reaches only tails/ and keys/.`,
+    );
+  }
+  if (missing.editorconfigReachesTheNotes === 'edited') {
+    lines.push(
+      `${oneLine(dirname(trees.projectPublic))} has a .mnema/${EDITORCONFIG_NAME} whose [*] reaches .mnema/workbench/ too, the person's notes, which are not signed bytes; it was edited, so mnema leaves it: change [*] to [{tails,keys}/**] to leave the notes to their editor.`,
+    );
+  }
   if (missing.prettierIgnore !== undefined) {
     lines.push(
       `${oneLine(missing.prettierIgnore.path)} ${missing.prettierIgnore.did === 'created' ? 'does not exist' : 'does not list .mnema/'}, and prettier is in play here: a formatter that rewrote the record would break its signatures; run \`mnema init\` to add the line.`,

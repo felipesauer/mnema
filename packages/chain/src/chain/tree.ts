@@ -31,7 +31,8 @@ import { type ChainLayout, gitattributesPath, gitignorePath } from './layout.js'
 
 /**
  * The chain's own `.gitignore`, self-contained at the tree root. It ignores the
- * private subtree, every local key-material file, and the writers' lock directory
+ * private subtree, every local key-material file, the private part of the person's notes
+ * (`workbench/local`, a link to a folder outside the tree: see below), and the writers' lock directory
  * (`locks/`, which holds machinery rather than record: the locks, `tailLockPath`,
  * and two files that persist, `projectionCachePath` and `citedHeadsPath`), and,
  * by NOT ignoring them,
@@ -43,6 +44,12 @@ import { type ChainLayout, gitattributesPath, gitignorePath } from './layout.js'
  * Sigstore's log by the time the file exists). Patterns are anchored with
  * a leading `/` so they match only THIS tree's paths, never a like-named path
  * elsewhere the project might track.
+ *
+ * `workbench/` is the person's notes beside the record, and not proof: no reader enumerates it
+ * (`FORMAT.md` section 4). Its `shared/` part is committed; its `local` part is a LINK, and its
+ * rule has NO TRAILING SLASH: git matches a link as a file, and a rule ending in `/` matches only a
+ * directory, so `/workbench/local/` leaves the link untracked for one `git add -A` to commit
+ * (measured). The link's folder lives outside the tree, so nothing behind it reaches git either way.
  */
 const GITIGNORE_CONTENT = [
   "# Managed by mnema: this file governs only mnema's own tree.",
@@ -57,10 +64,17 @@ const GITIGNORE_CONTENT = [
   '# way out; the projection a reader keeps; the heads a tail last cited. These two',
   '# persist, and losing them costs a rebuild or one repeated citation, never a proof.',
   '/locks/',
+  "# The person's private notes: a link to a folder outside this tree, never shared. No",
+  '# trailing slash: git matches a link as a file, and a rule ending in a slash would miss it.',
+  '/workbench/local',
   '',
 ].join('\n');
 
 const LOCKS_LINE = '/locks/';
+
+const WORKBENCH_LOCAL_LINE = '/workbench/local';
+
+const WORKBENCH_NEGATED = /^!\/?workbench\/local\/?$/;
 
 /**
  * The chain's own `.gitattributes`. A line of the record is refused unless its bytes are the
@@ -84,48 +98,53 @@ const NO_EOL_LINE = '* -text';
 /**
  * Ensures a PROJECT tree exists at `layout.root` and carries its own `.gitignore` and
  * `.gitattributes`. Creates the tree directory if absent and writes each file only if it
- * is not already there; an older `.gitignore` that lacks the `/locks/` line, or a
- * `.gitattributes` that lacks `* -text`, gets that line appended and nothing else, which
- * is how a tree made before either line existed gets it, at its next write. Idempotent:
- * safe to call before every write. Returns true if it wrote the `.gitignore` this call (it
- * was absent), false if one already existed (even if a line was appended to it).
+ * is not already there; an older `.gitignore` that lacks the `/locks/` or the
+ * `/workbench/local` line, or a `.gitattributes` that lacks `* -text`, gets each missing line
+ * appended and nothing else (unless the file negates the path, `!/workbench/local`: that is
+ * the person's choice, and the line would cancel it), which is how a tree made before a line existed gets it, at its
+ * next write. Idempotent: safe to call before every write. Returns true if it wrote the
+ * `.gitignore` this call (it was absent), false if one already existed (even if a line was
+ * appended to it).
  */
 export function ensureTree(layout: ChainLayout): boolean {
   mkdirSync(layout.root, { recursive: true });
-  ensureLine(
-    gitattributesPath(layout),
-    GITATTRIBUTES_CONTENT,
-    (l) => l === NO_EOL_LINE,
-    NO_EOL_LINE,
-  );
-  // A tree made before the writers' lock directory existed has no line for it, and a lock left
-  // by a killed holder would be committed.
-  return ensureLine(
-    gitignorePath(layout),
-    GITIGNORE_CONTENT,
-    (l) => l === LOCKS_LINE || l === 'locks/',
-    LOCKS_LINE,
-  );
+  ensureLines(gitattributesPath(layout), GITATTRIBUTES_CONTENT, [
+    { has: (l) => l === NO_EOL_LINE, line: NO_EOL_LINE },
+  ]);
+  return ensureLines(gitignorePath(layout), GITIGNORE_CONTENT, [
+    // A tree made before the writers' lock directory existed has no line for it, and a lock left
+    // by a killed holder would be committed.
+    { has: (l) => l === LOCKS_LINE || l === 'locks/', line: LOCKS_LINE },
+    // A tree made before the workbench existed has no line for its private link. Only the forms
+    // git matches against a link count: one that ends in a slash does not. A negation of the
+    // path is the person's own choice to share it: appended after it, the line would cancel it.
+    {
+      has: (l) =>
+        l === WORKBENCH_LOCAL_LINE || l === 'workbench/local' || WORKBENCH_NEGATED.test(l),
+      line: WORKBENCH_LOCAL_LINE,
+    },
+  ]);
 }
 
 /**
- * Writes `content` at `path` when nothing is there (returning true); otherwise appends `line`
- * at the end when no trimmed line of the file satisfies `has`, and touches nothing else.
+ * Writes `content` at `path` when nothing is there (returning true); otherwise appends, in order,
+ * each `line` that no trimmed line of the file satisfies the `has` of, and touches nothing else.
  */
-function ensureLine(
+function ensureLines(
   path: string,
   content: string,
-  has: (trimmed: string) => boolean,
-  line: string,
+  wanted: readonly { readonly has: (trimmed: string) => boolean; readonly line: string }[],
 ): boolean {
   if (!existsSync(path)) {
     writeFileSync(path, content, 'utf-8');
     return true;
   }
   const existing = readFileSync(path, 'utf-8');
-  if (!existing.split(/\r?\n/).some((l) => has(l.trim()))) {
+  const lines = existing.split(/\r?\n/).map((l) => l.trim());
+  const missing = wanted.filter(({ has }) => !lines.some(has)).map(({ line }) => `${line}\n`);
+  if (missing.length > 0) {
     const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
-    appendFileSync(path, `${gap}${line}\n`, 'utf-8');
+    appendFileSync(path, `${gap}${missing.join('')}`, 'utf-8');
   }
   return false;
 }
