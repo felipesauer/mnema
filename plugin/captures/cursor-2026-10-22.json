@@ -1,0 +1,109 @@
+{
+  "capturedBy": "by hand (run by an automated assistant for the maintainer)",
+  "date": "2026-10-22",
+  "host": {
+    "name": "Cursor CLI",
+    "command": "cursor-agent",
+    "version": "2026.09.18-9a7762b",
+    "sha256": "2ccc9a8e167797641448b5e5c936f006ba137a2555f117f38c5eb76a5238a233",
+    "flagsUsed": "cursor-agent -p --force --trust \"<prompt>\" (default model, \"auto\"); for the fourth case `cursor-agent mcp enable handed` then `cursor-agent mcp list`, no prompt"
+  },
+  "machine": "Linux 7.0.0-31-generic",
+  "script": {
+    "file": "plugin/captures/cursor-script.md",
+    "commit": "051610ec6ba48ce0171820eda33ee53f5a8c3ff6"
+  },
+  "plugin": {
+    "version": "0.1.2",
+    "commit": "38075791944835a44286c93225b6caa6c6d9171a",
+    "installedFrom": "the marketplace (as `claude plugin list` showed it, enabled, scope user; not reinstalled from this checkout, whose plugin.json also says 0.1.2)"
+  },
+  "rules": {
+    "refuses-a-write": {
+      "address": "src/frozen",
+      "id": "01a16458-88d0-7000-8c57-cbdf4399654c"
+    },
+    "asks-for-a-person": {
+      "address": "src/ledger",
+      "id": "01a16458-8c80-7000-a92c-924e72703397"
+    },
+    "governs": {
+      "address": "src/billing",
+      "id": "01a16458-9021-7000-9316-2f611ce9eefd"
+    }
+  },
+  "cases": [
+    {
+      "id": "refuses-a-write",
+      "expected": "The file is not created, and the transcript shows the rule's id and `refuses a write at src/frozen/x.ts`.",
+      "observed": "The file src/frozen/x.ts was created. The agent printed no refusal and no rule id. The agent's own transcript store shows one tool_use named Write for <scratch>/src/frozen/x.ts, so the tool was the one the page speaks of. No channel.* event was recorded (0 refused). The capture does not say whether Cursor's agent loaded the plugin's hook and the hook answered allow, or never ran it.",
+      "channelFacts": {
+        "channel.refused": 0,
+        "channel.asked": 0,
+        "channel.served": 0
+      },
+      "verdict": "did-not-hold",
+      "transcript": [
+        "Created `src/frozen/x.ts` with `export const x = 1;`."
+      ]
+    },
+    {
+      "id": "ask-is-ignored",
+      "expected": "The file is created with no pause, and nothing is recorded as asked.",
+      "observed": "src/ledger/x.ts was created with no pause (the run ended, exit 0, without a person). Tool used: Write. No channel.* event recorded. Weak: with no refusal in the first case either, this is also what a host that never ran the hook would show.",
+      "channelFacts": {
+        "channel.refused": 0,
+        "channel.asked": 0,
+        "channel.served": 0
+      },
+      "verdict": "held",
+      "transcript": [
+        "Created `src/ledger/x.ts` with `export const x = 1;`."
+      ]
+    },
+    {
+      "id": "no-rule",
+      "expected": "The file is created, and the plugin said nothing.",
+      "observed": "src/other/x.ts was created, tool Write, nothing printed by the plugin, no channel.* event recorded. Weak for the same reason as ask-is-ignored.",
+      "channelFacts": {
+        "channel.refused": 0,
+        "channel.asked": 0,
+        "channel.served": 0
+      },
+      "verdict": "held",
+      "transcript": [
+        "Created `src/other/x.ts` with `export const x = 1;`."
+      ]
+    },
+    {
+      "id": "what-the-host-hands-the-server",
+      "expected": "The file the probe server writes exists and holds the three fields; whatever they are, they are what the agent handed.",
+      "observed": "The probe server was first \"not loaded (needs approval)\"; after `cursor-agent mcp enable handed` (which adds it to the approved list), `cursor-agent mcp list` said \"handed: ready\" and the file was written, with no model call. The client name is what the agent announced. The chain is the ancestry of the shell that ran `cursor-agent mcp list` (it includes the capturing assistant's own processes, `claude` and `code`) and has no `cursor-agent` entry: do not read a rung into it. `present` is empty.",
+      "handed": {
+        "client": "Cursor",
+        "chain": [
+          "node",
+          "timeout",
+          "bash",
+          "claude",
+          "code",
+          "code",
+          "systemd"
+        ],
+        "present": []
+      },
+      "channelFacts": {
+        "channel.refused": 0,
+        "channel.asked": 0,
+        "channel.served": 0
+      },
+      "verdict": "held",
+      "transcript": [
+        "handed: not loaded (needs approval)",
+        "Failed to list tools: Failed to load MCP 'handed': MCP server \"handed\" has not been approved",
+        "Enabled and approved MCP server: handed",
+        "handed: ready"
+      ]
+    }
+  ]
+}
