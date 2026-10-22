@@ -1814,6 +1814,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'when the switch was made: an instant off the record',
   },
+  'switches.ts «\\`{}\\` turns it on» switchOnCommand(row.state.channel) #1': {
+    verdict: 'minted',
+    why: 'the command that turns the channel on: the verb and the product’s own channel name, never typed by anybody',
+  },
+  'switches.ts «off until switched on: \\`{}\\`» switchOnCommand(channel) #1': {
+    verdict: 'minted',
+    why: 'the same command for a channel that begins off, built from the product’s own channel name',
+  },
+  'summary.ts «Off on this machine: {}. Turn one on with \\`{}\\`.» summary.off.join(\', \') #1': {
+    verdict: 'minted',
+    why: 'the names of the channels that are off: the product’s own identifiers, a closed set',
+  },
+  'summary.ts «Off on this machine: {}. Turn one on with \\`{}\\`.» SWITCH_ON_COMMAND #1': {
+    verdict: 'minted',
+    why: 'a constant: the verb with the name left for the person to fill',
+  },
+  'summary.ts «{} decision(s) await a judgement: \\`mnema decision review\\` goes through them.» summary.waiting #1': {
+    verdict: 'minted',
+    why: 'how many decisions await a judgement: a count',
+  },
   'switches.ts «reason: {}» oneLine(row.state.reason) #1': {
     verdict: 'collapsed',
     why: 'why somebody switched it off: free text they typed at `--reason`, on a line the header counts',
@@ -2326,8 +2346,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record;
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(36);
-    expect(FOUND.composers.length).toBe(24);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(37);
+    expect(FOUND.composers.length).toBe(25);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -2337,8 +2357,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows.
-    expect(FOUND.sites.length).toBe(447);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on.
+    expect(FOUND.sites.length).toBe(452);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2360,7 +2380,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(121);
-    expect(count('minted')).toBe(254);
+    expect(count('minted')).toBe(259);
     expect(count('composed')).toBe(72);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(121);
   });

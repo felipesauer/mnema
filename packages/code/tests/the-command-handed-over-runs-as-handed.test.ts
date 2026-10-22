@@ -734,6 +734,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/presentation/runs.ts': { line: 1 },
   'packages/code/src/presentation/site.ts': { name: 1 },
   'packages/code/src/presentation/status.ts': { line: 2 },
+  'packages/code/src/presentation/summary.ts': { line: 2, name: 4 },
   'packages/code/src/presentation/usage.ts': { line: 1, name: 2 },
   'packages/code/src/record-framing.ts': { line: 1, name: 9 },
   'packages/code/src/record-integrity.ts': { name: 7 },
