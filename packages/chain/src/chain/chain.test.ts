@@ -1452,13 +1452,14 @@ describe('readTailSince: a tail resumed from the boundary a reading left', () =>
     w.append(taskCreated(env(w, 't-3'), { title: 'third' }));
     w.append(taskCreated(env(w, 't-4'), { title: 'fourth' }));
     const since = readTailSince({ root }, w.tail, upcasters, boundary, lastHash);
-    expect(since?.arrivals.map((e) => e.event.subject)).toEqual(['t-3', 't-4']);
+    if (since === undefined) throw new Error('the boundary should still hold');
+    expect(since.arrivals.map((e) => e.event.subject)).toEqual(['t-3', 't-4']);
     const again = readTailSince(
       { root },
       w.tail,
       upcasters,
-      since?.boundary,
-      since?.arrivals[1]?.link.hash ?? null,
+      since.boundary,
+      since.arrivals[1]?.link.hash ?? null,
     );
     expect(again?.arrivals).toEqual([]);
   });
