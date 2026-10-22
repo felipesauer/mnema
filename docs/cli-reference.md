@@ -1632,6 +1632,16 @@ credential in a recognized format is handed over as the fact that the note exist
 as its text. Where nothing is noted it prints **nothing**, and a session there is handed
 nothing. It is never a file to commit: it carries what was kept on this machine.
 
+**Where the last session stopped comes above the notes.** When another session wrote to this record in the last 24 hours and
+left a journal on this machine (see [The session journal](#the-session-journal)), `mnema recall` opens with a few lines read from
+it: how long ago it wrote, its goal (the title of the first task it moved into progress), the decisions it recorded by their
+`ADR-<n>` label and where each stands, and what it left (files edited, files of decisions the record cites nowhere, questions
+answered with no decision recorded after, tasks in progress). About a hundred tokens, ids and counts and a title the record
+already holds. The hook passes the session's own id (`--session <id>`, read off its payload) so a session never reads its own
+journal back as "the last one", for instance after a compaction; a session that did nothing worth saying is skipped for an
+earlier one. It is its own switch: `mnema switch off last-session` stops the section and nothing else, and switching the
+journal off leaves it nothing to read.
+
 **A note that turned out wrong can be taken back, and is not erased.** `mnema retract`
 (the `retract_note` tool, for an agent) takes the note's id and a `--reason`, and appends
 a signed fact saying who took it back and why, in the tree the note was written in. The
@@ -1675,7 +1685,7 @@ flips it are in [the table of switches](switches.md).
 
 ```sh
 mnema switch
-#> 15 channel(s), looked in public, private, global:
+#> 16 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with and a …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside …
@@ -1689,6 +1699,7 @@ mnema switch
 #>   decision-file-written  on   the line beside a write to a file that holds decisions (an ADR, a plan …
 #>   subagent-handback      on   the return of a subagent that ends its final reply without the block of …
 #>   tool-call-count        on   the local count of tool calls: …
+#>   last-session           on   the section of the notes `mnema recall` prints that says where the last …
 #>   session-journal        on   the session journal: …
 #>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```

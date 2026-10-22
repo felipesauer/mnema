@@ -354,7 +354,7 @@ export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, hand
  * @returns {string | null}
  */
 function textOf(verb, cwd, handed) {
-  const flags = [FOR_A_HOOK, ...hostFlags(handed)];
+  const flags = [FOR_A_HOOK, ...hostFlags(handed), ...sessionFlags(handed)];
   const asked = running(verb, flags, cwd);
   const ran = refusesTheFlag(asked, flags) ? running(verb, [], cwd) : asked;
   // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it
@@ -556,6 +556,20 @@ function theGateSays(ran, closed, timeout) {
 function hostFlags(handed) {
   const host = flagValue(handed, '--host');
   return host === undefined ? [] : ['--host', host];
+}
+
+/**
+ * The `--session <id>` among a handler's own arguments, as flags for the verb, or none: the id the
+ * host gave the session this hook runs for, which `session-recall.mjs` reads off the payload. Only an
+ * id that is a plain token passes, so a payload cannot hand the verb anything else; a `mnema` older
+ * than the flag refuses it by name and is asked again without it, as for the other flags.
+ *
+ * @param {readonly string[]} handed
+ * @returns {string[]}
+ */
+function sessionFlags(handed) {
+  const id = flagValue(handed, '--session');
+  return id !== undefined && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(id) ? ['--session', id] : [];
 }
 
 /**

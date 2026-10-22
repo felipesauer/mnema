@@ -285,3 +285,46 @@ export function journalAfter(input: {
 export function readingOf(previous: Journal | undefined): Reading {
   return previous === undefined ? emptyReading() : previous.reading;
 }
+
+/** A session counts as recent for the notes a new one is handed for this long after its last write. */
+export const RECENT_MS = 24 * 60 * 60 * 1000;
+
+/** Whether a journal holds anything a later session would want to be told. */
+export function hasSomethingToSay(journal: Journal): boolean {
+  return (
+    journal.decisions.length > 0 ||
+    journal.filesEdited > 0 ||
+    journal.tasksInProgress.length > 0 ||
+    journal.decisionFilesUncited > 0 ||
+    journal.questionsWithoutDecision > 0
+  );
+}
+
+/**
+ * The journal of the most recent OTHER session of this project that has something to say: not the
+ * session `except` names (the one asking, when it is known), and written to within
+ * {@link RECENT_MS} of `now`. Undefined when there is none.
+ */
+export function lastJournalOf(
+  trees: ResolvedTrees,
+  input: { readonly except?: string | undefined; readonly now: Date },
+): Journal | undefined {
+  const dir = journalsDir(trees);
+  if (dir === undefined) return undefined;
+  let names: string[];
+  try {
+    names = readdirSync(dir).filter((name) => name.endsWith('.json'));
+  } catch {
+    return undefined;
+  }
+  let best: Journal | undefined;
+  for (const name of names) {
+    const journal = readJournal(join(dir, name));
+    if (journal === undefined || journal.session === input.except) continue;
+    const written = Date.parse(journal.updatedAt);
+    if (Number.isNaN(written) || input.now.getTime() - written > RECENT_MS) continue;
+    if (!hasSomethingToSay(journal)) continue;
+    if (best === undefined || journal.updatedAt > best.updatedAt) best = journal;
+  }
+  return best;
+}

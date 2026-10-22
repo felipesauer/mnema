@@ -24,6 +24,10 @@
  * the verb prints nothing, so a session in a project with no notes is handed no text at all
  * (the rule the per-edit push keeps: nothing arrives where there is nothing to say).
  *
+ * IT READS ITS STDIN FOR ONE THING, the id of the session the payload names, and hands it to the
+ * verb as `--session <id>`: the notes open with where the last session stopped, and a session that
+ * is compacted opens again with this same hook, so the session's own journal has to be left out.
+ *
  * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED: {@link MODEL_CHANNEL}, framed in the words
  * `packages/code/src/record-framing.ts` gives every channel that puts record text in front
  * of a model, and switchable on its own (`mnema switch off recall-document`), because
@@ -43,12 +47,34 @@ const HOOK_EVENT = 'SessionStart';
  */
 export const MODEL_CHANNEL = 'recall-document';
 
+/**
+ * The session id a hook payload names, or undefined where it names none or is not JSON.
+ *
+ * @param {string} payload
+ * @returns {string | undefined}
+ */
+function sessionOf(payload) {
+  try {
+    const id = JSON.parse(payload).session_id;
+    return typeof id === 'string' ? id : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 try {
   // Imported INSIDE the guard, for the other handler's reason: a plugin directory missing
   // its sibling module is a session opened with nothing added, not a hook error.
   const { reply, whatTheVerbSays, whereTheSessionIs } = await import('./hand-over.mjs');
-  const notes = whatTheVerbSays('recall', whereTheSessionIs(), {}, process.argv.slice(2));
-  if (notes !== null) process.stdout.write(reply(HOOK_EVENT, notes, process.argv.slice(2)));
+  // The payload names the session this is for, so the verb can leave that session's own journal
+  // out of "where the last session stopped": a conversation compacted opens again with this hook.
+  const handed = process.argv.slice(2);
+  const chunks = [];
+  if (!process.stdin.isTTY) for await (const chunk of process.stdin) chunks.push(chunk);
+  const session = sessionOf(Buffer.concat(chunks).toString('utf-8'));
+  const asked = session === undefined ? handed : [...handed, '--session', session];
+  const notes = whatTheVerbSays('recall', whereTheSessionIs(), {}, asked);
+  if (notes !== null) process.stdout.write(reply(HOOK_EVENT, notes, handed));
 } catch {
   // Silence, with nothing to add: the one thing a handler of this plugin must never do is
   // make somebody else's session worse than it would have been without it.

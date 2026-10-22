@@ -55,6 +55,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAfterAWrite } from '../src/commands/after-a-write.js';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runHandback } from '../src/commands/handback.js';
+import { runRecall } from '../src/commands/recall.js';
 import { runSettled } from '../src/commands/settled.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
@@ -70,6 +71,7 @@ import {
   EDIT_PUSH_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
   HOST_MEMORY_MIRROR_CHANNEL,
+  LAST_SESSION_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
@@ -82,10 +84,11 @@ import {
   USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
-import { journalFile, readJournal } from '../src/session-journal.js';
+import { journalFile, readJournal, writeJournal } from '../src/session-journal.js';
 import { readToolCalls, toolCallsFile } from '../src/tool-calls.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
+import { emptyReading } from '../src/what-the-session-did.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -503,6 +506,38 @@ const HONOURED: Readonly<
         },
       );
       return 'hookSpecificOutput' in done.reply;
+    },
+  },
+  [LAST_SESSION_CHANNEL]: {
+    // A SECTION OF THE NOTES, driven the way a session asks for them: another session's journal on
+    // this machine, and the notes read for a session that is not it. "Speaks" is the section being there.
+    setUp: async () => {
+      const file = journalFile(resolveTrees(repo, env), 'an-earlier-session');
+      if (file === undefined) throw new Error('no project here');
+      writeJournal(
+        file,
+        {
+          version: 1,
+          session: 'an-earlier-session',
+          updatedAt: new Date().toISOString(),
+          openedAt: null,
+          decisions: [],
+          notes: [],
+          questionsWithoutDecision: 0,
+          decisionFilesUncited: 0,
+          filesEdited: 2,
+          tasksInProgress: [],
+          runsOpen: [],
+          goal: null,
+          outcome: null,
+          reading: emptyReading(),
+        },
+        new Date(),
+      );
+    },
+    speaks: async () => {
+      const done = runRecall({ cwd: repo, env, session: 'this-session' });
+      return done.ok && done.lastSession !== undefined;
     },
   },
   [SESSION_JOURNAL_CHANNEL]: {
