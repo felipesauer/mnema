@@ -68,3 +68,5 @@ lacks of the README, the `.editorconfig` and the `.prettierignore` line, and say
 answers as before. It never writes the instructions again: in a project founded before, or where you took them
 out, `mnema instructions` writes them, and `mnema doctor` says where they are missing. A project that never ran it again still gets the README from its first signed write to the public record, which says so in one line (a read, or a write refused, makes none and a README already there is never replaced); the `.prettierignore` stays `init`'s alone, and the session brief names it, in one line, where `mnema doctor` would add that line, and names in the same way a pre-commit hook, Biome, dprint or lint-staged configuration that would rewrite the folder (their files are yours: it says what to add and edits none). `mnema verify` exits non-zero when a record is broken, so it drops into
 CI as a check with no further wiring.
+
+Which of the channels that put the record in front of a model are on, and which begin off, is on [the switches page](switches.md).

@@ -50,7 +50,7 @@ from .canonical import CRLF, ends_in_crlf_only, utf16_order
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
-from .keys import PublicKey, load_keyring
+from .keys import HOLDS_NO_KEY, PublicKey, load_keyring
 from .root import content_root, which_reading_closes
 from .verdict import Refusal, Report
 
@@ -909,9 +909,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         report.break_out(f"there is no record at {root}")
         return
 
-    ring, misnamed, undecodable = load_keyring(root)
-    for name, refusal in undecodable:
-        report.fail(refusal.section, refusal.what, f"keys/{name}")
+    ring, misnamed, no_key = load_keyring(root)
+    for name, why in no_key:
+        report.fail("6", f"the key file keys/{name} {HOLDS_NO_KEY}: {why}", f"keys/{name}")
     for name in misnamed:
         report.fail(
             "6",

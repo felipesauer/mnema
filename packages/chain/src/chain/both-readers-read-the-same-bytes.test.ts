@@ -446,6 +446,7 @@ const AGREEMENTS: readonly Agreement[] = [
     second: { section: '1', says: 'Unexpected UTF-8 BOM', where: '000001.jsonl:1', refusals: 1 },
   },
   { name: 'appended-move-the-workflow-does-not-allow', verdict: 'accepted' },
+  { name: 'key-metadata-file-beside-the-keys', verdict: 'accepted' },
   { name: 'aligned-cut', verdict: 'accepted' },
   { name: 'refounded-record', verdict: 'accepted' },
 ];

@@ -36,7 +36,6 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
-import { decodeStoredBytes } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import {
   isProtected,
@@ -50,7 +49,6 @@ import {
   deriveAnchor,
   fingerprintOf,
   generateKeyPair,
-  type KeyObject,
   type KeyPair,
   type PublicHalf,
   privateKeyToPem,
@@ -70,6 +68,7 @@ import {
   publicKeyPath,
 } from './layout.js';
 import { sleepSync } from './sleep.js';
+import { readCommittedKeyFile } from './store.js';
 import { TailBusyError, withTailLock } from './tail-lock.js';
 
 /**
@@ -427,15 +426,10 @@ export function committedPublicKey(
   chainLayout: ChainLayout,
   fingerprint: string,
 ): PublicHalf | null {
-  const path = publicKeyPath(chainLayout, fingerprint);
-  if (!existsSync(path)) return null;
-  let publicKey: KeyObject;
-  try {
-    // Strictly, as the verifier reads it: bytes that are not UTF-8 are no key.
-    publicKey = publicKeyFromPem(decodeStoredBytes(readFileSync(path)));
-  } catch {
-    return null;
-  }
+  // As the verifier reads it, through the one reading of a committed key file.
+  const read = readCommittedKeyFile(publicKeyPath(chainLayout, fingerprint));
+  if ('holdsNoKey' in read) return null;
+  const publicKey = read.key;
   if (fingerprintOf(publicKey) !== fingerprint) return null;
   return { publicKey, fingerprint };
 }

@@ -44,7 +44,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, delimiter, dirname, join } from 'node:path';
-import { listPrivateKeyFingerprints } from '@mnema/chain';
+import { listAppleDoubleKeyFiles, listPrivateKeyFingerprints } from '@mnema/chain';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -97,6 +97,7 @@ export interface Finding {
     | 'private-tree'
     | 'stack'
     | 'record-page'
+    | 'key-metadata'
     | 'instructions'
     | 'agent-key';
   readonly state: 'fine' | 'attention';
@@ -708,6 +709,21 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
+ * The macOS metadata files (`keys/._<name>.pub`) in the committed record: both readers skip them as
+ * they skip `.DS_Store`, and a person can delete them. Read only. Nothing is said where there are none.
+ */
+function keyMetadataFindings(ctx: DoctorContext): Finding[] {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const root = trees.projectPublic;
+  if (root === undefined) return [];
+  return listAppleDoubleKeyFiles({ root }).map((name) => ({
+    topic: 'key-metadata' as const,
+    state: 'attention' as const,
+    line: `${oneLine(join(root, 'keys', name))} is macOS metadata, not a key: the readers skip it, and you can delete it.`,
+  }));
+}
+
+/**
  * The files an agent host reads standing instructions from that lack this version's block, each
  * with what `mnema instructions` would do (ADR-46). Read only. A block the person took out is said
  * here and never put back by `mnema init`: putting it back is `mnema instructions`, their act.
@@ -939,6 +955,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
       ...recordPageFindings(ctx),
+      ...keyMetadataFindings(ctx),
       ...instructionsFindings(ctx),
       ...stackFindings(ctx),
       ...agentKeyFindings(ctx),
