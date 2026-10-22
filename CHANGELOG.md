@@ -96,8 +96,10 @@ with its own changelog.
   to say, so a write a rule refuses was made. Now the hooks ask the first `node` what it is and, below the floor, run
   `mnema` on the first one further along that PATH that takes it (the `node` beside `mnema` first), within three seconds
   and with a second for each `node` that hangs on its version. Where none does, or where `mnema` is there and exits
-  non-zero, does not answer in ten seconds, or prints what no host reads, the write is refused with the reason and the
-  fix, but only where a rule that refuses a write or asks for a person at it addresses that path; any other path goes
+  non-zero, does not answer in ten seconds (six in Gemini CLI's script and OpenCode's plugin, which also ask again at the
+  next write after one failed identification), or prints what no host reads, the write is refused with the reason and the
+  fix, but only where a rule IN FORCE that refuses a write or asks for a person at it addresses that path (a rule only
+  proposed, rejected or superseded does not count); any other path goes
   through, a project whose only links govern is never refused, and a rule taken back stops refusing. This holds in Cursor's
   agent, Codex, VS Code, Copilot CLI, and now in Gemini CLI's script and OpenCode's plugin too, and for a fault of a
   handler itself. With no `mnema` on the PATH, no project, or no rule that could meet the write, nothing changes. The

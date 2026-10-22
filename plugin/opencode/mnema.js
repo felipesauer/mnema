@@ -371,8 +371,9 @@ const REACH_DEEPEST = 6;
 const GATING = ['refuses-a-write', 'asks-for-a-person'];
 
 /**
- * Whether a rule that refuses a write or asks for a person at it addresses a path this payload is
- * about to write, or may: `true` on every doubt.
+ * Whether a rule IN FORCE that refuses a write or asks for a person at it addresses a path this payload
+ * is about to write, or may: `true` on every doubt. In force is what the verb counts: ruled `accepted`
+ * (or `adopted`) and not since superseded or deprecated, read from the move events of the same pass.
  *
  * @param {string} cwd Where the session is.
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
@@ -392,14 +393,20 @@ function aRuleReaches(cwd, env, raw) {
       ...starts.flatMap(privateTreesAbove),
       ...globalTrees(env),
     ];
-    /** @type {Map<string, string>} */
+    /** @type {Map<string, { rule: string, address: string }>} */
     const standing = new Map();
-    for (const root of roots) readEdges(root, 0, standing);
-    if (standing.size === 0) return false;
+    /** @type {Map<string, Standing>} */
+    const rules = new Map();
+    for (const root of roots) readEdges(root, 0, standing, rules);
+    // A rule that is not in force refuses nothing and asks for nobody, as the verb counts it.
+    const addresses = [...standing.values()]
+      .filter((edge) => inForce(rules.get(edge.rule)))
+      .map((edge) => edge.address);
+    if (addresses.length === 0) return false;
     const written = pathsWritten(raw, cwd);
     if (written.length === 0) return true;
     const bases = starts.flatMap(projectRootsAbove);
-    return [...standing.values()].some((address) =>
+    return addresses.some((address) =>
       written.some((path) => bases.some((base) => covers(address, path, base))),
     );
   } catch {
@@ -426,13 +433,38 @@ function projectRootsAbove(dir) {
 }
 
 /**
- * The refusing and asking links that stand in the tails under `root`, by edge, each to its address.
+ * What the moves of one rule say of where it stands: it was ruled in force (`accepted`, `adopted`),
+ * and it was taken out of force from there (superseded, deprecated). Both are terminal, so no order
+ * is needed. A rule closed from a state it was not live in (a reject beside an accept, from two
+ * clones) is left in force: where the record doubts, the rule reaches.
+ *
+ * @typedef {{ live: boolean, left: boolean }} Standing
+ */
+
+/** The states a move can take a rule into that make it govern. */
+const LIVE = ['accepted', 'adopted'];
+
+/** The states a move takes a rule into that end its governing. */
+const CLOSED = ['rejected', 'superseded', 'deprecated'];
+
+/**
+ * @param {Standing | undefined} rule
+ * @returns {boolean}
+ */
+function inForce(rule) {
+  return rule !== undefined && rule.live && !rule.left;
+}
+
+/**
+ * The refusing and asking links that stand in the tails under `root`, by edge, each to its rule and
+ * address, and what the moves of every rule say of where it stands.
  *
  * @param {string} root
  * @param {number} depth
- * @param {Map<string, string>} standing
+ * @param {Map<string, { rule: string, address: string }>} standing
+ * @param {Map<string, Standing>} rules
  */
-function readEdges(root, depth, standing) {
+function readEdges(root, depth, standing, rules) {
   if (depth > REACH_DEEPEST) throw new Doubt('deeper than a tree goes');
   let entries;
   try {
@@ -446,7 +478,7 @@ function readEdges(root, depth, standing) {
     const path = join(root, name);
     if (!isDirectory(path)) continue;
     if (name !== 'tails') {
-      readEdges(path, depth + 1, standing);
+      readEdges(path, depth + 1, standing, rules);
       continue;
     }
     for (const tail of readdirSync(path)) {
@@ -460,6 +492,8 @@ function readEdges(root, depth, standing) {
             line.includes('"kind":"link.retracted"')
           ) {
             readEdge(line, standing);
+          } else if (line.includes('.transitioned"')) {
+            readMove(line, rules);
           }
         }
       }
@@ -468,8 +502,26 @@ function readEdges(root, depth, standing) {
 }
 
 /**
+ * A move of a decision or a pattern, read only where it takes the rule into or out of force: the
+ * line is parsed after a cheap look for the states, which is a small share of a record's lines.
+ *
  * @param {string} line
- * @param {Map<string, string>} standing
+ * @param {Map<string, Standing>} rules
+ */
+function readMove(line, rules) {
+  if (!/"to":"(?:accepted|adopted|rejected|superseded|deprecated)"/.test(line)) return;
+  const { event } = JSON.parse(line);
+  if (event.kind !== 'decision.transitioned' && event.kind !== 'skill.transitioned') return;
+  const { from, to } = event.payload;
+  const rule = rules.get(event.subject) ?? { live: false, left: false };
+  if (LIVE.includes(to)) rule.live = true;
+  else if (CLOSED.includes(to) && LIVE.includes(from)) rule.left = true;
+  rules.set(event.subject, rule);
+}
+
+/**
+ * @param {string} line
+ * @param {Map<string, { rule: string, address: string }>} standing
  */
 function readEdge(line, standing) {
   const { event } = JSON.parse(line);
@@ -477,7 +529,7 @@ function readEdge(line, standing) {
   const key = `${who}\0${subject}\0${payload?.rel}\0${payload?.target}`;
   if (kind === 'link.retracted') standing.delete(key);
   else if (kind === 'knowledge.linked' && GATING.includes(payload.rel)) {
-    standing.set(key, String(payload.target));
+    standing.set(key, { rule: String(subject), address: String(payload.target) });
   }
 }
 

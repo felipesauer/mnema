@@ -397,6 +397,44 @@ describe('where mnema cannot answer, only a path a rule addresses is refused', (
     expect(asked.decision).toBe('deny');
   });
 
+  /** A decision recorded, linked at `address` with `relation`, and moved on as `then` says. */
+  async function aRuleAt(
+    title: string,
+    address: string,
+    then: (id: string) => Promise<void> = async () => undefined,
+  ): Promise<string> {
+    const said = await did('decision', 'record', title, 'Because it was agreed');
+    const id = said.match(/\(([0-9a-f-]{20,})\)/)?.[1] as string;
+    await did('link', id, address, '--rel', 'refuses-a-write');
+    await then(id);
+    return id;
+  }
+
+  it('lets a path through whose rule is only proposed, rejected or superseded, and refuses the one in force', async () => {
+    await aRuleAt('Proposed only', 'src/proposed');
+    await aRuleAt('Turned down', 'src/rejected', async (id) => {
+      await did('decision', 'move', 'reject', id, '--note', 'no');
+    });
+    const old = await aRuleAt('Replaced', 'src/old', async (id) => {
+      await did('decision', 'move', 'accept', id, '--note', 'agreed');
+    });
+    const successor = (await did('decision', 'record', 'The replacement', 'Because')).match(
+      /\(([0-9a-f-]{20,})\)/,
+    )?.[1] as string;
+    await did('decision', 'supersede', old, successor, '--reason', 'moved on');
+    for (const path of ['src/proposed/a.ts', 'src/rejected/a.ts', 'src/old/a.ts']) {
+      const met = aHook(CURSOR(), writeAt(path), stuck(), CURSOR_ENV);
+      expect(met, path).toMatchObject({ stdout: '', status: 0 });
+    }
+    expect(aHook(CURSOR(), writeAt('src/billing/a.ts'), stuck(), CURSOR_ENV).decision).toBe('deny');
+    // Once the rule in force is superseded too, nothing is addressed any more.
+    await did('decision', 'supersede', rule, successor, '--reason', 'moved on');
+    expect(aHook(CURSOR(), writeAt('src/billing/a.ts'), stuck(), CURSOR_ENV)).toMatchObject({
+      stdout: '',
+      status: 0,
+    });
+  });
+
   it('lets everything through in a project whose only link is one that governs', async () => {
     process.chdir(plain);
     const said = await did('decision', 'record', 'The ledger is UTC', 'Because it was agreed');

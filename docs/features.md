@@ -11,10 +11,10 @@ Each line says what it does and what it leaves unproven; the page it points to h
   is a gate, and a gate that cannot answer lets the write through only where nothing says the path
   is governed. With no `mnema` on the PATH there is nothing to answer with
   ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)).
-  A `mnema` that is there and cannot answer (it exits non-zero, does not answer in ten seconds, prints
+  A `mnema` that is there and cannot answer (it exits non-zero, does not answer in ten seconds (six in Gemini CLI and OpenCode), prints
   what no host reads, or no `node` on the hooks' PATH takes it) refuses the write, with the reason
-  in words and the way to fix it, **only where a rule that refuses a write or asks for a person at it
-  addresses that very path**, in Cursor's agent, Codex, VS Code, Copilot CLI, Gemini CLI and OpenCode;
+  in words and the way to fix it, **only where a rule in force that refuses a write or asks for a person at it
+  addresses that very path** (a rule only proposed, rejected or superseded does not count), in Cursor's agent, Codex, VS Code, Copilot CLI, Gemini CLI and OpenCode;
   every other path goes through, a project whose only links merely govern is never refused, and a
   rule taken back stops refusing. A fault of a handler itself is treated the same way. Where `mnema`
   does run, the record decides, and `mnema switch off edit-refuses-a-write` is honoured. Cursor's agent
