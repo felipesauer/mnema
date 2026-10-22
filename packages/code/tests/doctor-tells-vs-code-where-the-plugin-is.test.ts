@@ -46,11 +46,11 @@ function write(path: string, text: string): string {
   return path;
 }
 
-function said(topic: string): string[] {
+function said(topic: string, processEnv: Record<string, string> = {}): string[] {
   return runDoctor({
     cwd: project,
     env: { home },
-    processEnv: { PATH: '' },
+    processEnv: { PATH: '', ...processEnv },
     running: { file: join(sandbox, 'x', 'mnema'), version: VERSION },
     platform: 'linux',
   })
@@ -271,6 +271,26 @@ describe('the leftovers of an earlier install', () => {
     expect(orphan).toContain('`claude mcp remove` cannot reach those');
     expect(orphan).not.toContain(live);
     expect(lines.find((line) => line.includes('also declared'))).toContain(live);
+  });
+
+  it('reads the file the host keeps in the folder CLAUDE_CONFIG_DIR names, and not the one in HOME', () => {
+    const moved = join(sandbox, 'moved');
+    const declared = {
+      projects: {
+        [join(sandbox, 'gone')]: { mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } } },
+      },
+    };
+    write(
+      join(home, '.claude.json'),
+      JSON.stringify({ mcpServers: declared.projects[join(sandbox, 'gone')].mcpServers }),
+    );
+    write(join(moved, '.claude.json'), JSON.stringify(declared));
+    const lines = said('mcp', { CLAUDE_CONFIG_DIR: moved });
+    expect(lines.find((line) => line.startsWith('attention '))).toContain(
+      join(moved, '.claude.json'),
+    );
+    expect(lines.join('\n')).not.toContain('declared 2 times');
+    expect(lines.join('\n')).not.toContain(join(home, '.claude.json'));
   });
 
   it('names the script that shadows the real mnema, and says it is a wrapper', () => {

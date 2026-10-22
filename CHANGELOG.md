@@ -76,6 +76,9 @@ with its own changelog.
 
 ### Fixed
 
+- **`mnema doctor` reads the host's `.claude.json` where the host keeps it.** With `CLAUDE_CONFIG_DIR` set the file is
+  `$CLAUDE_CONFIG_DIR/.claude.json`, and `doctor` read the one in your home directory, so it counted the wrong
+  declarations of the mnema MCP server and listed the wrong projects.
 - **A checkpoint or an event in a tail that names another key than the one the tail belongs to is refused, by
   `mnema verify`, the Python verifier and the page.** A tail id begins with the fingerprint of its key, and only that
   key writes to it (`FORMAT.md` section 6, a new rule). Both readers checked a checkpoint under the key it names and bound
