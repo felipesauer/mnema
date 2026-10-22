@@ -50,6 +50,22 @@ export function listTails(layout: ChainLayout): string[] {
 }
 
 /**
+ * A name under `keys/` that starts with this is the metadata macOS writes beside a file on a
+ * volume that cannot hold it (AppleDouble), not a key: both readers skip it as they skip
+ * `.DS_Store`, byte for byte the same rule. Every other `*.pub` must hold an Ed25519 key.
+ */
+export const APPLE_DOUBLE_PREFIX = '._';
+
+/** The AppleDouble files under `keys/` that the readers skip, so a person can delete them. */
+export function listAppleDoubleKeyFiles(layout: ChainLayout): string[] {
+  const dir = keysDir(layout);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.pub') && name.startsWith(APPLE_DOUBLE_PREFIX))
+    .sort();
+}
+
+/**
  * Lists the fingerprints of the committed public keys (each `<fingerprint>.pub`
  * under `keys/`). Because a public key is written before a machine's first
  * event and its fingerprint IS its tail id, this set is a committed census of
@@ -60,7 +76,7 @@ export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
   const dir = keysDir(layout);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
-    .filter((name) => name.endsWith('.pub'))
+    .filter((name) => name.endsWith('.pub') && !name.startsWith(APPLE_DOUBLE_PREFIX))
     .map((name) => name.slice(0, -'.pub'.length))
     .sort();
 }
@@ -151,6 +167,9 @@ export type CommittedKeyFile = { readonly key: KeyObject } | { readonly holdsNoK
 /** The reason a key file is refused when what is at its path is not a file. */
 export const NOT_A_FILE = 'it is not a file';
 
+/** The reason a key file is refused when the process may not read it. */
+export const CANNOT_BE_READ = 'it cannot be read';
+
 /**
  * The ONE reading of a committed key file, for every reader of a chain root's `keys/`.
  *
@@ -164,6 +183,8 @@ export function readCommittedKeyFile(path: string): CommittedKeyFile {
   try {
     return { key: publicKeyFromCommittedText(decodeStoredBytes(readFileSync(path))) };
   } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'EACCES' || code === 'EPERM') return { holdsNoKey: CANNOT_BE_READ };
     if (error instanceof NoCommittedKeyError || error instanceof StoredJsonError) {
       return { holdsNoKey: error.message };
     }

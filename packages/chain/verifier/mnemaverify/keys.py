@@ -46,6 +46,10 @@ _BASE64 = re.compile(r"(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{
 # product, followed by the reason.
 HOLDS_NO_KEY = "holds no Ed25519 public key"
 NOT_A_FILE = "it is not a file"
+CANNOT_BE_READ = "it cannot be read"
+# A name under `keys/` that starts with this is macOS metadata (AppleDouble), skipped like
+# `.DS_Store`; every other `*.pub` must hold a key. The product applies the same rule.
+APPLE_DOUBLE_PREFIX = "._"
 
 
 class PublicKey(NamedTuple):
@@ -107,14 +111,18 @@ def load_keyring(
     if not os.path.isdir(directory):
         return ring, misnamed, no_key
     for name in sorted(os.listdir(directory)):
-        if not name.endswith(".pub"):
+        if not name.endswith(".pub") or name.startswith(APPLE_DOUBLE_PREFIX):
             continue
         path = os.path.join(directory, name)
         if not os.path.isfile(path):
             no_key.append((name, NOT_A_FILE))
             continue
-        with open(path, "rb") as handle:
-            raw = handle.read()
+        try:
+            with open(path, "rb") as handle:
+                raw = handle.read()
+        except PermissionError:
+            no_key.append((name, CANNOT_BE_READ))
+            continue
         try:
             key = parse_pem(utf8_text(raw), path)
         except Refusal as refusal:

@@ -13,7 +13,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { generateKeyPairSync } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +23,7 @@ import { identityFounded } from '../events/build.js';
 import { openChainForWriting, verify } from './chain.js';
 import { generateKeyPair, publicKeyToPem } from './keys.js';
 import { keysDir } from './layout.js';
+import { listAppleDoubleKeyFiles, listPublicKeyFingerprints } from './store.js';
 import { HOLDS_NO_KEY } from './verify.js';
 
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -113,10 +114,25 @@ const CASES = [
       );
     },
   },
+  {
+    file: `${NAME}.pub`,
+    why: 'it cannot be read',
+    unreadable: true,
+    write: () => {
+      writeFileSync(join(keys, `${NAME}.pub`), publicKeyToPem(generateKeyPair().publicKey));
+      chmodSync(join(keys, `${NAME}.pub`), 0o000);
+    },
+  },
 ] as const;
 
-describe.each(CASES)('a key file that holds no key: $why', ({ file, why, write }) => {
-  it('is refused by the product by name, and not said as a key with no tail', () => {
+/** A process running as root reads a file whose mode is 000, so there is no such file to refuse. */
+const IS_ROOT = process.getuid?.() === 0;
+const itCan = (unreadable: boolean) => (unreadable && IS_ROOT ? it.skip : it);
+
+describe.each(CASES)('a key file that holds no key: $why', (one) => {
+  const { file, why, write } = one;
+  const unreadable = 'unreadable' in one;
+  itCan(unreadable)('is refused by the product by name, and not said as a key with no tail', () => {
     write();
     const result = verify(root);
     expect(result.ok).toBe(false);
@@ -130,18 +146,21 @@ describe.each(CASES)('a key file that holds no key: $why', ({ file, why, write }
     expect(result.census.filter((note) => note.kind === 'key-without-tail')).toEqual([]);
   });
 
-  it('is refused by the second reader in the same words, and it gives a verdict', () => {
-    write();
-    const there = secondReading(root);
-    expect(there.verdict).toBe('REFUSED');
-    expect(there.findings.filter((f) => f.level === 'FAIL')).toEqual([
-      expect.objectContaining({
-        section: '6',
-        what: `the key file keys/${file} ${HOLDS_NO_KEY}: ${why}`,
-        where: `keys/${file}`,
-      }),
-    ]);
-  });
+  itCan(unreadable)(
+    'is refused by the second reader in the same words, and it gives a verdict',
+    () => {
+      write();
+      const there = secondReading(root);
+      expect(there.verdict).toBe('REFUSED');
+      expect(there.findings.filter((f) => f.level === 'FAIL')).toEqual([
+        expect.objectContaining({
+          section: '6',
+          what: `the key file keys/${file} ${HOLDS_NO_KEY}: ${why}`,
+          where: `keys/${file}`,
+        }),
+      ]);
+    },
+  );
 });
 
 describe('a key file that holds a key', () => {
@@ -157,5 +176,23 @@ describe('a key file that holds a key', () => {
       result.census.filter((note) => note.kind === 'key-without-tail').map((n) => n.fingerprint),
     ).toEqual([key.fingerprint]);
     expect(secondReading(root).verdict).toBe('VERIFIED');
+  });
+});
+
+describe('a macOS metadata file under keys/', () => {
+  it('is skipped by both readers like .DS_Store, whatever it holds', () => {
+    writeFileSync(join(keys, `._${NAME}.pub`), Buffer.from([0x00, 0x05, 0x16, 0x07, 0xff, 0x00]));
+    writeFileSync(join(keys, '.DS_Store'), 'junk');
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.census.filter((note) => note.kind === 'key-without-tail')).toEqual([]);
+    expect(secondReading(root).verdict).toBe('VERIFIED');
+  });
+
+  it('is named by the listing the doctor reads, and the other key files are not', () => {
+    writeFileSync(join(keys, `._${NAME}.pub`), 'junk');
+    expect(listAppleDoubleKeyFiles({ root })).toEqual([`._${NAME}.pub`]);
+    expect(listPublicKeyFingerprints({ root })).not.toContain(`._${NAME}`);
   });
 });

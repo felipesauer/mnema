@@ -415,6 +415,44 @@ def key_file_not_utf8(root: str) -> tuple[bool, str]:
     return applied, "a key nothing uses, with a byte that is not UTF-8 after its armour"
 
 
+def key_file_unreadable(root: str) -> tuple[bool, str]:
+    """A key file nothing uses whose mode is 000: a real key the process may not read.
+
+    Both readers used to stop on it with a traceback. Not applied when the process can read it
+    anyway (root), because then there is no file to refuse.
+    """
+    fingerprint, pem = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(pem)
+        os.chmod(path, 0)
+
+    applied, _ = _key_file_without_a_key(root, f"{fingerprint}.pub", write)
+    if applied:
+        try:
+            with open(os.path.join(root, "keys", f"{fingerprint}.pub"), "rb"):
+                applied = False
+        except PermissionError:
+            pass
+    return applied, "a key nothing uses, with mode 000"
+
+
+def key_metadata_file_beside_the_keys(root: str) -> tuple[bool, str]:
+    """A `keys/._<fingerprint>.pub` of junk: macOS metadata, which both readers skip.
+
+    NOT a refusal: the row of this name is an agreement that the record is still VERIFIED.
+    """
+    fingerprint, _ = _unenrolled_public()
+
+    def write(path: str) -> None:
+        with open(path, "wb") as handle:
+            handle.write(b"\x00\x05\x16\x07\xff junk")
+
+    applied, _ = _key_file_without_a_key(root, f"._{fingerprint}.pub", write)
+    return applied, "a ._<fingerprint>.pub of junk beside the keys"
+
+
 def refused_line_beside_a_forged_signature(root: str) -> tuple[bool, str]:
     """Two causes in one tail: a line no reader can read, and a checkpoint whose signature fails.
 
@@ -1290,6 +1328,8 @@ MUTATIONS = {
     "key-file-holds-no-key": key_file_holds_no_key,
     "key-file-is-a-directory": key_file_is_a_directory,
     "key-file-not-utf8": key_file_not_utf8,
+    "key-file-unreadable": key_file_unreadable,
+    "key-metadata-file-beside-the-keys": key_metadata_file_beside_the_keys,
     "refused-line-beside-a-forged-signature": refused_line_beside_a_forged_signature,
     "forged-payload-field-appended": forged_payload_field_appended,
     "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
