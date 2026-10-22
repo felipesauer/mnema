@@ -86,7 +86,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
-import { couldNotAnswer, denial, settleTheRuntime } from './the-gate-kit.mjs';
+import { couldNotAnswer, settleTheRuntime, whyItDidNotAnswer } from './the-gate-kit.mjs';
 import { aRuleReaches } from './where-the-record-is.mjs';
 
 /** @typedef {import('./the-gate-kit.mjs').Runtime} Runtime */
@@ -503,6 +503,26 @@ export async function whatTheGateAnswers(argv, env, cwd, payload, { timeout = GA
 }
 
 /**
+ * The reply that does not let a write happen, in the shape the hosts that run the plugin's hooks read
+ * (`hookSpecificOutput`, `permissionDecision: "deny"`), with the control bytes of the reason struck.
+ *
+ * @param {string} reason
+ * @returns {string}
+ */
+export function denial(reason) {
+  const plain = [...reason]
+    .map((char) => ((char.codePointAt(0) ?? 32) < 32 || char === '\u007f' ? ' ' : char))
+    .join('');
+  return `${JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: plain,
+    },
+  })}\n`;
+}
+
+/**
  * How long the gate waits for `mnema`, in milliseconds. With the search for a node (`SEARCH_BUDGET`)
  * it stays under the hooks file's own 15 seconds, so the refusal is the answer and the host's kill,
  * which a host reads as nothing to say, is not.
@@ -512,11 +532,7 @@ export const GATE_TIMEOUT = 10_000;
 /**
  * What the gate says for one run of the verb: the host's reply byte for byte, `null` where the verb
  * has nothing to say or where there is no `mnema` to run, and `closed(because)` where the run is not
- * an answer: it could not start, it did not finish in time, it exited non-zero, or what it printed is
- * not a reply a host reads.
- *
- * NO PROGRAM IS NOT A RUN THAT FAILED, and that line is drawn by `ENOENT`: a machine with the plugin
- * and without the product is not made worse by the plugin (`without-mnema-the-hooks-fail-open.test.ts`).
+ * an answer (`whyItDidNotAnswer`).
  *
  * @param {import('node:child_process').SpawnSyncReturns<string>} ran
  * @param {(because: string) => string | null} closed
@@ -524,38 +540,9 @@ export const GATE_TIMEOUT = 10_000;
  * @returns {string | null}
  */
 function theGateSays(ran, closed, timeout) {
-  const code = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error)?.code;
-  if (code === 'ENOENT') return null;
-  if (code === 'ETIMEDOUT') return closed(`it did not answer in ${timeout / 1000} seconds`);
-  if (code !== undefined && code !== 'EPIPE') return closed(`it could not be started (${code})`);
-  if (ran.status !== 0) {
-    const said = (ran.stderr ?? '').trim().split('\n')[0] ?? '';
-    return closed(
-      `it exited ${ran.status ?? ran.signal}${said === '' ? '' : `: ${said.slice(0, QUOTED)}`}`,
-    );
-  }
-  if (!isAReply(ran.stdout ?? '')) return closed('what it printed is not a reply a host reads');
-  return answerOf(ran);
-}
-
-/**
- * Whether `text` is a reply a host reads: `{}`, or an object that carries `hookSpecificOutput`.
- *
- * @param {string} text
- * @returns {boolean}
- */
-function isAReply(text) {
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
-    const keys = Object.keys(parsed);
-    return (
-      keys.length === 0 ||
-      (typeof parsed.hookSpecificOutput === 'object' && parsed.hookSpecificOutput !== null)
-    );
-  } catch {
-    return false;
-  }
+  const failed = whyItDidNotAnswer(ran, timeout);
+  if (failed === null) return null;
+  return failed === undefined ? answerOf(ran) : closed(failed);
 }
 
 /**

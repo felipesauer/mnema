@@ -178,26 +178,6 @@ export function settleTheRuntime(binary, env) {
 }
 
 /**
- * The reply that does not let a write happen, in the shape the hosts that run the plugin's hooks read
- * (`hookSpecificOutput`, `permissionDecision: "deny"`), with the control bytes of the reason struck.
- *
- * @param {string} reason
- * @returns {string}
- */
-export function denial(reason) {
-  const plain = [...reason]
-    .map((char) => ((char.codePointAt(0) ?? 32) < 32 || char === '\u007f' ? ' ' : char))
-    .join('');
-  return `${JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: 'deny',
-      permissionDecisionReason: plain,
-    },
-  })}\n`;
-}
-
-/**
  * The sentence a refusal carries when `mnema` was there and did not answer, with what to do.
  *
  * @param {string} because Why it did not answer, in words.
@@ -209,4 +189,53 @@ export function couldNotAnswer(because) {
     'and a gate that cannot read the record does not let a write through. Run `mnema doctor` in a terminal ' +
     'to see what stops it; once mnema answers again, the record decides this write.'
   );
+}
+
+/** How much of what `mnema` said on its second stream is quoted back in a reason. */
+const QUOTED = 120;
+
+/**
+ * Whether `text` is a reply a host reads: `{}`, or an object that carries `hookSpecificOutput`
+ * (the shape of every host the plugin's hooks serve) or a `decision` (Gemini CLI's own).
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function isAReply(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
+    return (
+      Object.keys(parsed).length === 0 ||
+      (typeof parsed.hookSpecificOutput === 'object' && parsed.hookSpecificOutput !== null) ||
+      typeof parsed.decision === 'string'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Why one run of the gate's verb is not an answer, in words: `undefined` where it answered, `null`
+ * where there is no program to run (a machine with the plugin and without the product is not made
+ * worse by the plugin), and a reason where the program was there and did not answer: it could not
+ * start, it did not finish in `timeout` milliseconds, it exited non-zero, or what it printed is not
+ * a reply a host reads.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @param {number} timeout
+ * @returns {string | null | undefined}
+ */
+export function whyItDidNotAnswer(ran, timeout) {
+  const code = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error)?.code;
+  if (code === 'ENOENT') return null;
+  if (code === 'ETIMEDOUT') return `it did not answer in ${timeout / 1000} seconds`;
+  // A closed input is not a failure: a `mnema` that refuses an option at its arguments exits before it
+  // reads the payload, and what it said is read as it would be had the write gone through.
+  if (code !== undefined && code !== 'EPIPE') return `it could not be started (${code})`;
+  if (ran.status !== 0) {
+    const said = (ran.stderr ?? '').trim().split('\n')[0] ?? '';
+    return `it exited ${ran.status ?? ran.signal}${said === '' ? '' : `: ${said.slice(0, QUOTED)}`}`;
+  }
+  return isAReply(ran.stdout ?? '') ? undefined : 'what it printed is not a reply a host reads';
 }

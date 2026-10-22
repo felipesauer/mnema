@@ -131,6 +131,7 @@ const pathOf = (...names: (keyof typeof dirs)[]): string => names.map((n) => dir
 
 interface Said {
   readonly stdout: string;
+  readonly stderr: string;
   readonly status: number | null;
   readonly decision: string | undefined;
   readonly reason: string;
@@ -165,6 +166,7 @@ function aHook(
       : (JSON.parse(stdout) as { hookSpecificOutput?: Record<string, string> }).hookSpecificOutput;
   return {
     stdout,
+    stderr: ran.stderr,
     status: ran.status,
     decision: said?.permissionDecision,
     reason: said?.permissionDecisionReason ?? '',
@@ -191,7 +193,7 @@ beforeEach(async () => {
   }
   mkdirSync(home);
   symlinkSync(process.execPath, join(dirs.real, 'node'));
-  for (const tool of ['git', 'cat']) {
+  for (const tool of ['git', 'cat', 'sleep']) {
     const where = execFileSync('/bin/sh', ['-c', `command -v ${tool}`], {
       encoding: 'utf-8',
     }).trim();
@@ -437,6 +439,100 @@ describe('where mnema cannot answer, only a path a rule addresses is refused', (
       CURSOR_ENV,
     );
     expect(met).toMatchObject({ stdout: '', status: 0 });
+  });
+});
+
+describe("Gemini CLI's script and OpenCode's plugin", () => {
+  const GEMINI = join(PLUGIN, 'gemini', 'hooks', 'mnema.mjs');
+  const OPENCODE = join(PLUGIN, 'opencode', 'mnema.js');
+
+  /** What Gemini CLI reads when its gate runs on a write at `relative`. */
+  const gemini = (relative: string, path: string): Said =>
+    aHook(
+      `node "${GEMINI}" gate`,
+      JSON.stringify({
+        cwd: repo,
+        tool_name: 'write_file',
+        tool_input: { file_path: join(repo, relative), content: 'x\n' },
+      }),
+      path,
+    );
+
+  /** What OpenCode's plugin does before a write at `relative`: it throws the refusal, or it does not. */
+  const opencode = (relative: string, path: string): string => {
+    const driver = join(sandbox, 'driver.mjs');
+    writeFileSync(
+      driver,
+      [
+        `import { Mnema } from ${JSON.stringify(OPENCODE)};`,
+        `const hooks = await Mnema({ directory: ${JSON.stringify(repo)} });`,
+        'try {',
+        `  await hooks['tool.execute.before']({ tool: 'write' }, { args: { filePath: ${JSON.stringify(join(repo, relative))}, content: 'x' } });`,
+        "  console.log('went through');",
+        '} catch (refusal) {',
+        "  console.log('refused: ' + refusal.message);",
+        '}',
+        '',
+      ].join('\n'),
+    );
+    return spawnSync(process.execPath, [driver], {
+      cwd: repo,
+      encoding: 'utf-8',
+      env: {
+        HOME: home,
+        PATH: path,
+        GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+        GIT_CONFIG_NOSYSTEM: '1',
+      },
+    }).stdout.trim();
+  };
+
+  it('run mnema on the node that takes it, and the rule refuses the write', () => {
+    const around = pathOf('slow', 'mnema', 'real', 'tools');
+    const said = gemini('src/billing/invoice.ts', around);
+    expect(JSON.parse(said.stdout)).toMatchObject({ decision: 'deny' });
+    expect(said.stdout).toContain(rule);
+    expect(opencode('src/billing/invoice.ts', around)).toContain(rule);
+  });
+
+  it('refuse the write a rule addresses where no node takes mnema, and let another path through', () => {
+    const stuck = pathOf('slow', 'mnema', 'tools');
+    const said = gemini('src/billing/invoice.ts', stuck);
+    expect(JSON.parse(said.stdout)).toMatchObject({ decision: 'deny' });
+    expect(said.stdout).toContain('mnema needs Node 24.15.0');
+    expect(opencode('src/billing/invoice.ts', stuck)).toMatch(
+      /^refused: mnema could not answer for this write: mnema needs Node 24\.15\.0/,
+    );
+
+    expect(gemini('README.md', stuck)).toMatchObject({ stdout: '', status: 0 });
+    expect(opencode('README.md', stuck)).toBe('went through');
+  });
+
+  it('refuse where mnema exits without an answer, and let a path no rule addresses through', () => {
+    aMnemaOnTheFirstNode(dirs.mnema, 'echo boom >&2; exit 3');
+    // `--identify` is answered by the stand-in only when it asks as this product does.
+    writeFileSync(
+      join(dirs.mnema, 'mnema'),
+      [
+        '#!/bin/sh',
+        'if [ "$1" = "--identify" ]; then echo "@mnema/code 9.9.9"; exit 0; fi',
+        'echo boom >&2',
+        'exit 3',
+        '',
+      ].join('\n'),
+      { mode: 0o755 },
+    );
+    const path = pathOf('real', 'mnema', 'tools');
+    expect(gemini('src/billing/invoice.ts', path).stdout).toContain('it exited 3: boom');
+    expect(opencode('src/billing/invoice.ts', path)).toContain('it exited 3: boom');
+    expect(gemini('README.md', path)).toMatchObject({ stdout: '', status: 0 });
+    expect(opencode('README.md', path)).toBe('went through');
+  });
+
+  it('do nothing where there is no mnema at all', () => {
+    const none = pathOf('slow', 'tools');
+    expect(gemini('src/billing/invoice.ts', none)).toMatchObject({ stdout: '', status: 0 });
+    expect(opencode('src/billing/invoice.ts', none)).toBe('went through');
   });
 });
 
