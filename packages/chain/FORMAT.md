@@ -436,7 +436,13 @@ part of it**:
   with the tails, and a file whose name is not its key is what a rename that
   re-points a signature leaves behind
   (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`,
-  `unused-key-misnamed`).
+  `unused-key-misnamed`). A `.pub` there that holds no key is refused the same way, by its
+  name and with the reason, because its name stands for no key: one that is not a file,
+  one whose bytes are not UTF-8 (§1), and one with no `-----BEGIN PUBLIC KEY-----` block,
+  or whose first such block, once its ASCII whitespace is removed, is not strict base64
+  (the alphabet and the padding) of the twelve-byte prefix above followed by 32 bytes. Text
+  outside the block is no reason to refuse a key
+  (`a-key-file-that-holds-no-key-is-refused.test.ts`).
 - The signature is **Ed25519** over those bytes (RFC 8032), hex-encoded, stored as
   `sig` alongside the fields. The checkpoints of a tail live in
   `checkpoints.jsonl`, one canonical line each (the eight keys, `sig` included,

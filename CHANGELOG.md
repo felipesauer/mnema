@@ -54,6 +54,20 @@ with its own changelog.
   0.1.2, with a person, an agent key, a checker, a second machine and a restored
   backup key, and this repository's own record, verify as before. A version from before this one still verifies a record
   that breaks the rule.
+- **A `.pub` under `keys/` that holds no key is refused by name, by `mnema verify`, the Python verifier and the page, and
+  the Python verifier no longer crashes on one.** A `README.pub` with text in it and a directory named `<fingerprint>.pub`
+  stopped the Python verifier with a traceback, and a key file whose bytes are not UTF-8 was refused there; `mnema verify`
+  read all three as a committed key with no tail, a note, and verified. Each is now refused under `FORMAT.md` section 6
+  as a key file that *holds no Ed25519 public key*, with the reason (`it is not a file`, `not UTF-8 at byte N`, `no PEM
+  public key in it`, `the PEM body is not base64`, `not an Ed25519 SubjectPublicKeyInfo`), in the same words in every
+  reader, and is no longer counted as a key without a tail. Both readers read a key file by one written rule now, so a
+  private key, or a key of another algorithm, is no key to either. No record a mnema binary writes is touched: records
+  written by `main` and by this version, this repository's own record and the frozen fixtures verify as before.
+- **`mnema verify` names every cause in a tail with a line it cannot read, as the Python verifier does.** It stopped at
+  the first such line and said nothing more about that tail, so a second unreadable line, a checkpoint whose signature
+  fails or a missing ownership proof beside it were left out of the verdict. Every unreadable line is named now, and
+  so are the tail's ownership proof, the key its checkpoints and events name, and each checkpoint's own signature; across
+  a missing event line neither reader walks the hash chain or folds a content root. The level stays `unreadable`.
 
 ## [0.1.2] - 2026-10-21
 
