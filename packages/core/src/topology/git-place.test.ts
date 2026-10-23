@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -43,6 +43,16 @@ describe('gitPlaceOf: read from the files git writes, without running git', () =
       gitDir: own,
       commonDir: common,
     });
+  });
+
+  it('reads a relative commondir from the real directory when the .git file reaches it through a symbolic link', () => {
+    const common = aGitDir(join(sandbox, 'repo', '.git'));
+    const own = aGitDir(join(common, 'worktrees', 'wt'));
+    writeFileSync(join(own, 'commondir'), '../..\n');
+    symlinkSync(join(common, 'worktrees'), join(sandbox, 'link'));
+    mkdirSync(join(sandbox, 'wt'));
+    writeFileSync(join(sandbox, 'wt', '.git'), `gitdir: ${join(sandbox, 'link', 'wt')}\n`);
+    expect(gitPlaceOf(join(sandbox, 'wt'))?.commonDir).toBe(realpathSync.native(common));
   });
 
   it('answers nothing outside a repository, or where .git names nothing git would take', () => {

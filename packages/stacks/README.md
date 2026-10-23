@@ -126,7 +126,8 @@ entries of an index folder, and `--json` gives them to a program; it reads the f
 - The frontmatter reader is small on purpose and is not a YAML parser. It reads top-level `key: value` lines and
   refuses a document it cannot place. Where `skills-ref`, the validator the specification publishes, is on the
   path, a case holds the two to the same verdict over a set of skills; it is not a dependency, and it takes
-  non-ASCII skill names that this validator refuses.
+  non-ASCII skill names that this validator refuses. A stack install also asks it about the skill folders it
+  wrote, when it is on the path, and prints what it said.
 - It does not install anything, fetch anything, or sign anything.
 - Being an example, or being listed in the index, is not a vouching. The two examples are installed by the CI
   and read by the validators; nobody has shown that their instructions make an agent better.

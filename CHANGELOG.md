@@ -40,6 +40,12 @@ with its own changelog.
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
   directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
   and of the tail of the bytes already read, and read again from the top.
+- **A stack install asks `skills-ref` about the skills it wrote.** When `agentskills` (the validator the Agent Skills
+  specification publishes) is on the `PATH`, each installed skill folder is validated and the command prints one line,
+  accepted or refused, with what it said; without it, the command says it did not run. It is not a dependency, a refusal
+  does not undo the installation, and nothing of it is recorded.
+- **The Python reader declares itself.** `packages/chain/verifier/pyproject.toml` names it, gives it the release's
+  version and its Python floor, and holds the `ruff` rules CI now checks it with; it declares no dependency.
 - **The instruction block says when work is a task and a handoff.** One more line (version `v2` of the block): work in
   flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`) with its
   brief. `mnema init` and `mnema instructions` replace the `v1` block they wrote, byte for byte, and still refuse one
@@ -64,6 +70,12 @@ with its own changelog.
 
 ### Fixed
 
+- **An address that is not an address is a refusal, not an internal error.** A `TypeError` with Node's code
+  `ERR_INVALID_URL` (a signing-token address from the environment that does not parse, for one) is now said as an
+  ordinary refusal with exit 1, and no report is offered for it; any other `TypeError` is still a fault.
+- **A linked worktree reached through a symbolic link finds its private tree.** When a worktree's `.git` file names its
+  git directory through a link and the `commondir` there is relative, mnema read the private tree beside the link
+  instead of beside the real common directory; it now resolves the name against the real directory, as git does.
 - **A handoff with no scope follows its task, and its brief with it.** It landed in the public tree even when the
   task was private, and a brief of up to 64 KiB went with it into what is committed. With no `--scope` (or `scope`),
   the `task handoff` command and `record_handoff` now record in the tree that holds the task, as a move does; when no tree
