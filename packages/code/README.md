@@ -69,8 +69,9 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   stops it.
 - **A session journal**, which the `Stop` hook keeps on this machine, outside the record: ids and counts of what a
   session did with it (never its words), so the next `Stop` reads only what the host wrote since and the run the MCP
-  server closes ends with an outcome that the `resume` and `status` readings print; `mnema switch off session-journal`
-  stops it. [Every switch](https://github.com/felipesauer/mnema/blob/main/docs/switches.md) says where it begins and what it carries.
+  server closes ends with an outcome that the `resume` and `status` readings print, and the notes the next session
+  opens with say where this one stopped; `mnema switch off session-journal` and `mnema switch off last-session` stop
+  them. [Every switch](https://github.com/felipesauer/mnema/blob/main/docs/switches.md) says where it begins and what it carries.
 
 [The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
 unproven.
