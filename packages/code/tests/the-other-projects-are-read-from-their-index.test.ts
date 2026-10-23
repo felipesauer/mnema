@@ -54,6 +54,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createCacheRegistry } from '../src/mcp/cache-registry.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { writeContext } from '../src/mcp/session.js';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -311,7 +312,15 @@ describe('the index of the other projects', () => {
   it('hears a checkout that swaps the live segment for one of the same size', async () => {
     const [, second] = projects as [string, string, string];
     const vcs = (...args: string[]): void => {
-      execFileSync('git', args, { cwd: second, stdio: 'pipe' });
+      execFileSync('git', args, {
+        cwd: second,
+        stdio: 'pipe',
+        env: {
+          PATH: process.env.PATH ?? '',
+          HOME: env.home as string,
+          GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+        },
+      });
     };
     vcs('init', '-q', '-b', 'main');
     vcs('config', 'user.email', 'a@example.com');
