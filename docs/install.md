@@ -25,6 +25,47 @@ export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup
 To update, run the same install again. To run the `main` branch instead of the published version,
 see [Building it from source](build-from-source.md).
 
+## What is run on Windows and macOS
+
+Every pull request runs one job on `windows-latest` and one on `macos-latest`, each on Node 24.15.0 (the floor)
+and on the latest 24. The job packs the five packages, installs them together with `npm i -g` into an empty
+home (so the launcher is the one npm writes there, `mnema.cmd` on Windows), and drives the installed binary:
+
+- `mnema init`, recording a decision and accepting it, linking a rule that refuses a write at a folder, and
+  `mnema verify --require signed`, which must say the record is intact;
+- the same record in a clone git checked out with `core.autocrlf=true`: every record file must come out with LF
+  (the record's `.gitattributes` says `* -text`), and `mnema verify` and the Python reader (3.9, the floor: its
+  self-test and the record) must accept it. That shows the attribute holds the line endings; it does not show that a
+  reader accepts CRLF;
+- `mnema doctor`;
+- two of the plugin's hook scripts, started as Node starts them: `session-start.mjs` must hand over a decision in
+  force, and `edit-refuses-a-write.mjs`, with Cursor's arguments (`--host cursor`) and a Cursor payload, must refuse
+  a write under a rule, naming that rule (a refusal that says `mnema` could not answer fails the check), when the
+  host names the file with backslashes and a drive letter, with forward slashes, with the drive letter in lower
+  case, in the 8.3 short spelling of the temp directory (`RUNNER~1`), and, for a folder that exists, in another
+  letter case. The same scripts for the other hosts (Claude Code, VS Code, Codex, Copilot) take other arguments and
+  payloads, and OpenCode's module and Gemini's extension are separate files: none of those was run.
+
+Not run there: the test suite (about ten minutes on Linux, and it leans on `sh`, a pty and `unshare`, so it runs
+on Linux only), the `sh` lines of the plugin's `hooks.json` (a host's shell runs them), the Python reader on any
+version but 3.9, and any host itself. A rule addressed at a folder that is not on disk yet is matched by its
+letters as written, so on a case-insensitive volume a write that spells that folder in other case goes round it.
+
+Two things were found by that job, and are the reason the lines above are not a guess. Node cannot start npm's
+`mnema.cmd` without a shell, so every hook answered `could not be started` on Windows; and a path written with a
+drive letter and backslashes never matched a rule's address, so no rule applied to a Windows write at all. Both are
+fixed. One limit remains, computed from the names the format gives and not run into: a witnessed record names a
+file `tails/<id>/witness/<digest>.sigstore.json`, 190 characters below `.mnema/` (197 with `.mnema\`), and Windows
+stops at 260 for a whole path, drive and separators included, so the project folder must fit in about 61 characters.
+Past that, `git checkout` or `git clone` can fail with `Filename too long` unless `git config core.longpaths true` is
+set, and the Python reader may fail to open the file unless the system's `LongPathsEnabled` is on. The job turns
+`core.longpaths` on for the repository's own fixtures, and its record holds no witness, so neither failure is
+exercised for the installed product.
+
+On Windows the hooks start `mnema.cmd` through `cmd.exe`, which cannot be given a `"`, a `%`, a `^` or a line break
+inside a word. A path of `mnema` (the plugin's `mnema_path`) that has one is not run: the opening is silent, and a
+write under a rule that refuses it is refused with a reason that says so.
+
 ## Claude Code
 
 For the Claude Code plugin (the opening context, the notes beside it and the per-edit
@@ -117,9 +158,9 @@ opening goes through a hook OpenCode marks experimental, so it is held on one ve
 (`.github/workflows/host-contract.yml` names it). `~/.config/opencode/plugins/` takes the same file
 for every project. The module runs `mnema` as a process and waits for it: a call that does not answer
 holds OpenCode's own process for up to 15 seconds (the opening asks twice, `brief` and `recall`, after
-asking `mnema` who it is, so up to 45), and on Windows `mnema.cmd` may not be run at all, since Node
-does not start a `.cmd` without a shell: the module is then silent, as where `mnema` is missing; this
-last point was not run.
+asking `mnema` who it is, so up to 45). On Windows it starts npm's `mnema.cmd` through a shell, because
+Node does not start a `.cmd` without one; OpenCode's own module was not run on Windows, and the plugin's
+command-hook scripts were ([what is run on each system](#what-is-run-on-windows-and-macos)).
 
 ## GitHub Copilot CLI
 
@@ -153,9 +194,9 @@ to the first turn of each session (the host escapes the angle brackets of that t
 After an `ask_user` question is answered, it names the tool that records the choice (documented, not
 measured). It pauses nothing, so a rule that only asks is let through, and it does nothing where `mnema` is
 missing or is another program. Its three hooks run one script that runs `mnema` as a process and waits
-for it, and the extension's hooks file gives each hook 15 seconds; on Windows `mnema.cmd` may not be
-run at all, since Node does not start a `.cmd` without a shell: the script is then silent; that was
-not run. A run without a person (`gemini -p`) in a folder the host does not trust does not start
+for it, and the extension's hooks file gives each hook 15 seconds; on Windows the script starts npm's
+`mnema.cmd` through a shell, because Node does not start a `.cmd` without one, and that script was not run
+on Windows. A run without a person (`gemini -p`) in a folder the host does not trust does not start
 unless it is told to trust it (`--skip-trust`).
 
 ## Any other host with an MCP client

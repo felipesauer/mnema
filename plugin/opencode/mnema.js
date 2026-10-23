@@ -175,6 +175,66 @@ function settleTheRuntime(binary, env) {
   };
 }
 
+/** The characters a word of a command line may hold and need no quoting for a shell. */
+const SAFE_IN_A_SHELL = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:@=,+/-';
+
+/**
+ * What `cmd.exe` cannot be handed as part of one quoted word: a `"` ends the quoting, `%` expands a
+ * variable even inside it, `^` and a line break are read by the shell before the program is.
+ * There is no escape for them that holds in every case, so a word that has one is not run.
+ */
+const NOT_QUOTABLE = /["%^\r\n]/;
+
+/** The `code` of the error a start carries when a word could not be quoted for `cmd.exe`. */
+const NOT_QUOTABLE_CODE = 'EMNEMA_NOT_QUOTABLE';
+
+/**
+ * How to start `program` with `args`: on Windows as one command line for a shell, each word quoted
+ * where it needs it, because Node refuses to start the `.cmd` npm writes any other way (`EINVAL`)
+ * and warns of arguments handed to a shell as a list; elsewhere as they are. A word `cmd.exe`
+ * cannot be given safely (`"`, `%`, `^`, a line break) makes the target `refused`, and nothing is run.
+ *
+ * @param {string} program
+ * @param {readonly string[]} args
+ * @param {NodeJS.Platform} [platform]
+ * @returns {{ readonly command: string, readonly args: readonly string[], readonly shell: boolean, readonly refused: boolean }}
+ */
+function spawnTarget(program, args, platform = process.platform) {
+  if (platform !== 'win32') return { command: program, args, shell: false, refused: false };
+  if ([program, ...args].some((text) => NOT_QUOTABLE.test(text)))
+    return { command: program, args, shell: false, refused: true };
+  const word = (/** @type {string} */ text) =>
+    [...text].every((char) => SAFE_IN_A_SHELL.includes(char)) ? text : '"' + text + '"';
+  return {
+    command: ['"' + program + '"', ...args.map(word)].join(' '),
+    args: [],
+    shell: true,
+    refused: false,
+  };
+}
+
+/**
+ * The run that stands for a start refused by {@link spawnTarget}: it did not happen, and its
+ * `error.code` is {@link NOT_QUOTABLE_CODE}, which {@link whyItDidNotAnswer} says in words.
+ *
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
+function notStarted() {
+  const error = Object.assign(
+    new Error('a word of the command line cannot be quoted for cmd.exe'),
+    { code: NOT_QUOTABLE_CODE },
+  );
+  return {
+    status: null,
+    signal: null,
+    output: [null, '', ''],
+    pid: 0,
+    stdout: '',
+    stderr: '',
+    error,
+  };
+}
+
 /**
  * The sentence a refusal carries when `mnema` was there and did not answer, with what to do.
  *
@@ -227,6 +287,8 @@ function isAReply(text) {
 function whyItDidNotAnswer(ran, timeout) {
   const code = /** @type {NodeJS.ErrnoException | undefined} */ (ran.error)?.code;
   if (code === 'ENOENT') return null;
+  if (code === NOT_QUOTABLE_CODE)
+    return 'the path of mnema, or an argument, holds a ", a % or a ^, which cmd.exe cannot be given safely; set mnema_path to a path without them';
   if (code === 'ETIMEDOUT') return `it did not answer in ${timeout / 1000} seconds`;
   // A closed input is not a failure: a `mnema` that refuses an option at its arguments exits before it
   // reads the payload, and what it said is read as it would be had the write gone through.
@@ -656,7 +718,10 @@ const theRuntime = () => {
 
 /** One run of `mnema`, both streams kept; a run that did not finish carries an `error`. */
 function run(args, cwd, input, timeout = WAIT) {
-  return spawnSync(BINARY, args, {
+  const target = spawnTarget(BINARY, args);
+  if (target.refused) return notStarted();
+  return spawnSync(target.command, target.args, {
+    shell: target.shell,
     cwd,
     env: theRuntime().env,
     input,
