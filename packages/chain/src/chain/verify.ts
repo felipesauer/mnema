@@ -978,11 +978,12 @@ function reformatOf(
   upcasters: UpcasterRegistry,
   options: VerifyOptions,
 ): Reformatted | undefined {
-  const putBack: { readonly file: string; readonly canonical: string }[] = [];
+  const putBack: { readonly file: string; readonly value: unknown }[] = [];
   const relaid: RelaidLine = (text, file) => {
     const canonical = canonicalFormOf(text);
-    if (canonical !== undefined) putBack.push({ file, canonical });
-    return canonical;
+    if (canonical === undefined) return undefined;
+    putBack.push({ file, value: canonical.value });
+    return canonical.text;
   };
   const reread = verifyReading(layout, upcasters, options, relaid);
   if (putBack.length === 0 || !reread.ok) return undefined;
@@ -990,7 +991,7 @@ function reformatOf(
   for (const line of putBack) {
     if (!isSegmentFile(basename(line.file))) continue;
     // An entry the second reading accepted, so its link names its own tail and its position.
-    const { link } = JSON.parse(line.canonical) as { link: { tail: string; seq: number } };
+    const { link } = line.value as { link: { tail: string; seq: number } };
     if (link.seq > (covered.get(link.tail) ?? -1)) return undefined;
   }
   const files = [...new Set(putBack.map((line) => withinChain(layout, line.file)))].sort();
