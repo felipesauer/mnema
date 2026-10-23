@@ -99,6 +99,10 @@ mnema brief
 #> …
 ```
 
+The write gate says it too, in one line under the refusal or the request that cites such a rule, and so do
+`governing_rules` and the rules pushed before an edit; the verdict of the gate is the one the last move leaves,
+unchanged.
+
 `verify` says nothing of it. Neither move is a break: both are well-formed, signed, and in their
 tail's chain, and the verdict is what it would be without the disagreement. The line differs from a
 single machine's in one count, the second tail:

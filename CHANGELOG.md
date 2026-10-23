@@ -60,6 +60,11 @@ with its own changelog.
 
 ### Fixed
 
+- **A refusal, a request for a person, `governing_rules` and the rules pushed before an edit say when the rule they stand on was
+  moved apart.** A rule two machines moved out of one state without seeing each other was shown in the state the last move
+  leaves, and only `show`, `read_record` and the brief said it was disputed. Each now adds one line naming the rule;
+  no verdict changes.
+
 - **`mnema why <path>` shows every rule in force at the path, not only the ones that govern it.** A path under a rule that
   refuses a write or asks for a person read "0 rules"; each row now says what the rule does there (`governs`, `refuses a write`,
   `asks for a person`), and the JSON carries it as `relation`. `governing_rules` already listed all three and is unchanged.

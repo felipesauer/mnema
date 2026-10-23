@@ -33,6 +33,36 @@ import { placesOfAPath, readRefusesAWriteAt } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
 
+/**
+ * The one line a gate, a push or an asked reading owes when a rule it names was moved out of one
+ * state more than once by machines that had not seen each other (`movedApartSentence` says the
+ * same of one record to `show`, `read_record` and the brief, from the same `divergentMoves`).
+ * `undefined` for every other rule, which is every rule one machine moved.
+ *
+ * IT CHANGES NO VERDICT: the state a rule is in force under is the last move in the record's
+ * order, and the gate applies it as it stands. The line says that the state was disputed, so a
+ * person refused by it can read the moves before deciding the refusal is right.
+ */
+export function movedApartLine(
+  sources: readonly ScopedCache[],
+  rules: readonly { readonly id: string }[],
+): string | undefined {
+  const named = new Set(rules.map((rule) => rule.id));
+  if (named.size === 0) return undefined;
+  const apart = new Set<string>();
+  for (const source of sources) {
+    for (const move of source.cache.divergentMoves()) {
+      if (named.has(move.entityId)) apart.add(move.entityId);
+    }
+  }
+  if (apart.size === 0) return undefined;
+  const ids = [...apart].map((id) => `\`${oneLine(id)}\``).join(', ');
+  return (
+    `Moved apart: ${ids} left one state more than once, by moves on machines that had not seen each other; ` +
+    'the rule stands as the last of them in the record leaves it, and `mnema show <id>` names the moves.'
+  );
+}
+
 /** One write, as a hook sees it: every path it touches, and where they are read from. */
 export interface AWrite {
   /** The paths the write touches, as the host named them: relative or absolute. */
@@ -122,7 +152,7 @@ export function whatAWriteMeets(
       const notice = editRefusesNotice(at);
       return notice === undefined ? [] : [{ at, notice }];
     });
-    if (refused.length > 0) return verdict('refuse', once(refused));
+    if (refused.length > 0) return verdict(sources, 'refuse', once(refused));
   }
 
   if (!channelIsOn(sources, ASKS_A_PERSON_CHANNEL)) return undefined;
@@ -130,7 +160,7 @@ export function whatAWriteMeets(
     const gate = whatAWriteAsks(sources, read(path));
     return gate === undefined ? [] : [{ at: gate.asked, notice: gate.notice }];
   });
-  return asked.length > 0 ? verdict('ask', once(asked)) : undefined;
+  return asked.length > 0 ? verdict(sources, 'ask', once(asked)) : undefined;
 }
 
 /**
@@ -206,14 +236,19 @@ export const UNREADABLE_RECORD_NOTE =
   'The record could not be read, so the write was refused and nothing was recorded.';
 
 function verdict(
+  sources: readonly ScopedCache[],
   grade: WriteVerdict['grade'],
   met: readonly { readonly at: RulesAtPath; readonly notice: string }[],
 ): WriteVerdict {
+  const notices = met.map((one) => {
+    const apart = movedApartLine(sources, one.at.rules);
+    return apart === undefined ? one.notice : `${one.notice}\n${apart}`;
+  });
   return {
     grade,
     at: met.map((one) => one.at),
-    reason: met.map((one) => one.notice).join('\n\n'),
-    notices: met.map((one) => one.notice),
+    reason: notices.join('\n\n'),
+    notices,
   };
 }
 
