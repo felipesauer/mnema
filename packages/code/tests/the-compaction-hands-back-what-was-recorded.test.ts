@@ -202,6 +202,33 @@ describe('the read', () => {
     expect(afterwards()).toBeUndefined();
   });
 
+  it('is read through the verb: the sentence when the session did something, nothing for one that did not, a refusal when switched off', async () => {
+    keep(aJournal({ filesEdited: 3 }));
+    expect((await doing('recall', '--after-a-compaction', '--session', SESSION)).join('\n')).toBe(
+      'Before this conversation was compacted, this session had: its own tool calls wrote 3 files.',
+    );
+    expect(
+      await doing(
+        'recall',
+        '--after-a-compaction',
+        '--session',
+        '55555555-aaaa-4bbb-8ccc-555555555555',
+      ),
+    ).toEqual([]);
+    await doing('switch', 'off', 'after-a-compaction');
+    const err: string[] = [];
+    let failed = false;
+    await run(['recall', '--after-a-compaction', '--session', SESSION], {
+      out: () => {},
+      err: (line) => err.push(line),
+      fail: () => {
+        failed = true;
+      },
+    });
+    expect(failed).toBe(true);
+    expect(err.join('\n')).toContain('after-a-compaction');
+  });
+
   it('is its own switch, and the journal switch silences it too', async () => {
     keep(aJournal({ filesEdited: 3 }));
     expect(afterwards()).toContain('Before this conversation was compacted');
