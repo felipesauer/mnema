@@ -148,6 +148,8 @@ with its own changelog.
 
 ### Changed
 
+- **The README and the install page say they describe the next version.** What has not reached npm yet is under Unreleased here.
+
 - **The first read of a server with several projects open no longer opens the projects it does not work in.** Two
   questions are put to every project of the workspace, not only to the one the session is in: where the agent left off
   (its runs are in whichever project it wrote) and whether the count of calls is switched off. Both used to open each
