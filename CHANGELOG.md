@@ -12,6 +12,10 @@ with its own changelog.
 
 ### Added
 
+- **The page lists the credential formats the record's door replaces.** `docs/cli-reference.md` (What goes into the record) now
+  names each class (`<SECRET:aws-access-key>` and the ten others) and the e-mail address, with what each matches. The table is
+  generated from the door's own list, and a test fails when a class is added without a row.
+
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
