@@ -474,6 +474,34 @@ describe('where it stays silent, and never fails', () => {
   );
 
   it(
+    'clears a lock left by a process that died long ago, and mirrors the dispatch',
+    () => {
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      mirror(dispatch());
+      mkdirSync(`${file}.lock`);
+      const longAgo = new Date(Date.now() - 600_000);
+      utimesSync(`${file}.lock`, longAgo, longAgo);
+      mirror(dispatch({ type: 'revisar' }));
+      expect(existsSync(`${file}.lock`)).toBe(false);
+      expect(readJournal(file)?.handedOver?.handoffs).toBe(2);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'says so, and records nothing, when the mirror throws',
+    () => {
+      const thrown = runDispatched(
+        { cwd: repo, env, agentKey: join(sandbox, 'no-such-key') },
+        { payload: dispatch() },
+      );
+      expect(thrown.reply).toEqual({});
+      expect(thrown.notes.join(' ')).toMatch(/^The mirror of the dispatch failed: /);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
     'does nothing outside a project',
     () => {
       const away = join(sandbox, 'away');
