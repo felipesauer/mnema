@@ -7,8 +7,8 @@ verbatim. The surfaces never turn a verdict into a stronger claim than it is.
 
 **What holds.** A hash chain over every entry, so a changed or reordered event
 breaks it; Ed25519 checkpoints over a root recomputed from event *content*, so an
-edit made without the signing key is caught even if the keyless hashes are
-recomputed; and a committed public key that verification re-derives from the key
+edit made without the signing key is caught, where the checkpoints remain, even if
+the keyless hashes are recomputed (`--require=signed` fails when they were taken out); and a committed public key that verification re-derives from the key
 material it loads, so swapping the committed key for another is caught too. The
 verdict names the **level** it reached rather than saying yes or no.
 
