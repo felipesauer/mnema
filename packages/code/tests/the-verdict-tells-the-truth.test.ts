@@ -345,3 +345,41 @@ describe('the caller declares the minimum: `--require`', () => {
     expect((await verify('--require=chained')).failed).toBe(false);
   });
 });
+
+describe('a record a formatter rewrote', () => {
+  it('is refused as before, with one line naming the files, and the exit is the refusal', async () => {
+    await record(2);
+    const { segment, checkpoints } = storedFiles();
+    const tailproof = join(dirname(segment), 'tailproof.json');
+    // What an EditorConfig set to CRLF leaves on the lines, and prettier on the tail proof.
+    for (const file of [segment, checkpoints]) {
+      writeFileSync(file, readFileSync(file, 'utf-8').replace(/\n/g, '\r\n'));
+    }
+    writeFileSync(
+      tailproof,
+      `${JSON.stringify(JSON.parse(readFileSync(tailproof, 'utf-8')), null, 2)}\n`,
+    );
+    const said = await verify();
+    expect(said.failed).toBe(true);
+    const named = said.issues.filter((line) => line.includes('reformatted public'));
+    expect(named).toHaveLength(1);
+    expect(named[0]).toContain('a formatter or an editor rewrote them');
+    expect(named[0]).toContain('/000001.jsonl, ');
+    expect(named[0]).toContain('/checkpoints.jsonl, ');
+    expect(named[0]).toContain('/tailproof.json differ');
+    // Every refused line is still named, by the cause it had before.
+    expect(said.issues.filter((line) => line.includes('the line ends in CRLF')).length).toBe(
+      lines(segment).length + lines(checkpoints).length,
+    );
+  });
+
+  it('says nothing of a formatter when an event changed under the same layout', async () => {
+    await record(2);
+    const { segment } = storedFiles();
+    const text = readFileSync(segment, 'utf-8').replace('task number 0', 'task number 9');
+    writeFileSync(segment, text.replace(/\n/g, '\r\n'));
+    const said = await verify();
+    expect(said.failed).toBe(true);
+    expect(said.issues.some((line) => line.includes('reformatted'))).toBe(false);
+  });
+});

@@ -933,6 +933,11 @@ function report(
       ),
     );
   }
+  // Which files a formatter or an editor rewrote, when the chain PROVED that is all that
+  // happened: beside the issues and never in place of them, and the exit is the refusal's.
+  if (tree.result.reformatted !== undefined) {
+    io.err(render(fact(onOneLine`reformatted ${named}: ${tree.result.reformatted.detail}`)));
+  }
   // What the chain cannot know about its own tree: that git would take it. On stderr, with the
   // evidence, and not a break: the verdict above is about the record, and the exit is not
   // moved by a fact about a working tree.
