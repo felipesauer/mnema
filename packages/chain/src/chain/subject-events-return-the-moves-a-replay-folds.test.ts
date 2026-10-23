@@ -212,6 +212,12 @@ describe('a tail that is merged is read line by line, and a line of the wrong sh
     'an instant that is never closed': '{"event":{"at":"2026-10-01T00:00:01.000Z',
     'a hash that is too short': '{"event":{"at":"x"},"link":{"hash":"abcd"}}',
     'a hash that is not closed': `{"event":{"at":"x"},"link":{"hash":"${HASH}}`,
+    // The byte 64 past the hash's start is the quote that opens the next line, so a read that only
+    // looked for a quote there, and not at the end of its own line, would take this one for whole.
+    'a hash cut short by the end of its line, with a quote where the full one would end': `{"event":{"at":"x"},"link":{"hash":"${HASH.slice(0, 60)}}}`,
+    // The byte 64 BEFORE the hash's start is a quote, so a read that looked there for the closing
+    // quote would take this unclosed hash for whole.
+    'a hash of the right length that is not closed, with a quote 64 bytes before it': `{"event":{"at":"${'x'.repeat(44)}"},"link":{"hash":"${HASH}}}`,
     'a citation list that is never closed': `{"event":{"after":["${HASH}"`,
     'a citation that is not a hash': `{"event":{"after":["abcd"],"at":"x"},"link":{"hash":"${HASH}"}}`,
     'a citation that is not quoted': `{"event":{"after":[${HASH}],"at":"x"},"link":{"hash":"${HASH}"}}`,

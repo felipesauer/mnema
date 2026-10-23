@@ -150,6 +150,24 @@ describe('the events about a subject on more than one tail', () => {
   });
 });
 
+describe('a torn last line that names the subject', () => {
+  it('is dropped from what is found, and the lines before it are kept', () => {
+    // The cut leaves the bytes the search looks for in place, so the line is hit and then fails
+    // to parse: it is a torn tail, nothing about the subject, and not an event with no body.
+    const a = machine();
+    a.say(RUN, T(1));
+    a.say(RUN, T(2));
+    a.say(RUN, T(3));
+    const file = segmentOf(a.tail);
+    const text = readFileSync(file, 'utf8');
+    writeFileSync(file, text.slice(0, text.length - 40));
+    expect(readFileSync(file, 'utf8')).toContain(`"subject":"${RUN}"`);
+
+    const found = subjectEvents({ root }, upcasters, [RUN]).get(RUN);
+    expect(found?.map((event) => event.at)).toEqual([T(1), T(2)]);
+  });
+});
+
 describe('the events about a subject, by the bytes that name it', () => {
   it('finds every event about the subject, in order, and none that only mentions it', () => {
     writeARun();
