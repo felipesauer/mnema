@@ -63,7 +63,7 @@ with its own changelog.
 - **`verify` refuses a key no writer puts in a line, a link, a checkpoint or a tail proof.** A key added beside `event`
   and `link`, inside a line's link, on a checkpoint line or in `tailproof.json`, with the line left canonical, is covered
   by no hash and no signature, so every one still closed and `verify` said "local integrity verified" (exit 0) where
-  the Python reader refused the record. Both readers, and the page `mnema site` writes, now refuse it by name and in the
+  the Python reader refused the record. Both readers, and the page that verifies a record in the browser, now refuse it by name and in the
   same words (`top-level keys are ['event', 'forged', 'link'], not ['event', 'link']`), checked before the bytes so a
   re-spelled line with one is refused for the key; a stored block header with a key beside `header` and `height` is not
   read. `FORMAT.md` §4 says it, as a rule tightened after the first publication: records written by 0.1.0, 0.1.1 and
