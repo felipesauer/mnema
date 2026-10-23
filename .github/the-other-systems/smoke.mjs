@@ -329,19 +329,13 @@ try {
       join(project, 'src', 'billing', 'invoice.ts').replace(/^[A-Z]:/, (d) => d.toLowerCase()),
     );
   }
-  // A KNOWN GAP, said and not failed: a rule addresses `src/billing` by its bytes, and Windows and
-  // macOS volumes are case-insensitive, so `SRC/Billing/invoice.ts` is the same file the rule
-  // refuses and is let through. Printed so that a run shows whether it still is.
+  // The volumes are case-insensitive, so a host that reports `SRC/Billing` for the folder the rule
+  // addresses as `src/billing` names the same file, and the rule holds because the folder is there
+  // to be resolved to the case the disk keeps. (A folder that is not on disk yet cannot be.)
   if (WINDOWS || MAC) {
-    const ran = handler(
-      'edit-refuses-a-write.mjs',
-      refuseArgs,
-      cursorEnv,
-      payload(join(project, 'SRC', 'Billing', 'invoice.ts')),
-    );
-    const refused = ran.status === 0 && /deny/.test(ran.out);
-    console.log(
-      `KNOWN GAP: a write to the same file in other letter case is ${refused ? 'refused' : 'NOT refused'}`,
+    denied(
+      'other letter case for a folder that exists',
+      join(project, 'SRC', 'Billing', 'invoice.ts'),
     );
   }
 } catch (fault) {
