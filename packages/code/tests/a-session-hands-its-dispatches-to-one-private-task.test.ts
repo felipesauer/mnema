@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { resolveTrees } from '@mnema/core';
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   briefFileOf,
   briefOf,
@@ -47,8 +47,8 @@ import { emptyReading } from '../src/what-the-session-did.js';
 import { registerDispatched } from '../src/wiring/dispatched.js';
 
 // Each case makes real writes to a tree it signs, a few dozen milliseconds apiece, and the suite runs
-// beside other heavy files: the default of five seconds is the limit a loaded machine crossed.
-vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+// beside other heavy files: a case says so at its own `it`, and waits this long.
+const WAITS_ON_WRITES = 30_000;
 
 let sandbox: string;
 let repo: string;
@@ -202,258 +202,326 @@ afterEach(() => {
 });
 
 describe('three dispatches of one session', () => {
-  it('make one private task in progress and three private handoffs with a brief each', () => {
-    // What the tree a clone gets holds: the projection cache under locks/ is a read's own, and private/ is the other tree.
-    const publicBefore = snapshot(join(repo, '.mnema'), ['locks', 'private']);
-    for (const type of ['implementar', 'revisar', 'probe']) {
-      expect(mirror(dispatch({ type })).notes).toEqual([]);
-    }
-    const held = whatTheRecordHolds();
-    expect(held.tasks).toHaveLength(1);
-    const [task] = held.tasks;
-    expect(task?.scope).toBe('private');
-    expect(task?.state).toBe('IN_PROGRESS');
-    expect(task?.title).toMatch(
-      /^Work handed over in this session, \d{4}-\d\d-\d\d \d\d:\d\d UTC$/,
-    );
-    expect(held.handoffs.map((one) => [one.scope, one.from, one.to])).toEqual(
-      expect.arrayContaining([
-        ['private', 'orchestrator', 'implementar'],
-        ['private', 'orchestrator', 'revisar'],
-        ['private', 'orchestrator', 'probe'],
-      ]),
-    );
-    expect(held.handoffs).toHaveLength(3);
-    for (const one of held.handoffs) expect(one.brief).toContain('Fix the ledger date');
-    // The tree a clone gets was not touched.
-    expect(snapshot(join(repo, '.mnema'), ['locks', 'private'])).toBe(publicBefore);
-  });
+  it(
+    'make one private task in progress and three private handoffs with a brief each',
+    () => {
+      // What the tree a clone gets holds: the projection cache under locks/ is a read's own, and private/ is the other tree.
+      const publicBefore = snapshot(join(repo, '.mnema'), ['locks', 'private']);
+      for (const type of ['implementar', 'revisar', 'probe']) {
+        expect(mirror(dispatch({ type })).notes).toEqual([]);
+      }
+      const held = whatTheRecordHolds();
+      expect(held.tasks).toHaveLength(1);
+      const [task] = held.tasks;
+      expect(task?.scope).toBe('private');
+      expect(task?.state).toBe('IN_PROGRESS');
+      expect(task?.title).toMatch(
+        /^Work handed over in this session, \d{4}-\d\d-\d\d \d\d:\d\d UTC$/,
+      );
+      expect(held.handoffs.map((one) => [one.scope, one.from, one.to])).toEqual(
+        expect.arrayContaining([
+          ['private', 'orchestrator', 'implementar'],
+          ['private', 'orchestrator', 'revisar'],
+          ['private', 'orchestrator', 'probe'],
+        ]),
+      );
+      expect(held.handoffs).toHaveLength(3);
+      for (const one of held.handoffs) expect(one.brief).toContain('Fix the ledger date');
+      // The tree a clone gets was not touched.
+      expect(snapshot(join(repo, '.mnema'), ['locks', 'private'])).toBe(publicBefore);
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('close with the session: the task is done, and its note is the count', () => {
-    for (let i = 0; i < 3; i++) mirror(dispatch());
-    expect(mirror(theEnd()).notes).toEqual([]);
-    const [task] = whatTheRecordHolds().tasks;
-    expect(task?.state).toBe('DONE');
-    expect(task?.proof).toContain('3 handoffs recorded in this session.');
-  });
+  it(
+    'close with the session: the task is done, and its note is the count',
+    () => {
+      for (let i = 0; i < 3; i++) mirror(dispatch());
+      expect(mirror(theEnd()).notes).toEqual([]);
+      const [task] = whatTheRecordHolds().tasks;
+      expect(task?.state).toBe('DONE');
+      expect(task?.proof).toContain('3 handoffs recorded in this session.');
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('keep the task in the session journal, and the journal on its own is not the goal of the session', () => {
-    mirror(dispatch());
-    const file = journalFile(resolveTrees(repo, env), SESSION);
-    const held = readJournal(file as string)?.handedOver;
-    expect(held?.handoffs).toBe(1);
-    expect(held?.closed).toBe(false);
-    const transcript = join(sandbox, 't.jsonl');
-    writeFileSync(
-      transcript,
-      `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
-    );
-    runSessionTally(
-      { cwd: repo, env },
-      {
-        payload: JSON.stringify({
-          hook_event_name: 'Stop',
-          transcript_path: transcript,
-          session_id: SESSION,
+  it(
+    'keep the task in the session journal, and the journal on its own is not the goal of the session',
+    () => {
+      mirror(dispatch());
+      const file = journalFile(resolveTrees(repo, env), SESSION);
+      const held = readJournal(file as string)?.handedOver;
+      expect(held?.handoffs).toBe(1);
+      expect(held?.closed).toBe(false);
+      const transcript = join(sandbox, 't.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      runSessionTally(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'Stop',
+            transcript_path: transcript,
+            session_id: SESSION,
+          }),
+        },
+      );
+      const after = readJournal(file as string);
+      expect(after?.handedOver).toEqual(held);
+      expect(after?.trees.private.goal).toBeNull();
+      expect(after?.trees.public.goal).toBeNull();
+      expect(after?.tasksInProgress).toEqual([]);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'are kept by every later write of the journal, whoever makes it',
+    () => {
+      mirror(dispatch());
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      const previous = readJournal(file);
+      expect(previous?.handedOver?.handoffs).toBe(1);
+      const next = withScopedCaches(resolveTrees(repo, env), (sources) =>
+        journalAfter({
+          session: SESSION,
+          previous,
+          reading: emptyReading(),
+          sources,
+          now: new Date(),
         }),
-      },
-    );
-    const after = readJournal(file as string);
-    expect(after?.handedOver).toEqual(held);
-    expect(after?.trees.private.goal).toBeNull();
-    expect(after?.trees.public.goal).toBeNull();
-    expect(after?.tasksInProgress).toEqual([]);
-  });
+      );
+      expect(next.handedOver).toEqual(previous?.handedOver);
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('are kept by every later write of the journal, whoever makes it', () => {
-    mirror(dispatch());
-    const file = journalFile(resolveTrees(repo, env), SESSION) as string;
-    const previous = readJournal(file);
-    expect(previous?.handedOver?.handoffs).toBe(1);
-    const next = withScopedCaches(resolveTrees(repo, env), (sources) =>
-      journalAfter({
-        session: SESSION,
-        previous,
-        reading: emptyReading(),
-        sources,
-        now: new Date(),
-      }),
-    );
-    expect(next.handedOver).toEqual(previous?.handedOver);
-  });
-
-  it('never carry the prompt: not in the record, not in the journal, not on this machine', () => {
-    for (let i = 0; i < 3; i++) mirror(dispatch());
-    mirror(theEnd());
-    expect(snapshot(sandbox)).not.toContain('PROMPTSENTINEL');
-    expect(snapshot(sandbox)).not.toContain('migration');
-  });
+  it(
+    'never carry the prompt: not in the record, not in the journal, not on this machine',
+    () => {
+      for (let i = 0; i < 3; i++) mirror(dispatch());
+      mirror(theEnd());
+      expect(snapshot(sandbox)).not.toContain('PROMPTSENTINEL');
+      expect(snapshot(sandbox)).not.toContain('migration');
+    },
+    WAITS_ON_WRITES,
+  );
 });
 
 describe('a prompt that cites a file', () => {
-  it('puts that file’s path in the brief, and nothing of what the prompt says', () => {
-    mkdirSync(join(repo, 'notes'), { recursive: true });
-    writeFileSync(join(repo, 'notes', 'brief.md'), 'the long brief');
-    mirror(dispatch({ prompt: `${PROMPT_WORDS}. Read notes/brief.md first.` }));
-    const [one] = whatTheRecordHolds().handoffs;
-    expect(one?.brief).toContain('Brief in the file: notes/brief.md');
-    expect(one?.brief).not.toContain('PROMPTSENTINEL');
-    expect(one?.brief).not.toContain('the long brief');
-  });
+  it(
+    'puts that file’s path in the brief, and nothing of what the prompt says',
+    () => {
+      mkdirSync(join(repo, 'notes'), { recursive: true });
+      writeFileSync(join(repo, 'notes', 'brief.md'), 'the long brief');
+      mirror(dispatch({ prompt: `${PROMPT_WORDS}. Read notes/brief.md first.` }));
+      const [one] = whatTheRecordHolds().handoffs;
+      expect(one?.brief).toContain('Brief in the file: notes/brief.md');
+      expect(one?.brief).not.toContain('PROMPTSENTINEL');
+      expect(one?.brief).not.toContain('the long brief');
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('names no path that is not a file there', () => {
-    expect(briefFileOf('see docs/missing.md and ./nothing.txt', repo, repo)).toBeUndefined();
-    mkdirSync(join(repo, 'docs'));
-    writeFileSync(join(repo, 'docs', 'real.md'), 'x');
-    expect(briefFileOf('see docs/missing.md then (docs/real.md).', repo, repo)).toBe(
-      'docs/real.md',
-    );
-    expect(briefFileOf(`at ${join(repo, 'docs', 'real.md')}`, '/', repo)).toBe('docs/real.md');
-    const outside = join(sandbox, 'outside.md');
-    writeFileSync(outside, 'x');
-    expect(briefFileOf(`at ${outside}`, repo, repo)).toBe(outside);
-  });
+  it(
+    'names no path that is not a file there',
+    () => {
+      expect(briefFileOf('see docs/missing.md and ./nothing.txt', repo, repo)).toBeUndefined();
+      mkdirSync(join(repo, 'docs'));
+      writeFileSync(join(repo, 'docs', 'real.md'), 'x');
+      expect(briefFileOf('see docs/missing.md then (docs/real.md).', repo, repo)).toBe(
+        'docs/real.md',
+      );
+      expect(briefFileOf(`at ${join(repo, 'docs', 'real.md')}`, '/', repo)).toBe('docs/real.md');
+      const outside = join(sandbox, 'outside.md');
+      writeFileSync(outside, 'x');
+      expect(briefFileOf(`at ${outside}`, repo, repo)).toBe(outside);
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('keeps a brief short whatever the description is', () => {
-    expect(briefOf(`${'a'.repeat(500)}`, undefined)).toHaveLength(200);
-    expect(briefOf(undefined, undefined)).toBe('Work handed to a subagent.');
-  });
+  it(
+    'keeps a brief short whatever the description is',
+    () => {
+      expect(briefOf(`${'a'.repeat(500)}`, undefined)).toHaveLength(200);
+      expect(briefOf(undefined, undefined)).toBe('Work handed to a subagent.');
+    },
+    WAITS_ON_WRITES,
+  );
 });
 
 describe('a session that is resumed', () => {
-  it('reopens its task and closes it again with the whole count', () => {
-    mirror(dispatch());
-    mirror(theEnd());
-    mirror(dispatch());
-    const after = whatTheRecordHolds();
-    expect(after.tasks).toHaveLength(1);
-    expect(after.tasks[0]?.state).toBe('IN_PROGRESS');
-    mirror(theEnd());
-    const done = whatTheRecordHolds();
-    expect(done.tasks[0]?.state).toBe('DONE');
-    expect(done.tasks[0]?.proof).toContain('2 handoffs recorded in this session.');
-    expect(done.handoffs).toHaveLength(2);
-  });
+  it(
+    'reopens its task and closes it again with the whole count',
+    () => {
+      mirror(dispatch());
+      mirror(theEnd());
+      mirror(dispatch());
+      const after = whatTheRecordHolds();
+      expect(after.tasks).toHaveLength(1);
+      expect(after.tasks[0]?.state).toBe('IN_PROGRESS');
+      mirror(theEnd());
+      const done = whatTheRecordHolds();
+      expect(done.tasks[0]?.state).toBe('DONE');
+      expect(done.tasks[0]?.proof).toContain('2 handoffs recorded in this session.');
+      expect(done.handoffs).toHaveLength(2);
+    },
+    WAITS_ON_WRITES,
+  );
 });
 
 describe('a session that ended with no word', () => {
-  it('has its task closed by the next session that dispatches, once its journal is a day old', () => {
-    mirror(dispatch({ session: 'old-session' }));
-    const trees = resolveTrees(repo, env);
-    const old = journalFile(trees, 'old-session') as string;
-    const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
-    utimesSync(old, longAgo, longAgo);
-    mirror(dispatch({ session: 'new-session' }));
-    const held = whatTheRecordHolds();
-    expect(held.tasks).toHaveLength(2);
-    expect(held.tasks.map((task) => task.state).sort()).toEqual(['DONE', 'IN_PROGRESS']);
-    expect(readJournal(old)?.handedOver?.closed).toBe(true);
-    // One that is recent is a live session's: it is left alone.
-    mirror(dispatch({ session: 'third-session' }));
-    expect(whatTheRecordHolds().tasks.filter((task) => task.state === 'IN_PROGRESS')).toHaveLength(
-      2,
-    );
-    expect(journalsDir(trees)).toBeDefined();
-  });
+  it(
+    'has its task closed by the next session that dispatches, once its journal is a day old',
+    () => {
+      mirror(dispatch({ session: 'old-session' }));
+      const trees = resolveTrees(repo, env);
+      const old = journalFile(trees, 'old-session') as string;
+      const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
+      utimesSync(old, longAgo, longAgo);
+      mirror(dispatch({ session: 'new-session' }));
+      const held = whatTheRecordHolds();
+      expect(held.tasks).toHaveLength(2);
+      expect(held.tasks.map((task) => task.state).sort()).toEqual(['DONE', 'IN_PROGRESS']);
+      expect(readJournal(old)?.handedOver?.closed).toBe(true);
+      // One that is recent is a live session's: it is left alone.
+      mirror(dispatch({ session: 'third-session' }));
+      expect(
+        whatTheRecordHolds().tasks.filter((task) => task.state === 'IN_PROGRESS'),
+      ).toHaveLength(2);
+      expect(journalsDir(trees)).toBeDefined();
+    },
+    WAITS_ON_WRITES,
+  );
 });
 
 describe('where it stays silent, and never fails', () => {
-  it('does nothing for another tool, another event, or a session that names no id', () => {
-    expect(mirror(dispatch({ tool: 'Bash' })).notes).toEqual([]);
-    expect(mirror(JSON.stringify({ hook_event_name: 'Stop', session_id: SESSION })).notes).toEqual(
-      [],
-    );
-    expect(mirror(dispatch({ session: '../../x' })).notes).toEqual([]);
-    expect(whatTheRecordHolds().tasks).toEqual([]);
-  });
+  it(
+    'does nothing for another tool, another event, or a session that names no id',
+    () => {
+      expect(mirror(dispatch({ tool: 'Bash' })).notes).toEqual([]);
+      expect(
+        mirror(JSON.stringify({ hook_event_name: 'Stop', session_id: SESSION })).notes,
+      ).toEqual([]);
+      expect(mirror(dispatch({ session: '../../x' })).notes).toEqual([]);
+      expect(whatTheRecordHolds().tasks).toEqual([]);
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('says a payload that is not JSON was not read, and records nothing', () => {
-    const done = mirror('not json');
-    expect(done.reply).toEqual({});
-    expect(done.notes).toHaveLength(1);
-    expect(whatTheRecordHolds().tasks).toEqual([]);
-  });
+  it(
+    'says a payload that is not JSON was not read, and records nothing',
+    () => {
+      const done = mirror('not json');
+      expect(done.reply).toEqual({});
+      expect(done.notes).toHaveLength(1);
+      expect(whatTheRecordHolds().tasks).toEqual([]);
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('stays silent when the journal’s lock is not had in time: no task, no handoff, and the skip is counted', () => {
-    const file = journalFile(resolveTrees(repo, env), SESSION) as string;
-    mirror(dispatch());
-    const held = readJournal(file)?.handedOver;
-    expect(held?.handoffs).toBe(1);
-    // Another process holds the lock, freshly: this one is not let in within the time it waits.
-    mkdirSync(`${file}.lock`);
-    const before = whatTheRecordHolds();
-    const skipped = runDispatched(
-      { cwd: repo, env, lockWaitMs: 50 },
-      { payload: dispatch({ type: 'revisar' }) },
-    );
-    expect(skipped.reply).toEqual({});
-    expect(skipped.notes.join(' ')).toMatch(/not mirrored/);
-    expect(whatTheRecordHolds()).toEqual(before);
-    expect(readJournal(file)?.handedOver).toEqual(held);
-    // A first dispatch of another session, with the lock held, opens no task either.
-    const other = '7e7e7e7e-0000-4000-8000-0123456789ab';
-    const otherFile = journalFile(resolveTrees(repo, env), other) as string;
-    mkdirSync(`${otherFile}.lock`);
-    runDispatched({ cwd: repo, env, lockWaitMs: 50 }, { payload: dispatch({ session: other }) });
-    expect(whatTheRecordHolds().tasks).toHaveLength(before.tasks.length);
-    // The lock let go, the session goes on, and its end says how many dispatches were not mirrored.
-    rmSync(`${file}.lock`, { recursive: true });
-    mirror(dispatch());
-    mirror(theEnd());
-    const [task] = whatTheRecordHolds().tasks.filter((one) => one.state === 'DONE');
-    expect(task?.proof).toContain('2 handoffs recorded in this session');
-    expect(task?.proof).toContain('1 dispatch was not mirrored');
-  });
+  it(
+    'stays silent when the journal’s lock is not had in time: no task, no handoff, and the skip is counted',
+    () => {
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      mirror(dispatch());
+      const held = readJournal(file)?.handedOver;
+      expect(held?.handoffs).toBe(1);
+      // Another process holds the lock, freshly: this one is not let in within the time it waits.
+      mkdirSync(`${file}.lock`);
+      const before = whatTheRecordHolds();
+      const skipped = runDispatched(
+        { cwd: repo, env, lockWaitMs: 50 },
+        { payload: dispatch({ type: 'revisar' }) },
+      );
+      expect(skipped.reply).toEqual({});
+      expect(skipped.notes.join(' ')).toMatch(/not mirrored/);
+      expect(whatTheRecordHolds()).toEqual(before);
+      expect(readJournal(file)?.handedOver).toEqual(held);
+      // A first dispatch of another session, with the lock held, opens no task either.
+      const other = '7e7e7e7e-0000-4000-8000-0123456789ab';
+      const otherFile = journalFile(resolveTrees(repo, env), other) as string;
+      mkdirSync(`${otherFile}.lock`);
+      runDispatched({ cwd: repo, env, lockWaitMs: 50 }, { payload: dispatch({ session: other }) });
+      expect(whatTheRecordHolds().tasks).toHaveLength(before.tasks.length);
+      // The lock let go, the session goes on, and its end says how many dispatches were not mirrored.
+      rmSync(`${file}.lock`, { recursive: true });
+      mirror(dispatch());
+      mirror(theEnd());
+      const [task] = whatTheRecordHolds().tasks.filter((one) => one.state === 'DONE');
+      expect(task?.proof).toContain('2 handoffs recorded in this session');
+      expect(task?.proof).toContain('1 dispatch was not mirrored');
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('is listed by `mnema switch` as doing nothing while the journal’s switch is off', async () => {
-    const row = (lines: string[]) => lines.find((line) => line.includes('agent-mirror')) ?? '';
-    expect(row(await doing('switch'))).not.toContain('does nothing');
-    await doing('switch', 'off', 'session-journal');
-    const listed = row(await doing('switch'));
-    expect(listed).toMatch(/agent-mirror\s+on\b/);
-    expect(listed).toContain('does nothing while session-journal is off');
-    // Off by its own switch, the line says it is off and nothing about the journal.
-    await doing('switch', 'off', 'agent-mirror');
-    expect(row(await doing('switch'))).not.toContain('does nothing while');
-  });
+  it(
+    'is listed by `mnema switch` as doing nothing while the journal’s switch is off',
+    async () => {
+      const row = (lines: string[]) => lines.find((line) => line.includes('agent-mirror')) ?? '';
+      expect(row(await doing('switch'))).not.toContain('does nothing');
+      await doing('switch', 'off', 'session-journal');
+      const listed = row(await doing('switch'));
+      expect(listed).toMatch(/agent-mirror\s+on\b/);
+      expect(listed).toContain('does nothing while session-journal is off');
+      // Off by its own switch, the line says it is off and nothing about the journal.
+      await doing('switch', 'off', 'agent-mirror');
+      expect(row(await doing('switch'))).not.toContain('does nothing while');
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('does nothing outside a project', () => {
-    const away = join(sandbox, 'away');
-    mkdirSync(away);
-    const done = runDispatched({ cwd: away, env }, { payload: dispatch() });
-    expect(done).toEqual({ ok: true, reply: {}, notes: [] });
-  });
+  it(
+    'does nothing outside a project',
+    () => {
+      const away = join(sandbox, 'away');
+      mkdirSync(away);
+      const done = runDispatched({ cwd: away, env }, { payload: dispatch() });
+      expect(done).toEqual({ ok: true, reply: {}, notes: [] });
+    },
+    WAITS_ON_WRITES,
+  );
 
-  it('does nothing where its switch is off, or the journal’s', async () => {
-    await doing('switch', 'off', 'agent-mirror');
-    mirror(dispatch());
-    expect(whatTheRecordHolds().tasks).toEqual([]);
-    await doing('switch', 'on', 'agent-mirror');
-    await doing('switch', 'off', 'session-journal');
-    mirror(dispatch());
-    expect(whatTheRecordHolds().tasks).toEqual([]);
-    expect(statSync(sandbox).isDirectory()).toBe(true);
-  });
+  it(
+    'does nothing where its switch is off, or the journal’s',
+    async () => {
+      await doing('switch', 'off', 'agent-mirror');
+      mirror(dispatch());
+      expect(whatTheRecordHolds().tasks).toEqual([]);
+      await doing('switch', 'on', 'agent-mirror');
+      await doing('switch', 'off', 'session-journal');
+      mirror(dispatch());
+      expect(whatTheRecordHolds().tasks).toEqual([]);
+      expect(statSync(sandbox).isDirectory()).toBe(true);
+    },
+    WAITS_ON_WRITES,
+  );
 });
 
 describe('the verb as the command line routes it', () => {
-  it('is a write, takes no option, and prints {} whatever it did', async () => {
-    const seen = { out: [] as string[], err: [] as string[] };
-    const io = {
-      out: (line: string) => seen.out.push(line),
-      err: (line: string) => seen.err.push(line),
-      fail: () => {},
-      input: async () => dispatch(),
-    };
-    const program = new Command('mnema').exitOverride();
-    const declared = registerDispatched(program, {
-      io,
-      render: renderPlain,
-    } as unknown as Parameters<typeof registerDispatched>[1]);
-    expect(declared.effect).toBe('mutates');
-    expect(declared.act.options).toEqual([]);
-    await program.parseAsync(['dispatched'], { from: 'user' });
-    expect(seen.out).toEqual(['{}']);
-    expect(whatTheRecordHolds().handoffs).toHaveLength(1);
-  });
+  it(
+    'is a write, takes no option, and prints {} whatever it did',
+    async () => {
+      const seen = { out: [] as string[], err: [] as string[] };
+      const io = {
+        out: (line: string) => seen.out.push(line),
+        err: (line: string) => seen.err.push(line),
+        fail: () => {},
+        input: async () => dispatch(),
+      };
+      const program = new Command('mnema').exitOverride();
+      const declared = registerDispatched(program, {
+        io,
+        render: renderPlain,
+      } as unknown as Parameters<typeof registerDispatched>[1]);
+      expect(declared.effect).toBe('mutates');
+      expect(declared.act.options).toEqual([]);
+      await program.parseAsync(['dispatched'], { from: 'user' });
+      expect(seen.out).toEqual(['{}']);
+      expect(whatTheRecordHolds().handoffs).toHaveLength(1);
+    },
+    WAITS_ON_WRITES,
+  );
 });
