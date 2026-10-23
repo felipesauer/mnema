@@ -2090,9 +2090,17 @@ the same.
 
 The MCP server keeps it for the two trees of the project it is in, and for no other tree: the
 other projects of the workspace and the global tree are built in memory for the connection, as
-before. So a tool that only reads (`readOnlyHint: true`) may create or update that one file in
-the project it serves, and nothing else: the exception is written beside the other one, the local
-count of calls, and a read still appends nothing to the record and rewrites no byte of it.
+before. Two questions are put to every project of the workspace, though: where the agent left off
+(its runs are in whichever project it wrote) and whether the count of calls is switched off. For a
+tree the connection has not otherwise read, the server keeps the answer to both on this machine,
+under `cache/` of the mnema home (`~/.mnema`, or wherever `MNEMA_HOME` puts it), never inside a
+project; the next session believes it only while the tree is as marked (the extent of its tails, the
+fingerprint of its sealed segments, the last line of each tail and the stamp of the code), and otherwise
+reads the tree and writes the file again. A file of that kind that arrives with a clone is never
+read. So a tool that only reads (`readOnlyHint: true`) may create or update that one file in the
+project it serves and, beside the local count of calls, that index in the machine's data
+directory, and writes nothing into any other project; a read still appends nothing to the record and
+rewrites no byte of it. Deleting the index costs the next read the time it saves.
 Whatever moved the record behind the file (a command in another terminal, a `git pull`, a
 checkout of another commit) is read by the next call, and a file that does not follow the
 record is built again. The line a stored position ends on is read back and has to be the entry it ended on, so a
