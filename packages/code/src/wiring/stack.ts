@@ -147,9 +147,8 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
         const target = targetOf(wiring, opts.scope, opts.to);
         if (target === undefined) return;
         const { readStackSource } = await import('../commands/stack-source.js');
-        const { applyStackInstall, planLines, planStackInstall, targetRefusal } = await import(
-          '../commands/stack-install.js'
-        );
+        const { applyStackInstall, planLines, planStackInstall, skillsRefLines, targetRefusal } =
+          await import('../commands/stack-install.js');
         const ctx = onceSaid(hereWriting(wiring));
         const nowhere = targetRefusal(ctx, target);
         if (nowhere !== undefined) {
@@ -196,6 +195,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
             ? `The adoption is recorded in the ${target.scope} tree.`
             : 'Nothing is recorded: a folder of your own governs nothing.',
         );
+        for (const line of skillsRefLines(plan)) io.out(line);
       },
     );
 
