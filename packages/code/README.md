@@ -53,7 +53,8 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   and the opening read says who has each task in flight and what happened last. A handoff that names no tree
   is recorded where its task lives. The format does not change.
 - **`mnema verify`**, which reads the record with no key and no network and prints the level it
-  reached.
+  reached. A record a formatter rewrote is refused, and one line beside the refusal names the
+  files, when reading them back in canonical form proves that is all that happened.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
   addressed at a file beside a write to it. In Claude Code the plugin also hands the brief to a
   subagent as it starts, and, after a question the agent asked the person is answered, names the
