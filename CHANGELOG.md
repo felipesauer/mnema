@@ -60,6 +60,10 @@ with its own changelog.
 
 ### Fixed
 
+- **`mnema why <path>` shows every rule in force at the path, not only the ones that govern it.** A path under a rule that
+  refuses a write or asks for a person read "0 rules"; each row now says what the rule does there (`governs`, `refuses a write`,
+  `asks for a person`), and the JSON carries it as `relation`. `governing_rules` already listed all three and is unchanged.
+
 - **On Windows the plugin's hooks start `mnema`, and a rule applies to a Windows path.** Node would not start npm's
   `mnema.cmd` without a shell, so every command hook was silent and a gate under a rule answered that `mnema` could
   not be started; the handlers (and the OpenCode and Gemini plugins) now start it through a shell. An absolute path

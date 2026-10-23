@@ -1077,8 +1077,9 @@ git commit --trailer "$(mnema trailer ADR-4)"
 # addresses.
 mnema commits ADR-4
 
-# Under which decisions a file stands, or a commit: the rules in force that address it, and the
-# commits that touched it and carry a trailer.
+# Under which decisions a file stands, or a commit: the rules in force that address it, each
+# saying what it does there (governs, refuses a write, asks for a person), and the commits that
+# touched it and carry a trailer.
 mnema why src/billing/invoice.ts
 
 # Accepted decisions whose addressed paths changed in many commits since they were accepted.
