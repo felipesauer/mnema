@@ -24,11 +24,13 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 
-type Target = { command: string; args: string[]; shell: boolean };
-const { spawnTarget } = (await import(
-  pathToFileURL(join(ROOT, 'plugin', 'hooks', 'hand-over.mjs')).href
+type Target = { command: string; args: string[]; shell: boolean; refused: boolean };
+const { spawnTarget, notStarted, whyItDidNotAnswer } = (await import(
+  pathToFileURL(join(ROOT, 'plugin', 'hooks', 'the-gate-kit.mjs')).href
 )) as {
   spawnTarget: (program: string, args: string[], platform?: NodeJS.Platform) => Target;
+  notStarted: () => { status: number | null; stdout: string; error?: { code?: string } };
+  whyItDidNotAnswer: (ran: object, timeout: number) => string | null | undefined;
 };
 
 describe('the program a hook starts', () => {
@@ -37,6 +39,7 @@ describe('the program a hook starts', () => {
       command: '"mnema.cmd" before-a-write --host cursor',
       args: [],
       shell: true,
+      refused: false,
     });
   });
 
@@ -52,8 +55,33 @@ describe('the program a hook starts', () => {
         command: 'mnema',
         args: ['--identify'],
         shell: false,
+        refused: false,
       });
     }
+  });
+});
+
+describe('a word cmd.exe cannot be given safely is not run', () => {
+  it.each(['say "hi"', '%PATH%', 'a^b', 'one\ntwo'])('refuses %j on Windows', (bad) => {
+    expect(spawnTarget('C:\\tools\\mnema.cmd', ['--tools', bad], 'win32').refused).toBe(true);
+    expect(spawnTarget(`C:\\tools\\${bad}\\mnema.cmd`, [], 'win32').refused).toBe(true);
+  });
+
+  it('starts nothing for it, and says why in the words of the refusal', () => {
+    const ran = notStarted();
+    expect(ran.status).toBeNull();
+    expect(ran.error?.code).toBe('EMNEMA_NOT_QUOTABLE');
+    expect(whyItDidNotAnswer(ran, 10_000)).toMatch(/cmd\.exe cannot be given safely.*mnema_path/);
+  });
+
+  it('quotes a path with a space and an ampersand, which are inert inside quotes', () => {
+    const target = spawnTarget('C:\\A&B (x)\\mnema.cmd', ['--tools', 'a b'], 'win32');
+    expect(target.refused).toBe(false);
+    expect(target.command).toBe('"C:\\A&B (x)\\mnema.cmd" --tools "a b"');
+  });
+
+  it('refuses nothing on a platform that starts the program as it is', () => {
+    expect(spawnTarget('/opt/100%/mnema', ['say "hi"'], 'linux').refused).toBe(false);
   });
 });
 
@@ -80,6 +108,6 @@ describe('every start of mnema from the plugin asks for the target', () => {
     const source = readFileSync(join(ROOT, file), 'utf-8');
     const starts = [...source.matchAll(/spawnSync\(\s*(binaryToRun\(\)|BINARY)\b/g)];
     expect(starts, `${file} starts mnema directly`).toEqual([]);
-    expect([...source.matchAll(/spawnTarget\(/g)].length).toBeGreaterThan(1);
+    expect([...source.matchAll(/spawnTarget\(/g)].length).toBeGreaterThanOrEqual(1);
   });
 });

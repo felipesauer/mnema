@@ -538,26 +538,6 @@ const AGENT = ['--agent-key', 'opencode'];
 /** What is run: npm's own shim name on Windows. */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
-/** The characters a word of a command line may hold and need no quoting for a shell. */
-const SAFE_IN_A_SHELL = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:@=,+/-';
-
-/**
- * How to start \`program\` with \`args\`: on Windows as one command line for a shell, each word quoted
- * where it needs it, because Node refuses to start the \`.cmd\` npm writes any other way (\`EINVAL\`)
- * and warns of arguments handed to a shell as a list; elsewhere as they are.
- *
- * @param {string} program
- * @param {readonly string[]} args
- * @param {NodeJS.Platform} [platform]
- * @returns {{ readonly command: string, readonly args: readonly string[], readonly shell: boolean }}
- */
-function spawnTarget(program, args, platform = process.platform) {
-  if (platform !== 'win32') return { command: program, args, shell: false };
-  const word = (/** @type {string} */ text) =>
-    [...text].every((char) => SAFE_IN_A_SHELL.includes(char)) ? text : '"' + text + '"';
-  return { command: ['"' + program + '"', ...args.map(word)].join(' '), args: [], shell: true };
-}
-
 /** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
 let settled;
 const theRuntime = () => {
@@ -568,6 +548,7 @@ const theRuntime = () => {
 /** One run of \`mnema\`, both streams kept; a run that did not finish carries an \`error\`. */
 function run(args, cwd, input, timeout = WAIT) {
   const target = spawnTarget(BINARY, args);
+  if (target.refused) return notStarted();
   return spawnSync(target.command, target.args, {
     shell: target.shell,
     cwd,
@@ -830,26 +811,6 @@ const AGENT = ['--agent-key', 'gemini'];
 /** What is run: npm's own shim name on Windows. */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
-/** The characters a word of a command line may hold and need no quoting for a shell. */
-const SAFE_IN_A_SHELL = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:@=,+/-';
-
-/**
- * How to start \`program\` with \`args\`: on Windows as one command line for a shell, each word quoted
- * where it needs it, because Node refuses to start the \`.cmd\` npm writes any other way (\`EINVAL\`)
- * and warns of arguments handed to a shell as a list; elsewhere as they are.
- *
- * @param {string} program
- * @param {readonly string[]} args
- * @param {NodeJS.Platform} [platform]
- * @returns {{ readonly command: string, readonly args: readonly string[], readonly shell: boolean }}
- */
-function spawnTarget(program, args, platform = process.platform) {
-  if (platform !== 'win32') return { command: program, args, shell: false };
-  const word = (/** @type {string} */ text) =>
-    [...text].every((char) => SAFE_IN_A_SHELL.includes(char)) ? text : '"' + text + '"';
-  return { command: ['"' + program + '"', ...args.map(word)].join(' '), args: [], shell: true };
-}
-
 /** Which node \`mnema\` runs on, settled once: the first on the PATH, or the first that takes it. */
 let settled;
 const theRuntime = () => {
@@ -866,6 +827,7 @@ const theRuntime = () => {
  */
 function run(args, cwd, input, timeout = WAIT) {
   const target = spawnTarget(BINARY, args);
+  if (target.refused) return notStarted();
   return spawnSync(target.command, target.args, {
     shell: target.shell,
     cwd,

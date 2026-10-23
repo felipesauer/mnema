@@ -228,6 +228,12 @@ try {
     .filter((path) => path.endsWith('.jsonl') || path.endsWith('.json'));
   const crlf = some.filter((path) => readFileSync(path).includes(Buffer.from('\r\n')));
   console.log(`  ${crlf.length} of ${some.length} record files carry CRLF in the checkout`);
+  // The record's `.gitattributes` (`* -text`) is what keeps git from converting its files: with
+  // `core.autocrlf=true` in the clone, none may have come out with CRLF.
+  check(
+    some.length > 0 && crlf.length === 0,
+    'the clone, with core.autocrlf=true, holds every record file with LF',
+  );
   // A path of the record is `.mnema/...` below the project, and Windows stops at 260 characters
   // for the whole path unless the machine opted in to long paths: say how much room is left.
   const longest = everyEntry.reduce((most, entry) => Math.max(most, entry.length), 0);
@@ -236,7 +242,10 @@ try {
     'mnema verify in the clone',
     mnema(['verify', '--require', 'signed'], clone),
   );
-  check(/local integrity verified/.test(inClone.out), 'the clone verifies');
+  check(
+    /local integrity verified/.test(inClone.out),
+    'the clone verifies (it holds LF; that a reader accepts CRLF is not shown)',
+  );
 
   section('the second reader (Python)');
   const candidates = WINDOWS ? ['python', 'py', 'python3'] : ['python3', 'python'];
@@ -301,7 +310,19 @@ try {
     console.log(
       `$ edit-refuses-a-write.mjs (${label}) ${file}\n${ran.out}${ran.err}`.slice(0, 900),
     );
-    check(ran.status === 0 && /deny/.test(ran.out), `a write is refused: ${label}`);
+    // The refusal must be THE RULE'S: a gate that could not start `mnema` also denies a write a
+    // rule reaches, with a reason that names no rule, and a check for "deny" alone would pass on it.
+    let reason = '';
+    try {
+      reason = JSON.parse(ran.out).hookSpecificOutput?.permissionDecisionReason ?? '';
+    } catch {}
+    check(
+      ran.status === 0 &&
+        /"permissionDecision":"deny"/.test(ran.out) &&
+        reason.includes(ruleId) &&
+        !/could not answer/.test(reason),
+      `a write is refused by the rule, which the refusal names: ${label}`,
+    );
   };
   /**
    * @param {string} label

@@ -54,6 +54,10 @@ with its own changelog.
   rule addressed at a folder met a write there; it is now, the drive and the folders above the project compared
   without regard to case. A write is also placed by the system's own real path, which gives the long name for an
   8.3 short one and the letter case the disk keeps on Windows and macOS.
+  A path with a drive or a share (`C:\x`, `\\host\share`, `\\?\C:\x`) is read as a Windows path only under a project root
+  written that way (a Windows host always names its roots so); under any other root it is still one relative name, as before.
+  A word that `cmd.exe` cannot be given safely (`"`, `%`, `^`, a line break), in the path of `mnema`, makes the hook
+  not start it, and the refusal says so.
 - **An address that is not an address is a refusal, not an internal error.** A `TypeError` with Node's code
   `ERR_INVALID_URL` (a signing-token address from the environment that does not parse, for one) is now said as an
   ordinary refusal with exit 1, and no report is offered for it; any other `TypeError` is still a fault.

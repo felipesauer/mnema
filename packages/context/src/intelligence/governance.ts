@@ -586,11 +586,11 @@ function posix(segments: readonly string[]): string {
  * what that costs.
  */
 function relativeSegments(path: string, root: string): string[] | null {
-  const parts = normalized(path);
+  const windows = readsAsWindows(path, root);
+  const parts = normalized(path, windows);
   if (parts === null) return null;
-  const windows = isWindowsAbsolute(path);
   if (!path.startsWith('/') && !windows) return parts;
-  const base = normalized(root) ?? [];
+  const base = normalized(root, isWindowsAbsolute(root)) ?? [];
   if (parts.length < base.length) return null;
   // Windows names a drive and the folders above a project in either letter case, and a root and a
   // path from two hosts may spell them differently; nothing BELOW the root is folded, because an
@@ -603,23 +603,36 @@ function relativeSegments(path: string, root: string): string[] | null {
 
 /**
  * Whether a path is absolute the way Windows writes one: a drive and a separator (`C:\work`,
- * `c:/work`) or a UNC share (`\\server\share`). It is a test of the SHAPE of the text, and not of
- * the platform running, because the hooks hand this a path from the host that wrote it; a POSIX
- * path never has that shape, and a backslash anywhere else is one name of a POSIX file.
+ * `c:/work`) or a UNC share (`\\server\share`), which includes the `\\?\C:\work` spelling of a
+ * drive. It is a test of the SHAPE of the text.
  */
 function isWindowsAbsolute(path: string): boolean {
   return /^(?:[A-Za-z]:[\\/]|\\\\)/.test(path);
 }
 
 /**
+ * Whether `path` is to be read as a Windows path: it has that shape AND the project root is
+ * written that way too (the root and the path come from the same host, and a Windows host names
+ * its roots with a drive or a share). Under any other root `C:\x` and `\\x` are legal names of a
+ * file below the project, and they stay what POSIX makes of them. This layer reads no platform:
+ * it is a function of its arguments.
+ */
+function readsAsWindows(path: string, root: string): boolean {
+  return isWindowsAbsolute(path) && isWindowsAbsolute(root);
+}
+
+/**
  * The segments a path names, with `.` dropped and `..` resolved textually, or null
  * when the climbing goes above the first segment, which for an absolute path is
- * above the filesystem root and for a relative one is out of the project. A path written the
- * Windows way is split on both separators, its drive letter being its first segment.
+ * above the filesystem root and for a relative one is out of the project. A path read the
+ * Windows way is split on both separators, its drive letter being its first segment; the
+ * `\\?\` and `\\.\` prefix of a drive path is struck, and one of a UNC share
+ * (`\\?\UNC\server\share`) is not understood: that path is outside any project.
  */
-function normalized(path: string): string[] | null {
+function normalized(path: string, windows: boolean): string[] | null {
   const parts: string[] = [];
-  for (const part of path.split(isWindowsAbsolute(path) ? /[\\/]/ : '/')) {
+  const text = windows ? path.replace(/^\\\\[?.]\\(?=[A-Za-z]:[\\/])/, '') : path;
+  for (const part of text.split(windows ? /[\\/]/ : '/')) {
     if (part === '' || part === '.') continue;
     if (part === '..') {
       if (parts.length === 0) return null;

@@ -179,3 +179,58 @@ describe('an absolute path as Windows writes it', () => {
     expect(reduced('src\\odd', '/work/repo')).toBe('src\\odd');
   });
 });
+
+describe('a UNC share and the extended-length spelling of a drive', () => {
+  const reduced = (address: string, root: string) =>
+    addressReach({
+      address,
+      root,
+      tree: { walk: () => ({ skipped: [], truncated: false }) },
+    }).address;
+
+  it('is made relative to a root on the same share, and is outside a root on another', () => {
+    const root = '\\\\build\\share\\repo';
+    expect(reduced('\\\\build\\share\\repo\\src\\a.ts', root)).toBe('src/a.ts');
+    expect(reduced('\\\\BUILD\\Share\\repo\\src', root)).toBe('src');
+    expect(reduced('\\\\other\\share\\repo\\src', root)).toBeUndefined();
+    expect(reduced('C:\\Users\\me\\repo\\src', root)).toBeUndefined();
+  });
+
+  it('reads the extended-length spelling of a drive as the drive it spells', () => {
+    expect(reduced('\\\\?\\C:\\Users\\me\\repo\\src', 'C:\\Users\\me\\repo')).toBe('src');
+    expect(reduced('C:\\Users\\me\\repo\\src', '\\\\?\\C:\\Users\\me\\repo')).toBe('src');
+    expect(reduced('\\\\?\\D:\\Users\\me\\repo\\src', 'C:\\Users\\me\\repo')).toBeUndefined();
+  });
+
+  it('does not understand the extended-length spelling of a share: it is outside any root', () => {
+    expect(
+      reduced('\\\\?\\UNC\\build\\share\\repo\\src', '\\\\build\\share\\repo'),
+    ).toBeUndefined();
+  });
+});
+
+describe('where a drive or a share is only a name', () => {
+  const reduced = (address: string) =>
+    addressReach({
+      address,
+      root: '/work/repo',
+      tree: { walk: () => ({ skipped: [], truncated: false }) },
+    }).address;
+
+  it('keeps C:\\x, C:/x and \\\\x as the relative names they are on POSIX, byte for byte', () => {
+    expect(reduced('C:\\x\\a.ts')).toBe('C:\\x\\a.ts');
+    expect(reduced('C:/x/a.ts')).toBe('C:/x/a.ts');
+    expect(reduced('\\\\host\\share\\a.ts')).toBe('\\\\host\\share\\a.ts');
+  });
+
+  it('reads the same text as a Windows path under a root written the Windows way', () => {
+    const under = (address: string, root: string) =>
+      addressReach({
+        address,
+        root,
+        tree: { walk: () => ({ skipped: [], truncated: false }) },
+      }).address;
+    expect(under('C:\\x\\a.ts', 'C:\\x')).toBe('a.ts');
+    expect(under('C:\\x\\a.ts', 'D:\\x')).toBeUndefined();
+  });
+});
