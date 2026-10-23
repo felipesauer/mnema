@@ -72,6 +72,29 @@ describe('the last-resort catch', () => {
     expect(said.exit).toBe(1);
   });
 
+  it('says an address the person gave that no URL parser takes as a refusal, because the cause is the input', async () => {
+    let thrown: unknown;
+    try {
+      new URL('not an address');
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(TypeError);
+    const said = await whatItThrows(() => thrown);
+    expect(said.err).toHaveLength(1);
+    expect(said.err[0]).not.toContain('internal error');
+    expect(said.exit).toBe(1);
+  });
+
+  it('still says a TypeError that merely carries another Node code as internal', async () => {
+    const said = await whatItThrows(() =>
+      Object.assign(new TypeError('The "path" argument must be of type string'), {
+        code: 'ERR_INVALID_ARG_TYPE',
+      }),
+    );
+    expect(said.exit).toBe(INTERNAL_ERROR_EXIT);
+  });
+
   it('says a TypeError out of the product as an internal error, with its own exit', async () => {
     const said = await whatItThrows(
       () => new TypeError("Cannot read properties of undefined (reading 'seq')"),

@@ -128,6 +128,14 @@ describe('the manifests this workspace ships agree on one version', () => {
     expect(disagree).toEqual([]);
   });
 
+  it('is the number the second reader declares in its pyproject', () => {
+    // The Python reader is not a workspace package, so no manifest sweep above sees it.
+    const declared = /^version = "([^"]*)"/m.exec(
+      readFileSync(join(ROOT, 'packages/chain/verifier/pyproject.toml'), 'utf-8'),
+    )?.[1];
+    expect(declared).toBe(VERSION);
+  });
+
   it('is the number the record reader names when it refuses a line', () => {
     // The second constant, and the reason it is held here: `@mnema/chain` cannot import this
     // package, and its refusal of a `kind` and `v` it holds no contract for names the mnema

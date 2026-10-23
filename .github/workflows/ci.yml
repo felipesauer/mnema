@@ -213,6 +213,10 @@ jobs:
           python -m venv "$RUNNER_TEMP/types"
           "$RUNNER_TEMP/types/bin/pip" install --disable-pip-version-check mypy==1.19.1
           "$RUNNER_TEMP/types/bin/mypy" --python-version 3.9 --warn-unused-ignores --cache-dir "$RUNNER_TEMP/types-cache" packages/chain/verifier/
+          # The linter reads the rules in the reader's own `pyproject.toml`; it is in the same
+          # venv, for the same reason as the type checker.
+          "$RUNNER_TEMP/types/bin/pip" install --disable-pip-version-check ruff==0.17.2
+          "$RUNNER_TEMP/types/bin/ruff" check --no-cache packages/chain/verifier/
 
       # `vitest` and not the `test` script: `what-the-suite-left-behind` counts every step of this
       # file that runs that script as a run of the suite its sweep has to bracket, and this one
