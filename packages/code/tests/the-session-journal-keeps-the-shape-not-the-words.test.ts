@@ -34,6 +34,7 @@ import { buildMcpServer } from '../src/mcp/server.js';
 import { type CliIo, run } from '../src/program.js';
 import {
   type Journal,
+  journalsDir,
   outcomeOf,
   PRUNE_AFTER_MS,
   PRUNE_KEEP,
@@ -316,6 +317,21 @@ describe('the journal a Stop keeps', () => {
     expect(journal.questionsWithoutDecision).toBe(0);
     expect(journal.trees.public.outcome).toBe(outcomeOf(journal));
     expect(journal.trees.public.outcome).toBe('1 decision recorded; 2 files edited.');
+  });
+
+  it('names the runs left open since the session began, and the directory its journals live in', async () => {
+    const started = (await doing('run', 'start', '--which', 'claude-code')).join('\n');
+    const run = /Started run (\S+)/.exec(started)?.[1];
+    expect(run).toBeDefined();
+    const file = transcriptAt('open-run.jsonl', [
+      prompt(LONG_AGO, 'go'),
+      write(at(1), 'a', join(repo, 'src', 'a.ts')),
+      result(at(2), 'a'),
+    ]);
+    tally(payload('Stop', file));
+    expect(theJournal().runsOpen).toEqual([run]);
+    const [only] = journalsUnder(sandbox);
+    expect(journalsDir(resolveTrees(repo, env))).toBe(dirname(only ?? ''));
   });
 
   it('counts a question answered after the last decision as one with no decision after it', () => {
