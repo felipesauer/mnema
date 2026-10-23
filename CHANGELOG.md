@@ -12,11 +12,24 @@ with its own changelog.
 
 ### Added
 
+- **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
+  file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
+  `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
+  session did with the record (decisions recorded since it opened and their state, notes of the host's memory copied, questions
+  answered with no decision after, files holding decisions cited nowhere, files edited, tasks in progress, runs open, the goal
+  and an outcome as a sentence of counts). Never a prompt, a message, a tool's output, a file's content, the environment or the
+  answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
+  (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
+  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
+  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
+  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
+  and of the tail of the bytes already read, and read again from the top.
 - **CI runs the installed binary on Windows and macOS.** One job per system and per Node (24.15.0 and the latest 24)
   packs and installs the five packages, then runs `init`, `decision record`, `verify`, a clone checked out with
   `core.autocrlf=true`, the Python reader, `doctor` and the plugin's hook scripts on paths written the way each
   system writes them. [Install](docs/install.md#what-is-run-on-windows-and-macos) says what is and is not run.
-
 - **A stack install asks `skills-ref` about the skills it wrote.** When `agentskills` (the validator the Agent Skills
   specification publishes) is on the `PATH`, each installed skill folder is validated and the command prints one line,
   accepted or refused, with what it said; without it, the command says it did not run. It is not a dependency, a refusal

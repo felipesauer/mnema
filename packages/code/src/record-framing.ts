@@ -379,7 +379,8 @@ export type SwitchableChannel =
   | 'host-memory-mirror'
   | 'decision-file-written'
   | 'choice-settled'
-  | 'tool-call-count';
+  | 'tool-call-count'
+  | 'session-journal';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -485,6 +486,14 @@ export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
  * until switched off, because what it keeps is local and holds names and nothing else.
  */
 export const TOOL_CALL_COUNT_CHANNEL: SwitchableChannel = 'tool-call-count';
+
+/**
+ * The switch of the session journal: the small file on this machine, one per session, that holds the
+ * shape of what a session did with the record (ids and counts, never its words) so that what asks
+ * next, a later session, a compaction, the close of the run, answers from it instead of reading a
+ * transcript again. See `session-journal.ts`.
+ */
+export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
 
 /**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
@@ -647,6 +656,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
     'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
     'count of the count',
+  'session-journal':
+    'it puts nothing in front of a model and writes nothing to the record: the journal is a file on ' +
+    'this machine, outside it, holding ids and counts, so a fact saying it was kept would be a ' +
+    'count of the count',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing (no event, no key, no run), so a count of what a session did never moves the ' +
@@ -731,6 +744,11 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the local count of tool calls: with it off, the server keeps no line of the calls it answers ' +
     'and `mnema usage --tools` shows what was kept before. The count is a file on this machine, ' +
     'outside the record, with the tool’s name and its result and nothing of the arguments',
+  'session-journal':
+    'the session journal: with it off, no file is kept of what a session did with the record, and ' +
+    'nothing can say, to a later session, to a compaction or on the run that closes, what this one did. ' +
+    'The journal is a file on this machine, outside the record, holding ids and counts and none of ' +
+    'the session’s words',
   'session-tally':
     'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

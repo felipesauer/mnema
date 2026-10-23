@@ -25,16 +25,32 @@
  * these two, no project here, the channel switched off, a transcript this cannot read. What went
  * wrong, when something did, is a note on the second stream, and nothing reads it to decide.
  *
+ * IT KEEPS THE SESSION JOURNAL, and reads the transcript from where the last Stop stopped. The
+ * payload names the session (`session_id`); the journal (`session-journal.ts`) holds a byte cursor
+ * into the transcript and the shape of what the session did with the record, so a Stop reads the
+ * lines the host wrote since and not the whole conversation again (130, 237 and 462 ms for
+ * transcripts of 21, 43 and 103 MB). A payload that names no session, or the journal's channel
+ * switched off, reads the whole transcript as before and keeps no file. The counts the line
+ * carries come from the journal's reading, so the line says the same thing either way.
+ *
  * WHERE THE LINE LANDS IS THE HOST'S. It is written as the `systemMessage` of the reply, the field
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
 
+import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { HOST_MEMORY_MARK } from '../host-memory.js';
-import { SESSION_TALLY_CHANNEL } from '../record-framing.js';
+import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
+import {
+  journalAfter,
+  journalFile,
+  readingOf,
+  readJournal,
+  sessionIdOf,
+  writeJournal,
+} from '../session-journal.js';
 import { withScopedCaches } from '../tree-sources.js';
-import { whatTheSessionDid } from '../what-the-session-did.js';
+import { readTheNewPart } from '../what-the-session-did.js';
 
 /** What the command needs: injected so it is testable. */
 export interface SessionTallyContext {
@@ -113,50 +129,53 @@ export function runSessionTally(
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return silent();
+  const session = sessionIdOf(payload['session_id']);
+  const root = dirname(trees.projectPublic);
 
   return withScopedCaches(trees, (sources): SessionTallyDone => {
-    // The channel is asked BEFORE the transcript is read: a transcript can be tens of megabytes,
+    // The channels are asked BEFORE the transcript is read: a transcript can be tens of megabytes,
     // and a channel somebody switched off must not keep paying for it after every response.
-    if (!channelIsOn(sources, SESSION_TALLY_CHANNEL)) return silent();
+    const speaks = channelIsOn(sources, SESSION_TALLY_CHANNEL);
+    const file =
+      session !== undefined && channelIsOn(sources, SESSION_JOURNAL_CHANNEL)
+        ? journalFile(trees, session)
+        : undefined;
+    if (!speaks && file === undefined) return silent();
 
-    const did = whatTheSessionDid(transcript, ctx.cwd);
-    if (did === undefined) return silent([`The transcript ${transcript} could not be read.`]);
-    if (did.editedFiles.length === 0) return silent();
-    if (event === STOP && !did.lastResponseEdited) return silent();
-    const since = did.openedAt === undefined ? Number.NaN : Date.parse(did.openedAt);
-    if (Number.isNaN(since)) {
+    // THE READING STARTS WHERE THE LAST ONE STOPPED when there is a journal to say where: what the
+    // host wrote since, and not the whole conversation again, after every response.
+    const previous = file === undefined ? undefined : readJournal(file);
+    const reading = readingOf(previous);
+    if (!readTheNewPart(transcript, reading, { cwd: ctx.cwd, root })) {
+      return silent([`The transcript ${transcript} could not be read.`]);
+    }
+    if (reading.bytes === 0) return silent([`The transcript ${transcript} could not be read.`]);
+    const journal = journalAfter({
+      session: session ?? '',
+      previous,
+      reading,
+      sources,
+      now: new Date(),
+    });
+    if (file !== undefined) writeJournal(file, journal, new Date());
+
+    if (!speaks) return silent();
+    if (journal.filesEdited === 0) return silent();
+    if (event === STOP && reading.writesInResponse <= 0) return silent();
+    if (reading.openedAt === undefined || Number.isNaN(Date.parse(reading.openedAt))) {
       return silent([
         'The transcript carries no instant, so no decision could be counted against it.',
       ]);
     }
-
-    const decisions = sources
-      .filter((source) => source.scope !== 'global')
-      .reduce(
-        (total, source) =>
-          total +
-          source.cache.listDecisions().filter((one) => Date.parse(one.createdAt) >= since).length,
-        0,
-      );
-    // The notes `mnema after-a-write` copied from the host's memory since the session opened: the
-    // same instant ties them to it, and their marker tells them from any other memory.
-    const copied = sources
-      .filter((source) => source.scope !== 'global')
-      .reduce(
-        (total, source) =>
-          total +
-          source.cache
-            .listMemories()
-            .filter(
-              (one) =>
-                one.content.includes(HOST_MEMORY_MARK) && Date.parse(one.capturedAt) >= since,
-            ).length,
-        0,
-      );
     return {
       ok: true,
       reply: {
-        systemMessage: tallyLine({ event, files: did.editedFiles.length, decisions, copied }),
+        systemMessage: tallyLine({
+          event,
+          files: journal.filesEdited,
+          decisions: journal.decisions.length,
+          copied: journal.notes.length,
+        }),
       },
       notes: [],
     };

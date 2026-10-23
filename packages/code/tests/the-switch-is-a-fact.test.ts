@@ -73,6 +73,7 @@ import {
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
+  SESSION_JOURNAL_CHANNEL,
   SESSION_TALLY_CHANNEL,
   STARTS_OFF,
   SUBAGENT_HANDBACK_CHANNEL,
@@ -81,6 +82,7 @@ import {
   USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
+import { journalFile, readJournal } from '../src/session-journal.js';
 import { readToolCalls, toolCallsFile } from '../src/tool-calls.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
@@ -501,6 +503,32 @@ const HONOURED: Readonly<
         },
       );
       return 'hookSpecificOutput' in done.reply;
+    },
+  },
+  [SESSION_JOURNAL_CHANNEL]: {
+    // A FILE KEPT BY THE STOP HOOK, driven the way a host drives it: the payload of a `Stop` that
+    // names its session and a transcript. "Speaks" is the journal's file coming to exist.
+    setUp: async () => {},
+    speaks: async () => {
+      const file = journalFile(resolveTrees(repo, env), 'a-session-1');
+      if (file === undefined) return false;
+      rmSync(file, { force: true });
+      const transcript = join(sandbox, 'journal.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      runSessionTally(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'Stop',
+            transcript_path: transcript,
+            session_id: 'a-session-1',
+          }),
+        },
+      );
+      return readJournal(file) !== undefined;
     },
   },
   [SESSION_TALLY_CHANNEL]: {

@@ -41,6 +41,9 @@ export const NO_RUNS_HINT: readonly Line[] = [
  * agree between the two. What each caller keeps is the SUBJECT: the phrase begins at
  * "last run", so neither has to strip an actor the other put there.
  *
+ * THE OUTCOME rides it when the run recorded one: the sentence a session closed its run with,
+ * which nothing printed until then.
+ *
  * The age rides it only while it is OPEN, which is {@link runAgeSuffix}'s rule stated
  * where the decision is made: an ended run reports its own end, and an age beside that
  * would read as time still passing in it.
@@ -70,6 +73,7 @@ export function lastRunPhrase(run: {
   readonly id: string;
   readonly open: boolean;
   readonly goal?: string;
+  readonly outcome?: string;
   readonly ageSeconds?: number;
   readonly idleSeconds?: number;
   readonly wrote: readonly WrittenInRun[];
@@ -78,6 +82,8 @@ export function lastRunPhrase(run: {
     `last run ${run.id} (${run.open ? 'open' : 'ended'})` +
     (run.goal === undefined ? '' : `: ${oneLine(run.goal)}`) +
     (run.open ? runAgeSuffix(run) : '') +
+    // How the run ended, in the words it closed with: text, so it is collapsed here with the goal.
+    (run.outcome === undefined ? '' : ` · outcome: ${oneLine(run.outcome)}`) +
     wroteSuffix(run)
   );
 }

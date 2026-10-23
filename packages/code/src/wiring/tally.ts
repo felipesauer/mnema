@@ -4,7 +4,8 @@
  * `mnema tally` reads the payload a host hands a `Stop` or a `PreCompact` hook, on stdin,
  * and prints the reply that host reads, on stdout: one line saying how many files the session's
  * own tool calls wrote and how many decisions were recorded since it opened, and `{}` when there is
- * nothing to count. The command is `commands/tally.ts`; the plugin's handler runs it.
+ * nothing to count. It keeps the session journal (`session-journal.ts`) as it goes: a file on this
+ * machine, outside the record, which is why the verb still says it reads the record and no more. The command is `commands/tally.ts`; the plugin's handler runs it.
  *
  * A HOST RUNS IT, NOT A PERSON, so it is `before-a-write`'s shape: it exits 0 on every outcome that
  * is not a misuse of the verb itself, and what it has to say about a payload it could not read goes
@@ -32,7 +33,10 @@ export function registerTally(program: Command, wiring: Wiring): Declared {
         '  wrote and how many decisions were recorded in this project since it opened, or {} when',
         '  the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the',
         '  last response), there is no project here, or the transcript cannot be read.',
-        '  It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.',
+        '  It writes nothing to the record. When the hook names its session it also keeps a small file on',
+        '  this machine, the session journal (ids and counts, never what was said), and reads the',
+        '  transcript from where the last reading stopped. `mnema switch off session-tally` stops the',
+        '  line and `mnema switch off session-journal` stops the file.',
       ].join('\n'),
     )
     .action(async () => {

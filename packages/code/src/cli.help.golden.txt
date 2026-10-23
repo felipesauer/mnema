@@ -1340,7 +1340,10 @@ $ mnema tally --help
 |   wrote and how many decisions were recorded in this project since it opened, or {} when
 |   the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the
 |   last response), there is no project here, or the transcript cannot be read.
-|   It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.
+|   It writes nothing to the record. When the hook names its session it also keeps a small file on
+|   this machine, the session journal (ids and counts, never what was said), and reads the
+|   transcript from where the last reading stopped. `mnema switch off session-tally` stops the
+|   line and `mnema switch off session-journal` stops the file.
 
 ### mnema corrections --help
 $ mnema corrections --help
@@ -2080,7 +2083,8 @@ $ mnema switch off --help
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    subagent-handback, tool-call-count, session-journal,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2118,7 +2122,8 @@ $ mnema switch on --help
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
-|                    subagent-handback, tool-call-count, session-tally)
+|                    subagent-handback, tool-call-count, session-journal,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

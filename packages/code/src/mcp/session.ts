@@ -85,6 +85,7 @@ import { FoundingWatch } from '../a-new-identity.js';
 import { RecordPageWatch } from '../commands/the-record-page.js';
 import { oneLine } from '../one-line.js';
 import { replacementNotice } from '../recorded-content.js';
+import { type Journal, journalFile, readJournal } from '../session-journal.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import {
   type ClientWorkspace,
@@ -113,6 +114,12 @@ export type OpenSessionInput = ClientWorkspace & {
   readonly agentKey?: string | undefined;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
+  /**
+   * The host's id for the session this server was started in, when the host leaves one in the
+   * server's environment (Claude Code's `CLAUDE_CODE_SESSION_ID`): the name of the session
+   * journal this connection's runs are given a goal from and close with an outcome from.
+   */
+  readonly hostSession?: string | undefined;
   /**
    * Where to write diagnostics, if the caller has somewhere to write them.
    * Defaults to discarding them, so a caller with no log (a test, a tool driven
@@ -325,6 +332,8 @@ export interface Session {
    * say.
    */
   readonly clientName: string;
+  /** The host's id for the session this server runs in: see {@link OpenSessionInput.hostSession}. */
+  readonly hostSession?: string;
   /**
    * The agent this server was asked to sign as (`openSession`), whatever the name: one the record
    * enrols, one it does not, and one that is no agent name at all (`agentNameRefusal`), whose
@@ -611,6 +620,7 @@ export function openSession(input: OpenSessionInput): Session {
     refreshes: 0,
     which: whichOf(trees, input.clientName),
     clientName: input.clientName,
+    ...(input.hostSession !== undefined ? { hostSession: input.hostSession } : {}),
     ...(agentKey !== undefined ? { agentKey } : {}),
     who,
     // Empty: the first write to a tree opens that tree's run (see `openWrite`). A
@@ -1059,7 +1069,11 @@ function ensureRun(
   // moment before is what the next reply compares with, and a write refused before it founds
   // leaves them as they were, so the reply says nothing.
   session.founding.opened(root, scope);
-  const prepared = prepareRun(ctx, { agent: whichIn(trees, scope, session) });
+  const goal = goalFromTheJournal(session, trees, scope);
+  const prepared = prepareRun(ctx, {
+    agent: whichIn(trees, scope, session),
+    ...(goal !== undefined ? { goal } : {}),
+  });
   if (!prepared.ok) {
     throw new Error(`could not open a session run: ${prepared.code}: ${prepared.message}`);
   }
@@ -1109,6 +1123,43 @@ function ensureRun(
     session.log(oneLine(`session run ${opened.id} opened in ${root} for which=${opened.agent}`));
   };
   return { id: prepared.id, start, ask: prepared.ask };
+}
+
+/**
+ * The journal the host's session keeps for the project `trees` is of, when this server knows the
+ * host's id for its session and a journal was kept (its channel on, a Stop run since).
+ */
+function theJournalOf(
+  session: Pick<Session, 'hostSession'>,
+  trees: ResolvedTrees,
+): Journal | undefined {
+  if (session.hostSession === undefined) return undefined;
+  const file = journalFile(trees, session.hostSession);
+  return file === undefined ? undefined : readJournal(file);
+}
+
+/**
+ * The goal a run opens with: the first objective the journal knows for the tree the run is written
+ * to, a task title that tree holds. A run in the global tree takes none: the journal speaks of the
+ * project's trees only, and a run takes nothing from a tree other than its own.
+ */
+function goalFromTheJournal(
+  session: Session,
+  trees: ResolvedTrees,
+  scope: Scope,
+): string | undefined {
+  if (scope === 'global') return undefined;
+  return theJournalOf(session, trees)?.trees[scope].goal ?? undefined;
+}
+
+/** The outcome a run closes with: the journal's sentence of counts for the tree the run is in. */
+function outcomeFromTheJournal(
+  session: Session,
+  trees: ResolvedTrees,
+  scope: Scope,
+): string | undefined {
+  if (scope === 'global') return undefined;
+  return theJournalOf(session, trees)?.trees[scope].outcome ?? undefined;
 }
 
 /** What a close recorded, and what it could not: every run the connection opened. */
@@ -1180,9 +1231,11 @@ export function closeSession(session: Session): SessionClose {
         // `which` is the client's, the one disagreement `verify` reads as a break. Taken from
         // the session, never asked of the client.
         const ended = ctx.writer.exclusively(() => {
+          const outcome = outcomeFromTheJournal(session, run.trees, run.scope);
           const closing = endRun(ctx, {
             run: run.id,
             which: whichIn(run.trees, run.scope, session),
+            ...(outcome !== undefined ? { outcome } : {}),
           });
           if (closing.ok) ctx.writer.checkpoint();
           return closing;

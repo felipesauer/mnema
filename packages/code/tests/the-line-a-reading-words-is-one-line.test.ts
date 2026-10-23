@@ -1613,6 +1613,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the run’s goal: text whoever opened the session typed, and BOTH readings print it',
   },
+  'runs.ts « · outcome: {}» oneLine(run.outcome) #1': {
+    verdict: 'collapsed',
+    why: 'the sentence a run closed with: text the record holds as written, and both readings print it',
+  },
   'runs.ts «{} run(s) still open» resume.focus.openRuns.length #1': {
     verdict: 'minted',
     why: 'how many runs are still open: a count',
@@ -2415,8 +2419,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path.
-    expect(FOUND.sites.length).toBe(466);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with.
+    expect(FOUND.sites.length).toBe(467);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2437,10 +2441,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(127);
+    expect(count('collapsed')).toBe(128);
     expect(count('minted')).toBe(263);
     expect(count('composed')).toBe(76);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(127);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(128);
   });
 
   it('every reason says where the value comes from', () => {
