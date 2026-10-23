@@ -67,6 +67,11 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
         'progress, the name of the branch and the files of the last 3 commits, read with',
         'git and no lock, the record’s own directory left out. The rest are the newest.',
         'With nothing to read there, all of them are the newest. It says which, in a line.',
+        'Above them, when another session that has stopped (its connection ended, or its journal has been',
+        'quiet for 15 minutes) left a journal on this machine in the last 24 hours',
+        '(`mnema switch off session-journal` stops it), a few lines say where it stopped:',
+        'its goal, the decisions it recorded, and the counts it left. They can be switched off alone',
+        '(`mnema switch off last-session`).',
         'It prints NOTHING when nothing is recorded, so a session opens with nothing added.',
         'It can be switched off (`mnema switch off recall-document`), and then it refuses.',
       ].join('\n'),
@@ -77,7 +82,12 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
         'saying how many it left out',
     )
     .addOption(hookHostOption('the notes'))
-    .action(async (opts: { hook?: boolean; host?: string }) => {
+    .option(
+      '--session <id>',
+      'the host’s id for the session these notes are for: the journal that session keeps is ' +
+        'not "the last session", which a hook passes from the payload',
+    )
+    .action(async (opts: { hook?: boolean; host?: string; session?: string }) => {
       const host = hookHostOf(wiring, opts.hook === true, opts.host);
       if (host === false) return;
       const { linkBreakNotice } = await import('./integrity.js');
@@ -85,7 +95,7 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       const { recallDocument, recallWithin } = await import('../presentation/recall.js');
       const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
       const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
-      const result = runRecall(here());
+      const result = runRecall({ ...here(), session: opts.session });
       if (!result.ok) {
         reportRefusal(
           wiring,

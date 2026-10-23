@@ -45,7 +45,9 @@ document, delivered by the host instead of waited for.
   what the session touches (the files changed in the working tree, the tasks in progress,
   the branch, the last three commits), then the newest. It is the
   half that makes a note worth writing: what an agent records here comes back to the next
-  session without anybody asking. A project with nothing noted gets nothing from it. It is
+  session without anybody asking. When another session wrote to the record in the last day and left a journal on
+  this machine, a few lines above the notes say where it stopped (its goal, the decisions it recorded, what it left;
+  `mnema switch off last-session` stops them). A project with nothing noted gets nothing from it. It is
   a hook of its own because the host caps what each hook adds at 10,000 characters, and
   two texts in one hook would share one cap.
 - **A `PreToolUse` hook** on `Write|Edit|NotebookEdit` that hands over the rules

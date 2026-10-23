@@ -380,7 +380,8 @@ export type SwitchableChannel =
   | 'decision-file-written'
   | 'choice-settled'
   | 'tool-call-count'
-  | 'session-journal';
+  | 'session-journal'
+  | 'last-session';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -494,6 +495,14 @@ export const TOOL_CALL_COUNT_CHANNEL: SwitchableChannel = 'tool-call-count';
  * transcript again. See `session-journal.ts`.
  */
 export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
+
+/**
+ * The switch of the section of the notes document that says where the last session on this machine
+ * stopped: its goal, the decisions it recorded, and the counts of what it left, read from its
+ * journal when that session was another one and a recent one. It is text in front of a model, in
+ * the document `mnema recall` prints, and it is framed by that document's declaration.
+ */
+export const LAST_SESSION_CHANNEL: SwitchableChannel = 'last-session';
 
 /**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
@@ -656,6 +665,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
     'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
     'count of the count',
+  'last-session':
+    'the section is printed by `mnema recall`, which reads the journal and the record and writes ' +
+    'nothing (no event, no key, no run), so telling a session where the last one stopped never ' +
+    'moves the record',
   'session-journal':
     'it puts nothing in front of a model and writes nothing to the record: the journal is a file on ' +
     'this machine, outside it, holding ids and counts, so a fact saying it was kept would be a ' +
@@ -744,6 +757,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the local count of tool calls: with it off, the server keeps no line of the calls it answers ' +
     'and `mnema usage --tools` shows what was kept before. The count is a file on this machine, ' +
     'outside the record, with the tool’s name and its result and nothing of the arguments',
+  'last-session':
+    'the section of the notes `mnema recall` prints that says where the last session stopped: its ' +
+    'goal, the decisions it recorded and the counts of what it left, read from its journal when it ' +
+    'was another session and a recent one',
   'session-journal':
     'the session journal: with it off, no file is kept of what a session did with the record, and ' +
     'nothing can say, to a later session, to a compaction or on the run that closes, what this one did. ' +

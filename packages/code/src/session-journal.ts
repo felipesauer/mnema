@@ -102,6 +102,12 @@ export interface Journal {
   readonly tasksInProgress: readonly string[];
   /** Runs open that started since the session opened, by id. */
   readonly runsOpen: readonly string[];
+  /**
+   * When the host's connection to the server ended, which is when the session did: set by the close
+   * of that connection, and gone at the next `Stop`, which is the session going on. Absent for a
+   * session no one saw end.
+   */
+  readonly endedAt?: string;
   /** The goal and the outcome a run takes, by the tree the run is written to. */
   readonly trees: { readonly public: TreeAccount; readonly private: TreeAccount };
   /** Where the reading of the transcript stands. */
@@ -161,6 +167,7 @@ function isJournal(value: unknown): value is Journal {
     reading !== null &&
     typeof reading['bytes'] === 'number' &&
     (reading['anchors'] === null || typeof reading['anchors'] === 'object') &&
+    (one['endedAt'] === undefined || typeof one['endedAt'] === 'string') &&
     typeof reading['files'] === 'object' &&
     typeof reading['pending'] === 'object' &&
     Array.isArray(reading['questionTimes']) &&
@@ -359,4 +366,68 @@ export function journalAfter(input: {
 /** The journal that has nothing in it yet: a reading from the top of the transcript. */
 export function readingOf(previous: Journal | undefined): Reading {
   return previous === undefined ? emptyReading() : previous.reading;
+}
+
+/** A session counts as recent for the notes a new one is handed for this long after its last write. */
+export const RECENT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A session whose journal was written to this recently, and whose connection did not end, may be a
+ * session still going: the journal is written at the end of each response, so between two of them it
+ * looks the same as one that stopped. It is not told to another session as the one that stopped.
+ */
+export const LIVE_MS = 15 * 60 * 1000;
+
+/** Marks the journal at `file` as one whose session ended at `now`. Never throws. */
+export function markEnded(file: string, now: Date): void {
+  const journal = readJournal(file);
+  if (journal === undefined || journal.endedAt !== undefined) return;
+  writeJournal(file, { ...journal, endedAt: now.toISOString() }, now);
+}
+
+/** Whether `journal` is that of a session that has stopped, as far as `now` can tell. */
+export function hasStopped(journal: Journal, now: Date): boolean {
+  if (journal.endedAt !== undefined) return true;
+  return Date.parse(journal.updatedAt) + LIVE_MS <= now.getTime();
+}
+
+/** Whether a journal holds anything a later session would want to be told. */
+export function hasSomethingToSay(journal: Journal): boolean {
+  return (
+    journal.decisions.length > 0 ||
+    journal.filesEdited > 0 ||
+    journal.tasksInProgress.length > 0 ||
+    journal.decisionFilesUncited > 0 ||
+    journal.questionsWithoutDecision > 0
+  );
+}
+
+/**
+ * The journal of the most recent OTHER session of this project that has something to say: not the
+ * session `except` names (the one asking, when it is known), written to within {@link RECENT_MS} of
+ * `now`, and stopped: its connection ended, or its journal has been quiet for {@link LIVE_MS}.
+ * Undefined when there is none.
+ */
+export function lastJournalOf(
+  trees: ResolvedTrees,
+  input: { readonly except?: string | undefined; readonly now: Date },
+): Journal | undefined {
+  const dir = journalsDir(trees);
+  if (dir === undefined) return undefined;
+  let names: string[];
+  try {
+    names = readdirSync(dir).filter((name) => name.endsWith('.json'));
+  } catch {
+    return undefined;
+  }
+  let best: Journal | undefined;
+  for (const name of names) {
+    const journal = readJournal(join(dir, name));
+    if (journal === undefined || journal.session === input.except) continue;
+    const written = Date.parse(journal.updatedAt);
+    if (Number.isNaN(written) || input.now.getTime() - written > RECENT_MS) continue;
+    if (!hasSomethingToSay(journal) || !hasStopped(journal, input.now)) continue;
+    if (best === undefined || journal.updatedAt > best.updatedAt) best = journal;
+  }
+  return best;
 }

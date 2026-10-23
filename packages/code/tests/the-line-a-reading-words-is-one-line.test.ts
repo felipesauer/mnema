@@ -1169,6 +1169,43 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- recall.ts: the notes a session opens with ------------------------------------
+  "recall.ts «- Decisions it recorded: {}» last.decisions .map((one) => `${oneLine(one.label)}: ${oneLine(one.state)}`) .join('; ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'the label and the state of each decision the last session recorded: text the record holds, each collapsed',
+    },
+  "recall.ts «- It left: {}» left.join('; ') #1": {
+    verdict: 'composed',
+    why: 'the counts the last session left, each worded by `counted` out of a number and a noun of this module',
+  },
+  'recall.ts «- Its goal: {}» oneLine(excerptOf(last.goal)) #1': {
+    verdict: 'collapsed',
+    why: 'the title of the task the last session set out on: text whoever created the task wrote, cut and collapsed like every title here',
+  },
+  'recall.ts «Another session here stopped {} ago and wrote nothing to this record; what follows is read from the journal it left on this machine (ids and counts, none of its words).» humanDuration(last.agoSeconds) #1':
+    {
+      verdict: 'composed',
+      why: 'how long ago the last session stopped, worded by `humanDuration` out of a number of seconds',
+    },
+  'recall.ts «Another session here wrote to this record {} ago; what follows is read from the journal it left on this machine (ids and counts, none of its words).» humanDuration(last.agoSeconds) #1':
+    {
+      verdict: 'composed',
+      why: 'how long ago the last session wrote, worded by `humanDuration` out of a number of seconds',
+    },
+  "recall.ts «{} answered with no decision recorded after» counted(last.questionsWithoutDecision, 'question') #1":
+    {
+      verdict: 'composed',
+      why: 'how many questions were answered with no decision after, worded by `counted` out of a count',
+    },
+  "recall.ts «{} in progress» counted(last.tasksInProgress, 'task') #1": {
+    verdict: 'composed',
+    why: 'how many tasks the last session left in progress, worded by `counted` out of a count',
+  },
+  "recall.ts «{} of decisions the record cites nowhere» counted(last.decisionFilesUncited, 'file') #1":
+    {
+      verdict: 'composed',
+      why: 'how many files of decisions the record cites nowhere, worded by `counted` out of a count',
+    },
   'recall.ts «## {} ({})» heading #1': {
     verdict: 'minted',
     why: 'the name of one of the two sections, a constant this module hands in',
@@ -2423,8 +2460,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 468 with the word a rule's row says it does.
-    expect(FOUND.sites.length).toBe(468);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the word a rule's row says it does.
+    expect(FOUND.sites.length).toBe(476);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2445,10 +2482,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(128);
+    expect(count('collapsed')).toBe(130);
     expect(count('minted')).toBe(264);
-    expect(count('composed')).toBe(76);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(128);
+    expect(count('composed')).toBe(82);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(130);
   });
 
   it('every reason says where the value comes from', () => {
