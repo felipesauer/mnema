@@ -63,12 +63,18 @@
  * judge, and nothing in this file closes, hides or ranks a run by its age.
  */
 
-import {
-  canonicalIdentity,
-  newestFirst,
-  type ProjectionCache,
-  type RunProjection,
-} from '@mnema/core';
+import { canonicalIdentity, newestFirst, type RunProjection } from '@mnema/core';
+
+/**
+ * What a run is read from: a projection cache, or anything that lists the runs of one tree the
+ * way it does. The session hands the second kind for the projects of the workspace it has no
+ * other reason to open, so the runs of a project can come from a file it keeps instead of from
+ * replaying it; the answer is the same list.
+ */
+export interface RunSource {
+  listRuns(): readonly RunProjection[];
+  listOpenRuns(): readonly RunProjection[];
+}
 
 /**
  * What only the ASKER knows: the instant it is asking at, and the runs it opened
@@ -202,7 +208,7 @@ export interface Resume {
  * pruned or ranked), but they no longer list as ten runs indistinguishable from the
  * asker's own.
  */
-export function focus(caches: readonly ProjectionCache[], scope: ActorScope): Focus {
+export function focus(caches: readonly RunSource[], scope: ActorScope): Focus {
   // Canonicalize the actor with the core's OWN identity rule (trim + NFC): the
   // same rule the gate and the write operations apply, so this filter compares
   // the actor against `who` in the form the core produces it. In practice every
@@ -231,7 +237,7 @@ export function focus(caches: readonly ProjectionCache[], scope: ActorScope): Fo
  * the actor's runs, not just the open ones, so a finished session still answers
  * "what was I doing". Composes {@link focus} for the "what is still open" half.
  */
-export function resume(caches: readonly ProjectionCache[], scope: ActorScope): Resume {
+export function resume(caches: readonly RunSource[], scope: ActorScope): Resume {
   const actor = canonicalIdentity(scope.actor);
   const mine =
     actor === undefined

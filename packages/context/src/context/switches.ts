@@ -50,8 +50,18 @@
  * sources narrowed what it is asking about and not how the answer is computed.
  */
 
-import type { ChannelSwitchProjection, Scope } from '@mnema/core';
+import type { ChannelSwitchProjection, ProjectionCache, Scope } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
+
+/**
+ * What a switch is read from: a tree's scope and anything that says where a channel stands in it
+ * the way its projection does. A {@link ScopedCache} is one; a session hands another for the
+ * trees of a workspace it has no other reason to open, which says the same thing from a file.
+ */
+export interface SwitchSource {
+  readonly scope: ScopedCache['scope'];
+  readonly cache: Pick<ProjectionCache, 'channelSwitch'>;
+}
 
 /**
  * Where one channel stands, and what put it there.
@@ -106,7 +116,7 @@ const TRAVELS_TO_A_CLONE: Scope = 'public';
  * saying OFF makes it off, for the reason the module note gives.
  */
 export function channelStates(
-  sources: readonly ScopedCache[],
+  sources: readonly SwitchSource[],
   channels: readonly string[],
   startsOff: readonly string[] = [],
 ): readonly ChannelState[] {
@@ -123,11 +133,11 @@ export function channelStates(
  * bytes.
  */
 function stateOf(
-  sources: readonly ScopedCache[],
+  sources: readonly SwitchSource[],
   channel: string,
   startsOff: boolean,
 ): ChannelState {
-  const off: { readonly source: ScopedCache; readonly row: ChannelSwitchProjection }[] = [];
+  const off: { readonly source: SwitchSource; readonly row: ChannelSwitchProjection }[] = [];
   let switchedOn = false;
   for (const source of sources) {
     const row = source.cache.channelSwitch(channel);
@@ -141,7 +151,7 @@ function stateOf(
   // off: off still wins between trees that cannot be ordered, so the rule is one rule.
   if (off.length === 0) return { channel, on: startsOff ? switchedOn : true };
   const decided = off.sort(earliestSwitchOffFirst)[0] as {
-    readonly source: ScopedCache;
+    readonly source: SwitchSource;
     readonly row: ChannelSwitchProjection;
   };
   return {
@@ -193,7 +203,7 @@ function earliestSwitchOffFirst(
  * disagree with the document telling a reader what to expect.
  */
 export function channelIsOn(
-  sources: readonly ScopedCache[],
+  sources: readonly SwitchSource[],
   channel: string,
   startsOff: readonly string[] = [],
 ): boolean {
