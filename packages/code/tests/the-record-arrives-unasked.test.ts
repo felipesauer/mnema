@@ -584,7 +584,7 @@ afterAll(() => {
 const EVERY_HOOK_RUN = 30_000;
 
 describe('the record arrives unasked', () => {
-  it('says nothing at all where there is no project', () => {
+  it('says nothing at all where there is no project', { timeout: EVERY_HOOK_RUN }, () => {
     // The assertion that protects the machine of whoever installs this. `mnema brief`
     // outside a project refuses on stderr and exits 1, measured on the binary, so a
     // hook wired straight to the verb would put that sentence, or an error, into every
