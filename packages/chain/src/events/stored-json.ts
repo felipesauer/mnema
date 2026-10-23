@@ -216,6 +216,28 @@ export function parseCanonicalLine(text: string): unknown {
 }
 
 /**
+ * The canonical serialization of what a stored text holds, when that differs from the text and
+ * is all that is wrong with it: the text is JSON with no key twice and a value the format has
+ * bytes for, laid out another way (whitespace, line ends, indentation, key order, an escape or a
+ * number spelled another way). Undefined for anything else, a text that is already canonical
+ * included.
+ *
+ * IT PROVES NOTHING, AND NOTHING READS IT AS PROOF. It says what a line would hold if a formatter
+ * had only rewritten its layout; whether those are the bytes that were signed is asked of the
+ * verifier, over them, and nowhere else (`verify.ts`, where the reformat is named).
+ */
+export function canonicalFormOf(text: string): string | undefined {
+  let canonical: string;
+  try {
+    // Sound by construction: `JSON.parse` yields only the closed set CanonicalValue names.
+    canonical = canonicalStringify(parseStoredJson(text) as CanonicalValue);
+  } catch {
+    return undefined;
+  }
+  return canonical === text ? undefined : canonical;
+}
+
+/**
  * The refusal when a carriage return at the end is ALL that stands between a line and its
  * canonical bytes: what a checkout that rewrites line ends leaves on every line (git with
  * `core.autocrlf=true`, the Git for Windows default). Still a refusal: the bytes on disk are
