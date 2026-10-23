@@ -547,7 +547,10 @@ const theRuntime = () => {
 
 /** One run of \`mnema\`, both streams kept; a run that did not finish carries an \`error\`. */
 function run(args, cwd, input, timeout = WAIT) {
-  return spawnSync(BINARY, args, {
+  const target = spawnTarget(BINARY, args);
+  if (target.refused) return notStarted();
+  return spawnSync(target.command, target.args, {
+    shell: target.shell,
     cwd,
     env: theRuntime().env,
     input,
@@ -823,7 +826,10 @@ const theRuntime = () => {
  * @param {number} [timeout]
  */
 function run(args, cwd, input, timeout = WAIT) {
-  return spawnSync(BINARY, args, {
+  const target = spawnTarget(BINARY, args);
+  if (target.refused) return notStarted();
+  return spawnSync(target.command, target.args, {
+    shell: target.shell,
     cwd,
     env: theRuntime().env,
     input,

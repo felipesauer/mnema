@@ -26,6 +26,10 @@ with its own changelog.
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
   directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
   and of the tail of the bytes already read, and read again from the top.
+- **CI runs the installed binary on Windows and macOS.** One job per system and per Node (24.15.0 and the latest 24)
+  packs and installs the five packages, then runs `init`, `decision record`, `verify`, a clone checked out with
+  `core.autocrlf=true`, the Python reader, `doctor` and the plugin's hook scripts on paths written the way each
+  system writes them. [Install](docs/install.md#what-is-run-on-windows-and-macos) says what is and is not run.
 - **A stack install asks `skills-ref` about the skills it wrote.** When `agentskills` (the validator the Agent Skills
   specification publishes) is on the `PATH`, each installed skill folder is validated and the command prints one line,
   accepted or refused, with what it said; without it, the command says it did not run. It is not a dependency, a refusal
@@ -56,6 +60,17 @@ with its own changelog.
 
 ### Fixed
 
+- **On Windows the plugin's hooks start `mnema`, and a rule applies to a Windows path.** Node would not start npm's
+  `mnema.cmd` without a shell, so every command hook was silent and a gate under a rule answered that `mnema` could
+  not be started; the handlers (and the OpenCode and Gemini plugins) now start it through a shell. An absolute path
+  with a drive letter and backslashes (`C:\work\repo\src\a.ts`) was never read as lying under the project, so no
+  rule addressed at a folder met a write there; it is now, the drive and the folders above the project compared
+  without regard to case. A write is also placed by the system's own real path, which gives the long name for an
+  8.3 short one and the letter case the disk keeps on Windows and macOS.
+  A path with a drive or a share (`C:\x`, `\\host\share`, `\\?\C:\x`) is read as a Windows path only under a project root
+  written that way (a Windows host always names its roots so); under any other root it is still one relative name, as before.
+  A word that `cmd.exe` cannot be given safely (`"`, `%`, `^`, a line break), in the path of `mnema`, makes the hook
+  not start it, and the refusal says so.
 - **An address that is not an address is a refusal, not an internal error.** A `TypeError` with Node's code
   `ERR_INVALID_URL` (a signing-token address from the environment that does not parse, for one) is now said as an
   ordinary refusal with exit 1, and no report is offered for it; any other `TypeError` is still a fault.

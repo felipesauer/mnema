@@ -86,7 +86,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { anAddressCanBeMet } from './an-address-can-be-met.mjs';
-import { couldNotAnswer, settleTheRuntime, whyItDidNotAnswer } from './the-gate-kit.mjs';
+import {
+  couldNotAnswer,
+  notStarted,
+  settleTheRuntime,
+  spawnTarget,
+  whyItDidNotAnswer,
+} from './the-gate-kit.mjs';
 import { aRuleReaches } from './where-the-record-is.mjs';
 
 /** @typedef {import('./the-gate-kit.mjs').Runtime} Runtime */
@@ -94,12 +100,23 @@ import { aRuleReaches } from './where-the-record-is.mjs';
 /**
  * The command line to run.
  *
- * The `.cmd` on Windows is npm's own shim name, and it is INTENTION rather than an
- * assertion: nothing here has been run on Windows. If the guess is wrong the spawn
- * fails, and a failed spawn is silence: the plugin does nothing instead of doing
- * something wrong.
+ * The `.cmd` on Windows is npm's own shim name. Node will not start one without a shell
+ * (`EINVAL`), so `spawnTarget` of the gate kit says how it is started through one.
  */
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
+
+/**
+ * One start of the `mnema` this module runs, the way `spawnTarget` of the gate kit says.
+ *
+ * @param {readonly string[]} args
+ * @param {import('node:child_process').SpawnSyncOptionsWithStringEncoding} options
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
+function startMnema(args, options) {
+  const target = spawnTarget(binaryToRun(), args);
+  if (target.refused) return notStarted();
+  return spawnSync(target.command, target.args, { ...options, shell: target.shell });
+}
 
 /**
  * What to run: the program the person named in the plugin's `mnema_path` option, which the host
@@ -236,7 +253,7 @@ const QUOTED = 120;
  * @returns {{ readonly kind: 'this', readonly version: string } | { readonly kind: 'older' | 'absent' } | { readonly kind: 'stranger', readonly said: string, readonly status: number | null }}
  */
 export function whoAnswers(cwd) {
-  const ran = spawnSync(binaryToRun(), [WHICH_PROGRAM], {
+  const ran = startMnema([WHICH_PROGRAM], {
     cwd,
     env: theRuntime().env,
     encoding: 'utf-8',
@@ -402,7 +419,7 @@ export function whatTheVerbAnswers(argv, cwd, input) {
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
 function ranTheVerb(argv, cwd, input, timeout = undefined) {
-  return spawnSync(binaryToRun(), [...argv], {
+  return startMnema([...argv], {
     cwd,
     env: theRuntime().env,
     input,
@@ -594,7 +611,7 @@ function toolNameOf(input) {
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
 function running(verb, flags, cwd) {
-  return spawnSync(binaryToRun(), [verb, ...flags], {
+  return startMnema([verb, ...flags], {
     cwd,
     env: theRuntime().env,
     encoding: 'utf-8',

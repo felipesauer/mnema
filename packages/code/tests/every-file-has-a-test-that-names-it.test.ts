@@ -1194,6 +1194,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-front-page-says-what-it-is-not-and-groups-its-docs.test.ts': 4,
   'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
   'packages/code/tests/the-gate-is-decided-once.test.ts': 5,
+  'packages/code/tests/the-gate-reads-windows-paths-and-starts-the-windows-shim.test.ts': 4,
   'packages/code/tests/the-gate-throws-on-what-is-not-an-unreadable-line.test.ts': 11,
   'packages/code/tests/the-guard-names-what-it-saw.test.ts': 5,
   'packages/code/tests/the-help-is-grouped-by-the-flow.test.ts': 2,
