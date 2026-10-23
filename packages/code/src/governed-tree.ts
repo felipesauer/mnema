@@ -44,19 +44,13 @@ import {
   type GoverningRules,
   governingRules,
   governsInForceEverywhere,
-  type PushedRule,
   type RulesAtPath,
   refusesAWriteAt,
   rulesInForceAt,
   type ScopedCache,
   type WalkOutcome,
 } from '@mnema/context';
-import {
-  ADDRESS_RELATIONS,
-  ASKS_FOR_A_PERSON_RELATION,
-  GOVERNS_RELATION,
-  REFUSES_A_WRITE_RELATION,
-} from '@mnema/core';
+import { ADDRESS_RELATIONS } from '@mnema/core';
 
 /**
  * What a `governs` read is asked: a path, the project it belongs to, and the
@@ -115,7 +109,7 @@ const depthOf = (address: string): number =>
   address === '.' ? 0 : address.split('/').filter((part) => part !== '').length;
 
 /** Several readings of one path as ONE list: each rule once, most specific first. */
-function onceBySpecificity<T extends { readonly address?: string | undefined }>(
+export function onceBySpecificity<T extends { readonly address?: string | undefined }>(
   lists: readonly (readonly T[])[],
   idOf: (item: T) => string,
 ): T[] {
@@ -196,61 +190,6 @@ export function readRulesInForceWhereItLands(
       [first, ...others].map((one) => one.rules),
       (rule) => rule.id,
     ),
-  };
-}
-
-/** A rule in force at a path and the relation it holds there: what it does to the path. */
-export interface RuleInForceUnder extends PushedRule {
-  readonly relation:
-    | typeof GOVERNS_RELATION
-    | typeof REFUSES_A_WRITE_RELATION
-    | typeof ASKS_FOR_A_PERSON_RELATION;
-}
-
-/**
- * EVERY rule in force at a path, whichever relation it holds there (`governs`, `refuses-a-write`,
- * `asks-for-a-person`), each saying which: what a reader that TELLS what stands over a path
- * (`mnema why`) reads. The push reads `governs` alone ({@link readRulesInForceWhereItLands}),
- * because a refusal and a request have their own channels; a reader that asked what stands over
- * a file and left those two out would say "nothing" for a path the gate refuses.
- *
- * Each question goes through the same {@link asked} and the same places as the gate, so the
- * answer cannot name a rule the gate would not meet, nor miss one it would.
- */
-export function readEveryRuleInForceWhereItLands(
-  sources: readonly ScopedCache[],
-  read: GovernedRead,
-): {
-  readonly path: string;
-  readonly relative?: string;
-  readonly rules: readonly RuleInForceUnder[];
-} {
-  const places = placesOfAPath(read);
-  const under = (
-    relation: RuleInForceUnder['relation'],
-    reading: (path: string) => RulesAtPath,
-  ): { first: RulesAtPath; rules: RuleInForceUnder[] } => {
-    const readings = places.map(reading);
-    return {
-      first: readings[0] as RulesAtPath,
-      rules: readings.flatMap((one) => one.rules.map((rule) => ({ ...rule, relation }))),
-    };
-  };
-  const governs = under(GOVERNS_RELATION, (path) => readRulesInForceAt(sources, { ...read, path }));
-  const refuses = under(REFUSES_A_WRITE_RELATION, (path) =>
-    readRefusesAWriteAt(sources, { ...read, path }),
-  );
-  const asks = under(ASKS_FOR_A_PERSON_RELATION, (path) =>
-    readAsksForAPersonAt(sources, { ...read, path }),
-  );
-  const rules = onceBySpecificity(
-    [refuses.rules, asks.rules, governs.rules],
-    (rule) => `${rule.relation}\0${rule.id}`,
-  );
-  return {
-    path: governs.first.path,
-    ...(governs.first.relative !== undefined ? { relative: governs.first.relative } : {}),
-    rules,
   };
 }
 

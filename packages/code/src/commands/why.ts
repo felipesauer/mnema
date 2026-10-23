@@ -30,13 +30,13 @@ import {
   LISTED,
   resolveCommit,
 } from '../git-log.js';
-import { type RuleInForceUnder, readEveryRuleInForceWhereItLands } from '../governed-tree.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import { everyRuleInForceAt, type RuleInForceUnder } from '../what-a-write-meets.js';
 
 /** What the command needs: injected so it is testable. */
 export interface WhyContext {
@@ -158,7 +158,7 @@ export function runWhy(
       const changed = filesOf(root, commit.sha);
       const covered = new Map<string, { rule: RuleInForceUnder; files: number }>();
       for (const file of changed.files) {
-        const at = readEveryRuleInForceWhereItLands(sources, { path: file, root, from: root });
+        const at = everyRuleInForceAt(sources, { path: file, root, from: root });
         for (const rule of at.rules) {
           const key = `${rule.relation}\0${rule.id}\0${rule.address}`;
           covered.set(key, { rule, files: (covered.get(key)?.files ?? 0) + 1 });
@@ -175,7 +175,7 @@ export function runWhy(
         linkBreaks,
       };
     }
-    const at = readEveryRuleInForceWhereItLands(sources, {
+    const at = everyRuleInForceAt(sources, {
       path: input.target,
       root,
       from: ctx.cwd,

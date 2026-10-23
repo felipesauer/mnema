@@ -25,13 +25,83 @@
 
 import { sep } from 'node:path';
 import { DEFAULT_WAIT_MS, TailBusyError, UnreadableLineError } from '@mnema/chain';
-import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
-import type { Scope } from '@mnema/core';
+import { channelIsOn, type PushedRule, type RulesAtPath, type ScopedCache } from '@mnema/context';
+import {
+  ASKS_FOR_A_PERSON_RELATION,
+  GOVERNS_RELATION,
+  REFUSES_A_WRITE_RELATION,
+  type Scope,
+} from '@mnema/core';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
-import { placesOfAPath, readRefusesAWriteAt } from './governed-tree.js';
+import {
+  type GovernedRead,
+  onceBySpecificity,
+  placesOfAPath,
+  readRefusesAWriteAt,
+  readRulesInForceAt,
+} from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
+
+/** A rule in force at a path and the relation it holds there: what it does to the path. */
+export interface RuleInForceUnder extends PushedRule {
+  readonly relation:
+    | typeof GOVERNS_RELATION
+    | typeof REFUSES_A_WRITE_RELATION
+    | typeof ASKS_FOR_A_PERSON_RELATION;
+}
+
+/**
+ * EVERY rule in force at a path, whichever relation it holds there (`governs`, `refuses-a-write`,
+ * `asks-for-a-person`), each saying which: what a reader that TELLS what stands over a path
+ * (`mnema why`) reads. The push reads `governs` alone, because a refusal and a request have their
+ * own channels; a reader that asked what stands over a file and left those two out would say
+ * "nothing" for a path the gate refuses.
+ *
+ * IT LIVES HERE because which rules refuse and which ask is decided in this module and nowhere
+ * else (`the-gate-is-decided-once.test.ts`). It reads what the record holds and does not consult
+ * the switches: a channel switched off stops the gate from applying a rule, not the rule from
+ * standing in the record, and a reader that hid it would be telling a person the file is free.
+ * The places are the gate's own ({@link placesOfAPath}).
+ */
+export function everyRuleInForceAt(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): {
+  readonly path: string;
+  readonly relative?: string;
+  readonly rules: readonly RuleInForceUnder[];
+} {
+  const places = placesOfAPath(read);
+  const under = (
+    relation: RuleInForceUnder['relation'],
+    reading: (path: string) => RulesAtPath | undefined,
+  ): { first: RulesAtPath | undefined; rules: RuleInForceUnder[] } => {
+    const readings = places.map(reading);
+    return {
+      first: readings[0],
+      rules: readings.flatMap((one) => (one?.rules ?? []).map((rule) => ({ ...rule, relation }))),
+    };
+  };
+  const governs = under(GOVERNS_RELATION, (path) => readRulesInForceAt(sources, { ...read, path }));
+  const refuses = under(REFUSES_A_WRITE_RELATION, (path) =>
+    readRefusesAWriteAt(sources, { ...read, path }),
+  );
+  const asks = under(
+    ASKS_FOR_A_PERSON_RELATION,
+    (path) => whatAWriteAsks(sources, { ...read, path })?.asked,
+  );
+  const first = governs.first as RulesAtPath;
+  return {
+    path: first.path,
+    ...(first.relative !== undefined ? { relative: first.relative } : {}),
+    rules: onceBySpecificity(
+      [refuses.rules, asks.rules, governs.rules],
+      (rule) => `${rule.relation}\0${rule.id}`,
+    ),
+  };
+}
 
 /**
  * The one line a gate, a push or an asked reading owes when a rule it names was moved out of one
