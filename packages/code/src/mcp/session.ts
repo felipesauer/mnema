@@ -56,6 +56,7 @@
  * {@link writeContext}, the single door every MCP write goes through.
  */
 
+import { dirname } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
 import {
   agentSignsIn,
@@ -68,6 +69,7 @@ import {
   type ResolvedTrees,
   reachableTrees,
   type Scope,
+  treeIndexFile,
   treeWords,
   withAgentKey,
 } from '@mnema/core';
@@ -554,10 +556,22 @@ export function openSession(input: OpenSessionInput): Session {
   // process; the session is read at the moment a cache opens because a re-read of the
   // workspace can move the project it is in.
   const home: { session?: Session } = {};
-  const caches = createCacheRegistry((chainRoot) => {
-    const own = home.session?.trees ?? trees;
-    return chainRoot === own.projectPublic || chainRoot === own.projectPrivate;
-  });
+  const caches = createCacheRegistry(
+    (chainRoot) => {
+      const own = home.session?.trees ?? trees;
+      return chainRoot === own.projectPublic || chainRoot === own.projectPrivate;
+    },
+    // The other projects of the workspace have a small index of what the session asks of all of
+    // them, kept under the mnema home of this machine: a read writes nothing into a project it
+    // does not serve, and the machine's global tree has none.
+    (chainRoot) =>
+      (home.session?.workspaceProjects ?? workspaceProjects).some(
+        (project) =>
+          chainRoot === project.trees.projectPublic || chainRoot === project.trees.projectPrivate,
+      )
+        ? treeIndexFile(dirname(trees.global), chainRoot)
+        : undefined,
+  );
 
   // The anchor is DECIDED, not read off the writer. The writer's own anchor is the
   // one its key derives, and that is the wrong answer for a key the record proves
