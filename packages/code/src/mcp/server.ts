@@ -829,12 +829,11 @@ function countedLocally<Input extends ZodRawShapeCompat | undefined>(
  *     carries it (the one thing it can miss is an edit in place, to the same size, of a line before
  *     the last of a live segment, which only `verify` sees);
  *     `the-server-keeps-its-own-projects-cache.test.ts` holds that a read adds that file and no other.
-     The same holds of the small index (`locks/tree-index.json`, `core/src/projections/tree-index.ts`)
-     a read may leave in each OTHER project of the workspace: the runs and the channel switches the
-     tree held when it was read, which the next read of an unmoved tree takes instead of opening it.
  *     THE SECOND IS THE LOCAL COUNT OF CALLS (`tool-calls.ts`): every call, a read included,
  *     appends a line to a file in the machine's data directory, outside the record, until
- *     `tool-call-count` is switched off. It changes no fact and loses nothing, which is what a
+ *     `tool-call-count` is switched off, and with several projects in the workspace a read also
+ *     keeps the derived index of the OTHER projects' runs under that directory's `cache/` folder
+ *     (`core/src/projections/tree-index.ts`), never inside those projects. Both change no fact and lose nothing, which is what a
  *     client weighing whether to call a tool without asking needs to know, and the measurement
  *     excuses those two places and no other, the first only inside the project the call served.
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool

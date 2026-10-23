@@ -1,6 +1,6 @@
 /**
- * The few facts of a tree that a session asks of EVERY project it holds, kept beside the tree, so
- * that asking does not open it.
+ * The few facts of a tree that a session asks of EVERY project it holds, kept on this machine, so
+ * that asking does not open the tree.
  *
  * Two questions are put to all the projects of a workspace and not only to the one the session is
  * in: where did this actor leave off (a run is the actor's wherever it was opened), and is the
@@ -9,17 +9,25 @@
  * project's projection (create the tables, replay the chain), and with nine other projects that
  * was most of what a session's first call cost.
  *
- * WHAT THE FILE IS. A JSON document under the tree's `locks/` with a MARK of the tree as it stood
- * when the lists were read (the stamp of the code that folds them, the chain's extent, and the
- * fingerprint of every sealed segment) and the lists as the projection gives them. It is derived
- * and deletable: no reader depends on it existing, and a missing, unreadable, unparseable or
- * differently-marked file is not an error but a reason to read the tree and write the file again.
+ * WHERE THE FILE LIVES. Under the mnema home of this machine (`<home>/cache/<digest of the tree's
+ * path>/tree-index.json`, wherever `$MNEMA_HOME` puts the home), NEVER inside a project. The read
+ * tools write nothing into a project the session does not serve, and a file a clone carries
+ * (a `locks/tree-index.json` committed by somebody) is never looked at, because the only place
+ * this reads is the one the machine's own home names.
+ *
+ * WHAT THE FILE IS. A JSON document with a MARK of the tree as it stood when the lists were read
+ * (the stamp of the code that folds them, the chain's extent, the fingerprint of every sealed
+ * segment and the hash of the last line of every tail) and the lists as the projection gives
+ * them. It is derived and deletable: no reader depends on it existing, and a missing, unreadable,
+ * unparseable, differently-marked or ill-shaped file is not an error but a reason to read the
+ * tree and write the file again.
  *
  * WHEN IT IS BELIEVED. Only while the mark it carries is the mark the tree has now: the extent
- * moves when any tail appends, rotates, appears or vanishes, and a sealed segment rewritten
- * changes its fingerprint. That is the evidence the projection kept on disk is believed by
- * (`cache-meta`), with the same limit: an edit in place, to the same size, of a line before the
- * last one of a live segment is not seen here, and is `verify`'s. The mark is read BEFORE the
+ * moves when any tail appends, rotates, appears or vanishes, a sealed segment rewritten changes
+ * its fingerprint, and a checkout that swaps the live segment for another of the SAME size
+ * changes the last line, which is the hash of the last event and so of everything before it. The
+ * one thing not seen is an edit in place, to the same size, of a line before the last of a
+ * live segment that leaves the last line alone, which is `verify`'s. The mark is read BEFORE the
  * tree is, as the registry reads the extent before a replay, so an append that lands during the
  * read leaves a mark that is behind the tree and is read again next time.
  *
@@ -27,15 +35,19 @@
  * not be read has no mark worth keeping: both are read, every time, as they were.
  */
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { createHash } from 'node:crypto';
 import {
-  type ChainLayout,
-  chainExtent,
-  listTails,
-  orderedSegments,
-  treeIndexPath,
-} from '@mnema/chain';
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
+import { type ChainLayout, chainExtent, listTails, orderedSegments } from '@mnema/chain';
 import { fingerprintOf, productStamp } from './cache-meta.js';
 import type { ChannelSwitchProjection } from './channel.js';
 import type { RunProjection } from './run.js';
@@ -53,8 +65,18 @@ interface Marked {
 }
 
 /**
+ * The file a tree's facts are kept in: under the data directory of this machine (the directory
+ * that holds `global/` and `identity/`), in a folder named for the digest of the tree's own path.
+ * Nothing about the tree's content names it: the mark inside is what says whether it still fits.
+ */
+export function treeIndexFile(dataDir: string, chainRoot: string): string {
+  const digest = createHash('sha256').update(chainRoot).digest('hex').slice(0, 32);
+  return join(dataDir, 'cache', digest, 'tree-index.json');
+}
+
+/**
  * The facts of a tree: `remembered` while the tree's extent is the one it was remembered at, else
- * the file the tree keeps when it still describes the tree, else `read`, which opens the tree,
+ * the file at `indexFile` when it still describes the tree, else `read`, which opens the tree,
  * and the file is then written for the next reader. A tree that cannot carry a mark (no tail yet,
  * or an extent that could not be read) is read each time.
  *
@@ -65,6 +87,7 @@ interface Marked {
  */
 export function treeFactsFrom(
   layout: ChainLayout,
+  indexFile: string,
   read: () => TreeFacts,
   remembered?: Known,
 ): Known | { readonly extent: undefined; readonly facts: TreeFacts } {
@@ -73,10 +96,10 @@ export function treeFactsFrom(
   if (remembered?.extent === extent) return remembered;
   const mark = markOf(layout, extent);
   if (mark === undefined) return { extent: undefined, facts: read() };
-  const held = readIndex(layout);
+  const held = readIndex(indexFile);
   if (held?.mark === mark) return { extent, facts: held.facts };
   const facts = read();
-  writeIndex(layout, { mark, facts });
+  writeIndex(indexFile, { mark, facts });
   return { extent, facts };
 }
 
@@ -86,29 +109,93 @@ export interface Known {
   readonly facts: TreeFacts;
 }
 
+/** How much of the end of a segment is looked at for its last line: an entry's line is far shorter. */
+const LAST_LINE_BYTES = 64 * 1024;
+
+/** The digest of the last line of a file (of the end of it when the line is longer than the window). */
+function lastLineOf(path: string): string {
+  let fd: number | undefined;
+  try {
+    const size = statSync(path).size;
+    const length = Math.min(size, LAST_LINE_BYTES);
+    const buffer = Buffer.alloc(length);
+    fd = openSync(path, 'r');
+    const read = readSync(fd, buffer, 0, length, size - length);
+    let end = read;
+    while (end > 0 && buffer[end - 1] === 0x0a) end -= 1;
+    const start = buffer.subarray(0, end).lastIndexOf(0x0a) + 1;
+    return createHash('sha256').update(buffer.subarray(start, end)).digest('hex').slice(0, 32);
+  } catch {
+    return 'unreadable';
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+}
+
 /** The tree as it stands, or undefined when its segments cannot be listed. */
 function markOf(layout: ChainLayout, extent: string): string | undefined {
   const sealed: Record<string, string> = {};
+  const last: Record<string, string> = {};
   try {
     for (const tail of listTails(layout)) {
-      for (const segment of orderedSegments(layout, tail).slice(0, -1))
-        sealed[segment] = fingerprintOf(segment);
+      const segments = orderedSegments(layout, tail);
+      for (const segment of segments.slice(0, -1)) sealed[segment] = fingerprintOf(segment);
+      const live = segments.at(-1);
+      if (live !== undefined) last[live] = lastLineOf(live);
     }
   } catch {
     return undefined;
   }
-  return JSON.stringify({ stamp: productStamp(), extent, sealed });
+  return JSON.stringify({ stamp: productStamp(), extent, sealed, last });
 }
 
-function readIndex(layout: ChainLayout): Marked | undefined {
+const isText = (value: unknown): value is string => typeof value === 'string';
+const isTextOrAbsent = (value: unknown): boolean => value === undefined || isText(value);
+
+/** A row of the runs list as the projection gives it; the index is not believed with one that is not. */
+function isRun(row: unknown): boolean {
+  if (typeof row !== 'object' || row === null) return false;
+  const run = row as Record<string, unknown>;
+  return (
+    isText(run.id) &&
+    isText(run.agent) &&
+    isText(run.who) &&
+    typeof run.open === 'boolean' &&
+    isText(run.startedAt) &&
+    isTextOrAbsent(run.goal) &&
+    isTextOrAbsent(run.outcome) &&
+    isTextOrAbsent(run.endedAt) &&
+    isTextOrAbsent(run.lastFactAt) &&
+    Array.isArray(run.wrote)
+  );
+}
+
+/** A row of the channel switches as the projection gives it. */
+function isSwitch(row: unknown): boolean {
+  if (typeof row !== 'object' || row === null) return false;
+  const switched = row as Record<string, unknown>;
+  return (
+    isText(switched.channel) &&
+    typeof switched.on === 'boolean' &&
+    isText(switched.who) &&
+    isText(switched.switchedAt) &&
+    isTextOrAbsent(switched.which) &&
+    isTextOrAbsent(switched.reason)
+  );
+}
+
+function readIndex(indexFile: string): Marked | undefined {
   try {
-    const parsed = JSON.parse(readFileSync(treeIndexPath(layout), 'utf8')) as Partial<Marked>;
-    const facts = parsed.facts;
+    const parsed = JSON.parse(readFileSync(indexFile, 'utf8')) as Partial<Marked> | null;
+    const facts = parsed?.facts;
     if (
-      typeof parsed.mark !== 'string' ||
+      typeof parsed?.mark !== 'string' ||
       facts === undefined ||
+      facts === null ||
       !Array.isArray(facts.runs) ||
-      !Array.isArray(facts.channelSwitches)
+      !Array.isArray(facts.channelSwitches) ||
+      !facts.runs.every(isRun) ||
+      !facts.channelSwitches.every(isSwitch)
     )
       return undefined;
     return { mark: parsed.mark, facts };
@@ -119,16 +206,14 @@ function readIndex(layout: ChainLayout): Marked | undefined {
 
 /**
  * Written to a name of its own and renamed over the file, so a reader never sees half of one. A
- * tree that cannot be written to (a checkout read-only to this user) simply has no index.
+ * home that cannot be written to simply has no index.
  */
-function writeIndex(layout: ChainLayout, index: Marked): void {
-  const path = treeIndexPath(layout);
-  const temporary = `${path}.${process.pid}.tmp`;
+function writeIndex(indexFile: string, index: Marked): void {
+  const temporary = `${indexFile}.${process.pid}.tmp`;
   try {
-    if (!existsSync(layout.root)) return;
-    mkdirSync(dirname(path), { recursive: true });
+    mkdirSync(dirname(indexFile), { recursive: true });
     writeFileSync(temporary, JSON.stringify(index));
-    renameSync(temporary, path);
+    renameSync(temporary, indexFile);
   } catch {
     // No index: the next reader reads the tree, which is what it did before there was one.
   }

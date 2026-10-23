@@ -109,18 +109,21 @@ with its own changelog.
 - **The first read of a server with several projects open no longer opens the projects it does not work in.** Two
   questions are put to every project of the workspace, not only to the one the session is in: where the agent left off
   (its runs are in whichever project it wrote) and whether the count of calls is switched off. Both used to open each
-  project's projection, which was most of what the first `bootstrap` cost with nine other projects. A project the
-  connection has not otherwise read now keeps the answer to both, its runs and its channel switches, in a small
-  `locks/tree-index.json` beside the record (derived, gitignored, deletable: the next read builds it again), and the
-  server believes it only while the project is as marked, by the extent of its tails, the fingerprint of its sealed
-  segments and the stamp of the code that folds them; a project that moved, or whose file is missing or damaged, is read
-  as before. The first `bootstrap` over ten projects measured 42 ms before and 27 ms after, `resume` 37 ms and 23 ms
-  (median of 15 cold starts each, the same machine, load average 3); the answers are byte-identical to the
-  ones the trees give, including when the last run is in another project than the first. The second call is
-  unchanged. A tool that only reads may now leave this file in the other projects of the workspace, besides the
-  projection of the one it serves (`readOnlyHint` still means no byte of the record is written). The limit is the one
-  of the projection file: an edit in place, to the same size, of a line before the last one of a live segment is not
-  seen, and only `mnema verify` sees it.
+  project's projection, which was most of what the first `bootstrap` cost with nine other projects. For a project the
+  connection has not otherwise read, the server now keeps the answer to both, its runs and its channel switches, in a
+  small file on this machine under `cache/` of the mnema home (`~/.mnema`, or wherever `MNEMA_HOME` puts it), never
+  inside a project: a read writes nothing into a project it does not serve, and a `locks/tree-index.json` that arrives
+  with a clone is never read. The file is derived and deletable, and the server believes it only while the project is as
+  marked: the extent of its tails, the fingerprint of its sealed segments, the last line of each tail (so a checkout that
+  swaps the live segment for another of the same size is seen) and the stamp of the code that folds them. A project that
+  moved, or whose file is missing, damaged or holds rows that are not rows, is read as before. The first `bootstrap`
+  over ten projects measured 81 ms before and 41 ms after, `resume` 73 ms and 34 ms (median of 15 cold starts each, the
+  same machine, load average 10 on 16 cores); the answers are byte-identical to the ones the trees give, including when
+  the last run is in another project than the first. The second call is unchanged. A tool that only reads may now
+  leave this file in the machine's data directory, besides the projection of the project it serves and the local count
+  of calls (`readOnlyHint` still means no byte of the record is written). The limit is the one of the projection file:
+  an edit in place, to the same size, of a line before the last one of a live segment is not seen, and only
+  `mnema verify` sees it.
 - **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
   module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
   a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of

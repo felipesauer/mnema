@@ -163,7 +163,7 @@ export interface CacheRegistry {
    * The runs a tree holds, as the projection lists them, without opening the tree when it can be
    * told it has not moved since a reader last listed them: the question the session asks of every
    * project of the workspace (where did this actor leave off), answered from a small file the
-   * tree keeps ({@link treeFactsFrom}).
+   * machine keeps for it ({@link treeFactsFrom}).
    *
    * A tree this connection already holds, or keeps on disk for the next process, or reads from a
    * directory somebody chose, is read through {@link get} as it always was, so the answer is the
@@ -220,14 +220,14 @@ export interface CacheRegistry {
  * tree is shared by all of them. It is asked when a cache is first opened, so it may change its
  * mind between two roots (the workspace re-read moves the project the session is in).
  *
- * `mayIndex` says whether a tree the connection reads for a moment may keep a small index of its
- * runs and switches beside itself ({@link CacheRegistry.runsOf}). The session answers yes for the
- * trees of the other projects of the workspace and no for the global tree, which a read has no
- * business writing into: it is the machine's, shared, and a refused write leaves it byte for byte.
+ * `indexFileFor` names the file, under the mnema home of this machine and never inside a project,
+ * where a tree the connection reads for a moment keeps a small index of its runs and switches
+ * ({@link CacheRegistry.runsOf}), or undefined for a tree that keeps none. The session names one
+ * for the trees of the other projects of the workspace and none for the global tree.
  */
 export function createCacheRegistry(
   keepsOnDisk: (chainRoot: string) => boolean = () => false,
-  mayIndex: (chainRoot: string) => boolean = () => false,
+  indexFileFor: (chainRoot: string) => string | undefined = () => undefined,
 ): CacheRegistry {
   const entries = new Map<string, Entry>();
   // One upcaster registry for the session, shared by every cache it opens: the
@@ -243,9 +243,11 @@ export function createCacheRegistry(
    */
   const indexed = (chainRoot: string): TreeFacts | undefined => {
     if (entries.has(chainRoot) || keepsOnDisk(chainRoot) || readCacheIsChosen()) return undefined;
-    if (!mayIndex(chainRoot)) return undefined;
+    const indexFile = indexFileFor(chainRoot);
+    if (indexFile === undefined) return undefined;
     const found = treeFactsFrom(
       { root: chainRoot },
+      indexFile,
       () => {
         const cache = registry.get(chainRoot);
         return { runs: cache.listRuns(), channelSwitches: cache.channelSwitches() };

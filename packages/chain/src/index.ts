@@ -117,7 +117,6 @@ export {
   projectionCachePath,
   publicKeyPath,
   tailDir,
-  treeIndexPath,
   witnessDir,
   witnessSigstorePath,
 } from './chain/layout.js';

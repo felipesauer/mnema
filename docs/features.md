@@ -77,8 +77,9 @@ Each line says what it does and what it leaves unproven; the page it points to h
   same size, of a line before the last of a live segment: only a full verification sees that. The MCP server keeps it for the two trees of
   the project it is in too, so its first answer in a session of a large record takes what the file holds instead of
   building the record again; a tool that only reads may therefore update that one file (and nothing else).
-  For the other projects of the workspace it keeps only the runs and the channel switches of each, in
-  `locks/tree-index.json`, believed while the project has not moved, so the first answer does not open them.
+  For the other projects of the workspace it keeps only the runs and the channel switches of each, on this
+  machine under `cache/` of the mnema home and never inside those projects, believed while the project has
+  not moved, so the first answer does not open them.
   `MNEMA_CACHE_DIR` keeps it in a directory you choose instead (a checkout you cannot write to,
   worktrees that share one, or a CI cache restored between runs); a directory shared by several
   projects holds a file for each, and it is still only a cache. The SDK honors the variable only when
