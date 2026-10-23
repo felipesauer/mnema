@@ -140,7 +140,8 @@ function gitDirNamedBy(dotGit: string, at: string): string | undefined {
 function commonDirOf(gitDir: string): string {
   try {
     const named = readFileSync(join(gitDir, 'commondir'), 'utf-8').trim();
-    if (named.length > 0) return resolve(gitDir, named);
+    // A relative name is relative to the directory as the file system has it, as the tool reads it.
+    if (named.length > 0) return resolve(realOrUndefined(gitDir) ?? gitDir, named);
   } catch {
     // No `commondir`: this git directory is the common one.
   }

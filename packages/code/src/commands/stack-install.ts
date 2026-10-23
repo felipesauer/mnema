@@ -787,6 +787,30 @@ function writePlan(plan: StackPlan, where: Where): void {
 }
 
 /**
+ * What `skills-ref` (the validator the Agent Skills specification publishes; the command is
+ * `agentskills`) said of the skill folders an installation wrote, one line each. It is asked only
+ * when it is on the PATH: never a dependency, never a condition of the installation, and never
+ * written to the record. When it is not there, the line says it did not run.
+ */
+export function skillsRefLines(plan: StackPlan): string[] {
+  const BIN = 'agentskills';
+  const present = spawnSync(BIN, ['--version'], { encoding: 'utf8', timeout: 10_000 });
+  if (present.error !== undefined || present.status !== 0) {
+    return [`skills-ref did not run: \`${BIN}\` is not on the PATH.`];
+  }
+  const units = [...new Set(plan.files.filter((f) => f.kind === 'skill').map((f) => f.unit))];
+  return units.map((unit) => {
+    const asked = spawnSync(BIN, ['validate', join(plan.base, unit)], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+    const said = oneLine(`${asked.stdout ?? ''} ${asked.stderr ?? ''}`.trim()).slice(0, 300);
+    const verdict = asked.error === undefined && asked.status === 0 ? 'accepted' : 'refused';
+    return `skills-ref ${verdict} ${unit}${said === '' ? '' : ` (${said})`}`;
+  });
+}
+
+/**
  * Writes a plan, if its digest is the one the person expects: the digest the plan showed them,
  * so what is written is what was shown even when the source was fetched again. For a tree, the
  * name and the destinations are checked again, the files written and the adoption appended in one

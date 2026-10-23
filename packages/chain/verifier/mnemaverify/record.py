@@ -51,7 +51,7 @@ from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailpro
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
 from .keys import HOLDS_NO_KEY, PublicKey, load_keyring
-from .root import content_root, which_reading_closes
+from .root import which_reading_closes
 from .verdict import Refusal, Report
 
 SEGMENT_NAME = re.compile(r"^[0-9]{6}\.jsonl$")
@@ -1172,11 +1172,11 @@ def _check_enrolment(
     behind_by_tail: dict[str, list[int]] = {}
     for tail, _seq, gap in resolution.behind:
         behind_by_tail.setdefault(tail, []).append(gap)
-    for tail, gaps in behind_by_tail.items():
+    for tail, behind in behind_by_tail.items():
         report.note(
             "6.2",
-            f"{len(gaps)} event(s) stamped before an entry they cite: the writer's clock ran "
-            f"behind what it had read, by up to {max(gaps) / 1000:.3f} s - the order puts each "
+            f"{len(behind)} event(s) stamped before an entry they cite: the writer's clock ran "
+            f"behind what it had read, by up to {max(behind) / 1000:.3f} s - the order puts each "
             "after what it cites",
             f"{tail[:20]}...",
         )
