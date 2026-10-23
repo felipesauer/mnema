@@ -12,6 +12,13 @@ with its own changelog.
 
 ### Added
 
+- **`mnema recall` says where the last session stopped.** When another session that has stopped (its connection ended, or its
+  journal has been quiet for 15 minutes) left a session journal on this machine in the last 24 hours, the notes open with a
+  few lines (about a hundred tokens): how long ago it stopped, whether it wrote to the record (only a decision, a note or a
+  task moved counts; a session that only edited files is said to have written nothing), its goal, the decisions it recorded by label and state, and what it left (files edited, files of decisions cited
+  nowhere, questions answered with no decision after, tasks in progress). The plugin's hook passes the session's own id
+  (`mnema recall --session <id>`), so a session never reads its own journal back, for instance after a compaction. A new
+  switch, `last-session`, on by default, stops the section alone.
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the

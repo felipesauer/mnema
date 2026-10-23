@@ -64,9 +64,11 @@
 
 import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/context';
 import { detectSecrets, excerptOf } from '@mnema/core';
+import type { LastSession } from '../commands/recall.js';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
 import type { SessionTouch } from '../what-the-session-touches.js';
+import { humanDuration } from './runs.js';
 import { fitWhole } from './within-a-hook.js';
 
 /** The heading: what the text IS. */
@@ -135,6 +137,46 @@ const HOW_A_NOTE_ENTERS = [
 ];
 
 /** What a kind with nothing recorded says, when the other kind has something. */
+/**
+ * WHERE THE LAST SESSION STOPPED: a few lines read off the journal that session left on this machine,
+ * said only when it was another session and a recent one. The goal is a task title the record holds,
+ * so it is cut and screened as every title here is; the rest is ids named by the record's own labels
+ * and counts. Around a hundred tokens, and each part is left out when it is zero.
+ */
+function lastSessionSection(last: LastSession): string[] {
+  const left: string[] = [];
+  if (last.filesEdited > 0) left.push(counted(last.filesEdited, 'file') + ' edited');
+  if (last.decisionFilesUncited > 0) {
+    left.push(
+      `${counted(last.decisionFilesUncited, 'file')} of decisions the record cites nowhere`,
+    );
+  }
+  if (last.questionsWithoutDecision > 0) {
+    left.push(
+      `${counted(last.questionsWithoutDecision, 'question')} answered with no decision recorded after`,
+    );
+  }
+  if (last.tasksInProgress > 0) left.push(`${counted(last.tasksInProgress, 'task')} in progress`);
+  return [
+    '## Where the last session stopped',
+    '',
+    last.wrote
+      ? `Another session here wrote to this record ${humanDuration(last.agoSeconds)} ago; what follows is read from the journal it left on this machine (ids and counts, none of its words).`
+      : `Another session here stopped ${humanDuration(last.agoSeconds)} ago and wrote nothing to this record; what follows is read from the journal it left on this machine (ids and counts, none of its words).`,
+    ...(last.goal === null || holdsACredential(last.goal)
+      ? []
+      : [`- Its goal: ${oneLine(excerptOf(last.goal))}`]),
+    ...(last.decisions.length === 0
+      ? []
+      : [
+          `- Decisions it recorded: ${last.decisions
+            .map((one) => `${oneLine(one.label)}: ${oneLine(one.state)}`)
+            .join('; ')}`,
+        ]),
+    ...(left.length === 0 ? [] : [`- It left: ${left.join('; ')}`]),
+  ];
+}
+
 const NO_MEMORY = 'No memory is recorded here.';
 const NO_OBSERVATION = 'No observation is recorded here.';
 
@@ -265,6 +307,8 @@ interface Notes {
   readonly touched: SessionTouch;
   readonly memories: PertinentSearch;
   readonly observations: PertinentSearch;
+  /** Where the last session on this machine stopped, when there is one worth saying. */
+  readonly lastSession?: LastSession;
 }
 
 /**
@@ -301,7 +345,10 @@ function notesIn(notes: Notes): number {
 
 /** The text with its first `shown` notes: the one shape both copies print. */
 function composed(notes: Notes, shown: number): string[] {
-  if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
+  const where = notes.lastSession === undefined ? [] : lastSessionSection(notes.lastSession);
+  if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) {
+    return where.length === 0 ? [] : [TITLE, '', ...WHAT_THIS_IS, '', ...where];
+  }
   const near = notes.touched.words.length > 0;
   const memories = Math.min(shown, notes.memories.hits.length);
   return [
@@ -309,6 +356,7 @@ function composed(notes: Notes, shown: number): string[] {
     '',
     ...WHAT_THIS_IS,
     '',
+    ...(where.length === 0 ? [] : [...where, '']),
     ...WHERE_THEY_COME_FROM,
     '',
     orderLine(notes.touched),

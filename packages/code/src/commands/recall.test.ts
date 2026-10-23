@@ -163,7 +163,11 @@ describe('mnema recall: the verb', () => {
     });
     expect(declared.act.name()).toBe('recall');
     expect(declared.effect).toBe('reads');
-    expect(declared.act.options.map((option) => option.long)).toEqual(['--hook', '--host']);
+    expect(declared.act.options.map((option) => option.long)).toEqual([
+      '--hook',
+      '--host',
+      '--session',
+    ]);
   });
 });
 
