@@ -203,7 +203,7 @@ _mnema_flags() {
     'promote') echo '--workspace --evidence -h --help -V --version --color' ;;
     'status') echo '--actor --json -h --help -V --version --color' ;;
     'brief') echo '--hook --host -h --help -V --version --color' ;;
-    'recall') echo '--hook --host -h --help -V --version --color' ;;
+    'recall') echo '--hook --host --session -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
     'rules-file') echo '--host -h --help -V --version --color' ;;
     'instructions') echo '--check --remove -h --help -V --version --color' ;;
@@ -347,10 +347,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count session-journal agent-mirror session-tally' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count last-session session-journal agent-mirror session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count session-journal agent-mirror session-tally' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count last-session session-journal agent-mirror session-tally' ;;
     'inherit:--color') echo 'auto always never' ;;
     'inherit set:--color') echo 'auto always never' ;;
     'inherit update:--color') echo 'auto always never' ;;

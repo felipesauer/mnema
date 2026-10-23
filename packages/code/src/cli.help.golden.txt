@@ -123,8 +123,6 @@ $ mnema --help
 |                   format it is checked by
 |   settled         say to the agent, after a question to the person was answered,
 |                   which tool records a choice
-|   dispatched      record a session’s dispatches to other agents as one private
-|                   task and a handoff each, for a PostToolUse or SessionEnd hook
 |
 | Help:
 |   help            display help for command
@@ -583,11 +581,14 @@ $ mnema recall --help
 | print the notes recorded here as markdown, near ones first, for an agent to read
 |
 | Options:
-|   --hook         print it for a Claude Code hook: whole notes up to what a hook
-|                  carries, each section saying how many it left out
-|   --host <host>  with --hook, the host whose own ceiling to cut the notes to:
-|                  codex; without it, Claude Code’s
-|   -h, --help     display help for command
+|   --hook          print it for a Claude Code hook: whole notes up to what a hook
+|                   carries, each section saying how many it left out
+|   --host <host>   with --hook, the host whose own ceiling to cut the notes to:
+|                   codex; without it, Claude Code’s
+|   --session <id>  the host’s id for the session these notes are for: the journal
+|                   that session keeps is not "the last session", which a hook
+|                   passes from the payload
+|   -h, --help      display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
 | document `mnema brief` prints: the memories and the observations recorded for this
@@ -605,6 +606,11 @@ $ mnema recall --help
 | progress, the name of the branch and the files of the last 3 commits, read with
 | git and no lock, the record’s own directory left out. The rest are the newest.
 | With nothing to read there, all of them are the newest. It says which, in a line.
+| Above them, when another session that has stopped (its connection ended, or its journal has been
+| quiet for 15 minutes) left a journal on this machine in the last 24 hours
+| (`mnema switch off session-journal` stops it), a few lines say where it stopped:
+| its goal, the decisions it recorded, and the counts it left. They can be switched off alone
+| (`mnema switch off last-session`).
 | It prints NOTHING when nothing is recorded, so a session opens with nothing added.
 | It can be switched off (`mnema switch off recall-document`), and then it refuses.
 
@@ -1440,27 +1446,6 @@ $ mnema settled --help
 |   It reads which tool ran and never the answer, and writes nothing. It can be switched off
 |   with `mnema switch off choice-settled`.
 
-### mnema dispatched --help
-$ mnema dispatched --help
-| Usage: mnema dispatched [options]
-|
-| record a session’s dispatches to other agents as one private task and a handoff
-| each, for a PostToolUse or SessionEnd hook
-|
-| Options:
-|   -h, --help  display help for command
-|
-| What it reads and what it does:
-|   The JSON a host hands a PostToolUse hook after its Agent tool, or a SessionEnd hook, on stdin.
-|   The first dispatch of a session records a private task, "Work handed over in this session"
-|   and the instant, in progress. Each dispatch records a private handoff on it, from
-|   orchestrator to the subagent type, with the call’s short description and the path of a
-|   file the prompt cites when that file exists. The prompt itself is never recorded.
-|   The end of the session moves the task to done, with the number of handoffs. The task is
-|   kept in the session journal, so `mnema switch off session-journal` stops it, and so does
-|   `mnema switch off agent-mirror`. Nothing goes to the public tree.
-|   On stdout, {}.
-
 ### mnema decision record --help
 $ mnema decision record --help
 | Usage: mnema decision record [options] <title> [rationale]
@@ -2106,8 +2091,8 @@ $ mnema switch off --help
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
-|                    subagent-handback, tool-call-count, session-journal,
-|                    agent-mirror, session-tally)
+|                    subagent-handback, tool-call-count, last-session,
+|                    session-journal, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2145,8 +2130,8 @@ $ mnema switch on --help
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
-|                    subagent-handback, tool-call-count, session-journal,
-|                    agent-mirror, session-tally)
+|                    subagent-handback, tool-call-count, last-session,
+|                    session-journal, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

@@ -451,6 +451,7 @@ complete -c mnema -f -n '__mnema_at "brief"' -l color -x -a 'auto always never'
 # mnema recall
 complete -c mnema -f -n '__mnema_at "recall"' -l hook
 complete -c mnema -f -n '__mnema_at "recall"' -l host -x -a 'codex'
+complete -c mnema -f -n '__mnema_at "recall"' -l session -r
 complete -c mnema -f -n '__mnema_at "recall"' -s h -l help
 complete -c mnema -f -n '__mnema_at "recall"' -s V -l version
 complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'
@@ -488,7 +489,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count session-journal agent-mirror session-tally'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count last-session session-journal agent-mirror session-tally'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -497,7 +498,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count session-journal agent-mirror session-tally'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections choice-settled host-memory-mirror decision-file-written subagent-handback tool-call-count last-session session-journal agent-mirror session-tally'
 
 # mnema inherit
 complete -c mnema -f -n '__mnema_at "inherit"' -a 'set' -d 'point this project at a repository of decisions, at one commit'

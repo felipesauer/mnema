@@ -85,7 +85,7 @@ import { FoundingWatch } from '../a-new-identity.js';
 import { RecordPageWatch } from '../commands/the-record-page.js';
 import { oneLine } from '../one-line.js';
 import { replacementNotice } from '../recorded-content.js';
-import { type Journal, journalFile, readJournal } from '../session-journal.js';
+import { type Journal, journalFile, markEnded, readJournal } from '../session-journal.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import {
   type ClientWorkspace,
@@ -1256,6 +1256,17 @@ export function closeSession(session: Session): SessionClose {
     }
   } finally {
     session.caches.closeAll();
+  }
+  // The journals this connection's runs belong to are those of a session that has ended, so a later
+  // session is told this one stopped and not that it may still be going.
+  if (session.hostSession !== undefined) {
+    const marked = new Set<string>();
+    for (const run of session.runs.values()) {
+      const file = journalFile(run.trees, session.hostSession);
+      if (file === undefined || marked.has(file)) continue;
+      marked.add(file);
+      markEnded(file, new Date());
+    }
   }
   const opened = new Set(session.runs.keys());
   const begunWithNoRun = [...session.writesBegun].filter((root) => !opened.has(root));
