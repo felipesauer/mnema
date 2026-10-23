@@ -282,7 +282,7 @@ function asked(read: GovernedRead): GovernanceQuery {
 /** The directory `path` sits in, as the file system has it; the spelled one when it cannot be read. */
 function realDirectoryOf(path: string): string {
   try {
-    return realpathSync(dirname(path));
+    return realpathSync.native(dirname(path));
   } catch {
     return dirname(path);
   }
@@ -309,7 +309,7 @@ export function realPathInside(read: GovernedRead): string | undefined {
   const given = resolve(read.from, read.path);
   let rootReal: string;
   try {
-    rootReal = realpathSync(read.root);
+    rootReal = realpathSync.native(read.root);
   } catch {
     return undefined;
   }
@@ -337,7 +337,7 @@ export function realPathInside(read: GovernedRead): string | undefined {
       continue;
     }
     try {
-      const real = join(realpathSync(existing), ...rest);
+      const real = join(realpathSync.native(existing), ...rest);
       const inside = relative(rootReal, real);
       if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return undefined;
       const there = resolve(read.root, inside);
