@@ -22,7 +22,7 @@
 import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { parseEvent } from '../events/parse.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { holdsExactly, keyList, parseCanonicalLine } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { entryHash, type WrittenEvent, writtenAsBuilt, writtenAsStored } from './hash.js';
@@ -111,12 +111,10 @@ export function serializeEntry(entry: Entry): string {
 export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   let raw: unknown;
   try {
-    raw = parseCanonicalLine(line);
+    raw = parseCanonicalLine(line, entryShape);
   } catch (error) {
+    if (error instanceof EntryParseError) throw error;
     throw new EntryParseError((error as Error).message);
-  }
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new EntryParseError('entry must be a JSON object');
   }
   const obj = raw as { event?: unknown; link?: unknown };
   if (typeof obj.event !== 'object' || obj.event === null) {
@@ -138,6 +136,37 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
     throw new EntryParseError(`entry event is invalid: ${(error as Error).message}`);
   }
   return { event, written, link };
+}
+
+/** The keys of a stored line, and of its link: these, and nothing a writer never puts there. */
+const ENTRY_KEYS = ['event', 'link'] as const;
+const LINK_KEYS = ['hash', 'prev', 'seq', 'tail'] as const;
+
+/**
+ * The keys of the line and of its link, checked before its bytes, in the second reader's
+ * order and words (`read_line` in `mnemaverify/entry.py`). A key beside `event` and `link`,
+ * or a fifth key in the link, is covered by no hash and no signature, and is refused.
+ */
+function entryShape(raw: unknown): void {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new EntryParseError('entry must be a JSON object');
+  }
+  if (!holdsExactly(raw, ENTRY_KEYS)) {
+    throw new EntryParseError(
+      `top-level keys are ${keyList(Object.keys(raw))}, not ${keyList(ENTRY_KEYS)}`,
+    );
+  }
+  const { link } = raw as { link?: unknown };
+  if (
+    typeof link === 'object' &&
+    link !== null &&
+    !Array.isArray(link) &&
+    !holdsExactly(link, LINK_KEYS)
+  ) {
+    throw new EntryParseError(
+      `link keys are ${keyList(Object.keys(link))}, not ${keyList(LINK_KEYS)}`,
+    );
+  }
 }
 
 function parseLink(raw: unknown): EntryLink {
