@@ -88,6 +88,7 @@ export {
   focus,
   type ReportedRun,
   type Resume,
+  type RunSource,
   resume,
 } from './context/focus.js';
 export {

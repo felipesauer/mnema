@@ -182,7 +182,8 @@ export function sealedSegmentsHold(recorded: Readonly<Record<string, string>>): 
   return true;
 }
 
-function fingerprintOf(path: string): string {
+/** `<size>:<mtimeMs>` of a file, or `unreadable`: what a sealed segment cannot keep if it is rewritten. */
+export function fingerprintOf(path: string): string {
   try {
     const stat = statSync(path);
     return `${stat.size}:${stat.mtimeMs}`;
