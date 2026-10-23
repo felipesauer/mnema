@@ -1858,9 +1858,11 @@ function verifyTailOwnership(
     // The file is one canonical line and the newline that ends it, which is not part of
     // the line: the second reader strips it the same way before it compares bytes. Decoded
     // strictly, so bytes that are not UTF-8 are a malformed proof and not U+FFFD.
-    proof = relaying(parseTailProof, relaid, path)(
-      decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''),
-    );
+    proof = relaying(
+      parseTailProof,
+      relaid,
+      path,
+    )(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
   } catch (error) {
     push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,

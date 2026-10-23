@@ -199,7 +199,8 @@ describe('what only imitates a formatter is never called one', () => {
   it('a covered event changed, its hash and every hash after it recomputed, then set to CRLF', () => {
     const r = aRecord(3);
     const entries = linesOf(read(r, r.segment)).map(
-      (line) => JSON.parse(line) as { event: Record<string, unknown>; link: Record<string, unknown> },
+      (line) =>
+        JSON.parse(line) as { event: Record<string, unknown>; link: Record<string, unknown> },
     );
     (entries[2]?.event.payload as { content: string }).content = 'note 9, rewritten';
     let prev: string | null = null;
