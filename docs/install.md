@@ -31,8 +31,8 @@ Every pull request runs one job on `windows-latest` and one on `macos-latest`, e
 and on the latest 24. The job packs the five packages, installs them together with `npm i -g` into an empty
 home (so the launcher is the one npm writes there, `mnema.cmd` on Windows), and drives the installed binary:
 
-- `mnema init`, `mnema decision record`, `mnema decision move accept`, a rule that refuses a write
-  (`mnema link`), and `mnema verify --require signed`, which must say the record is intact;
+- `mnema init`, recording a decision and accepting it, linking a rule that refuses a write at a folder, and
+  `mnema verify --require signed`, which must say the record is intact;
 - the same record in a clone git checked out with `core.autocrlf=true`, which must verify too, and the Python
   reader over it (3.9, the floor: its self-test and the record);
 - `mnema doctor`;
