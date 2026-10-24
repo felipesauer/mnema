@@ -102,9 +102,10 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import type { CatalogEvent } from '../events/catalog.js';
 import { mayRetract } from '../events/retraction.js';
-import { decodeStoredBytes } from '../events/stored-json.js';
+import { canonicalFormOf, decodeStoredBytes } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import type { MoveEvent, MoveRule } from '../events/workflow.js';
 import { oneLine } from '../one-line.js';
@@ -119,7 +120,13 @@ import {
 import { type IdentityResolution, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
-import { type ChainLayout, tailFingerprint, tailProofPath, tailsDir } from './layout.js';
+import {
+  type ChainLayout,
+  isSegmentFile,
+  tailFingerprint,
+  tailProofPath,
+  tailsDir,
+} from './layout.js';
 import {
   levelHeadline,
   type ProvenFacts,
@@ -136,8 +143,10 @@ import {
   listPublicKeyFingerprints,
   listTails,
   type RefusedLine,
+  type RelaidLine,
   readTail,
   readTailCheckpoints,
+  relaying,
 } from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
@@ -646,6 +655,35 @@ export interface VerifyResult {
   readonly clauses: readonly [VerdictClause, ...VerdictClause[]];
   /** A scoped, honest one-line summary: {@link clauses}, joined. */
   readonly summary: string;
+  /**
+   * Present only on a REFUSED record whose refusal a formatter or an editor explains, and only
+   * when that is proved: see {@link Reformatted}. It moves nothing above it: `ok`, the level,
+   * the issues and the exit are the record's as it is on disk.
+   */
+  readonly reformatted?: Reformatted;
+}
+
+/**
+ * THE FILES A FORMATTER OR AN EDITOR REWROTE, said beside a refusal and never in place of it.
+ *
+ * The record on disk is refused, because its bytes are not the bytes the proof was taken over.
+ * This says why, and it is said only when the reason is PROVED: every file named here, read back
+ * in canonical form (in memory; nothing is copied or written), lets the same verifier find no
+ * issue at all in the whole record, and every line it had to put back is covered by a signature,
+ * an event by a verified checkpoint and a checkpoint or a tail proof by its own. Then the
+ * canonical bytes of each of those lines are the ones that were signed, and the rewrite changed
+ * nothing but their layout.
+ *
+ * What is never named a reformat: a line whose canonical form is another value (a hash or a
+ * signature then fails); a change that recomputed the line's own hash, since the stored hash is
+ * not what proves it; the last events of a tail that no checkpoint covers, which a keyless party
+ * can rewrite and re-hash; and a reformat beside any break that is not one.
+ */
+export interface Reformatted {
+  /** The files, under the chain root, the way the issues name them; sorted. */
+  readonly files: readonly string[];
+  /** The sentence, with the files and how to put them back. */
+  readonly detail: string;
 }
 
 /**
@@ -669,6 +707,30 @@ export function verifyChain(
   layout: ChainLayout,
   upcasters: UpcasterRegistry,
   options: VerifyOptions = {},
+): VerifyResult {
+  // The verdict is this reading's, and nothing below moves it. The `relaid` handed to it puts
+  // nothing back: it only notices, on a line that was refused anyway, that the line would have
+  // a canonical form, which is the one case worth asking whether a formatter did this.
+  let spotted = false;
+  const spot: RelaidLine = (text) => {
+    if (!spotted && canonicalFormOf(text) !== undefined) spotted = true;
+    return undefined;
+  };
+  const result = verifyReading(layout, upcasters, options, spot);
+  if (result.ok || !spotted) return result;
+  const reformatted = reformatOf(layout, upcasters, options);
+  return reformatted === undefined ? result : { ...result, reformatted };
+}
+
+/**
+ * The verification itself. `relaid` is undefined or the spotter above for the verdict, and
+ * the reading that puts a reformat back for {@link reformatOf}: nothing else differs.
+ */
+function verifyReading(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  options: VerifyOptions,
+  relaid: RelaidLine | undefined,
 ): VerifyResult {
   const tails = listTails(layout);
   let uncheckpointed = 0;
@@ -719,10 +781,15 @@ export function verifyChain(
     // (a second line, a checkpoint whose signature fails, a missing ownership proof) while the
     // second reader named them all. Each refused line is left out of what is read, so what
     // follows is asked only what a hole leaves checkable: see `lineRefused` below.
-    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, issues));
+    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, issues), relaid);
     // A refused EVENT line leaves a hole in the entries; a refused checkpoint line does not.
     const holed = issues.length > 0;
-    const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, issues));
+    const checkpoints = readTailCheckpoints(
+      layout,
+      tail,
+      refusedLine(layout, tail, issues),
+      relaid,
+    );
     const lineRefused = issues.length > 0;
     const entries = read.entries;
     if (read.partialFinalLine) {
@@ -747,7 +814,7 @@ export function verifyChain(
       // locally chosen: require the key to have signed THIS tail id at birth, so
       // a keyless party cannot fabricate a sibling tail under a real fingerprint
       // and have its residual events counted. See tailproof.ts.
-      verifyTailOwnership(layout, keys, tail, issues);
+      verifyTailOwnership(layout, keys, tail, issues, relaid);
     }
     if (lineRefused) {
       // A tail with a line the verifier could not read is refused at that line, and the level
@@ -890,6 +957,57 @@ export function verifyChain(
     clauses,
     summary: verdictSentence(clauses),
   };
+}
+
+/**
+ * WHETHER A FORMATTER IS ALL THAT HAPPENED TO A REFUSED RECORD: the {@link Reformatted} finding,
+ * or undefined.
+ *
+ * It is the SAME verification, run again over the record with each line that would not parse
+ * read as its canonical form ({@link canonicalFormOf}), in memory. Nothing is written: the
+ * earlier design that verified a canonicalized copy on disk wrote through a symlink inside the
+ * record into a file outside it, and could not run without a temporary directory.
+ *
+ * The finding needs the second reading to hold with NO issue, and every event it put back to
+ * sit at or below the last seq a verified checkpoint covers on its tail. A checkpoint or a tail
+ * proof put back needs nothing more: a reading with no issue verified its signature. The stored
+ * hash of a line is never taken as the proof, because whoever rewrites the line can rewrite it.
+ */
+function reformatOf(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  options: VerifyOptions,
+): Reformatted | undefined {
+  const putBack: { readonly file: string; readonly value: unknown }[] = [];
+  const relaid: RelaidLine = (text, file) => {
+    const canonical = canonicalFormOf(text);
+    if (canonical === undefined) return undefined;
+    putBack.push({ file, value: canonical.value });
+    return canonical.text;
+  };
+  const reread = verifyReading(layout, upcasters, options, relaid);
+  if (putBack.length === 0 || !reread.ok) return undefined;
+  const covered = new Map(reread.tails.map((t) => [t.tail, t.checkpointedThrough]));
+  for (const line of putBack) {
+    if (!isSegmentFile(basename(line.file))) continue;
+    // An entry the second reading accepted, so its link names its own tail and its position.
+    const { link } = line.value as { link: { tail: string; seq: number } };
+    if (link.seq > (covered.get(link.tail) ?? -1)) return undefined;
+  }
+  const files = [...new Set(putBack.map((line) => withinChain(layout, line.file)))].sort();
+  return { files, detail: reformatSentence(files) };
+}
+
+/** The sentence a {@link Reformatted} is said by. */
+function reformatSentence(files: readonly string[]): string {
+  return (
+    `${files.map(oneLine).join(', ')} differ from the bytes that were signed only in their ` +
+    'layout (whitespace, line ends, indentation or key order): read back in canonical form, ' +
+    'every line of them verifies and is covered by a signature, so a formatter or an editor ' +
+    'rewrote them. The record stays refused until they are restored: take them back from git ' +
+    'as they were before the rewrite (git checkout <commit> -- <file>), and keep the tool off ' +
+    'this folder'
+  );
 }
 
 /**
@@ -1728,6 +1846,7 @@ function verifyTailOwnership(
   keys: CommittedKeys,
   tail: string,
   issues: TailIssue[],
+  relaid: RelaidLine | undefined,
 ): void {
   const push = (detail: string) => issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
   const path = tailProofPath(layout, tail);
@@ -1740,7 +1859,11 @@ function verifyTailOwnership(
     // The file is one canonical line and the newline that ends it, which is not part of
     // the line: the second reader strips it the same way before it compares bytes. Decoded
     // strictly, so bytes that are not UTF-8 are a malformed proof and not U+FFFD.
-    proof = parseTailProof(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
+    proof = relaying(
+      parseTailProof,
+      relaid,
+      path,
+    )(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
   } catch (error) {
     push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,

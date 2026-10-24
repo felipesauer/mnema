@@ -149,6 +149,8 @@ the PRODUCT: it elected the first attestation a walk of the proof reached and da
 frozen record twenty minutes later than this reader did. It elects by height now, and the
 two readers agree.
 
+**WHAT THIS READER DOES NOT SAY: that a formatter rewrote the record.** The product's `verify` adds one line beside a refusal when the files read back in canonical form verify with no issue and every line put back is covered by a signature; this reader refuses the same records, by the same causes, and stops there. It is left out on purpose: the line moves no verdict, and this reader is worth what its independence is worth, which is measured in how little of it there is to audit. A second implementation of the condition is a second place where a tampering could come to be called a reformat. The verdict over those records is the one both readers give.
+
 ## The verdict, and the four things it can be
 
 | exit | verdict | |
