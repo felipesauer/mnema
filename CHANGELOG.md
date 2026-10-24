@@ -12,6 +12,41 @@ with its own changelog.
 
 ### Added
 
+- **`mnema recall` says where the last session stopped.** When another session that has stopped (its connection ended, or its
+  journal has been quiet for 15 minutes) left a session journal on this machine in the last 24 hours, the notes open with a
+  few lines (about a hundred tokens): how long ago it stopped, whether it wrote to the record (only a decision, a note or a
+  task moved counts; a session that only edited files is said to have written nothing), its goal, the decisions it recorded by label and state, and what it left (files edited, files of decisions cited
+  nowhere, questions answered with no decision after, tasks in progress). The plugin's hook passes the session's own id
+  (`mnema recall --session <id>`), so a session never reads its own journal back, for instance after a compaction. A new
+  switch, `last-session`, on by default, stops the section alone.
+- **The work a session hands to other agents is kept as one private task.** In the Claude Code plugin, a `PostToolUse` hook on the
+  `Agent` tool and a `SessionEnd` hook run a new verb, `mnema dispatched`: the first dispatch of a session records a private
+  task, `Work handed over in this session` and the instant, in progress; each dispatch records a private handoff on it, from
+  `orchestrator` to the subagent type, with the call's short description as the brief and the path of a file the prompt cites
+  when that file exists; the end of the session moves the task to done with the count of handoffs. The prompt is never recorded
+  and nothing goes to the public tree. The task's id is kept in the session journal (a new `handedOver` field), so a resumed
+  session reopens its task, and the next session that dispatches closes the tasks left by a journal untouched for a day.
+  `mnema switch off agent-mirror` stops it (a new channel, on by default; it also does nothing where `session-journal` is off,
+  and `mnema switch` lists it as `does nothing while session-journal is off` then), and a failure of the mirror never holds a
+  dispatch. Where the journal's lock is not had in time (another dispatch of the session holds it), the mirror records nothing
+  rather than go on without it, which opened tasks no one closed: it says so on the second stream, counts the skip, and the
+  task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
+  A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
+  the process itself.
+- **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
+  file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
+  `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
+  session did with the record (decisions recorded since it opened and their state, notes of the host's memory copied, questions
+  answered with no decision after, files holding decisions cited nowhere, files edited, tasks in progress, runs open, the goal
+  and an outcome as a sentence of counts). Never a prompt, a message, a tool's output, a file's content, the environment or the
+  answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
+  (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
+  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
+  `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
+  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
+  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
+  and of the tail of the bytes already read, and read again from the top.
 - **`mnema verify` names a reformat, and only when the signatures prove it.** A record a formatter or an editor rewrote is
   still refused, with the same exit and the same issues; one `reformatted` line beside them names the files and how to put
   them back (prettier, Biome, dprint and `pretty-format-json` indenting `tailproof.json`; an `.editorconfig` or
@@ -23,7 +58,6 @@ with its own changelog.
   packs and installs the five packages, then runs `init`, `decision record`, `verify`, a clone checked out with
   `core.autocrlf=true`, the Python reader, `doctor` and the plugin's hook scripts on paths written the way each
   system writes them. [Install](docs/install.md#what-is-run-on-windows-and-macos) says what is and is not run.
-
 - **A stack install asks `skills-ref` about the skills it wrote.** When `agentskills` (the validator the Agent Skills
   specification publishes) is on the `PATH`, each installed skill folder is validated and the command prints one line,
   accepted or refused, with what it said; without it, the command says it did not run. It is not a dependency, a refusal

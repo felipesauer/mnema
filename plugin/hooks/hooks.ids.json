@@ -72,6 +72,18 @@
       "group": 0,
       "index": 0,
       "runs": "hooks/subagent-stop.mjs"
+    },
+    "agent-dispatched": {
+      "event": "PostToolUse",
+      "group": 2,
+      "index": 0,
+      "runs": "hooks/agent-dispatched.mjs"
+    },
+    "agent-dispatched-at-the-end": {
+      "event": "SessionEnd",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/agent-dispatched.mjs"
     }
   }
 }

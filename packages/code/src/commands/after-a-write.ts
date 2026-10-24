@@ -197,7 +197,7 @@ function mirrored(
 }
 
 /** Whether the record already cites the file: a decision derived from it, or any link to it. */
-function cites(sources: readonly ScopedCache[], path: string): boolean {
+export function cites(sources: readonly ScopedCache[], path: string): boolean {
   return sources.some(
     (source) =>
       source.cache.listLinksTo(path).length > 0 ||

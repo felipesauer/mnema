@@ -44,9 +44,19 @@
  */
 
 import { dirname } from 'node:path';
-import { type PertinentSearch, pertinentFirst } from '@mnema/context';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { RECALL_CHANNEL } from '../record-framing.js';
+import {
+  channelIsOn,
+  type PertinentSearch,
+  pertinentFirst,
+  type ScopedCache,
+} from '@mnema/context';
+import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
+import {
+  LAST_SESSION_CHANNEL,
+  RECALL_CHANNEL,
+  SESSION_JOURNAL_CHANNEL,
+} from '../record-framing.js';
+import { lastJournalOf } from '../session-journal.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -62,6 +72,13 @@ export interface RecallContext {
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
+  /**
+   * The host's id for the session these notes are for, when the hook knows it: that session's own
+   * journal is not "the last session". Absent, the newest journal of any session counts.
+   */
+  readonly session?: string | undefined;
+  /** The instant it is asked at, for how recent a session was: now, unless a test says. */
+  readonly now?: Date;
 }
 
 /** The notes: the memories and the observations, the near ones first, then the newest. */
@@ -75,6 +92,24 @@ export interface RecallDone {
   readonly observations: PertinentSearch;
   /** The tails among those read that do not chain: empty for a sound record. */
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /** Where the last session on this machine stopped, when there is one worth saying: see {@link LastSession}. */
+  readonly lastSession?: LastSession;
+}
+
+/** What the notes say of the last session: read off its journal, and its decisions named by label. */
+export interface LastSession {
+  /** How long ago its journal was last written, in seconds. */
+  readonly agoSeconds: number;
+  /** The title of the first task it moved into progress, a title the record holds. */
+  readonly goal: string | null;
+  /** The decisions it recorded, by the record's own label, and where each stands. */
+  readonly decisions: readonly { readonly label: string; readonly state: string }[];
+  readonly filesEdited: number;
+  /** Whether it wrote anything to the record: a decision, a note copied, or a task moved. */
+  readonly wrote: boolean;
+  readonly decisionFilesUncited: number;
+  readonly questionsWithoutDecision: number;
+  readonly tasksInProgress: number;
 }
 
 /** The read was refused: there is no project whose notes a session here would be handed. */
@@ -100,6 +135,9 @@ export function runRecall(ctx: RecallContext): RecallDone | RecallRefused | Brie
     // The project's directory is the one holding its committed tree (the one the session
     // opened in, or above it) and it is what the working tree and the commits are read in.
     const touched = whatTheSessionTouches(dirname(projectPublic), sources);
+    const lastSession = channelIsOn(sources, LAST_SESSION_CHANNEL)
+      ? theLastSession(trees, sources, ctx)
+      : undefined;
     return {
       ok: true as const,
       // On `err` at the surface, as the document's: what the record says about its own proof
@@ -108,6 +146,41 @@ export function runRecall(ctx: RecallContext): RecallDone | RecallRefused | Brie
       touched,
       memories: pertinentFirst(sources, { kind: 'memory', words: touched.words }),
       observations: pertinentFirst(sources, { kind: 'observation', words: touched.words }),
+      ...(lastSession !== undefined ? { lastSession } : {}),
     };
   });
+}
+
+/**
+ * Where the last other session stopped, from its journal and the decisions' labels: or undefined
+ * when its journal channel is off, there is none that is recent, or it did nothing worth saying.
+ */
+function theLastSession(
+  trees: ResolvedTrees,
+  sources: readonly ScopedCache[],
+  ctx: RecallContext,
+): LastSession | undefined {
+  if (!channelIsOn(sources, SESSION_JOURNAL_CHANNEL)) return undefined;
+  const now = ctx.now ?? new Date();
+  const journal = lastJournalOf(trees, { except: ctx.session, now });
+  if (journal === undefined) return undefined;
+  const wrote = Date.parse(journal.updatedAt);
+  const ago = now.getTime() - wrote;
+  const known = sources.flatMap((source) => source.cache.listDecisions());
+  return {
+    agoSeconds: Math.max(0, Math.floor(ago / 1000)),
+    goal: journal.trees.public.goal ?? journal.trees.private.goal,
+    decisions: journal.decisions.flatMap((one) => {
+      const found = known.find((decision) => decision.id === one.id);
+      return found === undefined ? [] : [{ label: found.adr, state: found.state }];
+    }),
+    filesEdited: journal.filesEdited,
+    wrote:
+      journal.decisions.length > 0 ||
+      journal.notes.length > 0 ||
+      journal.tasksInProgress.length > 0,
+    decisionFilesUncited: journal.decisionFilesUncited,
+    questionsWithoutDecision: journal.questionsWithoutDecision,
+    tasksInProgress: journal.tasksInProgress.length,
+  };
 }

@@ -45,7 +45,9 @@ document, delivered by the host instead of waited for.
   what the session touches (the files changed in the working tree, the tasks in progress,
   the branch, the last three commits), then the newest. It is the
   half that makes a note worth writing: what an agent records here comes back to the next
-  session without anybody asking. A project with nothing noted gets nothing from it. It is
+  session without anybody asking. When another session wrote to the record in the last day and left a journal on
+  this machine, a few lines above the notes say where it stopped (its goal, the decisions it recorded, what it left;
+  `mnema switch off last-session` stops them). A project with nothing noted gets nothing from it. It is
   a hook of its own because the host caps what each hook adds at 10,000 characters, and
   two texts in one hook would share one cap.
 - **A `PreToolUse` hook** on `Write|Edit|NotebookEdit` that hands over the rules
@@ -80,7 +82,11 @@ document, delivered by the host instead of waited for.
   records nothing. A subagent's calls are in a transcript of their own and are not counted, and the
   decisions are those of the project since the session's first line, so a second session of the same
   project in the same hours is counted too. The line is the reply's `systemMessage`; which host shows
-  it, and to whom, was not measured.
+  it, and to whom, was not measured. The same command keeps the session journal: a small file on this
+  machine (outside the record, ids and counts and none of the session's words) that lets the next `Stop` read
+  only the lines the host wrote since, and from which the MCP server gives a run its goal and closes it with an
+  outcome (`mnema switch off session-journal` stops it; see
+  [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
 - **A `SubagentStart` hook**, `mnema brief --hook`. A subagent starts with a context of its own and
   does not see what the session was handed when it opened, so it is handed the same document: the
   decisions in force and the adopted patterns, by name, byte for byte what the opening hands over,
@@ -154,6 +160,16 @@ document, delivered by the host instead of waited for.
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was read on each host ([how each claim is held](../docs/evidence.md)).
+- **A `PostToolUse` hook after the `Agent` tool, and a `SessionEnd` hook, in Claude Code**, that run `mnema dispatched`: the work
+  a session hands to other agents is kept in your machine's **private** tree as one task for the session (opened at its first
+  dispatch, in progress) with a handoff on it for each dispatch, from `orchestrator` to the subagent type, whose brief is the
+  call's short description and the path of a file the prompt cites when one exists; at the end of the session the task is moved to
+  done with the count. **The prompt is never recorded**, nothing goes to the public tree, and it prints nothing to the model. It
+  is on to begin with (`mnema switch off agent-mirror` stops it), keeps the task in the session journal (so it needs
+  `session-journal` on; `mnema switch` says it does nothing while that is off), reopens the task of a resumed session, and
+  never holds a dispatch: a failure is a line on the second stream, and a dispatch that could not take the journal's lock records
+  nothing and is counted. Measured on the payload the host hands the hook, and not against a model. The other hosts that read this hooks file
+  were not measured on either event.
 - **Three skills**, which the host offers a model when a skill's description matches what the
   session is doing. `recording-decisions` is for the moment a choice between approaches is
   settled, an option is turned down, or a person says how something is done here: look first
@@ -460,6 +476,7 @@ plugin/
 │   ├── session-tally.mjs        the count at the end of a response and before a compaction
 │   ├── session-corrections.mjs  the corrections at the end of a response
 │   ├── after-a-write.mjs        the copy of the host's memory, and the line beside a decision file
+│   ├── agent-dispatched.mjs     runs `mnema dispatched` after the agent tool and at the end of a session
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
 │   ├── choice-settled.mjs       runs `mnema settled` after a question to the person is answered

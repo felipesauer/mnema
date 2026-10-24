@@ -308,12 +308,15 @@ describe('what `channel.served` counts, said by the table the type makes total',
     expect(pushed).toContain('edit-refuses-a-write');
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
       'agent-accepts',
+      'agent-mirror',
       'brief-document',
       'choice-settled',
       'decision-file-written',
       'edit-refuses-a-write',
       'host-memory-mirror',
+      'last-session',
       'recall-document',
+      'session-journal',
       'session-tally',
       'subagent-handback',
       'tool-call-count',
@@ -336,6 +339,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
         channel === 'agent-accepts' ||
         channel === 'user-corrections' ||
         channel === 'host-memory-mirror' ||
+        channel === 'agent-mirror' ||
         ITS_OWN_FACT.includes(channel)
           ? WRITES_THE_FACT_ITSELF
           : 'writes nothing';
@@ -521,6 +525,8 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:command:edit-asks-a-person.mjs',
       'PostToolUse:command:choice-settled.mjs',
       'PostToolUse:command:after-a-write.mjs',
+      'PostToolUse:command:agent-dispatched.mjs',
+      'SessionEnd:command:agent-dispatched.mjs',
       'SubagentStart:command:subagent-start.mjs',
       'SubagentStop:command:subagent-stop.mjs',
     ]);

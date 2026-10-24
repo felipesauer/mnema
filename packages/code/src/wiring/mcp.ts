@@ -81,12 +81,16 @@ export function registerMcp(program: Command, wiring: Wiring): Declared {
       // walks up from is this process's directory, the one the host started it in.
       const { cwd, env } = here();
       const agentKey = opts.agentKey ?? agentKeyFromEnvironment(process.env);
+      const hostSession = process.env.CLAUDE_CODE_SESSION_ID;
       const { connect } = buildMcpServer({
         cwd,
         env,
         log: (line) => io.err(line),
         ...(opts.project !== undefined ? { configProject: opts.project } : {}),
         ...(agentKey !== undefined ? { agentKey } : {}),
+        // The host's id for its session, when it leaves one here: the journal it names is where a
+        // run takes its goal from and what it closes with the outcome of.
+        ...(hostSession !== undefined ? { hostSession } : {}),
       });
       // stdout carries the JSON-RPC protocol, so the server writes every
       // diagnostic to stderr. This action does not return until the transport

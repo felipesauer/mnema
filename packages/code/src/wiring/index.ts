@@ -231,6 +231,7 @@ import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
 import { registerDecision } from './decision.js';
 import { registerDiagram } from './diagram.js';
+import { registerDispatched } from './dispatched.js';
 import { registerDoctor } from './doctor.js';
 import { registerExport } from './export.js';
 import { registerHandback } from './handback.js';
@@ -354,6 +355,7 @@ export const GROUPS: readonly Group[] = [
       registerAfterAWrite,
       registerHandback,
       registerSettled,
+      registerDispatched,
     ],
   },
 ];

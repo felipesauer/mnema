@@ -379,7 +379,10 @@ export type SwitchableChannel =
   | 'host-memory-mirror'
   | 'decision-file-written'
   | 'choice-settled'
-  | 'tool-call-count';
+  | 'tool-call-count'
+  | 'session-journal'
+  | 'agent-mirror'
+  | 'last-session';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -485,6 +488,42 @@ export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
  * until switched off, because what it keeps is local and holds names and nothing else.
  */
 export const TOOL_CALL_COUNT_CHANNEL: SwitchableChannel = 'tool-call-count';
+
+/**
+ * The switch of the session journal: the small file on this machine, one per session, that holds the
+ * shape of what a session did with the record (ids and counts, never its words) so that what asks
+ * next, a later session, a compaction, the close of the run, answers from it instead of reading a
+ * transcript again. See `session-journal.ts`.
+ */
+export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
+
+/**
+ * The switch of the section of the notes document that says where the last session on this machine
+ * stopped: its goal, the decisions it recorded, and the counts of what it left, read from its
+ * journal when that session was another one and a recent one. It is text in front of a model, in
+ * the document `mnema recall` prints, and it is framed by that document's declaration.
+ */
+export const LAST_SESSION_CHANNEL: SwitchableChannel = 'last-session';
+
+/**
+ * The switch of the mirror of the dispatches a session makes: with it on, a `PostToolUse` hook on
+ * the host's `Agent` tool opens one private task for the session at its first dispatch, records a
+ * private handoff on it for each dispatch (the call's short description, and the path of a brief the
+ * prompt cites, never the prompt), and the session's end moves the task to done with the count.
+ *
+ * NOT A CHANNEL TO A MODEL: nothing is put in front of anybody. It writes to the private tree without
+ * a verb being typed, and begins ON, like the mirror of the host's memory; it keeps its task in the
+ * session journal, so it does nothing where `session-journal` is off.
+ */
+export const AGENT_MIRROR_CHANNEL: SwitchableChannel = 'agent-mirror';
+
+/**
+ * The channels that do nothing while another is off, and the one they need: a channel on whose
+ * dependence is off is on in the record and does nothing, which a list of switches has to say.
+ */
+export const CHANNEL_NEEDS: Readonly<Partial<Record<SwitchableChannel, SwitchableChannel>>> = {
+  'agent-mirror': SESSION_JOURNAL_CHANNEL,
+};
 
 /**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
@@ -647,6 +686,18 @@ export const NOT_COUNTED_AS_SERVED: {
     'it puts nothing in front of a model and writes nothing to the record: the line it keeps is ' +
     'appended to a file on this machine, outside it, so a fact saying it was served would be a ' +
     'count of the count',
+  'last-session':
+    'the section is printed by `mnema recall`, which reads the journal and the record and writes ' +
+    'nothing (no event, no key, no run), so telling a session where the last one stopped never ' +
+    'moves the record',
+  'session-journal':
+    'it puts nothing in front of a model and writes nothing to the record: the journal is a file on ' +
+    'this machine, outside it, holding ids and counts, so a fact saying it was kept would be a ' +
+    'count of the count',
+  'agent-mirror':
+    'each task and handoff it records is itself the recorded fact (an event of its own, with its ' +
+    'own actor), and it puts nothing in front of a model, so a second fact saying the channel ' +
+    'served would repeat them',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing (no event, no key, no run), so a count of what a session did never moves the ' +
@@ -731,6 +782,21 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the local count of tool calls: with it off, the server keeps no line of the calls it answers ' +
     'and `mnema usage --tools` shows what was kept before. The count is a file on this machine, ' +
     'outside the record, with the tool’s name and its result and nothing of the arguments',
+  'last-session':
+    'the section of the notes `mnema recall` prints that says where the last session stopped: its ' +
+    'goal, the decisions it recorded and the counts of what it left, read from its journal when it ' +
+    'was another session and a recent one',
+  'session-journal':
+    'the session journal: with it off, no file is kept of what a session did with the record, and ' +
+    'nothing can say, to a later session, to a compaction or on the run that closes, what this one did. ' +
+    'The journal is a file on this machine, outside the record, holding ids and counts and none of ' +
+    'the session’s words',
+  'agent-mirror':
+    'the mirror of what a session hands to other agents: with it on, a `PostToolUse` hook on the ' +
+    'host’s `Agent` tool records a private task for the session and a private handoff for each ' +
+    'dispatch (its short description and the path of a brief file, never the prompt), and the ' +
+    'session’s end closes the task with the count. It needs `session-journal` on, and records ' +
+    'nothing to the tree a clone gets',
   'session-tally':
     'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

@@ -54,7 +54,9 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAfterAWrite } from '../src/commands/after-a-write.js';
 import { runCorrections } from '../src/commands/corrections.js';
+import { runDispatched } from '../src/commands/dispatched.js';
 import { runHandback } from '../src/commands/handback.js';
+import { runRecall } from '../src/commands/recall.js';
 import { runSettled } from '../src/commands/settled.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
@@ -63,6 +65,7 @@ import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tool
 import { type CliIo, run } from '../src/program.js';
 import {
   AGENT_ACCEPTS_CHANNEL,
+  AGENT_MIRROR_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
   CHOICE_SETTLED_CHANNEL,
   DECISION_FILE_WRITTEN_CHANNEL,
@@ -70,9 +73,11 @@ import {
   EDIT_PUSH_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
   HOST_MEMORY_MIRROR_CHANNEL,
+  LAST_SESSION_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
+  SESSION_JOURNAL_CHANNEL,
   SESSION_TALLY_CHANNEL,
   STARTS_OFF,
   SUBAGENT_HANDBACK_CHANNEL,
@@ -81,9 +86,11 @@ import {
   USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
+import { journalFile, readJournal, writeJournal } from '../src/session-journal.js';
 import { readToolCalls, toolCallsFile } from '../src/tool-calls.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
+import { emptyReading } from '../src/what-the-session-did.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -501,6 +508,86 @@ const HONOURED: Readonly<
         },
       );
       return 'hookSpecificOutput' in done.reply;
+    },
+  },
+  [AGENT_MIRROR_CHANNEL]: {
+    // A TASK THAT WRITES, driven the way a host drives it: the `PostToolUse` after the agent tool,
+    // for a session of its own each time, because a session that already has its task opens no second.
+    // "Speaks" is the journal of that session naming a task.
+    setUp: async () => {},
+    speaks: async () => {
+      const session = `a-dispatching-session-${Math.random().toString(36).slice(2)}`;
+      runDispatched(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'PostToolUse',
+            tool_name: 'Agent',
+            session_id: session,
+            tool_input: { description: 'a dispatch', prompt: 'a prompt', subagent_type: 'x' },
+          }),
+        },
+      );
+      const file = journalFile(resolveTrees(repo, env), session);
+      return file !== undefined && readJournal(file)?.handedOver !== undefined;
+    },
+  },
+  [LAST_SESSION_CHANNEL]: {
+    // A SECTION OF THE NOTES, driven the way a session asks for them: another session's journal on
+    // this machine, and the notes read for a session that is not it. "Speaks" is the section being there.
+    setUp: async () => {
+      const file = journalFile(resolveTrees(repo, env), 'an-earlier-session');
+      if (file === undefined) throw new Error('no project here');
+      writeJournal(
+        file,
+        {
+          version: 1,
+          session: 'an-earlier-session',
+          updatedAt: new Date().toISOString(),
+          endedAt: new Date().toISOString(),
+          openedAt: null,
+          decisions: [],
+          notes: [],
+          questionsWithoutDecision: 0,
+          decisionFilesUncited: 0,
+          filesEdited: 2,
+          tasksInProgress: [],
+          runsOpen: [],
+          trees: { public: { goal: null, outcome: null }, private: { goal: null, outcome: null } },
+          reading: emptyReading(),
+        },
+        new Date(),
+      );
+    },
+    speaks: async () => {
+      const done = runRecall({ cwd: repo, env, session: 'this-session' });
+      return done.ok && done.lastSession !== undefined;
+    },
+  },
+  [SESSION_JOURNAL_CHANNEL]: {
+    // A FILE KEPT BY THE STOP HOOK, driven the way a host drives it: the payload of a `Stop` that
+    // names its session and a transcript. "Speaks" is the journal's file coming to exist.
+    setUp: async () => {},
+    speaks: async () => {
+      const file = journalFile(resolveTrees(repo, env), 'a-session-1');
+      if (file === undefined) return false;
+      rmSync(file, { force: true });
+      const transcript = join(sandbox, 'journal.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      runSessionTally(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'Stop',
+            transcript_path: transcript,
+            session_id: 'a-session-1',
+          }),
+        },
+      );
+      return readJournal(file) !== undefined;
     },
   },
   [SESSION_TALLY_CHANNEL]: {
