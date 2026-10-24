@@ -501,7 +501,17 @@ describe('the rule has one site', () => {
     const defines = /export function run(Task|Decision|Skill)Transition\b/;
     return sourceFiles(SRC)
       .map((path) => ({ path, source: readFileSync(path, 'utf-8') }))
-      .filter(({ source }) => calls.test(source) && !defines.test(source));
+      .filter(({ path, source }) => calls.test(source) && !defines.test(source) && !silent(path));
+  }
+
+  /**
+   * The files that move a task and echo nothing, because nobody reads an echo there: the hook
+   * that mirrors a session's dispatches runs without a person, prints `{}` and keeps its second
+   * stream for what failed (what it prints on success would be handed to the model). Named, so a
+   * file that moves something and is not on this list still owes the line.
+   */
+  function silent(path: string): boolean {
+    return path.endsWith(join('commands', 'dispatched.ts'));
   }
 
   it('every surface that moves something goes through the one line builder', () => {

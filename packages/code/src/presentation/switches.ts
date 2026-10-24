@@ -41,7 +41,7 @@ import type { Scope } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import type { SwitchRow } from '../commands/switch.js';
 import { oneLine } from '../one-line.js';
-import { switchOnCommand } from '../record-framing.js';
+import { CHANNEL_NEEDS, switchOnCommand } from '../record-framing.js';
 import { asId, asWhen, type Column, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 
@@ -74,7 +74,7 @@ export function switchReport(
   const width = Math.max(...rows.map((row) => row.state.channel.length));
   return [
     `${rows.length} channel(s), looked in ${trees.join(', ')}:`,
-    ...rows.map((row) => render(itemLine(columnsOf(row, width, anchors)))),
+    ...rows.map((row) => render(itemLine(columnsOf(row, width, anchors, rows)))),
   ];
 }
 
@@ -87,7 +87,12 @@ export function switchReport(
  * state is off because a switch put it there, so there is no line that says `off` with
  * nobody's name on it.
  */
-function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string | Column)[] {
+function columnsOf(
+  row: SwitchRow,
+  width: number,
+  anchors: AnchorForms,
+  rows: readonly SwitchRow[],
+): (string | Column)[] {
   const stands: (string | Column)[] = [
     asId(column(row.state.channel, width)),
     // A PLAIN column and not a marked one. The three markers say what a column IS (an id
@@ -98,7 +103,14 @@ function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string
     column(row.state.on ? ON : OFF, POSITION_WIDTH),
     row.carries,
   ];
-  if (row.state.on) return stands;
+  if (row.state.on) {
+    // ON IN THE RECORD AND DOING NOTHING: a channel that needs another, whose need is off.
+    const needs = (CHANNEL_NEEDS as Readonly<Record<string, string | undefined>>)[
+      row.state.channel
+    ];
+    const lacking = rows.find((other) => other.state.channel === needs && !other.state.on);
+    return lacking === undefined ? stands : [...stands, `(does nothing while ${needs} is off)`];
+  }
   // OFF WITH NOBODY'S NAME ON IT is a channel that starts off and was never switched on: there is
   // no switch to attribute, and a placeholder where one goes would read as a switch somebody made.
   if (row.state.by === undefined) return [...stands, '·', neverSwitchedOn(row.state.channel)];

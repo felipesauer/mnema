@@ -74,7 +74,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares twelve hooks and
+  from depending on somebody remembering to regenerate a file. It declares fourteen hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes**: the memories and observations recorded for the project, from every tree
@@ -115,7 +115,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   response that ended in a question mark, quoted with the question), and records each as a `proposed`
   decision in this machine's private tree, citing the session and the line, at most five at a time
   and never the same line twice. A match is a pattern and not a judgement, which is why it is
-  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. The ninth is a `PostToolUse` hook on `AskUserQuestion` that runs `mnema settled`: after a question the agent asked the person was answered, it hands the agent one sentence beside the answer, that a choice may have been settled there and that `record_decision` records it, and it records nothing and reads which tool ran, never the answer. A shell in front of it starts nothing for any other tool, since VS Code runs a plugin's hooks whatever their matcher says. It is on until `mnema switch off choice-settled`, and held in Claude Code against the real binary; the hooks files of Codex (`request_user_input`), Copilot CLI (`AskUserQuestion`), Gemini CLI (`ask_user`) and OpenCode (`question`) carry the same hook, documented and not measured. The tenth is a `SubagentStart` hook that runs `mnema brief --hook`: the subagent that begins is handed the same document the session opened with, under the event the host routes the reply by; it is the opening's channel and the opening's switch, so `mnema switch off brief-document` stops both. It is held in Claude Code, against the real binary; VS Code documents the event and was not measured on it. The eleventh is a `PostToolUse` hook on `Write|Edit`, in Claude Code, that runs `mnema after-a-write` behind a shell that reads the path out of the payload and starts nothing for a path that can be neither of its two kinds. A note of Claude Code's own memory for this project (`projects/<project>/memory/*.md`, `<project>` named as the host names it after the main working tree, so a note in another project's directory is never copied, under `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your own settings or the project's `.claude/settings.local.json`) is copied as a memory into this machine's **private** tree, with a marker naming the file and a hash of its content, so a note is copied once per content: this is **on to begin with** (`mnema switch off host-memory-mirror` stops it), never copies the index `MEMORY.md` or a note of `type: user`, and never writes to the public tree. A file that holds decisions (under `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file, plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does) that the record cites nowhere gets one line beside the write naming the command that reads it, once per session and file; nothing is recorded for it, and `mnema switch off decision-file-written` stops it. The `Stop` line counts the notes copied since the session opened. All twelve are **silent** where there is no project, so a
+  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2): once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. The ninth is a `PostToolUse` hook on `AskUserQuestion` that runs `mnema settled`: after a question the agent asked the person was answered, it hands the agent one sentence beside the answer, that a choice may have been settled there and that `record_decision` records it, and it records nothing and reads which tool ran, never the answer. A shell in front of it starts nothing for any other tool, since VS Code runs a plugin's hooks whatever their matcher says. It is on until `mnema switch off choice-settled`, and held in Claude Code against the real binary; the hooks files of Codex (`request_user_input`), Copilot CLI (`AskUserQuestion`), Gemini CLI (`ask_user`) and OpenCode (`question`) carry the same hook, documented and not measured. The tenth is a `SubagentStart` hook that runs `mnema brief --hook`: the subagent that begins is handed the same document the session opened with, under the event the host routes the reply by; it is the opening's channel and the opening's switch, so `mnema switch off brief-document` stops both. It is held in Claude Code, against the real binary; VS Code documents the event and was not measured on it. The eleventh is a `PostToolUse` hook on `Write|Edit`, in Claude Code, that runs `mnema after-a-write` behind a shell that reads the path out of the payload and starts nothing for a path that can be neither of its two kinds. A note of Claude Code's own memory for this project (`projects/<project>/memory/*.md`, `<project>` named as the host names it after the main working tree, so a note in another project's directory is never copied, under `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your own settings or the project's `.claude/settings.local.json`) is copied as a memory into this machine's **private** tree, with a marker naming the file and a hash of its content, so a note is copied once per content: this is **on to begin with** (`mnema switch off host-memory-mirror` stops it), never copies the index `MEMORY.md` or a note of `type: user`, and never writes to the public tree. A file that holds decisions (under `docs/adr/`, `docs/decisions/` or an `adr/` directory, or a `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, host rules file, plan, handoff or ledger whose new lines open as `Ruling:`, `Decision:` or a correction does) that the record cites nowhere gets one line beside the write naming the command that reads it, once per session and file; nothing is recorded for it, and `mnema switch off decision-file-written` stops it. The `Stop` line counts the notes copied since the session opened. The thirteenth is a `PostToolUse` hook on the `Agent` tool and the fourteenth a `SessionEnd` hook, both running `mnema dispatched` (see [What a session handed to other agents](#what-a-session-handed-to-other-agents)): the first dispatch of a session records one private task, each dispatch a private handoff on it, and the end of the session closes it; `mnema switch off agent-mirror` stops it. It is held in Claude Code on the payload the host measured to hand the hook, and not run against a model; the other hosts that read this hooks file were not measured on either event. All fourteen are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
@@ -760,6 +760,31 @@ takes the mark away: it is what lets `mnema recall` tell a session that stopped 
 **It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
 session-journal` stops it (a fact of the record like the other switches); with it off, every `Stop` reads the whole
 transcript, as before.
+
+### What a session handed to other agents
+
+When a session dispatches work to a subagent (Claude Code's `Agent` tool), a `PostToolUse` hook runs `mnema dispatched`. The
+first dispatch of the session records a **private** task, `Work handed over in this session` and the instant (UTC, to the
+minute), moved to in progress; every dispatch records a **private** handoff on it, from `orchestrator` to the subagent type
+the call named (`subagent` when it named none), with a brief that is the call's short `description` (cut at 200 characters)
+and, when the prompt cites a file that exists on disk (a path ending in `.md`, `.txt`, `.json`, `.yml` or `.yaml`), the line
+`Brief in the file: <path>`. **The prompt is never recorded**, and neither is the subagent's reply. When the session ends
+(`SessionEnd`), the task is moved to done with the count of handoffs as its note.
+
+Nothing goes to the tree a clone gets: the task and its handoffs are in this machine's private tree. The task's id and the count
+are kept in the [session journal](#the-session-journal), the one file this machine keeps per session, so the mirror does nothing
+where `session-journal` is off. A session that is resumed (the host hands the same session id) reopens its task instead of
+opening a second, and closes it again at the next end. A session that ended with no `SessionEnd` (a terminal that was killed)
+leaves its task in progress: the next session of the project that dispatches closes the tasks whose journal has been untouched
+for a day. A failure of the mirror never holds a dispatch: the hook exits 0, and what it could not do is a line on the second
+stream. Two dispatches of one session are two processes, so each takes a lock on the journal; one that does not get it in three
+seconds records nothing (no task, no handoff), says so on the second stream and counts the skip, and the task's closing note
+says how many dispatches were not mirrored. `mnema switch` lists `agent-mirror` as doing nothing while `session-journal` is off.
+
+**It is on until you switch it off** (`mnema switch off agent-mirror`, a fact of the record like the other switches), because
+what it writes stays in the private tree and holds a few words the model itself wrote to label the dispatch. The cost is one
+`mnema` process per dispatch and per session end, and no tokens: measured at 315 ms a dispatch on a machine at a load of 5 on 16
+cores, of which 204 ms is the start of the process (`mnema --version`).
 
 ### Bringing a second machine into your identity
 
@@ -1725,7 +1750,7 @@ flips it are in [the table of switches](switches.md).
 
 ```sh
 mnema switch
-#> 16 channel(s), looked in public, private, global:
+#> 17 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with and a …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside …
@@ -1741,6 +1766,7 @@ mnema switch
 #>   tool-call-count        on   the local count of tool calls: …
 #>   last-session           on   the section of the notes `mnema recall` prints that says where the last …
 #>   session-journal        on   the session journal: …
+#>   agent-mirror           on   the mirror of what a session hands to other agents: …
 #>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```
 
