@@ -101,9 +101,7 @@ describe('the stored checkpoint', () => {
   });
 
   it('refuses a stored line that is a JSON value but not an object, by its kind', () => {
-    expect(() => parseCheckpoint('[]')).toThrow(
-      'a checkpoint line that is not a JSON object',
-    );
+    expect(() => parseCheckpoint('[]')).toThrow('a checkpoint line that is not a JSON object');
     expect(() => parseEntry('[]', upcasters)).toThrow('entry must be a JSON object');
   });
 
