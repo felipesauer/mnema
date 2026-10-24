@@ -61,7 +61,7 @@ describe('mnema why, as a page', () => {
     about: 'file',
     relative: 'src/a.ts',
     exists: true,
-    rules: [{ id: 'D1', name: 'keep it small', address: 'src' }],
+    rules: [{ id: 'D1', name: 'keep it small', address: 'src', relation: 'governs' }],
     git: true,
     shallow: false,
     commits: [
@@ -94,7 +94,7 @@ describe('mnema why, as a page', () => {
       about: 'commit',
       commit: { sha: commit.sha, at: commit.at, subject: 'Do a', cites: [] },
       shallow: false,
-      rules: [{ id: 'D1', name: 'keep it small', address: 'src', files: 2 }],
+      rules: [{ id: 'D1', name: 'keep it small', address: 'src', relation: 'governs', files: 2 }],
       files: 2,
       moreFiles: false,
       linkBreaks: [],

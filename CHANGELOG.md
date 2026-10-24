@@ -39,6 +39,9 @@ with its own changelog.
   task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
   A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
   the process itself.
+- **The page lists the credential formats the record's door replaces.** `docs/cli-reference.md` (What goes into the record) now
+  names each class (`<SECRET:aws-access-key>` and the ten others) and the e-mail address, with what each matches. The table is
+  generated from the door's own list, and a test fails when a class is added without a row.
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the
@@ -103,6 +106,13 @@ with its own changelog.
 
 ### Fixed
 
+- **A refusal, a request for a person, `governing_rules` and the rules pushed before an edit say when the rule they stand on was
+  moved apart.** A rule two machines moved out of one state without seeing each other was shown in the state the last move
+  leaves, and only `show`, `read_record` and the brief said it was disputed. Each now adds one line naming the rule;
+  no verdict changes.
+- **`mnema why <path>` shows every rule in force at the path, not only the ones that govern it.** A path under a rule that
+  refuses a write or asks for a person read "0 rules"; each row now says what the rule does there (`governs`, `refuses a write`,
+  `asks for a person`), and the JSON carries it as `relation`. `governing_rules` already listed all three and is unchanged.
 - **`verify` refuses a key no writer puts in a line, a link, a checkpoint or a tail proof.** A key added beside `event`
   and `link`, inside a line's link, on a checkpoint line or in `tailproof.json`, with the line left canonical, is covered
   by no hash and no signature, so every one still closed and `verify` said "local integrity verified" (exit 0) where
@@ -186,6 +196,7 @@ with its own changelog.
 
 ### Changed
 
+- **The README and the install page say they describe the next version.** What has not reached npm yet is under Unreleased here.
 - **The first read of a server with several projects open no longer opens the projects it does not work in.** Two
   questions are put to every project of the workspace, not only to the one the session is in: where the agent left off
   (its runs are in whichever project it wrote) and whether the count of calls is switched off. Both used to open each

@@ -20,8 +20,9 @@
  *     later concern), and carrying both from the first event is what makes that
  *     possible without ever changing the event's shape.
  *   - `which`: the agent that EXECUTED the fact, when one did. A free name
- *     (e.g. `claude`), never a key: an agent has no key of its own; the machine
- *     signs on its behalf. `who` and `which` are distinct identities by
+ *     (e.g. `claude`), never a key: an agent may sign with a key of its own, a
+ *     second key of the same identity, and that key is what `signerFp` names;
+ *     `which` stays a name. `who` and `which` are distinct identities by
  *     construction: an anchor hash never collides with an agent name.
  *
  * The chain-link fields (previous-hash, tail id, hash) are NOT part of the

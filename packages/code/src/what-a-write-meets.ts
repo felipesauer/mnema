@@ -25,13 +25,113 @@
 
 import { sep } from 'node:path';
 import { DEFAULT_WAIT_MS, TailBusyError, UnreadableLineError } from '@mnema/chain';
-import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
-import type { Scope } from '@mnema/core';
+import { channelIsOn, type PushedRule, type RulesAtPath, type ScopedCache } from '@mnema/context';
+import {
+  ASKS_FOR_A_PERSON_RELATION,
+  GOVERNS_RELATION,
+  REFUSES_A_WRITE_RELATION,
+  type Scope,
+} from '@mnema/core';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
-import { placesOfAPath, readRefusesAWriteAt } from './governed-tree.js';
+import {
+  type GovernedRead,
+  onceBySpecificity,
+  placesOfAPath,
+  readRefusesAWriteAt,
+  readRulesInForceAt,
+} from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
+
+/** A rule in force at a path and the relation it holds there: what it does to the path. */
+export interface RuleInForceUnder extends PushedRule {
+  readonly relation:
+    | typeof GOVERNS_RELATION
+    | typeof REFUSES_A_WRITE_RELATION
+    | typeof ASKS_FOR_A_PERSON_RELATION;
+}
+
+/**
+ * EVERY rule in force at a path, whichever relation it holds there (`governs`, `refuses-a-write`,
+ * `asks-for-a-person`), each saying which: what a reader that TELLS what stands over a path
+ * (`mnema why`) reads. The push reads `governs` alone, because a refusal and a request have their
+ * own channels; a reader that asked what stands over a file and left those two out would say
+ * "nothing" for a path the gate refuses.
+ *
+ * IT LIVES HERE because which rules refuse and which ask is decided in this module and nowhere
+ * else (`the-gate-is-decided-once.test.ts`). It reads what the record holds and does not consult
+ * the switches: a channel switched off stops the gate from applying a rule, not the rule from
+ * standing in the record, and a reader that hid it would be telling a person the file is free.
+ * The places are the gate's own ({@link placesOfAPath}).
+ */
+export function everyRuleInForceAt(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): {
+  readonly path: string;
+  readonly relative?: string;
+  readonly rules: readonly RuleInForceUnder[];
+} {
+  const places = placesOfAPath(read);
+  const under = (
+    relation: RuleInForceUnder['relation'],
+    reading: (path: string) => RulesAtPath | undefined,
+  ): { first: RulesAtPath | undefined; rules: RuleInForceUnder[] } => {
+    const readings = places.map(reading);
+    return {
+      first: readings[0],
+      rules: readings.flatMap((one) => (one?.rules ?? []).map((rule) => ({ ...rule, relation }))),
+    };
+  };
+  const governs = under(GOVERNS_RELATION, (path) => readRulesInForceAt(sources, { ...read, path }));
+  const refuses = under(REFUSES_A_WRITE_RELATION, (path) =>
+    readRefusesAWriteAt(sources, { ...read, path }),
+  );
+  const asks = under(
+    ASKS_FOR_A_PERSON_RELATION,
+    (path) => whatAWriteAsks(sources, { ...read, path })?.asked,
+  );
+  const first = governs.first as RulesAtPath;
+  return {
+    path: first.path,
+    ...(first.relative !== undefined ? { relative: first.relative } : {}),
+    rules: onceBySpecificity(
+      [refuses.rules, asks.rules, governs.rules],
+      (rule) => `${rule.relation}\0${rule.id}`,
+    ),
+  };
+}
+
+/**
+ * The one line a gate, a push or an asked reading owes when a rule it names was moved out of one
+ * state more than once by machines that had not seen each other (`movedApartSentence` says the
+ * same of one record to `show`, `read_record` and the brief, from the same `divergentMoves`).
+ * `undefined` for every other rule, which is every rule one machine moved.
+ *
+ * IT CHANGES NO VERDICT: the state a rule is in force under is the last move in the record's
+ * order, and the gate applies it as it stands. The line says that the state was disputed, so a
+ * person refused by it can read the moves before deciding the refusal is right.
+ */
+export function movedApartLine(
+  sources: readonly ScopedCache[],
+  rules: readonly { readonly id: string }[],
+): string | undefined {
+  const named = new Set(rules.map((rule) => rule.id));
+  if (named.size === 0) return undefined;
+  const apart = new Set<string>();
+  for (const source of sources) {
+    for (const move of source.cache.divergentMoves()) {
+      if (named.has(move.entityId)) apart.add(move.entityId);
+    }
+  }
+  if (apart.size === 0) return undefined;
+  const ids = [...apart].map((id) => `\`${oneLine(id)}\``).join(', ');
+  return (
+    `Moved apart: ${ids} left one state more than once, by moves on machines that had not seen each other; ` +
+    'the rule stands as the last of them in the record leaves it, and `mnema show <id>` names the moves.'
+  );
+}
 
 /** One write, as a hook sees it: every path it touches, and where they are read from. */
 export interface AWrite {
@@ -122,7 +222,7 @@ export function whatAWriteMeets(
       const notice = editRefusesNotice(at);
       return notice === undefined ? [] : [{ at, notice }];
     });
-    if (refused.length > 0) return verdict('refuse', once(refused));
+    if (refused.length > 0) return verdict(sources, 'refuse', once(refused));
   }
 
   if (!channelIsOn(sources, ASKS_A_PERSON_CHANNEL)) return undefined;
@@ -130,7 +230,7 @@ export function whatAWriteMeets(
     const gate = whatAWriteAsks(sources, read(path));
     return gate === undefined ? [] : [{ at: gate.asked, notice: gate.notice }];
   });
-  return asked.length > 0 ? verdict('ask', once(asked)) : undefined;
+  return asked.length > 0 ? verdict(sources, 'ask', once(asked)) : undefined;
 }
 
 /**
@@ -206,14 +306,19 @@ export const UNREADABLE_RECORD_NOTE =
   'The record could not be read, so the write was refused and nothing was recorded.';
 
 function verdict(
+  sources: readonly ScopedCache[],
   grade: WriteVerdict['grade'],
   met: readonly { readonly at: RulesAtPath; readonly notice: string }[],
 ): WriteVerdict {
+  const notices = met.map((one) => {
+    const apart = movedApartLine(sources, one.at.rules);
+    return apart === undefined ? one.notice : `${one.notice}\n${apart}`;
+  });
   return {
     grade,
     at: met.map((one) => one.at),
-    reason: met.map((one) => one.notice).join('\n\n'),
-    notices: met.map((one) => one.notice),
+    reason: notices.join('\n\n'),
+    notices,
   };
 }
 

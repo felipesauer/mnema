@@ -60,6 +60,7 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 ## Status
 
 - **On npm.** `@mnema/code` is published: install it with `npm i -g @mnema/code` ([`docs/install.md`](docs/install.md)); to run the `main` branch instead, see [Build from source](docs/build-from-source.md).
+- **These pages describe the next version** (the `main` branch). What has not reached npm yet is listed under Unreleased in the [Changelog](CHANGELOG.md).
 - **Node.** Requires Node 24.15.0 or a later 24, or 26.0.0 or later.
 - **From a checkout.** The GitHub Action, the SDK and the VS Code extension are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
 
@@ -186,7 +187,7 @@ Each of these is a choice with a reason, and the reasons are in [Where it fits](
 `mnema verify` reads the events and the committed public keys of a project's trees (no private
 key, no network) and prints each verdict verbatim, naming the level it reached.
 
-- **What holds.** A changed or reordered event breaks the hash chain, and an edit made without the signing key fails the signed checkpoints.
+- **What holds.** A changed or reordered event breaks the hash chain, and an edit made without the signing key is caught where the signed checkpoints remain; `verify --require=signed` fails when they were taken out.
 - **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, a key is not proven to be the person a name says, and the agent named on a fact is the name its client announced, unless an agent key signed it (then the name the record enrolled the key under). A refusal of a write covers a host's editing tools, not its shell: `sed -i` on a protected file goes round it.
 - **What a green `verify` means.** That nothing *verifiable* is broken, not that the record is honest, and the gate protects the shape of a change, not who may make it.
 

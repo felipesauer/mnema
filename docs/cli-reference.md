@@ -1128,8 +1128,9 @@ git commit --trailer "$(mnema trailer ADR-4)"
 # addresses.
 mnema commits ADR-4
 
-# Under which decisions a file stands, or a commit: the rules in force that address it, and the
-# commits that touched it and carry a trailer.
+# Under which decisions a file stands, or a commit: the rules in force that address it, each
+# saying what it does there (governs, refuses a write, asks for a person), and the commits that
+# touched it and carry a trailer.
 mnema why src/billing/invoice.ts
 
 # Accepted decisions whose addressed paths changed in many commits since they were accepted.
@@ -1343,6 +1344,28 @@ addressed by: a task's or decision's title, a skill's name, an observation's top
 and what it is about, either end of a link and the relation between them, the agent
 and the run stamped on every event of a session. The refusal names the class and the
 field and never the value, and it happens before anything is written.
+
+These are the formats the door recognizes, in the order it applies them, with what takes the
+place of each:
+
+<!-- The table below is generated from packages/core/src/content/secrets.ts: edit the words in the-secret-classes-page-is-generated.test.ts. -->
+
+| Replaced by | What it matches |
+| --- | --- |
+| `<SECRET:aws-access-key>` | An AWS access key id: `AKIA`, `ASIA`, `ABIA` or `ACCA`, then 16 or more capitals and digits. |
+| `<SECRET:github-token>` | A GitHub token: `ghp_`, `gho_`, `ghu_`, `ghs_` or `ghr_`, then 36 or more letters and digits. |
+| `<SECRET:anthropic-key>` | An Anthropic key: `sk-ant-`, then 20 or more letters, digits, `_` or `-`. |
+| `<SECRET:openai-key>` | An OpenAI-style key: `sk-` or `sk-proj-`, then 20 or more letters, digits, `_` or `-`; a value whose every piece is a lowercase word is read as a name and left alone. |
+| `<SECRET:stripe-key>` | A Stripe key: `sk_live_`, `sk_test_`, `rk_live_` or `rk_test_`, then 20 or more letters and digits. |
+| `<SECRET:slack-token>` | A Slack token: `xoxb-`, `xoxa-`, `xoxp-`, `xoxr-` or `xoxs-`, then 10 or more letters, digits or `-`. |
+| `<SECRET:google-api-key>` | A Google API key: `AIza`, then 30 or more letters, digits, `_` or `-`. |
+| `<SECRET:npm-token>` | An npm token: `npm_`, then 36 or more letters and digits. |
+| `<SECRET:jwt>` | A JSON Web Token: three dot-separated base64url parts, the first beginning `eyJ`. |
+| `<SECRET:private-key-block>` | A private key in PEM form (`-----BEGIN ... PRIVATE KEY-----`) or mnema’s own protected key file, the whole block when it is closed, only its header when it is not. |
+| `<SECRET:url-password>` | The password of `scheme://user:password@host`; the scheme, the user and the host stay. |
+| `<email>` | An e-mail address, except `noreply@`, `no-reply@` and GitHub’s `noreply.github.com` form, which name no one. |
+
+<!-- End of the generated table. -->
 
 Three limits, all stated rather than hidden. **It catches only formats it
 recognizes**: a proprietary token or a password in prose goes in verbatim, so

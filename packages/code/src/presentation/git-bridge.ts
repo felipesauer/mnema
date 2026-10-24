@@ -102,12 +102,20 @@ function citation(cite: WhyCitation): string {
   return `${oneLine(cite.value)} (no decision here by that name)`;
 }
 
+/** What each relation does to the path, in the words a row says it. */
+const WHAT_THE_RULE_DOES: Readonly<Record<WhyRule['relation'], string>> = {
+  governs: 'governs',
+  'refuses-a-write': 'refuses a write',
+  'asks-for-a-person': 'asks for a person',
+};
+
 /** The rows of the rules that address something. */
 function ruleRows(render: Render, rules: readonly WhyRule[]): string[] {
   return rules.map((rule) =>
     render(
       itemLine([
         oneLine(rule.address === '' ? '.' : rule.address),
+        WHAT_THE_RULE_DOES[rule.relation],
         oneLine(rule.name),
         asId(oneLine(rule.id)),
         ...(rule.files !== undefined
