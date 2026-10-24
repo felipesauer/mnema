@@ -487,6 +487,24 @@ export function journalAfter(input: {
   };
 }
 
+/**
+ * The decisions the project's own trees hold that were created since `openedAt`, with the state they
+ * have NOW: the record's answer, which a journal written at the last `Stop` can be behind. Undefined
+ * when the instant is not one.
+ */
+export function decisionsRecordedSince(
+  sources: readonly ScopedCache[],
+  openedAt: string | null,
+): readonly JournalDecision[] | undefined {
+  const since = openedAt === null ? Number.NaN : Date.parse(openedAt);
+  if (Number.isNaN(since)) return undefined;
+  return sources
+    .filter((source) => source.scope !== 'global')
+    .flatMap((source) => source.cache.listDecisions())
+    .filter((one) => Date.parse(one.createdAt) >= since)
+    .map((one) => ({ id: one.id, state: one.state }));
+}
+
 /** The journal that has nothing in it yet: a reading from the top of the transcript. */
 export function readingOf(previous: Journal | undefined): Reading {
   return previous === undefined ? emptyReading() : previous.reading;

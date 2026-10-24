@@ -167,12 +167,19 @@ const CURSOR_HOOK = 'edit-refuses-a-write.mjs';
 /** The handlers that gate a write, and so are handed one and do not ask which program is first. */
 const GATES: readonly string[] = [GATE_HOOK, CURSOR_HOOK];
 /**
- * The handler that says, at `Stop` and before a compaction, how many files the session wrote and how
- * many decisions were recorded since it opened. It is declared under two events and runs the one
- * verb, `mnema tally`, on the payload of either; what it counts is
- * `a-session-says-what-it-wrote.test.ts`.
+ * The handler that says, at `Stop`, how many files the session wrote and how many decisions were
+ * recorded since it opened, and keeps the session's journal. It runs the one verb, `mnema tally`, on
+ * the payload; what it counts is `a-session-says-what-it-wrote.test.ts`.
  */
 const TALLY_HOOK = 'session-tally.mjs';
+/**
+ * The handler that runs only after a compaction (`SessionStart`, matcher `compact`) and says what
+ * the session had recorded before, from its journal. It reads the session id off the payload and runs
+ * `mnema recall --after-a-compaction`; what it says is `the-compaction-hands-back-what-was-recorded.test.ts`.
+ */
+const COMPACTED_HOOK = 'session-compacted.mjs';
+/** The session id these cases hand the handler that needs one. */
+const A_SESSION = 'a-session-0001';
 /**
  * The handler that records, at `Stop` and only where `user-corrections` was switched on, the places a
  * person corrected the agent as proposals. Off by default: in these projects it is tried and answers
@@ -225,6 +232,7 @@ const SUBAGENT_HOOK = 'subagent-start.mjs';
 const VERB_OF: Readonly<Record<string, string>> = {
   [DOCUMENT_HOOK]: 'brief --hook',
   [NOTES_HOOK]: 'recall --hook',
+  [COMPACTED_HOOK]: `recall --after-a-compaction --session ${A_SESSION}`,
   [TALLY_HOOK]: 'tally',
   [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor --agent-key cursor',
@@ -254,6 +262,7 @@ function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
   if (GATES.includes(handler)) return [];
   return handler === TALLY_HOOK ||
+    handler === COMPACTED_HOOK ||
     handler === CORRECTIONS_HOOK ||
     handler === HANDBACK_HOOK ||
     handler === SETTLED_HOOK ||
@@ -270,6 +279,15 @@ function callsOf(handler: string): string[] {
  * asks about, so the gate is tried, derives nothing, and writes nothing.
  */
 function stdinOf(command: string, at: string): string {
+  // The handler that follows a compaction is handed the session it is for.
+  if (handlerOf(command) === COMPACTED_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'SessionStart',
+      source: 'compact',
+      session_id: A_SESSION,
+      cwd: at,
+    });
+  }
   // The tally is handed a `Stop` that names a transcript there is none of: it is tried, and a
   // transcript it cannot read is a note on the second stream and no byte on the first.
   if (handlerOf(command) === TALLY_HOOK || handlerOf(command) === CORRECTIONS_HOOK) {
@@ -607,9 +625,9 @@ describe('the record arrives unasked', () => {
     expect(commands.map(handlerOf)).toEqual([
       DOCUMENT_HOOK,
       NOTES_HOOK,
+      COMPACTED_HOOK,
       TALLY_HOOK,
       CORRECTIONS_HOOK,
-      TALLY_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
       SETTLED_HOOK,
@@ -1351,7 +1369,6 @@ describe('the record arrives unasked', () => {
       expect(declaredEvents()).toEqual([
         'SessionStart',
         'Stop',
-        'PreCompact',
         'PreToolUse',
         'PostToolUse',
         'SessionEnd',
@@ -1371,6 +1388,7 @@ describe('the record arrives unasked', () => {
       expect([...reached]).toEqual([
         'brief --hook',
         'recall --hook',
+        `recall --after-a-compaction --session ${A_SESSION}`,
         'tally',
         'corrections',
         'before-a-write --host cursor --agent-key cursor',
@@ -1391,6 +1409,7 @@ describe('the record arrives unasked', () => {
       expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
         'brief --hook: reads',
         'recall --hook: reads',
+        `recall --after-a-compaction --session ${A_SESSION}: reads`,
         'tally: reads',
         'corrections: mutates',
         'before-a-write --host cursor --agent-key cursor: mutates',
@@ -1479,9 +1498,9 @@ describe('the record arrives unasked', () => {
     expect(validated).toEqual([
       'command:/hooks/session-start.mjs',
       'command:/hooks/session-recall.mjs',
+      'command:/hooks/session-compacted.mjs',
       'command:/hooks/session-tally.mjs',
       'command:/hooks/session-corrections.mjs',
-      'command:/hooks/session-tally.mjs',
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',

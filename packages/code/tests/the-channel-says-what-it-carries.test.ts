@@ -307,6 +307,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
     );
     expect(pushed).toContain('edit-refuses-a-write');
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
+      'after-a-compaction',
       'agent-accepts',
       'agent-mirror',
       'brief-document',
@@ -464,6 +465,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'choice-settled.mjs:choice-settled',
       'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
       'edit-refuses-a-write.mjs:edit-refuses-a-write',
+      'session-compacted.mjs:after-a-compaction',
       'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
@@ -517,9 +519,9 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
+      'SessionStart:command:session-compacted.mjs',
       'Stop:command:session-tally.mjs',
       'Stop:command:session-corrections.mjs',
-      'PreCompact:command:session-tally.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',

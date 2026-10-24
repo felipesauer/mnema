@@ -53,6 +53,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAfterAWrite } from '../src/commands/after-a-write.js';
+import { runAfterACompaction } from '../src/commands/compacted.js';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runDispatched } from '../src/commands/dispatched.js';
 import { runHandback } from '../src/commands/handback.js';
@@ -64,6 +65,7 @@ import { openSession, type Session } from '../src/mcp/session.js';
 import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { type CliIo, run } from '../src/program.js';
 import {
+  AFTER_A_COMPACTION_CHANNEL,
   AGENT_ACCEPTS_CHANNEL,
   AGENT_MIRROR_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
@@ -562,6 +564,37 @@ const HONOURED: Readonly<
     speaks: async () => {
       const done = runRecall({ cwd: repo, env, session: 'this-session' });
       return done.ok && done.lastSession !== undefined;
+    },
+  },
+  [AFTER_A_COMPACTION_CHANNEL]: {
+    // A SENTENCE AFTER A COMPACTION, driven the way a host asks for it: the session's journal on this
+    // machine, and the sentence read for that session. "Speaks" is the sentence being there.
+    setUp: async () => {
+      const file = journalFile(resolveTrees(repo, env), 'a-compacted-session');
+      if (file === undefined) throw new Error('no project here');
+      writeJournal(
+        file,
+        {
+          version: 1,
+          session: 'a-compacted-session',
+          updatedAt: new Date().toISOString(),
+          openedAt: null,
+          decisions: [],
+          notes: [],
+          questionsWithoutDecision: 0,
+          decisionFilesUncited: 0,
+          filesEdited: 2,
+          tasksInProgress: [],
+          runsOpen: [],
+          trees: { public: { goal: null, outcome: null }, private: { goal: null, outcome: null } },
+          reading: emptyReading(),
+        },
+        new Date(),
+      );
+    },
+    speaks: async () => {
+      const done = runAfterACompaction({ cwd: repo, env, session: 'a-compacted-session' });
+      return done.ok && done.text !== undefined;
     },
   },
   [SESSION_JOURNAL_CHANNEL]: {
