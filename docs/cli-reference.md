@@ -99,15 +99,17 @@ CLI and the MCP tools behave identically, because they are the same call.
   before a write, and it asks, and records, exactly where the third would; Claude Code and
   Cursor never run it. Beside them, on the same `PreToolUse` matcher, one more hook runs only
   where `$CURSOR_VERSION` is set: the refusal for Cursor's command-line agent, which answers a
-  rule that refuses a write and nothing else, since that agent ignores a pause. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
-  before a conversation is compacted: when the session's own tool calls wrote a file (at
-  `Stop`, in the last response), it prints one line saying how many files they wrote and how
+  rule that refuses a write and nothing else, since that agent ignores a pause. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
+  the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is
   recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
   [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
-  what the host wrote since. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
+  what the host wrote since. The sixth runs only after a conversation was compacted (the `compact` matcher of
+  `SessionStart`) and hands it back what its session had recorded before, one sentence read from that journal (see
+  [After a compaction](#after-a-compaction)); nothing runs before a compaction, because the host throws away what a
+  hook says then. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
   (`mnema switch on user-corrections`): it reads the transcript's own words, the one reader here
   that does, finds the prompts that open by correcting the agent ("no, …", "stop …", "do not …",
   "that is wrong", "use … instead", in English and Portuguese), and the answers the person gave to
@@ -730,7 +732,7 @@ then says that the count is off and that what it shows was kept before.
 
 ### The session journal
 
-At each `Stop` (and before a compaction) `mnema tally` keeps a small file for the session, at
+At each `Stop` `mnema tally` keeps a small file for the session, at
 `<data directory>/sessions/<digest of the project>/<the host's session id>.json` (`~/.mnema`, or `$MNEMA_HOME`), when the hook
 names the session (Claude Code does, as `session_id`). It lets the next `Stop` read the transcript from the byte where the last
 reading stopped instead of the whole conversation again, and it holds, in ids and counts, what the session did with the
@@ -761,6 +763,27 @@ takes the mark away: it is what lets `mnema recall` tell a session that stopped 
 **It is on until you switch it off**, because what it keeps is local and holds ids and counts: `mnema switch off
 session-journal` stops it (a fact of the record like the other switches); with it off, every `Stop` reads the whole
 transcript, as before.
+
+### After a compaction
+
+A compaction replaces the conversation with a summary, and the decisions a session recorded are among the first things a summary
+drops. The brief and the notes come back on their own (a `SessionStart` fires after a compaction too) and say what the project
+holds; what is lost is what *this session* had done with the record. So the plugin has one more `SessionStart` hook, under the
+`compact` matcher, that reads the session's id off the payload and runs `mnema recall --after-a-compaction --session <id>`.
+It prints one sentence read from the session's journal, about sixty to a hundred and twenty tokens, and nothing else. The decisions in it are
+the record's, not the journal's: those created since the session opened, in the state they have now, because the journal is written at the end
+of a response and one recorded or moved since is not in it:
+
+```text
+Before this conversation was compacted, this session had: 2 decisions recorded in this project’s record (ADR-12: proposed; ADR-13: accepted); 1 note of this host’s memory copied into this machine’s private tree; 1 question answered with no decision recorded after; its own tool calls wrote 5 files.
+```
+
+Each part is left out when it is zero, and where nothing is left it prints nothing. It is a count, with the labels of decisions the
+record numbered, and none of the session's words (not even the goal): a fact and not an order. It records nothing. It is silent for
+a session with no journal, for a payload that names no session, and for a `mnema` older than the flag (which refuses it and is
+not asked again without it). `mnema switch off after-a-compaction` stops it, and so does switching the journal off.
+This is Claude Code's hook; the other hosts' hooks files do not carry it, since none of them was measured to run a hook after
+a compaction.
 
 ### What a session handed to other agents
 
@@ -1728,7 +1751,7 @@ flips it are in [the table of switches](switches.md).
 
 ```sh
 mnema switch
-#> 17 channel(s), looked in public, private, global:
+#> 18 channel(s), looked in public, private, global:
 #>   brief-document         on   the document `mnema brief` prints, which a session opens with and a …
 #>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside …
@@ -1743,9 +1766,10 @@ mnema switch
 #>   subagent-handback      on   the return of a subagent that ends its final reply without the block of …
 #>   tool-call-count        on   the local count of tool calls: …
 #>   last-session           on   the section of the notes `mnema recall` prints that says where the last …
+#>   after-a-compaction     on   the sentence a conversation is handed right after it was compacted …
 #>   session-journal        on   the session journal: …
 #>   agent-mirror           on   the mirror of what a session hands to other agents: …
-#>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
+#>   session-tally          on   the line a session’s `Stop` hook prints: …
 ```
 
 <!-- End of the generated listing. -->

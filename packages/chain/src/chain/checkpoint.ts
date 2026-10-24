@@ -44,7 +44,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { keyList, parseCanonicalLine } from '../events/stored-json.js';
 import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
@@ -195,9 +195,45 @@ export function serializeCheckpoint(checkpoint: Checkpoint): string {
   });
 }
 
+/** The keys of a stored checkpoint line: the seven signed ones and `sig`, and nothing else. */
+const CHECKPOINT_LINE_KEYS = [
+  'contentRoot',
+  'fromSeq',
+  'prev',
+  'scheme',
+  'sig',
+  'signerFp',
+  'tail',
+  'toSeq',
+] as const;
+
+/**
+ * The line's shape, checked before its bytes, in the second reader's order and words
+ * (`read_checkpoint` in `mnemaverify/checkpoint.py`): an object, a scheme this reader knows,
+ * then exactly the eight keys. A key beside them is outside the signed message, so the
+ * signature still verifies with it there, and it is refused.
+ */
+function checkpointShape(raw: unknown): void {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new CheckpointParseError('a checkpoint line that is not a JSON object');
+  }
+  const { scheme } = raw as { scheme?: unknown };
+  if (scheme !== SCHEME) return;
+  const held = Object.keys(raw);
+  const missing = CHECKPOINT_LINE_KEYS.filter((key) => !held.includes(key));
+  const unexpected = held.filter(
+    (key) => !(CHECKPOINT_LINE_KEYS as readonly string[]).includes(key),
+  );
+  if (missing.length > 0 || unexpected.length > 0) {
+    throw new CheckpointParseError(
+      `checkpoint keys: missing ${keyList(missing)}, unexpected ${keyList(unexpected)}`,
+    );
+  }
+}
+
 /** Parses a stored checkpoint line. */
 export function parseCheckpoint(line: string): Checkpoint {
-  const raw = parseCanonicalLine(line) as Record<string, unknown>;
+  const raw = parseCanonicalLine(line, checkpointShape) as Record<string, unknown>;
   const requireString = (key: string): string => {
     const value = raw[key];
     if (typeof value !== 'string' || value.length === 0) {

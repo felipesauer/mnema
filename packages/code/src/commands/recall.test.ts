@@ -167,6 +167,7 @@ describe('mnema recall: the verb', () => {
       '--hook',
       '--host',
       '--session',
+      '--after-a-compaction',
     ]);
   });
 });
