@@ -100,6 +100,11 @@ describe('the stored checkpoint', () => {
     expect(() => parseCheckpoint(line)).toThrow(/unknown checkpoint scheme/);
   });
 
+  it('refuses a stored line that is a JSON value but not an object, by its kind', () => {
+    expect(() => parseCheckpoint('[]')).toThrow('a checkpoint line that is not a JSON object');
+    expect(() => parseEntry('[]', upcasters)).toThrow('entry must be a JSON object');
+  });
+
   it('signs everything but the signature, hex-encoded', () => {
     const checkpoint = signed();
     // Ed25519 signatures are 64 bytes: 128 hex digits, lower case.

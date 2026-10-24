@@ -295,6 +295,27 @@ accepted. A genesis link is a `null`
 `prev`, never an empty string, and the top-level keys are `event` and `link` with
 no insignificant whitespace between them: the same file holds both.
 
+**A key no writer puts there is refused, by name, in every structure this document
+signs or chains.** A stored line holds `event` and `link` and nothing else, and its link
+holds `hash`, `prev`, `seq` and `tail` and nothing else; a checkpoint line holds its eight
+keys (§6) and a tail proof its four (§6.1), and nothing else. None of those extra places
+is covered by a hash or a signature: the entry hash takes the event, the tail, the seq and
+the prev (§3), and a signature takes the keys its section names. So a key added beside
+them, with the line left canonical, leaves every hash and every signature closing; only
+the set of keys tells that line from one a writer wrote, and both readers refuse it, with
+the keys they found and the keys the structure has, in one sentence: `top-level keys are
+['event', 'forged', 'link'], not ['event', 'link']`, `link keys are […], not ['hash',
+'prev', 'seq', 'tail']`, `checkpoint keys: missing [], unexpected ['forged']`, `tail-proof
+keys are […], not ['scheme', 'sig', 'signerFp', 'tail']`. The keys are checked before the
+bytes, so a line that is both re-spelled and carries one is refused for the key. A key in
+the event itself is §4.1's. A stored block header (§8) holds `header` and `height`; one
+with any other key is not read, as one that is not canonical is not. This rule was
+tightened after the first publication (§7.1): no writer of 0.1.0 to 0.1.2 put such a key in
+a record, and a version from before it verifies such a record and refuses nothing
+(`both-readers-read-the-same-bytes.test.ts`; `second-reader-agrees-on-the-record.test.ts`,
+`unknown-key-beside-event-and-link`, `unknown-key-in-a-link`,
+`unknown-key-in-a-checkpoint` and `unknown-key-in-the-tail-proof`).
+
 **A stored line is UTF-8, and a line that is not is refused** (§1.6). A reader decodes
 the bytes strictly: a sequence that is not well-formed UTF-8 (a lone continuation byte,
 an overlong form, a surrogate, a code point past U+10FFFF, a sequence cut short) is not
@@ -465,7 +486,7 @@ part of it**:
 - The signature is **Ed25519** over those bytes (RFC 8032), hex-encoded, stored as
   `sig` alongside the fields. The checkpoints of a tail live in
   `checkpoints.jsonl`, one canonical line each (the eight keys, `sig` included,
-  sorted by §1) in chain order.
+  sorted by §1) in chain order, and a line with any other key is refused (§4).
 - **The Ed25519 rule is the strict one**, and it is the same for every signature
   this document names (a checkpoint's, a tail proof's, an enrolment's). With A the
   public key's 32 bytes, R the first 32 bytes of the signature and S the last 32 as a
@@ -557,7 +578,8 @@ mentioned, and had to try five candidate messages to learn what it signs.
 The signed message is the same shape as §6: the canonical bytes (§1) of the object
 with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else. The
 signature is Ed25519 under the key `signerFp` names, which is the fingerprint the
-tail id begins with.
+tail id begins with. The file holds those four keys, `sig` included, and a proof with any
+other key is refused (§4).
 
 So a reader takes the key from the **tail id**, recomputes its fingerprint from the
 committed material as §6 says, and refuses a proof whose `signerFp` is any other
@@ -1067,7 +1089,8 @@ are this product's, and the test named below holds both readers beside this docu
   version wrote is read by every later one under the contract its `kind` and `v` selected,
   lifted through the registered upcasters when that kind has gained a later `v`, and the proof
   is taken over the line as written (§7, above). A later version does not refuse such a line for
-  its shape. This is a promise about reading the lines, not about the verdict over them (below).
+  its shape, except where the tightening below says otherwise. This is a promise about reading the
+  lines, not about the verdict over them (below).
 - **Forward: a version refuses by name what it cannot read.** A line whose `kind` and `v` no row
   of a reader's table declares is refused (§4.1), never guessed at and never skipped, and the
   refusal names the pair, what the reader reads of that kind, and, in this product, which mnema
@@ -1116,6 +1139,13 @@ both readers refuse it with the words above.
   such a change is the backward promise (the later version still reads every line an earlier one
   wrote) and that it is a change to this document and to the changelog, visible in a diff. It is
   not a refusal a version from before it can give.
+- **The unknown-key rule is such a tightening, and a shape one.** §4 refuses a line that carries a
+  key its writer does not declare, so it refuses on a line's shape, which the backward promise above
+  otherwise leaves alone. It was tightened after the first publication. A version from before it
+  verifies such a line and refuses nothing, as above. It holds backward only because no published
+  writer ever wrote such a key: 0.1.0, 0.1.1 and 0.1.2 were each checked by writing records of every
+  kind with that binary, and none of them wrote one. A later writer that does would be refused by
+  the rule itself, and by no earlier version.
 - **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
   skipped the line and read the rest would say a record verifies with facts in it that it cannot
   judge.

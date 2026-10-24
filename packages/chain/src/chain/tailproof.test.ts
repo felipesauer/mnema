@@ -102,7 +102,14 @@ describe('tail proof', () => {
 
   it('rejects malformed stored lines', () => {
     expect(() => parseTailProof('{not json')).toThrow(TailProofParseError);
-    expect(() => parseTailProof('{"scheme":"mnema-tail/1"}')).toThrow(/missing string "tail"/);
+    expect(() => parseTailProof('[]')).toThrow('a tail proof that is not a JSON object');
+    // A key missing is said as the second reader says it: the keys found, and the keys a proof has.
+    expect(() => parseTailProof('{"scheme":"mnema-tail/1"}')).toThrow(
+      "tail-proof keys are ['scheme'], not ['scheme', 'sig', 'signerFp', 'tail']",
+    );
+    expect(() =>
+      parseTailProof('{"scheme":"mnema-tail/1","sig":1,"signerFp":"f","tail":"t"}'),
+    ).toThrow(/missing string "sig"/);
     expect(() => parseTailProof('{"scheme":"other","sig":"a","signerFp":"f","tail":"t"}')).toThrow(
       /unknown tail-proof scheme/,
     );

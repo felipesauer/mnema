@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { firstDuplicateKey, parseStoredJson, StoredJsonError } from './stored-json.js';
+import { firstDuplicateKey, keyList, parseStoredJson, StoredJsonError } from './stored-json.js';
 
 describe('firstDuplicateKey', () => {
   it.each([
@@ -66,5 +66,15 @@ describe('parseStoredJson', () => {
     expect(message).toContain('a duplicate object key on the line:');
     expect(message).not.toContain('\u001b');
     expect(message.length).toBeLessThan(160);
+  });
+});
+
+describe('keyList', () => {
+  it('spells a refused key list as Python spells a list of strings, escapes included', () => {
+    // Sorted by code point; a tab and a carriage return are written as escapes, not as text.
+    expect(keyList(['a\r', 'a\t'])).toBe("['a\\t', 'a\\r']");
+    // A non-BMP format character (a language tag) takes the eight-digit escape.
+    expect(keyList(['x\u{E0001}'])).toBe("['x\\U000e0001']");
+    expect(keyList(['link', 'event'])).toBe("['event', 'link']");
   });
 });
