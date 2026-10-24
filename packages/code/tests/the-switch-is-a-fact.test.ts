@@ -55,6 +55,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAfterAWrite } from '../src/commands/after-a-write.js';
 import { runAfterACompaction } from '../src/commands/compacted.js';
 import { runCorrections } from '../src/commands/corrections.js';
+import { runDispatched } from '../src/commands/dispatched.js';
 import { runHandback } from '../src/commands/handback.js';
 import { runRecall } from '../src/commands/recall.js';
 import { runSettled } from '../src/commands/settled.js';
@@ -66,6 +67,7 @@ import { type CliIo, run } from '../src/program.js';
 import {
   AFTER_A_COMPACTION_CHANNEL,
   AGENT_ACCEPTS_CHANNEL,
+  AGENT_MIRROR_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
   CHOICE_SETTLED_CHANNEL,
   DECISION_FILE_WRITTEN_CHANNEL,
@@ -508,6 +510,28 @@ const HONOURED: Readonly<
         },
       );
       return 'hookSpecificOutput' in done.reply;
+    },
+  },
+  [AGENT_MIRROR_CHANNEL]: {
+    // A TASK THAT WRITES, driven the way a host drives it: the `PostToolUse` after the agent tool,
+    // for a session of its own each time, because a session that already has its task opens no second.
+    // "Speaks" is the journal of that session naming a task.
+    setUp: async () => {},
+    speaks: async () => {
+      const session = `a-dispatching-session-${Math.random().toString(36).slice(2)}`;
+      runDispatched(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'PostToolUse',
+            tool_name: 'Agent',
+            session_id: session,
+            tool_input: { description: 'a dispatch', prompt: 'a prompt', subagent_type: 'x' },
+          }),
+        },
+      );
+      const file = journalFile(resolveTrees(repo, env), session);
+      return file !== undefined && readJournal(file)?.handedOver !== undefined;
     },
   },
   [LAST_SESSION_CHANNEL]: {

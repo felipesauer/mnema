@@ -200,6 +200,12 @@ const HANDBACK_HOOK = 'subagent-stop.mjs';
  */
 const AFTER_A_WRITE_HOOK = 'after-a-write.mjs';
 /**
+ * The handler that records what a session hands to other agents: after the host's agent tool and
+ * when a session ends. Here it is handed the payload of a dispatch that names no session, so it is
+ * tried and records nothing; what it records is `a-session-hands-its-dispatches-to-one-private-task.test.ts`.
+ */
+const DISPATCHED_HOOK = 'agent-dispatched.mjs';
+/**
  * The handler that hands the agent one sentence after a question it asked the person was answered.
  * It is handed the payload of that question tool: in a project it answers with the sentence, outside
  * one it says nothing; what it says is `a-settled-choice-is-said.test.ts`.
@@ -233,6 +239,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [GATE_HOOK]: 'before-a-write --host vscode --agent-key vscode',
   [SETTLED_HOOK]: 'settled',
   [AFTER_A_WRITE_HOOK]: 'after-a-write',
+  [DISPATCHED_HOOK]: 'dispatched',
   [HANDBACK_HOOK]: 'handback',
   [SUBAGENT_HOOK]: 'brief --hook',
 };
@@ -259,7 +266,8 @@ function callsOf(handler: string): string[] {
     handler === CORRECTIONS_HOOK ||
     handler === HANDBACK_HOOK ||
     handler === SETTLED_HOOK ||
-    handler === AFTER_A_WRITE_HOOK
+    handler === AFTER_A_WRITE_HOOK ||
+    handler === DISPATCHED_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -309,6 +317,16 @@ function stdinOf(command: string, at: string): string {
         file_path: join(home, '.claude', 'projects', '-unasked', 'memory', 'project_unasked.md'),
         content: '---\nname: Unasked\ntype: project\n---\nA note.\n',
       },
+      cwd: at,
+    });
+  }
+  // The agent tool after it ran, with no session named: its shell passes the payload on, the verb is
+  // tried, and a payload that names no session is a dispatch it cannot keep a task for.
+  if (handlerOf(command) === DISPATCHED_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Agent',
+      tool_input: { description: 'a dispatch', prompt: 'a prompt', subagent_type: 'general' },
       cwd: at,
     });
   }
@@ -584,7 +602,7 @@ afterAll(() => {
 const EVERY_HOOK_RUN = 30_000;
 
 describe('the record arrives unasked', () => {
-  it('says nothing at all where there is no project', () => {
+  it('says nothing at all where there is no project', { timeout: EVERY_HOOK_RUN }, () => {
     // The assertion that protects the machine of whoever installs this. `mnema brief`
     // outside a project refuses on stderr and exits 1, measured on the binary, so a
     // hook wired straight to the verb would put that sentence, or an error, into every
@@ -614,6 +632,8 @@ describe('the record arrives unasked', () => {
       GATE_HOOK,
       SETTLED_HOOK,
       AFTER_A_WRITE_HOOK,
+      DISPATCHED_HOOK,
+      DISPATCHED_HOOK,
       SUBAGENT_HOOK,
       HANDBACK_HOOK,
     ]);
@@ -1351,6 +1371,7 @@ describe('the record arrives unasked', () => {
         'Stop',
         'PreToolUse',
         'PostToolUse',
+        'SessionEnd',
         'SubagentStart',
         'SubagentStop',
       ]);
@@ -1374,6 +1395,7 @@ describe('the record arrives unasked', () => {
         'before-a-write --host vscode --agent-key vscode',
         'settled',
         'after-a-write',
+        'dispatched',
         'handback',
       ]);
       expect([...reached]).toEqual([...new Set(Object.values(VERB_OF))]);
@@ -1394,6 +1416,7 @@ describe('the record arrives unasked', () => {
         'before-a-write --host vscode --agent-key vscode: mutates',
         'settled: reads',
         'after-a-write: mutates',
+        'dispatched: mutates',
         'handback: reads',
       ]);
     },
@@ -1483,6 +1506,8 @@ describe('the record arrives unasked', () => {
       'command:/hooks/edit-asks-a-person.mjs',
       'command:/hooks/choice-settled.mjs',
       'command:/hooks/after-a-write.mjs',
+      'command:/hooks/agent-dispatched.mjs',
+      'command:/hooks/agent-dispatched.mjs',
       'command:/hooks/subagent-start.mjs',
       'command:/hooks/subagent-stop.mjs',
     ]);

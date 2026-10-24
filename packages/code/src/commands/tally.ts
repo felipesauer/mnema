@@ -153,7 +153,16 @@ export function runSessionTally(
       sources,
       now: new Date(),
     });
-    if (file !== undefined) writeJournal(file, journal, new Date());
+    if (file !== undefined) {
+      // A dispatch may have opened the session's task while this read the transcript: its id is
+      // taken from the file as it is now, so the write does not give it back.
+      const handedOver = readJournal(file)?.handedOver ?? journal.handedOver;
+      writeJournal(
+        file,
+        handedOver === undefined ? journal : { ...journal, handedOver },
+        new Date(),
+      );
+    }
 
     if (!speaks) return silent();
     if (journal.filesEdited === 0) return silent();

@@ -2381,9 +2381,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the reading `@mnema/chain` worded, every value of which is classified in `the-phrase-the-domain-words-is-one-line`',
   },
 
-  'switches.ts itemLine(columnsOf(row, width, anchors)) #1': {
+  'switches.ts itemLine(columnsOf(row, width, anchors, rows)) #1': {
     verdict: 'minted',
     why: 'the columns this module composed, each classified on its own row here',
+  },
+  'switches.ts «(does nothing while {} is off)» needs #1': {
+    verdict: 'minted',
+    why: 'the name of the channel that one needs, one of the product’s own, as the product’s own table of needs names it',
   },
   'switches.ts asId(column(row.state.channel, width)) #1': {
     verdict: 'minted',
@@ -2456,8 +2460,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record.
-    expect(FOUND.sites.length).toBe(475);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line.
+    expect(FOUND.sites.length).toBe(476);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2479,7 +2483,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(130);
-    expect(count('minted')).toBe(263);
+    expect(count('minted')).toBe(264);
     expect(count('composed')).toBe(82);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(130);
   });

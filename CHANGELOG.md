@@ -25,6 +25,20 @@ with its own changelog.
   nowhere, questions answered with no decision after, tasks in progress). The plugin's hook passes the session's own id
   (`mnema recall --session <id>`), so a session never reads its own journal back, for instance after a compaction. A new
   switch, `last-session`, on by default, stops the section alone.
+- **The work a session hands to other agents is kept as one private task.** In the Claude Code plugin, a `PostToolUse` hook on the
+  `Agent` tool and a `SessionEnd` hook run a new verb, `mnema dispatched`: the first dispatch of a session records a private
+  task, `Work handed over in this session` and the instant, in progress; each dispatch records a private handoff on it, from
+  `orchestrator` to the subagent type, with the call's short description as the brief and the path of a file the prompt cites
+  when that file exists; the end of the session moves the task to done with the count of handoffs. The prompt is never recorded
+  and nothing goes to the public tree. The task's id is kept in the session journal (a new `handedOver` field), so a resumed
+  session reopens its task, and the next session that dispatches closes the tasks left by a journal untouched for a day.
+  `mnema switch off agent-mirror` stops it (a new channel, on by default; it also does nothing where `session-journal` is off,
+  and `mnema switch` lists it as `does nothing while session-journal is off` then), and a failure of the mirror never holds a
+  dispatch. Where the journal's lock is not had in time (another dispatch of the session holds it), the mirror records nothing
+  rather than go on without it, which opened tasks no one closed: it says so on the second stream, counts the skip, and the
+  task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
+  A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
+  the process itself.
 - **A session journal, kept at `Stop`.** `mnema tally` now keeps, for a session whose hook names it (`session_id`), a small
   file at `<data directory>/sessions/<digest of the project>/<session id>.json`: a byte cursor into the transcript, so each
   `Stop` reads only the lines the host wrote since and not the whole conversation again, and, in ids and counts, what the

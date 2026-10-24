@@ -386,6 +386,7 @@ export type SwitchableChannel =
   | 'choice-settled'
   | 'tool-call-count'
   | 'session-journal'
+  | 'agent-mirror'
   | 'last-session';
 
 /**
@@ -516,6 +517,26 @@ export const LAST_SESSION_CHANNEL: SwitchableChannel = 'last-session';
  * none of anybody's words.
  */
 export const AFTER_A_COMPACTION_CHANNEL: SwitchableChannel = 'after-a-compaction';
+
+/**
+ * The switch of the mirror of the dispatches a session makes: with it on, a `PostToolUse` hook on
+ * the host's `Agent` tool opens one private task for the session at its first dispatch, records a
+ * private handoff on it for each dispatch (the call's short description, and the path of a brief the
+ * prompt cites, never the prompt), and the session's end moves the task to done with the count.
+ *
+ * NOT A CHANNEL TO A MODEL: nothing is put in front of anybody. It writes to the private tree without
+ * a verb being typed, and begins ON, like the mirror of the host's memory; it keeps its task in the
+ * session journal, so it does nothing where `session-journal` is off.
+ */
+export const AGENT_MIRROR_CHANNEL: SwitchableChannel = 'agent-mirror';
+
+/**
+ * The channels that do nothing while another is off, and the one they need: a channel on whose
+ * dependence is off is on in the record and does nothing, which a list of switches has to say.
+ */
+export const CHANNEL_NEEDS: Readonly<Partial<Record<SwitchableChannel, SwitchableChannel>>> = {
+  'agent-mirror': SESSION_JOURNAL_CHANNEL,
+};
 
 /**
  * The channel that sends a subagent back, once, when its final reply does not end in the block of
@@ -690,6 +711,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'it puts nothing in front of a model and writes nothing to the record: the journal is a file on ' +
     'this machine, outside it, holding ids and counts, so a fact saying it was kept would be a ' +
     'count of the count',
+  'agent-mirror':
+    'each task and handoff it records is itself the recorded fact (an event of its own, with its ' +
+    'own actor), and it puts nothing in front of a model, so a second fact saying the channel ' +
+    'served would repeat them',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing (no event, no key, no run), so a count of what a session did never moves the ' +
@@ -787,6 +812,12 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'nothing can say, to a later session, to a compaction or on the run that closes, what this one did. ' +
     'The journal is a file on this machine, outside the record, holding ids and counts and none of ' +
     'the session’s words',
+  'agent-mirror':
+    'the mirror of what a session hands to other agents: with it on, a `PostToolUse` hook on the ' +
+    'host’s `Agent` tool records a private task for the session and a private handoff for each ' +
+    'dispatch (its short description and the path of a brief file, never the prompt), and the ' +
+    'session’s end closes the task with the count. It needs `session-journal` on, and records ' +
+    'nothing to the tree a clone gets',
   'session-tally':
     'the line a session’s `Stop` hook prints: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

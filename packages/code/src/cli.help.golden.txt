@@ -123,6 +123,8 @@ $ mnema --help
 |                   format it is checked by
 |   settled         say to the agent, after a question to the person was answered,
 |                   which tool records a choice
+|   dispatched      record a session’s dispatches to other agents as one private
+|                   task and a handoff each, for a PostToolUse or SessionEnd hook
 |
 | Help:
 |   help            display help for command
@@ -1449,6 +1451,27 @@ $ mnema settled --help
 |   It reads which tool ran and never the answer, and writes nothing. It can be switched off
 |   with `mnema switch off choice-settled`.
 
+### mnema dispatched --help
+$ mnema dispatched --help
+| Usage: mnema dispatched [options]
+|
+| record a session’s dispatches to other agents as one private task and a handoff
+| each, for a PostToolUse or SessionEnd hook
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it does:
+|   The JSON a host hands a PostToolUse hook after its Agent tool, or a SessionEnd hook, on stdin.
+|   The first dispatch of a session records a private task, "Work handed over in this session"
+|   and the instant, in progress. Each dispatch records a private handoff on it, from
+|   orchestrator to the subagent type, with the call’s short description and the path of a
+|   file the prompt cites when that file exists. The prompt itself is never recorded.
+|   The end of the session moves the task to done, with the number of handoffs. The task is
+|   kept in the session journal, so `mnema switch off session-journal` stops it, and so does
+|   `mnema switch off agent-mirror`. Nothing goes to the public tree.
+|   On stdout, {}.
+
 ### mnema decision record --help
 $ mnema decision record --help
 | Usage: mnema decision record [options] <title> [rationale]
@@ -2095,7 +2118,8 @@ $ mnema switch off --help
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
 |                    subagent-handback, tool-call-count, last-session,
-|                    after-a-compaction, session-journal, session-tally)
+|                    after-a-compaction, session-journal, agent-mirror,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -2134,7 +2158,8 @@ $ mnema switch on --help
 |                    agent-accepts, edit-first-write-gate, user-corrections,
 |                    choice-settled, host-memory-mirror, decision-file-written,
 |                    subagent-handback, tool-call-count, last-session,
-|                    after-a-compaction, session-journal, session-tally)
+|                    after-a-compaction, session-journal, agent-mirror,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
