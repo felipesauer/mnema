@@ -76,3 +76,49 @@ export function theFirstThatOffersTools<
 export function theWeightsFile(weight: TheWeight): string {
   return `${JSON.stringify({ bytes: weight.bytes, tokens: weight.tokens }, null, 2)}\n`;
 }
+
+/** Whether a dotted version is the floor or later; the versions compared here are `x.y.z`. */
+export function atLeast(version: string, floor: string): boolean {
+  const parts = (text: string) => text.split('.').map(Number);
+  const [have, want] = [parts(version), parts(floor)];
+  for (let at = 0; at < want.length; at += 1) {
+    const [a, b] = [have[at] ?? 0, want[at] ?? 0];
+    if (a !== b) return a > b;
+  }
+  return true;
+}
+
+/**
+ * The names of the server's tools that a request lists as deferred, where the host puts them in a
+ * `<system-reminder>` of the first message, one per line, instead of defining them in `tools`.
+ */
+export function theNamesListedAsDeferred(
+  body: Readonly<Record<string, unknown>>,
+  prefix: string,
+): readonly string[] {
+  const messages = Array.isArray(body['messages']) ? (body['messages'] as unknown[]) : [];
+  const names: string[] = [];
+  for (const message of messages) {
+    const content = (message as { content?: unknown } | null)?.content;
+    const parts = Array.isArray(content) ? (content as unknown[]) : [];
+    for (const part of parts) {
+      const text = String((part as { text?: unknown } | null)?.text ?? '');
+      if (!text.includes('deferred tools are now available via ToolSearch')) continue;
+      names.push(...text.split('\n').filter((line) => line.startsWith(prefix)));
+    }
+  }
+  return names;
+}
+
+/** The `tool_result` blocks of a request's messages, as the host wrote them. */
+export function theToolResultsOf(
+  body: Readonly<Record<string, unknown>>,
+): readonly Record<string, unknown>[] {
+  const messages = Array.isArray(body['messages']) ? (body['messages'] as unknown[]) : [];
+  return messages.flatMap((message) => {
+    const content = (message as { content?: unknown } | null)?.content;
+    return Array.isArray(content)
+      ? (content as Record<string, unknown>[]).filter((part) => part['type'] === 'tool_result')
+      : [];
+  });
+}
