@@ -160,6 +160,16 @@ document, delivered by the host instead of waited for.
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was read on each host ([how each claim is held](../docs/evidence.md)).
+- **A `PostToolUse` hook after the `Agent` tool, and a `SessionEnd` hook, in Claude Code**, that run `mnema dispatched`: the work
+  a session hands to other agents is kept in your machine's **private** tree as one task for the session (opened at its first
+  dispatch, in progress) with a handoff on it for each dispatch, from `orchestrator` to the subagent type, whose brief is the
+  call's short description and the path of a file the prompt cites when one exists; at the end of the session the task is moved to
+  done with the count. **The prompt is never recorded**, nothing goes to the public tree, and it prints nothing to the model. It
+  is on to begin with (`mnema switch off agent-mirror` stops it), keeps the task in the session journal (so it needs
+  `session-journal` on; `mnema switch` says it does nothing while that is off), reopens the task of a resumed session, and
+  never holds a dispatch: a failure is a line on the second stream, and a dispatch that could not take the journal's lock records
+  nothing and is counted. Measured on the payload the host hands the hook, and not against a model. The other hosts that read this hooks file
+  were not measured on either event.
 - **Three skills**, which the host offers a model when a skill's description matches what the
   session is doing. `recording-decisions` is for the moment a choice between approaches is
   settled, an option is turned down, or a person says how something is done here: look first
@@ -466,6 +476,7 @@ plugin/
 │   ├── session-tally.mjs        the count at the end of a response and before a compaction
 │   ├── session-corrections.mjs  the corrections at the end of a response
 │   ├── after-a-write.mjs        the copy of the host's memory, and the line beside a decision file
+│   ├── agent-dispatched.mjs     runs `mnema dispatched` after the agent tool and at the end of a session
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
 │   ├── choice-settled.mjs       runs `mnema settled` after a question to the person is answered
