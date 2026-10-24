@@ -84,6 +84,15 @@ with its own changelog.
   a link that stays inside is followed). An id that is neither a record nor a file says both, in that order. It reads
   the working tree and writes nothing.
 - **`search` finds a decision by its `ADR-<n>` label**, as `show` already did.
+- **The host contract measures what Claude Code and Codex send of the plugin's tools when they defer them.** With tool search on
+  (the default of Claude Code from 2.1.304, `ENABLE_TOOL_SEARCH=true` before), the first request carries none of the 27
+  definitions: their names in a system reminder (1,044 bytes, 387 tokens) and the host's `ToolSearch` tool (332 tokens). A
+  search loads definitions into the next request: one is 644 tokens, the five that `record a decision` returned 2,539, all 27
+  11,794 (against 11,610 with tool search off). Codex 0.161.0's search returns eight definitions in one namespace with the
+  server's instructions once: 3,845 and 3,387 tokens for the two queries the case asks. The figures are equal on Claude Code
+  2.1.296, 2.1.304 and 2.1.310; `docs/evidence.md` says what is measured and what is not (an interactive session, a model's
+  own query). The case with tool search off now sets it explicitly, so it holds on a version that defers by itself, and the
+  Copilot, Gemini and OpenCode figures of that page are the ones their pinned files hold.
 
 ### Fixed
 

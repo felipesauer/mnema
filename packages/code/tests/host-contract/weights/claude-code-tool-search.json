@@ -1,0 +1,79 @@
+{
+  "listedNames": {
+    "bytes": 1044,
+    "tokens": 387
+  },
+  "searchTool": {
+    "bytes": 1450,
+    "tokens": 332
+  },
+  "oneTool": {
+    "tools": [
+      "record_decision"
+    ],
+    "definitions": {
+      "bytes": 2933,
+      "tokens": 644
+    },
+    "answer": {
+      "bytes": 151,
+      "tokens": 46
+    }
+  },
+  "keywordQuery": {
+    "tools": [
+      "decision_transition",
+      "read_record",
+      "record_decision",
+      "record_handoff",
+      "record_observation"
+    ],
+    "definitions": {
+      "bytes": 11285,
+      "tokens": 2539
+    },
+    "answer": {
+      "bytes": 477,
+      "tokens": 136
+    }
+  },
+  "allTwentySeven": {
+    "tools": [
+      "audit_accountability",
+      "audit_antipatterns",
+      "audit_exposure",
+      "audit_refs",
+      "audit_timeline",
+      "bootstrap",
+      "capture_memory",
+      "create_skill",
+      "create_task",
+      "decision_transition",
+      "focus",
+      "governing_rules",
+      "guard",
+      "link_knowledge",
+      "next_actions",
+      "read_record",
+      "record_decision",
+      "record_handoff",
+      "record_observation",
+      "resume",
+      "retract_link",
+      "retract_note",
+      "rules_before_an_edit",
+      "search",
+      "skill_transition",
+      "skills",
+      "task_transition"
+    ],
+    "definitions": {
+      "bytes": 51443,
+      "tokens": 11794
+    },
+    "answer": {
+      "bytes": 2195,
+      "tokens": 627
+    }
+  }
+}
