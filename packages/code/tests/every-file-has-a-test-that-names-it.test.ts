@@ -1074,6 +1074,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts': 6,
   'packages/code/tests/host-contract/the-session-opens-with-the-record.test.ts': 3,
   'packages/code/tests/host-contract/the-shell-goes-round.test.ts': 6,
+  'packages/code/tests/host-contract/the-tool-definitions-the-host-defers.test.ts': 3,
   'packages/code/tests/host-contract/the-tool-definitions-the-host-sends.codex.test.ts': 3,
   'packages/code/tests/host-contract/the-tool-definitions-the-host-sends.copilot.test.ts': 3,
   'packages/code/tests/host-contract/the-tool-definitions-the-host-sends.gemini.test.ts': 3,
