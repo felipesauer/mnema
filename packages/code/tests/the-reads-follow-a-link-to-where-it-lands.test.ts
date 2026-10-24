@@ -168,4 +168,37 @@ describe('mnema why <path>', () => {
     expect(answer.rules.map((one) => one.id)).toEqual([rule]);
     expect(answer.exists).toBe(true);
   });
+
+  it('names a rule that refuses a write and one that asks for a person, each saying which it is', async () => {
+    const refusal = await ruleAt(
+      'Nobody writes the ledger by hand',
+      'src/ledger',
+      'refuses-a-write',
+    );
+    const asking = await ruleAt(
+      'A person signs off the billing',
+      'src/billing',
+      'asks-for-a-person',
+    );
+    const governs = await ruleAt('Billing follows the house style', 'src/billing');
+
+    const ledger = runWhy({ cwd: repo, env }, { target: 'src/ledger/posting.ts' });
+    if (!ledger.ok || ledger.about !== 'file') throw new Error('expected a file answer');
+    expect(ledger.rules.map((one) => [one.id, one.relation])).toEqual([
+      [refusal, 'refuses-a-write'],
+    ]);
+
+    const billing = runWhy({ cwd: repo, env }, { target: 'src/billing/invoice.ts' });
+    if (!billing.ok || billing.about !== 'file') throw new Error('expected a file answer');
+    expect(billing.rules.map((one) => [one.id, one.relation]).sort()).toEqual(
+      [
+        [asking, 'asks-for-a-person'],
+        [governs, 'governs'],
+      ].sort(),
+    );
+
+    const page = await did('why', 'src/ledger/posting.ts');
+    expect(page).toContain('rules in force that address this path: 1');
+    expect(page).toContain('refuses a write');
+  });
 });

@@ -19,7 +19,6 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
-import type { PushedRule } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
 import {
@@ -31,13 +30,13 @@ import {
   LISTED,
   resolveCommit,
 } from '../git-log.js';
-import { readRulesInForceWhereItLands } from '../governed-tree.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import { everyRuleInForceAt, type RuleInForceUnder } from '../what-a-write-meets.js';
 
 /** What the command needs: injected so it is testable. */
 export interface WhyContext {
@@ -50,6 +49,8 @@ export interface WhyRule {
   readonly id: string;
   readonly name: string;
   readonly address: string;
+  /** What it does at the path: `governs`, `refuses-a-write` or `asks-for-a-person`. */
+  readonly relation: RuleInForceUnder['relation'];
   /** How many of the changed files it covers: a commit's; absent for a file. */
   readonly files?: number;
 }
@@ -129,11 +130,12 @@ function describe(all: readonly DecisionFacts[], commit: Commit): WhyCommit {
 }
 
 /** A pushed rule as the answer carries it. */
-function ruleOf(rule: PushedRule, files?: number): WhyRule {
+function ruleOf(rule: RuleInForceUnder, files?: number): WhyRule {
   return {
     id: rule.id,
     name: rule.name,
     address: rule.address,
+    relation: rule.relation,
     ...(files !== undefined ? { files } : {}),
   };
 }
@@ -154,11 +156,11 @@ export function runWhy(
     const linkBreaks = linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE);
     if (commit !== undefined) {
       const changed = filesOf(root, commit.sha);
-      const covered = new Map<string, { rule: PushedRule; files: number }>();
+      const covered = new Map<string, { rule: RuleInForceUnder; files: number }>();
       for (const file of changed.files) {
-        const at = readRulesInForceWhereItLands(sources, { path: file, root, from: root });
+        const at = everyRuleInForceAt(sources, { path: file, root, from: root });
         for (const rule of at.rules) {
-          const key = `${rule.id}\0${rule.address}`;
+          const key = `${rule.relation}\0${rule.id}\0${rule.address}`;
           covered.set(key, { rule, files: (covered.get(key)?.files ?? 0) + 1 });
         }
       }
@@ -173,7 +175,7 @@ export function runWhy(
         linkBreaks,
       };
     }
-    const at = readRulesInForceWhereItLands(sources, {
+    const at = everyRuleInForceAt(sources, {
       path: input.target,
       root,
       from: ctx.cwd,

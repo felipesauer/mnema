@@ -197,6 +197,7 @@ import {
 } from '../tree-sources.js';
 import {
   type ChargeRecorded,
+  movedApartLine,
   reasonTold,
   recordTheCharge,
   refusalOfAnUnreadableRecord,
@@ -2667,6 +2668,23 @@ export function runGoverningRulesTool(
 }
 
 /**
+ * The line a `governing_rules` answer owes beside its payload when a rule it lists was moved
+ * apart ({@link movedApartLine}), or none: the answer reports every rule's state and judges
+ * none, so the line says only that the state it shows was disputed.
+ */
+export function governingRulesMovedApart(
+  session: Session,
+  answer: GoverningRules,
+): readonly string[] {
+  const line = movedApartLine(workspaceCaches(session), [
+    ...answer.rules.map((one) => ({ id: one.rule })),
+    ...answer.asks.map((one) => ({ id: one.rule })),
+    ...answer.refuses.map((one) => ({ id: one.rule })),
+  ]);
+  return line === undefined ? [] : [line];
+}
+
+/**
  * `rules_before_an_edit`: the same graph, pushed instead of answered.
  *
  * IT IS A SECOND TOOL AND NOT A FLAG ON THE FIRST, and the reason is the channel rather
@@ -2866,6 +2884,11 @@ function rulesBeforeAnEdit(
   // And what the content door replaced in those facts, for the same reason and by the same
   // field: the path the host named is screened on its way into `channel.asked`.
   const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
+  // A RULE MOVED APART IS SAID IN ONE LINE beside the rules, where the asking has not said it already
+  // (its reason carries the line): the push shows the state the record leaves, and not that it was disputed.
+  const apart =
+    rulesAt === undefined || gate !== undefined ? undefined : movedApartLine(caches, rulesAt.rules);
+  if (apart !== undefined) founded.push(apart);
   // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
   // handed, which is why the rules and they are joined by one function (`edit-rules-push.ts`).
   // On a held write the rules ride in the refusal, so the context is what was founded and nothing

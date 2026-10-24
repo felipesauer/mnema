@@ -106,7 +106,8 @@ const ctx = { writer, layout: { root }, upcasters: catalogUpcasters() };
 // neither the id nor the author. The id is MINTED here, from randomness, so two
 // offline clones never mint the same one; `who` is derived from the writing key,
 // so authorship cannot be forged by typing a name. `which` (the agent that
-// carried the work out) IS the caller's, because an agent has no key.
+// carried the work out) is the name the caller announces, unless an agent key
+// signs: then the name is the one the record enrolled that key under.
 const created = createTask(ctx, { title: 'Ship the parser', which: 'claude' });
 if (created.ok) {
   // DRAFT → READY: `submit` requires no proof fields, so none are needed. The id

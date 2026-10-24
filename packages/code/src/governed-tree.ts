@@ -109,7 +109,7 @@ const depthOf = (address: string): number =>
   address === '.' ? 0 : address.split('/').filter((part) => part !== '').length;
 
 /** Several readings of one path as ONE list: each rule once, most specific first. */
-function onceBySpecificity<T extends { readonly address?: string | undefined }>(
+export function onceBySpecificity<T extends { readonly address?: string | undefined }>(
   lists: readonly (readonly T[])[],
   idOf: (item: T) => string,
 ): T[] {

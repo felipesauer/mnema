@@ -894,7 +894,7 @@ $ mnema why docs/runbook/rollback.md
 |   rules in force that address this path: 1
 |   There is no git work tree here, so no commits were read.
 |
-|   docs/runbook  Keep the runbook in the record  <decision-runbook>
+|   docs/runbook  governs  Keep the runbook in the record  <decision-runbook>
 |
 |   Read from git just now; nothing was written to the record.
 $ mnema why docs/runbook/rollback.md --json
@@ -906,7 +906,8 @@ $ mnema why docs/runbook/rollback.md --json
 |     {
 |       "id": "<decision-runbook>",
 |       "name": "Keep the runbook in the record",
-|       "address": "docs/runbook"
+|       "address": "docs/runbook",
+|       "relation": "governs"
 |     }
 |   ],
 |   "git": false,
