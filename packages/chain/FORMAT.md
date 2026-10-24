@@ -1089,7 +1089,8 @@ are this product's, and the test named below holds both readers beside this docu
   version wrote is read by every later one under the contract its `kind` and `v` selected,
   lifted through the registered upcasters when that kind has gained a later `v`, and the proof
   is taken over the line as written (§7, above). A later version does not refuse such a line for
-  its shape. This is a promise about reading the lines, not about the verdict over them (below).
+  its shape, except where the tightening below says otherwise. This is a promise about reading the
+  lines, not about the verdict over them (below).
 - **Forward: a version refuses by name what it cannot read.** A line whose `kind` and `v` no row
   of a reader's table declares is refused (§4.1), never guessed at and never skipped, and the
   refusal names the pair, what the reader reads of that kind, and, in this product, which mnema
@@ -1138,6 +1139,13 @@ both readers refuse it with the words above.
   such a change is the backward promise (the later version still reads every line an earlier one
   wrote) and that it is a change to this document and to the changelog, visible in a diff. It is
   not a refusal a version from before it can give.
+- **The unknown-key rule is such a tightening, and a shape one.** §4 refuses a line that carries a
+  key its writer does not declare, so it refuses on a line's shape, which the backward promise above
+  otherwise leaves alone. It was tightened after the first publication. A version from before it
+  verifies such a line and refuses nothing, as above. It holds backward only because no published
+  writer ever wrote such a key: 0.1.0, 0.1.1 and 0.1.2 were each checked by writing records of every
+  kind with that binary, and none of them wrote one. A later writer that does would be refused by
+  the rule itself, and by no earlier version.
 - **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
   skipped the line and read the rest would say a record verifies with facts in it that it cannot
   judge.
