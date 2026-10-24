@@ -253,7 +253,7 @@ describe('what only imitates a formatter is never called one', () => {
   it('an indented tail proof whose signature was changed', () => {
     const r = aRecord(2);
     const proof = JSON.parse(read(r, r.tailproof)) as { sig: string };
-    proof.sig = `${proof.sig.slice(0, -2)}00`;
+    proof.sig = `${proof.sig.slice(0, -2)}${proof.sig.endsWith('00') ? '11' : '00'}`;
     write(r, r.tailproof, `${JSON.stringify(proof, null, 2)}\n`);
     expect(verify(r.root).reformatted).toBeUndefined();
   });
@@ -272,7 +272,7 @@ describe('what only imitates a formatter is never called one', () => {
     const r = aRecord(2);
     write(r, r.segment, crlf(read(r, r.segment)));
     const proof = JSON.parse(read(r, r.tailproof)) as { sig: string };
-    proof.sig = `${proof.sig.slice(0, -2)}00`;
+    proof.sig = `${proof.sig.slice(0, -2)}${proof.sig.endsWith('00') ? '11' : '00'}`;
     write(r, r.tailproof, `${canonicalStringify(proof as never)}\n`);
     expect(verify(r.root).reformatted).toBeUndefined();
   });
