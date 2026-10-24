@@ -56,6 +56,11 @@ export interface TheCodexSpec {
   readonly project?: (project: TheProjectToWrite) => void;
   /** The patch the stand-in makes Codex apply, relative to the project; none: a session that only opens. */
   readonly patch?: string;
+  /**
+   * A query the stand-in makes the model ask the tool search for: the request that follows
+   * carries what the search returned, and nothing else is called.
+   */
+  readonly search?: string;
   /** A hooks file of the person's own, in Codex's home, beside the plugin's. */
   readonly ownHooks?: Readonly<Record<string, unknown>>;
   /** Which plugin of the marketplace to install: the full one unless a case says otherwise. */
@@ -120,8 +125,17 @@ function toolsOffered(body: Readonly<Record<string, unknown>>): string[] {
   });
 }
 
+/** Whether a request offers the tool search. */
+function offersTheSearch(body: Readonly<Record<string, unknown>>): boolean {
+  const tools = Array.isArray(body['tools']) ? (body['tools'] as unknown[]) : [];
+  return tools.some((tool) => (tool as { type?: unknown } | null)?.type === 'tool_search');
+}
+
 /** Starts the stand-in on a free loopback port. */
-async function startTheStandIn(patch: string | undefined): Promise<{
+async function startTheStandIn(
+  patch: string | undefined,
+  search: string | undefined,
+): Promise<{
   readonly url: string;
   readonly requests: TheCodexRequest[];
   close(): Promise<void>;
@@ -145,21 +159,30 @@ async function startTheStandIn(patch: string | undefined): Promise<{
       requests.push({ url, headers: req.headers, body });
       const answered = JSON.stringify(body['input'] ?? []).includes('custom_tool_call_output');
       const call = patch !== undefined && toolsOffered(body).includes('apply_patch') && !answered;
+      const searched = JSON.stringify(body['input'] ?? []).includes('tool_search_output');
+      const asksTheSearch = search !== undefined && !searched && offersTheSearch(body);
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
       res.end(
-        call
-          ? aResponse('resp_call', {
-              type: 'custom_tool_call',
-              name: 'apply_patch',
-              input: patch,
-              call_id: 'call_stand_in_1',
+        asksTheSearch
+          ? aResponse('resp_search', {
+              type: 'tool_search_call',
+              call_id: 'call_stand_in_search',
+              execution: 'client',
+              arguments: { query: search },
             })
-          : aResponse('resp_end', {
-              type: 'message',
-              role: 'assistant',
-              id: 'msg_end',
-              content: [{ type: 'output_text', text: 'done' }],
-            }),
+          : call
+            ? aResponse('resp_call', {
+                type: 'custom_tool_call',
+                name: 'apply_patch',
+                input: patch,
+                call_id: 'call_stand_in_1',
+              })
+            : aResponse('resp_end', {
+                type: 'message',
+                role: 'assistant',
+                id: 'msg_end',
+                content: [{ type: 'output_text', text: 'done' }],
+              }),
       );
     });
   });
@@ -218,7 +241,7 @@ async function aCodexSessionOnce(
   keep(box);
   const codexHome = join(box.root, 'codex');
   mkdirSync(codexHome, { recursive: true });
-  const standIn = await startTheStandIn(spec.patch);
+  const standIn = await startTheStandIn(spec.patch, spec.search);
   writeFileSync(
     join(codexHome, 'config.toml'),
     [
@@ -362,4 +385,22 @@ export function theToolSearchSays(session: TheCodexSession): string {
     (tool) => (tool as { type?: unknown } | null)?.type === 'tool_search',
   );
   return String((search as { description?: unknown } | undefined)?.description ?? '');
+}
+
+/**
+ * What the tool search handed the model for the query a case made it ask, as the request after
+ * the search carried it: the `tool_search_output` item whole, or `undefined` where none came back.
+ */
+export function theResultOfTheSearch(
+  session: TheCodexSession,
+): Readonly<Record<string, unknown>> | undefined {
+  for (const request of session.requests) {
+    const input = Array.isArray(request.body['input']) ? (request.body['input'] as unknown[]) : [];
+    for (const item of input) {
+      if ((item as { type?: unknown } | null)?.type === 'tool_search_output') {
+        return item as Record<string, unknown>;
+      }
+    }
+  }
+  return undefined;
 }

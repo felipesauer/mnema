@@ -13,6 +13,12 @@
       "index": 1,
       "runs": "hooks/session-recall.mjs"
     },
+    "session-compacted": {
+      "event": "SessionStart",
+      "group": 1,
+      "index": 0,
+      "runs": "hooks/session-compacted.mjs"
+    },
     "session-tally-stop": {
       "event": "Stop",
       "group": 0,
@@ -24,12 +30,6 @@
       "group": 0,
       "index": 1,
       "runs": "hooks/session-corrections.mjs"
-    },
-    "session-tally-precompact": {
-      "event": "PreCompact",
-      "group": 0,
-      "index": 0,
-      "runs": "hooks/session-tally.mjs"
     },
     "rules-before-an-edit": {
       "event": "PreToolUse",

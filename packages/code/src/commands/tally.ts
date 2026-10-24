@@ -1,11 +1,10 @@
 /**
  * `mnema tally`, a fact about the session a hook fires in: how many files its own tool
- * calls wrote, and how many decisions were recorded since it opened.
+ * calls wrote, and how many decisions were recorded since it opened, said at the end of a response.
  *
  * WHAT IT IS FOR. Measured in the field, an agent that edits a project records almost nothing
- * unless somebody asks, and it is the end of a response and the moment before a conversation is
- * compacted that nobody is looking. This says, at those two points, what the session did and
- * what the record holds from it, and nothing about what to do. The product has no standing to
+ * unless somebody asks, and it is the end of a response that nobody is looking. This says, at that
+ * point, what the session did and what the record holds from it, and nothing about what to do. The product has no standing to
  * tell a session its business, and a host reads text that is framed as an order differently from
  * text that states a fact (`record-framing.ts`); so the line is a count and the words around it
  * say what was counted.
@@ -20,9 +19,10 @@
  *
  * IT SPEAKS ONLY WHEN IT HAS SOMETHING TO COUNT. At `Stop` it speaks after a response that wrote a
  * file: the host fires that event after every response, and a line after a response that wrote
- * nothing would be noise a person learns to read past. Before a compaction it speaks whenever the
- * session wrote any file. Every other outcome is the empty reply `{}`: a hook that is not one of
- * these two, no project here, the channel switched off, a transcript this cannot read. What went
+ * nothing would be noise a person learns to read past. Every other outcome is the empty reply `{}`:
+ * a hook that is not a `Stop` (a conversation about to be compacted is not told a count: what it
+ * had recorded is handed back to it afterwards, from the journal, by `mnema recall
+ * --after-a-compaction`), no project here, the channel switched off, a transcript this cannot read. What went
  * wrong, when something did, is a note on the second stream, and nothing reads it to decide.
  *
  * IT KEEPS THE SESSION JOURNAL, and reads the transcript from where the last Stop stopped. The
@@ -69,9 +69,8 @@ export interface SessionTallyDone {
   readonly notes: readonly string[];
 }
 
-/** The two events this answers, by the name the host gives them in the payload. */
+/** The one event this answers, by the name the host gives it in the payload. */
 const STOP = 'Stop';
-const BEFORE_A_COMPACTION = 'PreCompact';
 
 /** The silence, with what to say about it on the second stream. */
 function silent(notes: readonly string[] = []): SessionTallyDone {
@@ -90,15 +89,12 @@ function counted(n: number, one: string, many: string): string {
  * "this session edited 7 files" would claim the calls of a subagent too.
  */
 function tallyLine(input: {
-  readonly event: string;
   readonly files: number;
   readonly decisions: number;
   readonly copied: number;
 }): string {
-  const lead =
-    input.event === BEFORE_A_COMPACTION ? 'This conversation is about to be compacted. ' : '';
   return (
-    `${lead}Since this session opened, its own tool calls wrote ` +
+    `Since this session opened, its own tool calls wrote ` +
     `${counted(input.files, 'file', 'files')}, and ` +
     `${counted(input.decisions, 'decision was', 'decisions were')} recorded in this project’s record` +
     (input.copied === 0
@@ -121,7 +117,7 @@ export function runSessionTally(
     return silent(['The hook input was not JSON, so nothing was counted.']);
   }
   const event = payload['hook_event_name'];
-  if (event !== STOP && event !== BEFORE_A_COMPACTION) return silent();
+  if (event !== STOP) return silent();
   const transcript = payload['transcript_path'];
   if (typeof transcript !== 'string' || transcript === '') {
     return silent([`The ${event} input named no transcript, so nothing was counted.`]);
@@ -170,7 +166,7 @@ export function runSessionTally(
 
     if (!speaks) return silent();
     if (journal.filesEdited === 0) return silent();
-    if (event === STOP && reading.writesInResponse <= 0) return silent();
+    if (reading.writesInResponse <= 0) return silent();
     if (reading.openedAt === undefined || Number.isNaN(Date.parse(reading.openedAt))) {
       return silent([
         'The transcript carries no instant, so no decision could be counted against it.',
@@ -180,7 +176,6 @@ export function runSessionTally(
       ok: true,
       reply: {
         systemMessage: tallyLine({
-          event,
           files: journal.filesEdited,
           decisions: journal.decisions.length,
           copied: journal.notes.length,

@@ -92,10 +92,10 @@ describe('plugin/hooks/hooks.json', () => {
     const file = aCopy();
     groupOf(file, 'PreToolUse').matchers = 'Write';
     file.hook = {};
-    handlerOf(file, 'PreCompact').type = 'shell';
+    handlerOf(file, 'SubagentStop').type = 'shell';
     expect(whatTheHostDoesNotRead(file).sort()).toEqual([
-      'PreCompact handler type "shell"',
       'PreToolUse matcher group key "matchers"',
+      'SubagentStop handler type "shell"',
       'top-level key "hook"',
     ]);
   });

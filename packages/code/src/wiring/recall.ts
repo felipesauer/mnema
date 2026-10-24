@@ -87,41 +87,67 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       'the host’s id for the session these notes are for: the journal that session keeps is ' +
         'not "the last session", which a hook passes from the payload',
     )
-    .action(async (opts: { hook?: boolean; host?: string; session?: string }) => {
-      const host = hookHostOf(wiring, opts.hook === true, opts.host);
-      if (host === false) return;
-      const { linkBreakNotice } = await import('./integrity.js');
-      const { runRecall } = await import('../commands/recall.js');
-      const { recallDocument, recallWithin } = await import('../presentation/recall.js');
-      const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
-      const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
-      const result = runRecall({ ...here(), session: opts.session });
-      if (!result.ok) {
-        reportRefusal(
-          wiring,
-          result,
-          result.reason === 'SWITCHED_OFF' ? { SWITCHED_OFF: switchedOff(result) } : {},
+    .option(
+      '--after-a-compaction',
+      'print, instead of the notes, what the session named by --session had recorded before its ' +
+        'conversation was compacted, read from its journal: a sentence, or nothing',
+    )
+    .action(
+      async (opts: {
+        hook?: boolean;
+        host?: string;
+        session?: string;
+        afterACompaction?: boolean;
+      }) => {
+        const host = hookHostOf(wiring, opts.hook === true, opts.host);
+        if (host === false) return;
+        if (opts.afterACompaction === true) {
+          const { runAfterACompaction } = await import('../commands/compacted.js');
+          const reminder = runAfterACompaction({ ...here(), session: opts.session });
+          if (!reminder.ok) {
+            reportRefusal(
+              wiring,
+              reminder,
+              reminder.reason === 'SWITCHED_OFF' ? { SWITCHED_OFF: switchedOff(reminder) } : {},
+            );
+            return;
+          }
+          if (reminder.text !== undefined) io.out(reminder.text);
+          return;
+        }
+        const { linkBreakNotice } = await import('./integrity.js');
+        const { runRecall } = await import('../commands/recall.js');
+        const { recallDocument, recallWithin } = await import('../presentation/recall.js');
+        const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
+        const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
+        const result = runRecall({ ...here(), session: opts.session });
+        if (!result.ok) {
+          reportRefusal(
+            wiring,
+            result,
+            result.reason === 'SWITCHED_OFF' ? { SWITCHED_OFF: switchedOff(result) } : {},
+          );
+          return;
+        }
+        // On `err`, as `brief` puts it: the state of the record's proof qualifies the notes,
+        // and the plugin's handler hands that stream over under them when the verb succeeded.
+        const notice = linkBreakNotice(result.linkBreaks);
+        for (const line of notice) io.err(render(line));
+        // With the flag the notice is part of what has to fit, as it is for `brief`.
+        writeLines(
+          io,
+          opts.hook === true
+            ? recallWithin(
+                result,
+                roomBeside(
+                  notice.map((line) => render(line)),
+                  ceiling,
+                ),
+                ceiling.lengthOf,
+              )
+            : recallDocument(result),
         );
-        return;
-      }
-      // On `err`, as `brief` puts it: the state of the record's proof qualifies the notes,
-      // and the plugin's handler hands that stream over under them when the verb succeeded.
-      const notice = linkBreakNotice(result.linkBreaks);
-      for (const line of notice) io.err(render(line));
-      // With the flag the notice is part of what has to fit, as it is for `brief`.
-      writeLines(
-        io,
-        opts.hook === true
-          ? recallWithin(
-              result,
-              roomBeside(
-                notice.map((line) => render(line)),
-                ceiling,
-              ),
-              ceiling.lengthOf,
-            )
-          : recallDocument(result),
-      );
-    });
+      },
+    );
   return readsTheRecord(recall);
 }

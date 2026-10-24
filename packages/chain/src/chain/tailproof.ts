@@ -27,7 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { holdsExactly, keyList, parseCanonicalLine } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 import { tailFingerprint } from './layout.js';
 
@@ -124,12 +124,35 @@ export function serializeTailProof(proof: TailProof): string {
   });
 }
 
+/** The keys of a stored tail proof: the three signed ones and `sig`, and nothing else. */
+const TAILPROOF_LINE_KEYS = ['scheme', 'sig', 'signerFp', 'tail'] as const;
+
+/**
+ * The proof's shape, checked before its bytes, in the second reader's order and words
+ * (`read_tailproof` in `mnemaverify/checkpoint.py`): an object, a scheme this reader knows,
+ * then exactly the four keys. A key beside them is outside the signed message, so the
+ * signature still verifies with it there, and it is refused.
+ */
+function tailProofShape(raw: unknown): void {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new TailProofParseError('a tail proof that is not a JSON object');
+  }
+  const { scheme } = raw as { scheme?: unknown };
+  if (scheme !== SCHEME) return;
+  if (!holdsExactly(raw, TAILPROOF_LINE_KEYS)) {
+    throw new TailProofParseError(
+      `tail-proof keys are ${keyList(Object.keys(raw))}, not ${keyList(TAILPROOF_LINE_KEYS)}`,
+    );
+  }
+}
+
 /** Parses a stored tail-proof line. */
 export function parseTailProof(line: string): TailProof {
   let raw: Record<string, unknown>;
   try {
-    raw = parseCanonicalLine(line) as Record<string, unknown>;
+    raw = parseCanonicalLine(line, tailProofShape) as Record<string, unknown>;
   } catch (error) {
+    if (error instanceof TailProofParseError) throw error;
     throw new TailProofParseError((error as Error).message);
   }
   const requireString = (key: string): string => {

@@ -45,7 +45,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { catalogUpcasters } from '../events/registry.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { keyList, parseCanonicalLine } from '../events/stored-json.js';
 import { verify } from './chain.js';
 import { parseCheckpoint } from './checkpoint.js';
 import { parseEntry } from './entry.js';
@@ -439,6 +439,52 @@ const AGREEMENTS: readonly Agreement[] = [
     product: { layer, says: 'the line ends in CRLF' },
     second: { section, says: 'the line ends in CRLF', where, refusals: 1 },
   })),
+  // A KEY NO WRITER PUTS THERE, in each of the four signed or chained structures, with the
+  // line left canonical and every hash and signature closing: neither the entry hash nor a
+  // signature takes the envelope or the whole link, and the signed message of a checkpoint or
+  // a tail proof is its named keys. The product read all four as verified until both readers
+  // refused them in the same words.
+  ...(
+    [
+      [
+        'unknown-key-beside-event-and-link',
+        'T1',
+        '4',
+        "top-level keys are ['event', 'forged', 'link'], not ['event', 'link']",
+        '000001.jsonl:3',
+        1,
+      ],
+      [
+        'unknown-key-in-a-link',
+        'T1',
+        '4',
+        "link keys are ['forged', 'hash', 'prev', 'seq', 'tail'], not ['hash', 'prev', 'seq', 'tail']",
+        '000001.jsonl:3',
+        1,
+      ],
+      [
+        'unknown-key-in-a-checkpoint',
+        'T1',
+        '6',
+        "checkpoint keys: missing [], unexpected ['forged']",
+        'checkpoints.jsonl:1',
+        2,
+      ],
+      [
+        'unknown-key-in-the-tail-proof',
+        'T2/T4',
+        '-',
+        "tail-proof keys are ['forged', 'scheme', 'sig', 'signerFp', 'tail'], not ['scheme', 'sig', 'signerFp', 'tail']",
+        '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717/tailproof.json',
+        1,
+      ],
+    ] as const
+  ).map(([name, layer, section, says, where, refusals]) => ({
+    name,
+    verdict: 'refused' as const,
+    product: { layer, says },
+    second: { section, says, where, refusals },
+  })),
   {
     name: 'byte-order-mark-before-the-first-line',
     verdict: 'refused',
@@ -505,6 +551,77 @@ describe('the two readers reach the same verdict on the same bytes, and name the
     const there = secondReading(record);
     expect(there.verdict).toBe('REFUSED');
     expect(there.refusals.map((finding) => finding.what).join('\n')).toContain('no tailproof.json');
+  });
+});
+
+describe('a key no writer puts there, beside the keys a structure has', () => {
+  it('is named before the bytes, so a re-spelled line with one is refused for the key in both', () => {
+    const record = copyOf('witnessed-record');
+    const segment = join(tailOf(record), '000001.jsonl');
+    const lines = readFileSync(segment, 'utf-8').split('\n');
+    const honest = lines[2] as string;
+    lines[2] = honest
+      .replace(',"link":', ',"kind":"x","link":')
+      .replace('{"event":{', '{"event": {');
+    expect(lines[2]).not.toBe(honest);
+    writeFileSync(segment, lines.join('\n'));
+    const words = "top-level keys are ['event', 'kind', 'link'], not ['event', 'link']";
+    const here = verify(record, catalogUpcasters());
+    expect(here.issues[0]?.detail).toContain(`000001.jsonl line 3: ${words}`);
+    const there = secondReading(record);
+    expect(there.refusals[0]?.what).toBe(words);
+    expect(there.refusals[0]?.where).toBe('000001.jsonl:3');
+  });
+
+  it('is not read in a stored block header, as a header that is not canonical is not', () => {
+    const record = copyOf('witnessed-record');
+    const witness = join(tailOf(record), 'witness');
+    const blocks = readdirSync(witness).find((name) => name.endsWith('.blocks')) as string;
+    const digest = blocks.replace(/\.blocks$/, '');
+    const tail = readdirSync(join(record, 'tails'))[0] as string;
+    const layout = { root: record };
+    expect(readStoredWitness(layout, tail, digest)?.headers.size).toBe(2);
+
+    const file = join(witness, blocks);
+    const lines = readFileSync(file, 'utf-8').split('\n');
+    lines[0] = (lines[0] as string).replace(/\}$/, ',"z":1}');
+    expect(() => parseCanonicalLine(lines[0] as string)).not.toThrow();
+    writeFileSync(file, lines.join('\n'));
+    expect(readStoredWitness(layout, tail, digest)?.headers.size).toBe(1);
+    const there = python([VERIFIER, '--json', 'record', record]);
+    const findings = (JSON.parse(there.stdout) as { findings: Finding[] }).findings;
+    expect(
+      findings.some(
+        (f) =>
+          f.level === 'UNCHECKED' && f.section === '8' && f.what.includes('sidecar was refused'),
+      ),
+    ).toBe(true);
+  });
+
+  it("spells the keys as the second reader does: Python's sorted list of its strings", () => {
+    const keys = [
+      'tail',
+      "a'b",
+      'q"r',
+      'both\'"',
+      'back\\slash',
+      'nl\n',
+      ' nbsp',
+      '​zw',
+      'é',
+      '￿',
+      '\u{10000}',
+      '\u007f',
+      'Z',
+    ];
+    const run = python([
+      '-I',
+      '-c',
+      'import json, sys; print(repr(sorted(json.loads(sys.argv[1]))))',
+      JSON.stringify(keys),
+    ]);
+    expect(run.status, run.stderr).toBe(0);
+    expect(keyList(keys)).toBe(run.stdout.replace(/\n$/, ''));
   });
 });
 

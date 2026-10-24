@@ -346,6 +346,42 @@ const MUTATIONS = [
     productLayer: 'T1',
     productBreaks: 'ok',
   },
+  // A key no writer puts there, in each signed or chained structure, the line left canonical
+  // and every hash and signature closing. The product verified all four until it refused them
+  // in the second reader's words (`both-readers-read-the-same-bytes.test.ts` holds the words).
+  {
+    name: 'unknown-key-beside-event-and-link',
+    refusals: 1,
+    section: '4',
+    says: 'top-level keys are',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'unknown-key-in-a-link',
+    refusals: 1,
+    section: '4',
+    says: 'link keys are',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'unknown-key-in-a-checkpoint',
+    // TWO: the second checkpoint's prev names a message this reader no longer reads.
+    refusals: 2,
+    section: '6',
+    says: 'checkpoint keys: missing [], unexpected',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'unknown-key-in-the-tail-proof',
+    refusals: 1,
+    section: '-',
+    says: 'tail-proof keys are',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
   {
     name: 'checkpoint-other-key',
     // THREE since a tail belongs to one key (section 6): the first checkpoint now names a

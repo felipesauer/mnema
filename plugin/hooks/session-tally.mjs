@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * What the session did, said as a fact: at the end of a response that wrote a file, and before a
- * conversation is compacted, a line saying how many files the session's own tool calls wrote and
- * how many decisions were recorded since it opened.
+ * What the session did, said as a fact: at the end of a response that wrote a file, a line saying
+ * how many files the session's own tool calls wrote and how many decisions were recorded since it
+ * opened. The same run keeps the session's journal, which is what `session-compacted.mjs` reads back
+ * after a compaction.
  *
- * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload the host hands a `Stop` or a
- * `PreCompact` hook goes to `mnema tally` byte for byte and its answer comes back byte for
- * byte; which event it is, what was counted and what the line says are the verb's, which reads the
+ * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload the host hands a `Stop`
+ * hook goes to `mnema tally` byte for byte and its answer comes back byte for
+ * byte; what was counted and what the line says are the verb's, which reads the
  * transcript the payload names and the record. The rule for running a verb is `hand-over.mjs`'s.
  *
  * NO MODEL IS CALLED, and nothing is written to the record: the line is a count, in the words the

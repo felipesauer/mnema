@@ -1,7 +1,7 @@
 /**
  * The `mnema tally` wiring: what it declares, and what it prints.
  *
- * `mnema tally` reads the payload a host hands a `Stop` or a `PreCompact` hook, on stdin,
+ * `mnema tally` reads the payload a host hands a `Stop` hook, on stdin,
  * and prints the reply that host reads, on stdout: one line saying how many files the session's
  * own tool calls wrote and how many decisions were recorded since it opened, and `{}` when there is
  * nothing to count. It keeps the session journal (`session-journal.ts`) as it goes: a file on this
@@ -22,7 +22,7 @@ export function registerTally(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const verb = program
     .command('tally')
-    .description('answer a host’s Stop or PreCompact hook with what the session wrote and recorded')
+    .description('answer a host’s Stop hook with what the session wrote and recorded')
     .addHelpText(
       'after',
       [
@@ -31,8 +31,8 @@ export function registerTally(program: Command, wiring: Wiring): Declared {
         '  The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply',
         '  the host reads: a `systemMessage` saying how many files this session’s own tool calls',
         '  wrote and how many decisions were recorded in this project since it opened, or {} when',
-        '  the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the',
-        '  last response), there is no project here, or the transcript cannot be read.',
+        '  the hook is not Stop, the session wrote no file in the last response, there is no project',
+        '  here, or the transcript cannot be read.',
         '  It writes nothing to the record. When the hook names its session it also keeps a small file on',
         '  this machine, the session journal (ids and counts, never what was said), and reads the',
         '  transcript from where the last reading stopped. `mnema switch off session-tally` stops the',
