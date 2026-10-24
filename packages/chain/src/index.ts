@@ -161,6 +161,7 @@ export {
   isEmptyTail,
   type KeyWithoutTailNote,
   type PartialFinalLineNote,
+  type Reformatted,
   type TailIssue,
   type TailResult,
   type VerdictClause,

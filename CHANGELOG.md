@@ -47,6 +47,13 @@ with its own changelog.
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
   directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
   and of the tail of the bytes already read, and read again from the top.
+- **`mnema verify` names a reformat, and only when the signatures prove it.** A record a formatter or an editor rewrote is
+  still refused, with the same exit and the same issues; one `reformatted` line beside them names the files and how to put
+  them back (prettier, Biome, dprint and `pretty-format-json` indenting `tailproof.json`; an `.editorconfig` or
+  `mixed-line-ending` setting CRLF). It is said only when the files, read back in canonical form in memory, verify with no
+  issue and every line put back is covered by a signature, so a change laid out like a reformat, a recomputed hash, or the
+  last events no checkpoint covers never get it. Nothing is copied or written. The Python reader refuses the same records
+  and does not say it ([the second reader's README](packages/chain/verifier/README.md)).
 - **CI runs the installed binary on Windows and macOS.** One job per system and per Node (24.15.0 and the latest 24)
   packs and installs the five packages, then runs `init`, `decision record`, `verify`, a clone checked out with
   `core.autocrlf=true`, the Python reader, `doctor` and the plugin's hook scripts on paths written the way each

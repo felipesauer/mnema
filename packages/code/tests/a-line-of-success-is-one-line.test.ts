@@ -877,6 +877,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the chain’s finding, and the TAIL it is about: a directory name, chosen on disk',
   },
+  'verify.ts «reformatted {}: {}» #1': {
+    verdict: 'collapsed',
+    why: 'the chain’s sentence naming the files a formatter rewrote: each under a TAIL directory, chosen on disk',
+  },
   'verify.ts «since {}: not compared: {}» #1': {
     verdict: 'collapsed',
     why: 'the revision exactly as the caller typed it, and why git could not answer',
@@ -1007,7 +1011,8 @@ describe('every line this wiring words is classified', () => {
     // 155 with the line `switch on decision-file-written` prints.
     // 157 with the two lines that name the observation a brief or a description was recorded as.
     // 158 with the line a handoff prints when no tree holds its task.
-    expect(FOUND.sites.length).toBe(158);
+    // 159 with the line verify prints beside a refusal a formatter explains.
+    expect(FOUND.sites.length).toBe(159);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1027,9 +1032,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(82);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(83);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(82);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(83);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1281,6 +1286,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs a base commit and a segment cut or rewritten after it: the same file',
   'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
     'needs a base commit and a record that grew after it: the same file',
+  'verify.ts «reformatted {}: {}» #1':
+    'needs a record a formatter rewrote, which is file surgery and not an argv; driven in ' +
+    '`the-verdict-tells-the-truth.test.ts`',
   'verify.ts «issue [{}] {} {}: {}» #1':
     'needs a fabricated tail DIRECTORY, driven, with the chain’s half of the same line, ' +
     'in `the-phrase-the-domain-words-is-one-line.test.ts`',
