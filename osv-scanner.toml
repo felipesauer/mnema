@@ -1,0 +1,6 @@
+# osv-scanner configuration, read by `osv-scanner scan source --lockfile pnpm-lock.yaml` (ADR-70).
+
+[[IgnoredVulns]]
+id = "GHSA-xcx6-jx8p-x3h5"
+ignoreUntil = 2026-12-23
+reason = "@azure/msal-node 6.0.1 reaches the tree only through @mnema/vscode (devDependency) -> @vscode/vsce -> @azure/identity 4.x, which pins ^6.0.0; the fix is a major bump to 7.x, which needs a judgement. Dev-only: no published package ships it. Revisit by the expiry date (ADR-70)."
