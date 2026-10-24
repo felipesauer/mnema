@@ -178,6 +178,7 @@ export type ModelChannel =
   | 'host-rules-file'
   | 'agent-accepts'
   | 'session-tally'
+  | 'after-a-compaction'
   | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections'
@@ -333,6 +334,9 @@ export const UNFRAMED_CHANNELS: {
   'user-corrections':
     'what it carries is a count the product made and the ids of the proposals it recorded (no ' +
     'sentence of the person’s and no record text), so there is nobody’s words to say whose they are',
+  'after-a-compaction':
+    'what it carries is counts the product made and the labels of decisions it numbered, said in its ' +
+    'own sentence, and no record text, so there is nobody’s words to say whose they are',
   'session-tally':
     'what it carries is two counts the product made (files the session’s own tool calls wrote, ' +
     'and decisions recorded since it opened), and no record text, so there is nobody’s words to ' +
@@ -373,6 +377,7 @@ export type SwitchableChannel =
   | 'edit-refuses-a-write'
   | 'agent-accepts'
   | 'session-tally'
+  | 'after-a-compaction'
   | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections'
@@ -504,6 +509,14 @@ export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
  * the document `mnema recall` prints, and it is framed by that document's declaration.
  */
 export const LAST_SESSION_CHANNEL: SwitchableChannel = 'last-session';
+
+/**
+ * The switch of the reminder a conversation gets right after it was compacted: what the session had
+ * recorded with the record before, read from its journal. A fact in the voice of the other hooks
+ * (what was counted, and from where), with the labels of the decisions the record numbered and
+ * none of anybody's words.
+ */
+export const AFTER_A_COMPACTION_CHANNEL: SwitchableChannel = 'after-a-compaction';
 
 /**
  * The switch of the mirror of the dispatches a session makes: with it on, a `PostToolUse` hook on
@@ -690,6 +703,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'the section is printed by `mnema recall`, which reads the journal and the record and writes ' +
     'nothing (no event, no key, no run), so telling a session where the last one stopped never ' +
     'moves the record',
+  'after-a-compaction':
+    'the sentence is printed by `mnema recall --after-a-compaction`, which reads the journal and the ' +
+    'record and writes nothing (no event, no key, no run), so reminding a session of what it did never ' +
+    'moves the record',
   'session-journal':
     'it puts nothing in front of a model and writes nothing to the record: the journal is a file on ' +
     'this machine, outside it, holding ids and counts, so a fact saying it was kept would be a ' +
@@ -786,6 +803,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the section of the notes `mnema recall` prints that says where the last session stopped: its ' +
     'goal, the decisions it recorded and the counts of what it left, read from its journal when it ' +
     'was another session and a recent one',
+  'after-a-compaction':
+    'the sentence a conversation is handed right after it was compacted, saying what the session had ' +
+    'recorded before (decisions by label, notes copied, files edited, questions answered with no ' +
+    'decision after), read from its journal',
   'session-journal':
     'the session journal: with it off, no file is kept of what a session did with the record, and ' +
     'nothing can say, to a later session, to a compaction or on the run that closes, what this one did. ' +
@@ -798,7 +819,7 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'session’s end closes the task with the count. It needs `session-journal` on, and records ' +
     'nothing to the tree a clone gets',
   'session-tally':
-    'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
+    'the line a session’s `Stop` hook prints: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',
 };
 

@@ -284,6 +284,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'a host runs it at the end of a response and reads one field of its reply (a line of two ' +
     'counts), so a notice about the chain has nowhere to land; the same session opens with the ' +
     'document, which says it, and `mnema verify` rules on it',
+  'commands/compacted.ts':
+    'a host runs it once after a conversation was compacted and reads one sentence of the product’s ' +
+    'own (counts, and the labels of decisions), so a notice about the chain has nowhere to land; the ' +
+    'same start opens again with the document and the notes, which say it, and `mnema verify` rules on it',
   'commands/dispatched.ts':
     'a host runs it after a dispatch and when a session ends and reads nothing of its reply (it prints `{}`), ' +
     'so a notice about the chain has nowhere to land; it opens the record only to read two switches and ' +
