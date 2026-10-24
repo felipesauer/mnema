@@ -760,6 +760,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/a-key-file-named-for-another-key-is-refused.test.ts': 8,
   'packages/chain/src/chain/a-key-file-that-holds-no-key-is-refused.test.ts': 13,
   'packages/chain/src/chain/a-link-is-taken-back-only-by-the-identity-that-recorded-it.test.ts': 7,
+  'packages/chain/src/chain/a-reformat-is-named-only-where-the-signatures-prove-it.test.ts': 10,
   'packages/chain/src/chain/a-refused-line-hides-nothing-else-in-its-tail.test.ts': 8,
   'packages/chain/src/chain/a-registration-for-an-identity-the-record-never-founded-is-no-backup.test.ts': 9,
   'packages/chain/src/chain/a-swapped-public-key-is-named-at-the-signature-layer.test.ts': 8,

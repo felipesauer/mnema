@@ -250,6 +250,40 @@ interface SegmentRead {
  */
 export type RefusedLine = (line: UnreadableLineError) => void;
 
+/**
+ * What a reading that PUTS BACK A REFORMAT is handed for a line that would not parse: the line's
+ * text and the file it is in. It answers with the text to read in its place (the canonical form
+ * of what the line holds, in memory) or undefined to leave the line refused.
+ *
+ * Only the verifier asks for this, and only for a second reading of a record it already refused,
+ * to learn whether a formatter is all that happened to it (`verify.ts`). A line that parses is
+ * never handed over, and a torn final line is not either: the torn-fragment rule decides that one,
+ * and a reading that put it back would read a line the verdict dropped.
+ */
+export type RelaidLine = (text: string, file: string) => string | undefined;
+
+/**
+ * `parse`, with a line that will not parse handed to `relaid` and read again as what it answers.
+ * The first refusal stands when `relaid` answers nothing, so a reading handed no `relaid` is the
+ * reading it always was.
+ */
+export function relaying<T>(
+  parse: (text: string) => T,
+  relaid: RelaidLine | undefined,
+  file: string,
+): (text: string) => T {
+  if (relaid === undefined) return parse;
+  return (text) => {
+    try {
+      return parse(text);
+    } catch (error) {
+      const instead = relaid(text, file);
+      if (instead === undefined) throw error;
+      return parse(instead);
+    }
+  };
+}
+
 /** What {@link readOn} returns for a line it handed to the {@link RefusedLine}. */
 const REFUSED = Symbol('refused');
 
@@ -284,7 +318,10 @@ function entriesOfSegment(
   upcasters: UpcasterRegistry,
   isLast: boolean,
   refused: RefusedLine | undefined,
+  relaid?: RelaidLine,
 ): SegmentRead {
+  const entryOf = (stored: string): Entry => parseEntry(stored, upcasters);
+  const relaidEntryOf = relaying(entryOf, relaid, file);
   // Read as BYTES: each line is decoded by {@link parseStoredLine}, which refuses one
   // that is not UTF-8 instead of reading U+FFFD in its place.
   const raw = readFileSync(file);
@@ -313,7 +350,7 @@ function entriesOfSegment(
     const couldBeTorn = isLast && !endsWithNewline && i === lines.length - 1;
     at = i + 1;
     const entry = readOn(refused, () =>
-      parseStoredLine(line, couldBeTorn, (stored) => parseEntry(stored, upcasters), where),
+      parseStoredLine(line, couldBeTorn, couldBeTorn ? entryOf : relaidEntryOf, where),
     );
     if (entry === REFUSED) continue;
     if (entry !== null) {
@@ -408,6 +445,7 @@ export function readTail(
   tailId: string,
   upcasters: UpcasterRegistry,
   refused?: RefusedLine,
+  relaid?: RelaidLine,
 ): TailRead {
   const segments = orderedSegments(layout, tailId);
   const entries: Entry[] = [];
@@ -415,7 +453,7 @@ export function readTail(
   let boundary: TailBoundary | undefined;
   for (let s = 0; s < segments.length; s += 1) {
     const file = segments[s] as string;
-    const read = entriesOfSegment(file, upcasters, s === segments.length - 1, refused);
+    const read = entriesOfSegment(file, upcasters, s === segments.length - 1, refused, relaid);
     for (const entry of read.entries) entries.push(entry);
     if (read.partialFinalLine) partialFinalLine = true;
     // The end of the last segment that YIELDED an entry, not of the last segment read.
@@ -652,9 +690,11 @@ export function readTailCheckpoints(
   layout: ChainLayout,
   tailId: string,
   refused?: RefusedLine,
+  relaid?: RelaidLine,
 ): Checkpoint[] {
   const file = checkpointsPath(layout, tailId);
   if (!existsSync(file)) return [];
+  const relaidCheckpointOf = relaying(parseCheckpoint, relaid, file);
   // As bytes, for the reason {@link entriesOfSegment} reads a segment so.
   const raw = readFileSync(file);
   const endsWithNewline = raw.at(-1) === NEWLINE;
@@ -668,7 +708,7 @@ export function readTailCheckpoints(
     const couldBeTorn = !endsWithNewline && i === lines.length - 1;
     at = i + 1;
     const checkpoint = readOn(refused, () =>
-      parseStoredLine(line, couldBeTorn, parseCheckpoint, where),
+      parseStoredLine(line, couldBeTorn, couldBeTorn ? parseCheckpoint : relaidCheckpointOf, where),
     );
     if (checkpoint !== null && checkpoint !== REFUSED) checkpoints.push(checkpoint);
   }
