@@ -194,9 +194,16 @@ export function parseStoredJson(text: string): unknown {
  * event's bytes are serialized again when its hash is recomputed, so a reading could reuse
  * these instead; that is not done. Throws {@link StoredJsonError}, whose message is
  * already the whole sentence.
+ *
+ * `shape`, when given, is run on the value before the bytes are compared, and throws what
+ * the caller throws: the structure the line must have (which keys, and nothing else) is
+ * checked first, as `mnemaverify` does, so both readers name the same first cause.
  */
-export function parseCanonicalLine(text: string): unknown {
+export function parseCanonicalLine(text: string, shape?: (value: unknown) => void): unknown {
   const parsed = parseStoredJson(text);
+  // THE SHAPE BEFORE THE BYTES, in the order the second reader asks: a line that is both
+  // re-spelled and carries a key no writer puts there is refused for the key in both.
+  shape?.(parsed);
   let canonical: string;
   try {
     // Sound by construction: `JSON.parse` yields only the closed set CanonicalValue names.
@@ -227,3 +234,61 @@ const CRLF_REFUSAL =
   'not the canonical serialization of what it holds: the line ends in CRLF, as a checkout ' +
   'that rewrites line ends leaves it (git with core.autocrlf), so these are not the bytes the ' +
   "proof was taken over; '* -text' in the tree's .gitattributes keeps git from doing it";
+
+/**
+ * Whether a stored object holds EXACTLY these keys: none missing, and none a writer of the
+ * format never puts there. The entry hash takes no envelope and no whole link, and a
+ * signature takes only its named keys, so a key added beside them leaves every hash and
+ * signature closing and the line canonical: only the set of keys tells it from a line a
+ * writer wrote (`FORMAT.md` sections 4, 6 and 6.1).
+ */
+export function holdsExactly(value: object, keys: readonly string[]): boolean {
+  const held = Object.keys(value);
+  return held.length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+}
+
+/**
+ * Keys as the second reader writes them in a refusal: sorted by code point and spelled the
+ * way Python spells a list of strings (`['event', 'link']`), so both readers say one
+ * sentence over the same bytes.
+ */
+export function keyList(keys: Iterable<string>): string {
+  return `[${[...keys].sort(byCodePoint).map(pythonString).join(', ')}]`;
+}
+
+function byCodePoint(a: string, b: string): number {
+  const left = [...a];
+  const right = [...b];
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const delta = (left[i]?.codePointAt(0) ?? 0) - (right[i]?.codePointAt(0) ?? 0);
+    if (delta !== 0) return delta;
+  }
+  return left.length - right.length;
+}
+
+/**
+ * What Python's `repr` gives for a string: its quote, its backslash escapes, and the
+ * hexadecimal escape for a character that does not print (a control, a format character, a
+ * separator other than the space).
+ */
+function pythonString(text: string): string {
+  const quote = text.includes("'") && !text.includes('"') ? '"' : "'";
+  let out = quote;
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    if (char === '\\' || char === quote) out += `\\${char}`;
+    else if (char === '\n') out += '\\n';
+    else if (char === '\r') out += '\\r';
+    else if (char === '\t') out += '\\t';
+    else if (char !== ' ' && /[\p{C}\p{Z}]/u.test(char)) {
+      const hex = code.toString(16);
+      out +=
+        code < 0x100
+          ? `\\x${hex.padStart(2, '0')}`
+          : code < 0x10000
+            ? `\\u${hex.padStart(4, '0')}`
+            : `\\U${hex.padStart(8, '0')}`;
+    } else out += char;
+  }
+  return out + quote;
+}

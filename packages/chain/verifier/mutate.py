@@ -181,6 +181,57 @@ def forged_extra_field(root: str) -> tuple[bool, str]:
     return _rewrite(path, lines), f"an extra event field on seq {record['link']['seq']}"
 
 
+def _unknown_key_in_a_line(root: str, place) -> tuple[bool, str]:
+    """A key no writer puts there, added to one signed event line (seq 2), re-canonicalized.
+
+    `place(record)` returns the object inside the line that gains the key. Neither the entry
+    hash (section 3: the event, the tail, the seq and prev) nor any signature takes the
+    envelope of the line or the whole link, so every hash and signature still closes, and the
+    line is still the canonical serialization of what it holds: only the set of keys tells it
+    from a line a writer wrote.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    at = min(2, len(lines) - 1)
+    record = strict_loads(lines[at].decode("utf-8"))
+    place(record)["forged"] = "rides along"
+    lines[at] = canonical_bytes(record)
+    return _rewrite(path, lines), f"a key no writer puts there, on line {at + 1}"
+
+
+def unknown_key_beside_event_and_link(root: str) -> tuple[bool, str]:
+    """A third top-level key on a stored line, beside `event` and `link`."""
+    return _unknown_key_in_a_line(root, lambda record: record)
+
+
+def unknown_key_in_a_link(root: str) -> tuple[bool, str]:
+    """A fifth key in a line's link, beside hash, prev, seq and tail."""
+    return _unknown_key_in_a_line(root, lambda record: record["link"])
+
+
+def unknown_key_in_a_checkpoint(root: str) -> tuple[bool, str]:
+    """A ninth key on the first checkpoint line: the signed message is the seven keys, so it verifies."""
+    path = _checkpoints(root)
+    lines = _read_lines(path)
+    stored = strict_loads(lines[0].decode("utf-8"))
+    stored["forged"] = "rides along"
+    lines[0] = canonical_bytes(stored)
+    return _rewrite(path, lines), "a key no writer puts there, on the first checkpoint line"
+
+
+def unknown_key_in_the_tail_proof(root: str) -> tuple[bool, str]:
+    """A fifth key in tailproof.json: the signed message is the three keys, so it verifies."""
+    path = os.path.join(_tail_dir(root), "tailproof.json")
+    with open(path, "rb") as handle:
+        before = handle.read()
+    stored = strict_loads(before.decode("utf-8").rstrip("\n"))
+    stored["forged"] = "rides along"
+    after = canonical_bytes(stored) + (b"\n" if before.endswith(b"\n") else b"")
+    with open(path, "wb") as handle:
+        handle.write(after)
+    return after != before, "a key no writer puts there, in tailproof.json"
+
+
 def checkpoint_other_key(root: str) -> tuple[bool, str]:
     """A checkpoint pointed at another enrolled key, which is what signerFp is for."""
     path = _checkpoints(root)
@@ -1317,6 +1368,10 @@ MUTATIONS = {
     "edited-event": edited_event,
     "edited-event-chain-repaired": edited_event_chain_repaired,
     "forged-extra-field": forged_extra_field,
+    "unknown-key-beside-event-and-link": unknown_key_beside_event_and_link,
+    "unknown-key-in-a-link": unknown_key_in_a_link,
+    "unknown-key-in-a-checkpoint": unknown_key_in_a_checkpoint,
+    "unknown-key-in-the-tail-proof": unknown_key_in_the_tail_proof,
     "checkpoint-other-key": checkpoint_other_key,
     "checkpoint-prev-broken": checkpoint_prev_broken,
     "checkpoint-dropped": checkpoint_dropped,

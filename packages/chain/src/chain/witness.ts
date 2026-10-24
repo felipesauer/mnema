@@ -71,7 +71,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
 import { canonicalStringify } from '../events/canonical.js';
-import { parseCanonicalLine } from '../events/stored-json.js';
+import { holdsExactly, parseCanonicalLine } from '../events/stored-json.js';
 import { oneLine } from '../one-line.js';
 import { headerCarriesRealWork, parseBlockHeader } from './bitcoin.js';
 import { checkpointHash } from './checkpoint.js';
@@ -256,7 +256,11 @@ const MAX_BLOCKS_BYTES = 1 << 16;
 function parseStoredHeader(line: string): StoredHeader | null {
   try {
     const parsed: unknown = parseCanonicalLine(line);
-    if (typeof parsed !== 'object' || parsed === null) return null;
+    // A key beside `header` and `height` is not a header this format writes, and it is not
+    // read, like a line that is not canonical; the second reader refuses the whole sidecar
+    // (`read_blocks_sidecar`), the difference `FORMAT.md` section 4 already names.
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    if (!holdsExactly(parsed, ['header', 'height'])) return null;
     const { height, header } = parsed as Partial<StoredHeader>;
     if (typeof height !== 'number' || !Number.isInteger(height)) return null;
     if (typeof header !== 'string' || !/^[0-9a-f]{160}$/.test(header)) return null;

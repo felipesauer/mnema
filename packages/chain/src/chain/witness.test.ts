@@ -326,6 +326,17 @@ describe('a stored witness that does not say what it claims', () => {
     writeFileSync(witnessBlocksPath(layout, TAIL, digest), 'not json\n{"height":1}\n', 'utf-8');
     expect(readWitness(layout, TAIL, digest).status).toBe('pending');
   });
+
+  it('drops a headers line that is a JSON array and reads the headers beside it', () => {
+    writeWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT, {
+      proof: anchoredProof(BLOCK_800000_MERKLE_ROOT),
+      headers: new Map([[BLOCK_800000_HEIGHT, HEADER]]),
+    });
+    const path = witnessBlocksPath(layout, TAIL, BLOCK_800000_MERKLE_ROOT);
+    expect(readWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT).status).toBe('covered');
+    writeFileSync(path, `[]\n${readFileSync(path, 'utf-8')}`, 'utf-8');
+    expect(readWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT).status).toBe('covered');
+  });
 });
 
 describe('the chain-wide reading', () => {
