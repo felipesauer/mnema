@@ -1,5 +1,5 @@
 /**
- * `mnema recall --after-a-compaction --session <id>`: what a session had recorded with the record
+ * `mnema recall --after-a-compaction --session <id>`: what entered the record while a session ran,
  * before its conversation was compacted, as a sentence for the conversation that continues.
  *
  * WHAT IT IS FOR. A compaction replaces the conversation with a summary, and the summary keeps
@@ -12,7 +12,8 @@
  *
  * A FACT AND NOT AN ORDER, in the voice of the other hooks: it says what was counted and from
  * where, with the labels of the decisions the record numbered, and no word of anybody's. It
- * names no tool and asks for nothing. A sentence of about sixty to a hundred and twenty tokens.
+ * names no tool and asks for nothing, and names at most five decisions (a label held by two trees
+ * says which tree). A sentence of about sixty to a hundred and twenty tokens.
  *
  * IT SPEAKS ONLY WHEN THERE IS SOMETHING TO SAY: a session with no journal (its channel off, no
  * `Stop` yet, a host that names no session) or one that did nothing with the record is the empty
@@ -29,6 +30,7 @@ import {
   decisionsRecordedSince,
   type Journal,
   journalFile,
+  labelsOf,
   readJournal,
   sessionIdOf,
 } from '../session-journal.js';
@@ -58,6 +60,9 @@ export interface AfterACompactionRefused {
   readonly reason: 'NO_PROJECT';
 }
 
+/** How many decisions the sentence names: the rest are counted, so it stays near a hundred tokens. */
+const NAMED_AT_MOST = 5;
+
 /** How many of a thing, in the words the sentence uses for it. */
 function counted(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
@@ -85,9 +90,12 @@ export function afterACompactionSentence(
       const label = labels.get(one.id);
       return label === undefined ? [] : [`${label}: ${one.state}`];
     });
+    const shown = named.slice(0, NAMED_AT_MOST);
+    const more = named.length - shown.length;
+    if (more > 0) shown.push(`and ${more} more`);
     parts.push(
-      `${counted(journal.decisions.length, 'decision', 'decisions')} recorded in this project’s record` +
-        (named.length === 0 ? '' : ` (${named.join('; ')})`),
+      `${counted(journal.decisions.length, 'decision', 'decisions')} entered this project’s record since this session opened` +
+        (shown.length === 0 ? '' : ` (${shown.join('; ')})`),
     );
   }
   if (journal.notes.length > 0) {
@@ -131,11 +139,7 @@ export function runAfterACompaction(
     const file = journalFile(trees, session);
     const journal = file === undefined ? undefined : readJournal(file);
     if (journal === undefined) return { ok: true as const, text: undefined };
-    const labels = new Map(
-      sources.flatMap((source) =>
-        source.cache.listDecisions().map((one) => [one.id, one.adr] as const),
-      ),
-    );
+    const labels = labelsOf(sources);
     // THE DECISIONS ARE THE RECORD'S, since the instant the session opened, in the state they have
     // now: the journal is written at the end of a response, so one recorded after it, or moved
     // since, is not in it. Where the journal knows no instant, what it kept is all there is.

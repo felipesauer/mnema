@@ -20,5 +20,7 @@ describe('what the Copilot CLI hands the server it starts', () => {
     // The server is started directly by the host. What follows is the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['copilot']);
     expect(handed.present).toEqual(['COPILOT_AGENT_SESSION_ID', 'COPILOT_CLI_BINARY_VERSION']);
+    // The `env` the plugin's manifest declares for its server reaches it, with the value declared.
+    expect(handed.declared).toEqual({ MNEMA_AGENT_KEY: 'copilot' });
   }, 180_000);
 });

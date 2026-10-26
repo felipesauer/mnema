@@ -21,8 +21,10 @@
  * never the text of a message, never a tool's output, never the content or the diff of a file,
  * never the environment, never a secret and never the answer a person chose. The cursor into the
  * transcript is a byte offset and a few digests: a file is kept by a digest of its path, and the bytes
- * already read by a digest of their head and of their tail, so a transcript the host rewrote is read
- * again from the top and not from the middle of another history.
+ * already read by a digest of their first and of their last 4096 bytes, so a transcript that shrank
+ * or whose head or tail changed is read again from the top. A rewrite that leaves the size and both
+ * of those ends alone is NOT told: reading the whole file at each Stop is what the digests are there
+ * to spare.
  *
  * PRIVATE TO THE PERSON: the file is 0600 and its directories 0700, whatever the umask.
  *
@@ -228,6 +230,44 @@ export function writeJournal(file: string, journal: Journal, now: Date): void {
 }
 
 /**
+ * Takes a lock that a dead process left, and answers whether the lock is now this process's.
+ *
+ * TWO PROCESSES THAT BOTH FIND THE SAME LOCK OLD must not both clear it: the second one's `rm` would
+ * remove the lock the first had just made, and both would go on to hold it. So the clearing is itself
+ * under a lock (`<lock>.takeover`, made with `mkdir`, which only one process wins), and the age of the
+ * lock is read again under it. A process that does not win it leaves the lock alone and asks again.
+ * The takeover lock is held for the length of a `stat`, an `rm` and a `mkdir`; one left by a process
+ * that died inside that is cleared by age, which is not itself under a lock (two processes that both
+ * clear a takeover lock that a third died holding, in the same instant, are the one case left).
+ */
+function takeOverALeftLock(lock: string): boolean {
+  const guard = `${lock}.takeover`;
+  try {
+    mkdirSync(guard);
+  } catch {
+    try {
+      if (Date.now() - statSync(guard).mtimeMs > LOCK_LEFT_MS) {
+        rmSync(guard, { recursive: true, force: true });
+      }
+    } catch {
+      // Released between the two calls: ask again.
+    }
+    return false;
+  }
+  try {
+    if (Date.now() - statSync(lock).mtimeMs <= LOCK_LEFT_MS) return false;
+    rmSync(lock, { recursive: true, force: true });
+    mkdirSync(lock);
+    return true;
+  } catch {
+    // The lock was released (statSync) or made by another meanwhile (mkdirSync): ask again.
+    return false;
+  } finally {
+    rmSync(guard, { recursive: true, force: true });
+  }
+}
+
+/**
  * Runs `work` as the only one touching `file`'s journal: parallel dispatches of one session are
  * parallel processes, and two that both read "no task yet" would each open one. A lock that cannot be
  * had in `waitMs` ({@link LOCK_WAIT_MS} unless a caller says) is not waited for any longer, and one
@@ -250,12 +290,8 @@ export function exclusivelyOn<T>(
         mkdirSync(lock);
         held = true;
       } catch {
-        try {
-          if (Date.now() - statSync(lock).mtimeMs > LOCK_LEFT_MS)
-            rmSync(lock, { recursive: true, force: true });
-        } catch {
-          // Released between the two calls: ask again.
-        }
+        held = takeOverALeftLock(lock);
+        if (held) break;
         if (Date.now() > until) break;
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
       }
@@ -394,7 +430,8 @@ function counted(n: number, one: string, many: string): string {
 
 /**
  * The outcome a run ends with: a sentence of counts, in the order of what a person asks of a
- * session. Nothing in it is anybody's words.
+ * session. Nothing in it is anybody's words. It is the journal as of the session's LAST Stop, and
+ * says so: a run closes after that Stop, and a decision recorded in between is not in it.
  */
 export function outcomeOf(
   journal: Pick<Journal, 'decisions' | 'filesEdited' | 'notes' | 'questionsWithoutDecision'>,
@@ -411,7 +448,7 @@ export function outcomeOf(
       `${counted(journal.questionsWithoutDecision, 'question', 'questions')} answered with no decision recorded after`,
     );
   }
-  return `${parts.join('; ')}.`;
+  return `${parts.join('; ')}, as of the session's last Stop.`;
 }
 
 /**
@@ -484,6 +521,7 @@ export function journalAfter(input: {
     trees: { public: publicOnes.account, private: privateOnes.account },
     reading,
     ...(previous?.handedOver !== undefined ? { handedOver: previous.handedOver } : {}),
+    ...(previous?.endedAt !== undefined ? { endedAt: previous.endedAt } : {}),
   };
 }
 
@@ -505,6 +543,29 @@ export function decisionsRecordedSince(
     .map((one) => ({ id: one.id, state: one.state }));
 }
 
+/**
+ * The label of each decision the trees hold, by id. Each tree numbers its own decisions, so two
+ * trees can both hold an `ADR-1`: a label that more than one tree holds carries the name of its
+ * tree (`ADR-1 (private)`), and one that is only in a single tree stays as the record numbered it.
+ */
+export function labelsOf(sources: readonly ScopedCache[]): ReadonlyMap<string, string> {
+  const held = sources.flatMap((source) =>
+    source.cache.listDecisions().map((one) => ({ id: one.id, adr: one.adr, scope: source.scope })),
+  );
+  const scopesOf = new Map<string, Set<string>>();
+  for (const one of held) {
+    const scopes = scopesOf.get(one.adr) ?? new Set<string>();
+    scopes.add(one.scope);
+    scopesOf.set(one.adr, scopes);
+  }
+  return new Map(
+    held.map((one) => [
+      one.id,
+      (scopesOf.get(one.adr)?.size ?? 0) > 1 ? `${one.adr} (${one.scope})` : one.adr,
+    ]),
+  );
+}
+
 /** The journal that has nothing in it yet: a reading from the top of the transcript. */
 export function readingOf(previous: Journal | undefined): Reading {
   return previous === undefined ? emptyReading() : previous.reading;
@@ -520,11 +581,25 @@ export const RECENT_MS = 24 * 60 * 60 * 1000;
  */
 export const LIVE_MS = 15 * 60 * 1000;
 
-/** Marks the journal at `file` as one whose session ended at `now`. Never throws. */
-export function markEnded(file: string, now: Date): void {
-  const journal = readJournal(file);
-  if (journal === undefined || journal.endedAt !== undefined) return;
-  writeJournal(file, { ...journal, endedAt: now.toISOString() }, now);
+/** How long the Stop tally and the end of a connection wait for a journal's lock: a write they skip is made up by the next reader. */
+export const JOURNAL_LOCK_WAIT_MS = 1500;
+
+/**
+ * Marks the journal at `file` as one whose session ended at `now`. Never throws. The read and the
+ * write are under the lock the dispatches and the tally take, so they cannot erase what those write
+ * between the two (the task handed over, or an end already marked). A lock not had in `waitMs` leaves
+ * the journal as it was, and the next reader works out that the session stopped from its age.
+ */
+export function markEnded(file: string, now: Date, waitMs: number = JOURNAL_LOCK_WAIT_MS): void {
+  exclusivelyOn(
+    file,
+    () => {
+      const journal = readJournal(file);
+      if (journal === undefined || journal.endedAt !== undefined) return;
+      writeJournal(file, { ...journal, endedAt: now.toISOString() }, now);
+    },
+    waitMs,
+  );
 }
 
 /** Whether `journal` is that of a session that has stopped, as far as `now` can tell. */

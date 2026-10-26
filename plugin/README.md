@@ -88,7 +88,7 @@ document, delivered by the host instead of waited for.
   [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
 - **A `SessionStart` hook that runs only after a compaction** (the `compact` matcher), `mnema recall
   --after-a-compaction`. It hands the conversation that continues one sentence, read from the session's journal: the
-  decisions it had recorded (read from the record since it opened, by label and the state they have now), the notes copied, the questions answered with no decision after, the
+  decisions that entered the record since it opened (read from the record, by label and the state they have now), the notes copied, the questions answered with no decision after, the
   files its calls wrote; a count and the record's labels, none of the session's words. Nothing runs before a
   compaction, because the host discards what a hook says then. `mnema switch off after-a-compaction` stops it; see
   [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#after-a-compaction).
@@ -479,7 +479,7 @@ plugin/
 │   ├── session-start.mjs        runs `mnema brief --hook`; silent when there is nothing to say
 │   ├── session-recall.mjs       runs `mnema recall --hook`; silent when nothing is noted
 │   ├── session-tally.mjs        the count at the end of a response, and the session's journal
-│   ├── session-compacted.mjs    what the session had recorded, after a compaction
+│   ├── session-compacted.mjs    what entered the record in the session, after a compaction
 │   ├── session-corrections.mjs  the corrections at the end of a response
 │   ├── after-a-write.mjs        the copy of the host's memory, and the line beside a decision file
 │   ├── agent-dispatched.mjs     runs `mnema dispatched` after the agent tool and at the end of a session

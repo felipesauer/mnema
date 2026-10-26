@@ -23,10 +23,12 @@ with its own changelog.
   host contract. Qwen Code defers the server's tools, so, unlike the other four, no file pins the weight of the 27
   definitions it sends. Not run: an interactive session, `notebook_edit`, and what the plugin's other hooks (the count at
   the end of a response, the subagent hooks) do under it.
-- **A compacted conversation is handed back what its session had recorded.** A new `SessionStart` hook under the `compact`
+- **A compacted conversation is handed back what entered the record while its session ran.** A new `SessionStart` hook under the `compact`
   matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
-  twenty tokens) read from the session's journal: the decisions it recorded (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions
-  answered with no decision after, the files its calls wrote. A count and the record's labels, none of the session's words.
+  twenty tokens) read from the session's journal: the decisions that entered the record (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions
+  answered with no decision after, the files its calls wrote. A count and the record's labels, none of the session's words. It counts the decisions that entered the record since the session
+  opened (a pull or another session's included, and the sentence says so), names five at most with `and N more`, and a label that
+  two trees both number says its tree, as `ADR-1 (private)`; the notes' section on where the last session stopped says the same of its decisions.
   The `PreCompact` hook is gone: Claude Code discards what a hook says before a compaction, so `mnema tally` no longer
   answers that event. A new switch, `after-a-compaction`, on by default, stops the sentence.
 - **`mnema recall` says where the last session stopped.** When another session that has stopped (its connection ended, or its
@@ -48,8 +50,11 @@ with its own changelog.
   dispatch. Where the journal's lock is not had in time (another dispatch of the session holds it), the mirror records nothing
   rather than go on without it, which opened tasks no one closed: it says so on the second stream, counts the skip, and the
   task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
-  A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
-  the process itself.
+  A dispatch costs one `mnema` process: measured on this machine at a load of 9 on 16 cores, 340 to 430 ms for each dispatch
+  after the first, 860 ms for the first (it opens the task) and 530 ms for the session's end, where the start of the process
+  alone (`mnema --version`) took 220 to 260 ms; the numbers move with the load. A process that finds the journal's lock left
+  by one that died takes it under a second lock, so two of them cannot both take it and open two tasks, and the `Stop` that
+  keeps the journal waits for the same lock before it writes.
 - **The page lists the credential formats the record's door replaces.** `docs/cli-reference.md` (What goes into the record) now
   names each class (`<SECRET:aws-access-key>` and the ten others) and the e-mail address, with what each matches. The table is
   generated from the door's own list, and a test fails when a class is added without a row.
@@ -61,12 +66,13 @@ with its own changelog.
   and an outcome as a sentence of counts). Never a prompt, a message, a tool's output, a file's content, the environment or the
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
-  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
+  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome (a sentence of counts that says it is as of the session's last `Stop`), reading
   `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
   takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
-  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
-  and of the tail of the bytes already read, and read again from the top.
+  directories `0700` whatever the umask, and a transcript the host rewrote is read again from the top when it shrank or when the first or the last 4096 bytes already read
+  changed (a digest of each is kept); a rewrite that leaves both ends and the size alone is not told, which is what keeps a `Stop` from
+  reading the whole file.
 - **`mnema verify` names a reformat, and only when the signatures prove it.** A record a formatter or an editor rewrote is
   still refused, with the same exit and the same issues; one `reformatted` line beside them names the files and how to put
   them back (prettier, Biome, dprint and `pretty-format-json` indenting `tailproof.json`; an `.editorconfig` or
@@ -114,6 +120,13 @@ with its own changelog.
   2.1.296, 2.1.304 and 2.1.310; `docs/evidence.md` says what is measured and what is not (an interactive session, a model's
   own query). The case with tool search off now sets it explicitly, so it holds on a version that defers by itself, and the
   Copilot, Gemini and OpenCode figures of that page are the ones their pinned files hold.
+- **What each host hands the plugin's server and its hooks is measured and held.** The host contracts now read, by name, the
+  `env` of the server manifest as the server received it (Codex, Copilot CLI and Gemini CLI hand `MNEMA_AGENT_KEY` on with the
+  value the manifest declares; in Claude Code the manifest's own entry for the key, empty while the `agent_key` option is empty,
+  is what the server gets, so a key set only in the host's environment does not reach it, while `MNEMA_HOME` does), and the
+  fields each host writes on the stdin of the hook that runs before a write (Codex, Copilot CLI, Gemini CLI, VS Code) or after
+  one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
+  measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
 
 ### Fixed
 

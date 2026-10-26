@@ -107,7 +107,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
   [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
   what the host wrote since. The sixth runs only after a conversation was compacted (the `compact` matcher of
-  `SessionStart`) and hands it back what its session had recorded before, one sentence read from that journal (see
+  `SessionStart`) and hands it back what entered the record while its session ran, one sentence read from that journal (see
   [After a compaction](#after-a-compaction)); nothing runs before a compaction, because the host throws away what a
   hook says then. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
   (`mnema switch on user-corrections`): it reads the transcript's own words, the one reader here
@@ -744,8 +744,9 @@ were written and are cited nowhere in the record, how many files were edited, th
 goal of a run (the title of the first task it moved into progress in the tree that run is written to, a title that tree
 already holds) and an outcome that is a sentence of counts of that tree's records. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
 environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
-name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their head and of
-their tail, so a transcript the host rewrote is read again from the top. The file is mode `0600`, and its directories
+name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their first and of their
+last 4096, so a transcript that shrank, or whose head or tail changed, is read again from the top; a rewrite that leaves the
+size and both ends alone is not told, which is what keeps a `Stop` from reading the whole file. The file is mode `0600`, and its directories
 `0700`, whatever the umask.
 
 **It is disposable, and outside the record.** It is not an event, it is not signed, `mnema verify` does not read it, it is
@@ -755,7 +756,7 @@ newest 50.
 
 **What reads it.** The MCP server, when the host leaves its session id in the server's environment (Claude Code's
 `CLAUDE_CODE_SESSION_ID`): the run the server opens for the connection takes the journal's goal as its own goal when one is
-known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited.`).
+known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited, as of the session's last Stop.`: it is what the journal held at the last `Stop`, so a decision recorded after that is not in it).
 Each comes from the records of the tree the run is written to and from no other: the title of a private task never becomes
 the goal of a run in the public record, and a public run's outcome counts no private decision or note.
 The `resume` and `status` readings print that outcome beside a run that ended with one, as `outcome: …`.
@@ -774,10 +775,13 @@ holds; what is lost is what *this session* had done with the record. So the plug
 `compact` matcher, that reads the session's id off the payload and runs `mnema recall --after-a-compaction --session <id>`.
 It prints one sentence read from the session's journal, about sixty to a hundred and twenty tokens, and nothing else. The decisions in it are
 the record's, not the journal's: those created since the session opened, in the state they have now, because the journal is written at the end
-of a response and one recorded or moved since is not in it:
+of a response and one recorded or moved since is not in it. That is every decision that entered the record since the session opened,
+so one that came by a pull, or that another session recorded, is counted too: the sentence says "entered the record", not "recorded by
+this session". It names five at most (then `and N more`), and a label that two trees both number (each tree numbers its own) says
+which tree it is of, as `ADR-1 (private)`:
 
 ```text
-Before this conversation was compacted, this session had: 2 decisions recorded in this project’s record (ADR-12: proposed; ADR-13: accepted); 1 note of this host’s memory copied into this machine’s private tree; 1 question answered with no decision recorded after; its own tool calls wrote 5 files.
+Before this conversation was compacted, this session had: 2 decisions entered this project’s record since this session opened (ADR-12: proposed; ADR-13: accepted); 1 note of this host’s memory copied into this machine’s private tree; 1 question answered with no decision recorded after; its own tool calls wrote 5 files.
 ```
 
 Each part is left out when it is zero, and where nothing is left it prints nothing. It is a count, with the labels of decisions the
@@ -809,8 +813,11 @@ says how many dispatches were not mirrored. `mnema switch` lists `agent-mirror` 
 
 **It is on until you switch it off** (`mnema switch off agent-mirror`, a fact of the record like the other switches), because
 what it writes stays in the private tree and holds a few words the model itself wrote to label the dispatch. The cost is one
-`mnema` process per dispatch and per session end, and no tokens: measured at 315 ms a dispatch on a machine at a load of 5 on 16
-cores, of which 204 ms is the start of the process (`mnema --version`).
+`mnema` process per dispatch and per session end, and no tokens: measured, on a machine at a load of 9 on 16 cores, at 340 to 430 ms
+for each dispatch after the first, 860 ms for the first (it opens the task) and 530 ms for the session's end, of which 220 to 260 ms
+is the start of the process (`mnema --version`); the numbers move with the load. The lock a dispatch takes on the journal is taken
+from a process that died holding it (older than fifteen seconds) by one process only, and the `Stop` that keeps the journal
+waits for it too.
 
 ### Bringing a second machine into your identity
 
