@@ -774,7 +774,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/chain.test.ts': 18,
   'packages/chain/src/chain/cited-heads.test.ts': 10,
   'packages/chain/src/chain/coded-error.test.ts': 4,
-  'packages/chain/src/chain/durable.test.ts': 10,
+  'packages/chain/src/chain/durable.test.ts': 12,
   'packages/chain/src/chain/enrollment.test.ts': 13,
   'packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts': 12,
   'packages/chain/src/chain/format-on-disk.test.ts': 8,
