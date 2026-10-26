@@ -1,14 +1,15 @@
 # @mnema/vscode
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square) ![Not published: run from a checkout](https://img.shields.io/badge/npm-not%20published-997dbf?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square) ![Published as mnema.mnema on the Visual Studio Marketplace and Open VSX](https://img.shields.io/badge/extension-mnema.mnema-997dbf?style=flat-square)
 
 A VS Code extension for the person who reviews the [mnema](https://github.com/felipesauer/mnema)
 record, not for the agent. The record already says which decisions govern a file and which wait for
 a judgment; this puts both where the person is reading, so that a decision is not left unjudged only
 because judging it meant opening a terminal.
 
-It is not published: not to the VS Code Marketplace and not to npm (`private: true`). It runs from
-this repository, and every read and every write goes through the `mnema` command line.
+It is published as `mnema.mnema` to the Visual Studio Marketplace and to Open VSX by the release
+workflow, and the same file is attached to the GitHub release. Every read and every write goes through
+the `mnema` command line, which the extension does not bring: `@mnema/code` stays a prerequisite.
 
 ## What it gives you
 
@@ -73,7 +74,15 @@ workspace holds a `.mnema` folder. The path of the executable comes only from yo
 (`mnema.command` is a machine-scoped setting, so a repository's `.vscode/settings.json` cannot set
 it), and the extension stays off in a workspace that is not trusted.
 
-There is nothing to install from a registry. From a built checkout (`pnpm install`, `pnpm build`):
+From a store, in VS Code or in an editor that reads Open VSX:
+
+```sh
+code --install-extension mnema.mnema
+```
+
+If you installed the 0.1.2 file by hand (`felipesauer.mnema`), uninstall it first: it is a different
+extension id, and both would register the same commands. From a built checkout (`pnpm install`,
+`pnpm build`), the file the release publishes is made by:
 
 ```sh
 pnpm --filter @mnema/vscode package
@@ -81,13 +90,15 @@ code --install-extension packages/vscode/mnema-*.vsix
 ```
 
 `package` bundles the extension into one file, `extension.cjs`, with no database in it, and has `vsce`,
-the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 15 KB:
+the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 25 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
 in a workspace with a `.mnema` folder to see it start (`pnpm --filter @mnema/vscode install-check`
 does the same by hand, under `xvfb-run -a` on a machine without a screen), and keeps the file as an
-artifact of the run (`mnema-vscode-extension`). It is a local file and this repository never sends it
-anywhere: no workflow publishes it, and a test fails if one does.
+artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
+the release workflow, which a person approves in a protected environment and which publishes the very file
+it packed and checked, after asking each store whether the version is already there; a test fails if a
+publish command or a store token appears in any other job or file. The file has no token in it.
 
 ## How it is built
 
@@ -126,8 +137,8 @@ for that module; nothing downloads or starts an editor.
   network connection; `mnema` keeps whatever cache it keeps under `.mnema/locks/`.
 - It is tested against a stand-in for the editor's API, and the stack acts also against the built
   command line in a project of their own. The tests have not clicked a button in a real editor; CI
-  starts the packaged file in one and checks that its commands are registered. It is not on the
-  Marketplace.
+  starts the packaged file in one and checks that its commands are registered. A store accepting the
+  file is the store's act, not something a test here shows.
 
 ## License
 

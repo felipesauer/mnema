@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **The VS Code extension is published to the Visual Studio Marketplace and to Open VSX as `mnema.mnema`.** The release workflow
+  packs the `.vsix` once in a job that holds no secret, checks that the manifest inside is one a store takes (publisher
+  `mnema`, not `private`, an icon, a category, keywords, a banner, marked preview, a changelog and a one-line description that
+  promises nothing the command line does not print), installs that very file into a real VS Code to see the extension start,
+  attaches it to the GitHub release and publishes the same file to both stores from one job that asks for the
+  `extension-stores` environment, so a person approves it. Each store is asked first whether the version is already there
+  and a store that has it is skipped, so a run that stopped halfway runs again. The icon is drawn by the build from the
+  banner's cube, not kept as a binary. The publisher id moves from `felipesauer` to `mnema`, so the id is `mnema.mnema`:
+  uninstall the 0.1.2 file installed by hand (`felipesauer.mnema`). The extension still needs the `mnema` command of
+  `@mnema/code`. The guard that refused every publish now allows exactly that job and refuses a publish command or a store
+  token anywhere else, in another job, or in that job without its environment (ADR-76, ADR-77).
 - **The VS Code extension's commands have icons and short titles, and an empty view says what it means.** Every command carries a codicon, so the
   accept and reject buttons beside a decision and the add buttons of the stacks view are icons instead of the title's text, and the
   titles are short (`mnema: Accept Decision`, `mnema: Add Stack`); the command ids are unchanged, so a keybinding still works. The

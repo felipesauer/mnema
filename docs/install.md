@@ -104,6 +104,12 @@ and you still have every command. Do not install both: they declare the same ser
 
 ## VS Code and Cursor
 
+The [extension](../packages/vscode/README.md) that shows the rules over the open file and the decisions
+waiting for a judgment is on the Visual Studio Marketplace and on Open VSX as `mnema.mnema`: `code --install-extension mnema.mnema`. It runs the
+`mnema` command, so `@mnema/code` stays a prerequisite. If you installed the 0.1.2 file by hand
+(`felipesauer.mnema`), uninstall it first: it is a different extension id.
+
+
 In VS Code and Cursor, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details (what
