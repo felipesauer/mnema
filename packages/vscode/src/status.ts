@@ -68,3 +68,96 @@ export function statusTooltip(channels: readonly Channel[] | undefined): string 
   const off = channels.filter((c) => !c.on).map((c) => c.name);
   return off.length === 0 ? 'every channel is on' : `off: ${off.join(', ')}`;
 }
+
+/**
+ * The oldest `mnema` the extension is written against: the commands it starts (`verify --json`,
+ * `switch`, `rules --json`, `stack list --json`, `search ... --json`) are the ones that version
+ * has. An older one is treated as not there, because its answers are not read back correctly.
+ */
+export const MIN_CLI_VERSION = '0.1.2';
+
+/** Whether the command line can be run at all, and if not, in what words. */
+export type CliState =
+  | { readonly kind: 'ready' }
+  | { readonly kind: 'missing'; readonly reason: string };
+
+const VERSION_LINE = /^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/;
+
+const parts = (version: string): number[] | undefined => {
+  const match = VERSION_LINE.exec(version);
+  return match === null ? undefined : [Number(match[1]), Number(match[2]), Number(match[3])];
+};
+
+/** The reading of `mnema --version`: not started, not a mnema, or older than the floor, is missing. */
+export function readCli(result: {
+  readonly code: number | null;
+  readonly stdout: string;
+  readonly stderr: string;
+}): CliState {
+  if (result.code === null) {
+    const why = result.stderr.trim().split('\n')[0] ?? '';
+    return { kind: 'missing', reason: why === '' ? 'it could not be started' : why };
+  }
+  const first = result.stdout.trim().split('\n')[0] ?? '';
+  const found = result.code === 0 ? parts(first) : undefined;
+  const floor = parts(MIN_CLI_VERSION) ?? [0, 0, 0];
+  if (found === undefined) {
+    return { kind: 'missing', reason: 'it did not answer `--version` as mnema does' };
+  }
+  for (let i = 0; i < 3; i++) {
+    if ((found[i] ?? 0) !== (floor[i] ?? 0)) {
+      if ((found[i] ?? 0) > (floor[i] ?? 0)) return { kind: 'ready' };
+      return { kind: 'missing', reason: `version ${first} is older than ${MIN_CLI_VERSION}` };
+    }
+  }
+  return { kind: 'ready' };
+}
+
+/** What the status bar item shows and what a click on it does. */
+export interface Bar {
+  readonly text: string;
+  readonly tooltip: string;
+  readonly accessibility: { readonly label: string; readonly role: 'button' };
+  readonly action: 'refresh' | 'settings';
+}
+
+const STRONG = new Set(['fully-signed', 'externally-witnessed']);
+
+const iconFor = (verdict: Verdict): string =>
+  verdict.kind === 'verified'
+    ? STRONG.has(verdict.level)
+      ? 'book'
+      : 'info'
+    : verdict.kind === 'failed'
+      ? 'error'
+      : 'question';
+
+/**
+ * The item as a whole. The words about the record are the command line's: the level is what
+ * `verify --json` reports and the tooltip's first part is the text `mnema verify` printed, lines
+ * and all. The extension's own words are only about itself (the command is missing, the coverage
+ * was not read).
+ */
+export function describeBar(input: {
+  readonly cli: CliState;
+  readonly verdict: Verdict;
+  readonly channels: readonly Channel[] | undefined;
+  readonly coverage: string | undefined;
+}): Bar {
+  if (input.cli.kind === 'missing') {
+    return {
+      text: '$(warning) mnema: command not found',
+      tooltip: `The mnema command could not be used: ${input.cli.reason}. Install @mnema/code, or set mnema.command to the executable. Click to open that setting.`,
+      accessibility: { label: 'mnema: command not found', role: 'button' },
+      action: 'settings',
+    };
+  }
+  const text = statusText(input.verdict, input.channels);
+  const coverage = (input.coverage ?? '').trim();
+  return {
+    text: `$(${iconFor(input.verdict)}) ${text}`,
+    tooltip: `${coverage === '' ? 'what this level covers: not read' : coverage}\n\n${statusTooltip(input.channels)}`,
+    accessibility: { label: text.replace(' · ', ', '), role: 'button' },
+    action: 'refresh',
+  };
+}

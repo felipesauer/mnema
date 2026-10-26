@@ -58,7 +58,14 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
   };
   const commands = new Map<string, (...args: never[]) => unknown>();
   const watcher = { change: [] as (() => void)[] };
-  const bar = { text: '', tooltip: '', command: '', show() {}, dispose() {} };
+  const bar = {
+    text: '',
+    tooltip: '',
+    command: '' as unknown,
+    accessibilityInformation: undefined as unknown,
+    show() {},
+    dispose() {},
+  };
   const shown: string[] = [];
   const errors: string[] = [];
   const inputs: {
@@ -167,8 +174,9 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
     TreeItemCollapsibleState: { None: 0 },
     StatusBarAlignment: { Left: 1 },
   } as unknown as VscodeApi;
-  activate({ subscriptions: [] }, api, { run });
+  const started = activate({ subscriptions: [] }, api, { run });
   return {
+    started,
     ran,
     executed,
     bar,
@@ -197,7 +205,10 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
 
 const LIST = 'search --kind decision --state proposed --limit 200 --json';
 const STACK_LIST = 'stack list --json';
+const COVERAGE = 'public: local integrity verified (T1/T2/T4); external witness (T3): not covered';
 const base = (): Record<string, CliResult> => ({
+  '--version': ok('0.1.2\n'),
+  verify: ok(`${COVERAGE}\n`),
   [STACK_LIST]: ok(JSON.stringify({ stacks: [] })),
   [LIST]: listing(hit('d1', 'Use X')),
   'verify --json': VERIFY,
@@ -219,8 +230,56 @@ describe('the extension reads the record through the command line', () => {
   it('shows the verdict and the channels in the status bar', async () => {
     const w = world(base());
     await settle();
-    expect(w.bar.text).toBe('mnema: fully-signed · 1 of 2 channels off');
-    expect(w.bar.tooltip).toBe('off: user-corrections');
+    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.bar.tooltip).toBe(`${COVERAGE}\n\noff: user-corrections`);
+    expect(w.bar.accessibilityInformation).toEqual({
+      label: 'mnema: fully-signed, 1 of 2 channels off',
+      role: 'button',
+    });
+    expect(w.bar.command).toBe('mnema.refresh');
+    expect(w.executed).toContainEqual(['setContext', 'mnema.cliMissing', false]);
+    expect(w.started?.shown()).toEqual({ text: w.bar.text, tooltip: w.bar.tooltip });
+  });
+
+  it('says the command is missing, apart from nothing pending, and sends the bar to the setting', async () => {
+    const w = world({
+      ...base(),
+      '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
+    });
+    await settle();
+    expect(w.executed).toContainEqual(['setContext', 'mnema.cliMissing', true]);
+    expect(w.bar.text).toBe('$(warning) mnema: command not found');
+    expect(w.bar.tooltip).toContain('spawn mnema ENOENT');
+    expect(w.bar.accessibilityInformation).toEqual({
+      label: 'mnema: command not found',
+      role: 'button',
+    });
+    expect(w.bar.command).toEqual({
+      command: 'workbench.action.openSettings',
+      title: 'mnema: Set the mnema command',
+      arguments: ['mnema.command'],
+    });
+    // Nothing else is asked of a command that is not there, and no verdict is shown.
+    expect(w.ran).toEqual([['--version']]);
+    expect(w.tree().getChildren()).toEqual([]);
+  });
+
+  it('comes back from a missing command when it is there again, and the views are listed again', async () => {
+    const answers = {
+      ...base(),
+      '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
+    };
+    const w = world(answers);
+    await settle();
+    answers['--version'] = ok('0.1.2\n');
+    await w.command('mnema.refresh')();
+    expect(w.executed.filter((e) => e[1] === 'mnema.cliMissing').map((e) => e[2])).toEqual([
+      true,
+      false,
+    ]);
+    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.bar.command).toBe('mnema.refresh');
+    expect(w.tree().getChildren()).toHaveLength(1);
   });
 
   it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {
@@ -372,10 +431,10 @@ describe('the record is watched, and a new proposal is announced once', () => {
   it('reads once for a burst of changes, not once per change', async () => {
     const w = world(base());
     await settle();
-    const before = w.ran.filter((a) => a[0] === 'verify').length;
+    const before = w.ran.filter((a) => a.join(' ') === 'verify --json').length;
     for (let i = 0; i < 20; i++) w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS * 3);
-    expect(w.ran.filter((a) => a[0] === 'verify').length).toBe(before + 1);
+    expect(w.ran.filter((a) => a.join(' ') === 'verify --json').length).toBe(before + 1);
   });
 });
 

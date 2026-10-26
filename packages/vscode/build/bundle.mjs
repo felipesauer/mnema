@@ -17,7 +17,7 @@ const pkgDir = fileURLToPath(new URL('..', import.meta.url));
 const ENTRY = `
 import * as vscode from 'vscode';
 import { activate as start, deactivate } from './src/extension.ts';
-export const activate = (context) => start(context, vscode);
+export const activate = (context) => start(context, vscode) ?? {};
 export { deactivate };
 `;
 
