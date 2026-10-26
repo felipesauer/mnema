@@ -702,6 +702,7 @@ function firstCauses(record: string) {
       check: checkNaming(second?.what ?? '', 'second'),
       section: second?.section,
       where: second?.where,
+      what: second?.what ?? '',
     },
   };
 }
@@ -765,9 +766,9 @@ describe('the two readers name the same check first on a line broken where the o
       const causes = withLine('checkpoints.jsonl', 1, edit);
       expect(causes.product.check).toBe('checkpoint-scheme-unknown');
       expect(causes.second.check).toBe('checkpoint-scheme-unknown');
-      expect(causes.product.detail.endsWith(`does not know: ${named}`), causes.product.detail).toBe(
-        true,
-      );
+      // The same words in both, to the end: the naming is part of the sentence.
+      expect(causes.second.what).toBe(`a checkpoint scheme this reader does not know: ${named}`);
+      expect(causes.product.detail.endsWith(causes.second.what), causes.product.detail).toBe(true);
     }
   });
 
