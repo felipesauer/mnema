@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **Qwen Code opens its sessions with the record and refuses a write a rule refuses.** Installed as an extension
+  (`qwen extensions install /path/to/mnema/plugin`, which converts the Claude Code plugin), Qwen Code runs the plugin's
+  hooks file: the opening arrives in the system instruction of its first request, the server's tools are listed to the
+  model, and a `write_file` or an `edit` where a rule refuses is not made and the model reads the rule. The command that
+  refuses is new in `hooks/hooks.json` and starts only where `QWEN_PROJECT_DIR` is set, which Qwen Code sets for every
+  hook (it also sets the variables of Claude Code and Gemini CLI, so neither can tell it apart). It refuses and nothing
+  else, so a rule that only asks for a person is let through, and `mnema before-a-write --host` takes `qwen`. Held by a
+  contract that starts the real Qwen Code 0.26.1 against a stand-in for its model, with no account, in a new job of the
+  host contract. Qwen Code defers the server's tools, so, unlike the other four, no file pins the weight of the 27
+  definitions it sends. Not run: an interactive session, `notebook_edit`, and what the plugin's other hooks (the count at
+  the end of a response, the subagent hooks) do under it.
 - **A compacted conversation is handed back what its session had recorded.** A new `SessionStart` hook under the `compact`
   matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
   twenty tokens) read from the session's journal: the decisions it recorded (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions

@@ -137,7 +137,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   the table, host by host, and [how each claim is held](evidence.md) says which of it a test holds.
   Codex, GitHub Copilot CLI, OpenCode and Gemini CLI read files of their own in the same plugin
   folder: the two opening texts and the refusal, and in Copilot CLI the pause too, each held by a
-  job against the host's real binary; [the install page](install.md) says how, host by host.
+  job against the host's real binary; [the install page](install.md) says how, host by host. Qwen Code
+  installs the plugin itself, converted into an extension of its own, and runs the same hooks file:
+  the refusal is a command in it that starts only where `QWEN_PROJECT_DIR` is set.
 - **A rules file for a host without the plugin**: `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with

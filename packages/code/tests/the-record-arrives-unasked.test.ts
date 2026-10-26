@@ -160,8 +160,8 @@ const NOTES_HOOK = 'session-recall.mjs';
  */
 const GATE_HOOK = 'edit-asks-a-person.mjs';
 /**
- * The same verb for Cursor's agent, which can only refuse: its command starts only where the host
- * says it is Cursor, so this suite says so (`CURSOR_VERSION`) for it and for nobody else.
+ * The same verb for Cursor's agent and for Qwen Code, which can only refuse: each command starts only
+ * where the host says it is that host, so this suite says so (`CURSOR_VERSION`) for Cursor.
  */
 const CURSOR_HOOK = 'edit-refuses-a-write.mjs';
 /** The handlers that gate a write, and so are handed one and do not ask which program is first. */
@@ -630,6 +630,7 @@ describe('the record arrives unasked', () => {
       CORRECTIONS_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
+      CURSOR_HOOK,
       SETTLED_HOOK,
       AFTER_A_WRITE_HOOK,
       DISPATCHED_HOOK,
@@ -1504,6 +1505,7 @@ describe('the record arrives unasked', () => {
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
+      'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/choice-settled.mjs',
       'command:/hooks/after-a-write.mjs',
       'command:/hooks/agent-dispatched.mjs',

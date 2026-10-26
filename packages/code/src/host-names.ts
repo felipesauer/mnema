@@ -143,6 +143,7 @@ const HELD = {
   copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
   opencodeContract: 'packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts',
   geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
+  qwenContract: 'packages/code/tests/host-contract/qwen-opens-and-refuses.qwen.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
   claudeSubagentStart:
@@ -176,6 +177,16 @@ const OPENCODE_SOURCE =
 const GEMINI_SOURCE =
   'https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16';
 
+/**
+ * The Qwen Code source every cell of its row that is read rather than run was read at: the commit
+ * of the release the contract holds (0.26.1).
+ */
+const QWEN_SOURCE =
+  'https://github.com/QwenLM/qwen-code/blob/b475278c4a300acebe6cfc990a9e1b1d18819bfc';
+
+/** The day Qwen Code's documentation and source were read. */
+const QWEN_READ_ON = '26 October 2026';
+
 /** The day Gemini CLI's documentation and source were read. */
 const GEMINI_READ_ON = '10 October 2026';
 
@@ -206,7 +217,7 @@ const NOT_PORTED: Place = { held: 'not ported' };
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST SIX ARE PORTED; THE OTHERS WERE ONLY READ. Each of the others documents an MCP client
+ * THE FIRST EIGHT ARE PORTED; THE OTHERS WERE ONLY READ. Each of the others documents an MCP client
  * and reads an `AGENTS.md`, at the commit or on the page the link names, and no hook of this
  * plugin's is known to reach any of them. Aider was read too and is not here: it has no MCP client.
  */
@@ -534,6 +545,65 @@ export const HOSTS = {
       agents: NOT_PORTED,
     },
   },
+  qwen: {
+    title: 'Qwen Code',
+    door: 'command',
+    // Qwen Code converts a Claude Code plugin it is told to install into an extension of its own
+    // and loads that plugin's `hooks/hooks.json`, so it reads the file every other host that
+    // reads Claude Code's format reads, and it applies the matcher Claude Code applies (`Write`
+    // and `Edit` are aliases of its `write_file` and `edit`). It sets `GEMINI_PROJECT_DIR` and
+    // `CLAUDE_PROJECT_DIR` for every hook, beside its own, so only its own can say it is the host.
+    saysItIsTheHost: 'QWEN_PROJECT_DIR',
+    note:
+      'Qwen Code installs the Claude Code plugin of this repository as an extension, converted ' +
+      '(`qwen extensions install` on a checkout, see `docs/install.md`), and runs the plugin’s ' +
+      'hooks file. It has no hook that calls into a server, so the entry that does is passed ' +
+      'over, and the command of its own that this plugin ships for it runs only where ' +
+      '`QWEN_PROJECT_DIR` is set, which Qwen Code sets for every hook and no other host this ' +
+      'plugin serves sets (it also sets `CLAUDE_PROJECT_DIR` and `GEMINI_PROJECT_DIR`, which is ' +
+      'why neither can tell it apart; read in ' +
+      `[\`hookRunner.ts\`](${QWEN_SOURCE}/packages/core/src/hooks/hookRunner.ts#L1219-L1221)). ` +
+      'The refusal answers `PreToolUse` on its two tools that write, `write_file` and `edit`, ' +
+      'with a `permissionDecision` of `deny`, which Qwen Code hands the model as the call’s ' +
+      'error; a file a shell command writes meets no hook, as on every host. The opening is a ' +
+      '`SessionStart` hook’s `additionalContext`, which Qwen Code escapes (`<` and `>`) and ' +
+      'puts at the end of the system instruction, in a `<qwen:session-start-context>` block ' +
+      `(read in [\`types.ts\`](${QWEN_SOURCE}/packages/core/src/hooks/types.ts#L474-L481) and ` +
+      `[\`llm-chat.ts\`](${QWEN_SOURCE}/packages/core/src/core/llm-chat.ts#L2323-L2330)); a ` +
+      'ceiling of its own on that text was not found in the source read, so it is cut at ' +
+      '10,000 units. The host defers the server’s tools, naming them in the first request and ' +
+      'sending a schema only when the model asks for one, so the weight of the 27 definitions ' +
+      'is not pinned for it. The handler answers a refusal and nothing else, so a rule that ' +
+      'only asks for a person is let through in silence. It fails open where nothing says the ' +
+      'path is governed: with no `mnema` on the PATH the write goes through (held by its ' +
+      'test); a `mnema` that is there and cannot answer, or a program of that name that is not ' +
+      'this product, refuses a write at a path a rule that refuses it addresses and lets any ' +
+      'other through. The model is any endpoint that speaks the OpenAI protocol the host is ' +
+      'pointed at, with no account, under the Apache-2.0 license at ' +
+      `[\`LICENSE\`](${QWEN_SOURCE}/LICENSE).`,
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.qwenContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${QWEN_SOURCE}/docs/users/features/memory.md`,
+        read: QWEN_READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.qwenContract },
+      refuses: { does: true, held: 'a test', by: HELD.qwenContract },
+      asks: { does: false, held: 'a test', by: HELD.qwenContract },
+    },
+    places: {
+      skills: {
+        held: 'documentation',
+        project: '.qwen/skills',
+        user: '.qwen/skills',
+        at: `${QWEN_SOURCE}/docs/users/features/skills.md`,
+        read: QWEN_READ_ON,
+      },
+      agents: NOT_PORTED,
+    },
+  },
   cursorIde: {
     title: "Cursor's editor",
     door: 'none',
@@ -652,37 +722,6 @@ export const HOSTS = {
         project: '.factory/skills',
         user: '.factory/skills',
         at: 'https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/skills.mdx',
-        read: READ_ON,
-      },
-      agents: NOT_PORTED,
-    },
-  },
-  qwen: {
-    title: 'Qwen Code',
-    door: 'none',
-    cells: {
-      server: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/mcp.md',
-        read: READ_ON,
-      },
-      rulesFile: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/memory.md',
-        read: READ_ON,
-      },
-      opens: { held: 'not ported' },
-      refuses: { held: 'not ported' },
-      asks: { held: 'not ported' },
-    },
-    places: {
-      skills: {
-        held: 'documentation',
-        project: '.qwen/skills',
-        user: '.qwen/skills',
-        at: 'https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/skills.md',
         read: READ_ON,
       },
       agents: NOT_PORTED,
