@@ -30,8 +30,11 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { dirname, join, resolve } from 'node:path';
 import {
   ADDRESS_RELATIONS,
+  ASKS_FOR_A_PERSON_RELATION,
   catalogUpcasters,
   contractNotHeldIn,
+  GOVERNS_RELATION,
+  REFUSES_A_WRITE_RELATION,
   type VerifyResult,
   verify,
 } from '@mnema/chain';
@@ -79,6 +82,19 @@ export interface InheritedRule {
   readonly addresses: readonly { readonly rel: string; readonly target: string }[];
 }
 
+/**
+ * How many rules the inherited record places at an address, under each relation: its decisions in
+ * force, and the rules it addresses that it does not hold at all (a link from the origin to a rule
+ * of the project that inherits it, whose address is the origin's). The brief prints these beside
+ * the project's own counts, so a refusal that comes from the origin is never one the brief said
+ * would not come.
+ */
+export interface AddressingRules {
+  readonly governs: number;
+  readonly asks: number;
+  readonly refuses: number;
+}
+
 /** What the pointer file holds, or why it cannot be used. */
 export type PointerRead =
   | { readonly state: 'absent' }
@@ -96,6 +112,7 @@ export type InheritedReading =
       readonly state: 'read';
       readonly pointer: Pointer;
       readonly decisions: readonly InheritedRule[];
+      readonly addressing: AddressingRules;
     }
   | { readonly state: 'unverified'; readonly pointer: Pointer; readonly why: string }
   | { readonly state: 'unavailable'; readonly pointer: Pointer; readonly why: string }
@@ -271,7 +288,11 @@ function whyNotRead(verdict: VerifyResult): string {
 }
 
 type RecordRead =
-  | { readonly ok: true; readonly decisions: readonly InheritedRule[] }
+  | {
+      readonly ok: true;
+      readonly decisions: readonly InheritedRule[];
+      readonly addressing: AddressingRules;
+    }
   | { readonly ok: false; readonly why: string };
 
 /**
@@ -299,8 +320,8 @@ function verifyAndRead(root: string): RecordRead {
     const upcasters = catalogUpcasters();
     const verdict = verify(root, upcasters);
     if (!verdict.ok) return { ok: false, why: whyNotRead(verdict) };
-    const decisions = withCache(root, upcasters, (cache) =>
-      brief([{ scope: 'public', chainRoot: root, cache }], {
+    const { decisions, addressing } = withCache(root, upcasters, (cache) => {
+      const inForce = brief([{ scope: 'public', chainRoot: root, cache }], {
         editPush: EDIT_PUSH_CHANNEL,
         asksAPerson: ASKS_A_PERSON_CHANNEL,
         refusesAWrite: REFUSES_A_WRITE_CHANNEL,
@@ -323,9 +344,31 @@ function verifyAndRead(root: string): RecordRead {
               .map((target) => ({ rel, target })),
           ),
         };
-      }),
-    );
-    return { ok: true, decisions };
+      });
+      const standing = new Set(inForce.map((d) => d.id));
+      // A rule the record places at an address: one of its decisions in force, or a rule it does
+      // not hold at all (its address is the origin's, the rule the project's). A decision of its
+      // own that is not in force places nothing, as the project's own count has it.
+      const placed = (rel: string): number =>
+        new Set(
+          cache
+            .linksByRelation(rel)
+            .map((edge) => edge.subject)
+            .filter(
+              (id) =>
+                standing.has(id) || (cache.getDecision(id) === null && cache.getSkill(id) === null),
+            ),
+        ).size;
+      return {
+        decisions: inForce,
+        addressing: {
+          governs: placed(GOVERNS_RELATION),
+          asks: placed(ASKS_FOR_A_PERSON_RELATION),
+          refuses: placed(REFUSES_A_WRITE_RELATION),
+        },
+      };
+    });
+    return { ok: true, decisions, addressing };
   } catch (error) {
     return { ok: false, why: (error as Error).message };
   }
@@ -357,7 +400,15 @@ function readAt(
   }
   const read = readRecord(root);
   return read.ok
-    ? { reading: { state: 'read', pointer, decisions: read.decisions }, root }
+    ? {
+        reading: {
+          state: 'read',
+          pointer,
+          decisions: read.decisions,
+          addressing: read.addressing,
+        },
+        root,
+      }
     : { reading: { state: 'unverified', pointer, why: read.why } };
 }
 
@@ -446,15 +497,17 @@ export function withInheritedSource<T>(
 }
 
 /**
- * Whose rule a gate's opening sentence names: the project's record, the record it inherits, or
- * either, so a text that refuses or asks never says an inherited rule is one the project made.
+ * Whose ADDRESS a gate's opening sentence names: the project's record, the record it inherits, or
+ * either, so a text that refuses or asks never says an inherited address is one the project made.
+ * It names who placed the rule at the path and not who holds it: the record this project inherits
+ * may address a rule of the project, and it is that address that refuses or asks here.
  */
 export function aRuleOf(rules: readonly { readonly inherited?: InheritedFrom }[]): string {
   const inherited = rules.filter((rule) => rule.inherited !== undefined).length;
   if (inherited === 0) return 'A rule of this project’s record';
   return inherited === rules.length
-    ? 'A rule of the record this project inherits'
-    : 'A rule of this project’s record or of the record it inherits';
+    ? 'A rule addressed here by the record this project inherits'
+    : 'A rule addressed here by this project’s record or by the record it inherits';
 }
 
 /** How a line names where an inherited rule comes from: the origin and the commit, short. */

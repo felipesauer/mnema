@@ -246,10 +246,31 @@ describe('mnema rules', () => {
     expect(done.governed.inherited).toEqual({
       from: { origin: org, commit: pinned },
       addressed: 5,
+      governs: 2,
+      asks: 1,
+      refuses: 2,
       elsewhere: 2,
     });
     const page = rulesReport(renderPlain, done.governed).join('\n');
-    expect(page).toContain(`${fromTheOrg()}: 5 addresses, 2 name nothing in this project`);
+    expect(page).toContain(
+      `${fromTheOrg()}: 5 addresses (2 govern, 1 asks for a person, 2 refuse a write), ` +
+        '2 name nothing in this project',
+    );
+  });
+
+  it('counts under "in this project" only the addresses of the project record', () => {
+    const done = runRules({ cwd: repo, env }, { path: 'CHANGELOG.md' });
+    if (!done.ok) throw new Error('refused');
+    expect(done.governed.counts.refuses).toEqual({
+      matching: 1,
+      addressed: 0,
+      stale: 0,
+      unresolved: 0,
+    });
+    expect(done.governed.counts.governing).toBe(1);
+    const page = rulesReport(renderPlain, done.governed).join('\n');
+    expect(page).toContain('1 refuse a write here · 0 refuse in this project');
+    expect(page).toContain('1 address this project');
   });
 
   it('lists the inherited rule that refuses a write and the one that asks for a person', () => {
@@ -291,7 +312,7 @@ describe('the gate before a write', () => {
     expect(said['permissionDecisionReason']).toContain(orgRefuses);
     expect(said['permissionDecisionReason']).toContain(fromTheOrg());
     expect(said['permissionDecisionReason']).toContain(
-      'A rule of the record this project inherits refuses a write at CHANGELOG.md',
+      'A rule addressed here by the record this project inherits refuses a write at CHANGELOG.md',
     );
     expect(charges()).toEqual([`channel.refused ${orgRefuses} @ CHANGELOG.md`]);
   });
@@ -306,7 +327,7 @@ describe('the gate before a write', () => {
     expect(said['permissionDecision']).toBe('ask');
     expect(said['permissionDecisionReason']).toContain(orgAsks);
     expect(said['permissionDecisionReason']).toContain(
-      'A rule of the record this project inherits asks that a person look at package.json',
+      'A rule addressed here by the record this project inherits asks that a person look at package.json',
     );
     expect(said['permissionDecisionReason']).toContain(fromTheOrg());
   });
@@ -335,6 +356,81 @@ describe('the gate before a write', () => {
 
   it('says nothing more where no inherited rule addresses the path', () => {
     expect(vscode('src/a.ts')).toEqual({});
+  });
+});
+
+describe('an address the origin writes for a rule of the project', () => {
+  /**
+   * The origin links a rule THE PROJECT holds: the rule is the project's, the address is the
+   * origin's, so every line it reaches says it was inherited, and the rule still opens here.
+   */
+  beforeEach(async () => {
+    writeFileSync(join(repo, 'README.md'), '# repo\n');
+    mkdirSync(join(repo, 'docs'), { recursive: true });
+    await did(org, 'link', ownRule, 'README.md', '--rel', 'refuses-a-write');
+    await did(org, 'link', ownRule, 'docs', '--rel', 'asks-for-a-person');
+    git(org, 'add', '.mnema');
+    git(org, 'commit', '-q', '-m', 'the origin addresses a rule of the project');
+    pinned = git(org, 'rev-parse', 'HEAD');
+    await did(repo, 'inherit', 'update', '--to', 'main', '--write');
+  }, 30_000);
+
+  it('the refusal names the origin as where the address comes from', () => {
+    const said = vscode('README.md');
+    expect(said['permissionDecision']).toBe('deny');
+    const reason = said['permissionDecisionReason'] ?? '';
+    expect(reason).toContain(
+      'A rule addressed here by the record this project inherits refuses a write at README.md',
+    );
+    expect(reason.split('\n').find((line) => line.includes(ownRule))).toContain(fromTheOrg());
+    expect(reason).toContain(`The rule opens with \`mnema show ${ownRule}\``);
+    const done = runRules({ cwd: repo, env }, { path: 'README.md' });
+    if (!done.ok) throw new Error('refused');
+    expect(done.governed.refuses.map((rule) => [rule.rule, rule.inherited])).toEqual([
+      [ownRule, { origin: org, commit: pinned }],
+    ]);
+    const page = rulesReport(renderPlain, done.governed).join('\n');
+    expect(page.split('\n').find((line) => line.includes(ownRule))).toContain(fromTheOrg());
+  });
+
+  it('the asking names the origin as where the address comes from', () => {
+    const said = vscode('docs/guide.md');
+    expect(said['permissionDecision']).toBe('ask');
+    const reason = said['permissionDecisionReason'] ?? '';
+    expect(reason).toContain(
+      'A rule addressed here by the record this project inherits asks that a person look at docs/guide.md',
+    );
+    expect(reason.split('\n').find((line) => line.includes(ownRule))).toContain(fromTheOrg());
+  });
+
+  it('the address the project holds for the same rule stays its own', () => {
+    const done = runRules({ cwd: repo, env }, { path: 'src/a.ts' });
+    if (!done.ok) throw new Error('refused');
+    expect(done.governed.rules.find((rule) => rule.rule === ownRule)?.inherited).toBeUndefined();
+  });
+});
+
+describe('where a refused write is told the rule opens', () => {
+  it('names the origin for a rule only the inherited record holds, never a show that finds nothing', () => {
+    const reason = vscode('CHANGELOG.md')['permissionDecisionReason'] ?? '';
+    expect(reason).not.toContain(`The rule opens with \`mnema show ${orgRefuses}\``);
+    expect(reason).toContain(
+      `The rule is held by the record this project inherits, not by its own: \`mnema show ${orgRefuses}\` opens it in a clone of ${org} at ${pinned.slice(0, 12)}`,
+    );
+  });
+});
+
+describe('the brief', () => {
+  it('counts what the inherited record addresses here, and scopes its own counts to the project', async () => {
+    const page = await did(repo, 'brief');
+    expect(page).toContain('0 of them refuse a WRITE at an address');
+    expect(page).not.toContain('Nothing waits for a file none of them asks about.');
+    const flat = page.replace(/\n/g, ' ');
+    expect(flat).toContain(
+      'The record this project inherits places rules at addresses here too: 1 governs, ' +
+        '1 asks for a PERSON and 1 refuses a WRITE.',
+    );
+    expect(flat).toContain('The counts above are this project’s own rules alone.');
   });
 });
 

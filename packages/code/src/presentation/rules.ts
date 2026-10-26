@@ -78,15 +78,19 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
       ),
     ),
   ];
-  // THE RECORD THIS PROJECT INHERITS, when it read one: how many of its addresses there are and how
-  // many name nothing here. Those are not stale (another repository's layout is not a repair of
+  // THE RECORD THIS PROJECT INHERITS, when it read one: how many of its addresses there are, under
+  // which relation, and how many name nothing here. The three lines above count "in this project"
+  // the project's own record alone, so the inherited addresses are counted here and nowhere else.
+  // Those that name nothing here are not stale (another repository's layout is not a repair of
   // this one) and are listed nowhere, so the line is what says they were read.
   if (governed.inherited !== undefined) {
-    const { from, addressed, elsewhere } = governed.inherited;
+    const { from, addressed, governs, asks, refuses, elsewhere } = governed.inherited;
     lines.push(
       render(
         fact(
-          `${inheritedFromText(from)}: ${addressed} address${addressed === 1 ? '' : 'es'}, ` +
+          `${inheritedFromText(from)}: ${addressed} address${addressed === 1 ? '' : 'es'} ` +
+            `(${governs} govern${governs === 1 ? 's' : ''}, ${asks} ask${asks === 1 ? 's' : ''} ` +
+            `for a person, ${refuses} refuse${refuses === 1 ? 's' : ''} a write), ` +
             `${elsewhere} name${elsewhere === 1 ? 's' : ''} nothing in this project`,
         ),
       ),
