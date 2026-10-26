@@ -116,7 +116,7 @@ with its own changelog.
 - **Both readers refuse a `key.enrolled` that names an agent key.** A key that holds the agent role in a record (from its
   `agent.enrolled` on, retired included) taken in again as a plain member, by its own identity or another one of the same
   record, signed as one, without the agent's limits; the two readers refused only what it later signed for another identity.
-  `FORMAT.md` section 6.2 now says a key holds one role, and both readers, and the page `mnema site` writes, refuse such an
+  `FORMAT.md` section 6.2 now says a key holds one role, and both readers, and the verifier page, refuse such an
   enrolment where it is written, naming it in the same words (`key-enrolled-names-an-agent-key` in `mutate.py`). It is a
   tightening after the first publication (section 7.1): records written by 0.1.0, 0.1.1 and 0.1.2 through every flow that
   enrols, retires and asks again for an agent key, and this repository's own record, hold no such fact, and a version from

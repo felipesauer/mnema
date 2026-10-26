@@ -128,8 +128,8 @@ export function runKeyRequest(
         message:
           `the key in ${resolve(ctx.cwd, input.privateKeyPath)} is ${agent}: an agent's key signs for its host ` +
           `under a name and is not a key of ${input.asChecker === true ? 'a checker' : 'a person'} to enrol. It is ` +
-          `told by its fingerprint, ${made.fingerprint}, wherever the file is kept; \`mnema key request ` +
-          "--anchor <your identity>` without --key asks for this machine's own key",
+          `told by its fingerprint, ${made.fingerprint}, wherever the file is kept; ` +
+          "`mnema key request --anchor <your identity>` without --key asks for this machine's own key",
       };
     }
   }

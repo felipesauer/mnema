@@ -1593,7 +1593,7 @@ Stated plainly, because a published format invites all three readings:
   the private one, and the global one with `--global`): an event signed by an agent key
   that another of those trees retired, with an `at` later than that retirement's, is a
   break there, and is not counted as attested. That is the product's reading of a set of
-  records, not a rule of this format: the second reader and the page `mnema site` writes
+  records, not a rule of this format: the second reader and the verifier page
   read one tree at a time and do not make it, and no reader sees a retirement written in
   a tree it was not given (another machine's private tree, or the global tree without
   `--global`).
