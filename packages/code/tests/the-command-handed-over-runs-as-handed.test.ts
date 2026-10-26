@@ -679,7 +679,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 51, name: 92, flag: 4 },
+  'CHANGELOG.md': { line: 51, name: 94, flag: 4 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -789,7 +789,7 @@ export const HANDED_OVER: Readonly<
   'packages/core/src/workflow/identity-operations.ts': { name: 1 },
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
-  'packages/vscode/README.md': { line: 11, name: 4 },
+  'packages/vscode/README.md': { line: 11, name: 6 },
   'packages/vscode/src/stacks.ts': { line: 1 },
   'plugin/README.md': { line: 38, name: 26, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },

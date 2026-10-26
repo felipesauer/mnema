@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **The VS Code extension's commands have icons and short titles, and an empty view says what it means.** Every command carries a codicon, so the
+  accept and reject buttons beside a decision and the add buttons of the stacks view are icons instead of the title's text, and the
+  titles are short (`mnema: Accept Decision`, `mnema: Add Stack`); the command ids are unchanged, so a keybinding still works. The
+  Command Palette lists them only where a workspace folder is open, and `mnema: Show File Rules` only over a file. Each of the two
+  views has a text for a folder with no `.mnema` (it points to `mnema init`) and for a folder with one and nothing to list (the
+  decisions view also links to the `mnema.command` setting; the stacks view says no stack is adopted only when `mnema stack list` was read, offers the two ways to add one, and says it has not listed the
+  stacks when the command failed); which of the two applies is read from the disk. The two settings are described in markdown. A test now reads the manifest and holds all of this,
+  and the check that starts the packaged file in a real editor reads the command list from the manifest it installed instead of
+  from a second list. The buttons are grouped by meaning (accept beside reject; show, compare and check beside a stack, export in
+  the context menu and remove alone in its last group; refresh in both title bars), and every input box and choice has a title, a
+  placeholder that says what to type and stays open when focus moves.
 - **Qwen Code opens its sessions with the record and refuses a write a rule refuses.** Installed as an extension
   (`qwen extensions install /path/to/mnema/plugin`, which converts the Claude Code plugin), Qwen Code runs the plugin's
   hooks file: the opening arrives in the system instruction of its first request, the server's tools are listed to the
