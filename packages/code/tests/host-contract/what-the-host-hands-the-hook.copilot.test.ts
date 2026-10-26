@@ -6,8 +6,8 @@
  * WHAT IS HELD AND WHAT IS NOT. That, in the version the run names, the payload of the hook for a
  * write carries the fields the product reads, under the names it reads them by; and that nothing
  * else is relied on: a field the host adds goes red here, which is the day to look at whether
- * the product should read it. NOT HELD: the payload of any other event (the opening hook reads no
- * payload at all, and no case here makes the host's question tool run without a person), and
+ * the product should read it. NOT HELD: the payload of any other event (the hook that opens a
+ * session is not measured here, and its handlers read `session_id` or `cwd` from it, and no case here makes the host's question tool run without a person), and
  * that the host sends the same fields in another version.
  *
  * What the product reads of it: `tool_name`, and under `tool_input` the `path` of `Write`, and for
