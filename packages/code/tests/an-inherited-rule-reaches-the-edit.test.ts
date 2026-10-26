@@ -378,7 +378,7 @@ describe('an address the origin writes for a rule of the project', () => {
   it('the refusal names the origin as where the address comes from', () => {
     const said = vscode('README.md');
     expect(said['permissionDecision']).toBe('deny');
-    const reason = said['permissionDecisionReason'] ?? '';
+    const reason = String(said['permissionDecisionReason']);
     expect(reason).toContain(
       'A rule addressed here by the record this project inherits refuses a write at README.md',
     );
@@ -396,7 +396,7 @@ describe('an address the origin writes for a rule of the project', () => {
   it('the asking names the origin as where the address comes from', () => {
     const said = vscode('docs/guide.md');
     expect(said['permissionDecision']).toBe('ask');
-    const reason = said['permissionDecisionReason'] ?? '';
+    const reason = String(said['permissionDecisionReason']);
     expect(reason).toContain(
       'A rule addressed here by the record this project inherits asks that a person look at docs/guide.md',
     );
@@ -412,7 +412,7 @@ describe('an address the origin writes for a rule of the project', () => {
 
 describe('where a refused write is told the rule opens', () => {
   it('names the origin for a rule only the inherited record holds, never a show that finds nothing', () => {
-    const reason = vscode('CHANGELOG.md')['permissionDecisionReason'] ?? '';
+    const reason = String(vscode('CHANGELOG.md')['permissionDecisionReason']);
     expect(reason).not.toContain(`The rule opens with \`mnema show ${orgRefuses}\``);
     expect(reason).toContain(
       `The rule is held by the record this project inherits, not by its own: \`mnema show ${orgRefuses}\` opens it in a clone of ${org} at ${pinned.slice(0, 12)}`,
