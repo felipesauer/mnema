@@ -265,7 +265,7 @@ describe('the extension reads the record through the command line', () => {
   });
 
   it('comes back from a missing command when it is there again, and the views are listed again', async () => {
-    const answers = {
+    const answers: Record<string, CliResult> = {
       ...base(),
       '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
     };
