@@ -29,7 +29,7 @@
  *     the same marks beside the same authors, from the same selection.
  */
 
-import { spawn, spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -180,15 +180,14 @@ describe('first writes of one new key made together', () => {
     ...argv: string[]
   ): Promise<{ status: number | null; stderr: string }> {
     return new Promise((done) => {
-      const child = spawn(process.execPath, [CLI, ...argv], {
-        cwd: dir,
-        env: { PATH: process.env.PATH ?? '', HOME: home },
-      });
-      let stderr = '';
-      child.stderr.on('data', (chunk: Buffer) => {
-        stderr += chunk.toString();
-      });
-      child.on('close', (status) => done({ status, stderr }));
+      execFile(
+        process.execPath,
+        [CLI, ...argv],
+        { cwd: dir, encoding: 'utf-8', env: { PATH: process.env.PATH ?? '', HOME: home } },
+        (error, _stdout, stderr) => {
+          done({ status: error === null ? 0 : ((error as { code?: number }).code ?? 1), stderr });
+        },
+      );
     });
   }
 
