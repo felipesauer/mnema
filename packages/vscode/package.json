@@ -37,13 +37,13 @@
           "type": "string",
           "default": "mnema",
           "scope": "machine",
-          "description": "The mnema executable the extension runs. It is started directly, with an argument array, never through a shell."
+          "markdownDescription": "The `mnema` executable the extension runs. It is started directly, with an argument array, never through a shell. Set it in your user settings: a repository's own settings cannot change it."
         },
         "mnema.stackIndex": {
           "type": "string",
           "default": "stack-index",
           "scope": "machine",
-          "description": "The folder holding the index of stacks (index.json), relative to the workspace folder. It is read by `mnema stack index`."
+          "markdownDescription": "The folder holding the index of stacks (`index.json`), relative to the workspace folder. It is read by `mnema stack index`."
         }
       }
     },
@@ -61,50 +61,88 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "mnema.proposed",
+        "contents": "This folder holds no .mnema record, so there is nothing to list. Run mnema init in a terminal here to start one.\n[What a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md)",
+        "when": "!mnema.hasRecord"
+      },
+      {
+        "view": "mnema.proposed",
+        "contents": "No decision is listed as awaiting a judgment. If mnema could not run, nothing is listed either, and the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+        "when": "mnema.hasRecord"
+      },
+      {
+        "view": "mnema.stacks",
+        "contents": "This folder holds no .mnema record, so no stack is adopted. Run mnema init in a terminal here to start one.\n[What a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md)",
+        "when": "!mnema.hasRecord"
+      },
+      {
+        "view": "mnema.stacks",
+        "contents": "No stack is adopted for this project, as mnema stack list reads it.\n[Add a stack](command:mnema.stacks.add)\n[Add a stack from the index](command:mnema.stacks.addFromIndex)",
+        "when": "mnema.hasRecord && mnema.stacksRead"
+      },
+      {
+        "view": "mnema.stacks",
+        "contents": "mnema has not listed the stacks. If it could not run, the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+        "when": "mnema.hasRecord && !mnema.stacksRead"
+      }
+    ],
     "commands": [
       {
         "command": "mnema.accept",
-        "title": "mnema: Accept decision"
+        "title": "mnema: Accept Decision",
+        "icon": "$(check)"
       },
       {
         "command": "mnema.reject",
-        "title": "mnema: Reject decision"
+        "title": "mnema: Reject Decision",
+        "icon": "$(close)"
       },
       {
         "command": "mnema.refresh",
-        "title": "mnema: Refresh"
+        "title": "mnema: Refresh",
+        "icon": "$(refresh)"
       },
       {
         "command": "mnema.showRules",
-        "title": "mnema: Show the rules over this file"
+        "title": "mnema: Show File Rules",
+        "icon": "$(law)"
       },
       {
         "command": "mnema.stacks.add",
-        "title": "mnema: Add a stack from a folder, archive or git address"
+        "title": "mnema: Add Stack",
+        "icon": "$(add)"
       },
       {
         "command": "mnema.stacks.addFromIndex",
-        "title": "mnema: Add a stack from the index"
+        "title": "mnema: Add from Index",
+        "icon": "$(library)"
       },
       {
         "command": "mnema.stacks.show",
-        "title": "mnema: Show a stack"
+        "title": "mnema: Show Stack",
+        "icon": "$(eye)"
       },
       {
         "command": "mnema.stacks.diff",
-        "title": "mnema: Compare a stack with its receipt"
+        "title": "mnema: Compare Stack",
+        "icon": "$(diff)"
       },
       {
         "command": "mnema.stacks.check",
-        "title": "mnema: Check a stack against the record"
+        "title": "mnema: Check Stack",
+        "icon": "$(checklist)"
       },
       {
         "command": "mnema.stacks.remove",
-        "title": "mnema: Remove a stack"
+        "title": "mnema: Remove Stack",
+        "icon": "$(trash)"
       },
       {
         "command": "mnema.stacks.export",
-        "title": "mnema: Export a stack"
+        "title": "mnema: Export Stack",
+        "icon": "$(export)"
       }
     ],
     "menus": {
@@ -120,6 +158,16 @@
           "group": "inline@2"
         },
         {
+          "command": "mnema.accept",
+          "when": "view == mnema.proposed",
+          "group": "1_review@1"
+        },
+        {
+          "command": "mnema.reject",
+          "when": "view == mnema.proposed",
+          "group": "1_review@2"
+        },
+        {
           "command": "mnema.stacks.show",
           "when": "view == mnema.stacks",
           "group": "inline@1"
@@ -127,25 +175,45 @@
         {
           "command": "mnema.stacks.diff",
           "when": "view == mnema.stacks",
-          "group": "stack@1"
+          "group": "inline@2"
         },
         {
           "command": "mnema.stacks.check",
           "when": "view == mnema.stacks",
-          "group": "stack@2"
+          "group": "inline@3"
+        },
+        {
+          "command": "mnema.stacks.show",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@1"
+        },
+        {
+          "command": "mnema.stacks.diff",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@2"
+        },
+        {
+          "command": "mnema.stacks.check",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@3"
         },
         {
           "command": "mnema.stacks.export",
           "when": "view == mnema.stacks",
-          "group": "stack@3"
+          "group": "2_export@1"
         },
         {
           "command": "mnema.stacks.remove",
           "when": "view == mnema.stacks",
-          "group": "stack@4"
+          "group": "9_other@1"
         }
       ],
       "view/title": [
+        {
+          "command": "mnema.refresh",
+          "when": "view == mnema.proposed",
+          "group": "navigation@1"
+        },
         {
           "command": "mnema.stacks.add",
           "when": "view == mnema.stacks",
@@ -155,6 +223,57 @@
           "command": "mnema.stacks.addFromIndex",
           "when": "view == mnema.stacks",
           "group": "navigation@2"
+        },
+        {
+          "command": "mnema.refresh",
+          "when": "view == mnema.stacks",
+          "group": "navigation@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mnema.accept",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.reject",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.refresh",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.showRules",
+          "when": "workspaceFolderCount > 0 && resourceScheme == file"
+        },
+        {
+          "command": "mnema.stacks.add",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.addFromIndex",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.show",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.diff",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.check",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.remove",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.stacks.export",
+          "when": "workspaceFolderCount > 0"
         }
       ]
     }
