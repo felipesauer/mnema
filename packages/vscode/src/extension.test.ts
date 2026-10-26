@@ -61,7 +61,13 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
   const bar = { text: '', tooltip: '', command: '', show() {}, dispose() {} };
   const shown: string[] = [];
   const errors: string[] = [];
-  const inputs: { validate: (v: string) => string | undefined }[] = [];
+  const inputs: {
+    validate: (v: string) => string | undefined;
+    title: string;
+    prompt: string;
+    placeHolder: string;
+    ignoreFocusOut: boolean;
+  }[] = [];
   let reply: string | undefined;
   type Tree = { getChildren(): never[]; getTreeItem(e: never): Record<string, unknown> };
   const trees = new Map<string, Tree>();
@@ -97,8 +103,14 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
         show() {},
         dispose() {},
       }),
-      showInputBox: async (o: { validateInput: (v: string) => string | undefined }) => {
-        inputs.push({ validate: o.validateInput });
+      showInputBox: async (o: {
+        validateInput: (v: string) => string | undefined;
+        title: string;
+        prompt: string;
+        placeHolder: string;
+        ignoreFocusOut: boolean;
+      }) => {
+        inputs.push({ validate: o.validateInput, ...o });
         return reply;
       },
       showQuickPick: async (items: { label: string }[]) => {
@@ -265,6 +277,25 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     w.setReply('no');
     await w.command('mnema.reject')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
     expect(w.ran).toContainEqual(['decision', 'move', 'reject', 'd1', '--note', 'no']);
+  });
+
+  it('titles every input box, says what to type in its placeholder and keeps it open when focus moves', async () => {
+    const w = world(withStack());
+    await settle();
+    w.setReply('--scope');
+    await w.command('mnema.accept')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
+    await w.command('mnema.stacks.add')();
+    await w.command('mnema.stacks.export')({ name: 'hello-stack', scope: 'public' });
+    expect(w.inputs.map((i) => i.title)).toEqual([
+      'mnema: Accept Decision',
+      'mnema: Add Stack (1 of 2)',
+      'mnema: Export Stack',
+    ]);
+    for (const input of w.inputs) {
+      expect(input.placeHolder, input.title).not.toBe('');
+      expect(input.prompt, input.title).not.toBe('');
+      expect(input.ignoreFocusOut, input.title).toBe(true);
+    }
   });
 
   it('gives the input box a validator that refuses an empty note, and sends nothing without one', async () => {

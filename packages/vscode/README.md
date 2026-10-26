@@ -31,7 +31,7 @@ this repository, and every read and every write goes through the `mnema` command
 - **A panel, "mnema: stacks", in the Explorer.** The stacks adopted for the project, read from
   `mnema stack list --json`: each with its version, the tree it was adopted into, and whether its
   files are still as written. Its buttons and commands run the `stack` verb of the command line:
-  - `mnema: Add Stack` (from a folder, archive or git address) and `mnema: Add Stack from Index` run `mnema stack add <source> --scope <scope> --dry-run` and show what it printed, the
+  - `mnema: Add Stack` (from a folder, archive or git address) and `mnema: Add from Index` run `mnema stack add <source> --scope <scope> --dry-run` and show what it printed, the
     whole plan, in the output channel "mnema stacks". Only after that is one question asked; if
     the person confirms, the write is `mnema stack add <source> --scope <scope> --expect <digest>`
     with the digest that plan printed, so the files written are the ones shown. From the index, the
@@ -39,15 +39,20 @@ this repository, and every read and every write goes through the `mnema` command
     The index is read by `mnema stack index` from the folder named by `mnema.stackIndex` (default
     `stack-index`, relative to the workspace folder); an entry the checkout does not hold is not
     installed from here, and the message names the digest to compare.
-  - `mnema: Show Stack`, `mnema: Compare Stack with Receipt` and `mnema: Check Stack` run the verbs `show`,
+  - `mnema: Show Stack`, `mnema: Compare Stack` and `mnema: Check Stack` run the verbs `show`,
     `diff` and `check` of `stack` and print what they printed, a departure included.
   - `mnema: Remove Stack` runs `mnema stack remove <name> --dry-run`, shows it, asks once, and only then removes;
     `mnema: Export Stack` runs `mnema stack export <name> <folder>` into a folder the person types.
 - **Icons and short titles.** Every command carries a codicon (`$(check)` accept, `$(close)` reject,
   `$(refresh)` refresh, `$(law)` rules over the file, `$(add)` and `$(library)` add a stack,
   `$(eye)` show, `$(diff)` compare, `$(verified)` check, `$(trash)` remove, `$(export)` export), so the
-  buttons beside an item are icons and not the command's title. The Command Palette lists them only
-  where a workspace folder is open, and the rules command only over a file.
+  buttons are icons and the command's title (one to three words) is their tooltip. A decision has accept
+  and reject side by side; a stack has show, compare and check beside it, export in the context menu and
+  remove alone in the last group of it; the stacks view's title bar has add, add from the index and
+  refresh, and the decisions view's has refresh. The Command Palette lists the commands only where a
+  workspace folder is open, and the rules command only over a file. Each input box and each choice has a
+  title (with "1 of 2" where there are two steps), a placeholder that says what to type and stays open
+  when focus moves; a note that is empty is refused with what to fix.
 - **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` and to
   [the first record](../../docs/first-record.md); with a record, the decisions view says that nothing is
   listed as awaiting a judgment (and that nothing is listed either when `mnema` could not run, which the

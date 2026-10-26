@@ -101,7 +101,7 @@
       },
       {
         "command": "mnema.showRules",
-        "title": "mnema: Show Rules for This File",
+        "title": "mnema: Show File Rules",
         "icon": "$(law)"
       },
       {
@@ -111,7 +111,7 @@
       },
       {
         "command": "mnema.stacks.addFromIndex",
-        "title": "mnema: Add Stack from Index",
+        "title": "mnema: Add from Index",
         "icon": "$(library)"
       },
       {
@@ -121,7 +121,7 @@
       },
       {
         "command": "mnema.stacks.diff",
-        "title": "mnema: Compare Stack with Receipt",
+        "title": "mnema: Compare Stack",
         "icon": "$(diff)"
       },
       {
@@ -153,6 +153,16 @@
           "group": "inline@2"
         },
         {
+          "command": "mnema.accept",
+          "when": "view == mnema.proposed",
+          "group": "1_review@1"
+        },
+        {
+          "command": "mnema.reject",
+          "when": "view == mnema.proposed",
+          "group": "1_review@2"
+        },
+        {
           "command": "mnema.stacks.show",
           "when": "view == mnema.stacks",
           "group": "inline@1"
@@ -160,25 +170,45 @@
         {
           "command": "mnema.stacks.diff",
           "when": "view == mnema.stacks",
-          "group": "stack@1"
+          "group": "inline@2"
         },
         {
           "command": "mnema.stacks.check",
           "when": "view == mnema.stacks",
-          "group": "stack@2"
+          "group": "inline@3"
+        },
+        {
+          "command": "mnema.stacks.show",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@1"
+        },
+        {
+          "command": "mnema.stacks.diff",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@2"
+        },
+        {
+          "command": "mnema.stacks.check",
+          "when": "view == mnema.stacks",
+          "group": "1_inspect@3"
         },
         {
           "command": "mnema.stacks.export",
           "when": "view == mnema.stacks",
-          "group": "stack@3"
+          "group": "2_export@1"
         },
         {
           "command": "mnema.stacks.remove",
           "when": "view == mnema.stacks",
-          "group": "stack@4"
+          "group": "9_other@1"
         }
       ],
       "view/title": [
+        {
+          "command": "mnema.refresh",
+          "when": "view == mnema.proposed",
+          "group": "navigation@1"
+        },
         {
           "command": "mnema.stacks.add",
           "when": "view == mnema.stacks",
@@ -188,6 +218,11 @@
           "command": "mnema.stacks.addFromIndex",
           "when": "view == mnema.stacks",
           "group": "navigation@2"
+        },
+        {
+          "command": "mnema.refresh",
+          "when": "view == mnema.stacks",
+          "group": "navigation@3"
         }
       ],
       "commandPalette": [

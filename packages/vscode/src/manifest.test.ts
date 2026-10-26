@@ -41,11 +41,11 @@ describe('the extension manifest', () => {
     expect(manifest.capabilities?.untrustedWorkspaces?.supported).toBe(false);
   });
 
-  it('gives every command a codicon and a short title that starts with the product name', () => {
+  it('gives every command a codicon and a title of one to three words after the product name, because it is the tooltip of a button', () => {
     expect(commands.length).toBeGreaterThan(0);
     for (const { command, title, icon } of commands) {
       expect(icon, `${command} icon`).toMatch(/^\$\([a-z]+(-[a-z]+)*\)$/);
-      expect(title, `${command} title`).toMatch(/^mnema: [A-Z][A-Za-z]*( [A-Za-z]+){0,4}$/);
+      expect(title, `${command} title`).toMatch(/^mnema: [A-Z][A-Za-z]*( [A-Za-z]+){0,2}$/);
     }
   });
 
@@ -56,6 +56,25 @@ describe('the extension manifest', () => {
     );
     expect(buttons.length).toBeGreaterThan(0);
     for (const item of buttons) expect(icons.get(item.command), item.command).toBeDefined();
+  });
+
+  it('groups the buttons by meaning: at most three icons beside an item, the rest in named, ordered groups', () => {
+    for (const menu of ['view/title', 'view/item/context']) {
+      for (const view of ['view == mnema.proposed', 'view == mnema.stacks']) {
+        const items = (menus[menu] ?? []).filter((item) => item.when === view);
+        const buttons = items.filter((item) => /^(inline|navigation)@\d+$/.test(item.group ?? ''));
+        expect(buttons.length, `${menu} ${view}`).toBeLessThanOrEqual(3);
+        for (const item of items) {
+          expect(item.group, `${menu} ${item.command}`).toMatch(
+            /^(inline|navigation|\d_[a-z]+)@\d+$/,
+          );
+        }
+      }
+    }
+    const rest = (menus['view/item/context'] ?? []).filter((item) => /^\d_/.test(item.group ?? ''));
+    expect(
+      rest.some((item) => item.command === 'mnema.stacks.remove' && item.group?.startsWith('9_')),
+    ).toBe(true);
   });
 
   it('lists every command in the palette, only where a workspace is open, and the file command only over a file', () => {
