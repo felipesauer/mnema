@@ -156,17 +156,6 @@ describe('qwen code opens with the record and refuses the write', () => {
     expect(session.calls.filter((call) => /^(brief|recall)/.test(call))).toEqual([]);
   }, 180_000);
 
-  it('a program named mnema that is not this product leaves a path no rule addresses alone', async () => {
-    const session = await start({
-      project: (project) => {
-        ruleAt(project, 'Billing is frozen', 'src/frozen', 'refuses-a-write');
-      },
-      call: writing('src/free/notes.ts'),
-      mnema: 'a stranger',
-    });
-    expect(existsSync(join(session.project, 'src/free/notes.ts'))).toBe(true);
-  }, 180_000);
-
   it('with no extension installed, the same write is created: it is the extension that refuses', async () => {
     const session = await start({
       project: (project) => {

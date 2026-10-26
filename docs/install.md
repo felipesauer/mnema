@@ -218,8 +218,8 @@ to the system instruction of the session (the host escapes the angle brackets of
 refuses a `write_file` or an `edit` where a rule refuses it, handing the model the rule as the call's
 error. The command that refuses runs only where `QWEN_PROJECT_DIR` is set, which the host sets for
 every hook. It pauses nothing, so a rule that only asks is let through, and it does nothing where
-`mnema` is missing. A `mnema` that is there and cannot answer, or a program of that name that is not
-this product, refuses a write at a path a rule that refuses it addresses and lets any other through.
+`mnema` is missing. A program of that name that is not this product cannot answer, and a write at a
+path a rule that refuses it addresses is refused.
 Held by a test that starts the real Qwen Code 0.26.1 against a stand-in for its model
 ([`qwen-opens-and-refuses.qwen.test.ts`](../packages/code/tests/host-contract/qwen-opens-and-refuses.qwen.test.ts)).
 Not run: an interactive session, `notebook_edit`, a file a shell command writes, and what the plugin's

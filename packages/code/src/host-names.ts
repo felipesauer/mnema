@@ -574,11 +574,10 @@ export const HOSTS = {
       '10,000 units. The host defers the server’s tools, naming them in the first request and ' +
       'sending a schema only when the model asks for one, so the weight of the 27 definitions ' +
       'is not pinned for it. The handler answers a refusal and nothing else, so a rule that ' +
-      'only asks for a person is let through in silence. It fails open where nothing says the ' +
-      'path is governed: with no `mnema` on the PATH the write goes through (held by its ' +
-      'test); a `mnema` that is there and cannot answer, or a program of that name that is not ' +
-      'this product, refuses a write at a path a rule that refuses it addresses and lets any ' +
-      'other through. The model is any endpoint that speaks the OpenAI protocol the host is ' +
+      'only asks for a person is let through in silence. With no `mnema` on the PATH the write ' +
+      'goes through (held by its test); a program of that name that is not this product cannot ' +
+      'answer, and a write at a path a rule that refuses it addresses is refused (held by its ' +
+      'test). The model is any endpoint that speaks the OpenAI protocol the host is ' +
       'pointed at, with no account, under the Apache-2.0 license at ' +
       `[\`LICENSE\`](${QWEN_SOURCE}/LICENSE).`,
     cells: {
