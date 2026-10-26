@@ -9,7 +9,7 @@
  * invocation asked to exit with.
  */
 
-import { CodedError, KeyMadeMeanwhileError } from '@mnema/chain';
+import { CodedError, KeyMadeMeanwhileError, KeyRootBusyError } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_ERROR_EXIT, InternalError } from './internal-error.js';
 import { renderPlain } from './presentation/plain.js';
@@ -131,6 +131,18 @@ describe('the last-resort catch', () => {
     expect(said.err).toHaveLength(1);
     expect(said.err[0]).toContain('Refused (KEY_MADE_MEANWHILE)');
     expect(said.err[0]).toContain('Nothing was written.');
+    expect(said.err[0]).not.toContain('internal error');
+    expect(said.exit).toBe(1);
+  });
+
+  it('says a key root another write holds as a refusal under its own code, with exit 1', async () => {
+    const said = await whatItThrows(
+      () => new KeyRootBusyError('/home/x/.mnema/identity/k.lock', 4242),
+    );
+    expect(said.err).toHaveLength(1);
+    expect(said.err[0]).toContain('Refused (KEY_ROOT_BUSY)');
+    expect(said.err[0]).toContain('Nothing was written.');
+    expect(said.err[0]).toContain('Write again');
     expect(said.err[0]).not.toContain('internal error');
     expect(said.exit).toBe(1);
   });

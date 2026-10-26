@@ -16,7 +16,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { identityFounded, memoryCaptured } from '../events/build.js';
 import { openChainForWriting } from './chain.js';
+import { generateKeyPair } from './keys.js';
 import { appendDurably } from './durable.js';
+import {
+  materializePublicKey,
+  mintInstallationId,
+  persistKeyPair,
+  writeAnchor,
+} from './keystore.js';
 import { checkpointsPath, segmentPath } from './layout.js';
 import type { ChainWriter } from './writer.js';
 
@@ -107,5 +114,40 @@ describe('a write the writer returns from is on the disk', () => {
     );
     expect(source.match(/appendDurably\(/g)?.length ?? 0).toBe(3);
     expect(source).not.toMatch(/appendFileSync|writeSync\(|createWriteStream/);
+  });
+});
+
+describe('the files that name who signs are on the disk when their writer returns', () => {
+  const layout = () => ({ root });
+
+  it('syncs the .pub and the .key a key pair wrote, and the key directory that names them', () => {
+    const keyPair = generateKeyPair();
+    const keys = join(root, 'keys');
+    const privatePath = persistKeyPair(layout(), keyPair);
+    const pub = join(keys, `${keyPair.fingerprint}.pub`);
+    expect(synced.paths).toContain(pub);
+    expect(synced.paths).toContain(`${privatePath}.${process.pid}.writing`);
+    expect(synced.paths.at(-1)).toBe(keys);
+    expect(synced.paths.filter((p) => p === keys).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('syncs a public key materialized into a tree, and its directory', () => {
+    const keyPair = generateKeyPair();
+    materializePublicKey(layout(), keyPair);
+    const keys = join(root, 'keys');
+    expect(synced.paths).toEqual([join(keys, `${keyPair.fingerprint}.pub`), keys]);
+  });
+
+  it('syncs the installation id a mint created, and the directory that names it', () => {
+    const file = join(root, 'abc.inst');
+    expect(mintInstallationId(file, 'f'.repeat(32))).toBe('f'.repeat(32));
+    expect(synced.paths).toEqual([file, root]);
+  });
+
+  it('syncs the anchor written, and the directory when the write created it', () => {
+    writeAnchor(layout(), 'a'.repeat(64), 'anchor-1');
+    const keys = join(root, 'keys');
+    const file = join(keys, `${'a'.repeat(64)}.anchor`);
+    expect(synced.paths).toEqual([file, keys]);
   });
 });

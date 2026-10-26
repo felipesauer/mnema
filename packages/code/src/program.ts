@@ -469,10 +469,15 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       reportIdentityRefusal({ io, render }, error, whereTheKeyIs);
       return;
     }
-    // The machine's first key was made by another process while this write was decided: a refusal
-    // like the others, so it carries its code in the label the way they do.
-    if (error instanceof Error && (error as { code?: unknown }).code === 'KEY_MADE_MEANWHILE') {
-      reportIdentityRefusal({ io, render }, { code: 'KEY_MADE_MEANWHILE', message: error.message });
+    // The machine's first key was made by another process while this write was decided, or the key
+    // root was held past the budget by another: refusals like the others, so each carries its code
+    // in the label the way they do.
+    const keyRootCode = error instanceof Error ? (error as { code?: unknown }).code : undefined;
+    if (keyRootCode === 'KEY_MADE_MEANWHILE' || keyRootCode === 'KEY_ROOT_BUSY') {
+      reportIdentityRefusal(
+        { io, render },
+        { code: keyRootCode, message: (error as Error).message },
+      );
       return;
     }
     // A throw the product did not write for anybody (an engine error out of its own code, a

@@ -67,6 +67,7 @@ import {
   privateKeyPath,
   publicKeyPath,
 } from './layout.js';
+import { syncDirectory, syncFile, writeFileDurably } from './durable.js';
 import { sleepSync } from './sleep.js';
 import { readCommittedKeyFile } from './store.js';
 import { TailBusyError, withTailLock } from './tail-lock.js';
@@ -204,8 +205,9 @@ export class KeyRootBusyError extends CodedError {
   ) {
     const holder = heldBy === undefined ? 'another process' : `process ${heldBy}`;
     super(
-      `this machine's key is being made by ${holder}, which did not finish in time. Nothing was ` +
-        `written. If no mnema process is running, remove the lock and write again. Lock: ${lock}`,
+      `another write holds this machine's key root (${holder}) and did not let go in time. Nothing ` +
+        'was written. Write again; if no mnema process is running, remove the lock first. ' +
+        `Lock: ${lock}`,
     );
     this.name = 'KeyRootBusyError';
   }
@@ -282,24 +284,22 @@ export function persistKeyPair(
 ): string {
   ensureKeyRootIgnored(layout);
   mkdirSync(keysDir(layout), { recursive: true });
-  writeFileSync(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey), {
-    encoding: 'utf-8',
-  });
+  writeFileDurably(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey));
   const privatePath = privateKeyPath(layout, keyPair.fingerprint);
   // Written aside and renamed into place, so a reader that lists `.key` names never finds one
   // created and not yet written: the name appears with the whole key behind it. The aside's
   // name does not end in `.key`, so a listing never takes it for one.
   const pem = privateKeyToPem(keyPair.privateKey);
   const aside = `${privatePath}.${process.pid}.writing`;
-  writeFileSync(
+  writeFileDurably(
     aside,
     options.passphrase === undefined ? pem : protectPem(pem, options.passphrase),
     {
-      encoding: 'utf-8',
       mode: 0o600,
     },
   );
   renameSync(aside, privatePath);
+  syncDirectory(keysDir(layout));
   return privatePath;
 }
 
@@ -403,7 +403,7 @@ export function materializePublicKey(chainLayout: ChainLayout, key: PublicHalf):
   const path = publicKeyPath(chainLayout, key.fingerprint);
   if (existsSync(path)) return;
   mkdirSync(keysDir(chainLayout), { recursive: true });
-  writeFileSync(path, publicKeyToPem(key.publicKey), { encoding: 'utf-8' });
+  writeFileDurably(path, publicKeyToPem(key.publicKey));
 }
 
 /**
@@ -698,6 +698,7 @@ export function mintInstallationId(
   }
   try {
     writeSync(fd, `${installationId}\n`);
+    syncFile(fd, path);
   } catch (error) {
     closeSync(fd);
     rmSync(path, { force: true });
@@ -821,5 +822,5 @@ export function listAnchoredFingerprints(layout: ChainLayout): string[] {
  */
 export function writeAnchor(layout: ChainLayout, fingerprint: string, anchor: string): void {
   mkdirSync(keysDir(layout), { recursive: true });
-  writeFileSync(anchorPath(layout, fingerprint), `${anchor}\n`, { encoding: 'utf-8', mode: 0o600 });
+  writeFileDurably(anchorPath(layout, fingerprint), `${anchor}\n`, { mode: 0o600 });
 }
