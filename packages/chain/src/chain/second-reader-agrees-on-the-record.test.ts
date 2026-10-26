@@ -423,6 +423,16 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    name: 'tail-proof-scheme-not-a-string',
+    // A scheme that is no string is named by its JSON type in both, never spelled.
+    refusals: 1,
+    section: '-',
+    says: 'a tail-proof scheme this reader does not know: a number',
+    productSays: 'a tail-proof scheme this reader does not know: a number',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'checkpoint-other-key',
     // THREE since a tail belongs to one key (section 6): the first checkpoint now names a
     // signer that is not the key the tail id begins with, which is refused on its own.

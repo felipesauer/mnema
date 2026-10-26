@@ -269,17 +269,26 @@ def checkpoint_of_an_unknown_scheme(root: str) -> tuple[bool, str]:
     return _rewrite(path, lines), "the first checkpoint line under scheme mnema-checkpoint/9"
 
 
-def tail_proof_of_an_unknown_scheme(root: str) -> tuple[bool, str]:
-    """tailproof.json under a scheme no version of this format names, re-canonicalized."""
+def _tail_proof_under_scheme(root: str, scheme: object) -> bool:
     path = os.path.join(_tail_dir(root), "tailproof.json")
     with open(path, "rb") as handle:
         before = handle.read()
     stored = strict_loads(before.decode("utf-8").rstrip("\n"))
-    stored["scheme"] = "mnema-tail/9"
+    stored["scheme"] = scheme
     after = canonical_bytes(stored) + (b"\n" if before.endswith(b"\n") else b"")
     with open(path, "wb") as handle:
         handle.write(after)
-    return after != before, "tailproof.json under scheme mnema-tail/9"
+    return after != before
+
+
+def tail_proof_of_an_unknown_scheme(root: str) -> tuple[bool, str]:
+    """tailproof.json under a scheme no version of this format names, re-canonicalized."""
+    return _tail_proof_under_scheme(root, "mnema-tail/9"), "tailproof.json under scheme mnema-tail/9"
+
+
+def tail_proof_scheme_not_a_string(root: str) -> tuple[bool, str]:
+    """tailproof.json whose scheme is the number 1, named by its JSON type and not spelled."""
+    return _tail_proof_under_scheme(root, 1), "tailproof.json whose scheme is the number 1"
 
 
 def checkpoint_other_key(root: str) -> tuple[bool, str]:
@@ -1426,6 +1435,7 @@ MUTATIONS = {
     "link-is-a-string": link_is_a_string,
     "checkpoint-of-an-unknown-scheme": checkpoint_of_an_unknown_scheme,
     "tail-proof-of-an-unknown-scheme": tail_proof_of_an_unknown_scheme,
+    "tail-proof-scheme-not-a-string": tail_proof_scheme_not_a_string,
     "checkpoint-other-key": checkpoint_other_key,
     "checkpoint-prev-broken": checkpoint_prev_broken,
     "checkpoint-dropped": checkpoint_dropped,

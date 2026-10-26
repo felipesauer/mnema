@@ -716,6 +716,7 @@ describe('the two readers name the same check first on a line broken where the o
     // An unknown scheme: the product checked it after the bytes, in its words.
     ['checkpoint-of-an-unknown-scheme', 'checkpoint-scheme-unknown', 'checkpoints.jsonl line 1'],
     ['tail-proof-of-an-unknown-scheme', 'tail-proof-scheme-unknown', 'ownership proof'],
+    ['tail-proof-scheme-not-a-string', 'tail-proof-scheme-unknown', 'ownership proof'],
     // One check, worded by each reader in its own words: the comparison is of the check.
     ['forged-payload-field-appended', 'undeclared-payload-field', 'line 5'],
   ] as const;
@@ -768,6 +769,22 @@ describe('the two readers name the same check first on a line broken where the o
       expect(causes.second.check).toBe('checkpoint-scheme-unknown');
       // The same words in both, to the end: the naming is part of the sentence.
       expect(causes.second.what).toBe(`a checkpoint scheme this reader does not know: ${named}`);
+      expect(causes.product.detail.endsWith(causes.second.what), causes.product.detail).toBe(true);
+    }
+  });
+
+  it('names a tail proof with no scheme, a null one, and one that is no string, in the same words', () => {
+    for (const [edit, named] of [
+      [(line: string) => line.replace('"scheme":"mnema-tail/1",', ''), 'None'],
+      [(line: string) => line.replace('"mnema-tail/1"', 'null'), 'None'],
+      [(line: string) => line.replace('"mnema-tail/1"', '1'), 'a number'],
+      [(line: string) => line.replace('"mnema-tail/1"', '["mnema-tail/1"]'), 'an array'],
+    ] as const) {
+      const causes = withLine('tailproof.json', 1, edit);
+      expect(causes.product.check).toBe('tail-proof-scheme-unknown');
+      expect(causes.second.check).toBe('tail-proof-scheme-unknown');
+      // The same words in both, to the end: the naming is part of the sentence.
+      expect(causes.second.what).toBe(`a tail-proof scheme this reader does not know: ${named}`);
       expect(causes.product.detail.endsWith(causes.second.what), causes.product.detail).toBe(true);
     }
   });
