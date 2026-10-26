@@ -8,8 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { thePayloadsKept } from './support/a-sandbox.js';
-import { theOnlyPayloadOf, theShapeOf } from './support/the-shape-of-a-payload.js';
 import { aGeminiForEachCase, replacing, writing } from './support/the-gemini.js';
+import { theOnlyPayloadOf, theShapeOf } from './support/the-shape-of-a-payload.js';
 
 describe('what Gemini CLI hands the hook it runs before a write', () => {
   const start = aGeminiForEachCase();

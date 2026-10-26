@@ -61,7 +61,7 @@ export interface TheProjectToWrite {
   measureTheServer(): void;
   /**
    * From now on the shim keeps, byte for byte, what a host's hook handler hands the verbs that
-   * read a hook's payload (`before-a-write` and `settled`) on stdin, and then runs the verb on it.
+   * read a hook's payload (`before-a-write`, `after-a-write` and `settled`) on stdin, and then runs the verb on it.
    * Read it back with {@link thePayloadsKept}.
    */
   keepThePayloads(): void;
@@ -109,7 +109,7 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
       `printf '%s\\n' "$*" >> "${log}"`,
       `if [ "$1" = mcp ] && [ -e "${measuring}" ]; then exec "${process.execPath}" "${A_SERVER_THAT_SAYS}" "${join(root, 'what-the-server-was-handed.json')}"; fi`,
       // The verbs that read a hook's payload on stdin: keep it, then run the verb on the same bytes.
-      `if [ -e "${keeping}" ] && { [ "$1" = before-a-write ] || [ "$1" = settled ]; }; then f="${kept}/$$.$1.json"; cat > "$f"; exec "${process.execPath}" "${CLI}" "$@" < "$f"; fi`,
+      `if [ -e "${keeping}" ] && { [ "$1" = before-a-write ] || [ "$1" = after-a-write ] || [ "$1" = settled ]; }; then f="${kept}/$$.$1.json"; cat > "$f"; exec "${process.execPath}" "${CLI}" "$@" < "$f"; fi`,
       `exec "${process.execPath}" "${CLI}" "$@"`,
       '',
     ].join('\n'),
@@ -174,7 +174,7 @@ export function theServerWasHanded(project: string): WhatTheServerWasHanded {
 
 /** One payload a host's hook handler handed a verb of the product, as the host wrote it. */
 export interface ThePayloadKept {
-  /** The verb it was handed to: `before-a-write` or `settled`. */
+  /** The verb it was handed to: `before-a-write`, `after-a-write` or `settled`. */
   readonly verb: string;
   /** The JSON the host wrote on stdin. */
   readonly payload: Readonly<Record<string, unknown>>;
