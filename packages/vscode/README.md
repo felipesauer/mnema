@@ -45,7 +45,7 @@ this repository, and every read and every write goes through the `mnema` command
     `mnema: Export Stack` runs `mnema stack export <name> <folder>` into a folder the person types.
 - **Icons and short titles.** Every command carries a codicon (`$(check)` accept, `$(close)` reject,
   `$(refresh)` refresh, `$(law)` rules over the file, `$(add)` and `$(library)` add a stack,
-  `$(eye)` show, `$(diff)` compare, `$(verified)` check, `$(trash)` remove, `$(export)` export), so the
+  `$(eye)` show, `$(diff)` compare, `$(checklist)` check, `$(trash)` remove, `$(export)` export), so the
   buttons are icons and the command's title (one to three words) is their tooltip. A decision has accept
   and reject side by side; a stack has show, compare and check beside it, export in the context menu and
   remove alone in the last group of it; the stacks view's title bar has add, add from the index and
@@ -56,8 +56,8 @@ this repository, and every read and every write goes through the `mnema` command
 - **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` and to
   [the first record](../../docs/first-record.md); with a record, the decisions view says that nothing is
   listed as awaiting a judgment (and that nothing is listed either when `mnema` could not run, which the
-  status bar shows) and links to the setting `mnema.command`, and the stacks view offers the two ways to
-  add one. Whether the folder holds a `.mnema` is read from the disk, not from the command line.
+  status bar shows) and links to the setting `mnema.command`, and the stacks view, when `mnema stack list` was read, offers the two ways to
+  add one, and otherwise says it has not listed the stacks (the status bar shows what `mnema` read). Whether the folder holds a `.mnema` is read from the disk, not from the command line.
 - **No button turns a hook on.** A stack may declare hooks; they are shown as the command line
   reports them, and a hook is on only when a person, at a terminal, read its script and typed its
   name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the

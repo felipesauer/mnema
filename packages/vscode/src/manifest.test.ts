@@ -61,7 +61,7 @@ describe('the extension manifest', () => {
   it('groups the buttons by meaning: at most three icons beside an item, the rest in named, ordered groups', () => {
     for (const menu of ['view/title', 'view/item/context']) {
       for (const view of ['view == mnema.proposed', 'view == mnema.stacks']) {
-        const items = (menus[menu] ?? []).filter((item) => item.when === view);
+        const items = (menus[menu] ?? []).filter((item) => item.when?.includes(view));
         const buttons = items.filter((item) => /^(inline|navigation)@\d+$/.test(item.group ?? ''));
         expect(buttons.length, `${menu} ${view}`).toBeLessThanOrEqual(3);
         for (const item of items) {
@@ -93,7 +93,26 @@ describe('the extension manifest', () => {
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) {
       const whens = viewsWelcome.filter((w) => w.view === id).map((w) => w.when);
-      expect(whens.sort(), id).toEqual(['!mnema.hasRecord', 'mnema.hasRecord']);
+      expect(whens, id).toContain('!mnema.hasRecord');
+      expect(
+        whens.filter((when) => when !== '!mnema.hasRecord').every((when) => when.startsWith('mnema.hasRecord')),
+        id,
+      ).toBe(true);
+    }
+    // What a view says of its own emptiness is true only if mnema read it: the stacks view claims
+    // "no stack is adopted" only when the list was read, and says it did not read otherwise.
+    const stacksWhens = viewsWelcome.filter((w) => w.view === 'mnema.stacks').map((w) => w.when);
+    expect(stacksWhens.sort()).toEqual([
+      '!mnema.hasRecord',
+      'mnema.hasRecord && !mnema.stacksRead',
+      'mnema.hasRecord && mnema.stacksRead',
+    ]);
+    for (const w of viewsWelcome.filter((w) => w.when === 'mnema.hasRecord && mnema.stacksRead')) {
+      expect(w.contents).toContain('No stack is adopted');
+    }
+    for (const w of viewsWelcome.filter((w) => w.when === 'mnema.hasRecord && !mnema.stacksRead')) {
+      expect(w.contents).not.toContain('No stack is adopted');
+      expect(w.contents).toContain('status bar');
     }
     const known = [...commands.map((c) => c.command), 'workbench.action.openSettings'];
     for (const { contents } of viewsWelcome) {

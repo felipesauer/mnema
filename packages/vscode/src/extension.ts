@@ -203,6 +203,7 @@ export function activate(
       session.read(STACK_LIST_ARGS),
     ]);
     session.stacks = stacks.code === 0 ? readStacks(stacks.stdout) : [];
+    void api.commands.executeCommand('setContext', 'mnema.stacksRead', stacks.code === 0);
     stacksChanged.fire();
     session.channels = channels.code === 0 ? readChannels(channels.stdout) : undefined;
     bar.text = statusText(readVerdict(verify.stdout), session.channels);
@@ -297,6 +298,7 @@ export function activate(
           {
             title: `mnema: ${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
             placeHolder: `Pick the decision to ${verdict}`,
+            ignoreFocusOut: true,
           },
         )
       )?.item;
@@ -335,7 +337,11 @@ export function activate(
       const rules = await rulesOver(path);
       await api.window.showQuickPick(
         rules.map((rule) => ({ ...ruleLabel(rule), rule })),
-        { title: 'mnema: Rules over This File', placeHolder: `Rules in force over ${path}` },
+        {
+          title: 'mnema: Rules over This File',
+          placeHolder: `Rules in force over ${path}`,
+          ignoreFocusOut: true,
+        },
       );
     }),
   );
@@ -386,7 +392,7 @@ export function activate(
     return (
       await api.window.showQuickPick(
         session.stacks.map((s) => ({ label: s.name, description: s.scope, stack: s })),
-        { title: 'mnema: Pick Stack', placeHolder: 'Which stack?' },
+        { title: 'mnema: Pick Stack', placeHolder: 'Which stack?', ignoreFocusOut: true },
       )
     )?.stack;
   }

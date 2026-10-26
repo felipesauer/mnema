@@ -80,7 +80,12 @@
       {
         "view": "mnema.stacks",
         "contents": "No stack is adopted for this project, as mnema stack list reads it.\n[Add a stack](command:mnema.stacks.add)\n[Add a stack from the index](command:mnema.stacks.addFromIndex)",
-        "when": "mnema.hasRecord"
+        "when": "mnema.hasRecord && mnema.stacksRead"
+      },
+      {
+        "view": "mnema.stacks",
+        "contents": "mnema has not listed the stacks. If it could not run, the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+        "when": "mnema.hasRecord && !mnema.stacksRead"
       }
     ],
     "commands": [
@@ -127,7 +132,7 @@
       {
         "command": "mnema.stacks.check",
         "title": "mnema: Check Stack",
-        "icon": "$(verified)"
+        "icon": "$(checklist)"
       },
       {
         "command": "mnema.stacks.remove",

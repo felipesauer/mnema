@@ -74,6 +74,7 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
   const channel: string[] = [];
   const picks: string[] = [];
   const picked: string[][] = [];
+  const pickOptions: { title: string; ignoreFocusOut?: boolean }[] = [];
   let choice: string | undefined;
   let lenses: { provideCodeLenses(d: never): Promise<unknown[]> } | undefined;
   const api = {
@@ -113,7 +114,11 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
         inputs.push({ validate: o.validateInput, ...o });
         return reply;
       },
-      showQuickPick: async (items: { label: string }[]) => {
+      showQuickPick: async (
+        items: { label: string }[],
+        options: { title: string; ignoreFocusOut?: boolean },
+      ) => {
+        pickOptions.push(options);
         picked.push(items.map((i) => i.label));
         const want = picks.shift();
         return items.find((i) => i.label === want);
@@ -182,6 +187,7 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
     ids: () => [...commands.keys()],
     picks,
     picked,
+    pickOptions,
     choose: (v: string | undefined) => {
       choice = v;
     },
@@ -225,7 +231,7 @@ describe('the extension reads the record through the command line', () => {
       expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
       mkdirSync(join(folder, '.mnema'));
       await without.command('mnema.refresh')();
-      expect(without.executed.at(-1)).toEqual(['setContext', 'mnema.hasRecord', true]);
+      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', true]);
     } finally {
       rmSync(folder, { recursive: true, force: true });
     }
@@ -296,6 +302,26 @@ describe('a judgment goes through the verb of the command line, with a note', ()
       expect(input.prompt, input.title).not.toBe('');
       expect(input.ignoreFocusOut, input.title).toBe(true);
     }
+  });
+
+  it('keeps every quick pick open when focus moves, as the input boxes are', async () => {
+    const w = world(withStack());
+    await settle();
+    await w.command('mnema.accept')(undefined as never);
+    await w.command('mnema.reject')(undefined as never);
+    await w.command('mnema.stacks.show')(undefined as never);
+    await w.command('mnema.showRules')('src/a.ts');
+    expect(w.pickOptions.length).toBeGreaterThanOrEqual(4);
+    for (const options of w.pickOptions) expect(options.ignoreFocusOut, options.title).toBe(true);
+  });
+
+  it('says whether mnema read the stacks, so the empty stacks view never claims what the command line did not say', async () => {
+    const read = world(withStack());
+    await settle();
+    expect(read.executed).toContainEqual(['setContext', 'mnema.stacksRead', true]);
+    const failed = world({ ...withStack(), [STACK_LIST]: { code: 1, stdout: '', stderr: 'boom' } });
+    await settle();
+    expect(failed.executed).toContainEqual(['setContext', 'mnema.stacksRead', false]);
   });
 
   it('gives the input box a validator that refuses an empty note, and sends nothing without one', async () => {
