@@ -669,6 +669,13 @@ const CHECKS = {
     product: /: a tail-proof scheme this reader does not know: .+$/,
     second: /^a tail-proof scheme this reader does not know: .+$/,
   },
+  'key-enrolled-names-an-agent-key': {
+    section: '6.2',
+    product:
+      /^key\.enrolled names a key that holds the agent role at this point: a key holds one role only$/,
+    second:
+      /^key\.enrolled names a key that holds the agent role at this point: a key holds one role only$/,
+  },
   'undeclared-payload-field': {
     section: '4.1',
     product: /: event "[^"]+" has an unknown payload field "[^"]+"$/,
@@ -719,6 +726,8 @@ describe('the two readers name the same check first on a line broken where the o
     ['tail-proof-scheme-not-a-string', 'tail-proof-scheme-unknown', 'ownership proof'],
     // One check, worded by each reader in its own words: the comparison is of the check.
     ['forged-payload-field-appended', 'undeclared-payload-field', 'line 5'],
+    // A key that holds the agent role, enrolled again as a member: the fold names it, in both.
+    ['key-enrolled-names-an-agent-key', 'key-enrolled-names-an-agent-key', ''],
   ] as const;
 
   it('covers mutations the tool offers', () => {

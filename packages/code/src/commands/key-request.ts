@@ -29,17 +29,22 @@
  */
 
 import type { KeyObject } from 'node:crypto';
-import { mkdirSync, readdirSync, realpathSync, renameSync } from 'node:fs';
-import { basename, dirname, join, resolve, sep } from 'node:path';
-import { privateKeyPath } from '@mnema/chain';
+import { existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { catalogUpcasters, privateKeyPath } from '@mnema/chain';
 import {
+  AGENT_NAME,
   agentKeyRoot,
+  agentKeysIn,
   agentNameRefusal,
   agentRetiredIn,
   type DiscoveryEnv,
   nameOfAKeyKind,
+  orderedEvents,
   type ResolvedTrees,
+  reachableTrees,
   resolveTrees,
+  treeWords,
   withAgentKey,
 } from '@mnema/core';
 import {
@@ -49,6 +54,7 @@ import {
   requestEnrollment,
 } from '@mnema/core/write';
 import { resolveAnchorInRecord } from '../anchors.js';
+import { oneLine } from '../one-line.js';
 
 /** What the request needs: injected so it is testable. */
 export interface KeyRequestContext {
@@ -82,19 +88,6 @@ export interface KeyRequestRefused {
 }
 
 /**
- * Where `path` really is: every link in it followed. A path that does not exist yet (the agents'
- * folder on a machine that has none) is placed by its nearest part that does, so it still compares.
- */
-function placeOf(path: string): string {
-  try {
-    return realpathSync(path);
-  } catch {
-    const parent = dirname(path);
-    return parent === path ? path : join(placeOf(parent), basename(path));
-  }
-}
-
-/**
  * Produces this machine's request to join `anchor`. With `privateKeyPath` the
  * request speaks for the key in that file instead of this machine's own: the path
  * out of a machine that lost its key, minted another, and still holds a cold copy
@@ -111,21 +104,6 @@ export function runKeyRequest(
   if (!anchor.ok) {
     return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
   }
-  // A key file kept in the agents' folder is an agent's: where it really is (links followed) is all
-  // that can be told without opening it, and a copy kept elsewhere is not recognised.
-  if (input.privateKeyPath !== undefined) {
-    const file = resolve(ctx.cwd, input.privateKeyPath);
-    const agents = dirname(agentKeyRoot(ctx.env, 'x'));
-    const real = placeOf(file);
-    if (real.startsWith(`${placeOf(agents)}${sep}`)) {
-      return {
-        ok: false,
-        reason: 'REFUSED',
-        code: 'AN_AGENT_KEY',
-        message: `the key file ${file}${real === file ? '' : ` (which is ${real})`} lives in the folder of the agents' keys, ${agents}: an agent's key signs for its host under a name and is not a key of ${input.asChecker === true ? 'a checker' : 'a person'} to enrol. This checks the place the file really is, links followed, not what it holds`,
-      };
-    }
-  }
   const made = requestEnrollment({
     anchor: anchor.anchor,
     keyRoot: trees.keyRoot,
@@ -137,6 +115,24 @@ export function runKeyRequest(
   if (!made.ok) {
     return { ok: false, reason: 'REFUSED', code: made.code, message: made.message };
   }
+  // A key read from a file is told by what it holds: its fingerprint, against the agent keys this
+  // machine keeps and the agent keys the record here enrols. Where the file is kept says nothing:
+  // a copy of an agent's key is the agent's key wherever it sits.
+  if (input.privateKeyPath !== undefined) {
+    const agent = agentKeyRecognised(trees, ctx.env, made.fingerprint);
+    if (agent !== undefined) {
+      return {
+        ok: false,
+        reason: 'REFUSED',
+        code: 'AN_AGENT_KEY',
+        message:
+          `the key in ${resolve(ctx.cwd, input.privateKeyPath)} is ${agent}: an agent's key signs for its host ` +
+          `under a name and is not a key of ${input.asChecker === true ? 'a checker' : 'a person'} to enrol. It is ` +
+          `told by its fingerprint, ${made.fingerprint}, wherever the file is kept; \`mnema key request ` +
+          "--anchor <your identity>` without --key asks for this machine's own key",
+      };
+    }
+  }
   return {
     ok: true,
     fingerprint: made.fingerprint,
@@ -145,6 +141,50 @@ export function runKeyRequest(
     source: made.source,
     minted: made.minted,
   };
+}
+
+/**
+ * What makes `fingerprint` an AGENT's key, said as a person reads it, or undefined when nothing
+ * does: this machine keeps it in an agent's folder (`<data directory>/agents/<name>/keys/`, or
+ * `retired/` once the record retired it), or a record this process reaches enrols it as an agent.
+ *
+ * It is a guard against a mistake, not a proof: a key kept on another machine, or enrolled as an
+ * agent only in a record this process does not reach, is not recognised. The folder's keys are
+ * known by their file names, which are their fingerprints, as the machine's own key is.
+ */
+export function agentKeyRecognised(
+  trees: ResolvedTrees,
+  env: DiscoveryEnv,
+  fingerprint: string,
+): string | undefined {
+  const agents = dirname(agentKeyRoot(env, 'x'));
+  let names: string[] = [];
+  try {
+    names = readdirSync(agents).filter((name) => AGENT_NAME.test(name));
+  } catch {
+    names = [];
+  }
+  for (const name of names.sort()) {
+    for (const folder of ['keys', 'retired'] as const) {
+      if (existsSync(join(agents, name, folder, `${fingerprint}.key`))) {
+        return `${folder === 'retired' ? 'a retired key of' : 'the key of'} the agent "${oneLine(name)}" on this machine (${join(agents, name, folder)})`;
+      }
+    }
+  }
+  const upcasters = catalogUpcasters();
+  for (const tree of reachableTrees(trees)) {
+    let enrolled: ReturnType<typeof agentKeysIn>;
+    try {
+      enrolled = agentKeysIn(orderedEvents({ root: tree.chainRoot }, upcasters), tree.chainRoot);
+    } catch {
+      continue;
+    }
+    const role = enrolled.get(fingerprint);
+    if (role !== undefined) {
+      return `the key ${treeWords(tree.scope)} enrols as the agent "${oneLine(role.name)}" of ${oneLine(role.anchor)}`;
+    }
+  }
+  return undefined;
 }
 
 /** An agent's request was produced; nothing is enrolled yet. */

@@ -1317,9 +1317,9 @@ describe('the two readers agree on records the product itself wrote: an agent', 
   });
 
   it('an agent key speaking for another identity that took it in: refused by both', () => {
-    // B makes the agent key a plain member of its own identity (a `key.enrolled` naming an agent
-    // key is accepted as it always was) and the key then writes as B. The first refusal is the
-    // one that makes the key useless outside the anchor that gave it the role.
+    // B makes the agent key a plain member of its own identity and the key then writes as B.
+    // The enrolment is refused where it is written (a key holds one role), and the fact the key
+    // signs as B is refused as well: it speaks for an identity other than the one that enrolled it.
     const { a, g, anchor } = personAndAgent();
     const b = generateKeyPair();
     commitPublicKey(b);
@@ -1330,12 +1330,80 @@ describe('the two readers agree on records the product itself wrote: an agent', 
 
     const { productOk, verdict, refused } = bothReaders();
     expect(productOk).toBe(false);
-    expect(productRefused()).toEqual([
+    expect([...productRefused()].sort()).toEqual([
+      'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
       `task.created is signed by ${g.fingerprint}, an agent key, for an identity other than the one that enrolled it`,
     ]);
     expect(verdict).toBe('REFUSED');
-    expect(refused).toHaveLength(1);
+    expect(refused).toHaveLength(2);
+    expect(refused.join('\n')).toContain(
+      'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
+    );
     expect(refused.join('\n')).toContain('for an identity other than the one that enrolled it');
+  });
+
+  it('a key.enrolled naming the agent key of its own identity: refused by both, at the enrolment', () => {
+    // The identity that gave the key the role enrols it again as a plain member. Nothing the key
+    // signs is needed for the refusal: the enrolment itself names a key that holds a role.
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), enrolled(anchor, a, g, 3)],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productRefused()).toEqual([
+      'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
+    ]);
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]).toMatch(
+      /^6\.2: key\.enrolled names a key that holds the agent role at this point: a key holds one role only \(.*seq 2.*\)$/,
+    );
+  });
+
+  it('a key.enrolled naming an agent key the record retired: refused by both, at the enrolment', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolAgent(anchor, a, g),
+        retireAgent(anchor, a, g, 3),
+        enrolled(anchor, a, g, 4),
+      ],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productRefused()).toEqual([
+      'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
+    ]);
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('a key holds one role only');
+  });
+
+  it('a key.enrolled BEFORE the agent enrolment of the same key: the agent enrolment is the one refused', () => {
+    // The order the other way was refused already (section 6.2, `agent.enrolled`): the key is in
+    // an identity at that point. The new row changes nothing here.
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, g, 2), enrolAgent(anchor, a, g, { when: 3 })],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productRefused()).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
   });
 
   it('a record that has not heard of the agent enrolment takes the key as an ordinary member: green on both', () => {

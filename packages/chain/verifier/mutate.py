@@ -46,7 +46,12 @@ from mnemaverify.checkpoint import (  # noqa: E402
     signed_message,
 )
 from mnemaverify.ed25519 import public_key_of, sign  # noqa: E402
-from mnemaverify.enrolment import anchor_of, checker_message, enrolment_message  # noqa: E402
+from mnemaverify.enrolment import (  # noqa: E402
+    agent_message,
+    anchor_of,
+    checker_message,
+    enrolment_message,
+)
 from mnemaverify.entry import entry_hash  # noqa: E402
 from mnemaverify.root import content_root  # noqa: E402
 
@@ -1384,6 +1389,37 @@ def _a_second_key_enrolled_in_the_first_keys_tail(root: str) -> tuple[str, str, 
     return owner, second, event
 
 
+def key_enrolled_names_an_agent_key(root: str) -> tuple[bool, str]:
+    """An identity enrols its own AGENT key again, as a plain member, every line genuinely signed.
+
+    Section 6.2: a key holds one role. RFC 8032's first key founds the identity and makes the
+    second key its agent under a name, with the agent's consent; then it vouches for the same key
+    by a `key.enrolled`, with the key's consent to join. Every signature verifies and every
+    checkpoint covers what it says. What refuses the second fact is the role the key already
+    holds: a plain member signs without the agent's limits on `who`, `which` and kind.
+    """
+    anchor = _refound(root, "the record whose agent key is enrolled again as a member")
+    agent = _commit_the_unenrolled_key(root, CHECKER_SECRET)
+    template = _last_event(root)
+
+    def event(kind: str, payload: dict) -> dict:
+        return {**template, "kind": kind, "subject": anchor, "payload": payload}
+
+    consent = sign(CHECKER_SECRET, agent_message(anchor, agent, "claude")).hex()
+    _append_signed(
+        root,
+        event("agent.enrolled", {"agentFp": agent, "name": "claude", "reverseSig": consent}),
+        UNENROLLED_SECRET,
+    )
+    joined = sign(CHECKER_SECRET, enrolment_message(anchor, agent)).hex()
+    seq = _append_signed(
+        root,
+        event("key.enrolled", {"newFp": agent, "reverseSig": joined}),
+        UNENROLLED_SECRET,
+    )
+    return True, f"seq {seq} enrols the agent key {agent[:12]}... as a member of {anchor[:16]}..."
+
+
 def tail_written_by_another_enrolled_key(root: str) -> tuple[bool, str]:
     """A second key of the anchor writes an event into the FIRST key's tail and signs it there.
 
@@ -1480,6 +1516,7 @@ MUTATIONS = {
     "checkpoint-by-a-checker-over-the-persons-event": checkpoint_by_a_checker_over_the_persons_event,
     "which-is-who-in-a-signed-range": which_is_who_in_a_signed_range,
     "tail-written-by-another-enrolled-key": tail_written_by_another_enrolled_key,
+    "key-enrolled-names-an-agent-key": key_enrolled_names_an_agent_key,
     "event-by-another-enrolled-key-above-the-checkpoint": (
         event_by_another_enrolled_key_above_the_checkpoint
     ),

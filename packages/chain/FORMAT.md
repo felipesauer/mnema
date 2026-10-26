@@ -672,7 +672,7 @@ recorded, when its own conditions do not hold. `subject` is always the anchor.
 | kind | what it must satisfy | what it does |
 |---|---|---|
 | `identity.founded` | `signerFp == payload.foundingFp`, `subject == anchor(foundingFp)`, and `who == subject` | adds `foundingFp` to the anchor's set |
-| `key.enrolled` | `who == subject`; `signerFp` is in the anchor's set **at this point**; and `payload.reverseSig` is a valid Ed25519 signature, by the key `payload.newFp` names, over the UTF-8 of `enroll:<anchor>:<newFp>` | adds `newFp` |
+| `key.enrolled` | `who == subject`; `signerFp` is in the anchor's set **at this point**; `payload.newFp` is not, at this point, an agent key (below; a retired one included); and `payload.reverseSig` is a valid Ed25519 signature, by the key `payload.newFp` names, over the UTF-8 of `enroll:<anchor>:<newFp>` | adds `newFp` |
 | `key.revoked` | `who == subject`; `signerFp` is in the anchor's set at this point | removes `payload.revokedFp`, from this point forward |
 
 The `reverseSig` is the new key's own proof of possession, and it is checked
@@ -748,6 +748,19 @@ every earlier event in that order left them. A key is an agent key from its `age
 and stays one: a `key.revoked` naming it takes it out of the set like any key, and the role stays
 with it, so no later fact turns it into a key without the role. An `agent.enrolled` that would
 restore a key some covered `key.revoked` removed is gated as any such addition is.
+
+**A key holds one role.** An `agent.enrolled` naming a key that is already in an identity is
+refused (the table above), and so is the other order: a `key.enrolled` naming a key that is, at
+that point, an agent key of any identity, retired or not, whichever identity vouches for it. A
+key taken in as a plain member would sign as one, without the three limits above. The
+conditions of `key.enrolled` are checked in the order its row writes them, so a `key.enrolled`
+by a voucher not valid at that point is refused for that first. This rule was tightened after
+the first publication (§7.1): no writer of 0.1.0 to 0.1.2 wrote such a `key.enrolled`, and a
+version from before it verifies such a record and refuses nothing
+(`second-reader-agrees-on-enrolment.test.ts`, "a key.enrolled naming the agent key of its own
+identity"; `second-reader-agrees-on-the-record.test.ts`, `key-enrolled-names-an-agent-key`).
+It holds inside ONE record: a record that never heard of the `agent.enrolled` can still enrol
+the key as a member ("What this document does not promise").
 
 **A retired agent key signs nothing**, exactly as a retired checker key: from its retirement on,
 an event of any kind it signs is refused, and so is an `agent.enrolled` or a `checker.enrolled`
@@ -1168,6 +1181,15 @@ both readers refuse it with the words above.
   writer ever wrote such a key: 0.1.0, 0.1.1 and 0.1.2 were each checked by writing records of every
   kind with that binary, and none of them wrote one. A later writer that does would be refused by
   the rule itself, and by no earlier version.
+- **A `key.enrolled` naming an agent key is such a tightening, and a legality one** (§6.2, "A
+  key holds one role"). It holds backward because no published writer wrote one: each of 0.1.0,
+  0.1.1 and 0.1.2 wrote a record (committed, private and global trees) through every flow that
+  enrols, retires and asks again for an agent key and enrols a member and a checker, and was
+  then handed a copy of its agent's key file to enrol as a person's: none of the nine trees holds
+  such a fact, and each binary refused the copy because its record already enrolled the key as
+  an agent. What a published writer can still produce is the case between two records: a member
+  enrolling, in a record that never held the `agent.enrolled`, a copy of a key another record
+  made an agent. That is not refused by this rule and is said below.
 - **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
   skipped the line and read the rest would say a record verifies with facts in it that it cannot
   judge.
@@ -1557,10 +1579,24 @@ Stated plainly, because a published format invites all three readings:
   that `agent.enrolled`, can enrol the same key as an ordinary member when one of its
   members vouches for it, and both readers accept that. Nothing in the format stops a
   key from being an agent of one identity and a member of another, in different
-  records; it is stopped only inside one record, where the two claims are a membership
-  of more than one identity. The product's `key request --key` refuses a key file kept
-  in its agents' folder by the place the file really is (links followed), not by what
-  it holds, so a link to it is refused and a copy kept elsewhere is not recognised.
+  records; it is stopped only inside one record, where a `key.enrolled` naming an agent
+  key is refused (§6.2, "A key holds one role"). The product's `key request --key` and
+  `key enroll` refuse a key by its fingerprint when the machine they run on keeps it for
+  one of its agents, or a record they reach enrols it as an agent: a guard against a
+  person's mistake on that machine, not a proof, since a copy of the key on another
+  machine, or a writer that is not this product, is not asked.
+- **A retirement is a fact of one record too.** An `agent.retired` refuses what the key
+  signs after it in the record that holds the retirement (§6.2); a project's private tree
+  and a machine's global tree are records of their own, and one that has not received the
+  retirement still accepts the key's later facts and counts them as attested. The
+  product's `mnema verify` crosses the trees of a project it verifies (the committed one,
+  the private one, and the global one with `--global`): an event signed by an agent key
+  that another of those trees retired, with an `at` later than that retirement's, is a
+  break there, and is not counted as attested. That is the product's reading of a set of
+  records, not a rule of this format: the second reader and the page `mnema site` writes
+  read one tree at a time and do not make it, and no reader sees a retirement written in
+  a tree it was not given (another machine's private tree, or the global tree without
+  `--global`).
 - **A change to the format is visible, and §7.1 is all that is promised about
   changing it.** This entry used to say that the per-kind field declarations were
   not published, and that in consequence an implementation built from this

@@ -823,6 +823,19 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // SECTION 6.2: A KEY HOLDS ONE ROLE. The identity makes a key its agent and then vouches for
+    // the same key as a plain member, every line genuinely signed and covered. Both readers
+    // accepted the second fact until the row for `key.enrolled` said the key may not hold the
+    // agent role; the key then signed as a member, without the agent's limits.
+    name: 'key-enrolled-names-an-agent-key',
+    refusals: 1,
+    section: '6.2',
+    says: 'a key holds one role only',
+    productSays: 'a key holds one role only',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'reordered-lines',
     refusals: 6,
     section: '3',

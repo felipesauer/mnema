@@ -401,6 +401,18 @@ export function resolveIdentity(
           });
           break;
         }
+        // A key that holds the agent role (from its `agent.enrolled` on, retired included) is a
+        // member of the identity that enrolled it under that role, and of no identity otherwise.
+        // Taken in again as a plain member it would sign as one, without the role's limits.
+        if (agents.has(newFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
+          });
+          break;
+        }
         if (!reverseSignatureOk(keys, anchor, newFp, reverseSig)) {
           issues.push({
             tail,
