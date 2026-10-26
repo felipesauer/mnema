@@ -63,6 +63,7 @@ import {
   foundedBesideBy,
   type ResolvedTrees,
   type Scope,
+  settledByThisProcess,
   shortenAnchors,
 } from '@mnema/core';
 import { oneLine } from './one-line.js';
@@ -185,6 +186,20 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   );
 }
 
+/**
+ * What a write says where the key's identity in a tree was settled by another process of this
+ * machine, writing at the same moment: the process that settled it says what it means and what to
+ * do, and this one does not claim a founding it did not make.
+ */
+export function foundedByAnother(founded: FoundedBeside, scope: Scope): string {
+  const short = shortenAnchors([founded.anchor, ...founded.besides]);
+  return oneLine(
+    `This key's identity in the ${scope} tree, ${short.get(founded.anchor) ?? founded.anchor}, ` +
+      'already existed: another process of this machine founded it at the same moment, beside ' +
+      `${founded.besides.length} already there, and that process says what it means.`,
+  );
+}
+
 /** A tree a write may land in, with the name it is called by. */
 export interface WatchedTree {
   readonly root: string;
@@ -251,7 +266,16 @@ export function foundingsSince(before: AnchorsBefore): string[] {
       const founded = foundedBesideBy(root, fingerprint, upcasters);
       if (founded === undefined) continue;
       if (readAnchor({ root }, fingerprint) !== founded.anchor) continue;
-      sentences.push(foundingSentence(founded, scope));
+      // ONLY THE PROCESS THAT SETTLED THE ANCHOR SAYS THE KEY FOUNDED. Sessions of one installation
+      // making their first write together each see the anchor appear and the one founding on the
+      // record, and one of them settled it; the others found it recorded, so what they can say is
+      // that the identity already existed. A fresh clone and a restored key settle their own anchor
+      // by adopting the founding the record holds, and stay told as before.
+      sentences.push(
+        settledByThisProcess(root, fingerprint)
+          ? foundingSentence(founded, scope)
+          : foundedByAnother(founded, scope),
+      );
     }
   }
   return sentences;

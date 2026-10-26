@@ -13,6 +13,7 @@
  * It never decides anything about the founding. It reads.
  */
 
+import { resolve } from 'node:path';
 import type { CatalogEvent, UpcasterRegistry } from '@mnema/chain';
 import { orderedEvents } from '../projections/order.js';
 
@@ -85,4 +86,31 @@ export function foundedBesideBy(
   return identitiesFoundedBeside(orderedEvents({ root }, upcasters)).find(
     (one) => one.foundingFp === fingerprint,
   );
+}
+
+/** The anchors THIS process settled, by tree and key: what a record cannot say about itself. */
+const settledHere = new Set<string>();
+
+function settledKey(root: string, fingerprint: string): string {
+  return `${resolve(root)}\0${fingerprint}`;
+}
+
+/** Remembers that this process settled the anchor of `fingerprint` in the tree at `root`. */
+export function noteSettledHere(root: string, fingerprint: string): void {
+  settledHere.add(settledKey(root, fingerprint));
+}
+
+/**
+ * Whether THIS process settled the anchor of `fingerprint` in the tree at `root`: founded the
+ * identity it names, or adopted the founding the record already held (a fresh clone, a restored
+ * key).
+ *
+ * Two processes of one installation making their first write together both see the key's anchor
+ * appear and the founding on the record, and only one of them settled it: the other found it
+ * recorded, under the tail's lock or before (`ensureFounded`). The record holds one founding and
+ * cannot say which process wrote it, so a surface that owes the sentence "this key founded" to the
+ * process that did asks here. It holds for the life of the process and says nothing of any other.
+ */
+export function settledByThisProcess(root: string, fingerprint: string): boolean {
+  return settledHere.has(settledKey(root, fingerprint));
 }

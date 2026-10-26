@@ -29,7 +29,7 @@
  *     the same marks beside the same authors, from the same selection.
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -169,6 +169,54 @@ describe('the command line says it on stderr, once, after the answer', () => {
     expect(said[0]).toContain('kept on this machine alone');
     expect(said[0]).toContain(', under another key,');
     expect(said[0]).not.toContain('on another machine');
+  }, 60_000);
+});
+
+describe('first writes of one new key made together', () => {
+  /** `mnema <argv>` as the key under `home`, started now, answering when it ends. */
+  function started(
+    dir: string,
+    home: string,
+    ...argv: string[]
+  ): Promise<{ status: number | null; stderr: string }> {
+    return new Promise((done) => {
+      const child = spawn(process.execPath, [CLI, ...argv], {
+        cwd: dir,
+        env: { PATH: process.env.PATH ?? '', HOME: home },
+      });
+      let stderr = '';
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+      child.on('close', (status) => done({ status, stderr }));
+    });
+  }
+
+  it('say "founded" only in the process that appended the founding, and say the rest existed', async () => {
+    expect(mnema(homeA, 'init').status).toBe(0);
+    // The key exists before the race (two first keys made together refuse one of them), and has
+    // founded nowhere in this project.
+    const elsewhere = join(sandbox, 'elsewhere');
+    mkdirSync(elsewhere, { recursive: true });
+    expect(mnemaIn(elsewhere, homeB, 'init').status).toBe(0);
+    const runs = await Promise.all(
+      Array.from({ length: 8 }, (_, i) => started(repo, homeB, 'memory', `a note ${i}`)),
+    );
+    for (const ran of runs) expect(ran.status, ran.stderr).toBe(0);
+    // One founding on the record, beside the first identity, and one process says it made it.
+    expect(foundingsIn(repo)).toBe(2);
+    expect(
+      runs.flatMap((ran) => founded(ran.stderr)),
+      JSON.stringify(runs.map((r) => r.stderr)),
+    ).toHaveLength(1);
+    // The others that saw the key's anchor appear say the identity already existed, never "founded".
+    const others = runs.flatMap((ran) =>
+      ran.stderr.split('\n').filter((line) => line.includes('another process of this machine')),
+    );
+    for (const line of others) {
+      expect(line).toContain("This key's identity in the public tree");
+      expect(line).not.toContain(FOUNDED);
+    }
   }, 60_000);
 });
 

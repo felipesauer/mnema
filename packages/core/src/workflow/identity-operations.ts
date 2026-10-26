@@ -51,6 +51,7 @@ import {
 } from '../content/screen.js';
 import { GITHUB_SERVICE, SIGSTORE_SERVICE, sigstoreAccountOf } from '../identity/account.js';
 import { agentNameRefusal } from '../identity/agent-name.js';
+import { noteSettledHere } from '../identity/founded-beside.js';
 import {
   agentRoleIn,
   IdentityUnavailableError,
@@ -352,6 +353,9 @@ function foundUnderTheLock(ctx: WriteContext): string {
   // settles its anchor is already there, so the anchor is recorded at once.
   if (decided.source === 'adopted') {
     ctx.writer.recordAnchor(decided.anchor);
+    // Which process settled the anchor is not on the record: a surface that says "this key
+    // founded" asks (`settledByThisProcess`).
+    noteSettledHere(ctx.layout.root, ctx.writer.signerFingerprint);
     return decided.anchor;
   }
 
@@ -383,6 +387,7 @@ function foundUnderTheLock(ctx: WriteContext): string {
   // Only now, with the founding on the tail. Recorded before the append, an append
   // that failed left an anchor claiming a founding the record never got.
   ctx.writer.recordAnchor(decided.anchor);
+  noteSettledHere(ctx.layout.root, ctx.writer.signerFingerprint);
   return decided.anchor;
 }
 
