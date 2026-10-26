@@ -129,6 +129,7 @@
  */
 
 import type { PushedRule, RulesAtPath } from '@mnema/context';
+import { inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import {
@@ -345,5 +346,6 @@ export function ruleLine(rule: PushedRule): string {
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
   const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
-  return `“${oneLine(rule.name)}”: governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
+  const inherited = rule.inherited === undefined ? '' : ` · ${inheritedFromText(rule.inherited)}`;
+  return `“${oneLine(rule.name)}”: governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${inherited}${from}${by}`;
 }

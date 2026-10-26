@@ -56,6 +56,24 @@ export interface ScopedCache {
    * the topology every answer, from a path whose shape is the layout's business.
    */
   readonly project?: string;
+  /**
+   * Where this tree was read from when it is NOT the project's own: the record of another
+   * repository, at one commit, that the project inherits (`.mnema/inherit.json`). Absent for
+   * every tree of the project and of this machine.
+   *
+   * Only the reading of addresses takes such a tree (`intelligence/governance.ts`): its rules
+   * address paths of the project that inherits them, and every answer built from it says where
+   * it came from, so an inherited rule is never told as one the project made.
+   */
+  readonly inherited?: InheritedFrom;
   /** The cache itself, already rebuilt by whoever owns it. */
   readonly cache: ProjectionCache;
+}
+
+/** The repository a tree was inherited from, and the one commit of it that was read. */
+export interface InheritedFrom {
+  /** The origin as the project's pointer names it: a URL or a path. */
+  readonly origin: string;
+  /** The full commit the pointer pins. */
+  readonly commit: string;
 }

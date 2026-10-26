@@ -67,6 +67,9 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   naming the command that imports it, which records nothing. When the
   `mnema` on the `PATH` is older than the plugin, the opening of the session says so and gives the
   command that fixes it; `mnema doctor` says it in either direction.
+- **A record inherited from another repository** (`mnema inherit set`), pinned at one commit and read
+  only when it verifies there: its rules in force reach the paths they address, in `mnema rules`,
+  `mnema why`, `governing_rules` and the gate before a write, each naming its origin and commit.
 - **`mnema usage --tools`**, which counts how many times each MCP tool was called, from a file this
   machine keeps in its home and never in the repository; `mnema switch off tool-call-count`
   stops it.

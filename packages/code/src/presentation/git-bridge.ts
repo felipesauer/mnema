@@ -17,6 +17,7 @@
 import type { AgingDone } from '../commands/aging.js';
 import type { CommitPage, CommitsDone } from '../commands/commits.js';
 import type { WhyCitation, WhyCommit, WhyCommitDone, WhyFile, WhyRule } from '../commands/why.js';
+import { inheritedFromText } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { aside, fact, subjectLine } from './detail.js';
 import { asId, asWhen, itemLine } from './items.js';
@@ -118,6 +119,7 @@ function ruleRows(render: Render, rules: readonly WhyRule[]): string[] {
         WHAT_THE_RULE_DOES[rule.relation],
         oneLine(rule.name),
         asId(oneLine(rule.id)),
+        ...(rule.inherited !== undefined ? [inheritedFromText(rule.inherited)] : []),
         ...(rule.files !== undefined
           ? [`${rule.files} changed file${rule.files === 1 ? '' : 's'}`]
           : []),

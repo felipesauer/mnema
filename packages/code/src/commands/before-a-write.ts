@@ -68,6 +68,7 @@ import {
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
 import { type HookHost, hookTextOf } from '../host-names.js';
+import { withInheritedSource } from '../inherited-record.js';
 import { recordTrees } from '../intelligence-source.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { type HookCeiling, hookCeilingOf } from '../presentation/within-a-hook.js';
@@ -192,7 +193,11 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
   // against; a relative path is the host's, written against where it started the hook.
   const root = dirname(trees.projectPublic);
   const { met, others } = withScopedCaches(trees, (sources) => {
-    const found = whatAWriteMeets(sources, { paths, root, from: ctx.cwd });
+    // THE RECORD THIS PROJECT INHERITS is read beside its own: a rule of it that refuses or asks at
+    // the path applies here as the project's would, and says where it comes from.
+    const found = withInheritedSource(trees, sources, (all) =>
+      whatAWriteMeets(all, { paths, root, from: ctx.cwd }),
+    );
     // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
     // record would say a person was asked.
     if (found === undefined || (found.grade === 'ask' && !input.asks)) {

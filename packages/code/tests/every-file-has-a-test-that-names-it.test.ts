@@ -369,10 +369,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'A type-only module whose one export is the `Render` alias: it emits no runtime code, and the two tests naming it use `import type`, so there is no value to observe.',
   },
-  'packages/code/src/presentation/rules.ts': {
-    reached: 'nobody imports it',
-    why: "Builds the governance page's two count lines and four row groups; the address tests assert the `--json` reading, so the rows and their `(unresolved)` fallback ride on the golden.",
-  },
   'packages/code/src/presentation/runs.ts': {
     reached: 'nobody imports it',
     why: "Words every run phrase for three readings; only regex spot-checks through `focus` and `resume` reach it, so humanDuration's two-unit cut and negative-clock branch go unobserved.",
@@ -650,7 +646,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 49,
-  presentation: 9,
+  presentation: 8,
   projections: 3,
   completion: 4,
   commands: 2,
@@ -1020,6 +1016,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/an-agent-key-signs-for-its-host.test.ts': 19,
   'packages/code/tests/an-agent-request-says-the-kind-of-key-it-refuses-and-where-a-file-key-goes.test.ts': 7,
   'packages/code/tests/an-answer-says-the-path-of-a-project.test.ts': 11,
+  'packages/code/tests/an-inherited-rule-reaches-the-edit.test.ts': 19,
   'packages/code/tests/another-run-consulted-this-path.test.ts': 13,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,
@@ -2062,8 +2059,9 @@ describe('every file has a test that names it', () => {
     // 82 once the switch listing's test asserts on what presentation/switches.ts words.
     // 81 once the search store's test names materializeDecisions.
     // 80 once the session journal's test names the host-transcript reader.
-    expect(found.size).toBe(80);
-    expect(byReach('nobody imports it')).toBe(80);
+    // 79 once the inherited rule's test asserts on the governance page's rows.
+    expect(found.size).toBe(79);
+    expect(byReach('nobody imports it')).toBe(79);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2085,7 +2083,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(80);
+    expect(reasons).toHaveLength(79);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

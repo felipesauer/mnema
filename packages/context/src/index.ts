@@ -242,6 +242,7 @@ export {
   type GoverningRules,
   governingRules,
   governsInForceEverywhere,
+  type InheritedAddresses,
   type PushedRule,
   type ReachQuery,
   type RulesAtPath,
@@ -284,4 +285,4 @@ export {
   type TimelineEntry,
   timeline,
 } from './intelligence/timeline.js';
-export type { ScopedCache } from './sources.js';
+export type { InheritedFrom, ScopedCache } from './sources.js';
