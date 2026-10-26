@@ -53,7 +53,6 @@ import { GITHUB_SERVICE, SIGSTORE_SERVICE, sigstoreAccountOf } from '../identity
 import { agentNameRefusal } from '../identity/agent-name.js';
 import {
   agentRoleIn,
-  agentRoleWords,
   IdentityUnavailableError,
   type Membership,
   membershipIn,
@@ -496,7 +495,7 @@ export function establishIdentity(
     if (agent !== undefined) {
       declined.push({
         fingerprint: registration.fingerprint,
-        reason: `it holds the agent role in this record, ${agentRoleWords(agent)}: a key holds one role only`,
+        reason: `it holds the agent role in this record, as "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}${agent.retired ? ', retired' : ''}: a key holds one role only`,
       });
       continue;
     }

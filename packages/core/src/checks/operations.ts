@@ -42,12 +42,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { CHECKER_REQUEST_PREFIX, decodeKeyRequest } from '../identity/handshake.js';
-import {
-  agentRoleIn,
-  agentRoleWords,
-  membershipIn,
-  personsRosterOf,
-} from '../identity/membership.js';
+import { agentRoleIn, membershipIn, personsRosterOf } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent, appendFact } from '../workflow/append.js';
@@ -240,7 +235,8 @@ export function enrollChecker(
       ok: false,
       code: 'AN_AGENT_KEY',
       message:
-        `the key ${oneLine(fingerprint)} holds the agent role in this record, ${agentRoleWords(agent)}: ` +
+        `the key ${oneLine(fingerprint)} holds the agent role in this record, as "${oneLine(agent.name)}" of ` +
+        `${oneLine(agent.anchor)}${agent.retired ? ', retired' : ''}: ` +
         'a key holds one role only, and a checker key signs check results only. ' +
         'Make a key of its own for the machine that runs the checks',
     };

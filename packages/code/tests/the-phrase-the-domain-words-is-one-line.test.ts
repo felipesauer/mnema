@@ -1050,6 +1050,24 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a fingerprint decoded from a request line a person pasted',
     },
+  '@mnema/core checks/operations.ts «the key {} holds the agent role in this record, as "{}" of » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint decoded from a request line a person pasted',
+    },
+  '@mnema/core checks/operations.ts «the key {} holds the agent role in this record, as "{}" of » oneLine(agent.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record enrolled the agent key under, which the record names',
+    },
+  '@mnema/core checks/operations.ts «{}{}: » oneLine(agent.anchor) #1': {
+    verdict: 'collapsed',
+    why: 'the anchor of the identity the record holds the agent key for, which the record names',
+  },
+  "@mnema/core checks/operations.ts «{}{}: » agent.retired ? ', retired' : '' #1": {
+    verdict: 'minted',
+    why: 'a constant of this module or nothing, chosen by whether the record retired the key',
+  },
   '@mnema/core checks/operations.ts «the key {} is a member of an identity in this record: a checker » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
@@ -2060,6 +2078,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the state that move would have started from',
   },
+  '@mnema/core workflow/identity-operations.ts «it holds the agent role in this record, as "{}" of {}{}: a key holds one role only» oneLine(agent.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record enrolled the agent key under, which the record names',
+    },
+  '@mnema/core workflow/identity-operations.ts «it holds the agent role in this record, as "{}" of {}{}: a key holds one role only» oneLine(agent.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity the record holds the agent key for, which the record names',
+    },
+  "@mnema/core workflow/identity-operations.ts «it holds the agent role in this record, as \"{}\" of {}{}: a key holds one role only» agent.retired ? ', retired' : '' #1":
+    {
+      verdict: 'minted',
+      why: 'a constant of this module or nothing, chosen by whether the record retired the key',
+    },
   '@mnema/core workflow/identity-operations.ts «it is registered for another identity ({})» oneLine(registration.anchor) #1':
     {
       verdict: 'collapsed',
@@ -2206,9 +2239,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(321);
+    expect(SITES.length).toBe(328);
     expect(FOUND[0]?.sites.length).toBe(130);
-    expect(FOUND[1]?.sites.length).toBe(191);
+    expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -2258,11 +2291,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(218);
-    expect(count('minted')).toBe(78);
+    expect(count('collapsed')).toBe(223);
+    expect(count('minted')).toBe(80);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      218,
+      223,
     );
   });
 

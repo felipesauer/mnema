@@ -1389,6 +1389,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/handshake.test.ts': 6,
   'packages/core/src/identity/id.test.ts': 3,
   'packages/core/src/identity/key-kind.test.ts': 2,
+  'packages/core/src/identity/no-door-enrols-a-key-that-holds-the-agent-role.test.ts': 14,
   'packages/core/src/identity/restore-an-agent-key.test.ts': 11,
   'packages/core/src/identity/restore-refuses-an-agent-key.test.ts': 10,
   'packages/core/src/identity/restore.test.ts': 11,

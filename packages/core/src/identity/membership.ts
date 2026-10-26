@@ -559,11 +559,6 @@ export function agentRoleIn(query: MembershipQuery, fingerprint: string): AgentR
   return { ...role, retired };
 }
 
-/** {@link AgentRole} as a sentence says it: `as "bot" of <anchor>`, and `, retired` once it is. */
-export function agentRoleWords(role: AgentRole): string {
-  return `as "${oneLine(role.name)}" of ${oneLine(role.anchor)}${role.retired ? ', retired' : ''}`;
-}
-
 /** An identity's keys as one reading of the record sees them: its own, and its agents'. */
 export interface RosterByRole {
   /** The keys that are the identity's own: the ones that may vouch, retire and be the last. */
