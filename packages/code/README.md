@@ -54,7 +54,9 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   is recorded where its task lives. The format does not change.
 - **`mnema verify`**, which reads the record with no key and no network and prints the level it
   reached. A record a formatter rewrote is refused, and one line beside the refusal names the
-  files, when reading them back in canonical form proves that is all that happened.
+  files, when reading them back in canonical form proves that is all that happened. An agent key
+  one tree of the project retired is retired in the others it reads: what the key signed there
+  after the retirement is refused, and not counted as attested.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
   addressed at a file beside a write to it. In Claude Code the plugin also hands the brief to a
   subagent as it starts, and, after a question the agent asked the person is answered, names the
