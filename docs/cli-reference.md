@@ -811,8 +811,11 @@ says how many dispatches were not mirrored. `mnema switch` lists `agent-mirror` 
 
 **It is on until you switch it off** (`mnema switch off agent-mirror`, a fact of the record like the other switches), because
 what it writes stays in the private tree and holds a few words the model itself wrote to label the dispatch. The cost is one
-`mnema` process per dispatch and per session end, and no tokens: measured at 315 ms a dispatch on a machine at a load of 5 on 16
-cores, of which 204 ms is the start of the process (`mnema --version`).
+`mnema` process per dispatch and per session end, and no tokens: measured, on a machine at a load of 9 on 16 cores, at 340 to 430 ms
+for each dispatch after the first, 860 ms for the first (it opens the task) and 530 ms for the session's end, of which 220 to 260 ms
+is the start of the process (`mnema --version`); the numbers move with the load. The lock a dispatch takes on the journal is taken
+from a process that died holding it (older than fifteen seconds) by one process only, and the `Stop` that keeps the journal
+waits for it too.
 
 ### Bringing a second machine into your identity
 

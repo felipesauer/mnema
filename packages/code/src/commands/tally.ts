@@ -42,6 +42,7 @@ import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
+  exclusivelyOn,
   journalAfter,
   journalFile,
   readingOf,
@@ -58,7 +59,12 @@ export interface SessionTallyContext {
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
+  /** How long a held lock on the session's journal is waited for, in milliseconds: a test shortens it. */
+  readonly lockWaitMs?: number;
 }
+
+/** How long a `Stop` waits for a dispatch that holds the session's journal: the mirror's write is brief. */
+const JOURNAL_LOCK_WAIT_MS = 1500;
 
 /** The reply for the host, and what the run has to say beside it. */
 export interface SessionTallyDone {
@@ -156,11 +162,26 @@ export function runSessionTally(
     if (file !== undefined) {
       // A dispatch may have opened the session's task while this read the transcript: its id is
       // taken from the file as it is now, so the write does not give it back.
-      const handedOver = readJournal(file)?.handedOver ?? journal.handedOver;
-      writeJournal(
+      // The read and the write are under the lock the dispatches take, so the id cannot appear
+      // between them. A lock not had in time leaves the journal as it was, and the next `Stop` reads
+      // this part of the transcript again: a journal is a convenience, a lost task id is not.
+      exclusivelyOn(
         file,
-        handedOver === undefined ? journal : { ...journal, handedOver },
-        new Date(),
+        () => {
+          const now = readJournal(file);
+          const handedOver = now?.handedOver ?? journal.handedOver;
+          const endedAt = now?.endedAt ?? journal.endedAt;
+          writeJournal(
+            file,
+            {
+              ...journal,
+              ...(handedOver === undefined ? {} : { handedOver }),
+              ...(endedAt === undefined ? {} : { endedAt }),
+            },
+            new Date(),
+          );
+        },
+        ctx.lockWaitMs ?? JOURNAL_LOCK_WAIT_MS,
       );
     }
 

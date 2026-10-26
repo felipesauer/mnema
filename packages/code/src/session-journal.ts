@@ -230,6 +230,44 @@ export function writeJournal(file: string, journal: Journal, now: Date): void {
 }
 
 /**
+ * Takes a lock that a dead process left, and answers whether the lock is now this process's.
+ *
+ * TWO PROCESSES THAT BOTH FIND THE SAME LOCK OLD must not both clear it: the second one's `rm` would
+ * remove the lock the first had just made, and both would go on to hold it. So the clearing is itself
+ * under a lock (`<lock>.takeover`, made with `mkdir`, which only one process wins), and the age of the
+ * lock is read again under it. A process that does not win it leaves the lock alone and asks again.
+ * The takeover lock is held for the length of a `stat`, an `rm` and a `mkdir`; one left by a process
+ * that died inside that is cleared by age, which is not itself under a lock (two processes that both
+ * clear a takeover lock that a third died holding, in the same instant, are the one case left).
+ */
+function takeOverALeftLock(lock: string): boolean {
+  const guard = `${lock}.takeover`;
+  try {
+    mkdirSync(guard);
+  } catch {
+    try {
+      if (Date.now() - statSync(guard).mtimeMs > LOCK_LEFT_MS) {
+        rmSync(guard, { recursive: true, force: true });
+      }
+    } catch {
+      // Released between the two calls: ask again.
+    }
+    return false;
+  }
+  try {
+    if (Date.now() - statSync(lock).mtimeMs <= LOCK_LEFT_MS) return false;
+    rmSync(lock, { recursive: true, force: true });
+    mkdirSync(lock);
+    return true;
+  } catch {
+    // The lock was released (statSync) or made by another meanwhile (mkdirSync): ask again.
+    return false;
+  } finally {
+    rmSync(guard, { recursive: true, force: true });
+  }
+}
+
+/**
  * Runs `work` as the only one touching `file`'s journal: parallel dispatches of one session are
  * parallel processes, and two that both read "no task yet" would each open one. A lock that cannot be
  * had in `waitMs` ({@link LOCK_WAIT_MS} unless a caller says) is not waited for any longer, and one
@@ -252,12 +290,8 @@ export function exclusivelyOn<T>(
         mkdirSync(lock);
         held = true;
       } catch {
-        try {
-          if (Date.now() - statSync(lock).mtimeMs > LOCK_LEFT_MS)
-            rmSync(lock, { recursive: true, force: true });
-        } catch {
-          // Released between the two calls: ask again.
-        }
+        held = takeOverALeftLock(lock);
+        if (held) break;
         if (Date.now() > until) break;
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
       }
@@ -487,6 +521,7 @@ export function journalAfter(input: {
     trees: { public: publicOnes.account, private: privateOnes.account },
     reading,
     ...(previous?.handedOver !== undefined ? { handedOver: previous.handedOver } : {}),
+    ...(previous?.endedAt !== undefined ? { endedAt: previous.endedAt } : {}),
   };
 }
 

@@ -39,8 +39,11 @@ with its own changelog.
   dispatch. Where the journal's lock is not had in time (another dispatch of the session holds it), the mirror records nothing
   rather than go on without it, which opened tasks no one closed: it says so on the second stream, counts the skip, and the
   task's closing note says how many dispatches were not mirrored. The mirror's task is not taken for the goal of the session.
-  A dispatch costs one `mnema` process, 315 ms measured on this machine at a load of 5 on 16 cores, 204 ms of it the start of
-  the process itself.
+  A dispatch costs one `mnema` process: measured on this machine at a load of 9 on 16 cores, 340 to 430 ms for each dispatch
+  after the first, 860 ms for the first (it opens the task) and 530 ms for the session's end, where the start of the process
+  alone (`mnema --version`) took 220 to 260 ms; the numbers move with the load. A process that finds the journal's lock left
+  by one that died takes it under a second lock, so two of them cannot both take it and open two tasks, and the `Stop` that
+  keeps the journal waits for the same lock before it writes.
 - **The page lists the credential formats the record's door replaces.** `docs/cli-reference.md` (What goes into the record) now
   names each class (`<SECRET:aws-access-key>` and the ten others) and the e-mail address, with what each matches. The table is
   generated from the door's own list, and a test fails when a class is added without a row.
