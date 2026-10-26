@@ -44,7 +44,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { keyList, parseCanonicalLine } from '../events/stored-json.js';
+import { keyList, parseCanonicalLine, schemeNamed } from '../events/stored-json.js';
 import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
@@ -210,15 +210,21 @@ const CHECKPOINT_LINE_KEYS = [
 /**
  * The line's shape, checked before its bytes, in the second reader's order and words
  * (`read_checkpoint` in `mnemaverify/checkpoint.py`): an object, a scheme this reader knows,
- * then exactly the eight keys. A key beside them is outside the signed message, so the
- * signature still verifies with it there, and it is refused.
+ * then exactly the eight keys (`FORMAT.md` section 4 fixes that order). A key beside them is
+ * outside the signed message, so the signature still verifies with it there, and it is refused.
+ * The scheme comes first because a reader refuses one it does not know rather than guessing at
+ * the fields, and a scheme it does not know is all a line under a later scheme is wrong in.
  */
 function checkpointShape(raw: unknown): void {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new CheckpointParseError('a checkpoint line that is not a JSON object');
   }
   const { scheme } = raw as { scheme?: unknown };
-  if (scheme !== SCHEME) return;
+  if (scheme !== SCHEME) {
+    throw new CheckpointParseError(
+      `a checkpoint scheme this reader does not know: ${schemeNamed(scheme)}`,
+    );
+  }
   const held = Object.keys(raw);
   const missing = CHECKPOINT_LINE_KEYS.filter((key) => !held.includes(key));
   const unexpected = held.filter(
@@ -248,10 +254,8 @@ export function parseCheckpoint(line: string): Checkpoint {
     }
     return value;
   };
-  const scheme = requireString('scheme');
-  if (scheme !== SCHEME) {
-    throw new CheckpointParseError(`unknown checkpoint scheme "${scheme}"`);
-  }
+  // The shape above refused any other scheme, before the bytes.
+  const scheme = SCHEME;
   const prev = raw.prev;
   if (prev !== null && (typeof prev !== 'string' || prev.length === 0)) {
     throw new CheckpointParseError('checkpoint prev must be a hash or null');

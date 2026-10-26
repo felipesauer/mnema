@@ -625,6 +625,185 @@ describe('a key no writer puts there, beside the keys a structure has', () => {
   });
 });
 
+/**
+ * THE FIRST CAUSE, BY THE CHECK THAT NAMES IT. A line broken two ways at once is refused by
+ * both readers whatever order they check in, so a table of verdicts never sees the order; what
+ * shows it is WHICH check each reader names first. They named different ones on these inputs (a
+ * link's keys against both objects, a link that is no object, a scheme after the bytes against
+ * a scheme before them) until `FORMAT.md` section 4 wrote the order down.
+ *
+ * Each reader's first cause is mapped to ONE check of a closed list, by the sentence that check
+ * writes in that reader, and the two checks are compared: a sentence no check writes, or one two
+ * checks could have written, fails before any comparison. Where the two readers word one check
+ * differently (an undeclared payload field) the list holds both wordings, and the comparison is
+ * still of the check, never of the words.
+ */
+const CHECKS = {
+  'line-not-an-object': {
+    section: '4',
+    product: /: a stored line that is not a JSON object$/,
+    second: /^a stored line that is not a JSON object$/,
+  },
+  'event-or-link-not-an-object': {
+    section: '4',
+    product: /: event and link must both be objects$/,
+    second: /^event and link must both be objects$/,
+  },
+  'link-keys': {
+    section: '4',
+    product: /: link keys are \[[^\]]*\], not \['hash', 'prev', 'seq', 'tail'\]$/,
+    second: /^link keys are \[[^\]]*\], not \['hash', 'prev', 'seq', 'tail'\]$/,
+  },
+  'line-not-canonical': {
+    section: '4',
+    product: /: not the canonical serialization of what it holds \(/,
+    second: /^the stored line is not the canonical serialization of what it holds/,
+  },
+  'checkpoint-scheme-unknown': {
+    section: '6',
+    product: /: a checkpoint scheme this reader does not know: .+$/,
+    second: /^a checkpoint scheme this reader does not know: .+$/,
+  },
+  'tail-proof-scheme-unknown': {
+    section: '-',
+    product: /: a tail-proof scheme this reader does not know: .+$/,
+    second: /^a tail-proof scheme this reader does not know: .+$/,
+  },
+  'undeclared-payload-field': {
+    section: '4.1',
+    product: /: event "[^"]+" has an unknown payload field "[^"]+"$/,
+    second:
+      /^event '[^']+' carries payload field\(s\) \[[^\]]*\], which its contract does not declare, so they would ride along into the signed bytes$/,
+  },
+} as const;
+
+type Check = keyof typeof CHECKS;
+
+/** The one check whose sentence this is, in this reader, or a failure naming the sentence. */
+function checkNaming(sentence: string, reader: 'product' | 'second'): Check {
+  const matches = (Object.keys(CHECKS) as Check[]).filter((check) =>
+    CHECKS[check][reader].test(sentence),
+  );
+  expect(matches, `${reader}: the check that writes ${JSON.stringify(sentence)}`).toHaveLength(1);
+  return matches[0] as Check;
+}
+
+/** Both readers' first cause over one record, each as the check that names it, and where. */
+function firstCauses(record: string) {
+  const here = verify(record, catalogUpcasters());
+  const there = secondReading(record);
+  expect(here.ok, 'the product accepted').toBe(false);
+  expect(there.verdict, 'the second reader accepted').toBe('REFUSED');
+  const product = here.issues[0]?.detail ?? '';
+  const second = there.refusals[0];
+  return {
+    product: { check: checkNaming(product, 'product'), detail: product },
+    second: {
+      check: checkNaming(second?.what ?? '', 'second'),
+      section: second?.section,
+      where: second?.where,
+      what: second?.what ?? '',
+    },
+  };
+}
+
+describe('the two readers name the same check first on a line broken where the order decides', () => {
+  const ROWS = [
+    // `event` a string AND a fifth key in the link: the product read the link's keys first.
+    ['event-not-an-object-beside-a-key-in-the-link', 'event-or-link-not-an-object', 'line 3'],
+    // `link` a string: the product passed it to the bytes and named it after them, in its words.
+    ['link-is-a-string', 'event-or-link-not-an-object', 'line 3'],
+    // An unknown scheme: the product checked it after the bytes, in its words.
+    ['checkpoint-of-an-unknown-scheme', 'checkpoint-scheme-unknown', 'checkpoints.jsonl line 1'],
+    ['tail-proof-of-an-unknown-scheme', 'tail-proof-scheme-unknown', 'ownership proof'],
+    ['tail-proof-scheme-not-a-string', 'tail-proof-scheme-unknown', 'ownership proof'],
+    // One check, worded by each reader in its own words: the comparison is of the check.
+    ['forged-payload-field-appended', 'undeclared-payload-field', 'line 5'],
+  ] as const;
+
+  it('covers mutations the tool offers', () => {
+    const offered = JSON.parse(python([MUTATE, 'list']).stdout) as string[];
+    for (const [name] of ROWS) expect(offered, name).toContain(name);
+  });
+
+  it.each(ROWS)('names %s as %s in both', (name, check, at) => {
+    const causes = firstCauses(mutated(name));
+    expect(causes.product.check, 'the product').toBe(check);
+    expect(causes.second.check, 'the second reader').toBe(check);
+    expect(causes.second.section).toBe(CHECKS[check].section);
+    expect(causes.product.detail).toContain(at);
+  });
+
+  /** One line of the first segment, or of the checkpoints, replaced, and both readers asked. */
+  function withLine(file: string, number: number, edit: (line: string) => string) {
+    const record = copyOf('witnessed-record');
+    const path = join(tailOf(record), file);
+    const lines = readFileSync(path, 'utf-8').split('\n');
+    const honest = lines[number - 1] as string;
+    lines[number - 1] = edit(honest);
+    expect(lines[number - 1], 'the edit did not apply').not.toBe(honest);
+    writeFileSync(path, lines.join('\n'));
+    return firstCauses(record);
+  }
+
+  it('names a scheme it does not know before the bytes, on a re-spelled checkpoint line', () => {
+    const causes = withLine('checkpoints.jsonl', 1, (line) =>
+      line.replace('"scheme":"mnema-checkpoint/1"', '"scheme": "mnema-checkpoint/9"'),
+    );
+    expect(causes.product.check).toBe('checkpoint-scheme-unknown');
+    expect(causes.second.check).toBe('checkpoint-scheme-unknown');
+    expect(causes.product.detail).toContain("'mnema-checkpoint/9'");
+  });
+
+  it('names a checkpoint with no scheme, and one whose scheme is no string, in the same words', () => {
+    for (const [edit, named] of [
+      [(line: string) => line.replace('"scheme":"mnema-checkpoint/1",', ''), 'None'],
+      [(line: string) => line.replace('"mnema-checkpoint/1"', '1'), 'a number'],
+      [
+        (line: string) => line.replace('"mnema-checkpoint/1"', '["mnema-checkpoint/1"]'),
+        'an array',
+      ],
+    ] as const) {
+      const causes = withLine('checkpoints.jsonl', 1, edit);
+      expect(causes.product.check).toBe('checkpoint-scheme-unknown');
+      expect(causes.second.check).toBe('checkpoint-scheme-unknown');
+      // The same words in both, to the end: the naming is part of the sentence.
+      expect(causes.second.what).toBe(`a checkpoint scheme this reader does not know: ${named}`);
+      expect(causes.product.detail.endsWith(causes.second.what), causes.product.detail).toBe(true);
+    }
+  });
+
+  it('names a tail proof with no scheme, a null one, and one that is no string, in the same words', () => {
+    for (const [edit, named] of [
+      [(line: string) => line.replace('"scheme":"mnema-tail/1",', ''), 'None'],
+      [(line: string) => line.replace('"mnema-tail/1"', 'null'), 'None'],
+      [(line: string) => line.replace('"mnema-tail/1"', '1'), 'a number'],
+      [(line: string) => line.replace('"mnema-tail/1"', '["mnema-tail/1"]'), 'an array'],
+    ] as const) {
+      const causes = withLine('tailproof.json', 1, edit);
+      expect(causes.product.check).toBe('tail-proof-scheme-unknown');
+      expect(causes.second.check).toBe('tail-proof-scheme-unknown');
+      // The same words in both, to the end: the naming is part of the sentence.
+      expect(causes.second.what).toBe(`a tail-proof scheme this reader does not know: ${named}`);
+      expect(causes.product.detail.endsWith(causes.second.what), causes.product.detail).toBe(true);
+    }
+  });
+
+  it('names a stored line that is no object in the same words', () => {
+    const causes = withLine('000001.jsonl', 3, () => '[]');
+    expect(causes.product.check).toBe('line-not-an-object');
+    expect(causes.second.check).toBe('line-not-an-object');
+  });
+
+  it('maps every sentence to one check, or the comparison above proves nothing', () => {
+    // A check two sentences could both be read as would let two different causes compare equal.
+    expect(
+      checkNaming("x line 3: link keys are ['a'], not ['hash', 'prev', 'seq', 'tail']", 'product'),
+    ).toBe('link-keys');
+    expect(() => checkNaming('x line 3: entry is missing its link', 'product')).toThrow();
+  });
+});
+
 describe('the rule has one place', () => {
   /** Every non-test TypeScript file under `src`. */
   function sources(dir: string): string[] {

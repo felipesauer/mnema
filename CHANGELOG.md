@@ -129,6 +129,13 @@ with its own changelog.
   re-spelled line with one is refused for the key; a stored block header with a key beside `header` and `height` is not
   read. `FORMAT.md` §4 says it, as a rule tightened after the first publication: records written by 0.1.0, 0.1.1 and
   0.1.2 hold no such key and verify as before, and an earlier version still verifies a record that has one.
+- **`verify` and the Python reader name the same first cause on a line broken two ways.** A stored line whose `event` is
+  no object and whose link carries a fifth key, a link that is a string, and a checkpoint or a tail proof under a scheme
+  neither knows were refused by both, each for a different first cause: the product checked the link's keys before the two
+  objects and the scheme after the bytes. Both now check in the order `FORMAT.md` §4 writes down (the line an object, its
+  keys, `event` and `link` both objects, the link's keys; for a checkpoint or a tail proof, the scheme before the keys and
+  the bytes) and say it in the same words (`event and link must both be objects`, `a checkpoint scheme this reader does
+  not know: 'mnema-checkpoint/9'`). No verdict changes, only which cause is named first.
 - **On Windows the plugin's hooks start `mnema`, and a rule applies to a Windows path.** Node would not start npm's
   `mnema.cmd` without a shell, so every command hook was silent and a gate under a rule answered that `mnema` could
   not be started; the handlers (and the OpenCode and Gemini plugins) now start it through a shell. An absolute path
