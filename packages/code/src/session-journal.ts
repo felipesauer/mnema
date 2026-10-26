@@ -508,6 +508,29 @@ export function decisionsRecordedSince(
     .map((one) => ({ id: one.id, state: one.state }));
 }
 
+/**
+ * The label of each decision the trees hold, by id. Each tree numbers its own decisions, so two
+ * trees can both hold an `ADR-1`: a label that more than one tree holds carries the name of its
+ * tree (`ADR-1 (private)`), and one that is only in a single tree stays as the record numbered it.
+ */
+export function labelsOf(sources: readonly ScopedCache[]): ReadonlyMap<string, string> {
+  const held = sources.flatMap((source) =>
+    source.cache.listDecisions().map((one) => ({ id: one.id, adr: one.adr, scope: source.scope })),
+  );
+  const scopesOf = new Map<string, Set<string>>();
+  for (const one of held) {
+    const scopes = scopesOf.get(one.adr) ?? new Set<string>();
+    scopes.add(one.scope);
+    scopesOf.set(one.adr, scopes);
+  }
+  return new Map(
+    held.map((one) => [
+      one.id,
+      (scopesOf.get(one.adr)?.size ?? 0) > 1 ? `${one.adr} (${one.scope})` : one.adr,
+    ]),
+  );
+}
+
 /** The journal that has nothing in it yet: a reading from the top of the transcript. */
 export function readingOf(previous: Journal | undefined): Reading {
   return previous === undefined ? emptyReading() : previous.reading;

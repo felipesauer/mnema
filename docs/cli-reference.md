@@ -773,10 +773,13 @@ holds; what is lost is what *this session* had done with the record. So the plug
 `compact` matcher, that reads the session's id off the payload and runs `mnema recall --after-a-compaction --session <id>`.
 It prints one sentence read from the session's journal, about sixty to a hundred and twenty tokens, and nothing else. The decisions in it are
 the record's, not the journal's: those created since the session opened, in the state they have now, because the journal is written at the end
-of a response and one recorded or moved since is not in it:
+of a response and one recorded or moved since is not in it. That is every decision that entered the record since the session opened,
+so one that came by a pull, or that another session recorded, is counted too: the sentence says "entered the record", not "recorded by
+this session". It names five at most (then `and N more`), and a label that two trees both number (each tree numbers its own) says
+which tree it is of, as `ADR-1 (private)`:
 
 ```text
-Before this conversation was compacted, this session had: 2 decisions recorded in this project’s record (ADR-12: proposed; ADR-13: accepted); 1 note of this host’s memory copied into this machine’s private tree; 1 question answered with no decision recorded after; its own tool calls wrote 5 files.
+Before this conversation was compacted, this session had: 2 decisions entered this project’s record since this session opened (ADR-12: proposed; ADR-13: accepted); 1 note of this host’s memory copied into this machine’s private tree; 1 question answered with no decision recorded after; its own tool calls wrote 5 files.
 ```
 
 Each part is left out when it is zero, and where nothing is left it prints nothing. It is a count, with the labels of decisions the
