@@ -329,11 +329,14 @@ the bytes compared with the canonical serialization. The order moves no verdict,
 check refuses on its own; it decides which one a reader names first
 (`both-readers-read-the-same-bytes.test.ts`, "the two readers name the same check first";
 `second-reader-agrees-on-the-record.test.ts`, `event-not-an-object-beside-a-key-in-the-link`,
-`link-is-a-string`, `checkpoint-of-an-unknown-scheme` and `tail-proof-of-an-unknown-scheme`).
+`link-is-a-string`, `checkpoint-of-an-unknown-scheme`, `tail-proof-of-an-unknown-scheme` and
+`tail-proof-scheme-not-a-string`).
 The type of each value inside a link or a checkpoint is not in this order yet: the second
 reader checks it before the bytes and the product after them, in other words, so a line both
 re-spelled and holding such a value is named for its bytes by one and for the value by the
-other.
+other. Nor is the count after the first cause: on a checkpoint line under a scheme it does not know
+(`checkpoint-of-an-unknown-scheme`), the product reports three issues, the scheme and a broken `prev` in
+each of the two checkpoints after it, where the second reader reports two.
 
 **A stored line is UTF-8, and a line that is not is refused** (§1.6). A reader decodes
 the bytes strictly: a sequence that is not well-formed UTF-8 (a lone continuation byte,
