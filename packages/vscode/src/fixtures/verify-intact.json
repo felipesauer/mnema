@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "trees": [
+    {
+      "kind": "verdict",
+      "scope": "public",
+      "root": "/tmp/tmp.8XygkYmCTt/.mnema",
+      "result": {
+        "ok": true,
+        "fullySigned": true,
+        "level": "fully-signed",
+        "tails": [
+          {
+            "tail": "1c830b39bb468dfd2a9b605127b505027bdbfe219430bf5502f9b93f9fcda721-bc4a301572c91a8a08718bdc6f390ebe",
+            "entryCount": 3,
+            "checkpointedThrough": 2,
+            "issues": []
+          }
+        ],
+        "issues": [],
+        "census": [
+          {
+            "kind": "backup-key",
+            "fingerprint": "fb93948992ab48b3da7a5627f6033b80725a755ac9ad9a508ffd76ccca2a7763",
+            "anchor": "mnid:18a0d7bf706e1386850adaf78c1f45a71529e0830fec7dafbb1927eaabf70f6b",
+            "detail": "the backup key of mnid:18a0d7bf706e1386850adaf78c1f45a71529e0830fec7dafbb1927eaabf70f6b, as the record declares it: a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)"
+          }
+        ],
+        "uncheckpointedEvents": 0,
+        "witness": "not-covered",
+        "clauses": [
+          {
+            "of": "level",
+            "text": "local integrity verified (T1/T2/T4)"
+          },
+          {
+            "of": "tails",
+            "text": "1 tail(s)"
+          },
+          {
+            "of": "coverage",
+            "text": "all events are signature-covered"
+          },
+          {
+            "of": "census",
+            "text": "1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)"
+          },
+          {
+            "of": "witness",
+            "text": "external witness (T3): not covered, nothing outside this machine attests this record"
+          }
+        ],
+        "summary": "local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record"
+      }
+    },
+    {
+      "kind": "no-record",
+      "scope": "private",
+      "root": "/tmp/tmp.8XygkYmCTt/.git/mnema/%2E/private"
+    }
+  ],
+  "record": {
+    "ok": true,
+    "level": "fully-signed",
+    "scopes": [
+      "public"
+    ]
+  },
+  "requirement": "chained",
+  "requirementMet": true,
+  "notAnswered": [
+    "One tail removed whole while another remains is not a break: with its committed key left it IS reported, as a census note (informational, not a break, so the exit stays 0), and with its key removed too it may leave nothing to report. A record in which no tail holds anything is refused.",
+    "The newest events cut together with their checkpoint read as an honest record, under --require signed too.",
+    "A record erased and founded again reads as an honest record, under --require signed too.",
+    "One tail removed whole in a commit older than the revision --since compares with is not found by it. Only a copy of the record from before (--since <rev>, a git remote) shows any of these; the external witness dates a checkpoint and keeps no copy."
+  ]
+}

@@ -62,8 +62,26 @@ this repository, and every read and every write goes through the `mnema` command
   reports them, and a hook is on only when a person, at a terminal, read its script and typed its
   name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the
   command line, started as the extension starts it, refuses with no terminal.
-- **The status bar.** The level `mnema verify --json` reports for the record, and how many of the
-  channels `mnema switch` lists ([what they are](../../docs/switches.md)) are off, with their names in the tooltip. Clicking it reads again.
+- **The status bar.** The level `mnema verify --json` reports for the record, with a codicon that follows
+  it (a book for `fully-signed` and `externally-witnessed`, an info mark for a weaker level, an error
+  mark for a failure, a question mark for an answer it could not read; never a check mark or a seal),
+  and how many of the channels `mnema switch` lists ([what they are](../../docs/switches.md)) are off.
+  The tooltip is the text `mnema verify` printed, line by line (up to six), then the channels off by
+  name: what a level covers is what the command line says, and the extension adds no sentence of its
+  own about it. The item has an accessibility label and the role of a button. Clicking it reads again.
+- **A missing command is not "nothing pending".** Before anything else the extension asks
+  `mnema --version`. When the command cannot be started, answers as no mnema does, or is older than
+  0.1.2 (the version the extension is written against), the views say the command is missing and how to
+  fix it (install `@mnema/code` from source, or set `mnema.command`), nothing else is asked of it, and
+  the status bar says "command not found" and, clicked, opens the `mnema.command` setting. The context
+  key `mnema.cliMissing` carries it, and it clears at the next reading that finds a working command.
+  The setting is read again at every reading, and changing `mnema.command` starts one, so a corrected
+  setting needs no reload. A command that did not answer `--version` within 60 seconds is reported as
+  not answering, in the tooltip, not as not found. The error mark of the bar follows `record.ok` in
+  `mnema verify --json`, the verdict whose failure makes `mnema verify` exit 1.
+- **A walkthrough of three steps** (Help > Welcome > Walkthroughs, "Get started with mnema"): make the
+  command available, run `mnema init`, run `mnema verify` and read what it prints. It says to read the
+  command's output, never that the record is safe or verified.
 
 ## Install
 
@@ -84,8 +102,12 @@ code --install-extension packages/vscode/mnema-*.vsix
 the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 15 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
-in a workspace with a `.mnema` folder to see it start (`pnpm --filter @mnema/vscode install-check`
-does the same by hand, under `xvfb-run -a` on a machine without a screen), and keeps the file as an
+three times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema` (opening one of its views, or running one of its commands, starts it, and from then on it runs the command line); a folder
+with a `.mnema` and a `mnema.command` that does not exist, where the bar must say the command was not
+found; and a folder with a real record read by the `mnema` built here, where the bar must carry a level
+and the tooltip what `mnema verify` printed). `pnpm --filter @mnema/vscode install-check` does the same
+by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
+the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md), and keeps the file as an
 artifact of the run (`mnema-vscode-extension`). It is a local file and this repository never sends it
 anywhere: no workflow publishes it, and a test fails if one does.
 

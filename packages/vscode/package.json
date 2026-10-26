@@ -69,8 +69,13 @@
       },
       {
         "view": "mnema.proposed",
+        "contents": "The mnema command could not be used, so nothing is listed: this is not the same as nothing being pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with mnema.command.\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)\n[Refresh](command:mnema.refresh)",
+        "when": "mnema.hasRecord && mnema.cliMissing"
+      },
+      {
+        "view": "mnema.proposed",
         "contents": "No decision is listed as awaiting a judgment. If mnema could not run, nothing is listed either, and the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
-        "when": "mnema.hasRecord"
+        "when": "mnema.hasRecord && !mnema.cliMissing"
       },
       {
         "view": "mnema.stacks",
@@ -79,13 +84,18 @@
       },
       {
         "view": "mnema.stacks",
+        "contents": "The mnema command could not be used, so nothing is listed: this is not the same as nothing being pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with mnema.command.\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)\n[Refresh](command:mnema.refresh)",
+        "when": "mnema.hasRecord && mnema.cliMissing"
+      },
+      {
+        "view": "mnema.stacks",
         "contents": "No stack is adopted for this project, as mnema stack list reads it.\n[Add a stack](command:mnema.stacks.add)\n[Add a stack from the index](command:mnema.stacks.addFromIndex)",
-        "when": "mnema.hasRecord && mnema.stacksRead"
+        "when": "mnema.hasRecord && !mnema.cliMissing && mnema.stacksRead"
       },
       {
         "view": "mnema.stacks",
         "contents": "mnema has not listed the stacks. If it could not run, the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
-        "when": "mnema.hasRecord && !mnema.stacksRead"
+        "when": "mnema.hasRecord && !mnema.cliMissing && !mnema.stacksRead"
       }
     ],
     "commands": [
@@ -276,10 +286,47 @@
           "when": "workspaceFolderCount > 0"
         }
       ]
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "mnema.start",
+        "title": "Get started with mnema",
+        "description": "Three steps: make the command available, start a record, run mnema verify.",
+        "steps": [
+          {
+            "id": "mnema.start.command",
+            "title": "Make the mnema command available",
+            "description": "The extension runs the mnema command line and nothing else. Install @mnema/code from its source, or set the executable the extension starts.\n[Open the mnema.command setting](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+            "media": {
+              "markdown": "media/walkthrough/command.md"
+            }
+          },
+          {
+            "id": "mnema.start.init",
+            "title": "Start a record in this project",
+            "description": "Run mnema init in a terminal at the project root. It creates the .mnema folder where the record is kept. Then run mnema: Refresh, which starts the extension in a window that opened without one.\n[Open a terminal](command:workbench.action.terminal.new)\n[Refresh mnema](command:mnema.refresh)",
+            "media": {
+              "markdown": "media/walkthrough/init.md"
+            },
+            "completionEvents": [
+              "onContext:mnema.hasRecord"
+            ]
+          },
+          {
+            "id": "mnema.start.verify",
+            "title": "Run mnema verify and read what it prints",
+            "description": "Run mnema verify in the terminal. It prints the level it reached and what that level covers. The status bar shows that level and nothing more.\n[Open a terminal](command:workbench.action.terminal.new)\n[Refresh the status bar](command:mnema.refresh)",
+            "media": {
+              "markdown": "media/walkthrough/verify.md"
+            }
+          }
+        ]
+      }
+    ]
   },
   "files": [
     "extension.cjs",
+    "media",
     "NOTICE"
   ],
   "scripts": {

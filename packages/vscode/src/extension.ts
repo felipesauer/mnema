@@ -47,7 +47,7 @@ import {
   stackDescription,
   stackTooltip,
 } from './stacks.js';
-import { type Channel, readChannels, readVerdict, statusText, statusTooltip } from './status.js';
+import { type Channel, describeBar, readChannels, readCli, readVerdict } from './status.js';
 
 /** How long the record has to be quiet before it is read again. */
 export const QUIET_MS = 1500;
@@ -68,6 +68,7 @@ export interface VscodeApi {
   readonly workspace: {
     readonly workspaceFolders: readonly { readonly uri: { readonly fsPath: string } }[] | undefined;
     getConfiguration(section: string): { get<T>(key: string, fallback: T): T };
+    onDidChangeConfiguration: Event<{ affectsConfiguration(section: string): boolean }>;
     createFileSystemWatcher(pattern: unknown): {
       onDidChange: Event<unknown>;
       onDidCreate: Event<unknown>;
@@ -80,7 +81,8 @@ export interface VscodeApi {
     createStatusBarItem(alignment: number): {
       text: string;
       tooltip: string;
-      command: string;
+      command: string | { command: string; title: string; arguments: unknown[] };
+      accessibilityInformation: { label: string; role?: string } | undefined;
       show(): void;
       dispose(): void;
     };
@@ -155,17 +157,29 @@ interface Session {
   read(args: readonly string[]): Promise<CliResult>;
 }
 
+/** What the extension hands to whoever activated it: what the status bar item says now, read only. */
+export interface Shown {
+  readonly text: string;
+  readonly tooltip: string;
+}
+
 /** Starts the extension against one workspace folder: the first one open. */
 export function activate(
   context: { subscriptions: Disposable[] },
   api: VscodeApi,
-  options: { run?: Run } = {},
-): void {
+  options: { run?: Run; makeRun?: (command: string, cwd: string) => Run } = {},
+): { readonly shown: () => Shown } | undefined {
   const folder = api.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (folder === undefined) return;
+  if (folder === undefined) return undefined;
   const recordFolder = join(folder, '.mnema');
-  const command = api.workspace.getConfiguration('mnema').get<string>('command', 'mnema');
-  const run = options.run ?? createRun(command, folder);
+  // The setting is read again at every refresh: a corrected `mnema.command` is not kept from the
+  // activation, so the person does not have to reload the window for it.
+  const runner = (): Run =>
+    options.run ??
+    (options.makeRun ?? createRun)(
+      api.workspace.getConfiguration('mnema').get<string>('command', 'mnema'),
+      folder,
+    );
   const session: Session = {
     details: new Map(),
     rules: new Map(),
@@ -174,7 +188,7 @@ export function activate(
     total: 0,
     seen: undefined,
     channels: undefined,
-    read: run,
+    read: runner(),
   };
   const keep = <T extends Disposable>(d: T): T => {
     context.subscriptions.push(d);
@@ -188,17 +202,56 @@ export function activate(
   bar.command = 'mnema.refresh';
   bar.text = 'mnema: reading';
   bar.tooltip = '';
+  bar.accessibilityInformation = { label: 'mnema: reading', role: 'button' };
   bar.show();
 
+  function applyBar(shown: ReturnType<typeof describeBar>): void {
+    bar.text = shown.text;
+    bar.tooltip = shown.tooltip;
+    bar.accessibilityInformation = shown.accessibility;
+    bar.command =
+      shown.action === 'settings'
+        ? {
+            command: 'workbench.action.openSettings',
+            title: 'mnema: Set the mnema command',
+            arguments: ['mnema.command'],
+          }
+        : 'mnema.refresh';
+  }
+
   async function refresh(): Promise<void> {
+    session.read = runner();
     // The empty views say one thing with a record in the folder and another without; the key is
     // whether the folder holds a `.mnema`, nothing the command line said.
     void api.commands.executeCommand('setContext', 'mnema.hasRecord', existsSync(recordFolder));
     session.rules.clear();
     lensesChanged.fire();
-    const [list, verify, channels, stacks] = await Promise.all([
+    // Whether the command can be run at all comes first: a command that is not there is not
+    // "nothing pending", and nothing else is asked of it.
+    const cli = readCli(await session.read(['--version']));
+    void api.commands.executeCommand('setContext', 'mnema.cliMissing', cli.kind === 'missing');
+    if (cli.kind === 'missing') {
+      session.proposed = [];
+      session.stacks = [];
+      session.total = 0;
+      session.channels = undefined;
+      void api.commands.executeCommand('setContext', 'mnema.stacksRead', false);
+      applyBar(
+        describeBar({
+          cli,
+          verdict: { kind: 'unreadable' },
+          channels: undefined,
+          coverage: undefined,
+        }),
+      );
+      stacksChanged.fire();
+      treeChanged.fire();
+      return;
+    }
+    const [list, verify, coverage, channels, stacks] = await Promise.all([
       session.read(LIST_ARGS),
       session.read(['verify', '--json']),
+      session.read(['verify']),
       session.read(['switch']),
       session.read(STACK_LIST_ARGS),
     ]);
@@ -206,8 +259,15 @@ export function activate(
     void api.commands.executeCommand('setContext', 'mnema.stacksRead', stacks.code === 0);
     stacksChanged.fire();
     session.channels = channels.code === 0 ? readChannels(channels.stdout) : undefined;
-    bar.text = statusText(readVerdict(verify.stdout), session.channels);
-    bar.tooltip = statusTooltip(session.channels);
+    applyBar(
+      describeBar({
+        cli,
+        verdict: readVerdict(verify.stdout),
+        channels: session.channels,
+        // The words are the command line's own, as many lines as it printed up to a few.
+        coverage: coverage.stdout.trim().split('\n').slice(0, 6).join('\n') || undefined,
+      }),
+    );
     if (list.code !== 0) return;
     const { items, total } = readProposed(list.stdout);
     const fresh = newlyProposed(session.seen, items);
@@ -562,9 +622,15 @@ export function activate(
   keep(watcher.onDidChange(changed));
   keep(watcher.onDidCreate(changed));
   keep(watcher.onDidDelete(changed));
+  keep(
+    api.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('mnema.command')) void refresh();
+    }),
+  );
   keep({ dispose: () => timer !== undefined && clearTimeout(timer) } as Disposable);
 
   void refresh();
+  return { shown: () => ({ text: bar.text, tooltip: bar.tooltip }) };
 }
 
 /** Nothing to release: everything `activate` made is on the context's subscriptions. */

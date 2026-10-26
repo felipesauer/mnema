@@ -22,6 +22,18 @@ interface Manifest {
     };
     views: Record<string, { id: string }[]>;
     viewsWelcome: { view: string; contents: string; when: string }[];
+    walkthroughs?: {
+      id: string;
+      title: string;
+      description: string;
+      steps: {
+        id: string;
+        title: string;
+        description: string;
+        media: { markdown: string };
+        completionEvents?: string[];
+      }[];
+    }[];
     commands: Command[];
     menus: Record<string, MenuItem[]>;
   };
@@ -106,13 +118,14 @@ describe('the extension manifest', () => {
     const stacksWhens = viewsWelcome.filter((w) => w.view === 'mnema.stacks').map((w) => w.when);
     expect(stacksWhens.sort()).toEqual([
       '!mnema.hasRecord',
-      'mnema.hasRecord && !mnema.stacksRead',
-      'mnema.hasRecord && mnema.stacksRead',
+      'mnema.hasRecord && !mnema.cliMissing && !mnema.stacksRead',
+      'mnema.hasRecord && !mnema.cliMissing && mnema.stacksRead',
+      'mnema.hasRecord && mnema.cliMissing',
     ]);
-    for (const w of viewsWelcome.filter((w) => w.when === 'mnema.hasRecord && mnema.stacksRead')) {
+    for (const w of viewsWelcome.filter((w) => w.when.endsWith('&& mnema.stacksRead'))) {
       expect(w.contents).toContain('No stack is adopted');
     }
-    for (const w of viewsWelcome.filter((w) => w.when === 'mnema.hasRecord && !mnema.stacksRead')) {
+    for (const w of viewsWelcome.filter((w) => w.when.endsWith('&& !mnema.stacksRead'))) {
       expect(w.contents).not.toContain('No stack is adopted');
       expect(w.contents).toContain('status bar');
     }
@@ -135,5 +148,45 @@ describe('the extension manifest', () => {
     const check = readFileSync(new URL('../build/in-the-editor.cjs', import.meta.url), 'utf8');
     expect(check).not.toMatch(/'mnema\.[A-Za-z.]+'/);
     expect(check).toContain('contributes.commands');
+  });
+
+  it('tells each view that the command is missing, apart from empty, and no view says "nothing pending" then', () => {
+    for (const { id } of Object.values(views).flat()) {
+      const mine = viewsWelcome.filter((w) => w.view === id);
+      const missing = mine.filter((w) => w.when === 'mnema.hasRecord && mnema.cliMissing');
+      expect(missing, id).toHaveLength(1);
+      expect(missing[0]?.contents, id).toContain('@mnema/code');
+      expect(missing[0]?.contents, id).toContain('mnema.command');
+      // Every other entry for a folder with a record is off while the command is missing.
+      for (const w of mine.filter((w) => w.when.startsWith('mnema.hasRecord'))) {
+        if (w !== missing[0]) expect(w.when, id).toContain('!mnema.cliMissing');
+      }
+    }
+  });
+
+  it('opens with a walkthrough of three steps: point at the command, init, run verify', () => {
+    const [walkthrough, ...others] = manifest.contributes.walkthroughs ?? [];
+    expect(others).toEqual([]);
+    expect(walkthrough?.steps.map((step) => step.id)).toEqual([
+      'mnema.start.command',
+      'mnema.start.init',
+      'mnema.start.verify',
+    ]);
+    for (const step of walkthrough?.steps ?? []) {
+      const page = readFileSync(new URL(`../${step.media.markdown}`, import.meta.url), 'utf8');
+      expect(page.length, step.id).toBeGreaterThan(100);
+      // What it promises is what the command line says, never that the record is safe.
+      expect(`${step.title} ${step.description} ${page}`, step.id).not.toMatch(
+        /\b(is|are) (safe|secure|verified|proven|trusted)\b|\byour record is\b/i,
+      );
+    }
+    const last = walkthrough?.steps.at(-1);
+    expect(last?.description).toContain('mnema verify');
+  });
+
+  it('keeps its words free of emoji and of the long dash', () => {
+    const text = JSON.stringify(manifest);
+    expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(text).not.toContain(String.fromCharCode(0x2014));
   });
 });

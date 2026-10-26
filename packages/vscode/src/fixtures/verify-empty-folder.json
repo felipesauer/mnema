@@ -1,0 +1,64 @@
+{
+  "ok": true,
+  "trees": [
+    {
+      "kind": "verdict",
+      "scope": "public",
+      "root": "/tmp/tmp.4ioGKxZPMi/.mnema",
+      "result": {
+        "ok": false,
+        "fullySigned": false,
+        "level": "broken",
+        "tails": [],
+        "issues": [
+          {
+            "layer": "T1",
+            "detail": "NO TAIL: no tail in this record holds an event or a checkpoint: there is no tails/ directory, so the record asserts no fact, and nothing verifies over nothing"
+          }
+        ],
+        "census": [],
+        "uncheckpointedEvents": 0,
+        "witness": "not-covered",
+        "clauses": [
+          {
+            "of": "level",
+            "text": "local integrity FAILED: see issues"
+          },
+          {
+            "of": "tails",
+            "text": "0 tail(s)"
+          },
+          {
+            "of": "coverage",
+            "text": "no events yet"
+          },
+          {
+            "of": "witness",
+            "text": "external witness (T3): not covered, nothing outside this machine attests this record"
+          }
+        ],
+        "summary": "local integrity FAILED: see issues; 0 tail(s); no events yet; external witness (T3): not covered, nothing outside this machine attests this record"
+      }
+    },
+    {
+      "kind": "no-record",
+      "scope": "private",
+      "root": "/tmp/tmp.4ioGKxZPMi/.git/mnema/%2E/private"
+    }
+  ],
+  "record": {
+    "ok": false,
+    "level": "broken",
+    "scopes": [
+      "public"
+    ]
+  },
+  "requirement": "chained",
+  "requirementMet": false,
+  "notAnswered": [
+    "One tail removed whole while another remains is not a break: with its committed key left it IS reported, as a census note (informational, not a break, so the exit stays 0), and with its key removed too it may leave nothing to report. A record in which no tail holds anything is refused.",
+    "The newest events cut together with their checkpoint read as an honest record, under --require signed too.",
+    "A record erased and founded again reads as an honest record, under --require signed too.",
+    "One tail removed whole in a commit older than the revision --since compares with is not found by it. Only a copy of the record from before (--since <rev>, a git remote) shows any of these; the external witness dates a checkpoint and keeps no copy."
+  ]
+}
