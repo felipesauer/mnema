@@ -86,7 +86,8 @@ export interface Reading {
   decisionFiles: string[];
   /**
    * Digests of the head and of the tail of the bytes already read, so a transcript the host
-   * rewrote (to any size) is told from one that only grew. Null before anything was read.
+   * rewrote is told from one that only grew, when it shrank or one of the two ends changed (not when
+   * only the middle did). Null before anything was read.
    */
   anchors: Anchors | null;
 }

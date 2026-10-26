@@ -21,8 +21,10 @@
  * never the text of a message, never a tool's output, never the content or the diff of a file,
  * never the environment, never a secret and never the answer a person chose. The cursor into the
  * transcript is a byte offset and a few digests: a file is kept by a digest of its path, and the bytes
- * already read by a digest of their head and of their tail, so a transcript the host rewrote is read
- * again from the top and not from the middle of another history.
+ * already read by a digest of their first and of their last 4096 bytes, so a transcript that shrank
+ * or whose head or tail changed is read again from the top. A rewrite that leaves the size and both
+ * of those ends alone is NOT told: reading the whole file at each Stop is what the digests are there
+ * to spare.
  *
  * PRIVATE TO THE PERSON: the file is 0600 and its directories 0700, whatever the umask.
  *

@@ -54,8 +54,9 @@ with its own changelog.
   `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
   takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
-  directories `0700` whatever the umask, and a transcript the host rewrote (to any size) is told by a digest of the head
-  and of the tail of the bytes already read, and read again from the top.
+  directories `0700` whatever the umask, and a transcript the host rewrote is read again from the top when it shrank or when the first or the last 4096 bytes already read
+  changed (a digest of each is kept); a rewrite that leaves both ends and the size alone is not told, which is what keeps a `Stop` from
+  reading the whole file.
 - **`mnema verify` names a reformat, and only when the signatures prove it.** A record a formatter or an editor rewrote is
   still refused, with the same exit and the same issues; one `reformatted` line beside them names the files and how to put
   them back (prettier, Biome, dprint and `pretty-format-json` indenting `tailproof.json`; an `.editorconfig` or

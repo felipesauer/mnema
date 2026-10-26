@@ -742,8 +742,9 @@ were written and are cited nowhere in the record, how many files were edited, th
 goal of a run (the title of the first task it moved into progress in the tree that run is written to, a title that tree
 already holds) and an outcome that is a sentence of counts of that tree's records. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
 environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
-name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their head and of
-their tail, so a transcript the host rewrote is read again from the top. The file is mode `0600`, and its directories
+name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their first and of their
+last 4096, so a transcript that shrank, or whose head or tail changed, is read again from the top; a rewrite that leaves the
+size and both ends alone is not told, which is what keeps a `Stop` from reading the whole file. The file is mode `0600`, and its directories
 `0700`, whatever the umask.
 
 **It is disposable, and outside the record.** It is not an event, it is not signed, `mnema verify` does not read it, it is
