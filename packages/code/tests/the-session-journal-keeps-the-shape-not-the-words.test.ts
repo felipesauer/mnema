@@ -316,7 +316,9 @@ describe('the journal a Stop keeps', () => {
     expect(journal.trees.public.goal).toBe('Move the ledger to UTC');
     expect(journal.questionsWithoutDecision).toBe(0);
     expect(journal.trees.public.outcome).toBe(outcomeOf(journal));
-    expect(journal.trees.public.outcome).toBe('1 decision recorded; 2 files edited.');
+    expect(journal.trees.public.outcome).toBe(
+      "1 decision recorded; 2 files edited, as of the session's last Stop.",
+    );
   });
 
   it('names the runs left open since the session began, and the directory its journals live in', async () => {
@@ -450,6 +452,36 @@ describe('the journal a Stop keeps', () => {
     expect(theJournal().reading.bytes).toBe(statSync(file).size);
   });
 
+  it('tells a rewrite by the head and the tail of what was read, and not one in the middle that leaves both ends alone', () => {
+    const build = (headWord: string, middleFile: string): readonly string[] => [
+      prompt(LONG_AGO, `${headWord} ${'x'.repeat(5000)}`),
+      write(at(1), 'a', join(repo, 'src', middleFile)),
+      result(at(2), 'a'),
+      prompt(at(3), `tail ${'y'.repeat(5000)}`),
+    ];
+    const file = transcriptAt('middle.jsonl', build('go', 'a.ts'));
+    tally(payload('Stop', file));
+    expect(theJournal().filesEdited).toBe(1);
+    const grow = (name: string): void =>
+      appendFileSync(
+        file,
+        `${[write(at(7), name, join(repo, 'src', `${name}.ts`)), result(at(8), name)].join('\n')}\n`,
+      );
+
+    // Only the middle differs (same size, same first and last 4096 bytes): the reading goes on from
+    // its offset and the old middle stays counted, which is the limit the pages state.
+    transcriptAt('middle.jsonl', build('go', 'c.ts'));
+    grow('b');
+    tally(payload('Stop', file));
+    expect(theJournal().filesEdited).toBe(2);
+
+    // The head differs too: the reading starts over, and the old middle is gone from the count.
+    transcriptAt('middle.jsonl', build('no', 'c.ts'));
+    grow('e');
+    tally(payload('Stop', file));
+    expect(theJournal().filesEdited).toBe(2);
+  });
+
   it('is private to the person: the file is 0600 and its directories 0700, whatever the umask', () => {
     const before = process.umask(0);
     try {
@@ -491,8 +523,12 @@ describe('the journal a Stop keeps', () => {
     const journal = theJournal();
     expect(journal.trees.private.goal).toBe('PRIVATETITLESENTINEL fix the vault');
     expect(journal.trees.public.goal).toBeNull();
-    expect(journal.trees.public.outcome).toBe('0 decisions recorded; 1 file edited.');
-    expect(journal.trees.private.outcome).toBe('1 decision recorded; 1 file edited.');
+    expect(journal.trees.public.outcome).toBe(
+      "0 decisions recorded; 1 file edited, as of the session's last Stop.",
+    );
+    expect(journal.trees.private.outcome).toBe(
+      "1 decision recorded; 1 file edited, as of the session's last Stop.",
+    );
 
     // The public run a decision opens, with the host's session id, is what the sentinel must miss.
     const { server, armClose } = buildMcpServer({
