@@ -1,10 +1,29 @@
 {
   "name": "@mnema/vscode",
   "displayName": "mnema",
-  "publisher": "felipesauer",
+  "publisher": "mnema",
   "version": "0.1.2",
   "private": true,
-  "description": "A VS Code extension for the person who reviews the mnema record: the rules in force over the open file, the decisions waiting for a judgment, the stacks adopted for the project, and where the record verifies. It reads and writes only through the mnema command line and is not published.",
+  "description": "Shows the rules in force over the open file, the decisions waiting for a judgment and the stacks adopted for the project, as the mnema command line reports them.",
+  "icon": "icon.png",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "adr",
+    "decision-records",
+    "audit-trail",
+    "accountability",
+    "vscode",
+    "decisions"
+  ],
+  "galleryBanner": {
+    "color": "#0d1117",
+    "theme": "dark"
+  },
+  "preview": true,
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",

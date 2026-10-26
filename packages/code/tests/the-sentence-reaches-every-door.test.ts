@@ -417,6 +417,10 @@ const KEYWORDS_THE_PROMISE_BUYS: Readonly<Record<string, string>> = {
     "a host whose command-line agent runs the plugin, read once on the host and said so in the host table's cell",
   'hash-chain': 'the format: every event is hash-chained to the one before it in its tail',
   ed25519: 'the signature the format specifies, and the one rule every reader holds it to',
+  vscode:
+    'the editor the extension is for: a fact about where it runs, not a claim about the record',
+  decisions:
+    'what the extension lists for a person to judge: the decisions the record holds, with their reasoning',
   'agent-skills':
     'the open format a stack carries its skills in, byte for byte; a fact about the contract, not a claim about the record',
 };

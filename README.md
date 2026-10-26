@@ -60,9 +60,10 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 ## Status
 
 - **On npm.** `@mnema/code` is published: install it with `npm i -g @mnema/code` ([`docs/install.md`](docs/install.md)); to run the `main` branch instead, see [Build from source](docs/build-from-source.md).
+- **In the editor stores.** The VS Code extension is on the Visual Studio Marketplace and Open VSX as `mnema.mnema`, and still needs the `mnema` command from `@mnema/code`.
 - **These pages describe the next version** (the `main` branch). What has not reached npm yet is listed under Unreleased in the [Changelog](CHANGELOG.md).
 - **Node.** Requires Node 24.15.0 or a later 24, or 26.0.0 or later.
-- **From a checkout.** The GitHub Action, the SDK and the VS Code extension are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
+- **From a checkout.** The GitHub Action and the SDK are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
 
 ## Quick start
 
@@ -151,7 +152,7 @@ it. The detail of most of them is in [Features](docs/features.md); for the rest,
 | **`@mnema/code`**<br><sub>the core</sub> | The signed, append-only record, with the command line and the MCP server over it. | `npm i -g @mnema/code` ([Install](docs/install.md)). | [Package](packages/code/README.md) |
 | **GitHub Action** | On a pull request, comments what the change does to the record and fails the check when it is not signed. | Not published; runs from a clone of this repository. | [Package](packages/action/README.md) |
 | **SDK** | A library door to the record, for a program that records, reads and verifies. | Not published; runs from a clone of this repository. | [Package](packages/sdk/README.md) |
-| **VS Code extension** | Shows the rules in force over the open file, the decisions waiting for a judgment and the stacks adopted. | Not published; runs from a clone of this repository. | [Package](packages/vscode/README.md) |
+| **VS Code extension** | Shows the rules in force over the open file, the decisions waiting for a judgment and the stacks adopted. | On the Visual Studio Marketplace and Open VSX as `mnema.mnema` (`code --install-extension mnema.mnema`); it runs the `mnema` command, so `@mnema/code` stays a prerequisite. | [Package](packages/vscode/README.md) |
 | **Stacks** | Installs a set of skills and agents from a plan shown whole, and records the adoption as a signed fact. | Commands of `mnema`, not a package of their own; the contract they check against, `@mnema/stacks`, ships with `@mnema/code`. | [Stacks](packages/stacks/README.md) |
 | **An agent in CI** | A pipeline's agent records with a key of its own, so what it records is signed as that agent. | A recipe, not a package. | [The recipe](packages/action/README.md#an-agent-in-ci) |
 | **A page that verifies itself** | `mnema site` writes one HTML file, and the reader's browser checks it. | A command of `@mnema/code`, not a package. | [The page](docs/site.md) |

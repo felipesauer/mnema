@@ -114,7 +114,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   the record and fails the check when `verify --require=signed --since <base>` does (the Python second reader
   takes `--require signed` as well, and has no `--require witnessed`);
   [`@mnema/vscode`](../packages/vscode/) shows the rules over the open file, rules on waiting
-  decisions, lists the stacks a project adopted, and shows in its status bar the level `mnema verify` reports (the tooltip is the text the command printed) or says that the `mnema` command is missing, which is not the same as nothing pending. **None of the three is published**: they run from a checkout of this repository.
+  decisions, lists the stacks a project adopted, and shows in its status bar the level `mnema verify` reports (the tooltip is the text the command printed) or says that the `mnema` command is missing, which is not the same as nothing pending. **The SDK and the action are not published**: they run from a checkout of this repository. The extension is published to the Visual Studio Marketplace and Open VSX as `mnema.mnema`, by the release, and needs the `mnema` command of `@mnema/code` where the editor can start it.
   The SDK calls the same functions as the command line, and a test holds the doors to the same
   events and refusals.
 - **Skills and agents a project adopts.** `mnema stack add` installs a stack (skills and agents

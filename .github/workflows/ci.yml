@@ -283,6 +283,14 @@ jobs:
       - name: Pack the extension
         run: pnpm --filter @mnema/vscode package
 
+      # No token: what a store reads of the file, read from the file. A manifest a store would refuse (still
+      # `private`, no icon, no category, a description that says it is not published) fails here, before a
+      # release has to find it.
+      - name: Check that the file is one a store takes
+        run: |
+          set -euo pipefail
+          for vsix in packages/vscode/mnema-*.vsix; do node packages/vscode/build/check-the-vsix.mjs "$vsix"; done
+
       - name: Upload the extension
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

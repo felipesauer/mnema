@@ -12,6 +12,18 @@ with its own changelog.
 
 ### Added
 
+- **The VS Code extension is published to the Visual Studio Marketplace and to Open VSX as `mnema.mnema`.** The release workflow
+  packs the `.vsix` once in a job that holds no secret, checks that the manifest inside is one a store takes (publisher
+  `mnema`, not `private`, an icon, a category, keywords, a banner, marked preview, a changelog and a one-line description that
+  promises nothing the command line does not print), installs that very file into a real VS Code to see the extension start,
+  attaches it to the GitHub release and publishes the same file to both stores from one job that asks for the
+  `extension-stores` environment, so a person approves it. The two store command lines are installed from a committed
+  lockfile with `npm ci --ignore-scripts` in a step that holds no token, and each store is published to with `--skip-duplicate`
+  so a run that stopped halfway runs again. The icon is drawn by the build from the
+  banner's cube, not kept as a binary. The publisher id moves from `felipesauer` to `mnema`, so the id is `mnema.mnema`:
+  uninstall the 0.1.2 file installed by hand (`felipesauer.mnema`). The extension still needs the `mnema` command of
+  `@mnema/code`. The guard that refused every publish now allows exactly that job and refuses a publish command or a store
+  token anywhere else, in another job, or in that job without its environment (ADR-76, ADR-77).
 - **The VS Code extension tells a missing `mnema` command from nothing pending, and its status bar has an icon, a label and the command's own words.** The extension asks `mnema --version` first; a command that cannot be started, does not answer as `mnema` does, or is older than 0.1.2 sets the context key `mnema.cliMissing`: the views say the command is missing and how to fix it (install `@mnema/code`, or set `mnema.command`) instead of "nothing is listed", nothing else is asked of it, and the status bar says "command not found" and opens the setting when clicked. The bar carries a codicon that follows the verdict (never a check mark or a seal), an accessibility label and the role of a button, and its tooltip is the text `mnema verify` printed, then the channels off. The bar reads the record's own verdict (`record.ok` of `mnema verify --json`, not the top `ok`), so an altered record or an empty `.mnema` shows the error icon and "verify failed"; `mnema.command` is read again at every refresh and when it changes, so a corrected setting needs no reload; a command that did not answer in 60 s is said so, not called "not found". A walkthrough of three steps (make the command available, `mnema init`, `mnema verify`) is added. The check that installs the packaged file in a real editor now opens three folders: with no `.mnema` (measured: opening the folder does not start the extension, so it runs no `mnema`; opening one of its views or running one of its commands starts it, and then it does), with a `.mnema` and a command that does not exist, and with a real record. `plugin/captures/vscode-extension-script.md` is the script for what no CI sees (hover, menus, themes, a screen reader).
 - **A rule the project inherits reaches the path it addresses.** The record named in `.mnema/inherit.json` was read only for
   the brief, and only as titles. Its decisions in force are now read whole (rationale, alternatives, state, who accepted, and

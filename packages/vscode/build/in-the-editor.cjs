@@ -4,7 +4,7 @@ const { readFileSync } = require('node:fs');
 const vscode = require('vscode');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const id = 'felipesauer.mnema';
+const id = 'mnema.mnema';
 
 async function until(what, test, ms = 60_000) {
   const deadline = Date.now() + ms;
