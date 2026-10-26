@@ -9,7 +9,8 @@
  * CLI's own verb and the note it requires; nothing about rules, state or proof is decided here.
  */
 
-import { relative } from 'node:path';
+import { existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { type CliResult, createRun, type Run } from './cli.js';
 import {
   detailText,
@@ -99,7 +100,7 @@ export interface VscodeApi {
   };
   readonly commands: {
     registerCommand(id: string, callback: (...args: never[]) => unknown): Disposable;
-    executeCommand(id: string): PromiseLike<unknown>;
+    executeCommand(id: string, ...args: unknown[]): PromiseLike<unknown>;
   };
   readonly languages: {
     registerCodeLensProvider(
@@ -159,6 +160,7 @@ export function activate(
 ): void {
   const folder = api.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (folder === undefined) return;
+  const recordFolder = join(folder, '.mnema');
   const command = api.workspace.getConfiguration('mnema').get<string>('command', 'mnema');
   const run = options.run ?? createRun(command, folder);
   const session: Session = {
@@ -186,6 +188,9 @@ export function activate(
   bar.show();
 
   async function refresh(): Promise<void> {
+    // The empty views say one thing with a record in the folder and another without; the key is
+    // whether the folder holds a `.mnema`, nothing the command line said.
+    void api.commands.executeCommand('setContext', 'mnema.hasRecord', existsSync(recordFolder));
     session.rules.clear();
     lensesChanged.fire();
     const [list, verify, channels, stacks] = await Promise.all([

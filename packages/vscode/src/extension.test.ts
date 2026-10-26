@@ -42,8 +42,9 @@ const VERIFY = ok(JSON.stringify({ ok: true, record: { ok: true, level: 'fully-s
 const SWITCH = ok('2 channel(s):\n  brief-document  on  x\n  user-corrections  off  y\n');
 
 /** A stand-in for the members of `vscode` the extension uses, recording what it is asked. */
-function world(answers: Record<string, CliResult>, real?: Run) {
+function world(answers: Record<string, CliResult>, real?: Run, root: string = ROOT) {
   const ran: string[][] = [];
+  const executed: unknown[][] = [];
   const run = async (args: readonly string[]) => {
     ran.push([...args]);
     if (real !== undefined) return real(args);
@@ -71,7 +72,7 @@ function world(answers: Record<string, CliResult>, real?: Run) {
   let lenses: { provideCodeLenses(d: never): Promise<unknown[]> } | undefined;
   const api = {
     workspace: {
-      workspaceFolders: [{ uri: { fsPath: ROOT } }],
+      workspaceFolders: [{ uri: { fsPath: root } }],
       getConfiguration: () => ({ get: <T>(_k: string, d: T) => d }),
       createFileSystemWatcher: () => ({
         onDidChange: (l: () => void) => {
@@ -120,7 +121,10 @@ function world(answers: Record<string, CliResult>, real?: Run) {
         commands.set(id, cb);
         return { dispose() {} };
       },
-      executeCommand: async () => undefined,
+      executeCommand: async (...args: unknown[]) => {
+        executed.push(args);
+        return undefined;
+      },
     },
     languages: {
       registerCodeLensProvider: (_s: unknown, p: never) => {
@@ -149,6 +153,7 @@ function world(answers: Record<string, CliResult>, real?: Run) {
   activate({ subscriptions: [] }, api, { run });
   return {
     ran,
+    executed,
     bar,
     shown,
     errors,
@@ -198,6 +203,20 @@ describe('the extension reads the record through the command line', () => {
     await settle();
     expect(w.bar.text).toBe('mnema: fully-signed · 1 of 2 channels off');
     expect(w.bar.tooltip).toBe('off: user-corrections');
+  });
+
+  it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'mnema-extension-key-'));
+    try {
+      const without = world(base(), undefined, folder);
+      await settle();
+      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
+      mkdirSync(join(folder, '.mnema'));
+      await without.command('mnema.refresh')();
+      expect(without.executed.at(-1)).toEqual(['setContext', 'mnema.hasRecord', true]);
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
   });
 
   it('lists what waits for a judgment, with its justification', async () => {
