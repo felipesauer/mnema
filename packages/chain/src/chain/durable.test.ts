@@ -16,8 +16,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { identityFounded, memoryCaptured } from '../events/build.js';
 import { openChainForWriting } from './chain.js';
-import { generateKeyPair } from './keys.js';
 import { appendDurably } from './durable.js';
+import { generateKeyPair } from './keys.js';
 import {
   materializePublicKey,
   mintInstallationId,

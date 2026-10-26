@@ -37,6 +37,7 @@ import {
   writeSync,
 } from 'node:fs';
 import { CodedError } from './coded-error.js';
+import { syncDirectory, syncFile, writeFileDurably } from './durable.js';
 import {
   isProtected,
   KeyPassphraseWrongError,
@@ -67,7 +68,6 @@ import {
   privateKeyPath,
   publicKeyPath,
 } from './layout.js';
-import { syncDirectory, syncFile, writeFileDurably } from './durable.js';
 import { sleepSync } from './sleep.js';
 import { readCommittedKeyFile } from './store.js';
 import { TailBusyError, withTailLock } from './tail-lock.js';
