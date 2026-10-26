@@ -1487,7 +1487,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/proposed.test.ts': 2,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/stacks.test.ts': 7,
-  'packages/vscode/src/status.test.ts': 2,
+  'packages/vscode/src/status.test.ts': 3,
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
 };
 
