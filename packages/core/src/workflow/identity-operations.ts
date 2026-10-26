@@ -52,6 +52,8 @@ import {
 import { GITHUB_SERVICE, SIGSTORE_SERVICE, sigstoreAccountOf } from '../identity/account.js';
 import { agentNameRefusal } from '../identity/agent-name.js';
 import {
+  agentRoleIn,
+  agentRoleWords,
   IdentityUnavailableError,
   type Membership,
   membershipIn,
@@ -485,6 +487,19 @@ export function establishIdentity(
       continue;
     }
     if (decided.has(registration.fingerprint)) continue;
+    // A key the record holds as an agent's, retired included, holds no other role: the readers
+    // refuse a `key.enrolled` that names it.
+    const agent = agentRoleIn(
+      { tree: ctx.layout.root, upcasters: ctx.upcasters },
+      registration.fingerprint,
+    );
+    if (agent !== undefined) {
+      declined.push({
+        fingerprint: registration.fingerprint,
+        reason: `it holds the agent role in this record, ${agentRoleWords(agent)}: a key holds one role only`,
+      });
+      continue;
+    }
     materializePublicKey(ctx.layout, registration);
     const input = { newFp: registration.fingerprint, reverseSig: registration.reverseSig };
     // The backup's role goes into the record beside its enrollment, under the same signature,

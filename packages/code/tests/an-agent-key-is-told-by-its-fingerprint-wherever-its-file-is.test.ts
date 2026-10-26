@@ -232,6 +232,56 @@ describe('key enroll', () => {
   });
 });
 
+describe('key enroll --checker', () => {
+  /** The checker line a copy of the agent's key makes: what another machine holding the copy prints. */
+  function aCheckerLineFor(): string {
+    const made = requestEnrollment({ anchor, keyRoot: join(agents(), 'ci'), asChecker: true });
+    if (!made.ok) throw new Error(made.message);
+    return made.request;
+  }
+
+  const checkerRefusal = (fingerprint: string, what: string): string =>
+    `Refused (AN_AGENT_KEY): the key ${fingerprint} this checker request carries is ${what}: a key holds one role only, and a checker key signs check results only. Make a key of its own for the machine that runs the checks`;
+
+  it('refuses the key of an agent that signed and was retired, and the record still verifies', async () => {
+    const { fingerprint } = await anAgentKey();
+    await did('key', 'enroll', '--agent', 'ci');
+    process.env.MNEMA_AGENT_KEY = 'ci';
+    try {
+      await did('memory', 'a note the agent signs');
+    } finally {
+      delete process.env.MNEMA_AGENT_KEY;
+    }
+    // The agent's key signed it: the fact is attested, not declared.
+    expect(await did('audit', 'accountability')).toContain('ci 1 (1 attested)');
+    const line = aCheckerLineFor();
+    await did('key', 'revoke', '--agent', fingerprint, '--reason', 'lent out');
+    // The line came from another machine: nothing of the agent is kept on this one.
+    rmSync(agents(), { recursive: true, force: true });
+
+    const said = await mnema('key', 'enroll', '--checker', line);
+
+    expect(said.failed).toBe(true);
+    expect(said.err.trim()).toBe(
+      checkerRefusal(
+        fingerprint,
+        `the key this project's committed tree enrols as the agent "ci" of ${anchor}`,
+      ),
+    );
+    await did('verify');
+  });
+
+  it('refuses a key this machine keeps for an agent no record enrols yet', async () => {
+    const { fingerprint } = await anAgentKey();
+
+    const said = await mnema('key', 'enroll', '--checker', aCheckerLineFor());
+
+    expect(said.failed).toBe(true);
+    expect(said.err.trim()).toBe(checkerRefusal(fingerprint, ofTheAgentHere()));
+    await did('verify');
+  });
+});
+
 describe('agentKeyRecognised', () => {
   it('says nothing of a key no agent holds, here or in the record', async () => {
     await anAgentKey();

@@ -55,6 +55,7 @@ export {
   type AgentRequestErr,
   type AgentRequestInput,
   type AgentRequestOk,
+  CHECKER_REQUEST_PREFIX,
   decodeAgentRequest,
   decodeKeyRequest,
   encodeAgentRequest,
