@@ -98,7 +98,8 @@ CLI and the MCP tools behave identically, because they are the same call.
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code,
   Cursor and Qwen Code never run it. Beside them, on the same `PreToolUse` matcher, one more hook runs only
-  where `$CURSOR_VERSION` is set: the refusal for Cursor's command-line agent, which answers a
+  where `$CURSOR_VERSION` is set and `$QWEN_PROJECT_DIR` is not (a Qwen Code opened in a Cursor terminal inherits
+  Cursor's variable, and only Qwen Code's refusal runs there): the refusal for Cursor's command-line agent, which answers a
   rule that refuses a write and nothing else, since that agent ignores a pause. Another runs only
   where `$QWEN_PROJECT_DIR` is set: the same refusal for Qwen Code, which answers a rule that refuses
   a write and nothing else. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
