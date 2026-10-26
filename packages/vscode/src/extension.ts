@@ -9,7 +9,8 @@
  * CLI's own verb and the note it requires; nothing about rules, state or proof is decided here.
  */
 
-import { relative } from 'node:path';
+import { existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { type CliResult, createRun, type Run } from './cli.js';
 import {
   detailText,
@@ -86,12 +87,15 @@ export interface VscodeApi {
     registerTreeDataProvider<T>(viewId: string, provider: TreeProvider<T>): Disposable;
     createOutputChannel(name: string): OutputChannelLike;
     showInputBox(options: {
+      title: string;
       prompt: string;
+      placeHolder: string;
+      ignoreFocusOut: boolean;
       validateInput: (value: string) => string | undefined;
     }): PromiseLike<string | undefined>;
     showQuickPick<T extends { label: string }>(
       items: readonly T[],
-      options: { placeHolder: string },
+      options: { title: string; placeHolder: string; ignoreFocusOut?: boolean },
     ): PromiseLike<T | undefined>;
     showInformationMessage(message: string, ...actions: string[]): PromiseLike<string | undefined>;
     showErrorMessage(message: string): PromiseLike<string | undefined>;
@@ -99,7 +103,7 @@ export interface VscodeApi {
   };
   readonly commands: {
     registerCommand(id: string, callback: (...args: never[]) => unknown): Disposable;
-    executeCommand(id: string): PromiseLike<unknown>;
+    executeCommand(id: string, ...args: unknown[]): PromiseLike<unknown>;
   };
   readonly languages: {
     registerCodeLensProvider(
@@ -159,6 +163,7 @@ export function activate(
 ): void {
   const folder = api.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (folder === undefined) return;
+  const recordFolder = join(folder, '.mnema');
   const command = api.workspace.getConfiguration('mnema').get<string>('command', 'mnema');
   const run = options.run ?? createRun(command, folder);
   const session: Session = {
@@ -186,6 +191,9 @@ export function activate(
   bar.show();
 
   async function refresh(): Promise<void> {
+    // The empty views say one thing with a record in the folder and another without; the key is
+    // whether the folder holds a `.mnema`, nothing the command line said.
+    void api.commands.executeCommand('setContext', 'mnema.hasRecord', existsSync(recordFolder));
     session.rules.clear();
     lensesChanged.fire();
     const [list, verify, channels, stacks] = await Promise.all([
@@ -195,6 +203,7 @@ export function activate(
       session.read(STACK_LIST_ARGS),
     ]);
     session.stacks = stacks.code === 0 ? readStacks(stacks.stdout) : [];
+    void api.commands.executeCommand('setContext', 'mnema.stacksRead', stacks.code === 0);
     stacksChanged.fire();
     session.channels = channels.code === 0 ? readChannels(channels.stdout) : undefined;
     bar.text = statusText(readVerdict(verify.stdout), session.channels);
@@ -286,12 +295,19 @@ export function activate(
       (
         await api.window.showQuickPick(
           session.proposed.map((p) => ({ label: p.title, description: p.id, item: p })),
-          { placeHolder: `Which decision to ${verdict}?` },
+          {
+            title: `mnema: ${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
+            placeHolder: `Pick the decision to ${verdict}`,
+            ignoreFocusOut: true,
+          },
         )
       )?.item;
     if (item === undefined) return;
     const note = await api.window.showInputBox({
+      title: `mnema: ${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
       prompt: `Why ${verdict} "${item.title}"? The note is recorded with the verdict.`,
+      placeHolder: 'The reason, in a sentence (required)',
+      ignoreFocusOut: true,
       validateInput: noteProblem,
     });
     if (note === undefined || noteProblem(note) !== undefined) return;
@@ -321,7 +337,11 @@ export function activate(
       const rules = await rulesOver(path);
       await api.window.showQuickPick(
         rules.map((rule) => ({ ...ruleLabel(rule), rule })),
-        { placeHolder: `Rules in force over ${path}` },
+        {
+          title: 'mnema: Rules over This File',
+          placeHolder: `Rules in force over ${path}`,
+          ignoreFocusOut: true,
+        },
       );
     }),
   );
@@ -357,9 +377,14 @@ export function activate(
   };
   keep(api.window.registerTreeDataProvider('mnema.stacks', stacksProvider));
 
-  async function pickScope(): Promise<StackScope | undefined> {
-    return (await api.window.showQuickPick(SCOPES, { placeHolder: 'Where is the stack adopted?' }))
-      ?.label;
+  async function pickScope(title: string): Promise<StackScope | undefined> {
+    return (
+      await api.window.showQuickPick(SCOPES, {
+        title,
+        placeHolder: 'Where is the stack adopted?',
+        ignoreFocusOut: true,
+      })
+    )?.label;
   }
 
   async function pickStack(element: AdoptedStack | undefined): Promise<AdoptedStack | undefined> {
@@ -367,7 +392,7 @@ export function activate(
     return (
       await api.window.showQuickPick(
         session.stacks.map((s) => ({ label: s.name, description: s.scope, stack: s })),
-        { placeHolder: 'Which stack?' },
+        { title: 'mnema: Pick Stack', placeHolder: 'Which stack?', ignoreFocusOut: true },
       )
     )?.stack;
   }
@@ -410,11 +435,15 @@ export function activate(
   keep(
     api.commands.registerCommand('mnema.stacks.add', async () => {
       const typed = await api.window.showInputBox({
-        prompt: 'A folder, a tar archive, or an https:// git address of a stack',
+        title: 'mnema: Add Stack (1 of 2)',
+        prompt:
+          'A folder, a tar archive, or an https:// git address of a stack. The plan is shown before anything is written.',
+        placeHolder: 'e.g. ./my-stack or https://github.com/owner/my-stack.git',
+        ignoreFocusOut: true,
         validateInput: sourceProblem,
       });
       if (typed === undefined || sourceProblem(typed) !== undefined) return;
-      const scope = await pickScope();
+      const scope = await pickScope('mnema: Add Stack (2 of 2)');
       if (scope === undefined) return;
       await adopt(typed.trim(), scope);
     }),
@@ -438,7 +467,11 @@ export function activate(
             description: e.description,
             entry: e,
           })),
-          { placeHolder: 'Which stack of the index?' },
+          {
+            title: 'mnema: Add from Index (1 of 2)',
+            placeHolder: 'Which stack of the index?',
+            ignoreFocusOut: true,
+          },
         )
       )?.entry;
       if (entry === undefined) return;
@@ -448,7 +481,7 @@ export function activate(
         );
         return;
       }
-      const scope = await pickScope();
+      const scope = await pickScope('mnema: Add from Index (2 of 2)');
       if (scope === undefined) return;
       await adopt(entry.source, scope, entry.digest);
     }),
@@ -501,7 +534,10 @@ export function activate(
       const stack = await pickStack(element);
       if (stack === undefined) return;
       const folder = await api.window.showInputBox({
+        title: 'mnema: Export Stack',
         prompt: `A folder that does not exist yet, or is empty, to export ${stack.name} into`,
+        placeHolder: `e.g. ./${stack.name}`,
+        ignoreFocusOut: true,
         validateInput: folderProblem,
       });
       if (folder === undefined || folderProblem(folder) !== undefined) return;

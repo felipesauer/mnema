@@ -136,6 +136,12 @@ export interface IdentityResolution {
    * it"), informational, for the census: nothing here makes an event more or less authentic.
    */
   readonly agents: AgentsNamed;
+  /**
+   * The latest `at` each key signed with, in milliseconds since the epoch, over the events the fold
+   * reached (an event a retirement refused is not among them). A reader of several records asks it
+   * whether a key another record retired signed anything here after that retirement.
+   */
+  readonly latestBySigner: ReadonlyMap<string, number>;
 }
 
 /** The agents the accepted facts of a record name, and on whose word. */
@@ -158,6 +164,19 @@ export interface AgentsNamed {
   readonly declared: readonly { readonly which: string; readonly events: number }[];
 }
 
+/**
+ * An agent key a record OTHER than the one being folded retired: what a reader handed several
+ * records of one project (this product's `mnema verify`, over the trees of a project) knows that
+ * the format's fold of one record does not. Not a rule of the format: see FORMAT.md, "What this
+ * document does not promise".
+ */
+export interface RetiredElsewhere {
+  /** The `at` of that retirement: an event this record holds, signed by the key later than it, is refused. */
+  readonly at: string;
+  /** The record that holds the retirement, as a sentence says it ("this project's committed tree"). */
+  readonly where: string;
+}
+
 /** A checker key the record retired (FORMAT.md section 6.2). */
 export interface RetiredChecker {
   /** The identity that retired it. */
@@ -176,6 +195,8 @@ export interface RetiredAgent {
   /** Where the retirement sits. */
   readonly tail: string;
   readonly seq: number;
+  /** The `at` the retirement carries. */
+  readonly at: string;
   /** How many facts it signed that the fold accepted before the retirement. */
   readonly eventsBefore: number;
 }
@@ -222,12 +243,17 @@ export interface CitationsRead {
  * `key.enrolled` naming it. Handed the verifier's, it opens nothing the verification has
  * already read: `verify-costs-what-the-record-holds.test.ts` counts one read per key
  * across both. Left out, the fold reads each key itself, once.
+ *
+ * `retiredElsewhere` is what a reader of SEVERAL records knows that this one does not: agent keys
+ * another record retired, and when ({@link RetiredElsewhere}). Left out, the fold is the format's
+ * and reads this record alone.
  */
 export function resolveIdentity(
   layout: ChainLayout,
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
   checkpointedThroughByTail: ReadonlyMap<string, number>,
   keys: CommittedKeys = committedKeys(layout),
+  retiredElsewhere: ReadonlyMap<string, RetiredElsewhere> = new Map(),
 ): IdentityResolution {
   const { order, citations } = totalOrder(entriesByTail);
   const isCheckpointed = (tail: string, seq: number): boolean =>
@@ -288,6 +314,9 @@ export function resolveIdentity(
   const agents = new Map<string, { readonly anchor: string; readonly name: string }>();
   // The agent keys a signature-covered `agent.retired` took out: they sign nothing from then on.
   const retiredAgents = new Map<string, RetiredAgent>();
+  // The latest `at` each key signed with, in milliseconds: what tells a reader of several records
+  // whether a key another one retired signed anything here after that.
+  const latestBySigner = new Map<string, number>();
   // What the census says of the agents accepted facts name: per agent key, per declared `which`.
   const attested = new Map<string, number>();
   const declared = new Map<string, number>();
@@ -315,6 +344,21 @@ export function resolveIdentity(
         detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key retired at this point, which signs nothing`,
       });
       continue;
+    }
+    // Retired in ANOTHER record the reader was handed: what the key signed there after it, by the
+    // `at` it wrote, is refused here as it would be in that record.
+    const elsewhere = retiredElsewhere.get(event.signerFp);
+    if (elsewhere !== undefined && Date.parse(event.at) > Date.parse(elsewhere.at)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key ${oneLine(elsewhere.where)} retired at ${oneLine(elsewhere.at)}, which signs nothing after it`,
+      });
+      continue;
+    }
+    const signedAt = Date.parse(event.at);
+    if (Number.isFinite(signedAt) && !((latestBySigner.get(event.signerFp) ?? -1) >= signedAt)) {
+      latestBySigner.set(event.signerFp, signedAt);
     }
     if (!isCheckResult && checkers.has(event.signerFp)) {
       issues.push({
@@ -398,6 +442,18 @@ export function resolveIdentity(
             tail,
             seq,
             detail: 'key.enrolled is signed by a key not valid for the anchor at this point',
+          });
+          break;
+        }
+        // A key that holds the agent role (from its `agent.enrolled` on, retired included) is a
+        // member of the identity that enrolled it under that role, and of no identity otherwise.
+        // Taken in again as a plain member it would sign as one, without the role's limits.
+        if (agents.has(newFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
           });
           break;
         }
@@ -505,6 +561,7 @@ export function resolveIdentity(
             by: event.who,
             tail,
             seq,
+            at: event.at,
             eventsBefore: attested.get(agentFp) ?? 0,
           });
         }
@@ -722,6 +779,7 @@ export function resolveIdentity(
     backups,
     citations,
     agents: named,
+    latestBySigner,
   };
 }
 

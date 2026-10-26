@@ -42,8 +42,9 @@ const VERIFY = ok(JSON.stringify({ ok: true, record: { ok: true, level: 'fully-s
 const SWITCH = ok('2 channel(s):\n  brief-document  on  x\n  user-corrections  off  y\n');
 
 /** A stand-in for the members of `vscode` the extension uses, recording what it is asked. */
-function world(answers: Record<string, CliResult>, real?: Run) {
+function world(answers: Record<string, CliResult>, real?: Run, root: string = ROOT) {
   const ran: string[][] = [];
+  const executed: unknown[][] = [];
   const run = async (args: readonly string[]) => {
     ran.push([...args]);
     if (real !== undefined) return real(args);
@@ -60,18 +61,25 @@ function world(answers: Record<string, CliResult>, real?: Run) {
   const bar = { text: '', tooltip: '', command: '', show() {}, dispose() {} };
   const shown: string[] = [];
   const errors: string[] = [];
-  const inputs: { validate: (v: string) => string | undefined }[] = [];
+  const inputs: {
+    validate: (v: string) => string | undefined;
+    title: string;
+    prompt: string;
+    placeHolder: string;
+    ignoreFocusOut: boolean;
+  }[] = [];
   let reply: string | undefined;
   type Tree = { getChildren(): never[]; getTreeItem(e: never): Record<string, unknown> };
   const trees = new Map<string, Tree>();
   const channel: string[] = [];
   const picks: string[] = [];
   const picked: string[][] = [];
+  const pickOptions: { title: string; ignoreFocusOut?: boolean }[] = [];
   let choice: string | undefined;
   let lenses: { provideCodeLenses(d: never): Promise<unknown[]> } | undefined;
   const api = {
     workspace: {
-      workspaceFolders: [{ uri: { fsPath: ROOT } }],
+      workspaceFolders: [{ uri: { fsPath: root } }],
       getConfiguration: () => ({ get: <T>(_k: string, d: T) => d }),
       createFileSystemWatcher: () => ({
         onDidChange: (l: () => void) => {
@@ -96,11 +104,21 @@ function world(answers: Record<string, CliResult>, real?: Run) {
         show() {},
         dispose() {},
       }),
-      showInputBox: async (o: { validateInput: (v: string) => string | undefined }) => {
-        inputs.push({ validate: o.validateInput });
+      showInputBox: async (o: {
+        validateInput: (v: string) => string | undefined;
+        title: string;
+        prompt: string;
+        placeHolder: string;
+        ignoreFocusOut: boolean;
+      }) => {
+        inputs.push({ validate: o.validateInput, ...o });
         return reply;
       },
-      showQuickPick: async (items: { label: string }[]) => {
+      showQuickPick: async (
+        items: { label: string }[],
+        options: { title: string; ignoreFocusOut?: boolean },
+      ) => {
+        pickOptions.push(options);
         picked.push(items.map((i) => i.label));
         const want = picks.shift();
         return items.find((i) => i.label === want);
@@ -120,7 +138,10 @@ function world(answers: Record<string, CliResult>, real?: Run) {
         commands.set(id, cb);
         return { dispose() {} };
       },
-      executeCommand: async () => undefined,
+      executeCommand: async (...args: unknown[]) => {
+        executed.push(args);
+        return undefined;
+      },
     },
     languages: {
       registerCodeLensProvider: (_s: unknown, p: never) => {
@@ -149,6 +170,7 @@ function world(answers: Record<string, CliResult>, real?: Run) {
   activate({ subscriptions: [] }, api, { run });
   return {
     ran,
+    executed,
     bar,
     shown,
     errors,
@@ -165,6 +187,7 @@ function world(answers: Record<string, CliResult>, real?: Run) {
     ids: () => [...commands.keys()],
     picks,
     picked,
+    pickOptions,
     choose: (v: string | undefined) => {
       choice = v;
     },
@@ -198,6 +221,20 @@ describe('the extension reads the record through the command line', () => {
     await settle();
     expect(w.bar.text).toBe('mnema: fully-signed · 1 of 2 channels off');
     expect(w.bar.tooltip).toBe('off: user-corrections');
+  });
+
+  it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'mnema-extension-key-'));
+    try {
+      const without = world(base(), undefined, folder);
+      await settle();
+      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
+      mkdirSync(join(folder, '.mnema'));
+      await without.command('mnema.refresh')();
+      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', true]);
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
   });
 
   it('lists what waits for a judgment, with its justification', async () => {
@@ -246,6 +283,45 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     w.setReply('no');
     await w.command('mnema.reject')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
     expect(w.ran).toContainEqual(['decision', 'move', 'reject', 'd1', '--note', 'no']);
+  });
+
+  it('titles every input box, says what to type in its placeholder and keeps it open when focus moves', async () => {
+    const w = world(withStack());
+    await settle();
+    w.setReply('--scope');
+    await w.command('mnema.accept')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
+    await w.command('mnema.stacks.add')();
+    await w.command('mnema.stacks.export')({ name: 'hello-stack', scope: 'public' });
+    expect(w.inputs.map((i) => i.title)).toEqual([
+      'mnema: Accept Decision',
+      'mnema: Add Stack (1 of 2)',
+      'mnema: Export Stack',
+    ]);
+    for (const input of w.inputs) {
+      expect(input.placeHolder, input.title).not.toBe('');
+      expect(input.prompt, input.title).not.toBe('');
+      expect(input.ignoreFocusOut, input.title).toBe(true);
+    }
+  });
+
+  it('keeps every quick pick open when focus moves, as the input boxes are', async () => {
+    const w = world(withStack());
+    await settle();
+    await w.command('mnema.accept')(undefined as never);
+    await w.command('mnema.reject')(undefined as never);
+    await w.command('mnema.stacks.show')(undefined as never);
+    await w.command('mnema.showRules')('src/a.ts');
+    expect(w.pickOptions.length).toBeGreaterThanOrEqual(4);
+    for (const options of w.pickOptions) expect(options.ignoreFocusOut, options.title).toBe(true);
+  });
+
+  it('says whether mnema read the stacks, so the empty stacks view never claims what the command line did not say', async () => {
+    const read = world(withStack());
+    await settle();
+    expect(read.executed).toContainEqual(['setContext', 'mnema.stacksRead', true]);
+    const failed = world({ ...withStack(), [STACK_LIST]: { code: 1, stdout: '', stderr: 'boom' } });
+    await settle();
+    expect(failed.executed).toContainEqual(['setContext', 'mnema.stacksRead', false]);
   });
 
   it('gives the input box a validator that refuses an empty note, and sends nothing without one', async () => {

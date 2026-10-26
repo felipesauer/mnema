@@ -166,6 +166,20 @@ function payloadFor(host: HookHost, relative: string): string {
       tool_input: { filePath: join(repo, relative), content: 'export const probe = 1;\n' },
     });
   }
+  if (host === 'qwen') {
+    // As Qwen Code 0.26.1 hands a `PreToolUse` hook, read off a run: its own tool names (the
+    // plugin's matcher reaches them by aliases) and snake_case fields, the path under `file_path`.
+    return JSON.stringify({
+      session_id: '64a962e7-b499-4390-bf07-9fa500c1697b',
+      transcript_path: '/tmp/qwen/chats/session.jsonl',
+      cwd: repo,
+      hook_event_name: 'PreToolUse',
+      permission_mode: 'yolo',
+      tool_name: 'write_file',
+      tool_input: { file_path: join(repo, relative), content: 'export const probe = 1;\n' },
+      tool_use_id: 'toolu_1',
+    });
+  }
   if (host === 'copilot') {
     // As Copilot CLI 1.0.94 hands a hook configured under the PascalCase event name: Claude's
     // tool names (its `create` is `Write`), snake_case fields, and the path under `path`.
@@ -955,7 +969,16 @@ describe('the reply a refusal is spelled with', () => {
   });
 });
 
-describe('the command Cursor runs from the plugin', () => {
+/**
+ * The two hosts that read the plugin's own hooks file and run a command of their own from it, each
+ * only where the variable it sets for every hook is set: the others never set it.
+ */
+const BY_THEIR_VARIABLE = [
+  { host: 'cursor', name: 'Cursor', variable: 'CURSOR_VERSION', value: '2026.09.18' },
+  { host: 'qwen', name: 'Qwen Code', variable: 'QWEN_PROJECT_DIR', value: '/tmp/a-qwen-project' },
+] as const;
+
+describe.each(BY_THEIR_VARIABLE)('the command $name runs from the plugin', (one) => {
   /** The declared command whose handler is the refusal's, read off `hooks.json`. */
   function declared(): { readonly matcher: string; readonly command: string } {
     const config = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf-8')) as {
@@ -965,7 +988,9 @@ describe('the command Cursor runs from the plugin', () => {
       group.hooks
         .filter(
           (hook) =>
-            hook.type === 'command' && (hook.command ?? '').includes('edit-refuses-a-write.mjs'),
+            hook.type === 'command' &&
+            (hook.command ?? '').includes('edit-refuses-a-write.mjs') &&
+            (hook.command ?? '').includes(` --host ${one.host} `),
         )
         .map((hook) => ({ matcher: group.matcher ?? '', command: hook.command ?? '' })),
     );
@@ -973,7 +998,7 @@ describe('the command Cursor runs from the plugin', () => {
     return found[0] as { matcher: string; command: string };
   }
 
-  it('is matched where Claude Code matches the call into the server, and runs only for Cursor', () => {
+  it(`is matched where Claude Code matches the call into the server, and runs only for ${one.name}`, () => {
     const config = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf-8')) as {
       hooks: Record<string, { matcher?: string; hooks: { type: string }[] }[]>;
     };
@@ -983,14 +1008,14 @@ describe('the command Cursor runs from the plugin', () => {
     // Cursor applies the matcher and names its write tool as Claude Code does; the shell then
     // keeps the process from starting anywhere that is not Cursor, and the handler checks again.
     expect(declared().matcher).toBe(tooled?.matcher);
-    expect(declared().command).toContain('[ -n "$CURSOR_VERSION" ] && node ');
-    expect(declared().command).toContain(' --where CURSOR_VERSION');
+    expect(declared().command).toContain(`[ -n "$${one.variable}" ] && node `);
+    expect(declared().command).toContain(` --where ${one.variable}`);
     expect(HOOK_HOSTS.filter((host) => declared().command.includes(` --host ${host} `))).toEqual([
-      'cursor',
+      one.host,
     ]);
   });
 
-  it('starts nothing outside Cursor, and refuses a write under a refusing rule inside it', () => {
+  it(`starts nothing outside ${one.name}, and refuses a write under a refusing rule inside it`, () => {
     const bin = join(sandbox, 'bin');
     mkdirSync(bin);
     const calls = join(sandbox, 'calls.txt');
@@ -1007,7 +1032,7 @@ describe('the command Cursor runs from the plugin', () => {
     const host = (extra: Record<string, string>) =>
       spawnSync('sh', ['-c', declared().command], {
         cwd: repo,
-        input: payloadFor('cursor', 'src/billing/invoice.ts'),
+        input: payloadFor(one.host, 'src/billing/invoice.ts'),
         encoding: 'utf-8',
         env: {
           HOME: join(sandbox, 'home'),
@@ -1024,15 +1049,15 @@ describe('the command Cursor runs from the plugin', () => {
     expect(elsewhere.stdout).toBe('');
     expect(existsSync(calls)).toBe(false);
 
-    const inCursor = host({ CURSOR_VERSION: '2026.09.18' });
-    expect(inCursor.status).toBe(0);
-    const said = decided(JSON.parse(inCursor.stdout) as Record<string, unknown>);
+    const inside = host({ [one.variable]: one.value });
+    expect(inside.status).toBe(0);
+    const said = decided(JSON.parse(inside.stdout) as Record<string, unknown>);
     expect(said.value).toBe('deny');
     expect(said.reason).toContain(refusing);
     expect(readFileSync(calls, 'utf-8').trim().split('\n')).toEqual([
-      'before-a-write --host cursor --agent-key cursor',
+      `before-a-write --host ${one.host} --agent-key ${one.host}`,
     ]);
-    expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by cursor`]);
+    expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by ${one.host}`]);
   });
 });
 

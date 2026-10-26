@@ -42,8 +42,10 @@ import {
 import {
   agentKeyConflictIn,
   authorizingAnchor,
+  CHECKER_REQUEST_PREFIX,
   type DeferredWrite,
   decodeAgentRequest,
+  decodeKeyRequest,
   deferredWrite,
   enrollAgentFromRequest,
   enrollChecker,
@@ -52,7 +54,7 @@ import {
 } from '@mnema/core/write';
 import { oneLine } from '../one-line.js';
 import { personsKeyInTheClear } from '../the-persons-key-in-the-clear.js';
-import { agentKeyAlgorithmRefusal } from './key-request.js';
+import { agentKeyAlgorithmRefusal, agentKeyRecognised } from './key-request.js';
 
 /** What the enrollment needs: injected so it is testable. */
 export interface KeyEnrollContext {
@@ -114,6 +116,21 @@ export function runCheckerEnroll(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+  // As for a member: a checker line that carries a key this machine keeps for an agent, or one a
+  // record here enrols as an agent (retired included), is refused before anything is written.
+  const carried = decodeKeyRequest(input.request, CHECKER_REQUEST_PREFIX);
+  const agent =
+    carried === null ? undefined : agentKeyRecognised(trees, ctx.env, carried.key.fingerprint);
+  if (carried !== null && agent !== undefined) {
+    return {
+      ok: false,
+      reason: 'REFUSED',
+      code: 'AN_AGENT_KEY',
+      message:
+        `the key ${carried.key.fingerprint} this checker request carries is ${agent}: a key holds one role only, ` +
+        'and a checker key signs check results only. Make a key of its own for the machine that runs the checks',
+    };
+  }
   const write = deferredWrite(trees, 'public');
   const enrolled = enrollChecker(write, { request: input.request });
   if (!enrolled.ok) {
@@ -137,6 +154,23 @@ export function runKeyEnroll(
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
+  }
+
+  // The record refuses a key it already enrols as an agent; this machine knows its agents' keys
+  // too, and a request that carries one of them (a copy of the agent's key file, asked for as a
+  // person's) is the same mistake, said before anything is written.
+  const carried = decodeKeyRequest(input.request);
+  const agent =
+    carried === null ? undefined : agentKeyRecognised(trees, ctx.env, carried.key.fingerprint);
+  if (carried !== null && agent !== undefined) {
+    return {
+      ok: false,
+      reason: 'REFUSED',
+      code: 'AN_AGENT_KEY',
+      message:
+        `the key ${carried.key.fingerprint} this request carries is ${agent}: an agent is not a member ` +
+        'that joins, and a key holds one role only. `mnema key enroll --agent <name>` enrols an agent key',
+    };
   }
 
   const write = deferredWrite(trees, 'public');

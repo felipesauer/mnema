@@ -14,7 +14,8 @@ The shape, from the document:
 
     identity.founded   signerFp == payload.foundingFp, subject == anchor(foundingFp),
                        who == subject                          -> adds foundingFp
-    key.enrolled       who == subject, signerFp valid for the anchor AT THIS POINT, and
+    key.enrolled       who == subject, signerFp valid for the anchor AT THIS POINT, newFp
+                       not a key that holds the agent role (retired included), and
                        reverseSig verifies under the key newFp names, over the UTF-8 of
                        `enroll:<anchor>:<newFp>`              -> adds newFp
     key.revoked        who == subject, signerFp valid at this point
@@ -529,6 +530,17 @@ def resolve(
                         seq,
                         "key.enrolled is signed by a key not valid for the anchor at this point",
                         anchor,
+                    )
+                )
+                continue
+            # A key that holds the agent role - from its agent.enrolled on, retired included - is
+            # a member of the identity that enrolled it under that role, and of none otherwise.
+            if isinstance(new_fp, str) and new_fp in agents:
+                issues.append(
+                    Issue(
+                        tail,
+                        seq,
+                        "key.enrolled names a key that holds the agent role at this point: a key holds one role only",
                     )
                 )
                 continue

@@ -4,7 +4,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
 
 - **A rule can refuse a write.** An accepted decision linked to a path with `refuses-a-write` stops
   the write there, through each host's own hook: in Claude Code, VS Code, Cursor's command-line
-  agent, Codex, Copilot CLI, Gemini CLI and OpenCode. Which of that a test holds against the real
+  agent, Codex, Copilot CLI, Gemini CLI, Qwen Code and OpenCode. Which of that a test holds against the real
   host, and which was read once, is [the table of each host's rung](evidence.md#each-hosts-rung). It binds an agent that goes through the plugin, not a person with an
   editor, and `mnema switch off edit-refuses-a-write` is the way out: recorded, as a signed
   fact. [The plugin's page](../plugin/README.md#what-it-does-and-what-it-does-not). The refusal
@@ -14,7 +14,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   A `mnema` that is there and cannot answer (it exits non-zero, does not answer in ten seconds (six in Gemini CLI and OpenCode), prints
   what no host reads, or no `node` on the hooks' PATH takes it) refuses the write, with the reason
   in words and the way to fix it, **only where a rule in force that refuses a write or asks for a person at it
-  addresses that very path** (a rule only proposed, rejected or superseded does not count), in Cursor's agent, Codex, VS Code, Copilot CLI, Gemini CLI and OpenCode;
+  addresses that very path** (a rule only proposed, rejected or superseded does not count), in Cursor's agent, Codex, VS Code, Copilot CLI, Gemini CLI, Qwen Code and OpenCode;
   every other path goes through, a project whose only links merely govern is never refused, and a
   rule taken back stops refusing. A fault of a handler itself is treated the same way. Where `mnema`
   does run, the record decides, and `mnema switch off edit-refuses-a-write` is honoured. Cursor's agent
@@ -36,7 +36,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   or restore the line: from the repository's history for the public tree, and for the private and
   the global tree, which are not versioned, from a copy, or by repairing or removing that line
   ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts), and in Claude
-  Code, Gemini CLI and Codex by the host contract). Nothing is recorded, because a refusal fact
+  Code, Gemini CLI, Qwen Code and Codex by the host contract). Nothing is recorded, because a refusal fact
   cites a rule and no rule could be read. The cost is declared: on a team with two versions, a line
   of a kind only the newer knows refuses every write of the older in that project until it is
   updated, and the switch is no way out there, because switching reads the same record and is
@@ -113,8 +113,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
   record from a program; [`@mnema/action`](../packages/action/) comments what a pull request does to
   the record and fails the check when `verify --require=signed --since <base>` does (the Python second reader
   takes `--require signed` as well, and has no `--require witnessed`);
-  [`@mnema/vscode`](../packages/vscode/) shows the rules over the open file and rules on waiting
-  decisions. **None of the three is published**: they run from a checkout of this repository.
+  [`@mnema/vscode`](../packages/vscode/) shows the rules over the open file, rules on waiting
+  decisions and lists the stacks a project adopted. **None of the three is published**: they run from a checkout of this repository.
   The SDK calls the same functions as the command line, and a test holds the doors to the same
   events and refusals.
 - **Skills and agents a project adopts.** `mnema stack add` installs a stack (skills and agents
