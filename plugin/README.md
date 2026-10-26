@@ -334,7 +334,9 @@ name of an agent key (`mnema key request --agent <name> --anchor <identity>`, th
 --agent <the line>` where your own key is, which enrols it in the project's committed, private and
 global trees) and the server signs with that key in each tree whose record enrols it, naming the agent
 the record gives it on everything it records. The
-manifest passes it as `MNEMA_AGENT_KEY`, which a `mnema` from before the option ignores. One manifest
+manifest passes it as `MNEMA_PLUGIN_AGENT_KEY` and the launcher makes it the server's `MNEMA_AGENT_KEY` when it holds a name, so
+a `MNEMA_AGENT_KEY` in the environment you started the host with stands while the option is empty, and a `mnema` from before
+the option still gets the variable it knows. One manifest
 is read by Claude Code, VS Code and Cursor, so no name is filled in for you; Codex, Copilot CLI and
 Gemini CLI read a manifest of their own, which names the host (`codex`, `copilot`, `gemini`), and the
 hook files of VS Code, Cursor, Codex, Copilot CLI, Gemini CLI and OpenCode pass the host's name to

@@ -111,14 +111,18 @@ with its own changelog.
   Copilot, Gemini and OpenCode figures of that page are the ones their pinned files hold.
 - **What each host hands the plugin's server and its hooks is measured and held.** The host contracts now read, by name, the
   `env` of the server manifest as the server received it (Codex, Copilot CLI and Gemini CLI hand `MNEMA_AGENT_KEY` on with the
-  value the manifest declares; in Claude Code the manifest's own entry for the key, empty while the `agent_key` option is empty,
-  is what the server gets, so a key set only in the host's environment does not reach it, while `MNEMA_HOME` does), and the
+  value the manifest declares; in Claude Code a `MNEMA_AGENT_KEY` and a `MNEMA_HOME` set in the host's environment reach it), and the
   fields each host writes on the stdin of the hook that runs before a write (Codex, Copilot CLI, Gemini CLI, VS Code) or after
   one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
   measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
 
 ### Fixed
 
+- **A `MNEMA_AGENT_KEY` set in the environment of Claude Code now reaches the plugin's server when the `agent_key` option is
+  empty.** The manifest used to declare `MNEMA_AGENT_KEY` from the option, so an empty option set it to an empty value over the
+  one the person had set. The manifest now hands the option on as `MNEMA_PLUGIN_AGENT_KEY` and the launcher makes it the server's
+  `MNEMA_AGENT_KEY` only when it holds a name (an option with a name still wins, so whoever filled it signs as before); an empty
+  `MNEMA_AGENT_KEY` counts as none. Codex, Copilot CLI and Gemini CLI, whose manifests name their host, are unchanged.
 - **The files that name who signs are on the disk when their write returns.** A key's two halves, the local installation id
   and the anchor are now synced (`fsync`, and the directory that names a new file) before the write is reported done, as
   every entry and checkpoint already were; a power cut right after a first write could leave an identity the record carried
