@@ -10,20 +10,14 @@
     "Other"
   ],
   "keywords": [
-    "mnema",
-    "decisions",
-    "decision record",
-    "agents",
-    "ai agents",
-    "governance",
-    "audit",
-    "rules",
-    "review",
+    "ai-agents",
+    "coding-agents",
     "adr",
+    "decision-records",
+    "audit-trail",
+    "accountability",
     "mcp",
-    "stacks",
-    "provenance",
-    "signed record"
+    "agent-skills"
   ],
   "galleryBanner": {
     "color": "#0d1117",
