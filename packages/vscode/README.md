@@ -97,7 +97,7 @@ in a workspace with a `.mnema` folder to see it start (`pnpm --filter @mnema/vsc
 does the same by hand, under `xvfb-run -a` on a machine without a screen), and keeps the file as an
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
 the release workflow, which a person approves in a protected environment and which publishes the very file
-it packed and checked, after asking each store whether the version is already there; a test fails if a
+it packed and checked, with the store command lines installed from a lockfile and no install script run, and a store that already has the version is skipped; a test fails if a
 publish command or a store token appears in any other job or file. The file has no token in it.
 
 ## How it is built

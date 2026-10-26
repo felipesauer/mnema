@@ -1,0 +1,9 @@
+{
+  "name": "mnema-release-tools",
+  "private": true,
+  "description": "The two store command lines the release job runs, pinned with the integrity of what they install.",
+  "dependencies": {
+    "@vscode/vsce": "4.0.0",
+    "ovsx": "1.3.0"
+  }
+}

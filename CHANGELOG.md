@@ -17,8 +17,9 @@ with its own changelog.
   `mnema`, not `private`, an icon, a category, keywords, a banner, marked preview, a changelog and a one-line description that
   promises nothing the command line does not print), installs that very file into a real VS Code to see the extension start,
   attaches it to the GitHub release and publishes the same file to both stores from one job that asks for the
-  `extension-stores` environment, so a person approves it. Each store is asked first whether the version is already there
-  and a store that has it is skipped, so a run that stopped halfway runs again. The icon is drawn by the build from the
+  `extension-stores` environment, so a person approves it. The two store command lines are installed from a committed
+  lockfile with `npm ci --ignore-scripts` in a step that holds no token, and each store is published to with `--skip-duplicate`
+  so a run that stopped halfway runs again. The icon is drawn by the build from the
   banner's cube, not kept as a binary. The publisher id moves from `felipesauer` to `mnema`, so the id is `mnema.mnema`:
   uninstall the 0.1.2 file installed by hand (`felipesauer.mnema`). The extension still needs the `mnema` command of
   `@mnema/code`. The guard that refused every publish now allows exactly that job and refuses a publish command or a store

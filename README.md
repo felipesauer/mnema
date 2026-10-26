@@ -60,9 +60,10 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 ## Status
 
 - **On npm.** `@mnema/code` is published: install it with `npm i -g @mnema/code` ([`docs/install.md`](docs/install.md)); to run the `main` branch instead, see [Build from source](docs/build-from-source.md).
+- **In the editor stores.** The VS Code extension is on the Visual Studio Marketplace and Open VSX as `mnema.mnema`, and still needs the `mnema` command from `@mnema/code`.
 - **These pages describe the next version** (the `main` branch). What has not reached npm yet is listed under Unreleased in the [Changelog](CHANGELOG.md).
 - **Node.** Requires Node 24.15.0 or a later 24, or 26.0.0 or later.
-- **From a checkout.** The GitHub Action and the SDK are not published, and run from a clone of this repository ([Packages](docs/packages.md)). The VS Code extension is on the Visual Studio Marketplace and Open VSX as `mnema.mnema`, and still needs the `mnema` command from `@mnema/code`.
+- **From a checkout.** The GitHub Action and the SDK are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
 
 ## Quick start
 
