@@ -379,10 +379,46 @@ function switchedOffAtAnEdit(push: ChannelState): string[] {
  * reader has just read. It is three lines and a blank for that reason, and the skeleton's
  * own bound is what holds it to that (`brief.test.ts`).
  */
-function whatAsksForAPerson(asking: number, gate: ChannelState): string[] {
+function whatAsksForAPerson(asking: number, gate: ChannelState, inherits: boolean): string[] {
   return [
     `${asking} of them ${asking === 1 ? 'asks' : 'ask'} for a PERSON at an address: where one`,
-    ...(gate.on ? STOPS_AT_AN_EDIT : switchedOffAtTheGate(gate)),
+    ...(gate.on
+      ? inherits
+        ? STOPS_AT_AN_EDIT_WITH_INHERITED
+        : STOPS_AT_AN_EDIT
+      : switchedOffAtTheGate(gate)),
+  ];
+}
+
+/**
+ * The gate's sentence where the project reads a record it inherits: "nothing waits for a file
+ * none of them asks about" counts the rules below, and a rule of the inherited record asks too,
+ * so the sentence names both and the paragraph after the refusal counts the inherited ones.
+ */
+const STOPS_AT_AN_EDIT_WITH_INHERITED = [
+  'does, the write waits until a person decides, and the rule that asked is named by',
+  'its id in what comes back. Nothing waits for a file that none of them and none of the',
+  'inherited rules counted below asks about.',
+];
+
+/**
+ * What the record this project inherits places at an address here, when it was read: how many of
+ * its rules govern, ask for a person and refuse a write. The three paragraphs above count the
+ * rules below, which are the project's own, and a refusal from the inherited record is still a
+ * refusal at this project's edit, so the document counts it beside them and says the three counts
+ * above are the project's alone. The rules arrive, ask and refuse as the project's own do (under
+ * the project's switches), each line naming the record and its commit. Nothing when the project
+ * inherits nothing, or when the record was not read: then none of its rules applies.
+ */
+function whatTheInheritedRecordAddresses(inherited: InheritedReading | undefined): string[] {
+  if (inherited?.state !== 'read') return [];
+  const { governs, asks, refuses } = inherited.addressing;
+  return [
+    '',
+    `The record this project inherits places rules at addresses here too: ${governs} ${governs === 1 ? 'governs' : 'govern'},`,
+    `${asks} ${asks === 1 ? 'asks' : 'ask'} for a PERSON and ${refuses} ${refuses === 1 ? 'refuses' : 'refuse'} a WRITE. They reach an edit as this`,
+    'project’s own do, each named with that record and its commit. The counts above are',
+    'this project’s own rules alone.',
   ];
 }
 
@@ -696,7 +732,10 @@ function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
  * `brief` in @mnema/context).
  */
 export function briefDocument(governance: Brief, inherited?: InheritedReading): string[] {
-  return [...composed(governance, rulesIn(governance)), ...inheritedSection(inherited)];
+  return [
+    ...composed(governance, rulesIn(governance), CLAUDE_CODE_CEILING, true, inherited),
+    ...inheritedSection(inherited),
+  ];
 }
 
 /**
@@ -741,7 +780,7 @@ export function briefWithin(
   return fitWhole(
     rulesIn(governance),
     room,
-    (shown) => [...composed(governance, shown, ceiling, false), ...late],
+    (shown) => [...composed(governance, shown, ceiling, false, inherited), ...late],
     ceiling.lengthOf,
   );
 }
@@ -952,6 +991,7 @@ function composed(
   shown: number,
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
   forAFile = true,
+  inherited?: InheritedReading,
 ): string[] {
   const decisions = governance.decisions.slice(0, shown);
   const skills = governance.skills.slice(0, Math.max(0, shown - governance.decisions.length));
@@ -969,9 +1009,10 @@ function composed(
     ...(forAFile ? [...HOW_TO_REGENERATE, ''] : []),
     ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',
-    ...whatAsksForAPerson(governance.asking, governance.asksAPerson),
+    ...whatAsksForAPerson(governance.asking, governance.asksAPerson, inherited?.state === 'read'),
     '',
     ...whatRefusesAWrite(governance.refusing, governance.refusesAWrite),
+    ...whatTheInheritedRecordAddresses(inherited),
     '',
     ...HOW_A_DECISION_ENTERS,
     '',

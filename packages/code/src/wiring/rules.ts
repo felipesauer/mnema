@@ -44,6 +44,10 @@ export function registerRules(program: Command, wiring: Wiring): Declared {
       // BEFORE the answer, and on the other stream, so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+      const { inheritedNotReadLine } = await import('../inherited-record.js');
+      const { fact } = await import('../presentation/detail.js');
+      const notRead = inheritedNotReadLine(result.inherited);
+      if (notRead !== undefined) io.err(render(fact(notRead)));
       if (opts.json === true) {
         io.out(JSON.stringify(result.governed, null, 2));
         return;

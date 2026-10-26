@@ -30,8 +30,12 @@ export function registerWhy(program: Command, wiring: Wiring): Declared {
         return;
       }
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+      const { inheritedNotReadLine } = await import('../inherited-record.js');
+      const { fact } = await import('../presentation/detail.js');
+      const notRead = inheritedNotReadLine(result.inherited);
+      if (notRead !== undefined) io.err(render(fact(notRead)));
       if (opts.json === true) {
-        const { linkBreaks: _breaks, ok: _ok, ...reading } = result;
+        const { linkBreaks: _breaks, ok: _ok, inherited: _inherited, ...reading } = result;
         io.out(JSON.stringify(reading, null, 2));
         return;
       }

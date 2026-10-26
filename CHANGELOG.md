@@ -12,6 +12,26 @@ with its own changelog.
 
 ### Added
 
+- **A rule the project inherits reaches the path it addresses.** The record named in `.mnema/inherit.json` was read only for
+  the brief, and only as titles. Its decisions in force are now read whole (rationale, alternatives, state, who accepted, and
+  their addresses under `governs`, `asks-for-a-person` and `refuses-a-write`), and `mnema rules`, `mnema why`, the
+  `governing_rules` tool and the gate before a write (the MCP tool and `mnema before-a-write`) list an inherited rule beside the
+  project's own, each saying `inherited from <origin> at <commit>`; neither is chosen over the other. What a line calls
+  inherited is the ADDRESS: the record that wrote the link, not the one that holds the rule, so a link the origin holds to a
+  rule of the project is the origin's address for the project's rule and says it was inherited. One that refuses or asks
+  applies as the project's would, only where it addresses the path (a write that creates a file under it included), and its
+  sentence says the rule is addressed here by the record this project inherits; a refusal by a rule only the origin holds
+  names the clone it opens in, since `mnema show <id>` finds nothing here. An inherited address that names nothing in this
+  project is not a stale address here. `mnema rules` counts "in this project" the project's own record alone and the inherited
+  addresses on a line of their own, by relation; `mnema brief` counts the rules the inherited record places at an address
+  (govern, ask for a person, refuse a write) after the project's own counts, and says those are the project's alone. A
+  record that does not verify at the pinned commit governs nothing, and `rules`, `why` and `governing_rules` say so. The
+  switches stay the project's own. The verdict is kept for the life of a process; a project that inherits nothing pays one
+  file test. Known limits: the `channel.refused` or `channel.asked` this project records cites only the rule's id, not that
+  the address was inherited nor the origin and commit (and the id of a rule only the origin holds does not resolve here);
+  `mnema rules-file`, the commit hook and `mnema aging` do not read the inherited record, and `mnema show` of a rule of the
+  project does not list the addresses the origin holds for it.
+
 - **The VS Code extension's commands have icons and short titles, and an empty view says what it means.** Every command carries a codicon, so the
   accept and reject buttons beside a decision and the add buttons of the stacks view are icons instead of the title's text, and the
   titles are short (`mnema: Accept Decision`, `mnema: Add Stack`); the command ids are unchanged, so a keybinding still works. The

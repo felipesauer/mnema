@@ -157,6 +157,7 @@ import {
   A_WRITE,
   channelsOffHere,
   countsToolCalls,
+  governingRulesInheritedNotRead,
   governingRulesMovedApart,
   movedApartNotes,
   runAccountabilityTool,
@@ -1980,7 +1981,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // A path nothing addresses is an ANSWER ("nothing governs this"), never an
       // error, and the three counts beside it are what say which kind of nothing.
-      return served(active, result.value, governingRulesMovedApart(active, result.value));
+      return served(active, result.value, [
+        ...governingRulesMovedApart(active, result.value),
+        ...governingRulesInheritedNotRead(active),
+      ]);
     },
   );
 

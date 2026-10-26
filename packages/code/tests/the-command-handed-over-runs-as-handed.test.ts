@@ -454,8 +454,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
   'CHANGELOG.md: mnema rules-file': {
+    times: 2,
+    why: 'the verb named in the entry on a rule addressed at a directory, and in the known limits of the entry on the rules a project inherits, as a reader that does not read them; its `--help` hands the --host it needs',
+  },
+  'CHANGELOG.md: mnema show': {
     times: 1,
-    why: 'the verb named in the entry on a rule addressed at a directory; its `--help` hands the --host it needs',
+    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema site': {
     times: 2,
@@ -506,7 +510,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the sentence about what leaves the record as a file',
   },
   'docs/cli-reference.md: mnema show': {
-    times: 4,
+    times: 5,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
   'docs/cli-reference.md: mnema retract': {
@@ -522,8 +526,44 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'a verb named beside `mnema memory`, in the entry that says where either goes when an agent asked for by the environment writes without `--scope`',
   },
   'CHANGELOG.md: mnema before-a-write': {
+    times: 2,
+    why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning, and in the one on the rules a project inherits; the package page hands the whole line over, with its host',
+  },
+  'CHANGELOG.md: mnema rules': {
+    times: 2,
+    why: 'the verb named twice in the entry on the rules a project inherits, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'CHANGELOG.md: mnema why': {
     times: 1,
-    why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning; the package page hands the whole line over, with its host',
+    why: 'the verb named in the entry on the rules a project inherits, beside `rules`; the reference hands it over with a path or a commit',
+  },
+  'docs/cli-reference.md: mnema before-a-write': {
+    times: 1,
+    why: 'the command door of the gate, named in the paragraph on what an inherited rule reaches; the section on hosts hands it over with its host',
+  },
+  'docs/cli-reference.md: mnema rules': {
+    times: 2,
+    why: 'the verb named where the paragraphs on inherited rules say what it labels inherited and what it counts apart; the first of them hands it over with the path',
+  },
+  'docs/features.md: mnema rules': {
+    times: 1,
+    why: 'the verb named in the list item on a record that inherits another, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'docs/features.md: mnema why': {
+    times: 1,
+    why: 'the verb named beside `rules` in the list item on a record that inherits another; the reference hands it over with a path or a commit',
+  },
+  'packages/code/README.md: mnema inherit set': {
+    times: 1,
+    why: 'the verb named in the list item on an inherited record, as what pins it; the reference hands the whole line over, with the origin and --at',
+  },
+  'packages/code/README.md: mnema rules': {
+    times: 1,
+    why: 'the verb named in the list item on an inherited record, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'packages/code/README.md: mnema why': {
+    times: 1,
+    why: 'the verb named beside `rules` in the list item on an inherited record; the reference hands it over with a path or a commit',
   },
   'CHANGELOG.md: mnema decision import': {
     times: 1,
@@ -538,8 +578,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the sentence about reading decision files; its block has the line',
   },
   'packages/code/src/edit-refuses-a-write.ts: mnema show': {
-    times: 1,
-    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries; with one rule the same sentence hands `mnema show <id>` over whole',
+    times: 2,
+    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries, once as the project reads it and once with where an inherited one opens; with one rule the same sentence hands `mnema show <id>` over whole',
   },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
@@ -679,13 +719,13 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 54, name: 96, flag: 4 },
+  'CHANGELOG.md': { line: 55, name: 104, flag: 4 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
-  'docs/features.md': { line: 10, name: 12 },
+  'docs/features.md': { line: 10, name: 14 },
   'docs/first-record.md': { line: 2, name: 7 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
@@ -701,8 +741,8 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3, name: 1 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 108, name: 132, flag: 2 },
-  'packages/code/README.md': { line: 8, name: 10 },
+  'docs/cli-reference.md': { line: 114, name: 138, flag: 2 },
+  'packages/code/README.md': { line: 8, name: 13 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/after-a-write.ts': { line: 2 },
@@ -720,7 +760,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/stack-index.ts': { line: 1 },
   'packages/code/src/commands/status.ts': { name: 1 },
   'packages/code/src/commands/the-record-page.ts': { name: 1 },
-  'packages/code/src/edit-refuses-a-write.ts': { line: 1, name: 1 },
+  'packages/code/src/edit-refuses-a-write.ts': { line: 2, name: 2 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
   'packages/code/src/instructions-block.ts': { line: 3 },
