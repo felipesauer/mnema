@@ -65,7 +65,6 @@ import {
   type ProvenLevel,
   type UpcasterRegistry,
   type VerifyResult,
-  verify,
   verifyTogether,
   weakerLevel,
 } from '@mnema/chain';
@@ -240,29 +239,13 @@ function coverProject(
   const others = recordTrees(trees, undefined).filter(
     (tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global),
   );
-  const ruled = [{ scope: 'public' as Scope, chainRoot: root }, ...others].filter(
-    (tree) => tree.scope === 'public' || holdsRecord({ root: tree.chainRoot }),
-  );
-  const results = verifyTogether(
-    ruled.map((tree) => ({
-      layout: { root: tree.chainRoot },
-      where: treeWords(tree.scope),
-      options: { keyRoot: trees.keyRoot },
-    })),
+  const [first, ...reported] = reportsOn(
+    [{ scope: 'public', chainRoot: root }, ...others],
     upcasters,
+    trees.keyRoot,
   );
-  const reportOf = (tree: ScopedTree): TreeReport => {
-    const at = ruled.indexOf(tree);
-    if (at === -1) return { kind: 'no-record', scope: tree.scope, root: tree.chainRoot };
-    return {
-      kind: 'verdict',
-      scope: tree.scope,
-      root: tree.chainRoot,
-      result: withAgentsNamed(results[at] as VerifyResult, tree.chainRoot, upcasters),
-    };
-  };
-  const committed = reportOf(ruled[0] as ScopedTree) as TreeVerdict;
-  const rest = others.map(reportOf).map((report) => withWhatGitSees(report, trees));
+  const committed = first as TreeVerdict;
+  const rest = reported.map((report) => withWhatGitSees(report, trees));
   return {
     trees: [committed, ...rest],
     record: aggregate([committed, ...rest.filter(isVerdict)]),
@@ -561,16 +544,41 @@ function identityOf(path: string): string {
  * that key as one whose tail may have gone, on every tree but the one it remembered.
  */
 function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string): TreeReport {
-  const root = tree.chainRoot;
-  if (!holdsRecord({ root })) {
-    return { kind: 'no-record', scope: tree.scope, root };
-  }
-  return {
-    kind: 'verdict',
-    scope: tree.scope,
-    root,
-    result: verifiedTree(root, upcasters, keyRoot),
-  };
+  return reportsOn([tree], upcasters, keyRoot)[0] as TreeReport;
+}
+
+/**
+ * {@link reportOn} over the trees of ONE project at once, in their order: the committed tree is
+ * always ruled on, every other tree only when it holds a record. They are verified TOGETHER
+ * (`verifyTogether`): an agent key one of them retired is retired in the others, so what the key
+ * signed in another tree after that retirement is a break there, and is not counted as attested.
+ */
+function reportsOn(
+  trees: readonly ScopedTree[],
+  upcasters: UpcasterRegistry,
+  keyRoot: string,
+): TreeReport[] {
+  const ruled = trees.filter(
+    (tree) => tree.scope === 'public' || holdsRecord({ root: tree.chainRoot }),
+  );
+  const results = verifyTogether(
+    ruled.map((tree) => ({
+      layout: { root: tree.chainRoot },
+      where: treeWords(tree.scope),
+      options: { keyRoot },
+    })),
+    upcasters,
+  );
+  return trees.map((tree): TreeReport => {
+    const at = ruled.indexOf(tree);
+    if (at === -1) return { kind: 'no-record', scope: tree.scope, root: tree.chainRoot };
+    return {
+      kind: 'verdict',
+      scope: tree.scope,
+      root: tree.chainRoot,
+      result: withAgentsNamed(results[at] as VerifyResult, tree.chainRoot, upcasters),
+    };
+  });
 }
 
 /**
@@ -586,11 +594,6 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
  * where no waiver already accounts for the key. A key the record has since RETIRED is said to be
  * retired, not enrolled: it is the one thing the sentence must not call it.
  */
-function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
-  return withAgentsNamed(verify(root, upcasters, { keyRoot }), root, upcasters);
-}
-
-/** The note {@link verifiedTree} words, over a verdict already taken of the tree at `root`. */
 function withAgentsNamed(
   result: VerifyResult,
   root: string,

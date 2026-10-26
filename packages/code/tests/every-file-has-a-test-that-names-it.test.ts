@@ -810,6 +810,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/the-census-names-a-move-the-workflow-does-not-allow.test.ts': 7,
   'packages/chain/src/chain/the-census-says-what-a-backup-is.test.ts': 12,
   'packages/chain/src/chain/the-promise-between-versions.test.ts': 17,
+  'packages/chain/src/chain/the-records-of-a-project-are-verified-together.test.ts': 14,
   'packages/chain/src/chain/the-sight-of-a-writer-is-what-its-tail-cites.test.ts': 5,
   'packages/chain/src/chain/the-verdict-over-a-broken-tail.test.ts': 8,
   'packages/chain/src/chain/tree.test.ts': 8,
