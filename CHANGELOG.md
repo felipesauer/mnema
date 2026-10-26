@@ -12,6 +12,16 @@ with its own changelog.
 
 ### Added
 
+- **A rule the project inherits reaches the path it addresses.** The record named in `.mnema/inherit.json` was read only for
+  the brief, and only as titles. Its decisions in force are now read whole (rationale, alternatives, state, who accepted, and
+  their addresses under `governs`, `asks-for-a-person` and `refuses-a-write`), and `mnema rules`, `mnema why`, the
+  `governing_rules` tool and the gate before a write (the MCP tool and `mnema before-a-write`) list an inherited rule beside the
+  project's own, each saying `inherited from <origin> at <commit>`; neither is chosen over the other. One that refuses or asks
+  applies as the project's would, only where it addresses the path. An inherited address that names nothing in this project is
+  not a stale address here; `mnema rules` counts it apart. A record that does not verify at the pinned commit governs nothing,
+  and `rules`, `why` and `governing_rules` say so. The switches stay the project's own. The verdict is kept for the life of a
+  process; a project that inherits nothing pays one file test.
+
 - **A compacted conversation is handed back what entered the record while its session ran.** A new `SessionStart` hook under the `compact`
   matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
   twenty tokens) read from the session's journal: the decisions that entered the record (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions
