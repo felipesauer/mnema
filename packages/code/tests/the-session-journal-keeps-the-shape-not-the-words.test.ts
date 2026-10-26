@@ -347,6 +347,33 @@ describe('the journal a Stop keeps', () => {
     expect(theJournal().questionsWithoutDecision).toBe(1);
   });
 
+  it.each([
+    ['public', 'private'],
+    ['private', 'public'],
+  ] as const)(
+    'does not call a question one with no decision after it in the %s run when the decision came after it in the %s tree',
+    async (home, other) => {
+      await doing('decision', 'record', 'Use UTC', 'The ledger is UTC', '--scope', home);
+      const file = transcriptAt('across.jsonl', [
+        prompt(LONG_AGO, 'go'),
+        answered(at(3)),
+        write(at(4), 'a', join(repo, 'src', 'a.ts')),
+        result(at(5), 'a'),
+      ]);
+      tally(payload('Stop', file));
+      const journal = theJournal();
+      expect(journal.questionsWithoutDecision).toBe(0);
+      expect(journal.trees[home].outcome).toBe(
+        "1 decision recorded; 1 file edited, as of the session's last Stop.",
+      );
+      // The other tree's run counts its own decisions only (none), and a decision that came after the
+      // question is one the question did have, wherever it was recorded.
+      expect(journal.trees[other].outcome).toBe(
+        "0 decisions recorded; 1 file edited, as of the session's last Stop.",
+      );
+    },
+  );
+
   it('counts a file of decisions the record cites nowhere', () => {
     const file = transcriptAt('adr.jsonl', [
       prompt(LONG_AGO, 'go'),
