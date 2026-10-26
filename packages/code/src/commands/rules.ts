@@ -36,6 +36,7 @@ import { dirname } from 'node:path';
 import type { GoverningRules } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readGoverningRulesWhereItLands } from '../governed-tree.js';
+import { type InheritedReading, withInheritedSource } from '../inherited-record.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -62,6 +63,12 @@ export interface RulesDone {
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /**
+   * What reading the record this project inherits came to, when it points at one: a record that
+   * did not verify, or that this machine has not fetched, governs nothing here, and this is what
+   * says so. Absent when the project inherits nothing.
+   */
+  readonly inherited?: InheritedReading;
 }
 
 /** The read was refused before it ran. */
@@ -85,9 +92,12 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
   // The project root is the PARENT of its `.mnema/`: the directory every address
   // in the record is written against.
   const root = dirname(trees.projectPublic);
-  return withScopedCaches(trees, (sources) => ({
-    ok: true,
-    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
-    governed: readGoverningRulesWhereItLands(sources, { path: input.path, root, from: ctx.cwd }),
-  }));
+  return withScopedCaches(trees, (sources) =>
+    withInheritedSource(trees, sources, (all, inherited) => ({
+      ok: true,
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+      governed: readGoverningRulesWhereItLands(all, { path: input.path, root, from: ctx.cwd }),
+      ...(inherited !== undefined ? { inherited } : {}),
+    })),
+  );
 }

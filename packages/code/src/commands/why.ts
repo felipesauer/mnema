@@ -19,6 +19,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
+import type { InheritedFrom, ScopedCache } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
 import {
@@ -30,6 +31,7 @@ import {
   LISTED,
   resolveCommit,
 } from '../git-log.js';
+import { type InheritedReading, withInheritedSource } from '../inherited-record.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -53,6 +55,8 @@ export interface WhyRule {
   readonly relation: RuleInForceUnder['relation'];
   /** How many of the changed files it covers: a commit's; absent for a file. */
   readonly files?: number;
+  /** Where it was inherited from, when it is not the project's own rule. */
+  readonly inherited?: InheritedFrom;
 }
 
 /** What a trailer value named. */
@@ -87,6 +91,8 @@ export interface WhyFile {
   readonly commits: readonly WhyCommit[];
   readonly more: boolean;
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /** What reading the record this project inherits came to, when it points at one. */
+  readonly inherited?: InheritedReading;
 }
 
 /** The answer for a commit. */
@@ -102,6 +108,8 @@ export interface WhyCommitDone {
   readonly files: number;
   readonly moreFiles: boolean;
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /** What reading the record this project inherits came to, when it points at one. */
+  readonly inherited?: InheritedReading;
 }
 
 /** The read was refused before it ran. */
@@ -137,6 +145,7 @@ function ruleOf(rule: RuleInForceUnder, files?: number): WhyRule {
     address: rule.address,
     relation: rule.relation,
     ...(files !== undefined ? { files } : {}),
+    ...(rule.inherited !== undefined ? { inherited: rule.inherited } : {}),
   };
 }
 
@@ -151,9 +160,23 @@ export function runWhy(
   const absolute = isAbsolute(input.target) ? input.target : join(ctx.cwd, input.target);
   const exists = existsSync(absolute);
   const commit = exists ? undefined : resolveCommit(root, input.target);
-  return withScopedCaches(trees, (sources): WhyFile | WhyCommitDone => {
-    const all = readDecisionFacts(sources, root);
-    const linkBreaks = linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE);
+  return withScopedCaches(trees, (own) =>
+    withInheritedSource(trees, own, (sources, inherited) => ({
+      ...answer(own, sources),
+      ...(inherited !== undefined ? { inherited } : {}),
+    })),
+  );
+
+  /**
+   * The answer, over the project's own trees (`own`: its decisions, its link breaks) and the rules
+   * over a path read with the record it inherits added (`sources`).
+   */
+  function answer(
+    own: readonly ScopedCache[],
+    sources: readonly ScopedCache[],
+  ): WhyFile | WhyCommitDone {
+    const all = readDecisionFacts(own, root);
+    const linkBreaks = linkBreaksOf(own, THE_READING_THAT_OPENED_THESE);
     if (commit !== undefined) {
       const changed = filesOf(root, commit.sha);
       const covered = new Map<string, { rule: RuleInForceUnder; files: number }>();
@@ -196,5 +219,5 @@ export function runWhy(
       more: listed.length > LISTED,
       linkBreaks,
     };
-  });
+  }
 }

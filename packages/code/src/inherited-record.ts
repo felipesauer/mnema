@@ -28,9 +28,16 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { catalogUpcasters, contractNotHeldIn, type VerifyResult, verify } from '@mnema/chain';
-import { brief } from '@mnema/context';
+import {
+  ADDRESS_RELATIONS,
+  catalogUpcasters,
+  contractNotHeldIn,
+  type VerifyResult,
+  verify,
+} from '@mnema/chain';
+import { type Acceptance, brief, type InheritedFrom, type ScopedCache } from '@mnema/context';
 import type { ResolvedTrees } from '@mnema/core';
+import { oneLine } from './one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
   EDIT_PUSH_CHANNEL,
@@ -50,11 +57,26 @@ export interface Pointer {
   readonly commit: string;
 }
 
-/** One inherited decision in force, as the where's record names it. */
+/**
+ * One inherited decision in force, WHOLE, as the where's record holds it: what it says, why, what
+ * it turned down, its state and who accepted it, and every path it is addressed at. A reading that
+ * kept the title alone could say a rule exists and not where it applies or why.
+ */
 export interface InheritedRule {
   readonly id: string;
+  /** Its `ADR-<n>` label IN THE WHERE'S RECORD: the project's own numbering is another. */
   readonly adr: string;
   readonly title: string;
+  readonly rationale: string;
+  readonly alternatives?: string;
+  readonly state: string;
+  readonly acceptance?: Acceptance;
+  /**
+   * Every address the where's record holds for it, under the three relations that address a path
+   * (`governs`, `asks-for-a-person`, `refuses-a-write`), in that order, then by target. A target is
+   * read against the root of the project that INHERITS the rule, as the project's own are.
+   */
+  readonly addresses: readonly { readonly rel: string; readonly target: string }[];
 }
 
 /** What the pointer file holds, or why it cannot be used. */
@@ -248,30 +270,62 @@ function whyNotRead(verdict: VerifyResult): string {
   return [...named, verdict.summary].join(' ');
 }
 
-/** The decisions in force of one extracted record, once it verifies, or why it does not. */
-function readRecord(
-  root: string,
-):
+type RecordRead =
   | { readonly ok: true; readonly decisions: readonly InheritedRule[] }
-  | { ok: false; why: string } {
+  | { readonly ok: false; readonly why: string };
+
+/**
+ * What each extracted record came to, in this process: verified once, then served.
+ *
+ * A COMMIT DOES NOT CHANGE, and the extracted copy of one is never rewritten (`materialize`), so the
+ * same bytes would only verify the same way again. The verdict is kept for the life of the process
+ * and never on disk: a command line verifies at every run, and the server a host keeps up verifies
+ * once per connection, which is what lets the edit gate read the inherited rules at each write
+ * without verifying at each write. A record that did not verify is kept too: it is the same bytes.
+ */
+const READ_IN_THIS_PROCESS = new Map<string, RecordRead>();
+
+/** The decisions in force of one extracted record, once it verifies, or why it does not. */
+function readRecord(root: string): RecordRead {
+  const known = READ_IN_THIS_PROCESS.get(root);
+  if (known !== undefined) return known;
+  const read = verifyAndRead(root);
+  READ_IN_THIS_PROCESS.set(root, read);
+  return read;
+}
+
+function verifyAndRead(root: string): RecordRead {
   try {
     const upcasters = catalogUpcasters();
     const verdict = verify(root, upcasters);
     if (!verdict.ok) return { ok: false, why: whyNotRead(verdict) };
-    const decisions = withCache(
-      root,
-      upcasters,
-      (cache) =>
-        brief([{ scope: 'public', chainRoot: root, cache }], {
-          editPush: EDIT_PUSH_CHANNEL,
-          asksAPerson: ASKS_A_PERSON_CHANNEL,
-          refusesAWrite: REFUSES_A_WRITE_CHANNEL,
-        }).decisions,
+    const decisions = withCache(root, upcasters, (cache) =>
+      brief([{ scope: 'public', chainRoot: root, cache }], {
+        editPush: EDIT_PUSH_CHANNEL,
+        asksAPerson: ASKS_A_PERSON_CHANNEL,
+        refusesAWrite: REFUSES_A_WRITE_CHANNEL,
+      }).decisions.map((d): InheritedRule => {
+        const held = cache.getDecision(d.id);
+        return {
+          id: d.id,
+          adr: d.adr,
+          title: d.title,
+          rationale: held?.rationale ?? '',
+          ...(held?.alternatives !== undefined ? { alternatives: held.alternatives } : {}),
+          state: held?.state ?? 'accepted',
+          ...(d.acceptance !== undefined ? { acceptance: d.acceptance } : {}),
+          addresses: ADDRESS_RELATIONS.flatMap((rel) =>
+            cache
+              .linksByRelation(rel)
+              .filter((edge) => edge.subject === d.id)
+              .map((edge) => edge.target)
+              .sort()
+              .map((target) => ({ rel, target })),
+          ),
+        };
+      }),
     );
-    return {
-      ok: true,
-      decisions: decisions.map((d) => ({ id: d.id, adr: d.adr, title: d.title })),
-    };
+    return { ok: true, decisions };
   } catch (error) {
     return { ok: false, why: (error as Error).message };
   }
@@ -283,7 +337,32 @@ function readRecord(
  * It reads what this machine already holds and never asks the where for a commit it lacks.
  */
 export function readInherited(trees: ResolvedTrees, pointer: Pointer): InheritedReading {
+  return readAt(trees, pointer).reading;
+}
+
+/** {@link readInherited}, with the extracted record's root when it was read. */
+function readAt(
+  trees: ResolvedTrees,
+  pointer: Pointer,
+): { readonly reading: InheritedReading; readonly root?: string } {
   const home = homeOf(trees, pointer.where);
+  // A COMMIT ALREADY EXTRACTED IS READ WITHOUT ASKING GIT: it was held when it was extracted, and
+  // the copy is never rewritten. That keeps a process off the edit gate's path (`git cat-file`).
+  const extracted = join(home, 'at', pointer.commit, '.mnema');
+  let root: string = extracted;
+  if (!existsSync(extracted)) {
+    const fresh = extract(home, pointer);
+    if (typeof fresh !== 'string') return { reading: fresh };
+    root = fresh;
+  }
+  const read = readRecord(root);
+  return read.ok
+    ? { reading: { state: 'read', pointer, decisions: read.decisions }, root }
+    : { reading: { state: 'unverified', pointer, why: read.why } };
+}
+
+/** The extracted `.mnema/` of the pinned commit, or the reading that says why there is none. */
+function extract(home: string, pointer: Pointer): string | InheritedReading {
   let root: string;
   try {
     const repo = repoOf(home);
@@ -302,19 +381,87 @@ export function readInherited(trees: ResolvedTrees, pointer: Pointer): Inherited
   } catch (error) {
     return { state: 'unavailable', pointer, why: (error as Error).message };
   }
-  const read = readRecord(root);
-  return read.ok
-    ? { state: 'read', pointer, decisions: read.decisions }
-    : { state: 'unverified', pointer, why: read.why };
+  return root;
 }
 
 /** What the project's own pointer reads as, or `undefined` when it inherits nothing. */
 export function readProjectInherited(trees: ResolvedTrees): InheritedReading | undefined {
+  return inheritedTreeOf(trees)?.reading;
+}
+
+/**
+ * The record a project inherits, as one more TREE an address reading can take once it verifies:
+ * its root, the project it addresses, and where it came from (`ScopedCache.inherited`).
+ */
+export interface InheritedTree {
+  readonly scope: 'public';
+  readonly chainRoot: string;
+  readonly project: string;
+  readonly inherited: InheritedFrom;
+}
+
+/**
+ * What the project's pointer reads as, and the tree to add to an address reading when it was read:
+ * `undefined` when the project inherits nothing, which costs one file test. Every reading that
+ * lists the rules over a path takes the tree from here ({@link withInheritedSource} on the command
+ * line, the server's own registry for a connection), so the gate and the readers name the same
+ * inherited rules.
+ */
+export function inheritedTreeOf(
+  trees: ResolvedTrees,
+): { readonly reading: InheritedReading; readonly tree?: InheritedTree } | undefined {
   if (trees.projectPublic === undefined) return undefined;
   const found = readPointer(trees.projectPublic);
   if (found.state === 'absent') return undefined;
-  if (found.state === 'invalid') return found;
-  return readInherited(trees, found.pointer);
+  if (found.state === 'invalid') return { reading: found };
+  const { reading, root } = readAt(trees, found.pointer);
+  if (root === undefined || reading.state !== 'read') return { reading };
+  return {
+    reading,
+    tree: {
+      scope: 'public',
+      chainRoot: root,
+      project: dirname(trees.projectPublic),
+      inherited: { origin: found.pointer.where, commit: found.pointer.commit },
+    },
+  };
+}
+
+/**
+ * Hands `read` the project's sources with the inherited record added as one more, when the project
+ * inherits one that verifies, and what reading the pointer came to (`undefined` when it inherits
+ * nothing). The cache over the inherited record is opened and closed around `read`.
+ */
+export function withInheritedSource<T>(
+  trees: ResolvedTrees,
+  sources: readonly ScopedCache[],
+  read: (all: readonly ScopedCache[], inherited: InheritedReading | undefined) => T,
+): T {
+  const found = inheritedTreeOf(trees);
+  const tree = found?.tree;
+  if (tree === undefined) return read(sources, found?.reading);
+  return withCache(tree.chainRoot, catalogUpcasters(), (cache) =>
+    read([...sources, { ...tree, cache }], found?.reading),
+  );
+}
+
+/** How a line names where an inherited rule comes from: the origin and the commit, short. */
+export function inheritedFromText(from: InheritedFrom): string {
+  return `inherited from ${oneLine(from.origin)} at ${oneLine(from.commit.slice(0, 12))}`;
+}
+
+/**
+ * The sentence a reader of the rules over a path owes when the project points at a record that was
+ * NOT read: none of that record's rules govern here, and this says why. Undefined when the record
+ * was read or the project inherits nothing.
+ */
+export function inheritedNotReadLine(reading: InheritedReading | undefined): string | undefined {
+  if (reading === undefined || reading.state === 'read') return undefined;
+  const where =
+    reading.state === 'invalid'
+      ? `the ${POINTER_FILE} of this project`
+      : `${oneLine(reading.pointer.where)} at ${oneLine(reading.pointer.commit.slice(0, 12))}`;
+  return `No rule of the record this project inherits governs here: ${where} was not read (${oneLine(reading.why)}).`;
 }
 
 /** The commit a revision of the where names, after fetching, or why none. */

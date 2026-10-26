@@ -119,7 +119,7 @@ import {
 import { type Acceptance, acceptances, decisionsInForce } from '../context/decisions.js';
 import { originOf, type RecordBody, readRecord } from '../context/search.js';
 import { adoptedSkills } from '../context/skills.js';
-import type { ScopedCache } from '../sources.js';
+import type { InheritedFrom, ScopedCache } from '../sources.js';
 
 /** What to ask: a path, the project it is in, and how to test the working tree. */
 export interface GovernanceQuery {
@@ -177,6 +177,11 @@ export interface AddressedRule {
    * accepted.
    */
   readonly acceptance?: Acceptance;
+  /**
+   * The repository and the commit the rule was read from, when it is a rule this project
+   * INHERITS rather than one its own record holds. Absent for every rule of the project.
+   */
+  readonly inherited?: InheritedFrom;
   /** The tree whose record ASSERTS the address, which may not be the rule's own. */
   readonly assertedIn: Scope;
   /** The identity that authorized the assertion. */
@@ -310,6 +315,29 @@ export interface GoverningRules {
   readonly refusesUnresolved: readonly AddressedRule[];
   /** The four numbers, and each other relation's four. */
   readonly counts: GovernanceCounts;
+  /**
+   * What the record this project INHERITS addresses, when it reads one: the origin and the
+   * commit, how many addresses it holds under the three relations, and how many of those name
+   * nothing in this project's working tree. Absent when no inherited record was read.
+   *
+   * THOSE ARE NOT STALE, and that is why they are counted here and nowhere above. A stale address
+   * is a repair this project makes; an inherited address that names nothing here is another
+   * repository's rule addressed at a layout this one does not have (a rule for `packages/php`,
+   * inherited by a repository with no PHP), which is what addressing one record's rules at a
+   * family of repositories means. It is not listed and not repaired here, and the number says it
+   * was read.
+   */
+  readonly inherited?: InheritedAddresses;
+}
+
+/** What an inherited record addresses around a project: see {@link GoverningRules.inherited}. */
+export interface InheritedAddresses {
+  /** Where the record was read from. */
+  readonly from: InheritedFrom;
+  /** How many addresses it holds, under the three relations. */
+  readonly addressed: number;
+  /** How many of those name nothing in this project's working tree, or a rule it cannot read. */
+  readonly elsewhere: number;
 }
 
 /**
@@ -341,6 +369,7 @@ export function governingRules(
     refuses: ordered(refuses.matching),
     refusesStale: ordered(refuses.stale),
     refusesUnresolved: ordered(refuses.unresolved),
+    ...inheritedAround(sources, query.root, [governs, asks, refuses]),
     counts: {
       matching: governs.matching.length,
       governing: governs.all.length,
@@ -383,6 +412,8 @@ function addressesUnder(
   readonly matching: readonly Addressed[];
   readonly stale: readonly Addressed[];
   readonly unresolved: readonly Addressed[];
+  readonly inherited: number;
+  readonly elsewhere: number;
 } {
   const found: Addressed[] = [];
   // ONCE PER WALK, not once per edge: who accepted is read over every decision of the trees.
@@ -396,14 +427,45 @@ function addressesUnder(
   // THREE DISJOINT CLASSES, and the disjointness is what keeps the numbers from double
   // counting. An address whose subject does not resolve is UNRESOLVED and nothing else:
   // saying its address also went stale would be a claim about a rule nobody can read.
-  const readable = found.filter(readableRule);
+  //
+  // AN INHERITED ADDRESS IS IN NONE OF THE THREE unless it names something here. One that does
+  // governs like the project's own; one that does not is another repository's layout, not a
+  // repair of this project's, so it is counted apart ({@link GoverningRules.inherited}).
+  const own = found.filter((entry) => entry.assertedFrom === undefined);
+  const inherited = found.filter((entry) => entry.assertedFrom !== undefined);
+  const here = inherited.filter((entry) => readableRule(entry) && entry.rule.onDisk);
+  const readable = [...own.filter(readableRule), ...here];
   return {
     // `all` is what this project's record holds as RULES, the middle number, so an
     // address naming nothing readable is not in it.
     all: readable,
     matching: asked === null ? [] : readable.filter((entry) => covers(entry.segments, asked)),
-    stale: readable.filter((entry) => !entry.rule.onDisk),
-    unresolved: found.filter((entry) => !readableRule(entry)),
+    stale: own.filter((entry) => readableRule(entry) && !entry.rule.onDisk),
+    unresolved: own.filter((entry) => !readableRule(entry)),
+    inherited: inherited.length,
+    elsewhere: inherited.length - here.length,
+  };
+}
+
+/**
+ * The inherited record's addresses around a project, summed over the three relations, or nothing
+ * when no inherited record was read: {@link GoverningRules.inherited}.
+ */
+function inheritedAround(
+  sources: readonly ScopedCache[],
+  root: string,
+  relations: readonly { readonly inherited: number; readonly elsewhere: number }[],
+): { inherited?: InheritedAddresses } {
+  const from = sources.find(
+    (source) => source.inherited !== undefined && governsThisProject(source, root),
+  )?.inherited;
+  if (from === undefined) return {};
+  return {
+    inherited: {
+      from,
+      addressed: relations.reduce((sum, one) => sum + one.inherited, 0),
+      elsewhere: relations.reduce((sum, one) => sum + one.elsewhere, 0),
+    },
   };
 }
 
@@ -425,6 +487,8 @@ interface Addressed {
    * what it says) and it used to be counted as one.
    */
   readonly resolves: boolean;
+  /** The inherited record that ASSERTS the address, when it is not one of the project's trees. */
+  readonly assertedFrom?: InheritedFrom;
 }
 
 /**
@@ -487,9 +551,11 @@ function describe(
   const segments = relativeSegments(edge.target, query.root);
   const record = readRecord(sources, edge.subject);
   const placed = segments === null ? {} : { address: posix(segments), segments: segments.length };
+  const inherited = inheritedHolder(sources, edge.subject);
   return {
     segments,
     resolves: record !== null,
+    ...(asserted.inherited !== undefined ? { assertedFrom: asserted.inherited } : {}),
     rule: {
       rule: edge.subject,
       recorded: edge.target,
@@ -502,11 +568,23 @@ function describe(
       ...(accepted.has(edge.subject)
         ? { acceptance: accepted.get(edge.subject) as Acceptance }
         : {}),
+      ...(inherited !== undefined ? { inherited } : {}),
       assertedIn: asserted.scope,
       who: edge.who,
       at: edge.linkedAt,
     },
   };
+}
+
+/**
+ * Where a rule was inherited from: the inherited tree that holds it, when the first tree that
+ * holds it is one ({@link readRecord} answers from the first holder, and the project's own trees
+ * come first). Undefined for a rule of the project, and without a lookup at all when no tree here
+ * is inherited, which is every project that points at nothing.
+ */
+function inheritedHolder(sources: readonly ScopedCache[], id: string): InheritedFrom | undefined {
+  if (!sources.some((source) => source.inherited !== undefined)) return undefined;
+  return sources.find((source) => readRecord([source], id) !== null)?.inherited;
 }
 
 /**
@@ -703,6 +781,12 @@ export interface PushedRule {
    * on request pass it through for the same reason. `mnema refs` says whether it lands.
    */
   readonly origin?: readonly string[];
+  /**
+   * The repository and the commit the rule was INHERITED from, when it is not the project's own:
+   * the line a channel carries names them, so an inherited rule is never told as one this project
+   * made. Absent for every rule of the project.
+   */
+  readonly inherited?: InheritedFrom;
 }
 
 /** The rules in force addressed at a path, and the path they were matched against. */
@@ -905,6 +989,7 @@ function inForceOf(
           // Absent, never empty: a rule decided here has no provenance, and an empty
           // list would give the line a field with nothing in it.
           ...(origin.length > 0 ? { origin } : {}),
+          ...(rule.inherited !== undefined ? { inherited: rule.inherited } : {}),
         },
       },
     ];

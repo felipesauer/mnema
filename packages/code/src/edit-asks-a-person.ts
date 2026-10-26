@@ -51,6 +51,7 @@
 
 import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
 import { type GovernedRead, readAsksForAPersonAt } from './governed-tree.js';
+import { inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
@@ -175,5 +176,6 @@ function askLine(rule: PushedRule): string {
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
   const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
-  return `“${oneLine(rule.name)}”: asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
+  const inherited = rule.inherited === undefined ? '' : ` · ${inheritedFromText(rule.inherited)}`;
+  return `“${oneLine(rule.name)}”: asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}${inherited}${from}${by}`;
 }
