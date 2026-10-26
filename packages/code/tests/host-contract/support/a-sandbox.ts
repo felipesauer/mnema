@@ -8,7 +8,15 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,6 +59,12 @@ export interface TheProjectToWrite {
    * {@link theServerWasHanded}. Every other verb still runs the build.
    */
   measureTheServer(): void;
+  /**
+   * From now on the shim keeps, byte for byte, what a host's hook handler hands the verbs that
+   * read a hook's payload (`before-a-write`, `after-a-write` and `settled`) on stdin, and then runs the verb on it.
+   * Read it back with {@link thePayloadsKept}.
+   */
+  keepThePayloads(): void;
 }
 
 /** A sandbox, ready for a host. */
@@ -85,12 +99,17 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
   // it writes down each command line it was run with, so a case can say which door ran.
   const log = join(root, 'calls.log');
   const measuring = join(root, 'measure-the-server');
+  const keeping = join(root, 'keep-the-payloads');
+  const kept = join(root, 'payloads');
+  mkdirSync(kept, { recursive: true });
   writeFileSync(
     join(bin, 'mnema'),
     [
       '#!/bin/sh',
       `printf '%s\\n' "$*" >> "${log}"`,
       `if [ "$1" = mcp ] && [ -e "${measuring}" ]; then exec "${process.execPath}" "${A_SERVER_THAT_SAYS}" "${join(root, 'what-the-server-was-handed.json')}"; fi`,
+      // The verbs that read a hook's payload on stdin: keep it, then run the verb on the same bytes.
+      `if [ -e "${keeping}" ] && { [ "$1" = before-a-write ] || [ "$1" = after-a-write ] || [ "$1" = settled ]; }; then f="${kept}/$$.$1.json"; cat > "$f"; exec "${process.execPath}" "${CLI}" "$@" < "$f"; fi`,
       `exec "${process.execPath}" "${CLI}" "$@"`,
       '',
     ].join('\n'),
@@ -119,7 +138,12 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
       env: sandboxEnv(home, base),
     });
     mnema('init');
-    write?.({ dir: project, mnema, measureTheServer: () => writeFileSync(measuring, '') });
+    write?.({
+      dir: project,
+      mnema,
+      measureTheServer: () => writeFileSync(measuring, ''),
+      keepThePayloads: () => writeFileSync(keeping, ''),
+    });
   } catch (error) {
     sandbox.remove();
     throw error;
@@ -135,6 +159,8 @@ export interface WhatTheServerWasHanded {
   readonly chain: readonly string[];
   /** Which of a closed list of variables were present in its environment, by name; never a value. */
   readonly present: readonly string[];
+  /** The value of `MNEMA_AGENT_KEY` and of `MNEMA_HOME` where the server had them; nothing else. */
+  readonly declared: Readonly<Record<string, string>>;
 }
 
 /** Reads what the measuring server wrote for the session of `project`; throws where it wrote nothing. */
@@ -144,4 +170,24 @@ export function theServerWasHanded(project: string): WhatTheServerWasHanded {
     throw new Error('the server that was to measure it wrote no report');
   }
   return JSON.parse(readFileSync(file, 'utf-8')) as WhatTheServerWasHanded;
+}
+
+/** One payload a host's hook handler handed a verb of the product, as the host wrote it. */
+export interface ThePayloadKept {
+  /** The verb it was handed to: `before-a-write`, `after-a-write` or `settled`. */
+  readonly verb: string;
+  /** The JSON the host wrote on stdin. */
+  readonly payload: Readonly<Record<string, unknown>>;
+}
+
+/** The payloads kept for the session of `project`, in the order the shim ran them; see {@link TheProjectToWrite.keepThePayloads}. */
+export function thePayloadsKept(project: string): readonly ThePayloadKept[] {
+  const dir = join(dirname(project), 'payloads');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10))
+    .map((name) => ({
+      verb: name.split('.')[1] ?? '',
+      payload: JSON.parse(readFileSync(join(dir, name), 'utf-8')) as Record<string, unknown>,
+    }));
 }
