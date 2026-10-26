@@ -304,7 +304,7 @@
           {
             "id": "mnema.start.init",
             "title": "Start a record in this project",
-            "description": "Run mnema init in a terminal at the project root. It creates the .mnema folder where the record is kept.\n[Open a terminal](command:workbench.action.terminal.new)",
+            "description": "Run mnema init in a terminal at the project root. It creates the .mnema folder where the record is kept. Then run mnema: Refresh, which starts the extension in a window that opened without one.\n[Open a terminal](command:workbench.action.terminal.new)\n[Refresh mnema](command:mnema.refresh)",
             "media": {
               "markdown": "media/walkthrough/init.md"
             },

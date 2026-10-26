@@ -23,6 +23,15 @@ describe('the runner starts the mnema command directly, with an argument array',
     expect(out).toEqual({ code: 3, stdout: 'out', stderr: 'err' });
   });
 
+  it('says a command stopped for not answering in time apart from one that could not be started', async () => {
+    const run = createRun(process.execPath, process.cwd(), 200);
+    const slow = await run(['-e', 'setTimeout(() => {}, 10000)']);
+    expect(slow.code).toBeNull();
+    expect(slow.timedOut).toBe(true);
+    const absent = await createRun('/nonexistent/mnema-binary', process.cwd(), 200)(['x']);
+    expect(absent.timedOut).toBeUndefined();
+  });
+
   it('answers a missing executable with no exit code and the reason, and never throws', async () => {
     const run = createRun('/nonexistent/mnema-binary', process.cwd());
     const out = await run(['verify']);

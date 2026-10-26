@@ -68,6 +68,7 @@ export interface VscodeApi {
   readonly workspace: {
     readonly workspaceFolders: readonly { readonly uri: { readonly fsPath: string } }[] | undefined;
     getConfiguration(section: string): { get<T>(key: string, fallback: T): T };
+    onDidChangeConfiguration: Event<{ affectsConfiguration(section: string): boolean }>;
     createFileSystemWatcher(pattern: unknown): {
       onDidChange: Event<unknown>;
       onDidCreate: Event<unknown>;
@@ -166,13 +167,19 @@ export interface Shown {
 export function activate(
   context: { subscriptions: Disposable[] },
   api: VscodeApi,
-  options: { run?: Run } = {},
+  options: { run?: Run; makeRun?: (command: string, cwd: string) => Run } = {},
 ): { readonly shown: () => Shown } | undefined {
   const folder = api.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (folder === undefined) return undefined;
   const recordFolder = join(folder, '.mnema');
-  const command = api.workspace.getConfiguration('mnema').get<string>('command', 'mnema');
-  const run = options.run ?? createRun(command, folder);
+  // The setting is read again at every refresh: a corrected `mnema.command` is not kept from the
+  // activation, so the person does not have to reload the window for it.
+  const runner = (): Run =>
+    options.run ??
+    (options.makeRun ?? createRun)(
+      api.workspace.getConfiguration('mnema').get<string>('command', 'mnema'),
+      folder,
+    );
   const session: Session = {
     details: new Map(),
     rules: new Map(),
@@ -181,7 +188,7 @@ export function activate(
     total: 0,
     seen: undefined,
     channels: undefined,
-    read: run,
+    read: runner(),
   };
   const keep = <T extends Disposable>(d: T): T => {
     context.subscriptions.push(d);
@@ -213,6 +220,7 @@ export function activate(
   }
 
   async function refresh(): Promise<void> {
+    session.read = runner();
     // The empty views say one thing with a record in the folder and another without; the key is
     // whether the folder holds a `.mnema`, nothing the command line said.
     void api.commands.executeCommand('setContext', 'mnema.hasRecord', existsSync(recordFolder));
@@ -614,6 +622,11 @@ export function activate(
   keep(watcher.onDidChange(changed));
   keep(watcher.onDidCreate(changed));
   keep(watcher.onDidDelete(changed));
+  keep(
+    api.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('mnema.command')) void refresh();
+    }),
+  );
   keep({ dispose: () => timer !== undefined && clearTimeout(timer) } as Disposable);
 
   void refresh();

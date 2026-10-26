@@ -22,7 +22,8 @@ The date; the version and commit shown by **Help > About**; the operating system
 Each case ends in one of three words: `held`, `did-not-hold`, `not-run`. A case that does not hold is
 a finding, and a good capture.
 
-1. **A folder with no `.mnema`.** Open it. The extension does not start: no status bar item. The two
+1. **A folder with no `.mnema`.** Open it. The extension does not start on opening: no status bar item (opening one of its views, or
+   running `mnema: Refresh`, starts it). The two
    mnema views in the Explorer say the folder holds no record and how to start one.
 2. **A folder with a `.mnema` and no `mnema` command.** Set `mnema.command` in your user settings to a
    path that does not exist. The status bar item says the command was not found, with a warning

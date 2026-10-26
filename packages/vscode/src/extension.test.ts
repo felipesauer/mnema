@@ -43,7 +43,15 @@ const VERIFY = ok(JSON.stringify({ ok: true, record: { ok: true, level: 'fully-s
 const SWITCH = ok('2 channel(s):\n  brief-document  on  x\n  user-corrections  off  y\n');
 
 /** A stand-in for the members of `vscode` the extension uses, recording what it is asked. */
-function world(answers: Record<string, CliResult>, real?: Run, root: string = ROOT) {
+function world(
+  answers: Record<string, CliResult>,
+  real?: Run,
+  root: string = ROOT,
+  rereadSetting = false,
+) {
+  const setting = { command: 'mnema' };
+  const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
+  const made: string[] = [];
   const ran: string[][] = [];
   const executed: unknown[][] = [];
   const run = async (args: readonly string[]) => {
@@ -88,7 +96,13 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
   const api = {
     workspace: {
       workspaceFolders: [{ uri: { fsPath: root } }],
-      getConfiguration: () => ({ get: <T>(_k: string, d: T) => d }),
+      getConfiguration: () => ({
+        get: <T>(k: string, d: T) => (k === 'command' ? (setting.command as T) : d),
+      }),
+      onDidChangeConfiguration: (l: (e: { affectsConfiguration(s: string): boolean }) => void) => {
+        settingListeners.push(l);
+        return { dispose() {} };
+      },
       createFileSystemWatcher: () => ({
         onDidChange: (l: () => void) => {
           watcher.change.push(l);
@@ -175,7 +189,21 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
     TreeItemCollapsibleState: { None: 0 },
     StatusBarAlignment: { Left: 1 },
   } as unknown as VscodeApi;
-  const started = activate({ subscriptions: [] }, api, { run });
+  const started = activate(
+    { subscriptions: [] },
+    api,
+    rereadSetting
+      ? {
+          // Only the command named `good` is there: the person fixes the setting from a wrong name.
+          makeRun: (command) => {
+            made.push(command);
+            return command === 'good'
+              ? run
+              : async () => ({ code: null, stdout: '', stderr: `spawn ${command} ENOENT` });
+          },
+        }
+      : { run },
+  );
   return {
     started,
     ran,
@@ -185,6 +213,9 @@ function world(answers: Record<string, CliResult>, real?: Run, root: string = RO
     errors,
     inputs,
     watcher,
+    setting,
+    settingListeners,
+    made,
     answers,
     setReply: (v: string | undefined) => {
       reply = v;
@@ -281,6 +312,31 @@ describe('the extension reads the record through the command line', () => {
     expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
     expect(w.bar.command).toBe('mnema.refresh');
     expect(w.tree().getChildren()).toHaveLength(1);
+  });
+
+  it('reads the mnema.command setting again at every refresh, and when it changes, so a corrected setting clears "command not found" without a reload', async () => {
+    const w = world(base(), undefined, ROOT, true);
+    w.setting.command = 'typo';
+    await w.command('mnema.refresh')();
+    expect(w.bar.text).toBe('$(warning) mnema: command not found');
+    expect(w.bar.tooltip).toContain('spawn typo ENOENT');
+
+    // Changing the setting is enough: the editor says so, and no Refresh is asked for.
+    w.setting.command = 'good';
+    const unrelated = { affectsConfiguration: (s: string) => s === 'editor.fontSize' };
+    for (const l of w.settingListeners) l(unrelated);
+    await settle();
+    expect(w.bar.text).toBe('$(warning) mnema: command not found');
+    for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
+    await settle();
+    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.made.at(-1)).toBe('good');
+
+    // And a Refresh alone reads it too, with no event.
+    w.setting.command = 'typo-again';
+    await w.command('mnema.refresh')();
+    expect(w.made.at(-1)).toBe('typo-again');
+    expect(w.bar.text).toBe('$(warning) mnema: command not found');
   });
 
   it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {

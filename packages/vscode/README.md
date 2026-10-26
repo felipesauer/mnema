@@ -75,6 +75,10 @@ this repository, and every read and every write goes through the `mnema` command
   fix it (install `@mnema/code` from source, or set `mnema.command`), nothing else is asked of it, and
   the status bar says "command not found" and, clicked, opens the `mnema.command` setting. The context
   key `mnema.cliMissing` carries it, and it clears at the next reading that finds a working command.
+  The setting is read again at every reading, and changing `mnema.command` starts one, so a corrected
+  setting needs no reload. A command that did not answer `--version` within 60 seconds is reported as
+  not answering, in the tooltip, not as not found. The error mark of the bar follows `record.ok` in
+  `mnema verify --json`, the verdict whose failure makes `mnema verify` exit 1.
 - **A walkthrough of three steps** (Help > Welcome > Walkthroughs, "Get started with mnema"): make the
   command available, run `mnema init`, run `mnema verify` and read what it prints. It says to read the
   command's output, never that the record is safe or verified.
@@ -98,7 +102,7 @@ code --install-extension packages/vscode/mnema-*.vsix
 the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 15 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
-three times (a folder with no `.mnema`, where it must stay asleep and never run `mnema`; a folder
+three times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema` (opening one of its views, or running one of its commands, starts it, and from then on it runs the command line); a folder
 with a `.mnema` and a `mnema.command` that does not exist, where the bar must say the command was not
 found; and a folder with a real record read by the `mnema` built here, where the bar must carry a level
 and the tooltip what `mnema verify` printed). `pnpm --filter @mnema/vscode install-check` does the same

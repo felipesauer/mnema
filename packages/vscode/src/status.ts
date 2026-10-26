@@ -4,13 +4,19 @@
  * shown as unreadable rather than as fine.
  */
 
+import { TIMEOUT_SECONDS } from './cli.js';
+
 /** What the record's verification says, as far as it could be read. */
 export type Verdict =
   | { readonly kind: 'verified'; readonly level: string }
   | { readonly kind: 'failed'; readonly level: string | undefined }
   | { readonly kind: 'unreadable' };
 
-/** The reading of `mnema verify --json`; its exit code is not needed, the answer carries `ok`. */
+/**
+ * The reading of `mnema verify --json`. The top `ok` says the command ran and found a project; the
+ * verdict on the record is `record.ok` (the exit code of `mnema verify` follows it), so that is the
+ * one read. Only an answer with no `record.ok` falls back to the top `ok`.
+ */
 export function readVerdict(stdout: string): Verdict {
   let answer: unknown;
   try {
@@ -19,14 +25,12 @@ export function readVerdict(stdout: string): Verdict {
     return { kind: 'unreadable' };
   }
   if (typeof answer !== 'object' || answer === null) return { kind: 'unreadable' };
-  const { ok, record } = answer as { ok?: unknown; record?: unknown };
+  const { ok: top, record } = answer as { ok?: unknown; record?: unknown };
+  const rec =
+    typeof record === 'object' && record !== null ? (record as Record<string, unknown>) : {};
+  const ok = typeof rec.ok === 'boolean' ? rec.ok : top;
   if (typeof ok !== 'boolean') return { kind: 'unreadable' };
-  const level =
-    typeof record === 'object' &&
-    record !== null &&
-    typeof (record as { level?: unknown }).level === 'string'
-      ? (record as { level: string }).level
-      : undefined;
+  const level = typeof rec.level === 'string' ? rec.level : undefined;
   if (ok && level !== undefined) return { kind: 'verified', level };
   return ok ? { kind: 'unreadable' } : { kind: 'failed', level };
 }
@@ -93,7 +97,11 @@ export function readCli(result: {
   readonly code: number | null;
   readonly stdout: string;
   readonly stderr: string;
+  readonly timedOut?: true;
 }): CliState {
+  if (result.timedOut === true) {
+    return { kind: 'missing', reason: `it did not answer in ${TIMEOUT_SECONDS} s` };
+  }
   if (result.code === null) {
     const why = result.stderr.trim().split('\n')[0] ?? '';
     return { kind: 'missing', reason: why === '' ? 'it could not be started' : why };

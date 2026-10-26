@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   describeBar,
@@ -8,6 +9,10 @@ import {
   statusText,
   statusTooltip,
 } from './status.js';
+
+/** What `mnema verify --json` really printed (HOME in a temp folder): an intact record, one with a line altered, and an empty `.mnema`. */
+const printed = (name: string): string =>
+  readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8');
 
 const SWITCH = [
   '9 channel(s), looked in public, private, global:',
@@ -29,6 +34,19 @@ describe('the verdict of the record, as `mnema verify --json` says it', () => {
       level: 'chained',
     });
     expect(readVerdict('{"ok": false}')).toEqual({ kind: 'failed', level: undefined });
+  });
+
+  it("reads what the command really printed: the verdict is the record's, not the top ok", () => {
+    expect(readVerdict(printed('verify-intact'))).toEqual({
+      kind: 'verified',
+      level: 'fully-signed',
+    });
+    // Both of these have a top-level ok: true, and `mnema verify` exits 1 on them.
+    expect(readVerdict(printed('verify-tampered'))).toEqual({ kind: 'failed', level: 'unreadable' });
+    expect(readVerdict(printed('verify-empty-folder'))).toEqual({
+      kind: 'failed',
+      level: 'broken',
+    });
   });
 
   it('never reads a verdict out of what is not one', () => {
@@ -102,6 +120,19 @@ describe('whether the mnema command line can be run at all', () => {
     expect(readCli(answer(0, '')).kind).toBe('missing');
   });
 
+  it('says a command that did not answer in time did not answer, not that it was not found', () => {
+    const slow = readCli({ code: null, stdout: '', stderr: 'Command failed', timedOut: true });
+    expect(slow).toEqual({ kind: 'missing', reason: 'it did not answer in 60 s' });
+    const bar = describeBar({
+      cli: slow,
+      verdict: { kind: 'unreadable' },
+      channels: undefined,
+      coverage: undefined,
+    });
+    expect(bar.tooltip).toContain('it did not answer in 60 s');
+    expect(bar.tooltip).not.toContain('not found');
+  });
+
   it('is missing when the version is below the floor, naming both', () => {
     const old = readCli(answer(0, '0.0.9\n'));
     expect(old.kind).toBe('missing');
@@ -118,7 +149,9 @@ describe('the status bar item, as a whole', () => {
       /^\$\(book\) mnema: fully-signed/,
     );
     expect(icon({ kind: 'verified', level: 'hash-chain-only' })).toMatch(/^\$\(info\) mnema: /);
-    expect(icon({ kind: 'failed', level: 'broken' })).toMatch(/^\$\(error\) mnema: verify failed/);
+    for (const name of ['verify-tampered', 'verify-empty-folder']) {
+      expect(icon(readVerdict(printed(name)))).toMatch(/^\$\(error\) mnema: verify failed/);
+    }
     expect(icon({ kind: 'unreadable' })).toMatch(/^\$\(question\) mnema: verify unreadable/);
     for (const verdict of [
       { kind: 'verified', level: 'fully-signed' },
