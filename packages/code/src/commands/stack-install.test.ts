@@ -138,9 +138,9 @@ describe('a stack is installed into the folders the host table names', () => {
         'GitHub Copilot CLI',
         'OpenCode',
         'Gemini CLI',
+        'Qwen Code',
         "Antigravity's command line (`agy`)",
         'Factory Droid',
-        'Qwen Code',
         'Goose',
       ],
     });

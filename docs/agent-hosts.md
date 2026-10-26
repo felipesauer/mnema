@@ -2,7 +2,7 @@
 
 With the Claude Code plugin, the record reaches a session twice: as it opens, and
 at each edit. The other hosts get as much of this as their hooks allow: Codex, Copilot CLI,
-Gemini CLI, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and how far
+Gemini CLI, Qwen Code, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and how far
 each one goes is [the table of each host's rung](evidence.md#each-hosts-rung).
 
 ```mermaid

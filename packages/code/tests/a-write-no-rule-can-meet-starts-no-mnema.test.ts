@@ -89,20 +89,25 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 /** The command `hooks.json` declares for a host's gate. */
-function declared(handler: string): string {
+function declared(handler: string, host?: string): string {
   const config = JSON.parse(readFileSync(HOOKS, 'utf-8')) as {
     hooks: Record<string, { hooks: { type: string; command?: string }[] }[]>;
   };
   const found = (config.hooks['PreToolUse'] ?? [])
     .flatMap((group) => group.hooks)
-    .filter((hook) => hook.type === 'command' && (hook.command ?? '').includes(handler));
+    .filter(
+      (hook) =>
+        hook.type === 'command' &&
+        (hook.command ?? '').includes(handler) &&
+        (host === undefined || (hook.command ?? '').includes(` --host ${host} `)),
+    );
   expect(found.length).toBe(1);
   return found[0]?.command as string;
 }
 
 const HOSTS = {
   cursor: {
-    command: () => declared('edit-refuses-a-write.mjs'),
+    command: () => declared('edit-refuses-a-write.mjs', 'cursor'),
     payload: (path: string) =>
       JSON.stringify({
         hook_event_name: 'preToolUse',
@@ -110,6 +115,16 @@ const HOSTS = {
         tool_input: { file_path: path, content: 'x\n' },
       }),
     env: { CURSOR_VERSION: '2026.09.18' },
+  },
+  qwen: {
+    command: () => declared('edit-refuses-a-write.mjs', 'qwen'),
+    payload: (path: string) =>
+      JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'write_file',
+        tool_input: { file_path: path, content: 'x\n' },
+      }),
+    env: { QWEN_PROJECT_DIR: '/tmp/a-qwen-project' },
   },
   vscode: {
     command: () => declared('edit-asks-a-person.mjs'),
@@ -212,7 +227,7 @@ describe('the gate of a host whose hooks are processes', () => {
     await aRule('Bill in UTC');
     await did('memory', 'a note kept private', '--scope', 'private');
     await did('memory', 'a note kept global', '--scope', 'global');
-    for (const host of ['cursor', 'vscode'] as const) {
+    for (const host of ['cursor', 'vscode', 'qwen'] as const) {
       expect(aWrite(host, 'src/billing/invoice.ts'), host).toEqual({
         decision: undefined,
         reason: '',
@@ -225,7 +240,7 @@ describe('the gate of a host whose hooks are processes', () => {
     it(`starts it, and the write is refused, where a rule of the ${scope} tree refuses it`, async () => {
       const rule = await aRule(`Nobody writes billing (${scope})`, scope);
       await did('link', rule, 'src/billing', '--rel', 'refuses-a-write', '--scope', scope);
-      for (const host of ['cursor', 'vscode'] as const) {
+      for (const host of ['cursor', 'vscode', 'qwen'] as const) {
         const met = aWrite(host, 'src/billing/invoice.ts');
         expect(met.started, `${scope}, ${host}`).toBe(1);
         expect(met.decision, `${scope}, ${host}`).toBe('deny');
@@ -248,7 +263,7 @@ describe('the gate of a host whose hooks are processes', () => {
     const segment = theSegment(resolveTrees(repo, { home }).global);
     const last = readFileSync(segment, 'utf-8').trimEnd().split('\n').at(-1) as string;
     appendFileSync(segment, `${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`);
-    for (const host of ['cursor', 'vscode'] as const) {
+    for (const host of ['cursor', 'vscode', 'qwen'] as const) {
       const met = aWrite(host, 'src/billing/invoice.ts');
       expect(met.started, host).toBe(1);
       expect(met.decision, host).toBe('deny');
@@ -289,7 +304,7 @@ describe('the gate of a host whose hooks are processes', () => {
     git(repo, 'commit', '-q', '-m', 'the refusal');
     git(clone, 'pull', '-q', '--ff-only');
 
-    for (const host of ['cursor', 'vscode'] as const) {
+    for (const host of ['cursor', 'vscode', 'qwen'] as const) {
       const met = aWrite(host, 'src/billing/invoice.ts', clone);
       expect(met.started, host).toBe(1);
       expect(met.decision, host).toBe('deny');

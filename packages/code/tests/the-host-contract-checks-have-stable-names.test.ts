@@ -2,7 +2,7 @@
 /**
  * THE HOST CONTRACT'S CHECKS HAVE NAMES THAT DO NOT MOVE.
  *
- * The six jobs of `host-contract.yml` are required checks of `main`, and a required check is
+ * The seven jobs of `host-contract.yml` are required checks of `main`, and a required check is
  * matched by its name. A name that carried the pinned version of the host
  * (`host contract (codex 0.161.0)`) would stop every merge the day the pin is raised, because the
  * check the branch waits for would no longer be published. So on a pull request and on a push
@@ -36,6 +36,7 @@ const REQUIRED = [
   'host contract (copilot)',
   'host contract (opencode)',
   'host contract (gemini)',
+  'host contract (qwen)',
 ];
 
 const NAMES = [...WORKFLOW.matchAll(/^ {4}name: (host contract .*)$/gm)].map((m) => m[1] as string);
