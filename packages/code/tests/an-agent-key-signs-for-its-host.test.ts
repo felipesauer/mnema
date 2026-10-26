@@ -1066,7 +1066,7 @@ describe('mnema doctor says what the agent keys are', () => {
     const lines = hostLines(findings());
 
     // One line for each host that runs a hook, but the one whose key is held.
-    expect(lines).toHaveLength(5);
+    expect(lines).toHaveLength(6);
     expect(lines).toContain(
       'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you, or is refused (where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine); `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
     );
