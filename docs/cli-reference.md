@@ -745,7 +745,7 @@ record: the decisions recorded since it opened (their ids and state), the notes 
 tree (their ids), how many questions the person answered with no decision recorded after, how many files that hold decisions
 were written and are cited nowhere in the record, how many files were edited, the tasks in progress and the runs open, the
 goal of a run (the title of the first task it moved into progress in the tree that run is written to, a title that tree
-already holds) and an outcome that is a sentence of counts of that tree's records. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
+already holds) and an outcome that is a sentence of counts of that tree's records. The count of questions answered with no decision recorded after is, in the private run, over the decisions of both trees after the question, and in the public run over the public tree's decisions only: it crosses from the public tree to the private one, never the other way. `status` prints the last run of each tree that has one, the tree named, where a session left runs in more than one. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
 environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
 name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their first and of their
 last 4096, so a transcript that shrank, or whose head or tail changed, is read again from the top; a rewrite that leaves the

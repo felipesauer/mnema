@@ -50,7 +50,7 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
-import { type Bootstrap, bootstrap } from '@mnema/context';
+import { type Bootstrap, bootstrap, type ReportedRun, resume } from '@mnema/context';
 import {
   type Clock,
   chainRootForScope,
@@ -130,6 +130,17 @@ export interface StatusDone {
    * to one checkout, and `--json` still serves the derivation and only the derivation.
    */
   readonly neverImported: readonly UnimportedBase[];
+  /**
+   * The actor's latest run in EACH tree that holds one, the tree named: empty when no tree does.
+   *
+   * IT IS BESIDE {@link StatusDone.status} AND NOT IN IT for the reason the two fields above are:
+   * `--json` serves the derivation, and the derivation's `resume.lastRun` is the newest run of the
+   * actor across the trees. A session that wrote in the public and in the private tree leaves one run
+   * in each, with an outcome that counts that tree's records, and the record holds nothing that says
+   * the two are one session; so the reading that has no session names each run by its tree instead of
+   * letting the newest one stand for both.
+   */
+  readonly runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[];
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -219,6 +230,14 @@ export function runStatus(
         actor: anchor,
         asOf: (ctx.clock ?? systemClock)(),
         sessionRuns: [],
+      }),
+      runsByTree: sources.flatMap((source) => {
+        const { lastRun } = resume(caches([source]), {
+          actor: anchor,
+          asOf: (ctx.clock ?? systemClock)(),
+          sessionRuns: [],
+        });
+        return lastRun === null ? [] : [{ tree: source.scope, run: lastRun }];
       }),
     };
   });

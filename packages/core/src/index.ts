@@ -89,6 +89,7 @@ export {
   type FoundedBeside,
   foundedBesideBy,
   identitiesFoundedBeside,
+  settledByThisProcess,
 } from './identity/founded-beside.js';
 export {
   ALIAS_PREFIXES,

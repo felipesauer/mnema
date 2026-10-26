@@ -52,6 +52,7 @@ import {
 } from '@mnema/chain';
 import { oneLine } from '../one-line.js';
 import { agentNameRefusal } from './agent-name.js';
+import { noteSettledHere } from './founded-beside.js';
 import { nameOfAKeyKind } from './key-kind.js';
 import {
   type Membership,
@@ -182,6 +183,7 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
   }
 
   writeAnchor({ root: input.tree }, keyPair.fingerprint, found.anchor);
+  noteSettledHere(input.tree, keyPair.fingerprint);
   // A copy that was protected is installed protected, with the passphrase it was just opened by:
   // restoring a key must not be the way a protected one ends up in the clear.
   const passphrase = isProtectedCopy(input.privateKeyPath)
