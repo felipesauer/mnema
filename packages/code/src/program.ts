@@ -469,10 +469,14 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       reportIdentityRefusal({ io, render }, error, whereTheKeyIs);
       return;
     }
-    // The machine's first key was made by another process while this write was decided: a refusal
-    // like the others, so it carries its code in the label the way they do.
-    if (error instanceof Error && (error as { code?: unknown }).code === 'KEY_MADE_MEANWHILE') {
-      reportIdentityRefusal({ io, render }, { code: 'KEY_MADE_MEANWHILE', message: error.message });
+    // Any refusal the product wrote on purpose (a `CodedError`: the first key made meanwhile, a
+    // key root or a tail held by another write, an installation id that was never written, ...)
+    // carries its code in the label the way the others do. This is the question the MCP server
+    // asks of the same throw, so one refusal reads the same on both doors. Loaded here, not at the
+    // top: only a throw wants it (`the-floor-is-the-declaration.test.ts`).
+    const { CodedError } = await import('@mnema/chain');
+    if (error instanceof CodedError) {
+      reportIdentityRefusal({ io, render }, { code: error.code, message: error.message });
       return;
     }
     // A throw the product did not write for anybody (an engine error out of its own code, a

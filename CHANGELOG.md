@@ -112,6 +112,14 @@ with its own changelog.
 
 ### Fixed
 
+- **The files that name who signs are on the disk when their write returns.** A key's two halves, the local installation id
+  and the anchor are now synced (`fsync`, and the directory that names a new file) before the write is reported done, as
+  every entry and checkpoint already were; a power cut right after a first write could leave an identity the record carried
+  events of without its key or its id.
+- **A key root held by another write is refused under its own code on the command line.** `Refused (KEY_ROOT_BUSY)`, as the
+  MCP server already answered it, saying nothing was written and to write again; it was a bare sentence with no code.
+- **Every refusal the product wrote on purpose carries its code on the command line.** `Refused (TAIL_BUSY)`, `Refused (UNWRITTEN_INSTALLATION_ID)` and the
+  rest, decided by the same question the MCP server asks of a throw (is it a coded refusal), and not by a list of two codes; they came out as a bare sentence.
 - **A refusal, a request for a person, `governing_rules` and the rules pushed before an edit say when the rule they stand on was
   moved apart.** A rule two machines moved out of one state without seeing each other was shown in the state the last move
   leaves, and only `show`, `read_record` and the brief said it was disputed. Each now adds one line naming the rule;
