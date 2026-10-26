@@ -54,6 +54,13 @@ describe('the refusal for a host that reached beyond loopback', () => {
     expect(theRefusalFor('')).toBeUndefined();
   });
 
+  it('refuses an address outside the machine that the call reached, as it refuses one that failed', () => {
+    const left =
+      '4244 connect(9, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("168.63.129.16")}, 16) = 0';
+    expect(theRefusalFor(left)).toContain('the host reached beyond loopback: ["168.63.129.16"]');
+    expect(theRefusalFor(`${LOOPBACK}\n${left}`)).toContain('"168.63.129.16"');
+  });
+
   it('counts what it does not print', () => {
     const many = Array.from(
       { length: 23 },

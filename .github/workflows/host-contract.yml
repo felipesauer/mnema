@@ -20,6 +20,11 @@ name: Host contract
 # NOTHING LEAVES THE RUNNER WHILE THE HOST RUNS, and three things say so instead of one.
 #   1. The cases run in a network namespace that holds only loopback (`unshare -rn`), and the
 #      harness refuses to start the host in a process that can see another interface.
+#      The same namespace gets a `/etc/resolv.conf` of its own (a bind mount) that lists only
+#      `nameserver 127.0.0.1`: a runner whose file also lists addresses outside the machine (the
+#      cloud's resolver) makes the resolver TRY them, `strace` sees the `connect` that came back
+#      ENETUNREACH, and check 2 reads an attempt that never left as a connection that did. The
+#      check is not loosened: any address that is not loopback still fails the case.
 #   2. The host runs under `strace`, and every address it connected or sent to is read back; one
 #      that is not loopback fails the case that caused it.
 #   3. The host's own traffic that is not the model's (updates, telemetry, the marketplace) is
@@ -145,7 +150,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: claude-code
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR VS CODE'S AGENT. The editor is the one `@vscode/test-electron` downloads,
   # under a virtual screen, with the plugin of this tree listed in `chat.pluginLocations` and a
@@ -206,7 +211,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: vscode
-        run: unshare -rn bash -c 'ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR CODEX. The binary is the one npm installs from `@openai/codex` (Apache-2.0),
   # and before it runs, npm checks the registry's signature of each package and the provenance
@@ -303,7 +308,7 @@ jobs:
         env:
           MNEMA_HOST_CONTRACT_HOST: codex
           MNEMA_HOST_CONTRACT_EVIDENCE: ${{ runner.temp }}/host-contract-evidence
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
       - name: Keep the strace of a host that reached beyond loopback
         if: failure()
@@ -387,7 +392,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: copilot
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR OPENCODE. The binary is the one npm installs from `opencode-ai` (its
   # platform package, `opencode-linux-x64`), MIT-licensed; the job redistributes nothing and runs
@@ -461,7 +466,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: opencode
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR GEMINI CLI. The binary is the one npm installs from `@google/gemini-cli`
   # (a bundled script on Node), Apache-2.0; the job redistributes nothing and runs it unmodified.
@@ -535,7 +540,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: gemini
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR QWEN CODE. The binary is the one npm installs from `@qwen-code/qwen-code`
   # (a bundled script on Node), Apache-2.0; the job redistributes nothing and runs it unmodified.
@@ -608,7 +613,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: qwen
-        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+        run: unshare -rnm bash -c 'f=$(mktemp) && echo "nameserver 127.0.0.1" > "$f" && mount --bind "$f" /etc/resolv.conf && ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # WHEN THE WEEKLY RUN FAILS, SOMEBODY HAS TO KNOW. One issue, opened with the workflow's own token
   # and kept open: a second failure while it is open adds a comment and opens nothing.
