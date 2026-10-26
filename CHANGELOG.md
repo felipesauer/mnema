@@ -161,6 +161,7 @@ with its own changelog.
 
 ### Fixed
 
+- **A write is refused once where Qwen Code is opened in a Cursor terminal.** Qwen Code hands its hooks the person's environment, so a session started in Cursor's terminal carried `CURSOR_VERSION` too, and the command for Cursor ran beside Qwen Code's: the same rule was handed over twice. The command for Cursor now stands aside where `QWEN_PROJECT_DIR` is set, and the case is held against the real Qwen Code in the host contract.
 - **An agent's key is told by its fingerprint, not by where its file is kept.** `mnema key request --anchor <id> --key <file>`
   refused a key file kept in the agents' folder by the place of the file, so a copy of the agent's key kept anywhere else was
   asked for, and enrolled, as a person's key with nothing said; `mnema key enroll <line>` did not ask at all where the record had

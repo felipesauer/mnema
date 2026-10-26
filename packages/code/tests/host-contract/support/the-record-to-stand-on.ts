@@ -87,3 +87,11 @@ export function theChannelFactsOf(project: string, home: string): Record<string,
     kinds.map((kind) => [kind, events.filter((event) => event.kind === kind).length]),
   );
 }
+
+/** The refusals a project's public tree holds, whole, for a case that asks who recorded them. */
+export function theRefusalsOf(project: string, home: string): readonly unknown[] {
+  return orderedEvents(
+    { root: resolveTrees(project, { home }).projectPublic as string },
+    catalogUpcasters(),
+  ).filter((event) => event.kind === 'channel.refused');
+}
