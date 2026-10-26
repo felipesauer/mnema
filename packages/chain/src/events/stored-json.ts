@@ -282,6 +282,20 @@ export function keyList(keys: Iterable<string>): string {
   return `[${[...keys].sort(byCodePoint).map(pythonString).join(', ')}]`;
 }
 
+/**
+ * A scheme a reader does not know, as both readers name it in the refusal: a string as Python's
+ * `repr` spells it, an absent or `null` one as `None`, and any other value by its JSON type
+ * alone, whose spelling the two languages do not share (`1.0` is `1` once JavaScript has read it).
+ * `_scheme_named` in `mnemaverify/checkpoint.py` is the second reader's half.
+ */
+export function schemeNamed(value: unknown): string {
+  if (typeof value === 'string') return pythonString(value);
+  if (value === undefined || value === null) return 'None';
+  if (typeof value === 'boolean') return 'a boolean';
+  if (typeof value === 'number') return 'a number';
+  return Array.isArray(value) ? 'an array' : 'an object';
+}
+
 function byCodePoint(a: string, b: string): number {
   const left = [...a];
   const right = [...b];

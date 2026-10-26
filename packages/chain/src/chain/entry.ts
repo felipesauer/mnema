@@ -116,10 +116,8 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
     if (error instanceof EntryParseError) throw error;
     throw new EntryParseError((error as Error).message);
   }
-  const obj = raw as { event?: unknown; link?: unknown };
-  if (typeof obj.event !== 'object' || obj.event === null) {
-    throw new EntryParseError('entry is missing its event');
-  }
+  // The shape above made both an object, before the bytes.
+  const obj = raw as { event: object; link: object };
   const link = parseLink(obj.link);
   // Sound by construction: `JSON.parse` only ever yields strings, finite
   // numbers, booleans, null, arrays, and plain objects, the closed set
@@ -144,35 +142,36 @@ const LINK_KEYS = ['hash', 'prev', 'seq', 'tail'] as const;
 
 /**
  * The keys of the line and of its link, checked before its bytes, in the second reader's
- * order and words (`read_line` in `mnemaverify/entry.py`). A key beside `event` and `link`,
- * or a fifth key in the link, is covered by no hash and no signature, and is refused.
+ * order and words (`read_line` in `mnemaverify/entry.py`), the order `FORMAT.md` section 4
+ * fixes: an object, its two keys, both of them objects, then the link's four keys. A key beside
+ * `event` and `link`, or a fifth key in the link, is covered by no hash and no signature, and is
+ * refused.
  */
 function entryShape(raw: unknown): void {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new EntryParseError('entry must be a JSON object');
+  if (!isObject(raw)) {
+    throw new EntryParseError('a stored line that is not a JSON object');
   }
   if (!holdsExactly(raw, ENTRY_KEYS)) {
     throw new EntryParseError(
       `top-level keys are ${keyList(Object.keys(raw))}, not ${keyList(ENTRY_KEYS)}`,
     );
   }
-  const { link } = raw as { link?: unknown };
-  if (
-    typeof link === 'object' &&
-    link !== null &&
-    !Array.isArray(link) &&
-    !holdsExactly(link, LINK_KEYS)
-  ) {
+  const { event, link } = raw as { event?: unknown; link?: unknown };
+  if (!isObject(event) || !isObject(link)) {
+    throw new EntryParseError('event and link must both be objects');
+  }
+  if (!holdsExactly(link, LINK_KEYS)) {
     throw new EntryParseError(
       `link keys are ${keyList(Object.keys(link))}, not ${keyList(LINK_KEYS)}`,
     );
   }
 }
 
-function parseLink(raw: unknown): EntryLink {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new EntryParseError('entry is missing its link');
-  }
+function isObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseLink(raw: object): EntryLink {
   const obj = raw as { tail?: unknown; seq?: unknown; prev?: unknown; hash?: unknown };
   if (typeof obj.tail !== 'string' || obj.tail.length === 0) {
     throw new EntryParseError('entry link needs a tail');

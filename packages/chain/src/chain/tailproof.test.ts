@@ -111,7 +111,7 @@ describe('tail proof', () => {
       parseTailProof('{"scheme":"mnema-tail/1","sig":1,"signerFp":"f","tail":"t"}'),
     ).toThrow(/missing string "sig"/);
     expect(() => parseTailProof('{"scheme":"other","sig":"a","signerFp":"f","tail":"t"}')).toThrow(
-      /unknown tail-proof scheme/,
+      "a tail-proof scheme this reader does not know: 'other'",
     );
   });
 });

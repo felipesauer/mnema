@@ -27,7 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { holdsExactly, keyList, parseCanonicalLine } from '../events/stored-json.js';
+import { holdsExactly, keyList, parseCanonicalLine, schemeNamed } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 import { tailFingerprint } from './layout.js';
 
@@ -138,7 +138,11 @@ function tailProofShape(raw: unknown): void {
     throw new TailProofParseError('a tail proof that is not a JSON object');
   }
   const { scheme } = raw as { scheme?: unknown };
-  if (scheme !== SCHEME) return;
+  if (scheme !== SCHEME) {
+    throw new TailProofParseError(
+      `a tail-proof scheme this reader does not know: ${schemeNamed(scheme)}`,
+    );
+  }
   if (!holdsExactly(raw, TAILPROOF_LINE_KEYS)) {
     throw new TailProofParseError(
       `tail-proof keys are ${keyList(Object.keys(raw))}, not ${keyList(TAILPROOF_LINE_KEYS)}`,
@@ -162,10 +166,8 @@ export function parseTailProof(line: string): TailProof {
     }
     return value;
   };
-  const scheme = requireString('scheme');
-  if (scheme !== SCHEME) {
-    throw new TailProofParseError(`unknown tail-proof scheme "${scheme}"`);
-  }
+  // The shape above refused any other scheme, before the bytes.
+  const scheme = SCHEME;
   return {
     scheme,
     tail: requireString('tail'),

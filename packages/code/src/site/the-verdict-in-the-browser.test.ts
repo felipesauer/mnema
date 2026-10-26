@@ -245,59 +245,88 @@ describe('the verdict a page computes', () => {
 
   it.each([
     [
-      'beside event and link',
+      'a key no writer puts beside event and link',
       '000001.jsonl',
       (text: string) => text.replace(',"link":', ',"forged":1,"link":'),
       "top-level keys are ['event', 'forged', 'link'], not ['event', 'link']",
     ],
     [
-      'in a link',
+      'a key no writer puts in a link',
       '000001.jsonl',
       (text: string) => text.replace('"link":{"hash"', '"link":{"forged":1,"hash"'),
       "link keys are ['forged', 'hash', 'prev', 'seq', 'tail'], not ['hash', 'prev', 'seq', 'tail']",
     ],
     [
-      'in a checkpoint',
+      'a key no writer puts in a checkpoint',
       'checkpoints.jsonl',
       (text: string) => text.replace(',"fromSeq":', ',"forged":1,"fromSeq":'),
       "checkpoint keys: missing [], unexpected ['forged']",
     ],
     [
-      'in the tail proof',
+      'a key no writer puts in the tail proof',
       'tailproof.json',
       (text: string) => text.replace('{"scheme"', '{"forged":1,"scheme"'),
       "tail-proof keys are ['forged', 'scheme', 'sig', 'signerFp', 'tail'], not ['scheme', 'sig', 'signerFp', 'tail']",
     ],
-  ])(
-    'refuses a key no writer puts there %s where mnema verify refuses it, in its words',
-    (_, file, add, words) => {
-      // The line stays canonical and every hash and signature still closes: only the set of
-      // keys tells it from what a writer wrote. `mnema site` refuses to publish a tree it cannot
-      // read, so the key is set in the files the honest page embeds, and on disk beside them.
-      const out = honestRecord();
-      const honest = readFileSync(join(out, 'index.html'), 'utf-8');
-      const embedded = /id="record-files">(.*?)<\/script>/s.exec(honest)?.[1] as string;
-      const files = JSON.parse(embedded) as Record<string, string>;
-      const path = join(dirname(segmentOf(repo)), file);
-      const name = Object.keys(files).find((each) => path.endsWith(each)) as string;
-      const before = readFileSync(path, 'utf-8');
-      const after = add(before);
-      expect(after).not.toBe(before);
-      writeFileSync(path, after);
-      files[name] = Buffer.from(after, 'utf-8').toString('base64');
-      const cli = theCliSays();
-      expect(cli.ok).toBe(false);
+    // A line broken where the order of the checks decides which cause is named first
+    // (`FORMAT.md` section 4): the page names the one both readers name.
+    [
+      'a key in a link beside an event that is no object',
+      '000001.jsonl',
+      (text: string) => {
+        const [first, ...rest] = text.split('\n');
+        const { link } = JSON.parse(first as string) as { link: Record<string, unknown> };
+        const { hash, prev, seq, tail } = link;
+        const line = JSON.stringify({ event: 'x', link: { forged: 1, hash, prev, seq, tail } });
+        return [line, ...rest].join('\n');
+      },
+      'event and link must both be objects',
+    ],
+    [
+      'a link that is a string',
+      '000001.jsonl',
+      (text: string) => text.replace(/"link":\{[^}]*\}/, '"link":"x"'),
+      'event and link must both be objects',
+    ],
+    [
+      'a checkpoint scheme no version names',
+      'checkpoints.jsonl',
+      (text: string) => text.replace('"mnema-checkpoint/1"', '"mnema-checkpoint/9"'),
+      "a checkpoint scheme this reader does not know: 'mnema-checkpoint/9'",
+    ],
+    [
+      'a tail-proof scheme no version names',
+      'tailproof.json',
+      (text: string) => text.replace('"mnema-tail/1"', '"mnema-tail/9"'),
+      "a tail-proof scheme this reader does not know: 'mnema-tail/9'",
+    ],
+  ])('refuses %s where mnema verify refuses it, in its words', (_, file, add, words) => {
+    // The line stays canonical and every hash and signature still closes: only the set of
+    // keys tells it from what a writer wrote. `mnema site` refuses to publish a tree it cannot
+    // read, so the key is set in the files the honest page embeds, and on disk beside them.
+    const out = honestRecord();
+    const honest = readFileSync(join(out, 'index.html'), 'utf-8');
+    const embedded = /id="record-files">(.*?)<\/script>/s.exec(honest)?.[1] as string;
+    const files = JSON.parse(embedded) as Record<string, string>;
+    const path = join(dirname(segmentOf(repo)), file);
+    const name = Object.keys(files).find((each) => path.endsWith(each)) as string;
+    const before = readFileSync(path, 'utf-8');
+    const after = add(before);
+    expect(after).not.toBe(before);
+    writeFileSync(path, after);
+    files[name] = Buffer.from(after, 'utf-8').toString('base64');
+    const cli = theCliSays();
+    expect(cli.ok).toBe(false);
 
-      const page = honest.replace(embedded, JSON.stringify(files));
-      const shown = runInAPage(page, scriptOf(page));
-      expect({ summary: shown.summary, state: shown.state, lines: shown.lines.length }).toEqual({
-        summary: cli.summary,
-        state: 'broken',
-        lines: cli.notes,
-      });
-      expect(shown.lines.join('\n')).toContain(words);
-    },
-  );
+    const page = honest.replace(embedded, JSON.stringify(files));
+    const shown = runInAPage(page, scriptOf(page));
+    expect({ summary: shown.summary, state: shown.state, lines: shown.lines.length }).toEqual({
+      summary: cli.summary,
+      state: 'broken',
+      lines: cli.notes,
+    });
+    expect(shown.lines.join('\n')).toContain(words);
+  });
 
   it('breaks where mnema verify breaks when a checkpoint signature is altered', () => {
     honestRecord();

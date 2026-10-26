@@ -99,6 +99,22 @@ def binding_break(events: list[dict[str, Any]], signer_fp: Any) -> tuple[int, st
     return None
 
 
+def _scheme_named(value: Any) -> str:
+    """A scheme this reader does not know, as both readers name it in the refusal.
+
+    A string by its `repr`, an absent or null one as `None`, and any other value by its JSON
+    type alone (section 4), whose spelling a reader in another language need not share: `1.0`
+    reads back as `1` in a reader whose numbers are all floats.
+    """
+    if isinstance(value, str) or value is None:
+        return repr(value)
+    if isinstance(value, bool):
+        return "a boolean"
+    if isinstance(value, (int, float)):
+        return "a number"
+    return "an array" if isinstance(value, list) else "an object"
+
+
 def read_checkpoint(raw: bytes, index: int) -> Checkpoint:
     stored = strict_loads(utf8_text(raw))
     if not isinstance(stored, dict):
@@ -107,7 +123,7 @@ def read_checkpoint(raw: bytes, index: int) -> Checkpoint:
     if scheme != CHECKPOINT_SCHEME:
         # Section 6: a reader refuses a scheme it does not know rather than guessing at
         # the fields. Refusing BEFORE looking at the other keys is what makes that true.
-        raise Refusal("6", f"a checkpoint scheme this reader does not know: {scheme!r}")
+        raise Refusal("6", f"a checkpoint scheme this reader does not know: {_scheme_named(scheme)}")
     missing = sorted(set(CHECKPOINT_LINE_KEYS) - set(stored))
     extra = sorted(set(stored) - CHECKPOINT_LINE_KEYS)
     if missing or extra:
@@ -140,7 +156,9 @@ def read_tailproof(raw: bytes) -> TailProof:
     if not isinstance(stored, dict):
         raise Refusal("-", "a tail proof that is not a JSON object")
     if stored.get("scheme") != TAILPROOF_SCHEME:
-        raise Refusal("-", f"a tail-proof scheme this reader does not know: {stored.get('scheme')!r}")
+        raise Refusal(
+            "-", f"a tail-proof scheme this reader does not know: {_scheme_named(stored.get('scheme'))}"
+        )
     if set(stored) != TAILPROOF_LINE_KEYS:
         raise Refusal("-", f"tail-proof keys are {sorted(stored)}, not {sorted(TAILPROOF_LINE_KEYS)}")
     return TailProof(
