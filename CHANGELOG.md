@@ -114,7 +114,8 @@ with its own changelog.
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
   server opens a run with the journal's goal when it knows one and closes it with the journal's outcome (a sentence of counts that says it is as of the session's last `Stop`), reading
   `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
-  takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
+  takes its goal and its outcome from the records of its own tree and from no other (a private run alone also asks the
+  public tree whether a decision followed a question): a private task's title, and the
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its
   directories `0700` whatever the umask, and a transcript the host rewrote is read again from the top when it shrank or when the first or the last 4096 bytes already read
   changed (a digest of each is kept); a rewrite that leaves both ends and the size alone is not told, which is what keeps a `Stop` from
@@ -172,6 +173,58 @@ with its own changelog.
   fields each host writes on the stdin of the hook that runs before a write (Codex, Copilot CLI, Gemini CLI, VS Code) or after
   one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
   measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
+
+### Changed
+
+- **The README and the install page say they describe the next version.** What has not reached npm yet is under Unreleased here.
+- **The first read of a server with several projects open no longer opens the projects it does not work in.** Two
+  questions are put to every project of the workspace, not only to the one the session is in: where the agent left off
+  (its runs are in whichever project it wrote) and whether the count of calls is switched off. Both used to open each
+  project's projection, which was most of what the first `bootstrap` cost with nine other projects. For a project the
+  connection has not otherwise read, the server now keeps the answer to both, its runs and its channel switches, in a
+  small file on this machine under `cache/` of the mnema home (`~/.mnema`, or wherever `MNEMA_HOME` puts it), never
+  inside a project: a read writes nothing into a project it does not serve, and a `locks/tree-index.json` that arrives
+  with a clone is never read. The file is derived and deletable, and the server believes it only while the project is as
+  marked: the extent of its tails, the fingerprint of its sealed segments, the last line of each tail (so a checkout that
+  swaps the live segment for another of the same size is seen) and the stamp of the code that folds them. A project that
+  moved, or whose file is missing, damaged or holds rows that are not rows, is read as before. The first `bootstrap`
+  over ten projects measured 74 ms before and 39 ms after, `resume` 66 ms and 34 ms (median of 15 cold starts each, the
+  same machine, load average 8 on 16 cores); the answers are byte-identical to the ones the trees give, including when
+  the last run is in another project than the first. The second call is unchanged. A tool that only reads may now
+  leave this file in the machine's data directory, besides the projection of the project it serves and the local count
+  of calls (`readOnlyHint` still means no byte of the record is written). The limit is the one of the projection file:
+  an edit in place, to the same size, of a line before the last one of a live segment is not seen, and only
+  `mnema verify` sees it.
+- **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
+  module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
+  a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
+  stacks with `outside: true` (`stacksReaderFor` hands it).
+- **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
+  reply went out (about 21 microseconds an append, measured); it is now written in the next turn of the event loop, and
+  any line still waiting is written first when the process exits, when the session closes on SIGTERM, SIGINT or the end
+  of stdin, and when the count is read. A process killed by SIGKILL can still lose the lines that were waiting. Reading
+  the count in the same process sees every call already answered.
+- **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
+  projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
+  (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
+  fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
+  51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
+  its format or what a read answers changed.
+- **The MCP server starts from the projection the command line and the hooks already keep.** It opened every tree by
+  replaying the whole record; for the two trees of the project it is in, it now opens `locks/projection.db` and takes
+  only what was appended since, with the same checks every other reader uses (the stamp of the code, the size and
+  modification time of sealed segments, the frontier of each tail), so a record changed behind the file by another
+  process, a `git pull` or a checkout is read by the next call. The other projects of the workspace and the global tree
+  stay in memory. The first `bootstrap` of a server over a record of 4,508 lines went from about 250 to about 40 ms
+  (median of 21 cold starts, one project), and from 299 to 69 ms with nine other projects in the workspace; the second
+  call is about 4 ms slower than before while the file's pages are first read, and the calls after it are equal. Because a tool that only reads now updates that file, `readOnlyHint` carries a second written
+  exception beside the local count of calls: a cache derived from the project's own record, deletable (the next read builds
+  it again), never a fact of the record, and the one thing it can miss is an edit in place, to the same size, of a line
+  before the last of a live segment, which only `verify` sees. A live segment replaced by another branch's, even a longer one, is read again (the
+  line a stored position ends on is read back and must be the entry it ended on), in the command line as in the server,
+  and a file another process or version rewrote under a running server is taken again before the next answer. What the
+  file does not see is an edit, in place and to the same size, to a line before the last one of a live segment
+  (`mnema verify` is what rules on that).
 
 ### Fixed
 
@@ -317,60 +370,6 @@ with its own changelog.
   lacks this version's block. The Gemini CLI extension carries the same text as its context file (`contextFileName`).
 - A write of the block into an instruction file is not taken for a decision written there, and `AGENTS.md`,
   `CLAUDE.md` and `GEMINI.md` are not counted as decision documents of a directory `mnema decision import` reads.
-
-### Changed
-
-- **The README and the install page say they describe the next version.** What has not reached npm yet is under Unreleased here.
-- **The first read of a server with several projects open no longer opens the projects it does not work in.** Two
-  questions are put to every project of the workspace, not only to the one the session is in: where the agent left off
-  (its runs are in whichever project it wrote) and whether the count of calls is switched off. Both used to open each
-  project's projection, which was most of what the first `bootstrap` cost with nine other projects. For a project the
-  connection has not otherwise read, the server now keeps the answer to both, its runs and its channel switches, in a
-  small file on this machine under `cache/` of the mnema home (`~/.mnema`, or wherever `MNEMA_HOME` puts it), never
-  inside a project: a read writes nothing into a project it does not serve, and a `locks/tree-index.json` that arrives
-  with a clone is never read. The file is derived and deletable, and the server believes it only while the project is as
-  marked: the extent of its tails, the fingerprint of its sealed segments, the last line of each tail (so a checkout that
-  swaps the live segment for another of the same size is seen) and the stamp of the code that folds them. A project that
-  moved, or whose file is missing, damaged or holds rows that are not rows, is read as before. The first `bootstrap`
-  over ten projects measured 74 ms before and 39 ms after, `resume` 66 ms and 34 ms (median of 15 cold starts each, the
-  same machine, load average 8 on 16 cores); the answers are byte-identical to the ones the trees give, including when
-  the last run is in another project than the first. The second call is unchanged. A tool that only reads may now
-  leave this file in the machine's data directory, besides the projection of the project it serves and the local count
-  of calls (`readOnlyHint` still means no byte of the record is written). The limit is the one of the projection file:
-  an edit in place, to the same size, of a line before the last one of a live segment is not seen, and only
-  `mnema verify` sees it.
-- **Opening a session over a project with no stack is about 13 ms faster.** (Median of 15 runs, 211 ms to 198 ms, the same 1,789 bytes of document.) `mnema brief --hook` loaded the
-  module that installs and inspects stacks on every run; it now loads it only where a tree has a stack receipts folder or
-  a stack the record adopted, and prints the same document either way. `runBrief` in the library takes the reader of
-  stacks with `outside: true` (`stacksReaderFor` hands it).
-- **The local count of tool calls is written after the tool has answered.** The line used to be appended before the
-  reply went out (about 21 microseconds an append, measured); it is now written in the next turn of the event loop, and
-  any line still waiting is written first when the process exits, when the session closes on SIGTERM, SIGINT or the end
-  of stdin, and when the count is read. A process killed by SIGKILL can still lose the lines that were waiting. Reading
-  the count in the same process sees every call already answered.
-- **The first read of a server that has several projects open is faster.** Every tree a cold server opens used to create the
-  projection's tables, drop them as the first replay began and create them again; the tables are now made once per process
-  (copied from a database image where the runtime offers `serialize`/`deserialize`, created in place where it does not) and a
-  fresh database is not dropped before its first replay. The first `bootstrap` over ten projects measured 89 ms before and
-  51 ms after (median of 15 cold starts, the same machine and load); the second call is unchanged. Nothing about the record,
-  its format or what a read answers changed.
-- **The MCP server starts from the projection the command line and the hooks already keep.** It opened every tree by
-  replaying the whole record; for the two trees of the project it is in, it now opens `locks/projection.db` and takes
-  only what was appended since, with the same checks every other reader uses (the stamp of the code, the size and
-  modification time of sealed segments, the frontier of each tail), so a record changed behind the file by another
-  process, a `git pull` or a checkout is read by the next call. The other projects of the workspace and the global tree
-  stay in memory. The first `bootstrap` of a server over a record of 4,508 lines went from about 250 to about 40 ms
-  (median of 21 cold starts, one project), and from 299 to 69 ms with nine other projects in the workspace; the second
-  call is about 4 ms slower than before while the file's pages are first read, and the calls after it are equal. Because a tool that only reads now updates that file, `readOnlyHint` carries a second written
-  exception beside the local count of calls: a cache derived from the project's own record, deletable (the next read builds
-  it again), never a fact of the record, and the one thing it can miss is an edit in place, to the same size, of a line
-  before the last of a live segment, which only `verify` sees. A live segment replaced by another branch's, even a longer one, is read again (the
-  line a stored position ends on is read back and must be the entry it ended on), in the command line as in the server,
-  and a file another process or version rewrote under a running server is taken again before the next answer. What the
-  file does not see is an edit, in place and to the same size, to a line before the last one of a live segment
-  (`mnema verify` is what rules on that).
-
-### Fixed
 
 - **`mnema check run --key` with a key that is not Ed25519 no longer calls it an agent's key.** The refusal says that
   a checker's key is an Ed25519 one, as it says for an agent's in the commands that enrol an agent.
