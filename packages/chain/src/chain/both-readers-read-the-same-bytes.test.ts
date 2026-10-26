@@ -701,10 +701,17 @@ function firstCauses(record: string) {
   const there = secondReading(record);
   expect(here.ok, 'the product accepted').toBe(false);
   expect(there.verdict, 'the second reader accepted').toBe('REFUSED');
-  const product = here.issues[0]?.detail ?? '';
+  const first = here.issues[0];
+  const product = first?.detail ?? '';
   const second = there.refusals[0];
+  // Where the product places an issue of the fold, said as the second reader says it: a sentence
+  // of the fold carries no place of its own.
+  const where =
+    first?.tail === undefined || first.seq === undefined
+      ? ''
+      : `${first.tail.slice(0, 20)}... seq ${first.seq}`;
   return {
-    product: { check: checkNaming(product, 'product'), detail: product },
+    product: { check: checkNaming(product, 'product'), detail: product, where },
     second: {
       check: checkNaming(second?.what ?? '', 'second'),
       section: second?.section,
@@ -726,8 +733,9 @@ describe('the two readers name the same check first on a line broken where the o
     ['tail-proof-scheme-not-a-string', 'tail-proof-scheme-unknown', 'ownership proof'],
     // One check, worded by each reader in its own words: the comparison is of the check.
     ['forged-payload-field-appended', 'undeclared-payload-field', 'line 5'],
-    // A key that holds the agent role, enrolled again as a member: the fold names it, in both.
-    ['key-enrolled-names-an-agent-key', 'key-enrolled-names-an-agent-key', ''],
+    // A key that holds the agent role, enrolled again as a member: the fold names it, in both, at
+    // the `key.enrolled` (seq 3, after the founding and the `agent.enrolled`), not at the agent's.
+    ['key-enrolled-names-an-agent-key', 'key-enrolled-names-an-agent-key', 'seq 3'],
   ] as const;
 
   it('covers mutations the tool offers', () => {
@@ -740,7 +748,13 @@ describe('the two readers name the same check first on a line broken where the o
     expect(causes.product.check, 'the product').toBe(check);
     expect(causes.second.check, 'the second reader').toBe(check);
     expect(causes.second.section).toBe(CHECKS[check].section);
-    expect(causes.product.detail).toContain(at);
+    expect(`${causes.product.detail} ${causes.product.where}`).toContain(at);
+  });
+
+  it('places the agent key enrolled again as a member at the same event in both', () => {
+    const causes = firstCauses(mutated('key-enrolled-names-an-agent-key'));
+    expect(causes.product.where).toMatch(/\.\.\. seq 3$/);
+    expect(causes.second.where).toBe(causes.product.where);
   });
 
   /** One line of the first segment, or of the checkpoints, replaced, and both readers asked. */
