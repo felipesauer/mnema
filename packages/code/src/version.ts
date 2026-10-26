@@ -32,7 +32,7 @@
  */
 
 /** The version this build of the product reports, wherever it is asked. */
-export const VERSION = '0.1.2';
+export const VERSION = '0.1.3';
 
 /**
  * The name this product answers `mnema --identify` with, before its version: the package it is
