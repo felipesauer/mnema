@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CliResult, createRun, type Run } from './cli.js';
 import { activate, QUIET_MS, type VscodeApi } from './extension.js';
+import { MIN_CLI_VERSION } from './status.js';
 
 const ROOT = '/work/proj';
 const ok = (stdout: string): CliResult => ({ code: 0, stdout, stderr: '' });
@@ -207,7 +208,7 @@ const LIST = 'search --kind decision --state proposed --limit 200 --json';
 const STACK_LIST = 'stack list --json';
 const COVERAGE = 'public: local integrity verified (T1/T2/T4); external witness (T3): not covered';
 const base = (): Record<string, CliResult> => ({
-  '--version': ok('0.1.2\n'),
+  '--version': ok(`${MIN_CLI_VERSION}\n`),
   verify: ok(`${COVERAGE}\n`),
   [STACK_LIST]: ok(JSON.stringify({ stacks: [] })),
   [LIST]: listing(hit('d1', 'Use X')),
@@ -271,7 +272,7 @@ describe('the extension reads the record through the command line', () => {
     };
     const w = world(answers);
     await settle();
-    answers['--version'] = ok('0.1.2\n');
+    answers['--version'] = ok(`${MIN_CLI_VERSION}\n`);
     await w.command('mnema.refresh')();
     expect(w.executed.filter((e) => e[1] === 'mnema.cliMissing').map((e) => e[2])).toEqual([
       true,
