@@ -382,6 +382,46 @@ const MUTATIONS = [
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
+  // A line broken where the order of the checks decides how it is named: refused by both readers
+  // whatever the order, and named by the same check first since section 4 wrote the order down
+  // (`both-readers-read-the-same-bytes.test.ts` holds the first cause).
+  {
+    name: 'event-not-an-object-beside-a-key-in-the-link',
+    refusals: 1,
+    section: '4',
+    says: 'event and link must both be objects',
+    productSays: 'event and link must both be objects',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'link-is-a-string',
+    refusals: 1,
+    section: '4',
+    says: 'event and link must both be objects',
+    productSays: 'event and link must both be objects',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'checkpoint-of-an-unknown-scheme',
+    // TWO: the second checkpoint's prev names a message this reader no longer reads.
+    refusals: 2,
+    section: '6',
+    says: "a checkpoint scheme this reader does not know: 'mnema-checkpoint/9'",
+    productSays: "a checkpoint scheme this reader does not know: 'mnema-checkpoint/9'",
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'tail-proof-of-an-unknown-scheme',
+    refusals: 1,
+    section: '-',
+    says: "a tail-proof scheme this reader does not know: 'mnema-tail/9'",
+    productSays: "a tail-proof scheme this reader does not know: 'mnema-tail/9'",
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
   {
     name: 'checkpoint-other-key',
     // THREE since a tail belongs to one key (section 6): the first checkpoint now names a

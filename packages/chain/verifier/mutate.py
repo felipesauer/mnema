@@ -232,6 +232,56 @@ def unknown_key_in_the_tail_proof(root: str) -> tuple[bool, str]:
     return after != before, "a key no writer puts there, in tailproof.json"
 
 
+# THE SAME LINE, BROKEN TWO WAYS AT ONCE, or broken in a way the order of the checks decides how
+# it is named. Each is refused by both readers whatever the order; what these inputs hold them to
+# is that both name the SAME first cause, which they did not until the order was written down
+# (FORMAT.md section 4: the shape before the bytes, and within the shape, the scheme first).
+
+
+def event_not_an_object_beside_a_key_in_the_link(root: str) -> tuple[bool, str]:
+    """A line whose `event` is a string AND whose link carries a fifth key, re-canonicalized."""
+
+    def place(record: dict) -> dict:
+        record["event"] = "not an object"
+        return record["link"]
+
+    return _unknown_key_in_a_line(root, place)
+
+
+def link_is_a_string(root: str) -> tuple[bool, str]:
+    """A line whose `link` is a string where its four keys belong, re-canonicalized."""
+    path = _segment(root)
+    lines = _read_lines(path)
+    at = min(2, len(lines) - 1)
+    record = strict_loads(lines[at].decode("utf-8"))
+    record["link"] = "not an object"
+    lines[at] = canonical_bytes(record)
+    return _rewrite(path, lines), f"the link of line {at + 1} made a string"
+
+
+def checkpoint_of_an_unknown_scheme(root: str) -> tuple[bool, str]:
+    """The first checkpoint line under a scheme no version of this format names, re-canonicalized."""
+    path = _checkpoints(root)
+    lines = _read_lines(path)
+    stored = strict_loads(lines[0].decode("utf-8"))
+    stored["scheme"] = "mnema-checkpoint/9"
+    lines[0] = canonical_bytes(stored)
+    return _rewrite(path, lines), "the first checkpoint line under scheme mnema-checkpoint/9"
+
+
+def tail_proof_of_an_unknown_scheme(root: str) -> tuple[bool, str]:
+    """tailproof.json under a scheme no version of this format names, re-canonicalized."""
+    path = os.path.join(_tail_dir(root), "tailproof.json")
+    with open(path, "rb") as handle:
+        before = handle.read()
+    stored = strict_loads(before.decode("utf-8").rstrip("\n"))
+    stored["scheme"] = "mnema-tail/9"
+    after = canonical_bytes(stored) + (b"\n" if before.endswith(b"\n") else b"")
+    with open(path, "wb") as handle:
+        handle.write(after)
+    return after != before, "tailproof.json under scheme mnema-tail/9"
+
+
 def checkpoint_other_key(root: str) -> tuple[bool, str]:
     """A checkpoint pointed at another enrolled key, which is what signerFp is for."""
     path = _checkpoints(root)
@@ -1372,6 +1422,10 @@ MUTATIONS = {
     "unknown-key-in-a-link": unknown_key_in_a_link,
     "unknown-key-in-a-checkpoint": unknown_key_in_a_checkpoint,
     "unknown-key-in-the-tail-proof": unknown_key_in_the_tail_proof,
+    "event-not-an-object-beside-a-key-in-the-link": event_not_an_object_beside_a_key_in_the_link,
+    "link-is-a-string": link_is_a_string,
+    "checkpoint-of-an-unknown-scheme": checkpoint_of_an_unknown_scheme,
+    "tail-proof-of-an-unknown-scheme": tail_proof_of_an_unknown_scheme,
     "checkpoint-other-key": checkpoint_other_key,
     "checkpoint-prev-broken": checkpoint_prev_broken,
     "checkpoint-dropped": checkpoint_dropped,

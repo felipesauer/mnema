@@ -316,6 +316,25 @@ a record, and a version from before it verifies such a record and refuses nothin
 `unknown-key-beside-event-and-link`, `unknown-key-in-a-link`,
 `unknown-key-in-a-checkpoint` and `unknown-key-in-the-tail-proof`).
 
+**The shape is checked before the bytes, in one order, so a line broken in two of the ways
+named here is refused for the same first cause by both readers.** A stored line: it is an
+object (`a stored line that is not a JSON object`), its keys are `event` and `link`, both of
+them are objects (`event and link must both be objects`), and its link has its four keys. A checkpoint line or a tail
+proof: it is an object, its `scheme` is one the reader knows (`a checkpoint scheme this reader
+does not know: 'mnema-checkpoint/9'`, and `a tail-proof scheme ...` for §6.1), and then its
+keys, because a reader refuses a scheme it does not know rather than guessing at the fields. A
+scheme that is a string is named as quoted there, one absent or `null` as `None`, and any other
+value by its JSON type alone (`a number`, `a boolean`, `an array`, `an object`). Only then are
+the bytes compared with the canonical serialization. The order moves no verdict, since each
+check refuses on its own; it decides which one a reader names first
+(`both-readers-read-the-same-bytes.test.ts`, "the two readers name the same check first";
+`second-reader-agrees-on-the-record.test.ts`, `event-not-an-object-beside-a-key-in-the-link`,
+`link-is-a-string`, `checkpoint-of-an-unknown-scheme` and `tail-proof-of-an-unknown-scheme`).
+The type of each value inside a link or a checkpoint is not in this order yet: the second
+reader checks it before the bytes and the product after them, in other words, so a line both
+re-spelled and holding such a value is named for its bytes by one and for the value by the
+other.
+
 **A stored line is UTF-8, and a line that is not is refused** (§1.6). A reader decodes
 the bytes strictly: a sequence that is not well-formed UTF-8 (a lone continuation byte,
 an overlong form, a surrogate, a code point past U+10FFFF, a sequence cut short) is not
@@ -560,7 +579,7 @@ part of it**:
   `second-reader-agrees-on-the-record.test.ts`, `tail-written-by-another-enrolled-key` and
   `event-by-another-enrolled-key-above-the-checkpoint`).
 - `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
-  rather than guessing at the fields, and the signature is over the seven keys
+  rather than guessing at the fields, before it reads the other keys or the bytes (§4), and the signature is over the seven keys
   above with `sig` absent
   (`packages/chain/src/chain/format-on-disk.test.ts`).
 
