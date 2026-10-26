@@ -9,7 +9,7 @@
  * invocation asked to exit with.
  */
 
-import { CodedError, KeyMadeMeanwhileError, KeyRootBusyError } from '@mnema/chain';
+import { CodedError, KeyMadeMeanwhileError, KeyRootBusyError, TailBusyError } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_ERROR_EXIT, InternalError } from './internal-error.js';
 import { renderPlain } from './presentation/plain.js';
@@ -55,9 +55,19 @@ describe('the last-resort catch', () => {
     expect(said.exit).toBe(1);
   });
 
-  it('says a coded refusal the same way, with exit 1', async () => {
+  it('says any coded refusal under its own code, with exit 1', async () => {
     const said = await whatItThrows(() => new ADeliberateNo('the tail is busy'));
-    expect(said.err).toEqual(['the tail is busy']);
+    expect(said.err).toHaveLength(1);
+    expect(said.err[0]).toContain('Refused (A_DELIBERATE_NO)');
+    expect(said.err[0]).toContain('the tail is busy');
+    expect(said.exit).toBe(1);
+  });
+
+  it('says a busy tail under TAIL_BUSY, though no list of codes names it', async () => {
+    const said = await whatItThrows(() => new TailBusyError('/home/x/tail.lock', 4242, 5000));
+    expect(said.err).toHaveLength(1);
+    expect(said.err[0]).toContain('Refused (TAIL_BUSY)');
+    expect(said.err[0]).not.toContain('internal error');
     expect(said.exit).toBe(1);
   });
 

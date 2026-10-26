@@ -125,10 +125,9 @@ describe('the files that name who signs are on the disk when their writer return
     const keys = join(root, 'keys');
     const privatePath = persistKeyPair(layout(), keyPair);
     const pub = join(keys, `${keyPair.fingerprint}.pub`);
-    expect(synced.paths).toContain(pub);
-    expect(synced.paths).toContain(`${privatePath}.${process.pid}.writing`);
-    expect(synced.paths.at(-1)).toBe(keys);
-    expect(synced.paths.filter((p) => p === keys).length).toBeGreaterThanOrEqual(1);
+    // In order: the .pub and its directory entry, the aside and its directory entry, and the
+    // directory again AFTER the rename, which is what makes the `.key` name itself durable.
+    expect(synced.paths).toEqual([pub, keys, `${privatePath}.${process.pid}.writing`, keys, keys]);
   });
 
   it('syncs a public key materialized into a tree, and its directory', () => {
