@@ -525,6 +525,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
+      'PreToolUse:command:edit-refuses-a-write.mjs',
       'PostToolUse:command:choice-settled.mjs',
       'PostToolUse:command:after-a-write.mjs',
       'PostToolUse:command:agent-dispatched.mjs',

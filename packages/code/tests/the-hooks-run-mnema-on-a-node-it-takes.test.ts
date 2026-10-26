@@ -84,13 +84,18 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 /** The command `hooks.json` declares for a handler, under the event it is declared in. */
-function declared(event: string, handler: string): string {
+function declared(event: string, handler: string, host?: string): string {
   const config = JSON.parse(readFileSync(HOOKS, 'utf-8')) as {
     hooks: Record<string, { hooks: { type: string; command?: string }[] }[]>;
   };
   const found = (config.hooks[event] ?? [])
     .flatMap((group) => group.hooks)
-    .filter((hook) => hook.type === 'command' && (hook.command ?? '').includes(handler));
+    .filter(
+      (hook) =>
+        hook.type === 'command' &&
+        (hook.command ?? '').includes(handler) &&
+        (host === undefined || (hook.command ?? '').includes(` --host ${host} `)),
+    );
   expect(found.length).toBe(1);
   return found[0]?.command as string;
 }
@@ -173,7 +178,7 @@ function aHook(
   };
 }
 
-const CURSOR = () => declared('PreToolUse', 'edit-refuses-a-write.mjs');
+const CURSOR = () => declared('PreToolUse', 'edit-refuses-a-write.mjs', 'cursor');
 const cursorWrite = (at = repo): string =>
   JSON.stringify({
     hook_event_name: 'preToolUse',
@@ -809,7 +814,7 @@ describe('a fault of the handler itself', () => {
 
   it('refuses the write the call is about, with the fault said', () => {
     const met = aHook(
-      declared('PreToolUse', 'edit-refuses-a-write.mjs'),
+      declared('PreToolUse', 'edit-refuses-a-write.mjs', 'cursor'),
       cursorWrite(),
       pathOf('real', 'tools'),
       CURSOR_ENV,

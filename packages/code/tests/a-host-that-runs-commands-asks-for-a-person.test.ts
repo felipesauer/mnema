@@ -428,7 +428,7 @@ describe('the plugin command VS Code runs', () => {
     const gates = (config.hooks['PreToolUse'] ?? []).flatMap((group) =>
       group.hooks.flatMap((hook) => (hook.type === 'command' ? [hook.command ?? ''] : [])),
     );
-    expect(gates.length).toBe(2);
+    expect(gates.length).toBe(3);
     const host = (command: string, payload: string) =>
       spawnSync('/bin/sh', ['-c', command], {
         cwd: repo,
@@ -467,7 +467,7 @@ describe('the plugin command VS Code runs', () => {
     expect(refused.status).not.toBe(0);
     expect(refused.stdout).toBe('');
     expect(refused.stderr).toContain(
-      '--host takes one of vscode, cursor, codex, copilot, opencode, gemini, not "zed".',
+      '--host takes one of vscode, cursor, codex, copilot, opencode, gemini, qwen, not "zed".',
     );
     const missing = spawnSync(process.execPath, [CLI, 'before-a-write'], {
       cwd: repo,

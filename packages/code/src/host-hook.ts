@@ -174,6 +174,11 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   // (`packages/core/src/tools/definitions/base-declarations.ts`, v0.63.0). A multi-file tool of
   // its own was not read, and a file a shell command writes is not a tool this table can name.
   gemini: { write_file: snakeFilePath, replace: snakeFilePath },
+  // THE NAMES QWEN CODE GIVES ITS TWO WRITING TOOLS, which a hook is handed as they are (the
+  // plugin's matcher `Write|Edit|NotebookEdit` reaches them by the aliases the host keeps), the
+  // path under `file_path`: `write_file` and `edit`. Its `notebook_edit` was not run, and a file a
+  // shell command writes is not a tool this table can name.
+  qwen: { write_file: snakeFilePath, edit: snakeFilePath },
 };
 
 /**
@@ -235,6 +240,9 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // Gemini CLI reads the decision at the top level of the reply, `decision` and `reason`, and
     // has no field called `permissionDecision`; the nested reply would be read as nothing. Only a
     // refusal reaches it: its row says it is not asked.
+    // Qwen Code reads the nested reply the plugin's hooks file gives every host that reads it:
+    // `deny` refuses the write and the reason goes back to the model as the call's error.
+    qwen: (s) => hookReply('PreToolUse', s),
     gemini: (s) => {
       const said = hookReply('PreToolUse', s).hookSpecificOutput;
       return said !== undefined &&
