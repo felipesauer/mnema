@@ -511,8 +511,8 @@ export const SESSION_JOURNAL_CHANNEL: SwitchableChannel = 'session-journal';
 export const LAST_SESSION_CHANNEL: SwitchableChannel = 'last-session';
 
 /**
- * The switch of the reminder a conversation gets right after it was compacted: what the session had
- * recorded with the record before, read from its journal. A fact in the voice of the other hooks
+ * The switch of the reminder a conversation gets right after it was compacted: what entered the
+ * record while the session ran, read from its journal. A fact in the voice of the other hooks
  * (what was counted, and from where), with the labels of the decisions the record numbered and
  * none of anybody's words.
  */
@@ -804,8 +804,8 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'goal, the decisions it recorded and the counts of what it left, read from its journal when it ' +
     'was another session and a recent one',
   'after-a-compaction':
-    'the sentence a conversation is handed right after it was compacted, saying what the session had ' +
-    'recorded before (decisions by label, notes copied, files edited, questions answered with no ' +
+    'the sentence a conversation is handed right after it was compacted, saying what entered the ' +
+    "project's record since the session opened, and what it did beside it (decisions by label, notes copied, files edited, questions answered with no " +
     'decision after), read from its journal',
   'session-journal':
     'the session journal: with it off, no file is kept of what a session did with the record, and ' +

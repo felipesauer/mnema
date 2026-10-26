@@ -124,7 +124,7 @@ describe('the sentence', () => {
         labels,
       ),
     ).toBe(
-      'Before this conversation was compacted, this session had: 1 decision recorded in this project’s record (ADR-12: proposed); 1 note of this host’s memory copied into this machine’s private tree; 2 questions answered with no decision recorded after; 1 file of decisions that the record cites nowhere; 1 task in progress; its own tool calls wrote 5 files.',
+      'Before this conversation was compacted, this session had: 1 decision entered this project’s record since this session opened (ADR-12: proposed); 1 note of this host’s memory copied into this machine’s private tree; 2 questions answered with no decision recorded after; 1 file of decisions that the record cites nowhere; 1 task in progress; its own tool calls wrote 5 files.',
     );
     expect(afterACompactionSentence(aJournal({ filesEdited: 2 }), labels)).toBe(
       'Before this conversation was compacted, this session had: its own tool calls wrote 2 files.',
@@ -152,7 +152,51 @@ describe('the sentence', () => {
   });
 });
 
+describe('the sentence, capped', () => {
+  it('names at most five decisions and counts the rest', () => {
+    const labels = new Map(Array.from({ length: 9 }, (_, n) => [`d${n}`, `ADR-${n + 1}`] as const));
+    const sentence = afterACompactionSentence(
+      aJournal({ decisions: [...labels.keys()].map((id) => ({ id, state: 'accepted' })) }),
+      labels,
+    ) as string;
+    expect(sentence).toContain(
+      '9 decisions entered this project’s record since this session opened',
+    );
+    expect(sentence).toContain(
+      '(ADR-1: accepted; ADR-2: accepted; ADR-3: accepted; ADR-4: accepted; ADR-5: accepted; and 4 more)',
+    );
+    expect(sentence).not.toContain('ADR-6');
+  });
+});
+
 describe('the read', () => {
+  it('says which tree a label is of when two trees number a decision the same', async () => {
+    const pub = await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
+    const priv = await doing(
+      'decision',
+      'record',
+      'Keep cents',
+      'Money is cents',
+      '--scope',
+      'private',
+    );
+    const idOf = (out: string[]) =>
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(out.join('\n'))?.[0] ??
+      '';
+    keep(
+      aJournal({
+        openedAt: new Date(Date.now() - 3_600_000).toISOString(),
+        decisions: [
+          { id: idOf(pub), state: 'proposed' },
+          { id: idOf(priv), state: 'proposed' },
+        ],
+      }),
+    );
+    const text = afterwards() ?? '';
+    expect(text).toContain('ADR-1 (public): proposed');
+    expect(text).toContain('ADR-1 (private): proposed');
+  });
+
   it('names the decisions by the record’s own label and state', async () => {
     const out = await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
     const id = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(
@@ -160,7 +204,7 @@ describe('the read', () => {
     )?.[0];
     keep(aJournal({ decisions: [{ id: id ?? '', state: 'proposed' }], filesEdited: 3 }));
     expect(afterwards()).toMatch(
-      /1 decision recorded in this project’s record \(ADR-\d+: proposed\)/,
+      /1 decision entered this project’s record since this session opened \(ADR-\d+: proposed\)/,
     );
   });
 
@@ -181,7 +225,7 @@ describe('the read', () => {
     );
     await doing('decision', 'move', 'accept', idOf(first), '--note', 'Agreed');
     const text = afterwards() ?? '';
-    expect(text).toMatch(/2 decisions recorded in this project’s record/);
+    expect(text).toMatch(/2 decisions entered this project’s record since this session opened/);
     expect(text).toMatch(/ADR-\d+: accepted/);
     expect(text).toMatch(/ADR-\d+: proposed/);
     expect(text).not.toMatch(/ADR-\d+: proposed; ADR-\d+: proposed/);

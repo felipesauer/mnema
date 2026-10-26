@@ -56,7 +56,7 @@ import {
   RECALL_CHANNEL,
   SESSION_JOURNAL_CHANNEL,
 } from '../record-framing.js';
-import { lastJournalOf } from '../session-journal.js';
+import { labelsOf, lastJournalOf } from '../session-journal.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -167,12 +167,15 @@ function theLastSession(
   const wrote = Date.parse(journal.updatedAt);
   const ago = now.getTime() - wrote;
   const known = sources.flatMap((source) => source.cache.listDecisions());
+  const labels = labelsOf(sources);
   return {
     agoSeconds: Math.max(0, Math.floor(ago / 1000)),
     goal: journal.trees.public.goal ?? journal.trees.private.goal,
     decisions: journal.decisions.flatMap((one) => {
       const found = known.find((decision) => decision.id === one.id);
-      return found === undefined ? [] : [{ label: found.adr, state: found.state }];
+      return found === undefined
+        ? []
+        : [{ label: labels.get(found.id) ?? found.adr, state: found.state }];
     }),
     filesEdited: journal.filesEdited,
     wrote:
