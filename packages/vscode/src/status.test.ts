@@ -42,7 +42,10 @@ describe('the verdict of the record, as `mnema verify --json` says it', () => {
       level: 'fully-signed',
     });
     // Both of these have a top-level ok: true, and `mnema verify` exits 1 on them.
-    expect(readVerdict(printed('verify-tampered'))).toEqual({ kind: 'failed', level: 'unreadable' });
+    expect(readVerdict(printed('verify-tampered'))).toEqual({
+      kind: 'failed',
+      level: 'unreadable',
+    });
     expect(readVerdict(printed('verify-empty-folder'))).toEqual({
       kind: 'failed',
       level: 'broken',
