@@ -329,7 +329,7 @@ launcher runs the `PATH`'s `mnema`.
 
 ### Signing as an agent
 
-The plugin's second option, `agent_key`, is empty: the server signs with your own key. Give it the
+The plugin's second option, `agent_key`, is empty: the server signs with the key the option names, else the one a `MNEMA_AGENT_KEY` in the environment names, else your own. Give it the
 name of an agent key (`mnema key request --agent <name> --anchor <identity>`, then `mnema key enroll
 --agent <the line>` where your own key is, which enrols it in the project's committed, private and
 global trees) and the server signs with that key in each tree whose record enrols it, naming the agent
@@ -346,8 +346,8 @@ each such tree, and signs there with your own, and what it records is declared, 
 own key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, that write is
 refused and nothing is signed, and the server still opens and serves what it reads, and the refusal names the verb `key enroll --agent` (in the hook what is not done is
 the recording of the fact: the reply to the host is unchanged and says why). That a host passes a manifest's `env` to the server
-was not measured on the hosts named here, only on Claude Code's documentation; and that VS Code and Cursor
-hand the server the `agent_key` option was not measured either; `mnema doctor` says what a machine holds. What a
+was measured on Claude Code, Codex, Copilot CLI and Gemini CLI ([the evidence page](../docs/evidence.md)), and not on VS Code
+and Cursor; that those two hand the server the `agent_key` option was not measured either; `mnema doctor` says what a machine holds. What a
 host's sandbox leaves of the key's folder to the model is in
 [the sandbox section of the agent hosts page](../docs/agent-hosts.md#signing-as-an-agent-inside-a-sandbox).
 

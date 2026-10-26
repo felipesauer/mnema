@@ -144,7 +144,7 @@ describe('the launcher starts it as the host would have', () => {
 
   it('the server it starts has the key the option named, and the environment key when the option is empty', () => {
     const path = join(directory, 'env-mnema');
-    writeFileSync(path, '#!/bin/sh\necho "key=[${MNEMA_AGENT_KEY-unset}]"\n');
+    writeFileSync(path, `#!/bin/sh\necho "key=[$${'{'}MNEMA_AGENT_KEY-unset}]"\n`);
     chmodSync(path, 0o755);
     const run = (env: Record<string, string>) =>
       launch({ MNEMA_PLUGIN_BINARY: path, ...env }).stdout;
