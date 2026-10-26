@@ -64,6 +64,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           // as derived and nothing else (`commands/status.ts`).
           result.outside,
           result.neverImported,
+          result.runsByTree,
           result.asThisMachine,
         ),
       );

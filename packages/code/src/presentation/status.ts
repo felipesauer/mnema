@@ -64,7 +64,7 @@
  * classification of every value this module puts on a line, reconciled against the source.
  */
 
-import type { AwaitingJudgement, Bootstrap, TaskStanding } from '@mnema/context';
+import type { AwaitingJudgement, Bootstrap, ReportedRun, TaskStanding } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { fact } from './detail.js';
@@ -104,6 +104,7 @@ export function statusReport(
   actor: string,
   outside: readonly DecisionsOutside[],
   neverImported: readonly UnimportedBase[],
+  runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[],
   asThisMachine = false,
 ): string[] {
   return [
@@ -111,7 +112,7 @@ export function statusReport(
     ...(asThisMachine
       ? [render(fact('The identity this machine writes as in this project.'))]
       : []),
-    ...sessionLines(render, status),
+    ...sessionLines(render, status, runsByTree),
     '',
     ...workLines(render, status),
     '',
@@ -256,9 +257,23 @@ function unreadLines(status: Bootstrap): string[] {
  * has none. `mnema resume --actor <id>` is where a reader who wants the explanation
  * finds it, unchanged.
  */
-function sessionLines(render: Render, status: Bootstrap): string[] {
+function sessionLines(
+  render: Render,
+  status: Bootstrap,
+  runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[],
+): string[] {
   const { lastRun } = status.resume;
   if (lastRun === null) return [render(fact('No runs.'))];
+  // Runs in more than one tree: a session that wrote to both leaves one in each, with an outcome
+  // that counts that tree's records only, so the newest alone would speak for the other as well.
+  if (runsByTree.length > 1) {
+    return [
+      ...runsByTree.map(({ tree, run }) =>
+        render(fact(`In the ${tree} tree, ${lastRunPhrase(run)}`)),
+      ),
+      render(fact(openRunsPhrase(status.resume))),
+    ];
+  }
   return [render(fact(lastRunPhrase(lastRun))), render(fact(openRunsPhrase(status.resume)))];
 }
 
