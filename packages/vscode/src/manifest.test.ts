@@ -95,7 +95,9 @@ describe('the extension manifest', () => {
       const whens = viewsWelcome.filter((w) => w.view === id).map((w) => w.when);
       expect(whens, id).toContain('!mnema.hasRecord');
       expect(
-        whens.filter((when) => when !== '!mnema.hasRecord').every((when) => when.startsWith('mnema.hasRecord')),
+        whens
+          .filter((when) => when !== '!mnema.hasRecord')
+          .every((when) => when.startsWith('mnema.hasRecord')),
         id,
       ).toBe(true);
     }
