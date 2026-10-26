@@ -96,10 +96,12 @@ CLI and the MCP tools behave identically, because they are the same call.
   naming that run's agent and how many minutes ago; it is read from the record and appends
   nothing, and a path no rule has ever charged anyone at gets none. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
-  before a write, and it asks, and records, exactly where the third would; Claude Code and
-  Cursor never run it. Beside them, on the same `PreToolUse` matcher, one more hook runs only
+  before a write, and it asks, and records, exactly where the third would; Claude Code,
+  Cursor and Qwen Code never run it. Beside them, on the same `PreToolUse` matcher, one more hook runs only
   where `$CURSOR_VERSION` is set: the refusal for Cursor's command-line agent, which answers a
-  rule that refuses a write and nothing else, since that agent ignores a pause. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
+  rule that refuses a write and nothing else, since that agent ignores a pause. Another runs only
+  where `$QWEN_PROJECT_DIR` is set: the same refusal for Qwen Code, which answers a rule that refuses
+  a write and nothing else. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is
