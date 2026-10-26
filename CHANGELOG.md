@@ -50,7 +50,7 @@ with its own changelog.
   and an outcome as a sentence of counts). Never a prompt, a message, a tool's output, a file's content, the environment or the
   answer a person chose. It is outside the record (no event, no signature, `verify` does not read it), disposable, pruned by age
   (30 days) and number (50 a project), and `mnema switch off session-journal` stops it (a new channel, on by default). The MCP
-  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome, reading
+  server opens a run with the journal's goal when it knows one and closes it with the journal's outcome (a sentence of counts that says it is as of the session's last `Stop`), reading
   `CLAUDE_CODE_SESSION_ID`; the `resume` and `status` readings now print a run's outcome, which they never did. A run
   takes its goal and its outcome from the records of its own tree and from no other: a private task's title, and the
   count of private decisions or notes, never reach a run written to the public record. The file is `0600` and its

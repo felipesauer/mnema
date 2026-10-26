@@ -396,7 +396,8 @@ function counted(n: number, one: string, many: string): string {
 
 /**
  * The outcome a run ends with: a sentence of counts, in the order of what a person asks of a
- * session. Nothing in it is anybody's words.
+ * session. Nothing in it is anybody's words. It is the journal as of the session's LAST Stop, and
+ * says so: a run closes after that Stop, and a decision recorded in between is not in it.
  */
 export function outcomeOf(
   journal: Pick<Journal, 'decisions' | 'filesEdited' | 'notes' | 'questionsWithoutDecision'>,
@@ -413,7 +414,7 @@ export function outcomeOf(
       `${counted(journal.questionsWithoutDecision, 'question', 'questions')} answered with no decision recorded after`,
     );
   }
-  return `${parts.join('; ')}.`;
+  return `${parts.join('; ')}, as of the session's last Stop.`;
 }
 
 /**

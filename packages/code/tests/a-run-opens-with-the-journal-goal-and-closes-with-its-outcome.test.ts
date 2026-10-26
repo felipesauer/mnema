@@ -117,7 +117,10 @@ describe('a run and the journal of its session', () => {
     const file = journalFile(resolveTrees(project, env), SESSION) as string;
     writeJournal(
       file,
-      journal('Move the ledger to UTC', '2 decisions recorded; 3 files edited.'),
+      journal(
+        'Move the ledger to UTC',
+        "2 decisions recorded; 3 files edited, as of the session's last Stop.",
+      ),
       new Date(),
     );
     const { client, end } = await connected(project, SESSION);
@@ -129,7 +132,7 @@ describe('a run and the journal of its session', () => {
       'Move the ledger to UTC',
     ]);
     expect(ended.map((e) => (e.payload as Record<string, unknown>)['outcome'])).toEqual([
-      '2 decisions recorded; 3 files edited.',
+      "2 decisions recorded; 3 files edited, as of the session's last Stop.",
     ]);
     await client.close();
   });
@@ -180,7 +183,7 @@ describe('a run and the journal of its session', () => {
     const trees = resolveTrees(project, env);
     writeJournal(
       journalFile(trees, SESSION) as string,
-      journal(null, '1 decision recorded; 3 files edited.'),
+      journal(null, "1 decision recorded; 3 files edited, as of the session's last Stop."),
       new Date(),
     );
     const { client, end } = await connected(project, SESSION);
@@ -203,7 +206,7 @@ describe('a run and the journal of its session', () => {
       else process.env.HOME = homeBefore;
     }
     const printed = out.filter((line) =>
-      line.includes('outcome: 1 decision recorded; 3 files edited.'),
+      line.includes("outcome: 1 decision recorded; 3 files edited, as of the session's last Stop."),
     );
     expect(printed.length).toBeGreaterThanOrEqual(1);
   });

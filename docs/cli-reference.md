@@ -754,7 +754,7 @@ newest 50.
 
 **What reads it.** The MCP server, when the host leaves its session id in the server's environment (Claude Code's
 `CLAUDE_CODE_SESSION_ID`): the run the server opens for the connection takes the journal's goal as its own goal when one is
-known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited.`).
+known by then, and the run it closes ends with the journal's outcome (for example `2 decisions recorded; 5 files edited, as of the session's last Stop.`: it is what the journal held at the last `Stop`, so a decision recorded after that is not in it).
 Each comes from the records of the tree the run is written to and from no other: the title of a private task never becomes
 the goal of a run in the public record, and a public run's outcome counts no private decision or note.
 The `resume` and `status` readings print that outcome beside a run that ended with one, as `outcome: …`.

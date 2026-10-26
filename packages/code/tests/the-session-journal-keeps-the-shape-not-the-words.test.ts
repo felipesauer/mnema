@@ -316,7 +316,9 @@ describe('the journal a Stop keeps', () => {
     expect(journal.trees.public.goal).toBe('Move the ledger to UTC');
     expect(journal.questionsWithoutDecision).toBe(0);
     expect(journal.trees.public.outcome).toBe(outcomeOf(journal));
-    expect(journal.trees.public.outcome).toBe('1 decision recorded; 2 files edited.');
+    expect(journal.trees.public.outcome).toBe(
+      "1 decision recorded; 2 files edited, as of the session's last Stop.",
+    );
   });
 
   it('names the runs left open since the session began, and the directory its journals live in', async () => {
@@ -521,8 +523,12 @@ describe('the journal a Stop keeps', () => {
     const journal = theJournal();
     expect(journal.trees.private.goal).toBe('PRIVATETITLESENTINEL fix the vault');
     expect(journal.trees.public.goal).toBeNull();
-    expect(journal.trees.public.outcome).toBe('0 decisions recorded; 1 file edited.');
-    expect(journal.trees.private.outcome).toBe('1 decision recorded; 1 file edited.');
+    expect(journal.trees.public.outcome).toBe(
+      "0 decisions recorded; 1 file edited, as of the session's last Stop.",
+    );
+    expect(journal.trees.private.outcome).toBe(
+      "1 decision recorded; 1 file edited, as of the session's last Stop.",
+    );
 
     // The public run a decision opens, with the host's session id, is what the sentinel must miss.
     const { server, armClose } = buildMcpServer({
