@@ -1083,7 +1083,7 @@ signs, and a line on the error stream says so; `mnema memory` and `mnema observe
 The hooks of `corrections` sign with your key unless `MNEMA_AGENT_KEY` is in their environment (the manifests
 pass it to the server only).
 In Claude Code, VS Code and Cursor, which read one manifest, the plugin's `agent_key` option is empty by
-default (that the option, and `MNEMA_AGENT_KEY`, reach the server was not measured on VS Code or Cursor); the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
+default, and in Claude Code an empty option leaves a `MNEMA_AGENT_KEY` of the host's environment in force (that the option, and `MNEMA_AGENT_KEY`, reach the server was not measured on VS Code or Cursor); the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
 every host whose hooks are processes pass the host's name too. `mnema doctor` lists the agent keys
 this machine holds against the record of each tree (the committed, the private and the global one) and, on a machine that
 holds an agent key already, names the agents the files generated for each host ask for that no key is held under; it says
