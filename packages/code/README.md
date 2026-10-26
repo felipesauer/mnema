@@ -73,8 +73,8 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
 - **A session journal**, which the `Stop` hook keeps on this machine, outside the record: ids and counts of what a
   session did with it (never its words), so the next `Stop` reads only what the host wrote since and the run the MCP
   server closes ends with an outcome that the `resume` and `status` readings print, and the notes the next session
-  opens with say where this one stopped; a conversation that was compacted is handed back what its session had
-  recorded. `mnema switch off session-journal`, `last-session` and `after-a-compaction` stop them.
+  opens with say where this one stopped; a conversation that was compacted is handed back what entered the record while its session
+  ran. `mnema switch off session-journal`, `last-session` and `after-a-compaction` stop them.
 - **A task for the work a session hands to other agents**, in the Claude Code plugin: the first dispatch of a session records
   one private task, each dispatch a private handoff on it (its short description and the path of a brief file, never the
   prompt), and the end of the session closes it; `mnema switch off agent-mirror` stops it.

@@ -145,6 +145,33 @@ describe('the section', () => {
     expect(text).toMatch(/wrote to this record (\d+s|\d+m)/);
   });
 
+  it('says which tree each label is of when two trees number a decision the same', async () => {
+    const idOf = (out: string[]) =>
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(out.join('\n'))?.[0] ??
+      '';
+    const pub = await doing('decision', 'record', 'Use UTC', 'The ledger is UTC');
+    const priv = await doing(
+      'decision',
+      'record',
+      'Keep cents',
+      'Money is cents',
+      '--scope',
+      'private',
+    );
+    keep(
+      aJournal(FIRST, {
+        decisions: [
+          { id: idOf(pub), state: 'proposed' },
+          { id: idOf(priv), state: 'proposed' },
+        ],
+      }),
+    );
+    const text = recalled(SECOND).join('\n');
+    expect(text).toContain(
+      '- Decisions it recorded: ADR-1 (public): proposed; ADR-1 (private): proposed',
+    );
+  });
+
   it('says it wrote to the record only when the session did: files edited alone are not a write', () => {
     keep(aJournal(FIRST, { tasksInProgress: [], decisions: [], notes: [] }));
     const only = recalled(SECOND).join('\n');

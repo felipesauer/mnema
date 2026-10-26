@@ -9,6 +9,7 @@
  * `session_id`, `cwd`, `tool_use_id`) and the `SessionEnd` the host hands at the end.
  */
 
+import { spawn } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -22,6 +23,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { resolveTrees } from '@mnema/core';
 import { Command } from 'commander';
@@ -39,8 +41,10 @@ import {
   journalAfter,
   journalFile,
   journalsDir,
+  markEnded,
   readJournal,
   STALE_AFTER_MS,
+  writeJournal,
 } from '../src/session-journal.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { emptyReading } from '../src/what-the-session-did.js';
@@ -549,6 +553,208 @@ describe('the verb as the command line routes it', () => {
       await program.parseAsync(['dispatched'], { from: 'user' });
       expect(seen.out).toEqual(['{}']);
       expect(whatTheRecordHolds().handoffs).toHaveLength(1);
+    },
+    WAITS_ON_WRITES,
+  );
+});
+
+describe('the lock on a journal', () => {
+  // A child that waits for a shared instant, then asks for the lock and, inside it, makes a directory
+  // only one at a time can make: a second one in at once is an overlap, which is two dispatches that
+  // would each open the session's task.
+  const CHILD = `
+    import { appendFileSync, mkdirSync, rmSync } from 'node:fs';
+    const [, , mod, file, start, inside, log] = process.argv;
+    const { exclusivelyOn } = await import(mod);
+    while (Date.now() < Number(start)) {}
+    const ran = exclusivelyOn(file, () => {
+      let overlap = false;
+      try { mkdirSync(inside); } catch { overlap = true; }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30);
+      if (!overlap) rmSync(inside, { recursive: true });
+      appendFileSync(log, overlap ? 'O' : 'R');
+      return true;
+    }, 4000);
+    if (ran === undefined) appendFileSync(log, 'S');
+  `;
+
+  it(
+    'lets one of many processes that find the same old lock take it, and never two',
+    async () => {
+      const module = pathToFileURL(
+        fileURLToPath(new URL('../dist/session-journal.js', import.meta.url)),
+      ).href;
+      const script = join(sandbox, 'child.mjs');
+      writeFileSync(script, CHILD);
+      const old = new Date(Date.now() - 600_000);
+      let overlapped = 0;
+      let entered = 0;
+      for (let round = 0; round < 4; round++) {
+        const file = join(sandbox, `race-${round}.json`);
+        const log = join(sandbox, `race-${round}.log`);
+        writeFileSync(log, '');
+        mkdirSync(`${file}.lock`);
+        utimesSync(`${file}.lock`, old, old);
+        const start = String(Date.now() + 500);
+        await Promise.all(
+          Array.from(
+            { length: 12 },
+            () =>
+              new Promise<void>((done) => {
+                spawn(
+                  process.execPath,
+                  [script, module, file, start, join(sandbox, `inside-${round}`), log],
+                  { stdio: 'ignore' },
+                ).on('close', () => done());
+              }),
+          ),
+        );
+        const marks = readFileSync(log, 'utf8');
+        overlapped += [...marks].filter((mark) => mark === 'O').length;
+        entered += [...marks].filter((mark) => mark === 'R').length;
+      }
+      expect(overlapped).toBe(0);
+      expect(entered).toBe(48);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'is seen by the Stop of the same session: a journal it cannot lock is left as it was',
+    () => {
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      mirror(dispatch());
+      const before = readFileSync(file, 'utf8');
+      const transcript = join(sandbox, 'transcript.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      const payload = JSON.stringify({
+        hook_event_name: 'Stop',
+        session_id: SESSION,
+        transcript_path: transcript,
+        cwd: repo,
+      });
+      mkdirSync(`${file}.lock`);
+      runSessionTally({ cwd: repo, env, lockWaitMs: 50 }, { payload });
+      expect(readFileSync(file, 'utf8')).toBe(before);
+      rmSync(`${file}.lock`, { recursive: true });
+      runSessionTally({ cwd: repo, env, lockWaitMs: 50 }, { payload });
+      expect(readFileSync(file, 'utf8')).not.toBe(before);
+      expect(readJournal(file)?.handedOver?.handoffs).toBe(1);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'keeps the instant the connection ended through the Stop that follows it',
+    () => {
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      mirror(dispatch());
+      markEnded(file, new Date('2026-01-01T00:00:00.000Z'));
+      const transcript = join(sandbox, 'transcript-ended.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      const payload = JSON.stringify({
+        hook_event_name: 'Stop',
+        session_id: SESSION,
+        transcript_path: transcript,
+        cwd: repo,
+      });
+      runSessionTally({ cwd: repo, env }, { payload });
+      expect(readJournal(file)?.endedAt).toBe('2026-01-01T00:00:00.000Z');
+      mirror(dispatch({ type: 'revisar' }));
+      expect(readJournal(file)?.endedAt).toBe('2026-01-01T00:00:00.000Z');
+    },
+    WAITS_ON_WRITES,
+  );
+});
+
+describe('the instant a connection ended', () => {
+  const ENDED = '2026-01-01T00:00:00.000Z';
+
+  it(
+    'is kept by every later write of the journal that reads it from the previous one',
+    () => {
+      mirror(dispatch());
+      markEnded(journalFile(resolveTrees(repo, env), SESSION) as string, new Date(ENDED));
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      const previous = readJournal(file);
+      expect(previous?.endedAt).toBe(ENDED);
+      const next = withScopedCaches(resolveTrees(repo, env), (sources) =>
+        journalAfter({
+          session: SESSION,
+          previous,
+          reading: emptyReading(),
+          sources,
+          now: new Date(),
+        }),
+      );
+      expect(next.endedAt).toBe(ENDED);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'is kept by a Stop that read the journal before the end was marked and wrote it after',
+    async () => {
+      mirror(dispatch());
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      const transcript = join(sandbox, 'transcript-race.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({ type: 'user', timestamp: '2020-01-01T00:00:00.000Z', message: { role: 'user', content: 'go' } })}\n`,
+      );
+      const payload = JSON.stringify({
+        hook_event_name: 'Stop',
+        session_id: SESSION,
+        transcript_path: transcript,
+        cwd: repo,
+      });
+      const module = pathToFileURL(
+        fileURLToPath(new URL('../dist/commands/tally.js', import.meta.url)),
+      ).href;
+      const script = join(sandbox, 'tally-child.mjs');
+      writeFileSync(
+        script,
+        `const { runSessionTally } = await import(process.argv[2]);
+         runSessionTally({ cwd: process.argv[3], env: JSON.parse(process.argv[4]), lockWaitMs: 15000 }, { payload: process.argv[5] });`,
+      );
+      // The lock is held, so the child reads the journal (without an end) and then waits for the lock.
+      mkdirSync(`${file}.lock`);
+      const done = new Promise<void>((finish) => {
+        spawn(process.execPath, [script, module, repo, JSON.stringify(env), payload], {
+          stdio: 'ignore',
+        }).on('close', () => finish());
+      });
+      await new Promise((later) => setTimeout(later, 2500));
+      const before = readJournal(file) as NonNullable<ReturnType<typeof readJournal>>;
+      writeJournal(file, { ...before, endedAt: ENDED }, new Date());
+      rmSync(`${file}.lock`, { recursive: true });
+      await done;
+      expect(readJournal(file)?.endedAt).toBe(ENDED);
+      expect(readJournal(file)?.handedOver?.handoffs).toBe(1);
+    },
+    WAITS_ON_WRITES,
+  );
+
+  it(
+    'is marked under the lock of the journal: a lock not had leaves it as it was, and a later mark lands',
+    () => {
+      mirror(dispatch());
+      const file = journalFile(resolveTrees(repo, env), SESSION) as string;
+      const before = readFileSync(file, 'utf8');
+      mkdirSync(`${file}.lock`);
+      markEnded(file, new Date(ENDED), 50);
+      expect(readFileSync(file, 'utf8')).toBe(before);
+      rmSync(`${file}.lock`, { recursive: true });
+      markEnded(file, new Date(ENDED), 50);
+      expect(readJournal(file)?.endedAt).toBe(ENDED);
+      expect(readJournal(file)?.handedOver?.handoffs).toBe(1);
+      expect(existsSync(`${file}.lock`)).toBe(false);
     },
     WAITS_ON_WRITES,
   );

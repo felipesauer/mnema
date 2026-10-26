@@ -590,9 +590,10 @@ $ mnema recall --help
 |   --session <id>        the host’s id for the session these notes are for: the
 |                         journal that session keeps is not "the last session",
 |                         which a hook passes from the payload
-|   --after-a-compaction  print, instead of the notes, what the session named by
-|                         --session had recorded before its conversation was
-|                         compacted, read from its journal: a sentence, or nothing
+|   --after-a-compaction  print, instead of the notes, what entered the record
+|                         since the session named by --session opened, before its
+|                         conversation was compacted, read from its journal: a
+|                         sentence, or nothing
 |   -h, --help            display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the

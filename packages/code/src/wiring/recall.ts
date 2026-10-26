@@ -89,8 +89,8 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--after-a-compaction',
-      'print, instead of the notes, what the session named by --session had recorded before its ' +
-        'conversation was compacted, read from its journal: a sentence, or nothing',
+      'print, instead of the notes, what entered the record since the session named by --session opened, ' +
+        'before its conversation was compacted, read from its journal: a sentence, or nothing',
     )
     .action(
       async (opts: {
