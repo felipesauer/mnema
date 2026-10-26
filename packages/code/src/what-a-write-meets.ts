@@ -216,7 +216,10 @@ export function whatAWriteMeets(
     });
   };
 
-  if (channelIsOn(sources, REFUSES_A_WRITE_CHANNEL)) {
+  // THE SWITCHES ARE THE PROJECT'S OWN: a record the project inherits is read for its rules and
+  // never for its switches, so the origin cannot turn this project's gate off.
+  const own = sources.filter((source) => source.inherited === undefined);
+  if (channelIsOn(own, REFUSES_A_WRITE_CHANNEL)) {
     const refused = places.flatMap((path) => {
       const at = readRefusesAWriteAt(sources, read(path));
       const notice = editRefusesNotice(at);
@@ -225,7 +228,7 @@ export function whatAWriteMeets(
     if (refused.length > 0) return verdict(sources, 'refuse', once(refused));
   }
 
-  if (!channelIsOn(sources, ASKS_A_PERSON_CHANNEL)) return undefined;
+  if (!channelIsOn(own, ASKS_A_PERSON_CHANNEL)) return undefined;
   const asked = places.flatMap((path) => {
     const gate = whatAWriteAsks(sources, read(path));
     return gate === undefined ? [] : [{ at: gate.asked, notice: gate.notice }];

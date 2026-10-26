@@ -307,6 +307,17 @@ describe('the gate before a write', () => {
     expect(line).toContain(fromTheOrg());
   });
 
+  it('reads the project switches and never the origin switches', async () => {
+    await did(org, 'switch', 'off', 'edit-refuses-a-write');
+    git(org, 'add', '.mnema');
+    git(org, 'commit', '-q', '-m', 'the origin switches its refusals off');
+    await did(repo, 'inherit', 'update', '--to', 'main', '--write');
+    expect(vscode('CHANGELOG.md')['permissionDecision']).toBe('deny');
+    expect(tool('CHANGELOG.md')['permissionDecision']).toBe('deny');
+    await did(repo, 'switch', 'off', 'edit-refuses-a-write');
+    expect(vscode('CHANGELOG.md')['permissionDecision']).toBeUndefined();
+  });
+
   it('says nothing more where no inherited rule addresses the path', () => {
     expect(vscode('src/a.ts')).toEqual({});
   });
