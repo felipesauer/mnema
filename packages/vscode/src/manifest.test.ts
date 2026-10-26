@@ -146,7 +146,7 @@ describe('the extension manifest', () => {
 
   it('keeps the list of commands in one place: the editor check reads it from the installed manifest', () => {
     const check = readFileSync(new URL('../build/in-the-editor.cjs', import.meta.url), 'utf8');
-    expect(check).not.toMatch(/'mnema\.[A-Za-z.]+'/);
+    expect(check.replace("'mnema.mnema'", '')).not.toMatch(/'mnema\.[A-Za-z.]+'/);
     expect(check).toContain('contributes.commands');
   });
 

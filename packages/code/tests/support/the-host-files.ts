@@ -151,15 +151,25 @@ function nodeRuns(handler: string, args: readonly string[] = []): string {
  * starts (`[ -n "$VAR" ] && …; exit 0`), and a host that reads no matcher has its payload passed
  * on only when it names one of the tools it writes through (`case`). Neither is written by hand:
  * both come from the row, and `the-host-files-are-generated.test.ts` holds what they say.
+ *
+ * A VARIABLE A TERMINAL LEAVES BEHIND. A host that runs the hook inherits the person's
+ * environment (Qwen Code only strips secrets), so a session opened in another host's terminal
+ * carries that host's variable too, and both handlers would start and refuse the one write twice.
+ * `yieldsTo` is that: the variables of the hosts after this one in the table that have a handler of
+ * their own here, so exactly one handler starts, the later host's.
  */
 function gate(
   handler: string,
   args: readonly string[],
   env: string | undefined,
   tools: readonly string[],
+  yieldsTo: readonly string[] = [],
 ): string {
   const run = nodeRuns(handler, args);
-  if (env !== undefined) return `[ -n "$${env}" ] && ${run}; exit 0`;
+  if (env !== undefined) {
+    const turnedAway = yieldsTo.map((variable) => `[ -n "$${variable}" ] && exit 0; `).join('');
+    return `${turnedAway}[ -n "$${env}" ] && ${run}; exit 0`;
+  }
   const named = tools.map((tool) => `*'"${tool}"'*`).join('|');
   return `IN=$(cat); case "$IN" in ${named}) printf '%s' "$IN" | ${run};; esac`;
 }
@@ -199,6 +209,12 @@ function beforeAWrite(name: HostName): readonly Json[] {
   // command starts only where that variable is set. One that does not reads no matcher at all
   // (VS Code: measured), so its command starts only for the tools it writes through.
   const env = 'saysItIsTheHost' in host ? host.saysItIsTheHost : undefined;
+  const yieldsTo = HOST_NAMES.slice(HOST_NAMES.indexOf(name) + 1).flatMap((other) => {
+    const row = HOSTS[other] as Host;
+    return row.door === 'command' && !readsItsOwn(other) && row.saysItIsTheHost !== undefined
+      ? [row.saysItIsTheHost]
+      : [];
+  });
   return [
     {
       matcher: env === undefined ? `^(${tools.join('|')})$` : CLAUDE_WRITES,
@@ -215,6 +231,7 @@ function beforeAWrite(name: HostName): readonly Json[] {
             ],
             env,
             tools,
+            yieldsTo,
           ),
           timeout: TIMEOUT,
         },

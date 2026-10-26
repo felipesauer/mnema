@@ -478,18 +478,16 @@ export function journalAfter(input: {
         );
   const publicHeld = held('public');
   const privateHeld = held('private');
-  // WHETHER A QUESTION HAD A DECISION AFTER IT is a fact of the session, not of a tree: the decisions
-  // were taken wherever the session recorded them, and a run that said "no decision recorded after"
-  // because its own tree held none told the reader of a public run, after a decision in the public
-  // tree, that the question was left alone. Only the COUNT crosses; no tree's decision is named or
-  // quoted in the other's run.
-  const lastDecisionAt = Math.max(
-    publicHeld?.lastDecisionAt ?? 0,
-    privateHeld?.lastDecisionAt ?? 0,
-  );
-  const questionsWithoutDecision = reading.questionTimes.filter(
-    (at) => Date.parse(at) > lastDecisionAt,
-  ).length;
+  // WHETHER A QUESTION HAD A DECISION AFTER IT is a fact of the session, and the direction it crosses
+  // matters: the private run counts the decisions of both trees (what the public tree holds is
+  // visible to whoever reads the private one), but the PUBLIC run, which is signed and committed,
+  // counts only the public tree's. A decision that exists only in the private tree must not change a
+  // word of a run written to the public record, nor, with several questions, tell when it was made.
+  const questionsAfter = (lastDecisionAt: number) =>
+    reading.questionTimes.filter((at) => Date.parse(at) > lastDecisionAt).length;
+  const lastPublicDecisionAt = publicHeld?.lastDecisionAt ?? 0;
+  const lastDecisionAt = Math.max(lastPublicDecisionAt, privateHeld?.lastDecisionAt ?? 0);
+  const questionsWithoutDecision = questionsAfter(lastDecisionAt);
   const of = (
     held: ReturnType<typeof whatTheRecordHolds> | undefined,
     tree: (typeof TREES)[number],
@@ -498,7 +496,8 @@ export function journalAfter(input: {
       decisions: held?.decisions ?? [],
       notes: held?.notes ?? [],
       filesEdited,
-      questionsWithoutDecision,
+      questionsWithoutDecision:
+        tree === 'public' ? questionsAfter(lastPublicDecisionAt) : questionsWithoutDecision,
     };
     return {
       held,

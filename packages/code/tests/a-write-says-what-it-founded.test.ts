@@ -212,6 +212,10 @@ describe('first writes of one new key made together', () => {
     const others = runs.flatMap((ran) =>
       ran.stderr.split('\n').filter((line) => line.includes('another process of this machine')),
     );
+    // Not every other process says it: one that starts after the founding reads the identity as
+    // already settled and has nothing to add. But the loop below must not pass on zero lines.
+    expect(others.length).toBeGreaterThan(0);
+    expect(others.length).toBeLessThanOrEqual(runs.length - 1);
     for (const line of others) {
       expect(line).toContain("This key's identity in the public tree");
       expect(line).not.toContain(FOUNDED);

@@ -7,7 +7,8 @@
  * - it runs on a push to `main` and by hand with `mode`, never on a pull request, a schedule or a tag;
  * - the job that publishes asks for the `npm` environment (so a person approves it), holds `id-token: write`
  *   (the OIDC the trusted publisher trusts) and nothing wider than `contents: read`;
- * - nothing in it reads a secret: no `secrets.` at all, no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
+ * - nothing in it that publishes a package reads a secret: no `secrets.` outside the one job that publishes the
+ *   extension to the stores (which reads two, and only those), no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
  * - it publishes the tarball of each package with `--provenance --access public`, in the order chain, core,
  *   context, stacks, code;
  * - the tag and the release belong to a job that needs the publish, and no step before the publish creates one;
@@ -76,7 +77,16 @@ describe('the release workflow publishes without a token', () => {
     const names = [...CODE.slice(CODE.indexOf('\njobs:')).matchAll(/^ {2}([a-z][\w-]*):\n/gm)].map(
       (m) => m[1] as string,
     );
-    expect(names).toEqual(['plan', 'pack', 'packed-install', 'publish', 'release']);
+    expect(names).toEqual([
+      'plan',
+      'pack',
+      'packed-install',
+      'publish',
+      'release',
+      'vsix',
+      'attach-vsix',
+      'publish-vsix',
+    ]);
     for (const name of names) {
       const text = job(name);
       if (/pnpm install|pnpm build|pnpm pack/.test(text)) {
@@ -119,8 +129,15 @@ describe('the release workflow publishes without a token', () => {
     expect(condition).not.toMatch(/always\(\)|cancelled\(\)|failure\(\)|success\(\)/);
   });
 
-  it('holds no secret and no npm token anywhere', () => {
-    expect(CODE).not.toMatch(/\bsecrets\./);
+  it('holds no secret for the packages, and the only secrets are the two store tokens of the extension job', () => {
+    const stores = job('publish-vsix');
+    expect(CODE.replace(stores, '')).not.toMatch(/\bsecrets\./);
+    expect([...stores.matchAll(/\bsecrets\.(\w+)/g)].map((m) => m[1])).toEqual([
+      'VSCE_PAT',
+      'OVSX_PAT',
+    ]);
+    expect(stores).toMatch(/^ {4}environment: extension-stores$/m);
+    expect(CODE.replace(stores, '')).not.toMatch(/extension-stores/);
     expect(CODE).not.toMatch(/NODE_AUTH_TOKEN|NPM_TOKEN|_authToken|npm login|npm adduser/);
     expect(CODE).not.toMatch(/registry-url:/);
   });
@@ -144,7 +161,10 @@ describe('the release workflow publishes without a token', () => {
     expect(release).toMatch(/^ {6}contents: write$/m);
     expect(release).not.toMatch(/id-token/);
     expect(release).toContain('gh release create');
-    const outside = CODE.replace(release, '');
+    const attach = job('attach-vsix');
+    expect(attach).toContain('gh release upload');
+    expect(attach).not.toContain('gh release create');
+    const outside = CODE.replace(release, '').replace(attach, '');
     expect(outside).not.toMatch(/gh release|git tag|git push/);
     expect(release.indexOf('is not on npm')).toBeLessThan(release.indexOf('gh release create'));
   });

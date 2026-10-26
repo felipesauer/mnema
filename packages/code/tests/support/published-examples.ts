@@ -164,7 +164,7 @@ export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
   },
   {
     pkg: 'vscode',
-    why: 'It is the page of an editor extension, installed as a local .vsix: its one block is ```sh and there is no ```ts block in it to run. The comparison is about a library example, and this package exports no library.',
+    why: 'It is the page of an editor extension, installed from a store or as a local .vsix: its blocks are ```sh and there is no ```ts block in it to run. The comparison is about a library example, and this package exports no library.',
   },
 ];
 

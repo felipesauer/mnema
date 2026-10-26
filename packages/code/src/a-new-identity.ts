@@ -188,15 +188,14 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
 
 /**
  * What a write says where the key's identity in a tree was settled by another process of this
- * machine, writing at the same moment: the process that settled it says what it means and what to
- * do, and this one does not claim a founding it did not make.
+ * machine, writing at the same moment: this one does not claim a founding it did not make.
  */
 export function foundedByAnother(founded: FoundedBeside, scope: Scope): string {
   const short = shortenAnchors([founded.anchor, ...founded.besides]);
   return oneLine(
     `This key's identity in the ${scope} tree, ${short.get(founded.anchor) ?? founded.anchor}, ` +
       'already existed: another process of this machine founded it at the same moment, beside ' +
-      `${founded.besides.length} already there, and that process says what it means.`,
+      `${founded.besides.length} already there.`,
   );
 }
 

@@ -60,6 +60,8 @@ export interface TheQwenSpec {
   readonly mnema?: 'ours' | 'absent' | 'a stranger';
   /** `--approval-mode`: `yolo` unless a case says otherwise. */
   readonly approvalMode?: 'yolo' | 'default';
+  /** Variables of the person's own environment the host inherits, as a terminal of another host leaves them. */
+  readonly inherited?: Readonly<Record<string, string>>;
 }
 
 /** What one session left behind. */
@@ -298,6 +300,7 @@ async function aQwenSession(
     OPENAI_API_KEY: KEY,
     OPENAI_MODEL: MODEL,
     GIT_CONFIG_NOSYSTEM: '1',
+    ...spec.inherited,
   };
 
   const reported = spawnSync(qwen.binary, ['--version'], {

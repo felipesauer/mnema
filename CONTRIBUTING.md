@@ -190,7 +190,7 @@ the commit of the run that finishes. If `main` moved in between, the packages ar
 so before running again check that the commits since are not changes to the packages.
 
 A push to `main` whose root version is the one npm already serves publishes nothing and ends green.
-The workflow has not published a version yet: the first one was published by hand.
+The workflow has published versions since 0.1.1 (the first one, 0.1.0, was published by hand).
 
 ## A pull request
 
