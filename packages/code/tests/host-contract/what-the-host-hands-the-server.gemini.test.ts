@@ -20,5 +20,7 @@ describe('what Gemini CLI hands the server it starts', () => {
     // Gemini CLI is a Node program: the server sits under two `node`. What follows is the instrument.
     expect(handed.chain.slice(0, 2)).toEqual(['node', 'node']);
     expect(handed.present).toEqual(['GEMINI_CLI']);
+    // The `env` the plugin's manifest declares for its server reaches it, with the value declared.
+    expect(handed.declared).toEqual({ MNEMA_AGENT_KEY: 'gemini' });
   }, 180_000);
 });

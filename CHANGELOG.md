@@ -109,6 +109,13 @@ with its own changelog.
   2.1.296, 2.1.304 and 2.1.310; `docs/evidence.md` says what is measured and what is not (an interactive session, a model's
   own query). The case with tool search off now sets it explicitly, so it holds on a version that defers by itself, and the
   Copilot, Gemini and OpenCode figures of that page are the ones their pinned files hold.
+- **What each host hands the plugin's server and its hooks is measured and held.** The host contracts now read, by name, the
+  `env` of the server manifest as the server received it (Codex, Copilot CLI and Gemini CLI hand `MNEMA_AGENT_KEY` on with the
+  value the manifest declares; in Claude Code the manifest's own entry for the key, empty while the `agent_key` option is empty,
+  is what the server gets, so a key set only in the host's environment does not reach it, while `MNEMA_HOME` does), and the
+  fields each host writes on the stdin of the hook that runs before a write (Codex, Copilot CLI, Gemini CLI, VS Code) or after
+  one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
+  measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
 
 ### Fixed
 

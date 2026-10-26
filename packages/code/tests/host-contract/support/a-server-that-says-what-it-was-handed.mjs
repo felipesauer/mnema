@@ -3,9 +3,12 @@
 //
 //   client   the name the client announced in `initialize` (`clientInfo.name`);
 //   chain    the base names of the executables above this process, nearest first;
-//   present  which of a closed list of variables exist in its environment, by NAME.
+//   present  which of a closed list of variables exist in its environment, by NAME;
+//   declared the value of two variables the plugin's own manifest or the person sets, and the
+//            sandbox gives sentinel values (`MNEMA_AGENT_KEY`, `MNEMA_HOME`), so a case can say
+//            whether the host passed them on and which value won.
 //
-// NEVER A VALUE, NEVER A PATH. The environment of a host holds secrets, and a path carries the
+// NEVER A VALUE, NEVER A PATH, EXCEPT THE TWO OF `declared`. The environment of a host holds secrets, and a path carries the
 // name of whoever ran it: what is written is names of executables and names of variables, and
 // nothing else read off the environment. The list is closed on purpose: a variable that is not
 // in it is not looked at.
@@ -65,6 +68,9 @@ function theChain() {
   return chain;
 }
 
+/** The two variables whose value is read: neither is a secret, and both are what a case sets. */
+const THE_DECLARED = ['MNEMA_AGENT_KEY', 'MNEMA_HOME'];
+
 const [, , report] = process.argv;
 const server = new Server(
   { name: 'what-it-was-handed', version: '0.0.1' },
@@ -78,6 +84,12 @@ server.oninitialized = () => {
       client: server.getClientVersion()?.name,
       chain: theChain(),
       present: THE_MARKS.filter((name) => process.env[name] !== undefined),
+      declared: Object.fromEntries(
+        THE_DECLARED.filter((name) => process.env[name] !== undefined).map((name) => [
+          name,
+          process.env[name],
+        ]),
+      ),
     }),
   );
 };

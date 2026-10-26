@@ -22,5 +22,7 @@ describe('what Codex hands the server it starts', () => {
     expect(handed.chain.slice(0, 1)).toEqual(['codex']);
     // Codex hands a server a short list of variables of its own and none of a mark.
     expect(handed.present).toEqual([]);
+    // The `env` the plugin's manifest declares for its server reaches it, with the value declared.
+    expect(handed.declared).toEqual({ MNEMA_AGENT_KEY: 'codex' });
   }, 180_000);
 });
