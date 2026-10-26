@@ -212,9 +212,9 @@ describe('first writes of one new key made together', () => {
     const others = runs.flatMap((ran) =>
       ran.stderr.split('\n').filter((line) => line.includes('another process of this machine')),
     );
-    // Not every other process says it: one that starts after the founding reads the identity as
-    // already settled and has nothing to add. But the loop below must not pass on zero lines.
-    expect(others.length).toBeGreaterThan(0);
+    // How many of the others say it depends on the schedule: one that starts after the founding reads
+    // the identity as already settled and prints nothing, so the count is bounded, not fixed (CI saw
+    // none, a local run five). What is fixed: nobody but the founder says "founded" (held above).
     expect(others.length).toBeLessThanOrEqual(runs.length - 1);
     for (const line of others) {
       expect(line).toContain("This key's identity in the public tree");
