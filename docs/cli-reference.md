@@ -1212,18 +1212,35 @@ list an inherited rule beside the project's own, and each inherited rule says wh
 (`inherited from <origin> at <commit>`, the first 12 characters of the commit). Neither is chosen
 over the other: where a rule of the project and a rule of the origin address the same path, both are
 listed. A rule of the origin that refuses a write or asks for a person applies as one of the
-project's would, only where it addresses the path, and the refusal says the rule is one of the
-record this project inherits and names its origin; the
-`channel.refused` or `channel.asked` this project records cites the rule's id, which resolves in the
-origin's record and not in this one. An address of the origin that names nothing in this project's
-working tree is not counted as one of the project's stale addresses: `mnema rules` says how many
-such addresses were read (`inherited from <origin> at <commit>: N addresses, M name nothing in this
-project`). A record that does not verify at the pinned commit, or that this machine has not fetched,
+project's would, only where it addresses the path, and the refusal says the rule is addressed here
+by the record this project inherits and names its origin. Where a refused rule is held only by the
+origin's record, the refusal says so and names the clone it opens in (`mnema show <id>` opens it in
+a clone of `<origin>` at `<commit>`), because `mnema show <id>` here finds nothing. The
+`channel.refused` or `channel.asked` this project records cites the rule's id and nothing more: not
+that the address was inherited, nor the origin and the commit.
+
+**What is inherited is the address.** A line is labelled by the record that writes the link (the
+address), not by the record that holds the rule. So a link the origin's record holds to a rule of
+the project (`mnema link <project-rule-id> README.md --rel refuses-a-write`, run in the origin)
+means: the rule is the project's, the address is the organization's. Every line it reaches, the
+refusal, the asking, `mnema rules` and `governing_rules`, says `inherited from <origin> at <commit>`,
+and the rule still opens here with `mnema show <id>`, which lists only the addresses the project's
+own record holds.
+
+An address of the origin that names nothing in this project's
+working tree is not counted as one of the project's stale addresses. The three count lines of
+`mnema rules` count "in this project" the project's own record alone (an inherited row that covers
+the path is still counted among those that govern, ask or refuse "here"), and one more line counts
+the inherited addresses by relation (`inherited from <origin> at <commit>: N addresses (G govern,
+A ask for a person, R refuse a write), M name nothing in this project`). `mnema brief` counts, after
+the project's own three, the rules the inherited record places at an address (how many govern, ask
+for a person and refuse a write), and says the counts before it are the project's alone. A record that does not verify at the pinned commit, or that this machine has not fetched,
 governs nothing here, and `rules`, `why` and `governing_rules` say so in one line; the gate says
 nothing for it. The switches that turn a channel off are the project's own: the origin's are not
 read. The verdict is kept for the life of a process, so the server a host keeps up verifies the
 inherited record once per connection; a project with no `inherit.json` pays one file test. `mnema
-rules-file`, the commit hook and `mnema aging` do not read the inherited record.
+rules-file`, the commit hook and `mnema aging` do not read the inherited record, and `mnema show`
+does not list the addresses it holds.
 
 ### Is mnema set up on this machine
 

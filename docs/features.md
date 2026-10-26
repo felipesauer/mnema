@@ -104,7 +104,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
   signed here, and `verify` does not count them. A rule of that record addressed at a path reaches
   it here: `mnema rules`, `mnema why`, `governing_rules` and the gate before a write list it beside
   the project's own, naming the origin and the commit, and one that refuses a write or asks for a
-  person applies as the project's would.
+  person applies as the project's would. What is labelled inherited is the address: a link the
+  origin holds to a rule of the project is the origin's address for the project's rule.
 - **Decisions you wrote before you had a record.** `mnema decision import` reads decision documents,
   the ECC Memory Vault, a rulings ledger or Claude Code's memory files and proposes each one as
   `proposed`, with a dry run first. Nothing is accepted for you.
