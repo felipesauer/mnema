@@ -454,8 +454,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
   'CHANGELOG.md: mnema rules-file': {
+    times: 2,
+    why: 'the verb named in the entry on a rule addressed at a directory, and in the known limits of the entry on the rules a project inherits, as a reader that does not read them; its `--help` hands the --host it needs',
+  },
+  'CHANGELOG.md: mnema show': {
     times: 1,
-    why: 'the verb named in the entry on a rule addressed at a directory; its `--help` hands the --host it needs',
+    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema site': {
     times: 2,
@@ -506,7 +510,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the sentence about what leaves the record as a file',
   },
   'docs/cli-reference.md: mnema show': {
-    times: 4,
+    times: 5,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
   'docs/cli-reference.md: mnema retract': {
@@ -538,8 +542,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the command door of the gate, named in the paragraph on what an inherited rule reaches; the section on hosts hands it over with its host',
   },
   'docs/cli-reference.md: mnema rules': {
-    times: 1,
-    why: 'the verb named where the paragraph on inherited rules says what it counts apart; the same paragraph hands it over with the path a line above',
+    times: 2,
+    why: 'the verb named where the paragraphs on inherited rules say what it labels inherited and what it counts apart; the first of them hands it over with the path',
   },
   'docs/features.md: mnema rules': {
     times: 1,
@@ -574,8 +578,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the sentence about reading decision files; its block has the line',
   },
   'packages/code/src/edit-refuses-a-write.ts: mnema show': {
-    times: 1,
-    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries; with one rule the same sentence hands `mnema show <id>` over whole',
+    times: 2,
+    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries, once as the project reads it and once with where an inherited one opens; with one rule the same sentence hands `mnema show <id>` over whole',
   },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
@@ -715,7 +719,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 51, name: 96, flag: 3 },
+  'CHANGELOG.md': { line: 52, name: 100, flag: 3 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -737,7 +741,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 110, name: 134, flag: 2 },
+  'docs/cli-reference.md': { line: 114, name: 137, flag: 2 },
   'packages/code/README.md': { line: 8, name: 13 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -756,7 +760,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/stack-index.ts': { line: 1 },
   'packages/code/src/commands/status.ts': { name: 1 },
   'packages/code/src/commands/the-record-page.ts': { name: 1 },
-  'packages/code/src/edit-refuses-a-write.ts': { line: 1, name: 1 },
+  'packages/code/src/edit-refuses-a-write.ts': { line: 2, name: 2 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
   'packages/code/src/instructions-block.ts': { line: 3 },

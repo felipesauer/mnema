@@ -481,6 +481,34 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'one of two sentences written in this module, chosen by the count beside it: the shape the address paragraph uses, and the words are constants of this file handed in by the call above',
   },
+  'brief.ts «The record this project inherits places rules at addresses here too: {} {},» governs #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the rules the inherited record places at an address under one relation, made by the reading of that record',
+    },
+  "brief.ts «The record this project inherits places rules at addresses here too: {} {},» governs === 1 ? 'governs' : 'govern' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
+  'brief.ts «{} {} for a PERSON and {} {} a WRITE. They reach an edit as this» asks #1': {
+    verdict: 'minted',
+    why: 'a count of the rules the inherited record places at an address under one relation, made by the reading of that record',
+  },
+  "brief.ts «{} {} for a PERSON and {} {} a WRITE. They reach an edit as this» asks === 1 ? 'asks' : 'ask' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
+  'brief.ts «{} {} for a PERSON and {} {} a WRITE. They reach an edit as this» refuses #1': {
+    verdict: 'minted',
+    why: 'a count of the rules the inherited record places at an address under one relation, made by the reading of that record',
+  },
+  "brief.ts «{} {} for a PERSON and {} {} a WRITE. They reach an edit as this» refuses === 1 ? 'refuses' : 'refuse' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
   'brief.ts «{} {}» n #1': {
     verdict: 'minted',
     why: 'how many rules of one kind a hook’s copy left out: a count this document made',
@@ -1654,15 +1682,39 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the origin a project inherits from and the pinned commit, each collapsed inside `inheritedFromText`: `inherit.json` is a committed file anybody can edit',
   },
-  'rules.ts «{}: {} address{}, » inheritedFromText(from) #1': {
+  'rules.ts «({} govern{}, {} ask{} » governs #1': {
+    verdict: 'minted',
+    why: 'how many addresses of the inherited record are under one relation: a count',
+  },
+  "rules.ts «({} govern{}, {} ask{} » governs === 1 ? 's' : '' #1": {
+    verdict: 'minted',
+    why: 'the verb ending this report writes, chosen by the count beside it',
+  },
+  'rules.ts «({} govern{}, {} ask{} » asks #1': {
+    verdict: 'minted',
+    why: 'how many addresses of the inherited record are under one relation: a count',
+  },
+  "rules.ts «({} govern{}, {} ask{} » asks === 1 ? 's' : '' #1": {
+    verdict: 'minted',
+    why: 'the verb ending this report writes, chosen by the count beside it',
+  },
+  'rules.ts «for a person, {} refuse{} a write), » refuses #1': {
+    verdict: 'minted',
+    why: 'how many addresses of the inherited record are under one relation: a count',
+  },
+  "rules.ts «for a person, {} refuse{} a write), » refuses === 1 ? 's' : '' #1": {
+    verdict: 'minted',
+    why: 'the verb ending this report writes, chosen by the count beside it',
+  },
+  'rules.ts «{}: {} address{} » inheritedFromText(from) #1': {
     verdict: 'composed',
     why: 'the inherited record the count line is about: its origin and commit, collapsed inside `inheritedFromText`',
   },
-  'rules.ts «{}: {} address{}, » addressed #1': {
+  'rules.ts «{}: {} address{} » addressed #1': {
     verdict: 'minted',
     why: 'how many addresses the inherited record holds: a count',
   },
-  "rules.ts «{}: {} address{}, » addressed === 1 ? '' : 'es' #1": {
+  "rules.ts «{}: {} address{} » addressed === 1 ? '' : 'es' #1": {
     verdict: 'minted',
     why: 'the plural ending of a word this report writes, chosen by the count beside it',
   },
@@ -2498,8 +2550,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses.
-    expect(FOUND.sites.length).toBe(485);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief.
+    expect(FOUND.sites.length).toBe(497);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2521,7 +2573,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(130);
-    expect(count('minted')).toBe(269);
+    expect(count('minted')).toBe(281);
     expect(count('composed')).toBe(86);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(130);
   });
