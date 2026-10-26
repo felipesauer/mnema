@@ -80,6 +80,38 @@ describe('the launcher chooses what to run', async () => {
   });
 });
 
+describe('the launcher hands the agent_key option on without overwriting the environment', async () => {
+  const { theEnvironmentToRunWith } = (await import(pathToFileURL(LAUNCHER).href)) as {
+    theEnvironmentToRunWith: (env: Record<string, string | undefined>) => Record<string, string>;
+  };
+  const placeholder = `\${user_config.agent_key}`;
+
+  it('a name in the option becomes MNEMA_AGENT_KEY and wins over the environment', () => {
+    expect(theEnvironmentToRunWith({ MNEMA_PLUGIN_AGENT_KEY: 'claude' })).toEqual({
+      MNEMA_AGENT_KEY: 'claude',
+    });
+    expect(
+      theEnvironmentToRunWith({ MNEMA_PLUGIN_AGENT_KEY: 'claude', MNEMA_AGENT_KEY: 'mine' }),
+    ).toEqual({ MNEMA_AGENT_KEY: 'claude' });
+  });
+
+  it('an empty, blank or unsubstituted option leaves the environment key alone', () => {
+    for (const option of ['', '  ', placeholder]) {
+      expect(
+        theEnvironmentToRunWith({ MNEMA_PLUGIN_AGENT_KEY: option, MNEMA_AGENT_KEY: 'mine' }),
+      ).toEqual({ MNEMA_AGENT_KEY: 'mine' });
+    }
+  });
+
+  it('an empty key counts as none, with or without the option', () => {
+    expect(theEnvironmentToRunWith({ MNEMA_AGENT_KEY: '' })).toEqual({});
+    expect(theEnvironmentToRunWith({ MNEMA_PLUGIN_AGENT_KEY: '', MNEMA_AGENT_KEY: ' ' })).toEqual(
+      {},
+    );
+    expect(theEnvironmentToRunWith({})).toEqual({});
+  });
+});
+
 describe('the launcher starts it as the host would have', () => {
   let directory = '';
   beforeAll(() => {
@@ -108,6 +140,19 @@ describe('the launcher starts it as the host would have', () => {
     const ran = launch({ PATH: directory, MNEMA_PLUGIN_BINARY: `\${user_config.mnema_path}` });
     expect(ran.stdout).toContain('with: mcp');
     expect(ran.status).toBe(0);
+  });
+
+  it('the server it starts has the key the option named, and the environment key when the option is empty', () => {
+    const path = join(directory, 'env-mnema');
+    writeFileSync(path, '#!/bin/sh\necho "key=[${MNEMA_AGENT_KEY-unset}]"\n');
+    chmodSync(path, 0o755);
+    const run = (env: Record<string, string>) =>
+      launch({ MNEMA_PLUGIN_BINARY: path, ...env }).stdout;
+    expect(run({ MNEMA_PLUGIN_AGENT_KEY: 'claude', MNEMA_AGENT_KEY: 'mine' })).toBe(
+      'key=[claude]\n',
+    );
+    expect(run({ MNEMA_PLUGIN_AGENT_KEY: '', MNEMA_AGENT_KEY: 'mine' })).toBe('key=[mine]\n');
+    expect(run({ MNEMA_PLUGIN_AGENT_KEY: '' })).toBe('key=[unset]\n');
   });
 
   it('says so, and exits non-zero, when there is nothing to run', () => {
@@ -144,7 +189,7 @@ describe('both manifests hand the option to the server', () => {
           args: [`\${CLAUDE_PLUGIN_ROOT}/server/launch.mjs`, 'mcp'],
           env: {
             MNEMA_PLUGIN_BINARY: `\${user_config.mnema_path}`,
-            MNEMA_AGENT_KEY: `\${user_config.agent_key}`,
+            MNEMA_PLUGIN_AGENT_KEY: `\${user_config.agent_key}`,
           },
         },
       });
