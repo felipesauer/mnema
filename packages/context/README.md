@@ -100,6 +100,12 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 - **`patternProvenance`**: every pattern the record holds, in every state, with
   who proposed it and who adopted it. The reading for a person auditing where the
   patterns came from, next to the one that serves them.
+- **`governingRules` / `rulesInForceAt`**: the rules addressed at a path, by path segments. A
+  source marked `inherited` (another repository's record, read at one commit) is read for its
+  addresses beside the project's own, and each address from it carries where it came from
+  (`inherited`, the record that wrote the address, whoever holds the rule) and, for a rule the
+  project does not hold, where the rule is held (`heldIn`); an inherited address is counted apart,
+  never among the project's counts nor as stale.
 - **`focus` / `resume`**: what an actor is touching now (their open runs) and
   where they left off (their most recent run, open or ended, with its goal). Each
   run comes back with what only the ASKER can know: whether the asker opened it,

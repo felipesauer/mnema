@@ -33,6 +33,7 @@
  */
 
 import type { AddressedRule, GoverningRules } from '@mnema/context';
+import { inheritedFromText } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { fact, subjectLine } from './detail.js';
 import { asId, asScope, itemLine } from './items.js';
@@ -77,6 +78,24 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
       ),
     ),
   ];
+  // THE RECORD THIS PROJECT INHERITS, when it read one: how many of its addresses there are, under
+  // which relation, and how many name nothing here. The three lines above count "in this project"
+  // the project's own record alone, so the inherited addresses are counted here and nowhere else.
+  // Those that name nothing here are not stale (another repository's layout is not a repair of
+  // this one) and are listed nowhere, so the line is what says they were read.
+  if (governed.inherited !== undefined) {
+    const { from, addressed, governs, asks, refuses, elsewhere } = governed.inherited;
+    lines.push(
+      render(
+        fact(
+          `${inheritedFromText(from)}: ${addressed} address${addressed === 1 ? '' : 'es'} ` +
+            `(${governs} govern${governs === 1 ? 's' : ''}, ${asks} ask${asks === 1 ? 's' : ''} ` +
+            `for a person, ${refuses} refuse${refuses === 1 ? 's' : ''} a write), ` +
+            `${elsewhere} name${elsewhere === 1 ? 's' : ''} nothing in this project`,
+        ),
+      ),
+    );
+  }
   /**
    * One rule as the columns of a row: where it applies, what it is, its state, its
    * id and the tree that asserts it.
@@ -108,7 +127,13 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
         // rule of a kind with no state (a memory) rides without one.
         ...(rule.state === undefined ? [] : [asState(oneLine(rule.state))]),
         asId(oneLine(rule.rule)),
-        asScope(`[${rule.assertedIn}]`),
+        // An inherited rule says WHERE FROM in place of the tree: the origin and the commit, so it
+        // is never read as a rule this project made.
+        asScope(
+          rule.inherited === undefined
+            ? `[${rule.assertedIn}]`
+            : `[${inheritedFromText(rule.inherited)}]`,
+        ),
       ]),
     );
   };

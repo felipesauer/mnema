@@ -26,13 +26,14 @@
  */
 
 import type { PushedRule, RulesAtPath } from '@mnema/context';
+import { aRuleOf, inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
 
 /** What the record refuses, and about which file: passive about the record, never addressed to the reader. */
-function refusesAtPath(path: string): string {
-  return `A rule of this project’s record refuses a write at ${oneLine(path)} while it stands.`;
+function refusesAtPath(path: string, rules: RulesAtPath['rules']): string {
+  return `${aRuleOf(rules)} refuses a write at ${oneLine(path)} while it stands.`;
 }
 
 /** The asking's sentence for a rule that does not travel, said once. */
@@ -50,7 +51,7 @@ export function editRefusesNotice(at: RulesAtPath): string | undefined {
 
 /** What this channel says before the rules: the rule and the reason, which is what is refused. */
 function opening(at: RulesAtPath): readonly string[] {
-  return [refusesAtPath(at.relative ?? at.path)];
+  return [refusesAtPath(at.relative ?? at.path, at.rules)];
 }
 
 /**
@@ -77,11 +78,31 @@ function closing(at: RulesAtPath): readonly string[] {
  * with several, each line above already carries its id.
  */
 function wayToTheRule(rules: readonly PushedRule[]): string {
-  const opens =
-    rules.length === 1
-      ? `The rule opens with \`mnema show ${oneLine((rules[0] as PushedRule).id)}\``
-      : 'Each rule opens with `mnema show` and the id on its line';
-  return `${opens}; changing it is a decision for whoever recorded it.`;
+  return `${whereItOpens(rules)}; changing it is a decision for whoever recorded it.`;
+}
+
+/**
+ * Where the rule opens. A RULE ONLY THE INHERITED RECORD HOLDS DOES NOT OPEN HERE: `mnema show`
+ * in this project answers that there is no such record, so the sentence names the repository and
+ * the commit it opens in instead. A rule the project holds opens here, whoever addressed it.
+ */
+function whereItOpens(rules: readonly PushedRule[]): string {
+  const one = rules[0] as PushedRule;
+  const held = rules.find((rule) => rule.heldIn !== undefined)?.heldIn;
+  const there =
+    held === undefined
+      ? ''
+      : `a clone of ${oneLine(held.origin)} at ${oneLine(held.commit.slice(0, 12))}`;
+  if (rules.length === 1) {
+    return held === undefined
+      ? `The rule opens with \`mnema show ${oneLine(one.id)}\``
+      : 'The rule is held by the record this project inherits, not by its own: ' +
+          `\`mnema show ${oneLine(one.id)}\` opens it in ${there}`;
+  }
+  return held === undefined
+    ? 'Each rule opens with `mnema show` and the id on its line'
+    : 'Each rule opens with `mnema show` and the id on its line, and one held by the record ' +
+        `this project inherits opens in ${there}`;
 }
 
 /**
@@ -103,5 +124,6 @@ function refuseLine(rule: PushedRule): string {
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
   const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
-  return `“${oneLine(rule.name)}”: refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
+  const inherited = rule.inherited === undefined ? '' : ` · ${inheritedFromText(rule.inherited)}`;
+  return `“${oneLine(rule.name)}”: refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${inherited}${from}${by}`;
 }

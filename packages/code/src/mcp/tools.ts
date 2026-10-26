@@ -149,6 +149,7 @@ import {
   readGoverningRules,
   readRulesInForceWhereItLands,
 } from '../governed-tree.js';
+import { inheritedNotReadLine, inheritedTreeOf } from '../inherited-record.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -1720,6 +1721,19 @@ function workspaceCaches(session: Session): ScopedCache[] {
 }
 
 /**
+ * The trees a reading of the rules over a path takes: the workspace's, and the record the session's
+ * project INHERITS when it points at one that verifies (`inheritedTreeOf`), over the session's own
+ * warm cache. Verified once per connection; a project that inherits nothing pays one file test.
+ */
+function governanceCaches(session: Session): ScopedCache[] {
+  const caches = workspaceCaches(session);
+  const tree = session.project === undefined ? undefined : inheritedTreeOf(session.trees)?.tree;
+  return tree === undefined
+    ? caches
+    : [...caches, { ...tree, cache: session.caches.get(tree.chainRoot) }];
+}
+
+/**
  * The given trees as PROJECTION sources: each paired with the session's warm cache
  * over it.
  *
@@ -2659,7 +2673,7 @@ export function runGoverningRulesTool(
   const root = session.project ?? '';
   return {
     ok: true,
-    value: readGoverningRules(workspaceCaches(session), {
+    value: readGoverningRules(governanceCaches(session), {
       path: input.path,
       root,
       from: root,
@@ -2681,6 +2695,17 @@ export function governingRulesMovedApart(
     ...answer.asks.map((one) => ({ id: one.rule })),
     ...answer.refuses.map((one) => ({ id: one.rule })),
   ]);
+  return line === undefined ? [] : [line];
+}
+
+/**
+ * The line a `governing_rules` answer owes beside its payload when the project points at a record it
+ * inherits that was NOT read (it does not verify at the pinned commit, or this machine lacks it):
+ * none of that record's rules are in the answer, and this says why. None otherwise.
+ */
+export function governingRulesInheritedNotRead(session: Session): readonly string[] {
+  if (session.project === undefined) return [];
+  const line = inheritedNotReadLine(inheritedTreeOf(session.trees)?.reading);
   return line === undefined ? [] : [line];
 }
 
@@ -2808,9 +2833,12 @@ function rulesBeforeAnEdit(
   // be written still refuses, and says so in its reason. A RULE'S REFUSAL OUTRANKS THE
   // HOLD ON A FIRST WRITE below: it is returned before the hold is looked at, so a write a rule
   // refuses is refused every time and the once-only hold never spends its one pass on it.
+  // The rules over a path are read with the record this project inherits added: a rule of it applies
+  // here as the project's would, naming where it comes from. The switches above are the project's.
+  const addressed = asking || refusing || pushing || holding ? governanceCaches(session) : caches;
   const met =
     asking || refusing
-      ? whatAWriteMeets(caches, { paths: [input.path], root, from: root })
+      ? whatAWriteMeets(addressed, { paths: [input.path], root, from: root })
       : undefined;
   if (met?.grade === 'refuse') {
     const recorded = recordTheCharge(() => recordWhatItMet(session, met));
@@ -2829,7 +2857,7 @@ function rulesBeforeAnEdit(
   // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
   // path the rules do not address as written is read again at where a link leads inside the
   // project (`realPathInside`), so a link does not step around the hold of a first write.
-  const rulesAt = pushing || holding ? readRulesInForceWhereItLands(caches, read) : undefined;
+  const rulesAt = pushing || holding ? readRulesInForceWhereItLands(addressed, read) : undefined;
   const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
