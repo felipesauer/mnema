@@ -1,5 +1,5 @@
 /**
- * `mnema recall --after-a-compaction --session <id>`: what a session had recorded with the record
+ * `mnema recall --after-a-compaction --session <id>`: what entered the record while a session ran,
  * before its conversation was compacted, as a sentence for the conversation that continues.
  *
  * WHAT IT IS FOR. A compaction replaces the conversation with a summary, and the summary keeps

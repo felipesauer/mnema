@@ -107,7 +107,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
   [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
   what the host wrote since. The sixth runs only after a conversation was compacted (the `compact` matcher of
-  `SessionStart`) and hands it back what its session had recorded before, one sentence read from that journal (see
+  `SessionStart`) and hands it back what entered the record while its session ran, one sentence read from that journal (see
   [After a compaction](#after-a-compaction)); nothing runs before a compaction, because the host throws away what a
   hook says then. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
   (`mnema switch on user-corrections`): it reads the transcript's own words, the one reader here

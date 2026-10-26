@@ -43,6 +43,7 @@ import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
   exclusivelyOn,
+  JOURNAL_LOCK_WAIT_MS,
   journalAfter,
   journalFile,
   readingOf,
@@ -62,9 +63,6 @@ export interface SessionTallyContext {
   /** How long a held lock on the session's journal is waited for, in milliseconds: a test shortens it. */
   readonly lockWaitMs?: number;
 }
-
-/** How long a `Stop` waits for a dispatch that holds the session's journal: the mirror's write is brief. */
-const JOURNAL_LOCK_WAIT_MS = 1500;
 
 /** The reply for the host, and what the run has to say beside it. */
 export interface SessionTallyDone {

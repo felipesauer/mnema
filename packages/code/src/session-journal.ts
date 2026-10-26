@@ -581,11 +581,25 @@ export const RECENT_MS = 24 * 60 * 60 * 1000;
  */
 export const LIVE_MS = 15 * 60 * 1000;
 
-/** Marks the journal at `file` as one whose session ended at `now`. Never throws. */
-export function markEnded(file: string, now: Date): void {
-  const journal = readJournal(file);
-  if (journal === undefined || journal.endedAt !== undefined) return;
-  writeJournal(file, { ...journal, endedAt: now.toISOString() }, now);
+/** How long the Stop tally and the end of a connection wait for a journal's lock: a write they skip is made up by the next reader. */
+export const JOURNAL_LOCK_WAIT_MS = 1500;
+
+/**
+ * Marks the journal at `file` as one whose session ended at `now`. Never throws. The read and the
+ * write are under the lock the dispatches and the tally take, so they cannot erase what those write
+ * between the two (the task handed over, or an end already marked). A lock not had in `waitMs` leaves
+ * the journal as it was, and the next reader works out that the session stopped from its age.
+ */
+export function markEnded(file: string, now: Date, waitMs: number = JOURNAL_LOCK_WAIT_MS): void {
+  exclusivelyOn(
+    file,
+    () => {
+      const journal = readJournal(file);
+      if (journal === undefined || journal.endedAt !== undefined) return;
+      writeJournal(file, { ...journal, endedAt: now.toISOString() }, now);
+    },
+    waitMs,
+  );
 }
 
 /** Whether `journal` is that of a session that has stopped, as far as `now` can tell. */
