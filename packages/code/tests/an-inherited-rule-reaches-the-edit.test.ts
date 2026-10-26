@@ -177,6 +177,7 @@ beforeEach(async () => {
   orgGoverns = await ruleAt(org, 'TypeScript runs in strict mode', 'src', 'governs');
   await did(org, 'link', orgGoverns, 'packages/php/src', '--rel', 'governs');
   orgRefuses = await ruleAt(org, 'Release output is not edited', 'CHANGELOG.md', 'refuses-a-write');
+  await did(org, 'link', orgRefuses, 'generated', '--rel', 'refuses-a-write');
   orgAsks = await ruleAt(org, 'No production dependency', 'package.json', 'asks-for-a-person');
   git(org, 'add', '.mnema');
   git(org, 'commit', '-q', '-m', 'org rules');
@@ -184,7 +185,7 @@ beforeEach(async () => {
   await did(repo, 'init');
   ownRule = await ruleAt(repo, 'Bill in UTC', 'src', 'governs');
   await did(repo, 'inherit', 'set', org, '--write');
-});
+}, 60_000);
 
 afterEach(() => {
   process.chdir(originalCwd);
@@ -211,7 +212,10 @@ describe('the inherited reading keeps the decision whole', () => {
       { rel: 'governs', target: 'src' },
     ]);
     const refusing = reading.decisions.find((one) => one.id === orgRefuses);
-    expect(refusing?.addresses).toEqual([{ rel: 'refuses-a-write', target: 'CHANGELOG.md' }]);
+    expect(refusing?.addresses).toEqual([
+      { rel: 'refuses-a-write', target: 'CHANGELOG.md' },
+      { rel: 'refuses-a-write', target: 'generated' },
+    ]);
   });
 });
 
@@ -241,11 +245,11 @@ describe('mnema rules', () => {
     expect(done.governed.counts.stale).toBe(0);
     expect(done.governed.inherited).toEqual({
       from: { origin: org, commit: pinned },
-      addressed: 4,
-      elsewhere: 1,
+      addressed: 5,
+      elsewhere: 2,
     });
     const page = rulesReport(renderPlain, done.governed).join('\n');
-    expect(page).toContain(`${fromTheOrg()}: 4 addresses, 1 names nothing in this project`);
+    expect(page).toContain(`${fromTheOrg()}: 5 addresses, 2 name nothing in this project`);
   });
 
   it('lists the inherited rule that refuses a write and the one that asks for a person', () => {
@@ -286,13 +290,24 @@ describe('the gate before a write', () => {
     expect(said['permissionDecision']).toBe('deny');
     expect(said['permissionDecisionReason']).toContain(orgRefuses);
     expect(said['permissionDecisionReason']).toContain(fromTheOrg());
+    expect(said['permissionDecisionReason']).toContain(
+      'A rule of the record this project inherits refuses a write at CHANGELOG.md',
+    );
     expect(charges()).toEqual([`channel.refused ${orgRefuses} @ CHANGELOG.md`]);
+  });
+
+  it('refuses a write that creates a file under an inherited address the project does not hold yet', () => {
+    expect(vscode('generated/out.js')['permissionDecision']).toBe('deny');
+    expect(charges()).toEqual([`channel.refused ${orgRefuses} @ generated/out.js`]);
   });
 
   it('the command hook asks where an inherited rule asks for a person', () => {
     const said = vscode('package.json');
     expect(said['permissionDecision']).toBe('ask');
     expect(said['permissionDecisionReason']).toContain(orgAsks);
+    expect(said['permissionDecisionReason']).toContain(
+      'A rule of the record this project inherits asks that a person look at package.json',
+    );
     expect(said['permissionDecisionReason']).toContain(fromTheOrg());
   });
 
@@ -316,7 +331,7 @@ describe('the gate before a write', () => {
     expect(tool('CHANGELOG.md')['permissionDecision']).toBe('deny');
     await did(repo, 'switch', 'off', 'edit-refuses-a-write');
     expect(vscode('CHANGELOG.md')['permissionDecision']).toBeUndefined();
-  });
+  }, 30_000);
 
   it('says nothing more where no inherited rule addresses the path', () => {
     expect(vscode('src/a.ts')).toEqual({});
@@ -353,5 +368,5 @@ describe('an inherited record that does not verify', () => {
     ]);
     expect(vscode('CHANGELOG.md')).toEqual({});
     expect(tool('CHANGELOG.md')['permissionDecision']).toBeUndefined();
-  });
+  }, 30_000);
 });

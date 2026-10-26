@@ -26,14 +26,14 @@
  */
 
 import type { PushedRule, RulesAtPath } from '@mnema/context';
-import { inheritedFromText } from './inherited-record.js';
+import { aRuleOf, inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
 
 /** What the record refuses, and about which file: passive about the record, never addressed to the reader. */
-function refusesAtPath(path: string): string {
-  return `A rule of this project’s record refuses a write at ${oneLine(path)} while it stands.`;
+function refusesAtPath(path: string, rules: RulesAtPath['rules']): string {
+  return `${aRuleOf(rules)} refuses a write at ${oneLine(path)} while it stands.`;
 }
 
 /** The asking's sentence for a rule that does not travel, said once. */
@@ -51,7 +51,7 @@ export function editRefusesNotice(at: RulesAtPath): string | undefined {
 
 /** What this channel says before the rules: the rule and the reason, which is what is refused. */
 function opening(at: RulesAtPath): readonly string[] {
-  return [refusesAtPath(at.relative ?? at.path)];
+  return [refusesAtPath(at.relative ?? at.path, at.rules)];
 }
 
 /**

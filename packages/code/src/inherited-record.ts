@@ -445,6 +445,18 @@ export function withInheritedSource<T>(
   );
 }
 
+/**
+ * Whose rule a gate's opening sentence names: the project's record, the record it inherits, or
+ * either, so a text that refuses or asks never says an inherited rule is one the project made.
+ */
+export function aRuleOf(rules: readonly { readonly inherited?: InheritedFrom }[]): string {
+  const inherited = rules.filter((rule) => rule.inherited !== undefined).length;
+  if (inherited === 0) return 'A rule of this project’s record';
+  return inherited === rules.length
+    ? 'A rule of the record this project inherits'
+    : 'A rule of this project’s record or of the record it inherits';
+}
+
 /** How a line names where an inherited rule comes from: the origin and the commit, short. */
 export function inheritedFromText(from: InheritedFrom): string {
   return `inherited from ${oneLine(from.origin)} at ${oneLine(from.commit.slice(0, 12))}`;

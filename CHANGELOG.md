@@ -17,7 +17,8 @@ with its own changelog.
   their addresses under `governs`, `asks-for-a-person` and `refuses-a-write`), and `mnema rules`, `mnema why`, the
   `governing_rules` tool and the gate before a write (the MCP tool and `mnema before-a-write`) list an inherited rule beside the
   project's own, each saying `inherited from <origin> at <commit>`; neither is chosen over the other. One that refuses or asks
-  applies as the project's would, only where it addresses the path. An inherited address that names nothing in this project is
+  applies as the project's would, only where it addresses the path (a write that creates a file under it included), and its
+  sentence says the rule is one of the record this project inherits. An inherited address that names nothing in this project is
   not a stale address here; `mnema rules` counts it apart. A record that does not verify at the pinned commit governs nothing,
   and `rules`, `why` and `governing_rules` say so. The switches stay the project's own. The verdict is kept for the life of a
   process; a project that inherits nothing pays one file test.

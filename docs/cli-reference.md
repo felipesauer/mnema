@@ -1205,14 +1205,15 @@ and says when the commit is not there yet.
 **An inherited rule reaches the path it addresses.** A link the origin's record holds under
 `governs`, `asks-for-a-person` or `refuses-a-write` is an address in the project that inherits it,
 read against that project's root, by path segments, the way the project's own are: a rule of the
-origin addressed at `packages/php/src` covers `packages/php/src/Foo.php` here, and covers nothing in
-a project with no such directory. So `mnema rules <path>`, `mnema why <path>`, the `governing_rules`
+origin addressed at `packages/php/src` covers `packages/php/src/Foo.php` here, and in a project with
+no such directory it covers nothing until a file is written under it. So `mnema rules <path>`, `mnema why <path>`, the `governing_rules`
 tool and the gate before a write (the MCP tool Claude Code's hook calls and `mnema before-a-write`)
 list an inherited rule beside the project's own, and each inherited rule says where it comes from
 (`inherited from <origin> at <commit>`, the first 12 characters of the commit). Neither is chosen
 over the other: where a rule of the project and a rule of the origin address the same path, both are
 listed. A rule of the origin that refuses a write or asks for a person applies as one of the
-project's would, only where it addresses the path, and the refusal names its origin; the
+project's would, only where it addresses the path, and the refusal says the rule is one of the
+record this project inherits and names its origin; the
 `channel.refused` or `channel.asked` this project records cites the rule's id, which resolves in the
 origin's record and not in this one. An address of the origin that names nothing in this project's
 working tree is not counted as one of the project's stale addresses: `mnema rules` says how many

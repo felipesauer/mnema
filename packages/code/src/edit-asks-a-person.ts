@@ -51,7 +51,7 @@
 
 import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
 import { type GovernedRead, readAsksForAPersonAt } from './governed-tree.js';
-import { inheritedFromText } from './inherited-record.js';
+import { aRuleOf, inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
@@ -90,8 +90,8 @@ export function whatAWriteAsks(
  * `record-framing.ts` exists to hold. The path is named as the record COMPARED it rather
  * than as the host spelled it, so the sentence and the addresses below are in one spelling.
  */
-function asksAboutPath(path: string): string {
-  return `A rule of this project’s record asks that a person look at ${oneLine(path)} before it is written.`;
+function asksAboutPath(path: string, rules: RulesAtPath['rules']): string {
+  return `${aRuleOf(rules)} asks that a person look at ${oneLine(path)} before it is written.`;
 }
 
 /**
@@ -122,7 +122,10 @@ export function editAsksNotice(at: RulesAtPath): string | undefined {
 
 /** What this channel says before the rules: whose text this is, and what is being asked. */
 function opening(at: RulesAtPath): readonly string[] {
-  return [recordFramingBlock('edit-asks-a-person'), asksAboutPath(at.relative ?? at.path)];
+  return [
+    recordFramingBlock('edit-asks-a-person'),
+    asksAboutPath(at.relative ?? at.path, at.rules),
+  ];
 }
 
 /** What it says after them. */

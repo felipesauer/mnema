@@ -428,13 +428,14 @@ function addressesUnder(
   // counting. An address whose subject does not resolve is UNRESOLVED and nothing else:
   // saying its address also went stale would be a claim about a rule nobody can read.
   //
-  // AN INHERITED ADDRESS IS IN NONE OF THE THREE unless it names something here. One that does
-  // governs like the project's own; one that does not is another repository's layout, not a
-  // repair of this project's, so it is counted apart ({@link GoverningRules.inherited}).
+  // AN INHERITED ADDRESS GOVERNS LIKE THE PROJECT'S OWN, a write that creates the file it names
+  // included, and it is never STALE or UNRESOLVED here: one that names nothing in this tree is
+  // another repository's layout, not a repair of this project's, so it is counted apart
+  // ({@link GoverningRules.inherited}).
   const own = found.filter((entry) => entry.assertedFrom === undefined);
   const inherited = found.filter((entry) => entry.assertedFrom !== undefined);
   const here = inherited.filter((entry) => readableRule(entry) && entry.rule.onDisk);
-  const readable = [...own.filter(readableRule), ...here];
+  const readable = [...own.filter(readableRule), ...inherited.filter(readableRule)];
   return {
     // `all` is what this project's record holds as RULES, the middle number, so an
     // address naming nothing readable is not in it.
