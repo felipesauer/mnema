@@ -81,7 +81,7 @@ claude plugin install mnema@mnema
 
 Claude Code may end the install saying that `userConfig` options are not yet set. They are the
 plugin's `mnema_path` option, which has the default `mnema` (the first one on your `PATH`), and its
-`agent_key` option, which is empty (the server signs with your own key): the host lists an option as
+`agent_key` option, which is empty (the server signs with the key your environment's `MNEMA_AGENT_KEY` names, else with your own): the host lists an option as
 unset until you give it a value, and nothing needs doing unless you want to run another binary or
 sign as an agent (`/plugin configure mnema@mnema`). That VS Code and Cursor, which read this same manifest, pass the
 option on to the server was not measured.
@@ -202,10 +202,33 @@ for it, and the extension's hooks file gives each hook 15 seconds; on Windows th
 on Windows. A run without a person (`gemini -p`) in a folder the host does not trust does not start
 unless it is told to trust it (`--skip-trust`).
 
+## Qwen Code
+
+Qwen Code installs the plugin of this repository itself: it converts the Claude Code plugin into an
+extension of its own and copies it into your home. From a checkout of this repository:
+
+```bash
+qwen extensions install /path/to/mnema/plugin
+```
+
+The host asks you to consent to the install, and reads the extension from the next session on. The
+extension starts `mnema mcp` as its MCP server (the host lists the server's
+tools by name and hands a schema only when the model asks for one), adds the document and the notes
+to the system instruction of the session (the host escapes the angle brackets of that text), and
+refuses a `write_file` or an `edit` where a rule refuses it, handing the model the rule as the call's
+error. The command that refuses runs only where `QWEN_PROJECT_DIR` is set, which the host sets for
+every hook. It pauses nothing, so a rule that only asks is let through, and it does nothing where
+`mnema` is missing. A program of that name that is not this product cannot answer, and a write at a
+path a rule that refuses it addresses is refused.
+Held by a test that starts the real Qwen Code 0.26.1 against a stand-in for its model
+([`qwen-opens-and-refuses.qwen.test.ts`](../packages/code/tests/host-contract/qwen-opens-and-refuses.qwen.test.ts)).
+Not run: an interactive session, `notebook_edit`, a file a shell command writes, and what the plugin's
+other hooks do under it.
+
 ## Any other host with an MCP client
 
 The hosts in the first rung of [the table](evidence.md#each-hosts-rung) (Cursor's editor,
-Antigravity's command line, Factory Droid, Qwen Code and Goose) get no plugin from this repository.
+Antigravity's command line, Factory Droid and Goose) get no plugin from this repository.
 Their own documentation says they take an MCP server and read a rules file; that was read, not run
 with this product. Any other client that takes an MCP server is in the same place, and nothing about it
 was read. Declare the server the way the

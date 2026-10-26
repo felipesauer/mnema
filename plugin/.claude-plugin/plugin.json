@@ -31,7 +31,7 @@
       "args": ["${CLAUDE_PLUGIN_ROOT}/server/launch.mjs", "mcp"],
       "env": {
         "MNEMA_PLUGIN_BINARY": "${user_config.mnema_path}",
-        "MNEMA_AGENT_KEY": "${user_config.agent_key}"
+        "MNEMA_PLUGIN_AGENT_KEY": "${user_config.agent_key}"
       }
     }
   }

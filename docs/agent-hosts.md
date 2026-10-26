@@ -2,7 +2,7 @@
 
 With the Claude Code plugin, the record reaches a session twice: as it opens, and
 at each edit. The other hosts get as much of this as their hooks allow: Codex, Copilot CLI,
-Gemini CLI, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and how far
+Gemini CLI, Qwen Code, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and how far
 each one goes is [the table of each host's rung](evidence.md#each-hosts-rung).
 
 ```mermaid
@@ -71,7 +71,7 @@ project's committed one (`.mnema/`), its private one (under the project's `.git/
 machine holds; a line printed by a `request` on another machine is passed whole, and is enrolled in the committed tree
 alone. To rotate, retire the key and run `request` again under the same name: the retired key moves to
 `agents/claude/retired/` (it is never deleted) and the new key is enrolled with `enroll`. A host signs with it
-when told its name, with the plugin's `agent_key` option, `MNEMA_AGENT_KEY`, or `mnema mcp --agent-key claude`.
+when told its name, with the plugin's `agent_key` option (which wins when it holds a name; empty, it leaves `MNEMA_AGENT_KEY` in the host's environment to say), `MNEMA_AGENT_KEY`, or `mnema mcp --agent-key claude`.
 `mnema doctor` lists the keys the machine holds against the three trees.
 
 What the key proves about `which` depends on who else can read the folder it lives in, and under one operating-system user

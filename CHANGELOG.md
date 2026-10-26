@@ -23,6 +23,17 @@ with its own changelog.
   from a second list. The buttons are grouped by meaning (accept beside reject; show, compare and check beside a stack, export in
   the context menu and remove alone in its last group; refresh in both title bars), and every input box and choice has a title, a
   placeholder that says what to type and stays open when focus moves.
+- **Qwen Code opens its sessions with the record and refuses a write a rule refuses.** Installed as an extension
+  (`qwen extensions install /path/to/mnema/plugin`, which converts the Claude Code plugin), Qwen Code runs the plugin's
+  hooks file: the opening arrives in the system instruction of its first request, the server's tools are listed to the
+  model, and a `write_file` or an `edit` where a rule refuses is not made and the model reads the rule. The command that
+  refuses is new in `hooks/hooks.json` and starts only where `QWEN_PROJECT_DIR` is set, which Qwen Code sets for every
+  hook (it also sets the variables of Claude Code and Gemini CLI, so neither can tell it apart). It refuses and nothing
+  else, so a rule that only asks for a person is let through, and `mnema before-a-write --host` takes `qwen`. Held by a
+  contract that starts the real Qwen Code 0.26.1 against a stand-in for its model, with no account, in a new job of the
+  host contract. Qwen Code defers the server's tools, so, unlike the other four, no file pins the weight of the 27
+  definitions it sends. Not run: an interactive session, `notebook_edit`, and what the plugin's other hooks (the count at
+  the end of a response, the subagent hooks) do under it.
 - **A compacted conversation is handed back what entered the record while its session ran.** A new `SessionStart` hook under the `compact`
   matcher runs `mnema recall --after-a-compaction --session <id>`, which prints one sentence (about sixty to a hundred and
   twenty tokens) read from the session's journal: the decisions that entered the record (read from the record since the session opened, by label and in the state they have now, so one recorded in the middle of a turn is there), the notes copied, the questions
@@ -122,14 +133,18 @@ with its own changelog.
   Copilot, Gemini and OpenCode figures of that page are the ones their pinned files hold.
 - **What each host hands the plugin's server and its hooks is measured and held.** The host contracts now read, by name, the
   `env` of the server manifest as the server received it (Codex, Copilot CLI and Gemini CLI hand `MNEMA_AGENT_KEY` on with the
-  value the manifest declares; in Claude Code the manifest's own entry for the key, empty while the `agent_key` option is empty,
-  is what the server gets, so a key set only in the host's environment does not reach it, while `MNEMA_HOME` does), and the
+  value the manifest declares; in Claude Code a `MNEMA_AGENT_KEY` and a `MNEMA_HOME` set in the host's environment reach it), and the
   fields each host writes on the stdin of the hook that runs before a write (Codex, Copilot CLI, Gemini CLI, VS Code) or after
   one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
   measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
 
 ### Fixed
 
+- **A `MNEMA_AGENT_KEY` set in the environment of Claude Code now reaches the plugin's server when the `agent_key` option is
+  empty.** The manifest used to declare `MNEMA_AGENT_KEY` from the option, so an empty option set it to an empty value over the
+  one the person had set. The manifest now hands the option on as `MNEMA_PLUGIN_AGENT_KEY` and the launcher makes it the server's
+  `MNEMA_AGENT_KEY` only when it holds a name (an option with a name still wins, so whoever filled it signs as before); an empty
+  `MNEMA_AGENT_KEY` counts as none. Codex, Copilot CLI and Gemini CLI, whose manifests name their host, are unchanged.
 - **The files that name who signs are on the disk when their write returns.** A key's two halves, the local installation id
   and the anchor are now synced (`fsync`, and the directory that names a new file) before the write is reported done, as
   every entry and checkpoint already were; a power cut right after a first write could leave an identity the record carried

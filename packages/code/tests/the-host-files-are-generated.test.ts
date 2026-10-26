@@ -89,7 +89,7 @@ describe('the rung table', () => {
     expect(rung("Cursor's command-line agent")).toBe('(c)');
     // Codex refuses and does not pause a write; the rules file it reads is only documented.
     expect(rung('Codex')).toBe('(c), with (a) documented, not measured');
-    expect(rung('Qwen Code')).toBe('(a), documented, not measured');
+    expect(rung('Qwen Code')).toBe('(c), with (a) documented, not measured');
     // The editor was only read in Cursor's documentation; the plugin was not read running in it.
     expect(rung("Cursor's editor")).toBe('(a), documented, not measured');
   });

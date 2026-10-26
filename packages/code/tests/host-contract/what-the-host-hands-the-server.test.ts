@@ -36,15 +36,15 @@ describe('what Claude Code hands the server it starts', () => {
       'CLAUDE_CODE_ENTRYPOINT',
       'CLAUDE_CODE_SESSION_ID',
     ]);
-    // The manifest's own entry for the key is there, and empty: the option the person did not fill.
-    expect(handed.declared).toEqual({ MNEMA_AGENT_KEY: '' });
+    // The option the person did not fill reaches the server as nothing, not as an empty name.
+    expect(handed.declared).toEqual({});
   }, 120_000);
 
   describe("the person's own environment", () => {
     let home = '';
     afterEach(() => rmSync(home, { recursive: true, force: true }));
 
-    it('hands MNEMA_HOME on, and lets the manifest entry for the key win over the key set in the host environment', async () => {
+    it('hands MNEMA_HOME on, and hands the key set in the host environment on, the option being empty', async () => {
       home = mkdtempSync(join(tmpdir(), 'mnema-sentinel-home-'));
       const session = await start({
         project: (it) => it.measureTheServer(),
@@ -53,9 +53,10 @@ describe('what Claude Code hands the server it starts', () => {
       const handed = theServerWasHanded(session.project);
 
       expect(handed.declared['MNEMA_HOME']).toBe(home);
-      // The plugin's manifest declares `MNEMA_AGENT_KEY` from its `agent_key` option, which the
-      // person left empty; the host sets the manifest's entry over the one it inherited.
-      expect(handed.declared['MNEMA_AGENT_KEY']).toBe('');
+      // The manifest hands the empty `agent_key` option on under a name of its own, so the key
+      // the person set is the one the server has. A filled option winning over it is held by
+      // the launcher's own test, because a contract cannot fill a plugin option without an account.
+      expect(handed.declared['MNEMA_AGENT_KEY']).toBe('sentinel-agent-key');
     }, 120_000);
   });
 });

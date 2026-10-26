@@ -1307,7 +1307,8 @@ $ mnema before-a-write --help
 |
 | Options:
 |   --host <host>       the host whose hook runs this, and whose payload arrives
-|                       on stdin: vscode, cursor, codex, copilot, opencode, gemini
+|                       on stdin: vscode, cursor, codex, copilot, opencode,
+|                       gemini, qwen
 |   --agent-key <name>  sign what this hook records with the key of that agent in
 |                       each tree whose record enrols it (made with `mnema key
 |                       request --agent <name> --anchor <id>`), and name the agent
