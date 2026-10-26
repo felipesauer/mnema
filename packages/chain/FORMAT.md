@@ -1596,7 +1596,11 @@ Stated plainly, because a published format invites all three readings:
   records, not a rule of this format: the second reader and the verifier page
   read one tree at a time and do not make it, and no reader sees a retirement written in
   a tree it was not given (another machine's private tree, or the global tree without
-  `--global`).
+  `--global`). The cross has two limits of its own. `key revoke --agent` writes the
+  retirement in one tree after the other, so an event the agent signed in a tree between
+  the two retirements is refused in the tree whose retirement came later. And the cross
+  compares the `at` each event carries, which the key that signs it writes, so a leaked
+  key that writes an `at` earlier than the retirement passes it.
 - **A change to the format is visible, and §7.1 is all that is promised about
   changing it.** This entry used to say that the per-kind field declarations were
   not published, and that in consequence an implementation built from this
