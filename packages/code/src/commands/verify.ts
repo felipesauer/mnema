@@ -66,6 +66,7 @@ import {
   type UpcasterRegistry,
   type VerifyResult,
   verify,
+  verifyTogether,
   weakerLevel,
 } from '@mnema/chain';
 import {
@@ -77,6 +78,7 @@ import {
   type ResolvedTrees,
   resolveTrees,
   type Scope,
+  treeWords,
 } from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
 import { oneLine } from '../one-line.js';
@@ -228,16 +230,39 @@ function coverProject(
   // ruled on only when they hold a record (a key or a tail), so the same rule reaches
   // them exactly there. A project with events above its last checkpoint is still
   // legitimate, and still `T1 only` while no checkpoint covers any of them.
-  const committed: TreeVerdict = {
-    kind: 'verdict',
-    scope: 'public',
-    root,
-    result: verifiedTree(root, upcasters, trees.keyRoot),
+  //
+  // THE TREES ARE VERIFIED TOGETHER, and that is the one judgement this adds to the chain's: an
+  // agent key one tree retired is retired in the others ({@link verifyTogether}). Each tree is a
+  // record of its own, so a private tree that has not received a retirement the committed one
+  // holds would verify, and count as attested, what the key signed there after it. That is said
+  // here, as a break of the tree that holds the event, because this command reads every tree of
+  // the project at once; the second reader and the page read one tree at a time and do not.
+  const others = recordTrees(trees, undefined).filter(
+    (tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global),
+  );
+  const ruled = [{ scope: 'public' as Scope, chainRoot: root }, ...others].filter(
+    (tree) => tree.scope === 'public' || holdsRecord({ root: tree.chainRoot }),
+  );
+  const results = verifyTogether(
+    ruled.map((tree) => ({
+      layout: { root: tree.chainRoot },
+      where: treeWords(tree.scope),
+      options: { keyRoot: trees.keyRoot },
+    })),
+    upcasters,
+  );
+  const reportOf = (tree: ScopedTree): TreeReport => {
+    const at = ruled.indexOf(tree);
+    if (at === -1) return { kind: 'no-record', scope: tree.scope, root: tree.chainRoot };
+    return {
+      kind: 'verdict',
+      scope: tree.scope,
+      root: tree.chainRoot,
+      result: withAgentsNamed(results[at] as VerifyResult, tree.chainRoot, upcasters),
+    };
   };
-  const rest = recordTrees(trees, undefined)
-    .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
-    .map((tree) => reportOn(tree, upcasters, trees.keyRoot))
-    .map((report) => withWhatGitSees(report, trees));
+  const committed = reportOf(ruled[0] as ScopedTree) as TreeVerdict;
+  const rest = others.map(reportOf).map((report) => withWhatGitSees(report, trees));
   return {
     trees: [committed, ...rest],
     record: aggregate([committed, ...rest.filter(isVerdict)]),
@@ -562,7 +587,15 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
  * retired, not enrolled: it is the one thing the sentence must not call it.
  */
 function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
-  const result = verify(root, upcasters, { keyRoot });
+  return withAgentsNamed(verify(root, upcasters, { keyRoot }), root, upcasters);
+}
+
+/** The note {@link verifiedTree} words, over a verdict already taken of the tree at `root`. */
+function withAgentsNamed(
+  result: VerifyResult,
+  root: string,
+  upcasters: UpcasterRegistry,
+): VerifyResult {
   if (!result.census.some((note) => note.kind === 'key-without-tail')) return result;
   // A record the chain called unreadable cannot be replayed, and holds no agent to name.
   let agents: ReturnType<typeof agentKeysIn>;

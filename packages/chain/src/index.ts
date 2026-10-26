@@ -44,6 +44,7 @@ export { CodedError } from './chain/coded-error.js';
 export {
   type IdentityIssue,
   type IdentityResolution,
+  type RetiredElsewhere,
   resolveIdentity,
 } from './chain/enrollment.js';
 export {
@@ -161,6 +162,7 @@ export {
   isEmptyTail,
   type KeyWithoutTailNote,
   type PartialFinalLineNote,
+  type RecordOfASet,
   type Reformatted,
   type TailIssue,
   type TailResult,
@@ -169,6 +171,7 @@ export {
   type VerifyOptions,
   type VerifyResult,
   verifyChain,
+  verifyTogether,
   type WitnessStatus,
 } from './chain/verify.js';
 export {
