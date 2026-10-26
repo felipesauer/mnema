@@ -245,7 +245,7 @@ is what a later capture follows.
 | Claude Code calls a hook's MCP server only under the name `plugin:<plugin>:<server>`; the manifest's own name and three other spellings were not called | Claude Code 2.1.228 | not held yet |
 | How VS Code spells the server's name to the model | not read | not held yet |
 | That the `agent_key` option reaches the server in VS Code (no handshake of the plugin's server is seen in the contract) and in Cursor (its agent needs an account, so no contract exists) | not measured | not held yet |
-| What Codex, Copilot CLI and Gemini CLI write on the stdin of the hook after a question tool ran (the payload `mnema settled` reads: `hook_event_name` and `tool_name`): no case here makes a question tool run without a person | not measured | not held yet |
+| What Codex, Copilot CLI and Gemini CLI write on the stdin of the hook after a question tool ran (the payload the settled-choice hook reads: `hook_event_name` and `tool_name`): no case here makes a question tool run without a person | not measured | not held yet |
 | What any host writes on the stdin of the hook that opens a session: the opening handlers read no payload, so there is no field to compare | not applicable | not held yet |
 | What an agent does with a decision the record holds as superseded, against the same rule written in a `CLAUDE.md`: no run compared them, and no result is published | not run | not held yet |
 | VS Code puts a hook's reason in front of the person who decides; what the person sees in the confirmation | not read from the screen | not held yet |
