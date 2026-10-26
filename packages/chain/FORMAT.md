@@ -321,7 +321,7 @@ named here is refused for the same first cause by both readers.** A stored line:
 object (`a stored line that is not a JSON object`), its keys are `event` and `link`, both of
 them are objects (`event and link must both be objects`), and its link has its four keys. A checkpoint line or a tail
 proof: it is an object, its `scheme` is one the reader knows (`a checkpoint scheme this reader
-does not know: 'mnema-checkpoint/9'`, and `a tail-proof scheme ...` for §6.1), and then its
+does not know: 'other'`, and `a tail-proof scheme ...` for §6.1), and then its
 keys, because a reader refuses a scheme it does not know rather than guessing at the fields. A
 scheme that is a string is named as quoted there, one absent or `null` as `None`, and any other
 value by its JSON type alone (`a number`, `a boolean`, `an array`, `an object`). Only then are

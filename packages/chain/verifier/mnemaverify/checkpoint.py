@@ -103,8 +103,8 @@ def _scheme_named(value: Any) -> str:
     """A scheme this reader does not know, as both readers name it in the refusal.
 
     A string by its `repr`, an absent or null one as `None`, and any other value by its JSON
-    type alone, whose spelling the two languages do not share (`1.0` reads back as `1` in the
-    product's). `schemeNamed` in the product's `stored-json.ts` is the other half.
+    type alone (section 4), whose spelling a reader in another language need not share: `1.0`
+    reads back as `1` in a reader whose numbers are all floats.
     """
     if isinstance(value, str) or value is None:
         return repr(value)
