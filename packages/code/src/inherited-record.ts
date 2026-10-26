@@ -459,7 +459,10 @@ export function aRuleOf(rules: readonly { readonly inherited?: InheritedFrom }[]
 
 /** How a line names where an inherited rule comes from: the origin and the commit, short. */
 export function inheritedFromText(from: InheritedFrom): string {
-  return `inherited from ${oneLine(from.origin)} at ${oneLine(from.commit.slice(0, 12))}`;
+  // The repository the rule was inherited from, which is not a provenance (`derived-from`): named
+  // apart so the word a provenance is introduced with keeps its one source.
+  const repository = from.origin;
+  return `inherited from ${oneLine(repository)} at ${oneLine(from.commit.slice(0, 12))}`;
 }
 
 /**

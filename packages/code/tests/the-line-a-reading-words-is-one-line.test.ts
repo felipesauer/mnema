@@ -903,6 +903,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'one of two words written in this module, chosen by a count or a flag beside it: nothing from the record or git reaches it',
     },
+  'git-bridge.ts itemLine(...(rule.inherited !== undefined ? [inheritedFromText(rule.inherited)] : [])) #1':
+    {
+      verdict: 'composed',
+      why: 'where an inherited rule came from: the origin and commit of `inherit.json`, collapsed inside `inheritedFromText`',
+    },
   "git-bridge.ts itemLine(...(rule.files !== undefined ? [`${rule.files} changed file${rule.files === 1 ? '' : 's'}`] : [])) #1":
     {
       verdict: 'minted',
@@ -1639,6 +1644,35 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'rules.ts «[{}]» rule.assertedIn #1': {
     verdict: 'minted',
     why: 'the tree whose record asserts the address: one of three words',
+  },
+  'rules.ts asScope(rule.inherited === undefined ? `[${rule.assertedIn}]` : `[${inheritedFromText(rule.inherited)}]`) #1':
+    {
+      verdict: 'composed',
+      why: 'the tree that asserts the address, or where an inherited rule came from: a word of three, or the origin and commit collapsed inside `inheritedFromText`',
+    },
+  'rules.ts «[{}]» inheritedFromText(rule.inherited) #1': {
+    verdict: 'composed',
+    why: 'the origin a project inherits from and the pinned commit, each collapsed inside `inheritedFromText`: `inherit.json` is a committed file anybody can edit',
+  },
+  'rules.ts «{}: {} address{}, » inheritedFromText(from) #1': {
+    verdict: 'composed',
+    why: 'the inherited record the count line is about: its origin and commit, collapsed inside `inheritedFromText`',
+  },
+  'rules.ts «{}: {} address{}, » addressed #1': {
+    verdict: 'minted',
+    why: 'how many addresses the inherited record holds: a count',
+  },
+  "rules.ts «{}: {} address{}, » addressed === 1 ? '' : 'es' #1": {
+    verdict: 'minted',
+    why: 'the plural ending of a word this report writes, chosen by the count beside it',
+  },
+  'rules.ts «{} name{} nothing in this project» elsewhere #1': {
+    verdict: 'minted',
+    why: 'how many inherited addresses name nothing in this working tree: a count',
+  },
+  "rules.ts «{} name{} nothing in this project» elsewhere === 1 ? 's' : '' #1": {
+    verdict: 'minted',
+    why: 'the verb ending this report writes, chosen by the count beside it',
   },
 
   // --- runs.ts: a run, for all three readings ------------------------------------
@@ -2464,8 +2498,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does.
-    expect(FOUND.sites.length).toBe(477);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses.
+    expect(FOUND.sites.length).toBe(485);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2487,8 +2521,8 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(130);
-    expect(count('minted')).toBe(265);
-    expect(count('composed')).toBe(82);
+    expect(count('minted')).toBe(269);
+    expect(count('composed')).toBe(86);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(130);
   });
 

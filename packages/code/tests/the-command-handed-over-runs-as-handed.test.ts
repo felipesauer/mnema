@@ -522,8 +522,44 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'a verb named beside `mnema memory`, in the entry that says where either goes when an agent asked for by the environment writes without `--scope`',
   },
   'CHANGELOG.md: mnema before-a-write': {
+    times: 2,
+    why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning, and in the one on the rules a project inherits; the package page hands the whole line over, with its host',
+  },
+  'CHANGELOG.md: mnema rules': {
+    times: 2,
+    why: 'the verb named twice in the entry on the rules a project inherits, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'CHANGELOG.md: mnema why': {
     times: 1,
-    why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning; the package page hands the whole line over, with its host',
+    why: 'the verb named in the entry on the rules a project inherits, beside `rules`; the reference hands it over with a path or a commit',
+  },
+  'docs/cli-reference.md: mnema before-a-write': {
+    times: 1,
+    why: 'the command door of the gate, named in the paragraph on what an inherited rule reaches; the section on hosts hands it over with its host',
+  },
+  'docs/cli-reference.md: mnema rules': {
+    times: 1,
+    why: 'the verb named where the paragraph on inherited rules says what it counts apart; the same paragraph hands it over with the path a line above',
+  },
+  'docs/features.md: mnema rules': {
+    times: 1,
+    why: 'the verb named in the list item on a record that inherits another, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'docs/features.md: mnema why': {
+    times: 1,
+    why: 'the verb named beside `rules` in the list item on a record that inherits another; the reference hands it over with a path or a commit',
+  },
+  'packages/code/README.md: mnema inherit set': {
+    times: 1,
+    why: 'the verb named in the list item on an inherited record, as what pins it; the reference hands the whole line over, with the origin and --at',
+  },
+  'packages/code/README.md: mnema rules': {
+    times: 1,
+    why: 'the verb named in the list item on an inherited record, as a reader of the rules over a path; the reference hands it over with the path',
+  },
+  'packages/code/README.md: mnema why': {
+    times: 1,
+    why: 'the verb named beside `rules` in the list item on an inherited record; the reference hands it over with a path or a commit',
   },
   'CHANGELOG.md: mnema decision import': {
     times: 1,
@@ -679,13 +715,13 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 51, name: 92, flag: 3 },
+  'CHANGELOG.md': { line: 51, name: 96, flag: 3 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
-  'docs/features.md': { line: 10, name: 12 },
+  'docs/features.md': { line: 10, name: 14 },
   'docs/first-record.md': { line: 2, name: 7 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
@@ -701,8 +737,8 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 108, name: 131, flag: 2 },
-  'packages/code/README.md': { line: 8, name: 10 },
+  'docs/cli-reference.md': { line: 110, name: 134, flag: 2 },
+  'packages/code/README.md': { line: 8, name: 13 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/after-a-write.ts': { line: 2 },
