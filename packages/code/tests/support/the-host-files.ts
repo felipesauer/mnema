@@ -1026,7 +1026,7 @@ function manifest(name: string, description: string): string {
         args: [`${hostVariable('CLAUDE_PLUGIN_ROOT')}/server/launch.mjs`, 'mcp'],
         env: {
           MNEMA_PLUGIN_BINARY: hostVariable('user_config.mnema_path'),
-          MNEMA_AGENT_KEY: hostVariable('user_config.agent_key'),
+          MNEMA_PLUGIN_AGENT_KEY: hostVariable('user_config.agent_key'),
         },
       },
     },

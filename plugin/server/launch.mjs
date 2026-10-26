@@ -8,6 +8,12 @@
  * substitution leaves the placeholder as it was, and that is taken as no choice made: starting
  * a program named by the placeholder would be a server that never comes up, with nothing said.
  *
+ * The `agent_key` option arrives the same way, as `MNEMA_PLUGIN_AGENT_KEY`, and becomes the
+ * server's `MNEMA_AGENT_KEY` only when it holds a name. It has a variable of its own so that an
+ * empty option cannot overwrite a `MNEMA_AGENT_KEY` the person set in the host's environment:
+ * a name in the option wins, then the environment's, and an empty or unsubstituted one counts as
+ * none.
+ *
  * Everything else is passed through: the arguments, the standard streams (the server speaks
  * over them) and the exit code. The signals a host stops a server with are forwarded, so the
  * server does not outlive this process.
@@ -37,9 +43,25 @@ export function theBinaryToRun(configured) {
   return named === '' || named.includes('${') ? BINARY : named;
 }
 
+/**
+ * The environment the server runs with, given the one the host started the launcher with.
+ *
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function theEnvironmentToRunWith(env) {
+  const { MNEMA_PLUGIN_AGENT_KEY: option, ...rest } = env;
+  const named = typeof option === 'string' ? option.trim() : '';
+  if (named !== '' && !named.includes('${')) return { ...rest, MNEMA_AGENT_KEY: named };
+  const inherited = typeof rest.MNEMA_AGENT_KEY === 'string' ? rest.MNEMA_AGENT_KEY.trim() : '';
+  if (inherited === '') delete rest.MNEMA_AGENT_KEY;
+  return rest;
+}
+
 function main() {
   const binary = theBinaryToRun(process.env.MNEMA_PLUGIN_BINARY);
   const child = spawn(binary, process.argv.slice(2), {
+    env: theEnvironmentToRunWith(process.env),
     stdio: 'inherit',
     shell: process.platform === 'win32',
   });
