@@ -299,9 +299,10 @@ jobs:
           if-no-files-found: error
 
       # The file, installed into a real VS Code (downloaded here, free) with `--install-extension`,
-      # in a workspace with a `.mnema` folder: the extension has to be active. No screen on a runner,
+      # in three workspaces: with no `.mnema` (it has to stay asleep), with a `.mnema` and a command
+      # that does not exist (the bar has to say so), and with a real record. No screen on a runner,
       # so the editor runs under a virtual one.
-      - name: Install it in VS Code and check that it starts
+      - name: Install it in VS Code and check what it does in each
         run: xvfb-run -a pnpm --filter @mnema/vscode install-check
 
   # THE BINARY SAYS WHY, ON A NODE IT CANNOT RUN ON. The suite runs on a Node that has `node:sqlite`,

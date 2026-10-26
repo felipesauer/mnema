@@ -92,6 +92,27 @@ function jobsOf(text: string): { header: string; jobs: Map<string, string> } {
   return { header: lines.slice(0, starts[0] ?? lines.length).join('\n'), jobs };
 }
 
+/** The one install line the job may have: lockfile, no script, the release tools' own folder. */
+const INSTALL_LINE = 'npm ci --ignore-scripts --no-audit --no-fund --prefix .github/release-tools';
+
+/**
+ * Why the install of the job is refused. In npm a later flag wins, so `--ignore-scripts --ignore-scripts=false`
+ * runs the install scripts with the tokens' job around it: no `ignore-scripts=` and no `--foreground-scripts`
+ * anywhere in the job, and every `npm ci` is the exact line.
+ */
+function installOffences(block: string): string[] {
+  const found: string[] = [];
+  if (/ignore-scripts\s*=/.test(block)) found.push('sets ignore-scripts with a value');
+  if (/--foreground-scripts\b/.test(block)) found.push('asks for --foreground-scripts');
+  for (const line of block.split('\n')) {
+    const at = line.indexOf('npm ci');
+    if (at >= 0 && !line.trim().startsWith('#') && !line.endsWith(`run: ${INSTALL_LINE}`)) {
+      found.push(`an npm ci that is not the exact line: ${line.trim()}`);
+    }
+  }
+  return found;
+}
+
 /** Why a workflow is refused, in words; empty when it is clean. */
 function offences(where: string, text: string): string[] {
   const never = NEVER.exec(text);
@@ -149,6 +170,7 @@ describe('one job publishes the extension, behind an approval', () => {
     const block = jobsOf(RELEASE).jobs.get(PLACE.job) ?? '';
     const install = block.indexOf('npm ci --ignore-scripts');
     expect(install, 'the install step').toBeGreaterThan(-1);
+    expect(installOffences(block)).toEqual([]);
     expect(block.slice(install)).toMatch(
       /^ {8}run: npm ci --ignore-scripts .*--prefix \.github\/release-tools$/m,
     );
@@ -173,6 +195,28 @@ describe('one job publishes the extension, behind an approval', () => {
       without.map(([name]) => name),
       'a locked package with no integrity',
     ).toEqual([]);
+  });
+
+  it('refuses an install that turns the scripts back on, by a later flag or by another form', () => {
+    const block = jobsOf(RELEASE).jobs.get(PLACE.job) ?? '';
+    expect(installOffences(block)).toEqual([]);
+    for (const tail of [
+      ' --ignore-scripts=false',
+      ' --foreground-scripts',
+      ' --ignore-scripts=false --ignore-scripts',
+    ]) {
+      const mutated = block.replace(
+        `${INSTALL_LINE}`,
+        `npm ci --ignore-scripts${tail} --no-audit --no-fund --prefix .github/release-tools`,
+      );
+      expect(mutated, tail).not.toBe(block);
+      expect(installOffences(mutated), tail).not.toEqual([]);
+    }
+    const twice = block.replace(
+      INSTALL_LINE,
+      'npm ci --ignore-scripts --ignore-scripts=false --prefix .github/release-tools',
+    );
+    expect(installOffences(twice)).not.toEqual([]);
   });
 
   it('still packs the extension in CI and keeps the file, so the scan has something to refuse', () => {

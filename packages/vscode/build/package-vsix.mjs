@@ -13,7 +13,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,13 +31,14 @@ try {
   const { name, private: isPrivate, devDependencies, scripts, type, ...packed } = manifest;
   writeFileSync(
     join(scratch, 'package.json'),
-    `${JSON.stringify({ name: 'mnema', ...packed, files: ['extension.cjs', 'icon.png', 'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md'] }, null, 2)}\n`,
+    `${JSON.stringify({ name: 'mnema', ...packed, files: ['extension.cjs', 'icon.png', 'media/**', 'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md'] }, null, 2)}\n`,
   );
   copyFileSync(join(repoRoot, 'LICENSE'), join(scratch, 'LICENSE'));
   copyFileSync(join(pkgDir, 'NOTICE'), join(scratch, 'NOTICE'));
   copyFileSync(join(pkgDir, 'README.md'), join(scratch, 'README.md'));
   copyFileSync(join(pkgDir, 'CHANGELOG.md'), join(scratch, 'CHANGELOG.md'));
   writeFileSync(join(scratch, 'icon.png'), drawIcon());
+  cpSync(join(pkgDir, 'media'), join(scratch, 'media'), { recursive: true });
   const done = spawnSync(
     join(pkgDir, 'node_modules', '.bin', 'vsce'),
     ['package', '--no-dependencies', '--out', out],
