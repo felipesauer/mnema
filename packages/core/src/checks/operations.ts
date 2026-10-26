@@ -42,7 +42,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { CHECKER_REQUEST_PREFIX, decodeKeyRequest } from '../identity/handshake.js';
-import { membershipIn, personsRosterOf } from '../identity/membership.js';
+import { agentRoleIn, membershipIn, personsRosterOf } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent, appendFact } from '../workflow/append.js';
@@ -173,6 +173,7 @@ export type EnrollCheckerErr =
         | 'UNPROVEN_REQUEST'
         | 'CANNOT_VOUCH'
         | 'A_MEMBER_KEY'
+        | 'AN_AGENT_KEY'
         | 'RETIRED_CHECKER';
       readonly message: string;
     };
@@ -183,8 +184,9 @@ export type EnrollCheckerErr =
  * Refused: a line that is not a checker request (a request to JOIN is refused here, by its
  * prefix, so a person cannot grant the wrong power by pasting the wrong line); a request
  * whose consent was given to another identity; a machine whose key its identity no longer
- * counts; and a key that is a MEMBER of an identity in this record, because a checker key
- * signs check results only, and every other fact that key went on to sign would fail.
+ * counts; a key that holds the AGENT role in this record, in use or retired, because a key
+ * holds one role only; and a key that is a MEMBER of an identity in this record, because a
+ * checker key signs check results only, and every other fact that key went on to sign would fail.
  */
 export function enrollChecker(
   ctx: DecideThenWrite,
@@ -223,6 +225,20 @@ export function enrollChecker(
       ok: false,
       code: 'CANNOT_VOUCH',
       message: `this machine's key is not currently valid for ${oneLine(anchor)}, so a vouch it signed would be rejected`,
+    };
+  }
+  // A key that holds the agent role, retired included, holds no other: the readers refuse a
+  // checker enrolment of a retired agent key, and an agent key in use would sign as a checker.
+  const agent = agentRoleIn(query, fingerprint);
+  if (agent !== undefined) {
+    return {
+      ok: false,
+      code: 'AN_AGENT_KEY',
+      message:
+        `the key ${oneLine(fingerprint)} holds the agent role in this record, as "${oneLine(agent.name)}" of ` +
+        `${oneLine(agent.anchor)}${agent.retired ? ', retired' : ''}: ` +
+        'a key holds one role only, and a checker key signs check results only. ' +
+        'Make a key of its own for the machine that runs the checks',
     };
   }
   const membership = membershipIn(query, request.key);

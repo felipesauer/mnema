@@ -532,6 +532,33 @@ export function agentKeysIn(
   return keys;
 }
 
+/** The agent role a key holds in a record: whose, under what name, and whether it was retired. */
+export interface AgentRole {
+  readonly anchor: string;
+  readonly name: string;
+  readonly retired: boolean;
+}
+
+/**
+ * The agent role `fingerprint` holds in the record, in use or retired, or undefined when the record
+ * never enrolled it as an agent. A key holds one role only (FORMAT.md section 6.2): every door that
+ * takes a key into a role (a member, a checker, a key `init` finds registered) asks this first,
+ * because the readers refuse the fact that would take a key the record holds as an agent's, and a
+ * retirement does not give the key back.
+ */
+export function agentRoleIn(query: MembershipQuery, fingerprint: string): AgentRole | undefined {
+  const events = orderedEvents({ root: query.tree }, query.upcasters);
+  const role = agentKeysIn(events, query.tree).get(fingerprint);
+  if (role === undefined) return undefined;
+  const retired = [...enrollmentFactsOf(events)].some(
+    (fact) =>
+      fact.kind === 'agent-retired' &&
+      fact.fingerprint === fingerprint &&
+      fact.anchor === role.anchor,
+  );
+  return { ...role, retired };
+}
+
 /** An identity's keys as one reading of the record sees them: its own, and its agents'. */
 export interface RosterByRole {
   /** The keys that are the identity's own: the ones that may vouch, retire and be the last. */

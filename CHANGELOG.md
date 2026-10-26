@@ -140,6 +140,38 @@ with its own changelog.
 
 ### Fixed
 
+- **An agent's key is told by its fingerprint, not by where its file is kept.** `mnema key request --anchor <id> --key <file>`
+  refused a key file kept in the agents' folder by the place of the file, so a copy of the agent's key kept anywhere else was
+  asked for, and enrolled, as a person's key with nothing said; `mnema key enroll <line>` did not ask at all where the record had
+  not enrolled the key as an agent. Both now refuse (`AN_AGENT_KEY`, before a line is made or anything is written) a key whose
+  fingerprint is one this machine keeps for an agent (`agents/<name>/keys/` or `agents/<name>/retired/`) or one a record they
+  reach enrols as an agent, and the refusal says which. It guards a person's mistake on that machine and proves nothing: a key
+  kept only on another machine, or enrolled as an agent only in a record this one does not reach, is not recognised.
+- **No door takes an agent key, in use or retired, into another role.** `mnema key enroll --checker <line>` asked only whether
+  the key was a member, so a copy of an agent's key retired in the record went through, and the `checker.enrolled` it wrote
+  left the record failing `verify` for good, since both readers refuse a retired agent key enrolled as a checker. It now
+  refuses an agent key (`AN_AGENT_KEY`), retired included, as the record holds it and as this machine keeps it, before
+  anything is written; `init` declines a key registered at the key root that the record holds as an agent's.
+- **Both readers refuse a `key.enrolled` that names an agent key.** A key that holds the agent role in a record (from its
+  `agent.enrolled` on, retired included) taken in again as a plain member, by its own identity or another one of the same
+  record, signed as one, without the agent's limits; the two readers refused only what it later signed for another identity.
+  `FORMAT.md` section 6.2 now says a key holds one role, and both readers, and the verifier page, refuse such an
+  enrolment where it is written, naming it in the same words (`key-enrolled-names-an-agent-key` in `mutate.py`). It is a
+  tightening after the first publication (section 7.1): records written by 0.1.0, 0.1.1 and 0.1.2 through every flow that
+  enrols, retires and asks again for an agent key, and this repository's own record, hold no such fact, and a version from
+  before it verifies such a record and refuses nothing. A record that never held the `agent.enrolled` can still take the key as
+  a member, which `FORMAT.md` says.
+- **`mnema verify` crosses the trees of a project for an agent key's retirement.** A retirement is a fact of the record that
+  holds it, so a private tree that had not received one (a machine that wrote as the agent before it pulled the committed tree's
+  retirement) verified what the retired key signed there afterwards and counted it as attested. `mnema verify` now reads the
+  trees it verifies together (the committed one, the private one, and the global one with `--global`): an event signed by an
+  agent key another of them retired, with an `at` later than that retirement's, is a break of the tree that holds it, named
+  with the tree that retired the key, and is not counted as attested. A tree is read a second time only when it holds such an
+  event. The second reader and the page read one tree at a time and do not make this cross, and no reader sees a retirement
+  written in a tree it was not given; `FORMAT.md` and `docs/what-it-proves.md` say so, and that the output does not. The
+  cross has two limits, said there too: `key revoke --agent` writes the trees one after the other, so what the agent signed in
+  a tree between two of its retirements is refused in the tree retired later; and it compares the `at` the signing key wrote,
+  so a leaked key that writes an earlier `at` passes it.
 - **A `MNEMA_AGENT_KEY` set in the environment of Claude Code now reaches the plugin's server when the `agent_key` option is
   empty.** The manifest used to declare `MNEMA_AGENT_KEY` from the option, so an empty option set it to an empty value over the
   one the person had set. The manifest now hands the option on as `MNEMA_PLUGIN_AGENT_KEY` and the launcher makes it the server's

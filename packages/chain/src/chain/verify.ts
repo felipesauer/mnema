@@ -117,7 +117,7 @@ import {
   checkpointSignatureHolds,
   verifyCheckpoint,
 } from './checkpoint.js';
-import { type IdentityResolution, resolveIdentity } from './enrollment.js';
+import { type IdentityResolution, type RetiredElsewhere, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
 import {
@@ -700,6 +700,15 @@ export interface VerifyOptions {
    * instead of a key whose tail may have gone. Left out, the census reads the record alone.
    */
   readonly keyRoot?: string;
+  /**
+   * Agent keys ANOTHER record retired, with when and where ({@link RetiredElsewhere}): what a reader
+   * of the several records of one project knows that this record does not. An event this record
+   * holds, signed by one of them with an `at` later than that retirement's, is a break here, and is
+   * not counted as attested. It is this product's reading of a set of records and not a rule of the
+   * format (FORMAT.md, "What this document does not promise"); left out, the verdict is the
+   * format's over this record alone. {@link verifyTogether} is the one caller that hands it in.
+   */
+  readonly retiredElsewhere?: ReadonlyMap<string, RetiredElsewhere>;
 }
 
 /** Verifies an entire chain, aggregating all tails. */
@@ -707,6 +716,16 @@ export function verifyChain(
   layout: ChainLayout,
   upcasters: UpcasterRegistry,
   options: VerifyOptions = {},
+): VerifyResult {
+  return verifyChainSeeing(layout, upcasters, options, undefined);
+}
+
+/** {@link verifyChain}, handing `seen` the fold of the reading the verdict is. */
+function verifyChainSeeing(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  options: VerifyOptions,
+  seen: ((identity: IdentityResolution) => void) | undefined,
 ): VerifyResult {
   // The verdict is this reading's, and nothing below moves it. The `relaid` handed to it puts
   // nothing back: it only notices, on a line that was refused anyway, that the line would have
@@ -716,10 +735,66 @@ export function verifyChain(
     if (!spotted && canonicalFormOf(text) !== undefined) spotted = true;
     return undefined;
   };
-  const result = verifyReading(layout, upcasters, options, spot);
+  const result = verifyReading(layout, upcasters, options, spot, seen);
   if (result.ok || !spotted) return result;
   const reformatted = reformatOf(layout, upcasters, options);
   return reformatted === undefined ? result : { ...result, reformatted };
+}
+
+/** One record of a set {@link verifyTogether} verifies. */
+export interface RecordOfASet {
+  readonly layout: ChainLayout;
+  /** How a sentence names it ("this project's private tree"): what a refusal in another says. */
+  readonly where: string;
+  readonly options?: VerifyOptions;
+}
+
+/**
+ * THE RECORDS OF ONE PROJECT, VERIFIED TOGETHER: each one's verdict, as {@link verifyChain} gives
+ * it, with the one thing a reader of all of them knows that a reader of one does not. An agent key
+ * retired in one record (`agent.retired`, signature-covered) is retired for the others too: an event
+ * another record holds, signed by that key with an `at` later than the retirement's, is a break of
+ * the record that holds it, and is not counted as attested ({@link VerifyOptions.retiredElsewhere}).
+ *
+ * A record is read a second time only when it holds such an event: the first reading says which
+ * keys each record retired, when, and the latest `at` each key signed with, so a set whose records
+ * agree costs what verifying each of them costs.
+ *
+ * Not a rule of the format: the second reader and the page read one record at a time and do not
+ * make this cross, and no reader sees a retirement in a record it was not handed.
+ */
+export function verifyTogether(
+  records: readonly RecordOfASet[],
+  upcasters: UpcasterRegistry,
+): VerifyResult[] {
+  const folds: (IdentityResolution | undefined)[] = records.map(() => undefined);
+  const first = records.map((record, i) =>
+    verifyChainSeeing(record.layout, upcasters, record.options ?? {}, (identity) => {
+      folds[i] = identity;
+    }),
+  );
+  return records.map((record, i) => {
+    const own = folds[i];
+    if (own === undefined) return first[i] as VerifyResult;
+    const elsewhere = new Map<string, RetiredElsewhere>();
+    records.forEach((other, j) => {
+      if (j === i) return;
+      for (const [fingerprint, retirement] of folds[j]?.retiredAgents ?? []) {
+        const at = Date.parse(retirement.at);
+        const ownRetirement = own.retiredAgents.get(fingerprint);
+        if (ownRetirement !== undefined && Date.parse(ownRetirement.at) <= at) continue;
+        if (!((own.latestBySigner.get(fingerprint) ?? -1) > at)) continue;
+        const known = elsewhere.get(fingerprint);
+        if (known !== undefined && Date.parse(known.at) <= at) continue;
+        elsewhere.set(fingerprint, { at: retirement.at, where: other.where });
+      }
+    });
+    if (elsewhere.size === 0) return first[i] as VerifyResult;
+    return verifyChain(record.layout, upcasters, {
+      ...record.options,
+      retiredElsewhere: elsewhere,
+    });
+  });
 }
 
 /**
@@ -731,6 +806,7 @@ function verifyReading(
   upcasters: UpcasterRegistry,
   options: VerifyOptions,
   relaid: RelaidLine | undefined,
+  seen?: (identity: IdentityResolution) => void,
 ): VerifyResult {
   const tails = listTails(layout);
   let uncheckpointed = 0;
@@ -858,7 +934,14 @@ function verifyReading(
   // machine authorizes events on another), it is resolved once over the merged
   // order, and each issue is attributed back to the tail and seq of the event
   // that failed.
-  const identity = resolveIdentity(layout, entriesByTail, checkpointedByTail, keys);
+  const identity = resolveIdentity(
+    layout,
+    entriesByTail,
+    checkpointedByTail,
+    keys,
+    options.retiredElsewhere,
+  );
+  seen?.(identity);
   for (const identityIssue of identity.issues) {
     (issuesByTail.get(identityIssue.tail) ?? []).push({
       tail: identityIssue.tail,

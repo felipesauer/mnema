@@ -420,6 +420,38 @@ describe('the verdict a page computes', () => {
     expect(shown.lines.join('\n')).toContain('(tail-signer-mismatch)');
   });
 
+  it('refuses an agent key enrolled again as a member, in the words mnema verify uses', () => {
+    const record = join(sandbox, 'agent-as-member');
+    cpSync(join(FROZEN, 'witnessed-record'), record, { recursive: true });
+    const mutate = join(FROZEN, '..', '..', '..', 'verifier', 'mutate.py');
+    const made = spawnSync('python3', [mutate, 'key-enrolled-names-an-agent-key', record], {
+      encoding: 'utf-8',
+    });
+    expect(made.status, made.stderr).toBe(0);
+    const files: Record<string, string> = {};
+    const walk = (dir: string, prefix: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(join(dir, entry.name), `${prefix}${entry.name}/`);
+        else
+          files[`${prefix}${entry.name}`] = readFileSync(join(dir, entry.name)).toString('base64');
+      }
+    };
+    walk(record, '');
+    const shown = runInAPage(
+      `id="record-files">${JSON.stringify(files)}</script>`,
+      theSiteVerifier(),
+    );
+    const chain = verify(record);
+    expect(chain.issues.map((issue) => issue.detail)).toEqual([
+      'key.enrolled names a key that holds the agent role at this point: a key holds one role only',
+    ]);
+    expect(shown.state).toBe('broken');
+    expect(shown.summary).toBe(chain.summary);
+    expect(shown.lines.filter((line) => line?.includes('a key holds one role only'))).toHaveLength(
+      1,
+    );
+  });
+
   it('is what the chain says over the frozen witnessed record, witness included', () => {
     const files: Record<string, string> = {};
     const walk = (dir: string, prefix: string): void => {
